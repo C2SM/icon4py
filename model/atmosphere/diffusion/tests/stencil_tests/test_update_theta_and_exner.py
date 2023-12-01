@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestUpdateThetaAndExner(StencilTest):
@@ -28,7 +29,7 @@ class TestUpdateThetaAndExner(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_temp: np.array,
         area: np.array,
         theta_v: np.array,
@@ -43,12 +44,12 @@ class TestUpdateThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_temp = random_field(mesh, CellDim, KDim)
-        area = random_field(mesh, CellDim)
-        theta_v = random_field(mesh, CellDim, KDim)
-        exner = random_field(mesh, CellDim, KDim)
-        rd_o_cvd = 5.0
+    def input_data(self, grid):
+        z_temp = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        area = random_field(grid, CellDim, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rd_o_cvd = vpfloat("5.0")
 
         return dict(
             z_temp=z_temp,
@@ -57,7 +58,7 @@ class TestUpdateThetaAndExner(StencilTest):
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

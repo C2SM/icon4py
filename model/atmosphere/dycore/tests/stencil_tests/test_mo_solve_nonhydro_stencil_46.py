@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil46(StencilTest):
@@ -27,21 +28,21 @@ class TestMoSolveNonhydroStencil46(StencilTest):
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
     @staticmethod
-    def reference(mesh, w_nnew: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
+    def reference(grid, w_nnew: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
         w_nnew = np.zeros_like(w_nnew)
         z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
         return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_contr_w_fl_l = zero_field(mesh, CellDim, KDim)
-        w_nnew = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_contr_w_fl_l = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_nnew = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             w_nnew=w_nnew,
             z_contr_w_fl_l=z_contr_w_fl_l,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

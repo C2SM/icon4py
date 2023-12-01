@@ -13,37 +13,34 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, where
+from gt4py.next.ffront.fbuiltins import Field, exp, log, where
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_66(
     bdy_halo_c: Field[[CellDim], bool],
-    rho: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    theta_v = where(bdy_halo_c, exner, theta_v)
-    exner = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
-    return theta_v, exner
+    rho: Field[[CellDim, KDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    rd_o_cvd: wpfloat,
+    rd_o_p0ref: wpfloat,
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    theta_v_wp = where(bdy_halo_c, exner, theta_v)
+    exner_wp = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
+    return theta_v_wp, exner_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_66(
     bdy_halo_c: Field[[CellDim], bool],
-    rho: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    rd_o_cvd: float,
-    rd_o_p0ref: float,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    rho: Field[[CellDim, KDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    rd_o_cvd: wpfloat,
+    rd_o_p0ref: wpfloat,
 ):
     _mo_solve_nonhydro_stencil_66(
         bdy_halo_c,
@@ -53,8 +50,4 @@ def mo_solve_nonhydro_stencil_66(
         rd_o_cvd,
         rd_o_p0ref,
         out=(theta_v, exner),
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
     )

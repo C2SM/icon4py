@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
@@ -32,7 +33,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         kh_smag_ec: np.array,
         vn: np.array,
         e_bln_c_s: np.array,
@@ -40,27 +41,28 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
         diff_multfac_smag: np.array,
         **kwargs,
     ) -> dict:
+        c2e = grid.connectivities[C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        vn_geofac = vn[mesh.c2e] * geofac_div[mesh.get_c2ce_offset_provider().table]
+        vn_geofac = vn[c2e] * geofac_div[grid.get_offset_provider("C2CE").table]
         div = np.sum(vn_geofac, axis=1)
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         diff_multfac_smag = np.expand_dims(diff_multfac_smag, axis=0)
-        mul = kh_smag_ec[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table]
+        mul = kh_smag_ec[c2e] * e_bln_c_s[grid.get_offset_provider("C2CE").table]
         summed = np.sum(mul, axis=1)
         kh_c = summed / diff_multfac_smag
 
         return dict(div=div, kh_c=kh_c)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn = random_field(mesh, EdgeDim, KDim)
-        geofac_div = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        kh_smag_ec = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        diff_multfac_smag = random_field(mesh, KDim)
+    def input_data(self, grid):
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        kh_smag_ec = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        e_bln_c_s = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        diff_multfac_smag = random_field(grid, KDim, dtype=vpfloat)
 
-        kh_c = zero_field(mesh, CellDim, KDim)
-        div = zero_field(mesh, CellDim, KDim)
+        kh_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        div = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_ec=kh_smag_ec,

@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil09(StencilTest):
@@ -31,19 +32,20 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
     OUTPUTS = ("z_w_concorr_mc",)
 
     @staticmethod
-    def reference(mesh, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
+    def reference(grid, z_w_concorr_me: np.array, e_bln_c_s: np.array, **kwargs) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         z_w_concorr_mc = np.sum(
-            z_w_concorr_me[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
+            z_w_concorr_me[grid.connectivities[C2EDim]]
+            * e_bln_c_s[grid.get_offset_provider("C2CE").table],
             axis=1,
         )
         return dict(z_w_concorr_mc=z_w_concorr_mc)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_w_concorr_me = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = random_field(mesh, CellDim, C2EDim)
-        z_w_concorr_mc = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_w_concorr_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        e_bln_c_s = random_field(grid, CellDim, C2EDim, dtype=wpfloat)
+        z_w_concorr_mc = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_w_concorr_me=z_w_concorr_me,

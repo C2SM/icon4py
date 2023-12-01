@@ -13,53 +13,65 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_nabla4(
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_v1: Field[[ECVDim], float],
-    primal_normal_vert_v2: Field[[ECVDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    nabv_tang = (
-        u_vert(E2C2V[0]) * primal_normal_vert_v1(E2ECV[0])
-        + v_vert(E2C2V[0]) * primal_normal_vert_v2(E2ECV[0])
-    ) + (
-        u_vert(E2C2V[1]) * primal_normal_vert_v1(E2ECV[1])
-        + v_vert(E2C2V[1]) * primal_normal_vert_v2(E2ECV[1])
+    u_vert: Field[[VertexDim, KDim], vpfloat],
+    v_vert: Field[[VertexDim, KDim], vpfloat],
+    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    u_vert_wp, v_vert_wp = astype((u_vert, v_vert), wpfloat)
+
+    nabv_tang_vp = astype(
+        (
+            u_vert_wp(E2C2V[0]) * primal_normal_vert_v1(E2ECV[0])
+            + v_vert_wp(E2C2V[0]) * primal_normal_vert_v2(E2ECV[0])
+        )
+        + (
+            u_vert_wp(E2C2V[1]) * primal_normal_vert_v1(E2ECV[1])
+            + v_vert_wp(E2C2V[1]) * primal_normal_vert_v2(E2ECV[1])
+        ),
+        vpfloat,
     )
-    nabv_norm = (
-        u_vert(E2C2V[2]) * primal_normal_vert_v1(E2ECV[2])
-        + v_vert(E2C2V[2]) * primal_normal_vert_v2(E2ECV[2])
-    ) + (
-        u_vert(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
-        + v_vert(E2C2V[3]) * primal_normal_vert_v2(E2ECV[3])
+
+    nabv_norm_vp = astype(
+        (
+            u_vert_wp(E2C2V[2]) * primal_normal_vert_v1(E2ECV[2])
+            + v_vert_wp(E2C2V[2]) * primal_normal_vert_v2(E2ECV[2])
+        )
+        + (
+            u_vert_wp(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
+            + v_vert_wp(E2C2V[3]) * primal_normal_vert_v2(E2ECV[3])
+        ),
+        vpfloat,
     )
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
-    z_nabla4_e2 = 4.0 * (
-        (nabv_norm - 2.0 * z_nabla2_e) * inv_vert_vert_length**2.0
-        + (nabv_tang - 2.0 * z_nabla2_e) * inv_primal_edge_length**2.0
+    nabv_tang_wp, nabv_norm_wp = astype((nabv_tang_vp, nabv_norm_vp), wpfloat)
+    z_nabla4_e2_wp = wpfloat("4.0") * (
+        (nabv_norm_wp - wpfloat("2.0") * z_nabla2_e) * inv_vert_vert_length**2
+        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e) * inv_primal_edge_length**2
     )
-    return z_nabla4_e2
+    return astype(z_nabla4_e2_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla4(
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_v1: Field[[ECVDim], float],
-    primal_normal_vert_v2: Field[[ECVDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    z_nabla4_e2: Field[[EdgeDim, KDim], float],
+    u_vert: Field[[VertexDim, KDim], vpfloat],
+    v_vert: Field[[VertexDim, KDim], vpfloat],
+    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
 ):
     _calculate_nabla4(
         u_vert,

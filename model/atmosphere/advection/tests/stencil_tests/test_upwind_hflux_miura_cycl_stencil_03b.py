@@ -17,8 +17,8 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03b impo
     upwind_hflux_miura_cycl_stencil_03b,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def upwind_hflux_miura_cycl_stencil_03b_numpy(
@@ -30,24 +30,24 @@ def upwind_hflux_miura_cycl_stencil_03b_numpy(
     return p_out_e
 
 
-def test_upwind_hflux_miura_cycl_stencil_03b():
-    mesh = SimpleMesh()
-    z_tracer_mflx_1_dsl = random_field(mesh, EdgeDim, KDim)
-    z_tracer_mflx_2_dsl = random_field(mesh, EdgeDim, KDim)
-    z_tracer_mflx_3_dsl = random_field(mesh, EdgeDim, KDim)
-    p_out_e = zero_field(mesh, EdgeDim, KDim)
+def test_upwind_hflux_miura_cycl_stencil_03b(backend):
+    grid = SimpleGrid()
+    z_tracer_mflx_1_dsl = random_field(grid, EdgeDim, KDim)
+    z_tracer_mflx_2_dsl = random_field(grid, EdgeDim, KDim)
+    z_tracer_mflx_3_dsl = random_field(grid, EdgeDim, KDim)
+    p_out_e = zero_field(grid, EdgeDim, KDim)
 
     ref = upwind_hflux_miura_cycl_stencil_03b_numpy(
-        np.asarray(z_tracer_mflx_1_dsl),
-        np.asarray(z_tracer_mflx_2_dsl),
-        np.asarray(z_tracer_mflx_3_dsl),
+        z_tracer_mflx_1_dsl.asnumpy(),
+        z_tracer_mflx_2_dsl.asnumpy(),
+        z_tracer_mflx_3_dsl.asnumpy(),
     )
 
-    upwind_hflux_miura_cycl_stencil_03b(
+    upwind_hflux_miura_cycl_stencil_03b.with_backend(backend)(
         z_tracer_mflx_1_dsl,
         z_tracer_mflx_2_dsl,
         z_tracer_mflx_3_dsl,
         p_out_e,
         offset_provider={},
     )
-    assert np.allclose(ref, p_out_e)
+    assert np.allclose(ref, p_out_e.asnumpy())

@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
+
 import pytest
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 from gt4py.next.program_processors.runners.roundtrip import executor
@@ -18,6 +20,10 @@ from gt4py.next.program_processors.runners.roundtrip import executor
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
+
+    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
+    if config.getoption("--enable-mixed-precision"):
+        os.environ["FLOAT_PRECISION"] = "mixed"
 
 
 def pytest_addoption(parser):
@@ -36,8 +42,28 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default=None,
-            help="GT4Py backend to use when executing stencils. Defaults to 'executor' embedded backend. Currently the other option is 'run_gtfn' which is the GTFN CPU backend.",
+            default="embedded",
+            help="GT4Py backend to use when executing stencils. Defaults to embedded, other options include gtfn_cpu",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--grid",
+            action="store",
+            default="simple_grid",
+            help="Grid to use. Defaults to simple_grid, other options include icon_grid",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--enable-mixed-precision",
+            action="store_true",
+            help="Switch unit tests from double to mixed-precision",
+            default=False,
         )
     except ValueError:
         pass
@@ -50,13 +76,43 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    # parametrise backends
+    # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
 
-        params = [executor]  # default
-        if backend_option == "run_gtfn":
-            params.append(run_gtfn)
-        # TODO: add gpu support
+        params = []
+        ids = []
 
-        metafunc.parametrize("backend", params)
+        if backend_option == "gtfn_cpu":
+            params.append(run_gtfn)
+            ids.append("backend=gtfn_cpu")
+        elif backend_option == "embedded":
+            params.append(executor)
+            ids.append("backend=embedded")
+        # TODO (skellerhals): add gpu support
+        else:
+            raise Exception(
+                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest."
+            )
+
+        metafunc.parametrize("backend", params, ids=ids)
+
+    # parametrise grid
+    if "grid" in metafunc.fixturenames:
+        selected_grid_type = metafunc.config.getoption("--grid")
+
+        try:
+            if selected_grid_type == "simple_grid":
+                from icon4py.model.common.grid.simple import SimpleGrid
+
+                grid_instance = SimpleGrid()
+            elif selected_grid_type == "icon_grid":
+                from icon4py.model.common.test_utils.grid_utils import get_icon_grid
+
+                grid_instance = get_icon_grid()
+            else:
+                raise ValueError(f"Unknown grid type: {selected_grid_type}")
+            metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
+        except ValueError as e:
+            available_grids = ["simple_grid", "icon_grid"]
+            raise Exception(f"{e}. Select from: {available_grids}")

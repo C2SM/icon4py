@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil61(StencilTest):
@@ -27,7 +28,7 @@ class TestMoSolveNonhydroStencil61(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         rho_now: np.array,
         grf_tend_rho: np.array,
         theta_v_now: np.array,
@@ -43,17 +44,17 @@ class TestMoSolveNonhydroStencil61(StencilTest):
         return dict(rho_new=rho_new, exner_new=exner_new, w_new=w_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        rho_now = random_field(mesh, CellDim, KDim)
-        grf_tend_rho = random_field(mesh, CellDim, KDim)
-        theta_v_now = random_field(mesh, CellDim, KDim)
-        grf_tend_thv = random_field(mesh, CellDim, KDim)
-        w_now = random_field(mesh, CellDim, KDim)
-        grf_tend_w = random_field(mesh, CellDim, KDim)
-        dtime = 5.0
-        rho_new = zero_field(mesh, CellDim, KDim)
-        exner_new = zero_field(mesh, CellDim, KDim)
-        w_new = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        grf_tend_rho = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        grf_tend_thv = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        grf_tend_w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        dtime = wpfloat("5.0")
+        rho_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             rho_now=rho_now,

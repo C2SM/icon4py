@@ -13,13 +13,13 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_66 import (
     mo_solve_nonhydro_stencil_66,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil66(StencilTest):
@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil66(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         bdy_halo_c: np.array,
         rho: np.array,
         theta_v: np.array,
@@ -47,13 +47,13 @@ class TestMoSolveNonhydroStencil66(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        rd_o_cvd = 10.0
-        rd_o_p0ref = 20.0
-        bdy_halo_c = random_mask(mesh, CellDim)
-        exner = random_field(mesh, CellDim, KDim, low=1, high=2)
-        rho = random_field(mesh, CellDim, KDim, low=1, high=2)
-        theta_v = random_field(mesh, CellDim, KDim, low=1, high=2)
+    def input_data(self, grid):
+        rd_o_cvd = wpfloat("10.0")
+        rd_o_p0ref = wpfloat("20.0")
+        bdy_halo_c = random_mask(grid, CellDim)
+        exner = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        rho = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
 
         return dict(
             bdy_halo_c=bdy_halo_c,
@@ -62,8 +62,4 @@ class TestMoSolveNonhydroStencil66(StencilTest):
             exner=exner,
             rd_o_cvd=rd_o_cvd,
             rd_o_p0ref=rd_o_p0ref,
-            horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
-            vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
         )

@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil32(StencilTest):
@@ -28,7 +29,7 @@ class TestMoSolveNonhydroStencil32(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_rho_e: np.array,
         z_vn_avg: np.array,
         ddqz_z_full_e: np.array,
@@ -40,13 +41,13 @@ class TestMoSolveNonhydroStencil32(StencilTest):
         return dict(mass_fl_e=mass_fl_e, z_theta_v_fl_e=z_theta_v_fl_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_rho_e = random_field(mesh, EdgeDim, KDim)
-        z_vn_avg = random_field(mesh, EdgeDim, KDim)
-        ddqz_z_full_e = random_field(mesh, EdgeDim, KDim)
-        mass_fl_e = random_field(mesh, EdgeDim, KDim)
-        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
-        z_theta_v_fl_e = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        z_rho_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_vn_avg = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        ddqz_z_full_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        mass_fl_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_theta_v_fl_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             z_rho_e=z_rho_e,
@@ -56,7 +57,7 @@ class TestMoSolveNonhydroStencil32(StencilTest):
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

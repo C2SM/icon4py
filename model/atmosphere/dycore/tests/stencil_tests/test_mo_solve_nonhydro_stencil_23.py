@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil23(StencilTest):
@@ -28,7 +29,7 @@ class TestMoSolveNonhydroStencil23(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vn_nnow: np.array,
         ddt_vn_apc_ntl1: np.array,
         ddt_vn_apc_ntl2: np.array,
@@ -50,18 +51,18 @@ class TestMoSolveNonhydroStencil23(StencilTest):
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn_nnow = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc_ntl1 = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_apc_ntl2 = random_field(mesh, EdgeDim, KDim)
-        ddt_vn_phy = random_field(mesh, EdgeDim, KDim)
-        z_theta_v_e = random_field(mesh, EdgeDim, KDim)
-        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
-        vn_nnew = zero_field(mesh, EdgeDim, KDim)
-        dtime = 5.0
-        wgt_nnow_vel = 8.0
-        wgt_nnew_vel = 7.0
-        cpd = 2.0
+    def input_data(self, grid):
+        vn_nnow = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        ddt_vn_apc_ntl1 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        ddt_vn_apc_ntl2 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        ddt_vn_phy = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_theta_v_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn_nnew = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        dtime = wpfloat("5.0")
+        wgt_nnow_vel = wpfloat("8.0")
+        wgt_nnew_vel = wpfloat("7.0")
+        cpd = wpfloat("2.0")
 
         return dict(
             vn_nnow=vn_nnow,
@@ -76,7 +77,7 @@ class TestMoSolveNonhydroStencil23(StencilTest):
             wgt_nnew_vel=wgt_nnew_vel,
             cpd=cpd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

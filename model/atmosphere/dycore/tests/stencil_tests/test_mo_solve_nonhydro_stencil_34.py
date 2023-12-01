@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil34(StencilTest):
@@ -28,7 +29,7 @@ class TestMoSolveNonhydroStencil34(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_vn_avg: np.array,
         mass_fl_e: np.array,
         vn_traj: np.array,
@@ -41,12 +42,12 @@ class TestMoSolveNonhydroStencil34(StencilTest):
         return dict(vn_traj=vn_traj, mass_flx_me=mass_flx_me)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        mass_fl_e = random_field(mesh, EdgeDim, KDim)
-        mass_flx_me = random_field(mesh, EdgeDim, KDim)
-        z_vn_avg = random_field(mesh, EdgeDim, KDim)
-        vn_traj = random_field(mesh, EdgeDim, KDim)
-        r_nsubsteps = 9.0
+    def input_data(self, grid):
+        mass_fl_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        mass_flx_me = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_vn_avg = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        vn_traj = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        r_nsubsteps = wpfloat("9.0")
 
         return dict(
             z_vn_avg=z_vn_avg,
@@ -55,7 +56,7 @@ class TestMoSolveNonhydroStencil34(StencilTest):
             mass_flx_me=mass_flx_me,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

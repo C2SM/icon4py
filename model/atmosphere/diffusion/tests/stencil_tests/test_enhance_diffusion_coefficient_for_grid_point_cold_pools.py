@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import math
 
 import numpy as np
 import pytest
@@ -17,8 +18,9 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     enhance_diffusion_coefficient_for_grid_point_cold_pools,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat
 
 
 class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
@@ -27,17 +29,21 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         kh_smag_e: np.array,
         enh_diffu_3d: np.array,
     ) -> np.array:
-        kh_smag_e = np.maximum(kh_smag_e, np.max(enh_diffu_3d[mesh.e2c], axis=1))
+        e2c = grid.connectivities[E2CDim]
+        kh_smag_e = np.maximum(
+            kh_smag_e,
+            np.max(np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf), axis=1),
+        )
         return dict(kh_smag_e=kh_smag_e)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        kh_smag_e = random_field(mesh, EdgeDim, KDim)
-        enh_diffu_3d = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        enh_diffu_3d = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

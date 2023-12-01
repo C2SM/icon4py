@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil68(StencilTest):
@@ -28,7 +29,7 @@ class TestMoSolveNonhydroStencil68(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         mask_prog_halo_c: np.array,
         rho_now: np.array,
         theta_v_now: np.array,
@@ -49,15 +50,15 @@ class TestMoSolveNonhydroStencil68(StencilTest):
         return dict(theta_v_new=theta_v_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        mask_prog_halo_c = random_mask(mesh, CellDim)
-        rho_now = random_field(mesh, CellDim, KDim)
-        theta_v_now = random_field(mesh, CellDim, KDim)
-        exner_new = random_field(mesh, CellDim, KDim)
-        exner_now = random_field(mesh, CellDim, KDim)
-        rho_new = random_field(mesh, CellDim, KDim)
-        theta_v_new = random_field(mesh, CellDim, KDim)
-        cvd_o_rd = 10.0
+    def input_data(self, grid):
+        mask_prog_halo_c = random_mask(grid, CellDim)
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        cvd_o_rd = wpfloat("10.0")
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,
@@ -69,7 +70,7 @@ class TestMoSolveNonhydroStencil68(StencilTest):
             theta_v_new=theta_v_new,
             cvd_o_rd=cvd_o_rd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

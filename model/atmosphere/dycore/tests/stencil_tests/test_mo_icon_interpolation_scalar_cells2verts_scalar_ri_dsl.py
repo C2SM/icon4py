@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 )
 from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
@@ -27,25 +28,28 @@ class TestMoIconInterpolationScalarCells2vertsScalarRiDsl(StencilTest):
     OUTPUTS = ("p_vert_out",)
 
     @staticmethod
-    def reference(mesh, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
+    def reference(grid, p_cell_in: np.array, c_intp: np.array, **kwargs) -> np.array:
+        v2c = grid.connectivities[V2CDim]
         c_intp = np.expand_dims(c_intp, axis=-1)
-        p_vert_out = np.sum(p_cell_in[mesh.v2c] * c_intp, axis=1)
+        p_vert_out = np.sum(
+            np.where((v2c != -1)[:, :, np.newaxis], p_cell_in[v2c] * c_intp, 0), axis=1
+        )
         return dict(
             p_vert_out=p_vert_out,
         )
 
     @pytest.fixture
-    def input_data(self, mesh):
-        p_cell_in = random_field(mesh, CellDim, KDim)
-        c_intp = random_field(mesh, VertexDim, V2CDim)
-        p_vert_out = zero_field(mesh, VertexDim, KDim)
+    def input_data(self, grid):
+        p_cell_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        c_intp = random_field(grid, VertexDim, V2CDim, dtype=wpfloat)
+        p_vert_out = zero_field(grid, VertexDim, KDim, dtype=vpfloat)
 
         return dict(
             p_cell_in=p_cell_in,
             c_intp=c_intp,
             p_vert_out=p_vert_out,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_vertices),
+            horizontal_end=int32(grid.num_vertices),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_05 import face_val_ppm_stencil_05
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def face_val_ppm_stencil_05_numpy(
@@ -62,20 +62,20 @@ def face_val_ppm_stencil_05_numpy(
     return p_face
 
 
-def test_face_val_ppm_stencil_05():
-    mesh = SimpleMesh()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_cellhgt_mc_now = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    z_slope = random_field(mesh, CellDim, KDim)
-    p_face = zero_field(mesh, CellDim, KDim)
+def test_face_val_ppm_stencil_05(backend):
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    z_slope = random_field(grid, CellDim, KDim)
+    p_face = zero_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_05_numpy(
-        np.asarray(p_cc),
-        np.asarray(p_cellhgt_mc_now),
-        np.asarray(z_slope),
+        p_cc.asnumpy(),
+        p_cellhgt_mc_now.asnumpy(),
+        z_slope.asnumpy(),
     )
 
-    face_val_ppm_stencil_05(
+    face_val_ppm_stencil_05.with_backend(backend)(
         p_cc,
         p_cellhgt_mc_now,
         z_slope,
@@ -83,4 +83,4 @@ def test_face_val_ppm_stencil_05():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, :], p_face[:, 2:])
+    assert np.allclose(ref[:, :], p_face.asnumpy()[:, 2:])

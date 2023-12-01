@@ -14,21 +14,24 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_21(
-    theta_v: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], wpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
-    zdiff_gradp: Field[[ECDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    grav_o_cpd: float,
-) -> Field[[EdgeDim, KDim], float]:
+    zdiff_gradp: Field[[ECDim, KDim], vpfloat],
+    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    grav_o_cpd: wpfloat,
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    zdiff_gradp_wp = astype(zdiff_gradp, wpfloat)
+
     theta_v_0 = theta_v(as_offset(Koff, ikoffset(E2EC[0])))
     theta_v_1 = theta_v(as_offset(Koff, ikoffset(E2EC[1])))
 
@@ -38,37 +41,36 @@ def _mo_solve_nonhydro_stencil_21(
     theta_v_ic_p1_0 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[0]) + 1))
     theta_v_ic_p1_1 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[1]) + 1))
 
-    inv_ddqz_z_full_0 = inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[0])))
-    inv_ddqz_z_full_1 = inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[1])))
+    inv_ddqz_z_full_0_wp = astype(inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[0]))), wpfloat)
+    inv_ddqz_z_full_1_wp = astype(inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[1]))), wpfloat)
 
-    z_theta_0 = theta_v_0(E2C[0]) + zdiff_gradp(E2EC[0]) * (
+    z_theta_0 = theta_v_0(E2C[0]) + zdiff_gradp_wp(E2EC[0]) * (
         theta_v_ic_0(E2C[0]) - theta_v_ic_p1_0(E2C[0])
-    ) * inv_ddqz_z_full_0(E2C[0])
-    z_theta_1 = theta_v_1(E2C[1]) + zdiff_gradp(E2EC[1]) * (
+    ) * inv_ddqz_z_full_0_wp(E2C[0])
+    z_theta_1 = theta_v_1(E2C[1]) + zdiff_gradp_wp(E2EC[1]) * (
         theta_v_ic_1(E2C[1]) - theta_v_ic_p1_1(E2C[1])
-    ) * inv_ddqz_z_full_1(E2C[1])
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
-    z_hydro_corr = (
+    ) * inv_ddqz_z_full_1_wp(E2C[1])
+    z_hydro_corr_wp = (
         grav_o_cpd
         * inv_dual_edge_length
         * (z_theta_1 - z_theta_0)
-        * float(4.0)
-        / (z_theta_0 + z_theta_1) ** 2.0
+        * wpfloat("4.0")
+        / (z_theta_0 + z_theta_1) ** 2
     )
 
-    return z_hydro_corr
+    return astype(z_hydro_corr_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_21(
-    theta_v: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], wpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
-    zdiff_gradp: Field[[ECDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    z_hydro_corr: Field[[EdgeDim, KDim], float],
-    grav_o_cpd: float,
+    zdiff_gradp: Field[[ECDim, KDim], vpfloat],
+    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    grav_o_cpd: wpfloat,
+    z_hydro_corr: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_38 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil38(StencilTest):
@@ -26,7 +27,7 @@ class TestMoSolveNonhydroStencil38(StencilTest):
     OUTPUTS = ("vn_ie",)
 
     @staticmethod
-    def reference(mesh, vn: np.array, wgtfacq_e: np.array, **kwargs) -> np.array:
+    def reference(grid, vn: np.array, wgtfacq_e: np.array, **kwargs) -> np.array:
         vn_ie = np.zeros_like(vn)
         vn_ie[:, -1] = (
             np.roll(wgtfacq_e, shift=1, axis=1) * np.roll(vn, shift=1, axis=1)
@@ -36,10 +37,10 @@ class TestMoSolveNonhydroStencil38(StencilTest):
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        wgtfacq_e = zero_field(mesh, EdgeDim, KDim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        vn_ie = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        wgtfacq_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        vn_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

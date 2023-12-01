@@ -22,6 +22,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestCalculateNabla4(StencilTest):
@@ -30,7 +31,7 @@ class TestCalculateNabla4(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         u_vert: np.array,
         v_vert: np.array,
         primal_normal_vert_v1: np.array,
@@ -40,11 +41,12 @@ class TestCalculateNabla4(StencilTest):
         inv_primal_edge_length: np.array,
         **kwargs,
     ) -> np.array:
-        u_vert_e2c2v = u_vert[mesh.e2c2v]
-        v_vert_e2c2v = v_vert[mesh.e2c2v]
+        e2c2v = grid.connectivities[E2C2VDim]
+        u_vert_e2c2v = u_vert[e2c2v]
+        v_vert_e2c2v = v_vert[e2c2v]
 
-        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(mesh.e2c2v.shape)
-        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(mesh.e2c2v.shape)
+        primal_normal_vert_v1 = primal_normal_vert_v1.reshape(e2c2v.shape)
+        primal_normal_vert_v2 = primal_normal_vert_v2.reshape(e2c2v.shape)
 
         primal_normal_vert_v1 = np.expand_dims(primal_normal_vert_v1, axis=-1)
         primal_normal_vert_v2 = np.expand_dims(primal_normal_vert_v2, axis=-1)
@@ -72,21 +74,24 @@ class TestCalculateNabla4(StencilTest):
         return dict(z_nabla4_e2=z_nabla4_e2)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        u_vert = random_field(mesh, VertexDim, KDim)
-        v_vert = random_field(mesh, VertexDim, KDim)
+    def input_data(self, grid):
+        if np.any(grid.connectivities[E2C2VDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
 
-        primal_normal_vert_v1 = random_field(mesh, EdgeDim, E2C2VDim)
-        primal_normal_vert_v2 = random_field(mesh, EdgeDim, E2C2VDim)
+        u_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+        v_vert = random_field(grid, VertexDim, KDim, dtype=vpfloat)
+
+        primal_normal_vert_v1 = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
+        primal_normal_vert_v2 = random_field(grid, EdgeDim, E2C2VDim, dtype=wpfloat)
 
         primal_normal_vert_v1_new = as_1D_sparse_field(primal_normal_vert_v1, ECVDim)
         primal_normal_vert_v2_new = as_1D_sparse_field(primal_normal_vert_v2, ECVDim)
 
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        inv_vert_vert_length = random_field(mesh, EdgeDim)
-        inv_primal_edge_length = random_field(mesh, EdgeDim)
+        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        inv_vert_vert_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
 
-        z_nabla4_e2 = zero_field(mesh, EdgeDim, KDim)
+        z_nabla4_e2 = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             u_vert=u_vert,

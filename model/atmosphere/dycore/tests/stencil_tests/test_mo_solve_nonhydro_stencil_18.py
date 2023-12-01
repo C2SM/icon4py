@@ -18,8 +18,9 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_18 import (
     mo_solve_nonhydro_stencil_18,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil18(StencilTest):
@@ -28,28 +29,31 @@ class TestMoSolveNonhydroStencil18(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
+        grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs
     ) -> np.array:
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-        z_exner_ex_pr_e2c = z_exner_ex_pr[mesh.e2c]
+        z_exner_ex_pr_e2c = z_exner_ex_pr[grid.connectivities[E2CDim]]
         z_exner_ex_weighted = z_exner_ex_pr_e2c[:, 1] - z_exner_ex_pr_e2c[:, 0]
 
         z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        inv_dual_edge_length = random_field(mesh, EdgeDim)
-        z_exner_ex_pr = random_field(mesh, CellDim, KDim)
-        z_gradh_exner = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        if np.any(grid.connectivities[E2CDim] == -1):
+            pytest.xfail("Stencil does not support missing neighbors.")
+
+        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_gradh_exner = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=z_exner_ex_pr,
             z_gradh_exner=z_gradh_exner,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

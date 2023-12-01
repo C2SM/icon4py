@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_35 import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil35(StencilTest):
@@ -27,7 +28,7 @@ class TestMoSolveNonhydroStencil35(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         vn: np.array,
         ddxn_z_full: np.array,
         ddxt_z_full: np.array,
@@ -38,12 +39,12 @@ class TestMoSolveNonhydroStencil35(StencilTest):
         return dict(z_w_concorr_me=z_w_concorr_me)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        vn = random_field(mesh, EdgeDim, KDim)
-        ddxn_z_full = random_field(mesh, EdgeDim, KDim)
-        ddxt_z_full = random_field(mesh, EdgeDim, KDim)
-        vt = random_field(mesh, EdgeDim, KDim)
-        z_w_concorr_me = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        ddxn_z_full = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        ddxt_z_full = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_w_concorr_me = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

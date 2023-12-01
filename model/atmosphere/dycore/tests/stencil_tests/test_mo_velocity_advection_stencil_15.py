@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat
 
 
 class TestMoVelocityAdvectionStencil15(StencilTest):
@@ -27,21 +28,21 @@ class TestMoVelocityAdvectionStencil15(StencilTest):
     OUTPUTS = ("z_w_con_c_full",)
 
     @staticmethod
-    def reference(mesh, z_w_con_c: np.array, **kwargs):
+    def reference(grid, z_w_con_c: np.array, **kwargs):
         z_w_con_c_full = 0.5 * (z_w_con_c[:, :-1] + z_w_con_c[:, 1:])
         return dict(z_w_con_c_full=z_w_con_c_full)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_w_con_c = random_field(mesh, CellDim, KDim, extend={KDim: 1})
+    def input_data(self, grid):
+        z_w_con_c = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
 
-        z_w_con_c_full = zero_field(mesh, CellDim, KDim)
+        z_w_con_c_full = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             z_w_con_c=z_w_con_c,
             z_w_con_c_full=z_w_con_c_full,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

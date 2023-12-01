@@ -13,140 +13,162 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, maximum, minimum, sqrt
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, maximum, minimum, sqrt
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_nabla2_and_smag_coefficients_for_vn(
-    diff_multfac_smag: Field[[KDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_x: Field[[ECVDim], float],
-    primal_normal_vert_y: Field[[ECVDim], float],
-    dual_normal_vert_x: Field[[ECVDim], float],
-    dual_normal_vert_y: Field[[ECVDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    smag_limit: Field[[KDim], float],
-    smag_offset: float,
+    diff_multfac_smag: Field[[KDim], vpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    u_vert: Field[[VertexDim, KDim], vpfloat],
+    v_vert: Field[[VertexDim, KDim], vpfloat],
+    primal_normal_vert_x: Field[[ECVDim], wpfloat],
+    primal_normal_vert_y: Field[[ECVDim], wpfloat],
+    dual_normal_vert_x: Field[[ECVDim], wpfloat],
+    dual_normal_vert_y: Field[[ECVDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    smag_limit: Field[[KDim], vpfloat],
+    smag_offset: vpfloat,
 ) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], wpfloat],
 ]:
-    dvt_tang = (
+    diff_multfac_smag_wp, u_vert_wp, v_vert_wp, smag_offset_wp = astype(
+        (diff_multfac_smag, u_vert, v_vert, smag_offset), wpfloat
+    )
+
+    dvt_tang_wp = (
         -(
-            u_vert(E2C2V[0]) * dual_normal_vert_x(E2ECV[0])
-            + v_vert(E2C2V[0]) * dual_normal_vert_y(E2ECV[0])
+            u_vert_wp(E2C2V[0]) * dual_normal_vert_x(E2ECV[0])
+            + v_vert_wp(E2C2V[0]) * dual_normal_vert_y(E2ECV[0])
         )
     ) + (
-        u_vert(E2C2V[1]) * dual_normal_vert_x(E2ECV[1])
-        + v_vert(E2C2V[1]) * dual_normal_vert_y(E2ECV[1])
+        u_vert_wp(E2C2V[1]) * dual_normal_vert_x(E2ECV[1])
+        + v_vert_wp(E2C2V[1]) * dual_normal_vert_y(E2ECV[1])
     )
 
-    dvt_norm = (
-        -(
-            u_vert(E2C2V[2]) * dual_normal_vert_x(E2ECV[2])
-            + v_vert(E2C2V[2]) * dual_normal_vert_y(E2ECV[2])
-        )
-    ) + (
-        u_vert(E2C2V[3]) * dual_normal_vert_x(E2ECV[3])
-        + v_vert(E2C2V[3]) * dual_normal_vert_y(E2ECV[3])
-    )
-
-    kh_smag_1 = (
-        -(
-            u_vert(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
-            + v_vert(E2C2V[0]) * primal_normal_vert_y(E2ECV[0])
-        )
-    ) + (
-        u_vert(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
-        + v_vert(E2C2V[1]) * primal_normal_vert_y(E2ECV[1])
-    )
-
-    dvt_tang = dvt_tang * tangent_orientation
-
-    kh_smag_1 = (kh_smag_1 * tangent_orientation * inv_primal_edge_length) + (
-        dvt_norm * inv_vert_vert_length
-    )
-
-    kh_smag_1 = kh_smag_1 * kh_smag_1
-
-    kh_smag_2 = (
-        -(
-            u_vert(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
-            + v_vert(E2C2V[2]) * primal_normal_vert_y(E2ECV[2])
-        )
-    ) + (
-        u_vert(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
-        + v_vert(E2C2V[3]) * primal_normal_vert_y(E2ECV[3])
-    )
-
-    kh_smag_2 = (kh_smag_2 * inv_vert_vert_length) - (dvt_tang * inv_primal_edge_length)
-
-    kh_smag_2 = kh_smag_2 * kh_smag_2
-
-    kh_smag_e = diff_multfac_smag * sqrt(kh_smag_2 + kh_smag_1)
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
-    z_nabla2_e = (
+    dvt_norm_vp = astype(
         (
-            (
-                u_vert(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
-                + v_vert(E2C2V[0]) * primal_normal_vert_y(E2ECV[0])
-            )
-            + (
-                u_vert(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
-                + v_vert(E2C2V[1]) * primal_normal_vert_y(E2ECV[1])
+            -(
+                u_vert_wp(E2C2V[2]) * dual_normal_vert_x(E2ECV[2])
+                + v_vert_wp(E2C2V[2]) * dual_normal_vert_y(E2ECV[2])
             )
         )
-        - 2.0 * vn
-    ) * (inv_primal_edge_length**2.0)
+        + (
+            u_vert_wp(E2C2V[3]) * dual_normal_vert_x(E2ECV[3])
+            + v_vert_wp(E2C2V[3]) * dual_normal_vert_y(E2ECV[3])
+        ),
+        vpfloat,
+    )
+
+    kh_smag_1_vp = (
+        -astype(
+            u_vert_wp(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
+            + v_vert_wp(E2C2V[0]) * primal_normal_vert_y(E2ECV[0]),
+            vpfloat,
+        )
+    ) + astype(
+        u_vert_wp(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
+        + v_vert_wp(E2C2V[1]) * primal_normal_vert_y(E2ECV[1]),
+        vpfloat,
+    )
+
+    dvt_tang_vp = astype(dvt_tang_wp * tangent_orientation, vpfloat)
+
+    kh_smag_1_wp, dvt_norm_wp = astype((kh_smag_1_vp, dvt_norm_vp), wpfloat)
+    kh_smag_1_wp = (kh_smag_1_wp * tangent_orientation * inv_primal_edge_length) + (
+        dvt_norm_wp * inv_vert_vert_length
+    )
+
+    kh_smag_1_wp = kh_smag_1_wp * kh_smag_1_wp
+
+    kh_smag_2_vp = (
+        -astype(
+            u_vert_wp(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
+            + v_vert_wp(E2C2V[2]) * primal_normal_vert_y(E2ECV[2]),
+            vpfloat,
+        )
+    ) + astype(
+        u_vert_wp(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
+        + v_vert_wp(E2C2V[3]) * primal_normal_vert_y(E2ECV[3]),
+        vpfloat,
+    )
+
+    kh_smag_2_wp = astype(kh_smag_2_vp, wpfloat)
+    kh_smag_2_wp = (kh_smag_2_wp * inv_vert_vert_length) - (
+        astype(dvt_tang_vp, wpfloat) * inv_primal_edge_length
+    )
+
+    kh_smag_2_wp = kh_smag_2_wp * kh_smag_2_wp
+
+    kh_smag_e_wp = diff_multfac_smag_wp * sqrt(kh_smag_2_wp + kh_smag_1_wp)
+    z_nabla2_e_wp = (
+        astype(
+            astype(
+                u_vert_wp(E2C2V[0]) * primal_normal_vert_x(E2ECV[0])
+                + v_vert_wp(E2C2V[0]) * primal_normal_vert_y(E2ECV[0]),
+                vpfloat,
+            )
+            + astype(
+                u_vert_wp(E2C2V[1]) * primal_normal_vert_x(E2ECV[1])
+                + v_vert_wp(E2C2V[1]) * primal_normal_vert_y(E2ECV[1]),
+                vpfloat,
+            ),
+            wpfloat,
+        )
+        - wpfloat("2.0") * vn
+    ) * (inv_primal_edge_length**2)
     # TODO(magdalena): change exponent back to int (workaround for gt4py)
-    z_nabla2_e = z_nabla2_e + (
-        (
-            (
-                u_vert(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
-                + v_vert(E2C2V[2]) * primal_normal_vert_y(E2ECV[2])
+    z_nabla2_e_wp = z_nabla2_e_wp + (
+        astype(
+            astype(
+                u_vert_wp(E2C2V[2]) * primal_normal_vert_x(E2ECV[2])
+                + v_vert_wp(E2C2V[2]) * primal_normal_vert_y(E2ECV[2]),
+                vpfloat,
             )
-            + (
-                u_vert(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
-                + v_vert(E2C2V[3]) * primal_normal_vert_y(E2ECV[3])
-            )
+            + astype(
+                u_vert_wp(E2C2V[3]) * primal_normal_vert_x(E2ECV[3])
+                + v_vert_wp(E2C2V[3]) * primal_normal_vert_y(E2ECV[3]),
+                vpfloat,
+            ),
+            wpfloat,
         )
-        - 2.0 * vn
-    ) * (inv_vert_vert_length**2.0)
+        - wpfloat("2.0") * vn
+    ) * (inv_vert_vert_length**2)
 
-    z_nabla2_e = 4.0 * z_nabla2_e
+    z_nabla2_e_wp = wpfloat("4.0") * z_nabla2_e_wp
 
-    kh_smag_ec = kh_smag_e
-    kh_smag_e = maximum(0.0, kh_smag_e - smag_offset)
-    kh_smag_e = minimum(kh_smag_e, smag_limit)
+    kh_smag_ec_wp = kh_smag_e_wp
+    kh_smag_e_vp = maximum(vpfloat("0.0"), astype(kh_smag_e_wp - smag_offset_wp, vpfloat))
+    kh_smag_e_vp = minimum(kh_smag_e_vp, smag_limit)
 
-    return kh_smag_e, kh_smag_ec, z_nabla2_e
+    return kh_smag_e_vp, astype(kh_smag_ec_wp, vpfloat), z_nabla2_e_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla2_and_smag_coefficients_for_vn(
-    diff_multfac_smag: Field[[KDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    inv_vert_vert_length: Field[[EdgeDim], float],
-    u_vert: Field[[VertexDim, KDim], float],
-    v_vert: Field[[VertexDim, KDim], float],
-    primal_normal_vert_x: Field[[ECVDim], float],
-    primal_normal_vert_y: Field[[ECVDim], float],
-    dual_normal_vert_x: Field[[ECVDim], float],
-    dual_normal_vert_y: Field[[ECVDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    smag_limit: Field[[KDim], float],
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    kh_smag_ec: Field[[EdgeDim, KDim], float],
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    smag_offset: float,
+    diff_multfac_smag: Field[[KDim], vpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    u_vert: Field[[VertexDim, KDim], vpfloat],
+    v_vert: Field[[VertexDim, KDim], vpfloat],
+    primal_normal_vert_x: Field[[ECVDim], wpfloat],
+    primal_normal_vert_y: Field[[ECVDim], wpfloat],
+    dual_normal_vert_x: Field[[ECVDim], wpfloat],
+    dual_normal_vert_y: Field[[ECVDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    smag_limit: Field[[KDim], vpfloat],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    smag_offset: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

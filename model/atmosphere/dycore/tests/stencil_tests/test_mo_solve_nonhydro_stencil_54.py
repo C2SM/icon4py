@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil54(StencilTest):
@@ -27,24 +28,24 @@ class TestMoSolveNonhydroStencil54(StencilTest):
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(mesh, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> np.array:
+    def reference(grid, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> np.array:
         z_raylfac = np.expand_dims(z_raylfac, axis=0)
         w_1 = np.expand_dims(w_1, axis=-1)
         w = z_raylfac * w + (1.0 - z_raylfac) * w_1
         return dict(w=w)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_raylfac = random_field(mesh, KDim)
-        w_1 = random_field(mesh, CellDim)
-        w = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_raylfac = random_field(grid, KDim, dtype=wpfloat)
+        w_1 = random_field(grid, CellDim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
             z_raylfac=z_raylfac,
             w_1=w_1,
             w=w,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

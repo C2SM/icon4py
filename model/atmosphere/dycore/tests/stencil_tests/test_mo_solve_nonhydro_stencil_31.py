@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
 )
 from icon4py.model.common.dimension import E2C2EODim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil31(StencilTest):
@@ -27,23 +28,26 @@ class TestMoSolveNonhydroStencil31(StencilTest):
     OUTPUTS = ("z_vn_avg",)
 
     @staticmethod
-    def reference(mesh, e_flx_avg: np.array, vn: np.array, **kwargs) -> np.array:
+    def reference(grid, e_flx_avg: np.array, vn: np.array, **kwargs) -> np.array:
+        e2c2eO = grid.connectivities[E2C2EODim]
         geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
-        z_vn_avg = np.sum(vn[mesh.e2c2eO] * geofac_grdiv, axis=1)
+        z_vn_avg = np.sum(
+            np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
+        )
         return dict(z_vn_avg=z_vn_avg)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        e_flx_avg = random_field(mesh, EdgeDim, E2C2EODim)
-        vn = random_field(mesh, EdgeDim, KDim)
-        z_vn_avg = zero_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        e_flx_avg = random_field(grid, EdgeDim, E2C2EODim, dtype=wpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        z_vn_avg = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
             e_flx_avg=e_flx_avg,
             vn=vn,
             z_vn_avg=z_vn_avg,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_edges),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

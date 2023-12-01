@@ -20,18 +20,19 @@ from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_39_40 import (
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 from .test_mo_solve_nonhydro_stencil_39 import mo_solve_nonhydro_stencil_39_numpy
 from .test_mo_solve_nonhydro_stencil_40 import mo_solve_nonhydro_stencil_40_numpy
 
 
 def _fused_solve_nonhydro_stencil_39_40_numpy(
-    mesh, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+    grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
 ):
     w_concorr_c = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
-        mo_solve_nonhydro_stencil_39_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfac_c),
-        mo_solve_nonhydro_stencil_40_numpy(mesh, e_bln_c_s, z_w_concorr_me, wgtfacq_c),
+        mo_solve_nonhydro_stencil_39_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        mo_solve_nonhydro_stencil_40_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c),
     )
 
     w_concorr_c_res = np.zeros_like(w_concorr_c)
@@ -45,7 +46,7 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         e_bln_c_s: np.array,
         z_w_concorr_me: np.array,
         wgtfac_c: np.array,
@@ -56,23 +57,23 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
         **kwargs,
     ) -> dict:
         w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
-            mesh, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+            grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
         )
         return dict(w_concorr_c=w_concorr_c_result)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        e_bln_c_s = random_field(mesh, CEDim)
-        z_w_concorr_me = random_field(mesh, EdgeDim, KDim)
-        wgtfac_c = random_field(mesh, CellDim, KDim)
-        wgtfacq_c = random_field(mesh, CellDim, KDim)
-        w_concorr_c = zero_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        e_bln_c_s = random_field(grid, CEDim, dtype=wpfloat)
+        z_w_concorr_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        wgtfacq_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        w_concorr_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
-        vert_idx = zero_field(mesh, KDim, dtype=int32)
-        for level in range(mesh.k_level):
+        vert_idx = zero_field(grid, KDim, dtype=int32)
+        for level in range(grid.num_levels):
             vert_idx[level] = level
 
-        nlev = mesh.k_level
+        nlev = grid.num_levels
         nflatlev = 13
 
         return dict(

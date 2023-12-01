@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoVelocityAdvectionStencil17(StencilTest):
@@ -27,20 +28,21 @@ class TestMoVelocityAdvectionStencil17(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
+        grid, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
     ) -> np.array:
         e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
         ddt_w_adv = ddt_w_adv + np.sum(
-            z_v_grad_w[mesh.c2e] * e_bln_c_s[mesh.get_c2ce_offset_provider().table],
+            z_v_grad_w[grid.connectivities[C2EDim]]
+            * e_bln_c_s[grid.get_offset_provider("C2CE").table],
             axis=1,
         )
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_v_grad_w = random_field(mesh, EdgeDim, KDim)
-        e_bln_c_s = as_1D_sparse_field(random_field(mesh, CellDim, C2EDim), CEDim)
-        ddt_w_adv = random_field(mesh, CellDim, KDim)
+    def input_data(self, grid):
+        z_v_grad_w = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        e_bln_c_s = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
+        ddt_w_adv = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             e_bln_c_s=e_bln_c_s,

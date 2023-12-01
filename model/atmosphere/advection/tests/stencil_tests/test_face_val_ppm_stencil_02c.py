@@ -15,14 +15,13 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02c import face_val_ppm_stencil_02c
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def face_val_ppm_stencil_02c_numpy(
     p_cc: np.array,
 ):
-
     p_face = p_cc.copy()
 
     p_face[:, 1:] = p_cc[:, :-1]
@@ -30,19 +29,19 @@ def face_val_ppm_stencil_02c_numpy(
     return p_face
 
 
-def test_face_val_ppm_stencil_02c():
-    mesh = SimpleMesh()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_face = random_field(mesh, CellDim, KDim)
+def test_face_val_ppm_stencil_02c(backend):
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_face = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_02c_numpy(
-        np.asarray(p_cc),
+        p_cc.asnumpy(),
     )
 
-    face_val_ppm_stencil_02c(
+    face_val_ppm_stencil_02c.with_backend(backend)(
         p_cc,
         p_face,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(ref[:, 1:], p_face[:, 1:])
+    assert np.allclose(ref[:, 1:], p_face.asnumpy()[:, 1:])

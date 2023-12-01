@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
@@ -26,11 +27,11 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
     OUTPUTS = ("vn",)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        fac_bdydiff_v = 5.0
-        z_nabla2_e = random_field(mesh, EdgeDim, KDim)
-        area_edge = random_field(mesh, EdgeDim)
-        vn = random_field(mesh, EdgeDim, KDim)
+    def input_data(self, grid):
+        fac_bdydiff_v = wpfloat("5.0")
+        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        area_edge = random_field(grid, EdgeDim, dtype=wpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
         return dict(
             fac_bdydiff_v=fac_bdydiff_v,
             z_nabla2_e=z_nabla2_e,
@@ -40,7 +41,7 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
 
     @staticmethod
     def reference(
-        mesh, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
+        grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v
     ) -> np.array:
         area_edge = np.expand_dims(area_edge, axis=-1)
         vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)

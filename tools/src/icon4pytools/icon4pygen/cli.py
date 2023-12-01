@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 
+import os
 import pathlib
 
 import click
@@ -47,6 +48,9 @@ class ModuleType(click.ParamType):
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
 @click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
+@click.option(
+    "--enable-mixed-precision", is_flag=True, type=bool, help="Enable mixed precision dycore"
+)
 @click.argument(
     "outpath",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
@@ -63,6 +67,7 @@ def main(
     block_size: int,
     levels_per_thread: int,
     is_global: bool,
+    enable_mixed_precision: bool,
     outpath: pathlib.Path,
     imperative: bool,
 ) -> None:
@@ -79,6 +84,7 @@ def main(
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
     from icon4pytools.icon4pygen.metadata import get_stencil_info, import_definition
 
+    os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def, is_global)
     GTHeader(stencil_info)(outpath, imperative)

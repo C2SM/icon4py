@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil55(StencilTest):
@@ -28,7 +29,7 @@ class TestMoSolveNonhydroStencil55(StencilTest):
 
     @staticmethod
     def reference(
-        mesh,
+        grid,
         z_rho_expl: np.array,
         vwind_impl_wgt: np.array,
         inv_ddqz_z_full: np.array,
@@ -64,24 +65,24 @@ class TestMoSolveNonhydroStencil55(StencilTest):
         return dict(rho_new=rho_new, exner_new=exner_new, theta_v_new=theta_v_new)
 
     @pytest.fixture
-    def input_data(self, mesh):
-        z_rho_expl = random_field(mesh, CellDim, KDim)
-        vwind_impl_wgt = random_field(mesh, CellDim)
-        inv_ddqz_z_full = random_field(mesh, CellDim, KDim)
-        rho_ic = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        w = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        z_exner_expl = random_field(mesh, CellDim, KDim)
-        exner_ref_mc = random_field(mesh, CellDim, KDim)
-        z_alpha = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-        z_beta = random_field(mesh, CellDim, KDim)
-        rho_now = random_field(mesh, CellDim, KDim)
-        theta_v_now = random_field(mesh, CellDim, KDim)
-        exner_now = random_field(mesh, CellDim, KDim)
-        rho_new = zero_field(mesh, CellDim, KDim)
-        exner_new = zero_field(mesh, CellDim, KDim)
-        theta_v_new = zero_field(mesh, CellDim, KDim)
-        dtime = 5.0
-        cvd_o_rd = 9.0
+    def input_data(self, grid):
+        z_rho_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho_ic = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+        z_exner_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+        z_beta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_new = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        dtime = wpfloat("5.0")
+        cvd_o_rd = wpfloat("9.0")
 
         return dict(
             z_rho_expl=z_rho_expl,
@@ -102,7 +103,7 @@ class TestMoSolveNonhydroStencil55(StencilTest):
             dtime=dtime,
             cvd_o_rd=cvd_o_rd,
             horizontal_start=int32(0),
-            horizontal_end=int32(mesh.n_cells),
+            horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
-            vertical_end=int32(mesh.k_level),
+            vertical_end=int32(grid.num_levels),
         )

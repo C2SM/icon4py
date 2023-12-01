@@ -13,9 +13,8 @@
 
 from dataclasses import dataclass
 
-import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Field
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
@@ -37,4 +36,4 @@ class PrognosticState:
 
     @property
     def w_1(self) -> Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.w)[:, 0])
+        return as_field((CellDim,), self.w.asnumpy()[:, 0])

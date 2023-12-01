@@ -13,26 +13,29 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_28(
-    vn_incr: Field[[EdgeDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    iau_wgt_dyn: float,
-) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + (iau_wgt_dyn * vn_incr)
-    return vn
+    vn_incr: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    iau_wgt_dyn: wpfloat,
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    vn_incr_wp = astype(vn_incr, wpfloat)
+
+    vn_wp = vn + (iau_wgt_dyn * vn_incr_wp)
+    return vn_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_28(
-    vn_incr: Field[[EdgeDim, KDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    iau_wgt_dyn: float,
+    vn_incr: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    iau_wgt_dyn: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

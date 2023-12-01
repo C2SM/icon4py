@@ -403,7 +403,7 @@ MULTIPLE_FUSED = """\
         !$DSL INSERT(w_old(:,:,:) = p_nh_prog%w(:,:,:))
         !$DSL INSERT(!$ACC END PARALLEL)
 
-        !$DSL START FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance; &
+        !$DSL START FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence; &
         !$DSL       area=p_patch%cells%area(:,1); geofac_grg_x=p_int%geofac_grg(:,:,1,1); &
         !$DSL       geofac_grg_y=p_int%geofac_grg(:,:,1,2); geofac_n2s=p_int%geofac_n2s(:,:,1); &
         !$DSL       w_old=w_old(:,:,1); w=p_nh_prog%w(:,:,1); diff_multfac_w=diff_multfac_w; &
@@ -443,7 +443,7 @@ MULTIPLE_FUSED = """\
 
           !$DSL END STENCIL(name=apply_nabla2_to_w_in_upper_damping_layer)
 
-        !$DSL END FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance)
+        !$DSL END FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence)
     """
 
 
