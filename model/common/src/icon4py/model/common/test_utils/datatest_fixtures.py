@@ -25,6 +25,7 @@ from .datatest_utils import (
     get_ranked_data_path,
 )
 
+
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 
@@ -56,14 +57,11 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
-
-    # TODO do this in pytest config for the entire session
-    # try:
-    #     has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
-    #     if not has_data_marker or not request.config.getoption("datatest"):
-    #         pytest.skip("not running datatest marked tests")
-    # except ValueError:
-    #     pass
+    try:
+        if not request.config.getoption("datatest"):
+            pytest.skip("not running datatest marked tests")
+    except ValueError:
+        pass
 
     try:
         destination_path = get_datapath_for_experiment(ranked_data_path, experiment)

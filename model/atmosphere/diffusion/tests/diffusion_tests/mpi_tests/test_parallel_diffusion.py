@@ -108,7 +108,7 @@ def test_parallel_diffusion(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
     verify_diffusion_fields(
-        config=config,
+        config=r04b09_diffusion_config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=diffusion_savepoint_exit,

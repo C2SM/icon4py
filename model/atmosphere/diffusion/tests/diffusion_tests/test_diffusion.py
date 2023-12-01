@@ -15,17 +15,12 @@ import numpy as np
 import pytest
 
 import icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.diffusion import (
-    Diffusion,
-    DiffusionParams,
-    TurbulenceShearForcingType,
-)
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
-from .utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
 
 from .utils import (
     construct_config,
@@ -33,10 +28,10 @@ from .utils import (
     construct_interpolation_state,
     construct_metric_state_for_diffusion,
     diff_multfac_vn_numpy,
-    enhanced_smagorinski_factor_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
 )
+
 
 backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 

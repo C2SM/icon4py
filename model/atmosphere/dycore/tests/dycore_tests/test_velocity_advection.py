@@ -16,7 +16,7 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
-from icon4py.model.common.dimension import EdgeDim, CellDim
+from icon4py.model.common.dimension import CellDim, EdgeDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState

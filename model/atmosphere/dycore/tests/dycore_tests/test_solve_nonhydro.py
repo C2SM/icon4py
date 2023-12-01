@@ -37,10 +37,10 @@ from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
 
+from .utils import construct_config
+
 
 backend = run_gtfn
-
-from .utils import construct_config
 
 
 @pytest.mark.datatest

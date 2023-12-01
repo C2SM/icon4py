@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import gt4py.next
+
 import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field

@@ -14,7 +14,7 @@
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     datapath,
     download_ser_data,
+    experiment,
     processor_props,
     ranked_data_path,
-    experiment,
 )
