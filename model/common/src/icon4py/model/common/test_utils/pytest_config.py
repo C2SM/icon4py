@@ -14,7 +14,7 @@
 import os
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
 from gt4py.next.program_processors.runners.roundtrip import executor
 
 
@@ -89,10 +89,12 @@ def pytest_generate_tests(metafunc):
         elif backend_option == "embedded":
             params.append(executor)
             ids.append("backend=embedded")
-        # TODO (skellerhals): add gpu support
+        elif backend_option == "gtfn_gpu":
+            params.append(run_gtfn_gpu)
+            ids.append("backend=gtfn_gpu")
         else:
             raise Exception(
-                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest."
+                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu', 'gtfn_gpu'] and pass it as an argument to --backend when invoking pytest."
             )
 
         metafunc.parametrize("backend", params, ids=ids)

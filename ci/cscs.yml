@@ -34,20 +34,36 @@ variables:
 build_job:
   extends: .build_template
 
-test_model_job_embedded_simple_grid:
+#test_model_job_embedded_simple_grid:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
+
+#benchmark_model_gtfn_cpu_simple_grid:
+#  extends: .test_template
+#  stage: benchmark
+#  script:
+#    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+
+test_model_job_gtfn_gpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
 
-benchmark_model_gtfn_cpu_simple_grid:
+
+benchmark_model_gtfn_gpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
+
 
 test_tools_job:
   extends: .test_template
   stage: test
   script:
     - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
+
+
