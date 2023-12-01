@@ -3,6 +3,7 @@
 git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
+cupy-cuda11x
 bump2version>=1.0.1
 coverage[toml]>=5.0
 flake8>=3.8
