@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 imp
 )
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
@@ -210,9 +211,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = zero_field(grid, EdgeDim, KDim)
         wgtfacq_e = random_field(grid, EdgeDim, KDim)
 
-        k = zero_field(grid, KDim, dtype=int32)
-        for level in range(grid.num_levels):
-            k[level] = level
+        k = indices_field(KDim, grid, is_halfdim=False, dtype=int32)
 
         edge = zero_field(grid, EdgeDim, dtype=int32)
         for e in range(grid.num_edges):

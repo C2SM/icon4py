@@ -23,6 +23,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -103,9 +104,7 @@ class TestApplyDiffusionToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        edge = zero_field(grid, EdgeDim, dtype=int32)
-        for e in range(grid.num_edges):
-            edge[e] = e
+        edge = indices_field(EdgeDim, grid, is_halfdim=False, dtype=int32)
 
         u_vert = random_field(grid, VertexDim, KDim)
         v_vert = random_field(grid, VertexDim, KDim)
