@@ -6,7 +6,7 @@ def spack_fork = "C2SM"
 def spack_branch = "main"
 
 def gt4py_fork = "GridTools"
-def gt4py_branch = "icon4py_20230621"
+def gt4py_branch = "main"
 def gt4py_default = true
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
