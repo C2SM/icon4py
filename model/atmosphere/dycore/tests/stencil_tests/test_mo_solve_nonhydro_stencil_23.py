@@ -41,7 +41,7 @@ class TestMoSolveNonhydroStencil23(StencilTest):
         wgt_nnew_vel,
         cpd,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         vn_nnew = vn_nnow + dtime * (
             wgt_nnow_vel * ddt_vn_apc_ntl1
             + wgt_nnew_vel * ddt_vn_apc_ntl2

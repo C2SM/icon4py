@@ -154,7 +154,7 @@ def construct_interpolation_state(
     )
 
 
-def construct_metric_state_for_diffusion(savepoint: MetricSavepoint) -> DiffusionMetricState:
+def construct_metric_state(savepoint: MetricSavepoint) -> DiffusionMetricState:
     return DiffusionMetricState(
         mask_hdiff=savepoint.mask_hdiff(),
         theta_ref_mc=savepoint.theta_ref_mc(),

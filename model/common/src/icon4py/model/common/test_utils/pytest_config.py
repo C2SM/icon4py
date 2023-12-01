@@ -21,6 +21,9 @@ from gt4py.next.program_processors.runners.roundtrip import executor
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
     config.addinivalue_line("markers", "slow_tests: this test takes a very long time")
+    config.addinivalue_line(
+        "markers", "with_netcdf: test uses netcdf which is an optional dependency"
+    )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):

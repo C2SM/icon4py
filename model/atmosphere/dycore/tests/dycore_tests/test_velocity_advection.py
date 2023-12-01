@@ -224,15 +224,18 @@ def test_velocity_predictor_step(
     assert dallclose(icon_result_vt, diagnostic_state.vt.asnumpy(), atol=1.0e-14)
     # stencil 02,05
     assert dallclose(icon_result_vn_ie, diagnostic_state.vn_ie.asnumpy(), atol=1.0e-14)
-    # stencil 07
+
     start_edge_lateral_boundary_6 = icon_grid.get_start_index(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
     )
-    assert dallclose(
-        icon_result_z_v_grad_w[start_edge_lateral_boundary_6:, :],
-        velocity_advection.z_v_grad_w.asnumpy()[start_edge_lateral_boundary_6:, :],
-        atol=1.0e-16,
-    )
+    # stencil 07
+    if not vn_only:
+        assert dallclose(
+            velocity_advection.z_v_grad_w.asnumpy()[start_edge_lateral_boundary_6:, :],
+            icon_result_z_v_grad_w[start_edge_lateral_boundary_6:, :],
+            atol=1.0e-16,
+        )
+
     # stencil 08
     start_cell_nudging = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.nudging(CellDim)

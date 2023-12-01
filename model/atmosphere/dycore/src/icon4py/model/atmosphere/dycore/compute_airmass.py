@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
@@ -33,5 +33,18 @@ def compute_airmass(
     ddqz_z_full_in: Field[[CellDim, KDim], wpfloat],
     deepatmo_t1mc_in: Field[[KDim], wpfloat],
     airmass_out: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _compute_airmass(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, out=airmass_out)
+    _compute_airmass(
+        rho_in,
+        ddqz_z_full_in,
+        deepatmo_t1mc_in,
+        out=airmass_out,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

@@ -26,7 +26,7 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
 from ..utils import (
     construct_diagnostics,
     construct_interpolation_state,
-    construct_metric_state_for_diffusion,
+    construct_metric_state,
     verify_diffusion_fields,
 )
 
@@ -66,7 +66,7 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    metric_state = construct_metric_state(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)

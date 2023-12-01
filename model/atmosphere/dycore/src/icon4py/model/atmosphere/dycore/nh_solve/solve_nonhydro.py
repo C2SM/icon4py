@@ -451,7 +451,7 @@ class SolveNonhydro:
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state_ls: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
+        z_fields: ZFields,  # TODO (Magdalena): move local fields to SolveNonHydro
         nh_constants: NHConstants,
         divdamp_fac_o2: float,
         dtime: float,
@@ -518,7 +518,9 @@ class SolveNonhydro:
             nh_constants=nh_constants,
             lprep_adv=lprep_adv,
         )
-
+        log.info(
+            f"running corrector step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, prep_adv = {lprep_adv},  divdamp_fac_od = {divdamp_fac_o2} "
+        )
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -536,6 +538,10 @@ class SolveNonhydro:
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
                 offset_provider={},
+                horizontal_start=0,
+                horizontal_end=end_cell_end,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
             )
 
             mo_solve_nonhydro_stencil_67.with_backend(backend)(
@@ -589,17 +595,17 @@ class SolveNonhydro:
             else:
                 lvn_only = False
 
-        self.velocity_advection.run_predictor_step(
-            vn_only=lvn_only,
-            diagnostic_state=diagnostic_state_nh,
-            prognostic_state=prognostic_state[nnow],
-            z_w_concorr_me=self.z_w_concorr_me,
-            z_kin_hor_e=z_fields.z_kin_hor_e,
-            z_vt_ie=z_fields.z_vt_ie,
-            dtime=dtime,
-            ntnd=self.ntl1,
-            cell_areas=self.cell_params.area,
-        )
+            self.velocity_advection.run_predictor_step(
+                vn_only=lvn_only,
+                diagnostic_state=diagnostic_state_nh,
+                prognostic_state=prognostic_state[nnow],
+                z_w_concorr_me=self.z_w_concorr_me,
+                z_kin_hor_e=z_fields.z_kin_hor_e,
+                z_vt_ie=z_fields.z_vt_ie,
+                dtime=dtime,
+                ntnd=self.ntl1,
+                cell_areas=self.cell_params.area,
+            )
 
         p_dthalf = 0.5 * dtime
 
@@ -1414,12 +1420,11 @@ class SolveNonhydro:
         start_edge_nudging_plus1 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
+        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
 
         start_edge_lb_plus4 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
-
         end_edge_local_minus2 = self.grid.get_end_index(
             EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
         )
@@ -1560,7 +1565,6 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-                log.debug("corrector end stencil 26")
 
             # TODO: this does not get accessed in FORTRAN
             if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
@@ -1749,7 +1753,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={},
             )
-
+        # TODO (magdalena): delete NonHydrostaticConfig. l_open_ubc
         if not self.config.l_open_ubc and not self.l_vert_nested:
             log.debug(f"corrector start stencil 46")
             mo_solve_nonhydro_stencil_46.with_backend(backend)(

@@ -35,6 +35,7 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, Horizon
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 
 from .utils import construct_config
@@ -89,8 +90,8 @@ def test_validate_divdamp_fields_against_savepoint_values(
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -385,8 +386,9 @@ def test_nonhydro_predictor_step(
     assert dallclose(
         solve_nonhydro.z_w_concorr_me.asnumpy()[:, nflatlev:],
         sp_exit.z_w_concorr_me().asnumpy()[:, nflatlev:],
-        atol=1e-15,  # TODO (magdalena) was 1e-20
+        atol=1e-15,
     )
+
     # stencils 39,40
     assert dallclose(
         diagnostic_state_nh.w_concorr_c.asnumpy(),
@@ -398,26 +400,30 @@ def test_nonhydro_predictor_step(
     assert dallclose(
         solve_nonhydro.z_flxdiv_mass.asnumpy(),
         sp_exit.z_flxdiv_mass().asnumpy(),
-        atol=5e-13,  # TODO (magdalena) was 5-20
+        atol=5e-13,  # TODO (magdalena) was 5e-15
     )
+
     # TODO: @abishekg7 higher tol.
     assert dallclose(
         solve_nonhydro.z_flxdiv_theta.asnumpy(),
         sp_exit.z_flxdiv_theta().asnumpy(),
         atol=5e-12,
     )
+
     # stencils 43, 46, 47
     assert dallclose(
         z_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
         sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
+
     # stencil 43
     assert dallclose(
         z_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
         sp_exit.z_w_expl().asnumpy()[cell_start_nudging:, 1:nlev],
         atol=1e-14,
     )
+
     # stencil 44, 45
     assert dallclose(
         sp_exit.z_alpha().asnumpy()[cell_start_nudging:, :],
@@ -515,8 +521,8 @@ def create_vertical_params(damping_height, grid_savepoint):
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -628,7 +634,6 @@ def test_nonhydro_corrector_step(
         diagnostic_state_nh.theta_v_ic.asnumpy(),
         savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
     )
-    # stencil 10 no assertion for z_theta_v_pr_ic, z_th_ddz_exner_c
 
     # stencil 17
     assert dallclose(
@@ -641,7 +646,7 @@ def test_nonhydro_corrector_step(
     assert dallclose(
         prognostic_state_ls[nnew].vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-9,
+        rtol=1e-9,  # TODO (magdalena) was 1e-10
     )
 
     assert dallclose(
@@ -672,20 +677,20 @@ def test_nonhydro_corrector_step(
     assert dallclose(
         diagnostic_state_nh.mass_fl_e.asnumpy(),
         savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        rtol=5e-7,
+        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10
     )
 
     # stencil 33, 34
     assert dallclose(
         prep_adv.mass_flx_me.asnumpy(),
         savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        rtol=5e-7,
+        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10
     )
     # stencil 33, 34
     assert dallclose(
         prep_adv.vn_traj.asnumpy(),
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        rtol=5e-7,
+        rtol=5e-7,  # TODO (magdalena) was rtol=1e-10
     )
 
 
@@ -694,8 +699,8 @@ def test_nonhydro_corrector_step(
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
     ],
 )
 def test_run_solve_nonhydro_single_step(
@@ -797,9 +802,11 @@ def test_run_solve_nonhydro_single_step(
         rtol=1e-12,
         atol=1e-13,
     )
+
     assert dallclose(
         prognostic_state_nnew.rho.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
     )
+
     assert dallclose(
         prognostic_state_nnew.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
@@ -807,14 +814,16 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
-@pytest.mark.skip
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
-    "istep, step_date_init, step_date_exit",
-    [(1, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000")],
+    "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
+    [
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
+        (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
+    ],
 )
 def test_run_solve_nonhydro_multi_step(
-    istep,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -832,12 +841,7 @@ def test_run_solve_nonhydro_multi_step(
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-        nflatlev=grid_savepoint.nflatlev(),
-    )
+    vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
     r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
@@ -855,7 +859,7 @@ def test_run_solve_nonhydro_multi_step(
 
     diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
-    prognostic_state_ls, prognostic_state_nnew = create_prognostic_states(sp)
+    prognostic_state_ls = create_prognostic_states(sp)
 
     z_fields = allocate_z_fields(icon_grid)
 
@@ -880,7 +884,7 @@ def test_run_solve_nonhydro_multi_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    for _ in range(r_nsubsteps):
+    for i_substep in range(r_nsubsteps):
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_ls=prognostic_state_ls,
@@ -897,28 +901,68 @@ def test_run_solve_nonhydro_multi_step(
             lclean_mflx=clean_mflx,
             lprep_adv=lprep_adv,
         )
+        linit = False
+        recompute = False
+        clean_mflx = False
+        if i_substep != r_nsubsteps - 1:
+            ntemp = nnow
+            nnow = nnew
+            nnew = ntemp
 
-    assert dallclose(
-        diagnostic_state_nh.rho_ic.asnumpy(),
-        savepoint_nonhydro_exit.rho_ic().asnumpy(),
+    cell_start_lb_plus2 = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+    )
+    edge_start_lb_plus4 = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
     )
 
     assert dallclose(
-        diagnostic_state_nh.theta_v_ic.asnumpy(),
-        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
+        diagnostic_state_nh.rho_ic.asnumpy()[cell_start_lb_plus2:, :],
+        savepoint_nonhydro_exit.rho_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
 
     assert dallclose(
-        z_fields.z_graddiv_vn.asnumpy(),
-        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy(),
+        diagnostic_state_nh.theta_v_ic.asnumpy()[cell_start_lb_plus2:, :],
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy()[cell_start_lb_plus2:, :],
     )
+
+    assert dallclose(
+        z_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
+        savepoint_nonhydro_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
+        atol=1.0e-18,
+    )
+
+    assert dallclose(
+        diagnostic_state_nh.mass_fl_e.asnumpy()[edge_start_lb_plus4:, :],
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy()[edge_start_lb_plus4:, :],
+        atol=5e-7,
+    )
+
+    assert dallclose(
+        prep_adv.mass_flx_me.asnumpy(),
+        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
+        atol=5e-7,
+    )
+
+    assert dallclose(
+        prep_adv.vn_traj.asnumpy(),
+        savepoint_nonhydro_exit.vn_traj().asnumpy(),
+        atol=1e-12,
+    )
+
+    assert dallclose(
+        prognostic_state_ls[nnew].theta_v.asnumpy(),
+        sp_step_exit.theta_v_new().asnumpy(),
+    )
+
+    assert dallclose(
+        prognostic_state_ls[nnew].rho.asnumpy(),
+        savepoint_nonhydro_exit.rho_new().asnumpy(),
+    )
+
     assert dallclose(
         prognostic_state_ls[nnew].exner.asnumpy(),
-        savepoint_nonhydro_exit.exner_new().asnumpy(),
-    )
-
-    assert dallclose(
-        prognostic_state_ls[nnew].rho_new.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
+        sp_step_exit.exner_new().asnumpy(),
     )
 
     assert dallclose(
@@ -930,37 +974,8 @@ def test_run_solve_nonhydro_multi_step(
     assert dallclose(
         prognostic_state_ls[nnew].vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
-        rtol=1e-10,
+        atol=5e-13,
     )
-
-    assert dallclose(
-        prognostic_state_ls[nnew].theta_v.asnumpy(),
-        savepoint_nonhydro_exit.theta_v_new().asnumpy(),
-    )
-
-    assert dallclose(
-        diagnostic_state_nh.mass_fl_e.asnumpy(),
-        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
-        rtol=1e-10,
-    )
-
-    assert dallclose(
-        prep_adv.mass_flx_me.asnumpy(),
-        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
-        rtol=1e-10,
-    )
-    assert dallclose(
-        prep_adv.vn_traj.asnumpy(),
-        savepoint_nonhydro_exit.vn_traj().asnumpy(),
-        rtol=1e-10,
-    )
-
-    assert dallclose(
-        prognostic_state_nnew.theta_v.asnumpy(),
-        sp_step_exit.theta_v_new().asnumpy(),
-    )
-
-    assert dallclose(prognostic_state_nnew.exner.asnumpy(), sp_step_exit.exner_new().asnumpy())
 
 
 def create_nh_constants(sp):

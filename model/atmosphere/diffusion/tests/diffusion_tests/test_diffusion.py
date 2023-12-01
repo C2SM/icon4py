@@ -28,7 +28,7 @@ from .utils import (
     construct_config,
     construct_diagnostics,
     construct_interpolation_state,
-    construct_metric_state_for_diffusion,
+    construct_metric_state,
     diff_multfac_vn_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
@@ -127,7 +127,7 @@ def test_diffusion_init(
     assert meta["date"] == step_date_init
 
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    metric_state = construct_metric_state(metrics_savepoint)
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -230,7 +230,7 @@ def test_verify_diffusion_init_against_savepoint(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    metric_state = construct_metric_state(metrics_savepoint)
     edge_params = grid_savepoint.construct_edge_geometry()
     cell_params = grid_savepoint.construct_cell_geometry()
 
@@ -273,7 +273,7 @@ def test_run_diffusion_single_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    metric_state = construct_metric_state(metrics_savepoint)
     diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vertical_params = VerticalModelParams(
@@ -327,7 +327,7 @@ def test_run_diffusion_initial_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
-    metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    metric_state = construct_metric_state(metrics_savepoint)
     diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()

@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
@@ -47,4 +48,12 @@ class TestCalculateNabla2OfTheta(StencilTest):
 
         z_temp = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
-        return dict(z_nabla2_e=z_nabla2_e, geofac_div=geofac_div_new, z_temp=z_temp)
+        return dict(
+            z_nabla2_e=z_nabla2_e,
+            geofac_div=geofac_div_new,
+            z_temp=z_temp,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
+        )

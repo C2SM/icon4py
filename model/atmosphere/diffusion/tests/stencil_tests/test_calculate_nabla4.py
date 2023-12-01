@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import calculate_nabla4
 from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
@@ -40,7 +41,7 @@ class TestCalculateNabla4(StencilTest):
         inv_vert_vert_length: np.array,
         inv_primal_edge_length: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         e2c2v = grid.connectivities[E2C2VDim]
         u_vert_e2c2v = u_vert[e2c2v]
         v_vert_e2c2v = v_vert[e2c2v]
@@ -102,4 +103,8 @@ class TestCalculateNabla4(StencilTest):
             inv_vert_vert_length=inv_vert_vert_length,
             inv_primal_edge_length=inv_primal_edge_length,
             z_nabla4_e2=z_nabla4_e2,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )
