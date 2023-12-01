@@ -43,7 +43,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     calculate_diagnostic_quantities_for_turbulence,
@@ -685,7 +685,7 @@ class Diffusion:
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-        ):  # TODO (magdalena) or ltkesh
+        ):
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
@@ -713,7 +713,7 @@ class Diffusion:
             )
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO (magdalena) move this up and do asynchronousely
+        # TODO (magdalena) move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
@@ -776,7 +776,7 @@ class Diffusion:
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(backend)(
+        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
