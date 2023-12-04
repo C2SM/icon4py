@@ -6,10 +6,6 @@ stages:
 - image
 - test
 
-variables:
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/base/icon4py-ci:$DOCKER_TAG-$PYVERSION
-  PYTHON_VERSION: "3.10"
-
 .py310: &py310
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
@@ -37,17 +33,29 @@ build py310 baseimage:
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
     <<: *py310
 
+build py310 image:
+  extends: .container-builder
+  needs: ["build py310 baseimage"]
+  stage: image
+  variables:
+    # make sure we use a unique name here, otherwise we could create a race condition, when multiple pipelines
+    # are running.
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/gt4py/gt4py-ci:$CI_COMMIT_SHA-$PYVERSION
+    DOCKERFILE: ci/checkout.Dockerfile
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+    <<: *py310
+
+
 test py310:
   extends: .container-runner-clariden-a100
   needs: ["build py310 baseimage"]
   stage: test
   timeout: 2h
-  image: $PERSIST_IMAGE_NAME
+  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   script:
   - cd /icon4py.src
   - python -c "import cupy"
-  - pyversion_no_dot="${PYTHON_VERSION//./}"
-  - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
+  - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
   variables:
     CRAY_CUDA_MPS: 1
     SLURM_JOB_NUM_NODES: 1
