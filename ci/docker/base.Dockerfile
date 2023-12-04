@@ -1,4 +1,4 @@
-FROM docker.io/nvidia/cuda:11.8.0-runtime-ubuntu22.04
+FROM docker.io/nvidia/cuda:11.2.2-devel-ubuntu20.04
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
@@ -21,7 +21,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     tk-dev \
     libffi-dev \
     liblzma-dev \
-    python3-openssl \
+    python-openssl \
     libreadline-dev \
     git \
     rustc \
@@ -38,20 +38,20 @@ RUN wget --quiet https://boostorg.jfrog.io/artifactory/main/release/1.72.0/sourc
 ENV BOOST_ROOT /usr/local/
 ENV CUDA_HOME /usr/local/cuda
 
+ARG PYVERSION
+
 RUN curl https://pyenv.run | bash
 
 ENV PYENV_ROOT /root/.pyenv
 ENV PATH="/root/.pyenv/bin:${PATH}"
 
 RUN pyenv update && \
-    pyenv install 3.10.9 && \
+    pyenv install ${PYVERSION} && \
     echo 'eval "$(pyenv init -)"' >> /root/.bashrc && \
     eval "$(pyenv init -)" && \
-    pyenv global 3.10.9
+    pyenv global ${PYVERSION}
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
 
-RUN pip install --upgrade pip setuptools wheel tox cupy-cuda11x
-
-COPY . /icon4py
+RUN pip install --upgrade pip setuptools wheel tox cupy-cuda11x clang-format
