@@ -113,47 +113,47 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         (z_exner_ex_pr, exner_pr),
     )
 
-    vert_start = maximum(1, nflatlev)
-    if igradp_method == 3:
-        (z_exner_ic, z_dexner_dz_c_1) = where(
-            (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-            & (vert_start <= vert_idx < (n_lev + int32(1))),
-            _predictor_stencils_4_5_6(
-                wgtfacq_c_dsl=wgtfacq_c_dsl,
-                z_exner_ex_pr=z_exner_ex_pr,
-                z_exner_ic=z_exner_ic,
-                wgtfac_c=wgtfac_c,
-                inv_ddqz_z_full=inv_ddqz_z_full,
-                z_dexner_dz_c_1=z_dexner_dz_c_1,
-                k_field=vert_idx_1d,
-                nlev=n_lev,
-            ),
-            (z_exner_ic, z_dexner_dz_c_1),
-        )
-
-    (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02),
-        _predictor_stencils_7_8_9(
-            rho=rho_nnow,
-            rho_ref_mc=rho_ref_mc,
-            theta_v=theta_v_nnow,
-            theta_ref_mc=theta_ref_mc,
-            rho_ic=rho_ic,
-            z_rth_pr_1=z_rth_pr_1,
-            z_rth_pr_2=z_rth_pr_2,
-            wgtfac_c=wgtfac_c,
-            vwind_expl_wgt=vwind_expl_wgt,
-            exner_pr=exner_pr,
-            d_exner_dz_ref_ic=d_exner_dz_ref_ic,
-            ddqz_z_half=ddqz_z_half,
-            z_theta_v_pr_ic=z_theta_v_pr_ic,
-            theta_v_ic=theta_v_ic,
-            z_th_ddz_exner_c=z_th_ddz_exner_c,
-            k_field=vert_idx_1d,
-            nlev=n_lev,
-        ),
-        (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
-    )
+    # vert_start = maximum(1, nflatlev)
+    # if igradp_method == 3:
+    #     (z_exner_ic, z_dexner_dz_c_1) = where(
+    #         (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
+    #         & (vert_start <= vert_idx < (n_lev + int32(1))),
+    #         _predictor_stencils_4_5_6(
+    #             wgtfacq_c_dsl=wgtfacq_c_dsl,
+    #             z_exner_ex_pr=z_exner_ex_pr,
+    #             z_exner_ic=z_exner_ic,
+    #             wgtfac_c=wgtfac_c,
+    #             inv_ddqz_z_full=inv_ddqz_z_full,
+    #             z_dexner_dz_c_1=z_dexner_dz_c_1,
+    #             k_field=vert_idx_1d,
+    #             nlev=n_lev,
+    #         ),
+    #         (z_exner_ic, z_dexner_dz_c_1),
+    #     )
+    #
+    # (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
+    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02),
+    #     _predictor_stencils_7_8_9(
+    #         rho=rho_nnow,
+    #         rho_ref_mc=rho_ref_mc,
+    #         theta_v=theta_v_nnow,
+    #         theta_ref_mc=theta_ref_mc,
+    #         rho_ic=rho_ic,
+    #         z_rth_pr_1=z_rth_pr_1,
+    #         z_rth_pr_2=z_rth_pr_2,
+    #         wgtfac_c=wgtfac_c,
+    #         vwind_expl_wgt=vwind_expl_wgt,
+    #         exner_pr=exner_pr,
+    #         d_exner_dz_ref_ic=d_exner_dz_ref_ic,
+    #         ddqz_z_half=ddqz_z_half,
+    #         z_theta_v_pr_ic=z_theta_v_pr_ic,
+    #         theta_v_ic=theta_v_ic,
+    #         z_th_ddz_exner_c=z_th_ddz_exner_c,
+    #         k_field=vert_idx_1d,
+    #         nlev=n_lev,
+    #     ),
+    #     (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+    # )
 
     # (z_theta_v_pr_ic, theta_v_ic) = where(
     #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx < (n_lev + int32(1))),
