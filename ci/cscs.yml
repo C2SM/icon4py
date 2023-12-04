@@ -38,7 +38,7 @@ build py310 baseimage:
     <<: *py310
 
 test py310:
-  extends: .container-runner-daint-gpu
+  extends: .container-runner-clariden-a100
   needs: ["build py310 baseimage"]
   stage: test
   timeout: 2h
