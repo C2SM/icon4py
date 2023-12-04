@@ -40,7 +40,7 @@ build py310 image:
   variables:
     # make sure we use a unique name here, otherwise we could create a race condition, when multiple pipelines
     # are running.
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/gt4py/gt4py-ci:$CI_COMMIT_SHA-$PYVERSION
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
     DOCKERFILE: ci/checkout.Dockerfile
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
     <<: *py310
