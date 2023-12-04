@@ -39,7 +39,7 @@ build py310 baseimage:
 
 test py310:
   extends: .container-runner-daint-gpu
-  needs: ["build py310 image"]
+  needs: ["build py310 baseimage"]
   stage: test
   timeout: 2h
   image: $PERSIST_IMAGE_NAME
