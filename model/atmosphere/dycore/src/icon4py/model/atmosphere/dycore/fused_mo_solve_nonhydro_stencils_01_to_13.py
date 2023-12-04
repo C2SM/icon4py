@@ -487,10 +487,10 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
     wgt_nnow_rth: float,
     wgt_nnew_rth: float,
     istep: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
     horizontal_lower_01: int32,
     horizontal_upper_01: int32,
     horizontal_lower_02: int32,
@@ -568,8 +568,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
             z_dexner_dz_c_2,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            CellDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper - 1),
         },
     )
 
@@ -638,7 +638,7 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
             z_dexner_dz_c_2,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            CellDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_upper - 1, vertical_upper),
         },
     )
