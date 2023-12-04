@@ -64,31 +64,17 @@ test py310:
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     <<: *py310
 
-#.test_template:
-#  extends: .container-runner-clariden-a100
-#  timeout: 2h
-#  image: $PERSIST_IMAGE_NAME
-#  before_script:
-#    - apt-get update
-#    - python3 -m pip install --upgrade pip setuptools wheel
-#    - cd /icon4py
-#    - pyversion_no_dot="${PYTHON_VERSION//./}"
-#  variables:
-#    SLURM_JOB_NUM_NODES: 2
-#    SLURM_NTASKS: 2
-#    SLURM_TIMELIMIT: '01:00:00'
+test_model_job_embedded_simple_grid:
+  extends: test py310
+  stage: test
+  script:
+    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip -n auto
 
-#test_model_job_embedded_simple_grid:
-#  extends: .test_template
-#  stage: test
-#  script:
-#    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
-
-#benchmark_model_gtfn_cpu_simple_grid:
-#  extends: .test_template
-#  stage: benchmark
-#  script:
-#    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+test_model_job_gtfn_cpu_simple_grid:
+  extends: test py310
+  stage: test
+  script:
+    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
 
 #test_model_job_gtfn_gpu_simple_grid:
 #  extends: test py310
