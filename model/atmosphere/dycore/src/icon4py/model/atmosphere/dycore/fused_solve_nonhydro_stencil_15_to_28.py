@@ -102,9 +102,9 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     ipeidx_dsl: gtx.Field[[EdgeDim, KDim], bool],
     pg_exdist: gtx.Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: gtx.Field[[EdgeDim], wpfloat],
-    # vn_nnow: gtx.Field[[EdgeDim, KDim], wpfloat],
-    # ddt_vn_apc_ntl1: gtx.Field[[EdgeDim, KDim], vpfloat],
-    # ddt_vn_phy: gtx.Field[[EdgeDim, KDim], vpfloat],
+    vn_nnow: gtx.Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc_ntl1: gtx.Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_phy: gtx.Field[[EdgeDim, KDim], vpfloat],
     # vn_incr: gtx.Field[[EdgeDim, KDim], vpfloat],
     vn: gtx.Field[[EdgeDim, KDim], wpfloat],
     z_theta_v_e: gtx.Field[[EdgeDim, KDim], wpfloat],
@@ -117,8 +117,8 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     p_dthalf: wpfloat,
     idiv_method: int32,
     igradp_method: int32,
-    # dtime: wpfloat,
-    # cpd: wpfloat,
+    dtime: wpfloat,
+    cpd: wpfloat,
     # iau_wgt_dyn: wpfloat,
     # is_iau_active: bool,
     limited_area: bool,
@@ -253,20 +253,20 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         z_gradh_exner,
     ) if igradp_method == 3 else z_gradh_exner
 
-    # vn = where(
-    #     (horizontal_lower <= horz_idx < horizontal_upper),
-    #     _mo_solve_nonhydro_stencil_24(
-    #         vn_nnow=vn_nnow,
-    #         ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-    #         ddt_vn_phy=ddt_vn_phy,
-    #         z_theta_v_e=z_theta_v_e,
-    #         z_gradh_exner=z_gradh_exner,
-    #         dtime=dtime,
-    #         cpd=cpd,
-    #     ),
-    #     vn,
-    # )
-    #
+    vn = where(
+        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+        _mo_solve_nonhydro_stencil_24(
+            vn_nnow=vn_nnow,
+            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+            ddt_vn_phy=ddt_vn_phy,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            dtime=dtime,
+            cpd=cpd,
+        ),
+        vn,
+    )
+
     # if is_iau_active:
     #     vn = where(
     #         (horizontal_lower <= horz_idx < horizontal_upper),
@@ -525,16 +525,16 @@ def _fused_solve_nonhydro_stencil_15_to_28(
         inv_dual_edge_length=inv_dual_edge_length,
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
-        # vn_nnow=vn_nnow,
-        # ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-        # ddt_vn_phy=ddt_vn_phy,
+        vn_nnow=vn_nnow,
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_phy=ddt_vn_phy,
         # vn_incr=vn_incr,
         vn=vn,
         horz_idx=horz_idx,
         vert_idx=vert_idx,
         grav_o_cpd=grav_o_cpd,
-        # dtime=dtime,
-        # cpd=cpd,
+        dtime=dtime,
+        cpd=cpd,
         p_dthalf=p_dthalf,
         # iau_wgt_dyn=iau_wgt_dyn,
         # is_iau_active=is_iau_active,
