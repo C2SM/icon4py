@@ -500,10 +500,10 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
     n_lev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
 ):
     _fused_mo_solve_nonhydro_stencils_01_to_13(
         rho_nnow,
@@ -570,8 +570,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
             z_dexner_dz_c_2,
         ),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            CellDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper - 1),
         },
     )
 
