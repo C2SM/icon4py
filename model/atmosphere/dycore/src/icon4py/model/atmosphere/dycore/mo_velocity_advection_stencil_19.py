@@ -52,7 +52,7 @@ def _mo_velocity_advection_stencil_19(
         astype(
             z_kin_hor_e * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
             + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1])
-            - (coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0])),
+            - coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0]),
             wpfloat,
         )
         + vt_wp * (f_e + astype(vpfloat("0.5") * neighbor_sum(zeta(E2V), axis=E2VDim), wpfloat))
