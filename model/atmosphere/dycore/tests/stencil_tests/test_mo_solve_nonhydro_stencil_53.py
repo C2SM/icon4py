@@ -39,7 +39,7 @@ class TestMoSolveNonhydroStencil53(StencilTest):
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(grid, z_q: np.array, w: np.array, **kwargs) -> np.array:
+    def reference(grid, z_q: np.array, w: np.array, **kwargs) -> dict:
         w_new = mo_solve_nonhydro_stencil_53_numpy(grid, z_q, w)
         return dict(w=w_new)
 

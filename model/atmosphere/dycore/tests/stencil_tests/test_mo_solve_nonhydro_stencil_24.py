@@ -52,7 +52,7 @@ class TestMoSolveNonhydroStencil24(StencilTest):
         dtime: float,
         cpd: float,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         vn_nnew = mo_solve_nonhydro_stencil_24_numpy(
             grid,
             vn_nnow,

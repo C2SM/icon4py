@@ -11,8 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_lower import (
     mo_solve_nonhydro_stencil_11_lower,
@@ -27,7 +27,7 @@ class TestMoSolveNonhydroStencil11Lower(StencilTest):
     OUTPUTS = ("z_theta_v_pr_ic",)
 
     @staticmethod
-    def reference(grid, **kwargs) -> np.array:
+    def reference(grid, **kwargs) -> dict:
         z_theta_v_pr_ic = 0
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic)
 
@@ -36,4 +36,8 @@ class TestMoSolveNonhydroStencil11Lower(StencilTest):
         z_theta_v_pr_ic = random_field(grid, CellDim, KDim, dtype=vpfloat)
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

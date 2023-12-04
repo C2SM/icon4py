@@ -28,7 +28,7 @@ class TestMoVelocityAdvectionStencil01(StencilTest):
     OUTPUTS = ("vt",)
 
     @staticmethod
-    def reference(grid, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> np.array:
+    def reference(grid, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> dict:
         rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
         e2c2e = grid.connectivities[E2C2EDim]
         vt = np.sum(

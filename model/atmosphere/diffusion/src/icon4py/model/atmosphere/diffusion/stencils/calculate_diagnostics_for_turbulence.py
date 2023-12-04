@@ -28,10 +28,11 @@ def _calculate_diagnostics_for_turbulence(
     wgtfac_c_wp, div_wp, kh_c_wp = astype((wgtfac_c, div, kh_c), wpfloat)
 
     div_ic_wp = astype(wgtfac_c * div, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * div_wp(Koff[-1])
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
-    hdef_ic_wp = (
-        astype(wgtfac_c * kh_c, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * kh_c_wp(Koff[-1])
-    ) ** 2
+    hdef_ic_wp = astype(wgtfac_c * kh_c, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * kh_c_wp(
+        Koff[-1]
+    )
+    hdef_ic_wp = hdef_ic_wp * hdef_ic_wp
+
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
 
 

@@ -29,7 +29,7 @@ def _apply_nabla2_to_w(
 ) -> Field[[CellDim, KDim], wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
 
-    w_wp = w - diff_multfac_w * area * area * neighbor_sum(
+    w_wp = w - diff_multfac_w * (area * area) * neighbor_sum(
         z_nabla2_c_wp(C2E2CO) * geofac_n2s, axis=C2E2CODim
     )
     return w_wp
