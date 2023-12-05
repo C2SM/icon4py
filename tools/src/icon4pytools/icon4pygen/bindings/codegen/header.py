@@ -105,13 +105,7 @@ class CppHeaderGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, verify *verify,
-        {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ k_size_suffix }}
-        {%- if not loop.last -%}
-        ,
-        {%- endif -%}
-        {%- endfor -%})
+        GlobalGpuTriMesh *mesh, cudaStream_t stream, json *json_record, verify *verify)
         """
     )
 
@@ -144,7 +138,7 @@ class CppVerifyFuncDeclaration(CppSizeFunc):
     before_suffix: str
 
 
-class CppSetupFuncDeclaration(CppVerifyFuncDeclaration):
+class CppSetupFuncDeclaration(CppFunc):
     ...
 
 
@@ -192,10 +186,6 @@ class CppHeaderFile(Node):
 
         self.setupFunc = CppSetupFuncDeclaration(
             funcname=self.stencil_name,
-            out_fields=output_fields,
-            tol_fields=tolerance_fields,
-            before_suffix="before",
-            k_size_suffix="k_size",
         )
 
         self.freeFunc = CppFreeFunc(funcname=self.stencil_name)

@@ -145,8 +145,6 @@ class F90Generator(TemplatedGenerator):
         use, intrinsic :: iso_c_binding
         use openacc
         {{binds}}
-        {{vert_decls}}
-        {{vert_conditionals}}
         call setup_{{stencil_name}} &
         ( &
             {{setup_params}}
@@ -319,16 +317,14 @@ class F90SetupFun(Node):
             F90Field(name=name)
             for name in [
                 "mesh",
-                "k_size",
                 "stream",
                 "json_record",
                 "mesh_info_vtk",
                 "verify",
             ]
-        ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
+        ]
         bind_fields = [
             F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
-            F90TypedField(name="k_size", dtype="integer(c_int)", dims="value"),
             F90TypedField(
                 name="stream",
                 dtype="integer(kind=acc_handle_kind)",
@@ -337,14 +333,6 @@ class F90SetupFun(Node):
             F90TypedField(name="json_record", dtype="type(c_ptr)", dims="value"),
             F90TypedField(name="mesh_info_vtk", dtype="type(c_ptr)", dims="value"),
             F90TypedField(name="verify", dtype="type(c_ptr)", dims="value"),
-        ] + [
-            F90TypedField(
-                name=field.name,
-                dtype="integer(c_int)",
-                dims="value",
-                suffix="kmax",
-            )
-            for field in self.out_fields
         ]
 
         self.params = F90EntityList(fields=param_fields, line_end=", &", line_end_last=" &")
@@ -493,8 +481,6 @@ class F90WrapSetupFun(Node):
 
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
-    vert_decls: F90EntityList = eve.datamodels.field(init=False)
-    vert_conditionals: F90EntityList = eve.datamodels.field(init=False)
     setup_params: F90EntityList = eve.datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -502,16 +488,14 @@ class F90WrapSetupFun(Node):
             F90Field(name=name)
             for name in [
                 "mesh",
-                "k_size",
                 "stream",
                 "json_record",
                 "mesh_info_vtk",
                 "verify",
             ]
-        ] + [F90Field(name=field.name, suffix="kmax") for field in self.out_fields]
+        ]
         bind_fields = [
             F90TypedField(name="mesh", dtype="type(c_ptr)", dims="value"),
-            F90TypedField(name="k_size", dtype="integer(c_int)", dims="value"),
             F90TypedField(
                 name="stream",
                 dtype="integer(kind=acc_handle_kind)",
@@ -520,44 +504,20 @@ class F90WrapSetupFun(Node):
             F90TypedField(name="json_record", dtype="type(c_ptr)", dims="value"),
             F90TypedField(name="mesh_info_vtk", dtype="type(c_ptr)", dims="value"),
             F90TypedField(name="verify", dtype="type(c_ptr)", dims="value"),
-        ] + [
-            F90TypedField(
-                name=field.name,
-                dtype="integer(c_int)",
-                dims="value",
-                suffix="kmax",
-                optional=True,
-            )
-            for field in self.out_fields
-        ]
-        vert_fields = [
-            F90TypedField(name=field.name, suffix="kvert_max", dtype="integer(c_int)")
-            for field in self.out_fields
-        ]
-        vert_conditionals_fields = [
-            F90Conditional(
-                predicate=f"present({field.name}_kmax)",
-                if_branch=f"{field.name}_kvert_max = {field.name}_kmax",
-                else_branch=f"{field.name}_kvert_max = k_size",
-            )
-            for field in self.out_fields
         ]
         setup_params_fields = [
             F90Field(name=name)
             for name in [
                 "mesh",
-                "k_size",
                 "stream",
                 "json_record",
                 "mesh_info_vtk",
                 "verify",
             ]
-        ] + [F90Field(name=field.name, suffix="kvert_max") for field in self.out_fields]
+        ]
 
         self.params = F90EntityList(fields=param_fields, line_end=", &", line_end_last=" &")
         self.binds = F90EntityList(fields=bind_fields)
-        self.vert_decls = F90EntityList(fields=vert_fields)
-        self.vert_conditionals = F90EntityList(fields=vert_conditionals_fields)
         self.setup_params = F90EntityList(
             fields=setup_params_fields, line_end=", &", line_end_last=" &"
         )

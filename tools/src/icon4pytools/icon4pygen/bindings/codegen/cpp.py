@@ -128,10 +128,6 @@ class CppDefGenerator(TemplatedGenerator):
         return stream_;
       }
 
-      static int getKSize() {
-        return kSize_;
-      }
-
       static json *getJsonRecord() {
         return jsonRecord_;
       }
@@ -143,12 +139,6 @@ class CppDefGenerator(TemplatedGenerator):
       static verify *getVerify() {
         return verify_;
       }
-
-      {% for field in _this_node.fields %}
-      static int get_{{field.name}}_KSize() {
-      return {{field.name}}_kSize_;
-      }
-      {% endfor %}
 
       static void free() {
       }
@@ -227,24 +217,13 @@ class CppDefGenerator(TemplatedGenerator):
     StencilClassSetupFunc = as_jinja(
         """\
         static void setup(
-        const GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify,
-        {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ k_size_suffix }}
-        {%- if not loop.last -%}
-        ,
-        {%- endif -%}
-        {%- endfor %}) {
+        const GlobalGpuTriMesh *mesh, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify) {
         mesh_ = GpuTriMesh(mesh);
-        {{ k_size_suffix }}_ = {{ k_size_suffix }};
         is_setup_ = true;
         stream_ = stream;
         jsonRecord_ = jsonRecord;
         mesh_info_vtk_ = mesh_info_vtk;
         verify_ = verify;
-
-        {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ k_size_suffix }}_ = {{ field.name }}_{{ k_size_suffix }};
-        {%- endfor -%}
         }
         """
     )
@@ -255,16 +234,12 @@ class CppDefGenerator(TemplatedGenerator):
         {%- for field in _this_node.fields -%}
         {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_;
         {%- endfor -%}
-        inline static int kSize_;
         inline static GpuTriMesh mesh_;
         inline static bool is_setup_;
         inline static cudaStream_t stream_;
         inline static json* jsonRecord_;
         inline static MeshInfoVtk* mesh_info_vtk_;
         inline static verify* verify_;
-        {%- for field in _this_node.out_fields -%}
-        inline static int {{ field.name }}_kSize_;
-        {%- endfor %}
 
         dim3 grid(int kSize, int elSize, bool kparallel) {
             if (kparallel) {
@@ -394,7 +369,6 @@ class CppDefGenerator(TemplatedGenerator):
         using namespace std::chrono;
         const auto &mesh = cuda_ico::{{ funcname }}::getMesh();
         cudaStream_t stream = cuda_ico::{{ funcname }}::getStream();
-        int kSize = cuda_ico::{{ funcname }}::getKSize();
         MeshInfoVtk* mesh_info_vtk = cuda_ico::{{ funcname }}::getMeshInfoVtk();
         verify* verify = cuda_ico::{{ funcname }}::getVerify();
         high_resolution_clock::time_point t_start = high_resolution_clock::now();
@@ -512,27 +486,14 @@ class CppDefGenerator(TemplatedGenerator):
     CppSetupFuncDeclaration = as_jinja(
         """\
         void setup_{{funcname}}(
-        GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, MeshInfoVtk *mesh_info_vtk, verify *verify,
-        {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ k_size_suffix }}
-        {%- if not loop.last -%}
-        ,
-        {%- endif -%}
-        {%- endfor -%})
+        GlobalGpuTriMesh *mesh, cudaStream_t stream, json *json_record, MeshInfoVtk *mesh_info_vtk, verify *verify)
         """
     )
 
     SetupFunc = as_jinja(
         """\
         {{ func_declaration }} {
-        cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record, mesh_info_vtk, verify,
-        {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ k_size_suffix }}
-        {%- if not loop.last -%}
-        ,
-        {%- endif -%}
-        {%- endfor -%}
-        );
+        cuda_ico::{{ funcname }}::setup(mesh, stream, json_record, mesh_info_vtk, verify);
         }
         """
     )
@@ -544,6 +505,9 @@ class CppDefGenerator(TemplatedGenerator):
         }
         """
     )
+
+class CppFunc(Node):
+    funcname: str
 
 
 class IncludeStatements(Node):
@@ -629,7 +593,7 @@ class VerifyFuncCall(CppVerifyFuncDeclaration):
     ...
 
 
-class SetupFunc(CppVerifyFuncDeclaration):
+class SetupFunc(CppFunc):
     func_declaration: CppSetupFuncDeclaration
 
 
@@ -720,10 +684,6 @@ class CppDefTemplate(Node):
             private_members=PrivateMembers(fields=self.fields, out_fields=fields["output"]),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
-                out_fields=fields["output"],
-                tol_fields=fields["tolerance"],
-                before_suffix="before",
-                k_size_suffix="kSize",
             ),
         )
 
@@ -779,17 +739,9 @@ class CppDefTemplate(Node):
 
         self.setup_func = SetupFunc(
             funcname=self.stencil_name,
-            out_fields=fields["output"],
-            tol_fields=fields["tolerance"],
             func_declaration=CppSetupFuncDeclaration(
                 funcname=self.stencil_name,
-                out_fields=fields["output"],
-                tol_fields=fields["tolerance"],
-                before_suffix="before",
-                k_size_suffix="k_size",
             ),
-            k_size_suffix="k_size",
-            before_suffix="before",
         )
 
         self.free_func = FreeFunc(funcname=self.stencil_name)
