@@ -36,6 +36,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # 
     grid_savepoint,
     icon_grid,
     ranked_data_path,
+    experiment,
 )
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,

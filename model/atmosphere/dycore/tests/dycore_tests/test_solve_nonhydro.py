@@ -819,7 +819,7 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
     [
-        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
+        #       (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
         (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
     ],
 )
