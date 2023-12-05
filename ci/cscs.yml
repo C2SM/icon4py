@@ -4,7 +4,9 @@ include:
 stages:
 - baseimage
 - image
-- test
+- test_gpu
+- test_cpu
+- test_embedded
 
 .py310: &py310
   PYVERSION_PREFIX: py310
@@ -49,7 +51,7 @@ build py310 image:
 test py310:
   extends: .container-runner-daint-gpu
   needs: ["build py310 image"]
-  stage: test
+  stage: test_gpu
   timeout: 2h
   image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   script:
@@ -64,17 +66,18 @@ test py310:
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     <<: *py310
 
+test_model_job_gtfn_cpu_simple_grid:
+  extends: test py310
+  stage: test_cpu
+  script:
+    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
+
 test_model_job_embedded_simple_grid:
   extends: test py310
-  stage: test
+  stage: test_embedded
   script:
     - tox -r -e py310 -c model/ --verbose -- --benchmark-skip -n auto
 
-test_model_job_gtfn_cpu_simple_grid:
-  extends: test py310
-  stage: test
-  script:
-    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
 
 #test_model_job_gtfn_gpu_simple_grid:
 #  extends: test py310
