@@ -1900,7 +1900,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        # TODO (magdalena) stencil_60???
+        # TODO (magdalena) stencil_60 is missing here?
 
         if lprep_adv:
             if lclean_mflx:

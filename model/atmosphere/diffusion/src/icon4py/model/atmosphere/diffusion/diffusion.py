@@ -80,11 +80,10 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
-"""Diffusion module ported from ICON mo_nh_diffusion.f90.
+"""
+Diffusion module ported from ICON mo_nh_diffusion.f90.
 
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
-
-
 """
 
 # flake8: noqa
@@ -271,7 +270,15 @@ class DiffusionConfig:
             self.apply_to_temperature = True
             self.apply_to_horizontal_wind = True
 
-        # TODO validate shear_type
+        if self.shear_type not in (
+            TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+            TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        ):
+            raise NotImplementedError(
+                f"Turbulence Shear only {TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND} "
+                f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
+                f"implemented"
+            )
 
     @functools.cached_property
     def substep_as_float(self):

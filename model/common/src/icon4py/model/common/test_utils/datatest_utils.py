@@ -43,7 +43,7 @@ def get_ranked_data_path(base_path, processor_properties):
     return base_path.absolute().joinpath(f"mpitask{processor_properties.comm_size}")
 
 
-def get_datapath_for_experiment(ranked_base_path, experiment="mch_ch_r04b09_dsl"):
+def get_datapath_for_experiment(ranked_base_path, experiment=REGIONAL_EXPERIMENT):
     return ranked_base_path.joinpath(f"{experiment}/ser_data")
 
 
