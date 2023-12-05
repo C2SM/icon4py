@@ -79,15 +79,6 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
 ]:
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
@@ -325,15 +316,6 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
     nflatlev: int32,
     nflat_gradp: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
