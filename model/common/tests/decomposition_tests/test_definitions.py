@@ -17,8 +17,8 @@ from icon4py.model.common.decomposition.definitions import (
     create_exchange,
 )
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures form test_utils
-    processor_props,
     experiment,
+    processor_props,
 )
 
 

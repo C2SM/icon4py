@@ -33,12 +33,12 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     data_provider,
     datapath,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
     processor_props,
     ranked_data_path,
-    experiment,
 )
 
 
