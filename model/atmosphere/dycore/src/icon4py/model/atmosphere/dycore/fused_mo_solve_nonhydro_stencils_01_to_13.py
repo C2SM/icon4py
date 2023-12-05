@@ -92,12 +92,16 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
-    if limited_area:
-        (z_rth_pr_1, z_rth_pr_2) = where(
+
+    (z_rth_pr_1, z_rth_pr_2) = (
+        where(
             (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
             (_set_zero_c_k(), _set_zero_c_k()),
             (z_rth_pr_1, z_rth_pr_2),
-        )
+    )
+    if limited_area
+    else (z_rth_pr_1, z_rth_pr_2)
+    )
 
     (z_exner_ex_pr, exner_pr) = where(
         (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx < (n_lev + int32(1))),
