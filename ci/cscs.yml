@@ -52,7 +52,7 @@ test py310:
   extends: .container-runner-daint-gpu
   needs: ["build py310 image"]
   stage: test_gpu
-  timeout: 2h
+  timeout: 10h
   image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   script:
   - cd /icon4py.src
@@ -61,21 +61,27 @@ test py310:
   variables:
     CRAY_CUDA_MPS: 1
     SLURM_JOB_NUM_NODES: 1
-    SLURM_TIMELIMIT: '01:00:00'
+    SLURM_TIMELIMIT: '08:00:00'
     NUM_PROCESSES: auto
-    VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     <<: *py310
 
+.test_template:
+  extends: .container-runner-clariden-a100
+  timeout: 2h
+  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  variables:
+    SLURM_JOB_NUM_NODES: 2
+    SLURM_NTASKS: 2
+    SLURM_TIMELIMIT: '01:00:00'
+
 test_model_job_gtfn_cpu_simple_grid:
-  needs: ["test py310"]
-  extends: test py310
+  extends: .test_template
   stage: test_cpu
   script:
     - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
 
 test_model_job_embedded_simple_grid:
-  needs: ["test_model_job_gtfn_cpu_simple_grid"]
-  extends: test py310
+  extends: .test_template
   stage: test_embedded
   script:
     - tox -r -e py310 -c model/ --verbose -- --benchmark-skip -n auto
