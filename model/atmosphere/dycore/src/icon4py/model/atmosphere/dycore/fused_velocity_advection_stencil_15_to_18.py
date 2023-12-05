@@ -13,8 +13,6 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     _mo_velocity_advection_stencil_15,
@@ -29,6 +27,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     _mo_velocity_advection_stencil_18,
 )
 from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator

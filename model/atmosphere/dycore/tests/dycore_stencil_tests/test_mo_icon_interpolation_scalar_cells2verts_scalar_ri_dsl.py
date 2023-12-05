@@ -28,9 +28,7 @@ def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(
 ) -> np.array:
     v2c = grid.connectivities[V2CDim]
     c_intp = np.expand_dims(c_intp, axis=-1)
-    p_vert_out = np.sum(
-        np.where((v2c != -1)[:, :, np.newaxis], p_cell_in[v2c] * c_intp, 0), axis=1
-    )
+    p_vert_out = np.sum(np.where((v2c != -1)[:, :, np.newaxis], p_cell_in[v2c] * c_intp, 0), axis=1)
     return p_vert_out
 
 
