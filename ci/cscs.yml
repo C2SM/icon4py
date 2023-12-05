@@ -23,7 +23,7 @@ variables:
     <<: *py310
 
 .test_template:
-  extends: .container-runner-clariden-a100
+  extends: .container-runner-daint-gpu
   timeout: 8h
   image: $PERSIST_IMAGE_NAME
   before_script:
