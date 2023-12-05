@@ -34,9 +34,9 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
-    construct_diagnostics_for_diffusion,
 )
 
 

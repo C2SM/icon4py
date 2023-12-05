@@ -18,9 +18,9 @@ from .data_handling import download_and_extract
 from .datatest_utils import (
     DATA_URIS,
     DATA_URIS_APE,
-    SER_DATA_BASEPATH,
-    REGIONAL_EXPERIMENT,
     GLOBAL_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+    SER_DATA_BASEPATH,
     create_icon_serial_data_provider,
     get_datapath_for_experiment,
     get_processor_properties_for_run,

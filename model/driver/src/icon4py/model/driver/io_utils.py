@@ -37,10 +37,11 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.driver.serialbox_helpers import (
-    construct_metric_state_for_diffusion,
-    construct_interpolation_state_for_diffusion,
     construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
 )
+
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 

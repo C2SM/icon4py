@@ -204,9 +204,9 @@ def _verify_init_values_against_savepoint(
 @pytest.mark.parametrize(
     "experiment,step_date_init,damping_height",
     [
-        #    (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", 12500.0),
-        #    (REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", 12500.0),
-        #    (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", 12500.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", 12500.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", 50000.0),
         (GLOBAL_EXPERIMENT, "2000-01-01T00:00:08.000", 50000.0),
     ],
 )
