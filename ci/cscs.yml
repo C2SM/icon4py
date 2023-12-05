@@ -35,6 +35,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
+    SLURM_GPUS_PER_NODE: 3
     SLURM_TIMELIMIT: '06:00:00'
 
 build_job:
