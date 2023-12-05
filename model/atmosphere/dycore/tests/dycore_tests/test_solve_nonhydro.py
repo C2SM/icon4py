@@ -819,7 +819,7 @@ def test_run_solve_nonhydro_single_step(
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init, istep_exit, jstep_exit, step_date_exit, vn_only",
     [
-        #       (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 1, "2021-06-20T12:00:10.000", False),
         (1, 0, "2021-06-20T12:00:20.000", 2, 1, "2021-06-20T12:00:20.000", True),
     ],
 )
@@ -837,14 +837,14 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_step_exit,
     experiment,
 ):
-    config = construct_config(experiment)
+    nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
+    config = construct_config(experiment, nsubsteps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    r_nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
@@ -884,7 +884,7 @@ def test_run_solve_nonhydro_multi_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    for i_substep in range(r_nsubsteps):
+    for i_substep in range(nsubsteps):
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_ls=prognostic_state_ls,
@@ -904,7 +904,7 @@ def test_run_solve_nonhydro_multi_step(
         linit = False
         recompute = False
         clean_mflx = False
-        if i_substep != r_nsubsteps - 1:
+        if i_substep != nsubsteps - 1:
             ntemp = nnow
             nnow = nnew
             nnew = ntemp
