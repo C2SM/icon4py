@@ -33,10 +33,10 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
 ]:
     p_ccpr1_wp, p_ccpr2_wp = astype((p_ccpr1, p_ccpr2), wpfloat)
 
-    p_grad_1_u_wp = neighbor_sum(p_ccpr1_wp(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
-    p_grad_1_v_wp = neighbor_sum(p_ccpr1_wp(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
-    p_grad_2_u_wp = neighbor_sum(p_ccpr2_wp(C2E2CO) * geofac_grg_x, axis=C2E2CODim)
-    p_grad_2_v_wp = neighbor_sum(p_ccpr2_wp(C2E2CO) * geofac_grg_y, axis=C2E2CODim)
+    p_grad_1_u_wp = neighbor_sum(geofac_grg_x * p_ccpr1_wp(C2E2CO), axis=C2E2CODim)
+    p_grad_1_v_wp = neighbor_sum(geofac_grg_y * p_ccpr1_wp(C2E2CO), axis=C2E2CODim)
+    p_grad_2_u_wp = neighbor_sum(geofac_grg_x * p_ccpr2_wp(C2E2CO), axis=C2E2CODim)
+    p_grad_2_v_wp = neighbor_sum(geofac_grg_y * p_ccpr2_wp(C2E2CO), axis=C2E2CODim)
     return astype((p_grad_1_u_wp, p_grad_1_v_wp, p_grad_2_u_wp, p_grad_2_v_wp), vpfloat)
 
 

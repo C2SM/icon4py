@@ -205,9 +205,7 @@ class NonHydrostaticConfig:
         htop_moist_proc: float = 22500.0,
         ltestcase: bool = False,
     ):
-        # parameters from namelist nonhydrostatic_nml
-
-        #: time scheme for the non hydro static model
+        # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
 
         #: Miura scheme for advection of rho and theta
