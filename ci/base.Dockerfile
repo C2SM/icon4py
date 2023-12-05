@@ -53,5 +53,6 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
+COPY . /icon4py
 
 RUN pip install --upgrade pip setuptools wheel tox cupy-cuda11x clang-format

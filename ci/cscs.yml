@@ -1,108 +1,169 @@
+#include:
+#  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+#
+#stages:
+#- baseimage
+#- image
+#- test
+#
+#.py310: &py310
+#  PYVERSION_PREFIX: py310
+#  PYVERSION: 3.10.9
+#
+#build py310 baseimage:
+#  extends: .container-builder
+#  stage: baseimage
+#  # we create a tag that depends on the SHA value of ci/base.Dockerfile, this way
+#  # a new base image is only built when the SHA of this file changes
+#  # If there are more dependency files that should change the tag-name of the base container
+#  # image, they can be added too.
+#  # Since the base image name is runtime dependent, we need to carry the value of it to
+#  # the following jobs via a dotenv file.
+#  before_script:
+#  - DOCKER_TAG=`sha256sum ci/base.Dockerfile | head -c 16`
+#  - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/base/icon4py-ci:$DOCKER_TAG-$PYVERSION
+#  - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
+#  artifacts:
+#    reports:
+#      dotenv: build.env
+#  variables:
+#    DOCKERFILE: ci/base.Dockerfile
+#    # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
+#    CSCS_REBUILD_POLICY: if-not-exists
+#    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+#    <<: *py310
+#
+#build py310 image:
+#  extends: .container-builder
+#  needs: ["build py310 baseimage"]
+#  stage: image
+#  variables:
+#    # make sure we use a unique name here, otherwise we could create a race condition, when multiple pipelines
+#    # are running.
+#    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+#    DOCKERFILE: ci/checkout.Dockerfile
+#    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+#    <<: *py310
+#
+#
+#test py310:
+#  extends: .container-runner-daint-gpu
+#  needs: ["build py310 image"]
+#  stage: test
+#  timeout: 10h
+#  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+#  script:
+#  - cd /icon4py.src
+#  - python -c "import cupy"
+#  - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
+#  variables:
+#    CRAY_CUDA_MPS: 1
+#    SLURM_JOB_NUM_NODES: 1
+#    SLURM_TIMELIMIT: '08:00:00'
+#    NUM_PROCESSES: auto
+#    <<: *py310
+#
+#.test_template:
+#  extends: .container-runner-clariden-a100
+#  timeout: 2h
+#  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+#  stage: test
+#  variables:
+#    SLURM_JOB_NUM_NODES: 2
+#    SLURM_NTASKS: 2
+#    SLURM_TIMELIMIT: '01:00:00'
+#    <<: *py310
+#
+#test_model_job_gtfn_cpu_simple_grid:
+#  extends: .test_template
+#  script:
+#    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
+#
+#test_model_job_embedded_simple_grid:
+#  extends: .test_template
+#  script:
+#    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip -n auto
+#
+#
+##test_model_job_gtfn_gpu_simple_grid:
+##  extends: test py310
+##  stage: test
+##  script:
+##    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
+#
+#
+##benchmark_model_gtfn_gpu_simple_grid:
+##  extends: .test_template
+##  stage: benchmark
+##  script:
+##    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
+##
+##
+##test_tools_job:
+##  extends: .test_template
+##  stage: test
+##  script:
+##    - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
+##
+
+
 include:
   - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
 
 stages:
-- baseimage
-- image
-- test
+  - build
+  - test
+  - benchmark
 
 .py310: &py310
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
 
-build py310 baseimage:
+variables:
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
+  PYTHON_VERSION: 3.10
+
+.build_template:
+  stage: build
   extends: .container-builder
-  stage: baseimage
-  # we create a tag that depends on the SHA value of ci/base.Dockerfile, this way
-  # a new base image is only built when the SHA of this file changes
-  # If there are more dependency files that should change the tag-name of the base container
-  # image, they can be added too.
-  # Since the base image name is runtime dependent, we need to carry the value of it to
-  # the following jobs via a dotenv file.
-  before_script:
-  - DOCKER_TAG=`sha256sum ci/base.Dockerfile | head -c 16`
-  - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/base/icon4py-ci:$DOCKER_TAG-$PYVERSION
-  - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
-  artifacts:
-    reports:
-      dotenv: build.env
   variables:
     DOCKERFILE: ci/base.Dockerfile
-    # change to 'always' if you want to rebuild, even if target tag exists already (if-not-exists is the default, i.e. we could also skip the variable)
-    CSCS_REBUILD_POLICY: if-not-exists
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
     <<: *py310
 
-build py310 image:
-  extends: .container-builder
-  needs: ["build py310 baseimage"]
-  stage: image
-  variables:
-    # make sure we use a unique name here, otherwise we could create a race condition, when multiple pipelines
-    # are running.
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-    DOCKERFILE: ci/checkout.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-    <<: *py310
-
-
-test py310:
-  extends: .container-runner-daint-gpu
-  needs: ["build py310 image"]
-  stage: test
-  timeout: 10h
-  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  script:
-  - cd /icon4py.src
-  - python -c "import cupy"
-  - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
-  variables:
-    CRAY_CUDA_MPS: 1
-    SLURM_JOB_NUM_NODES: 1
-    SLURM_TIMELIMIT: '08:00:00'
-    NUM_PROCESSES: auto
-    <<: *py310
 
 .test_template:
   extends: .container-runner-clariden-a100
   timeout: 2h
-  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-  stage: test
+  image: $PERSIST_IMAGE_NAME
+  before_script:
+    - apt-get update
+    - python3 -m pip install --upgrade pip setuptools wheel
+    - cd /icon4py
+    - pyversion_no_dot="${PYTHON_VERSION//./}"
+    - pip install tox clang-format
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 2
     SLURM_TIMELIMIT: '01:00:00'
-    <<: *py310
 
-test_model_job_gtfn_cpu_simple_grid:
-  extends: .test_template
-  script:
-    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
+build_job:
+  extends: .build_template
 
 test_model_job_embedded_simple_grid:
   extends: .test_template
+  stage: test
   script:
-    - tox -r -e py310 -c model/ --verbose -- --benchmark-skip -n auto
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
 
+benchmark_model_gtfn_cpu_simple_grid:
+  extends: .test_template
+  stage: benchmark
+  script:
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
 
-#test_model_job_gtfn_gpu_simple_grid:
-#  extends: test py310
-#  stage: test
-#  script:
-#    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu --grid=simple_grid
-
-
-#benchmark_model_gtfn_gpu_simple_grid:
-#  extends: .test_template
-#  stage: benchmark
-#  script:
-#    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
-#
-#
-#test_tools_job:
-#  extends: .test_template
-#  stage: test
-#  script:
-#    - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
-#
-
+test_tools_job:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
