@@ -393,8 +393,6 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
         horizontal_upper_02,
         horizontal_lower_03,
         horizontal_upper_03,
-        horizontal_lower_11,
-        horizontal_upper_11,
         n_lev,
         nflatlev,
         nflat_gradp,
