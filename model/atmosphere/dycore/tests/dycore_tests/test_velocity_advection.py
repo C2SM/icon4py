@@ -211,11 +211,13 @@ def test_velocity_predictor_step(
     # stencil 02,05
     assert dallclose(icon_result_vn_ie, diagnostic_state.vn_ie.asnumpy(), atol=1.0e-14)
     # stencil 07
-    assert dallclose(
-        icon_result_z_v_grad_w[3777:31558, :],
-        velocity_advection.z_v_grad_w.asnumpy()[3777:31558, :],
-        atol=1.0e-16,
-    )
+    if not vn_only:
+        assert dallclose(
+            icon_result_z_v_grad_w.asnumpy()[3777:31558, :],
+            velocity_advection.z_v_grad_w.asnumpy()[3777:31558, :],
+            atol=1.0e-16,
+        )
+
     # stencil 08
     assert dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[3316:20896, :],
@@ -250,10 +252,10 @@ def test_velocity_predictor_step(
         atol=5.0e-16,
         rtol=1.0e-10,
     )
-    # stencil 19 level 0 not verifying
+    # stencil 19
     assert dallclose(
-        icon_result_ddt_vn_apc_pc[5387:31558, 0:65],
-        diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy()[5387:31558, 0:65],
+        icon_result_ddt_vn_apc_pc,
+        diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy(),
         atol=1.0e-15,
     )
 
@@ -372,9 +374,9 @@ def test_velocity_corrector_step(
         diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[3316:20896, :],
         atol=5.0e-16,
     )
-    # stencil 19 level 0 not verifying
+    # stencil 19
     assert dallclose(
-        icon_result_ddt_vn_apc_pc[5387:31558, 0:65],
-        diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy()[5387:31558, 0:65],
+        icon_result_ddt_vn_apc_pc,
+        diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy(),
         atol=5.0e-16,
     )

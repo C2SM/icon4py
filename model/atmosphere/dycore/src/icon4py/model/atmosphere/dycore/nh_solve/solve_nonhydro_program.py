@@ -1047,6 +1047,10 @@ def predictor_stencils_59_60(
     cell_endindex_interior: int32,
     kstart_moist: int32,
     nlev: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _predictor_stencils_59_60(
         exner_nnow,

@@ -28,7 +28,7 @@ class TestMoSolveNonhydroStencil54(StencilTest):
     OUTPUTS = ("w",)
 
     @staticmethod
-    def reference(grid, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> np.array:
+    def reference(grid, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> dict:
         z_raylfac = np.expand_dims(z_raylfac, axis=0)
         w_1 = np.expand_dims(w_1, axis=-1)
         w = z_raylfac * w + (1.0 - z_raylfac) * w_1

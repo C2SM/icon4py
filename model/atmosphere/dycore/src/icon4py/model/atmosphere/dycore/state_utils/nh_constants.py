@@ -20,5 +20,3 @@ class NHConstants:
     wgt_nnew_rth: float
     wgt_nnow_vel: float
     wgt_nnew_vel: float
-    scal_divdamp: float
-    scal_divdamp_o2: float

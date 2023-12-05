@@ -19,14 +19,13 @@ from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionPar
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
 
-from .utils import (
-    diff_multfac_vn_numpy,
-    enhanced_smagorinski_factor_numpy,
-    smag_limit_numpy,
-    verify_diffusion_fields,
-)
+from .utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
+
+
+backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 
 
 backend = icon4py.model.atmosphere.diffusion.diffusion.backend
@@ -264,7 +263,6 @@ def test_verify_diffusion_init_against_other_regular_savepoint(
     _verify_init_values_against_savepoint(diffusion_savepoint_init, diffusion)
 
 
-@pytest.mark.skip("#TODO (magdalena) assertion failure after update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "step_date_init, step_date_exit",
@@ -320,7 +318,6 @@ def test_run_diffusion_single_step(
     verify_diffusion_fields(diagnostic_state, prognostic_state, diffusion_savepoint_exit)
 
 
-@pytest.mark.skip("#TODO (magdalena) assertion failure after update of gt4py")
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_run_diffusion_initial_step(

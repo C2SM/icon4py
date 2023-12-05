@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
 from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -33,7 +33,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,
 )
-from icon4py.model.common.test_utils.helpers import dallclose, random_field
+from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fixture
     check_comm_size,
     processor_props,
@@ -107,10 +107,6 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(icon_grid, KDim)
-    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
     nnow = 0
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
@@ -178,8 +174,6 @@ def test_run_solve_nonhydro_single_step(
         wgt_nnew_rth=sp.wgt_nnew_rth(),
         wgt_nnow_vel=sp.wgt_nnow_vel(),
         wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
@@ -198,12 +192,8 @@ def test_run_solve_nonhydro_single_step(
         interpolation_state=interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
@@ -217,7 +207,7 @@ def test_run_solve_nonhydro_single_step(
         prep_adv=prep_adv,
         z_fields=z_fields,
         nh_constants=nh_constants,
-        bdy_divdamp=sp.bdy_divdamp(),
+        divdamp_fac_o2=0.032,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -235,50 +225,50 @@ def test_run_solve_nonhydro_single_step(
         expected_theta_v,
         calculated_theta_v,
     )
-    expected_exner = np.asarray(sp_step_exit.exner_new())
-    calculated_exner = np.asarray(prognostic_state_nnew.exner)
+    expected_exner = sp_step_exit.exner_new().asnumpy()
+    calculated_exner = prognostic_state_nnew.exner.asnumpy()
     assert dallclose(
         expected_exner,
         calculated_exner,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.vn_new()),
-        np.asarray(prognostic_state_nnew.vn),
+        savepoint_nonhydro_exit.vn_new().asnumpy(),
+        prognostic_state_nnew.vn.asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.w_new()),
-        np.asarray(prognostic_state_nnew.w),
+        savepoint_nonhydro_exit.w_new().asnumpy(),
+        prognostic_state_nnew.w.asnumpy(),
         atol=8e-14,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho_new()),
-        np.asarray(prognostic_state_nnew.rho),
+        savepoint_nonhydro_exit.rho_new().asnumpy(),
+        prognostic_state_nnew.rho.asnumpy(),
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.rho_ic()),
-        np.asarray(diagnostic_state_nh.rho_ic),
+        savepoint_nonhydro_exit.rho_ic().asnumpy(),
+        diagnostic_state_nh.rho_ic.asnumpy(),
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.theta_v_ic()),
-        np.asarray(diagnostic_state_nh.theta_v_ic),
+        savepoint_nonhydro_exit.theta_v_ic().asnumpy(),
+        diagnostic_state_nh.theta_v_ic.asnumpy(),
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.mass_fl_e()),
-        np.asarray(diagnostic_state_nh.mass_fl_e),
+        savepoint_nonhydro_exit.mass_fl_e().asnumpy(),
+        diagnostic_state_nh.mass_fl_e.asnumpy(),
         rtol=1e-10,
     )
 
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.mass_flx_me()),
-        np.asarray(prep_adv.mass_flx_me),
+        savepoint_nonhydro_exit.mass_flx_me().asnumpy(),
+        prep_adv.mass_flx_me.asnumpy(),
         rtol=1e-10,
     )
     assert dallclose(
-        np.asarray(savepoint_nonhydro_exit.vn_traj()),
-        np.asarray(prep_adv.vn_traj),
+        savepoint_nonhydro_exit.vn_traj().asnumpy(),
+        prep_adv.vn_traj.asnumpy(),
         rtol=1e-10,
     )

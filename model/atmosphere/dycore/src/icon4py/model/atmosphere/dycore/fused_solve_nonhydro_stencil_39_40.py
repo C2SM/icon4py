@@ -52,6 +52,10 @@ def fused_solve_nonhydro_stencil_39_40(
     nlev: int32,
     nflatlev: int32,
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _fused_solve_nonhydro_stencil_39_40(
         e_bln_c_s,
@@ -61,5 +65,9 @@ def fused_solve_nonhydro_stencil_39_40(
         vert_idx,
         nlev,
         nflatlev,
-        out=w_concorr_c[:, -1:],
+        out=w_concorr_c,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
