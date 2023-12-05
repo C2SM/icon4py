@@ -12,7 +12,7 @@ stages:
 
 variables:
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
-  PYTHON_VERSION: 3.10
+  PYTHON_VERSION: "3.10"
 
 .build_template:
   stage: build
@@ -24,7 +24,7 @@ variables:
 
 .test_template:
   extends: .container-runner-clariden-a100
-  timeout: 2h
+  timeout: 8h
   image: $PERSIST_IMAGE_NAME
   before_script:
     - apt-get update
@@ -35,7 +35,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 2
-    SLURM_TIMELIMIT: '01:00:00'
+    SLURM_TIMELIMIT: '06:00:00'
 
 build_job:
   extends: .build_template
