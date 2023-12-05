@@ -32,6 +32,7 @@ variables:
     - cd /icon4py
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
+    - python -c "import cupy"
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
