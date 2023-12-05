@@ -57,3 +57,9 @@ benchmark_model_gtfn_cpu_simple_grid:
   stage: benchmark
   script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+
+benchmark_model_gtfn_gpu_simple_grid:
+  extends: .test_template
+  stage: benchmark
+  script:
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
