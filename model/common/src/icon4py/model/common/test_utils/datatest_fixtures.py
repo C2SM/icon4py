@@ -73,7 +73,7 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
-            download_and_extract(uri, destination_path, data_file)
+            download_and_extract(uri, ranked_data_path, destination_path, data_file)
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError:
