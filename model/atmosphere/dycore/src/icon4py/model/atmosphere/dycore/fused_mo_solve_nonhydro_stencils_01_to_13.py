@@ -198,17 +198,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     # )
 
     return (
-        z_exner_ex_pr,
-        exner_pr,
-        z_exner_ic,
-        z_dexner_dz_c_1,
         z_rth_pr_1,
         z_rth_pr_2,
-        rho_ic,
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
-        z_dexner_dz_c_2,
     )
 
 
@@ -348,17 +339,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
 ]:
     #if istep == 1:
     (
-        z_exner_ex_pr,
-        exner_pr,
-        z_exner_ic,
-        z_dexner_dz_c_1,
         z_rth_pr_1,
         z_rth_pr_2,
-        rho_ic,
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
-        z_dexner_dz_c_2,
     ) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         rho_nnow,
         rho_ref_mc,
@@ -436,17 +418,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
     #     )
 
     return (
-        z_exner_ex_pr,
-        exner_pr,
-        z_exner_ic,
-        z_dexner_dz_c_1,
         z_rth_pr_1,
         z_rth_pr_2,
-        rho_ic,
-        z_theta_v_pr_ic,
-        theta_v_ic,
-        z_th_ddz_exner_c,
-        z_dexner_dz_c_2,
     )
 
 
@@ -559,17 +532,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         nflatlev,
         nflat_gradp,
         out=(
-            z_exner_ex_pr,
-            exner_pr,
-            z_exner_ic,
-            z_dexner_dz_c_1,
             z_rth_pr_1,
             z_rth_pr_2,
-            rho_ic,
-            z_theta_v_pr_ic,
-            theta_v_ic,
-            z_th_ddz_exner_c,
-            z_dexner_dz_c_2,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
@@ -629,17 +593,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         nflatlev,
         nflat_gradp,
         out=(
-            z_exner_ex_pr,
-            exner_pr,
-            z_exner_ic,
-            z_dexner_dz_c_1,
             z_rth_pr_1,
             z_rth_pr_2,
-            rho_ic,
-            z_theta_v_pr_ic,
-            theta_v_ic,
-            z_th_ddz_exner_c,
-            z_dexner_dz_c_2,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
