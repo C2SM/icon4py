@@ -13,8 +13,6 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
-from icon4py.model.common.type_alias import vpfloat, wpfloat
-
 
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
@@ -41,6 +39,7 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     _mo_velocity_advection_stencil_07,
 )
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
