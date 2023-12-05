@@ -33,8 +33,8 @@ variables:
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
   variables:
-    SLURM_JOB_NUM_NODES: 2
-    SLURM_NTASKS: 2
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
     SLURM_TIMELIMIT: '06:00:00'
 
 build_job:
