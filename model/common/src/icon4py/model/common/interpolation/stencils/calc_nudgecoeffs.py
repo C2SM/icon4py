@@ -31,15 +31,20 @@ def _calc_nudgecoeffs(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calc_nudgecoeffs(
+    nudgecoeffs_e: Field[[EdgeDim], wpfloat],
     refin_ctrl: Field[[EdgeDim], int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
-    nudgecoeffs_e: Field[[EdgeDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32
 ):
     _calc_nudgecoeffs(
         refin_ctrl,
         grf_nudge_start_e,
         nudge_max_coeffs,
         out=nudgecoeffs_e,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end)
+        },
     )
 
