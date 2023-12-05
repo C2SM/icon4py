@@ -67,12 +67,14 @@ test py310:
     <<: *py310
 
 test_model_job_gtfn_cpu_simple_grid:
+  needs: ["test py310"]
   extends: test py310
   stage: test_cpu
   script:
     - tox -r -e py310 -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu --grid=simple_grid
 
 test_model_job_embedded_simple_grid:
+  needs: ["test_model_job_gtfn_cpu_simple_grid"]
   extends: test py310
   stage: test_embedded
   script:
