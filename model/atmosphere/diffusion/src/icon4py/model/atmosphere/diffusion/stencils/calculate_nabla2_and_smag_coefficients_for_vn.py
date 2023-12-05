@@ -123,8 +123,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
             wpfloat,
         )
         - wpfloat("2.0") * vn
-    ) * (inv_primal_edge_length**2)
-    # TODO(magdalena): change exponent back to int (workaround for gt4py)
+    ) * (inv_primal_edge_length * inv_primal_edge_length)
     z_nabla2_e_wp = z_nabla2_e_wp + (
         astype(
             astype(
@@ -140,7 +139,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
             wpfloat,
         )
         - wpfloat("2.0") * vn
-    ) * (inv_vert_vert_length**2)
+    ) * (inv_vert_vert_length * inv_vert_vert_length)
 
     z_nabla2_e_wp = wpfloat("4.0") * z_nabla2_e_wp
 
