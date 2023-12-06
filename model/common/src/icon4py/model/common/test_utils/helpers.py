@@ -124,6 +124,13 @@ def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -
     return as_field(dims, newarray)
 
 
+def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
+    """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
+    old_shape = np.asarray(field).shape
+    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
+    return np.asarray(field).reshape(new_shape)
+
+
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
