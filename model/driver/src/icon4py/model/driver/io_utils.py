@@ -23,9 +23,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    InterpolationState,
+    MetricStateNonHydro,
+    DiagnosticStateNonHydro,
+)
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
@@ -75,7 +77,6 @@ def read_icon_grid(
 
 # TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
 def model_initialization():
-
     # create two prognostic states, nnow and nnew?
     # at least two prognostic states are global because they are needed in the dycore, AND possibly nesting and restart processes in the future
     # one is enough for the JW test

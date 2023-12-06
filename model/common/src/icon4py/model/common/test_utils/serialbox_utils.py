@@ -24,9 +24,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    InterpolationState,
+    MetricStateNonHydro,
+    DiagnosticStateNonHydro,
+)
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
@@ -751,20 +753,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             div_ic=self.div_ic(),
             dwdx=self.dwdx(),
             dwdy=self.dwdy(),
-        )
-
-    def construct_diagnostics(self) -> DiagnosticState:
-        return DiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
-            vt=None,
-            vn_ie=None,
-            w_concorr_c=None,
-            ddt_w_adv_pc_before=None,
-            ddt_vn_apc_pc_before=None,
-            ntnd=None,
         )
 
 
