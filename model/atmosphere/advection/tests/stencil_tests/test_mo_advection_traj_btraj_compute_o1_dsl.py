@@ -47,7 +47,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         dual_normal_cell_2: np.array,
         p_dthalf: float,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         e2c = grid.connectivities[E2CDim]
         cell_idx = cell_idx.reshape(e2c.shape)
         cell_blk = cell_blk.reshape(e2c.shape)
@@ -143,4 +143,8 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
             p_dthalf=p_dthalf,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )

@@ -30,7 +30,7 @@ class TestMoSolveNonhydroStencil5663(StencilTest):
     @staticmethod
     def reference(
         grid, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
-    ) -> np.array:
+    ) -> dict:
         z_dwdz_dd = inv_ddqz_z_full * (
             (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
         )

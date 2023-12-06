@@ -45,7 +45,7 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         theta_v: np.array,
         z_temp: np.array,
         **kwargs,
-    ) -> np.array:
+    ) -> dict:
         c2e2c = grid.connectivities[C2E2CDim]
         shape = c2e2c.shape + vcoef.shape[1:]
         vcoef = vcoef.reshape(shape)

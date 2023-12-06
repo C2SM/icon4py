@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     temporary_field_for_grid_point_cold_pools_enhancement,
@@ -29,7 +30,7 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
     @staticmethod
     def reference(
         grid, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, smallest_vpfloat, **kwargs
-    ) -> np.array:
+    ) -> dict:
         c2e2c = grid.connectivities[C2E2CDim]
         tdiff = (
             theta_v
@@ -63,4 +64,8 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
             enh_diffu_3d=enh_diffu_3d,
             thresh_tdiff=thresh_tdiff,
             smallest_vpfloat=smallest_vpfloat,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(0),
+            vertical_end=int32(grid.num_levels),
         )
