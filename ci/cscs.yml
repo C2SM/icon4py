@@ -50,6 +50,18 @@ test_model_job_embedded_simple_grid:
   script:
     - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
 
+test_model_job_gtfn_cpu_simple_grid:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu -n auto
+
+test_model_job_gtfn_gpu_simple_grid:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_gpu -n auto
+
 test_tools_job:
   extends: .test_template
   stage: test

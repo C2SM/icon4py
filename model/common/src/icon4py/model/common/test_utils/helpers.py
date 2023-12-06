@@ -139,11 +139,12 @@ def _test_validation(self, grid, backend, input_data):
         },
     )
 
-    _allocate_field = constructors.as_field.partial(allocator=backend)
-    input_data = {
-        k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
-        for k, v in input_data.items()
-    }
+    if backend is not None:
+        _allocate_field = constructors.as_field.partial(allocator=backend)
+        input_data = {
+            k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
+            for k, v in input_data.items()
+        }
 
     self.PROGRAM.with_backend(backend)(
         **input_data,
@@ -163,11 +164,13 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
-            _allocate_field = constructors.as_field.partial(allocator=backend)
-            input_data = {
-                k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
-                for k, v in input_data.items()
-            }
+
+            if backend is not None:
+                _allocate_field = constructors.as_field.partial(allocator=backend)
+                input_data = {
+                    k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
+                    for k, v in input_data.items()
+                }
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,

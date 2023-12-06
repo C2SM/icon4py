@@ -42,8 +42,8 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default="embedded",
-            help="GT4Py backend to use when executing stencils. Defaults to embedded, other options include gtfn_cpu",
+            default=None,
+            help="GT4Py backend to use when executing stencils. Defaults to embedded backend, other options include gtfn_cpu, gtfn_gpu, embedded_ir",
         )
     except ValueError:
         pass
@@ -83,19 +83,18 @@ def pytest_generate_tests(metafunc):
         params = []
         ids = []
 
-        if backend_option == "gtfn_cpu":
+        if backend_option is None:
+            params.append(None)
+            ids.append("embedded")
+        elif backend_option == "gtfn_cpu":
             params.append(run_gtfn)
             ids.append("backend=gtfn_cpu")
-        elif backend_option == "embedded":
+        elif backend_option == "embedded_ir":
             params.append(run_embedded_iterator_ir)
-            ids.append("backend=embedded")
+            ids.append("backend=embedded_ir")
         elif backend_option == "gtfn_gpu":
             params.append(run_gtfn_gpu)
             ids.append("backend=gtfn_gpu")
-        else:
-            raise Exception(
-                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu', 'gtfn_gpu'] and pass it as an argument to --backend when invoking pytest."
-            )
 
         metafunc.parametrize("backend", params, ids=ids)
 
