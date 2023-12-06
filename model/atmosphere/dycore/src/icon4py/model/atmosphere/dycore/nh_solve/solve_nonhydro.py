@@ -141,9 +141,9 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     InterpolationState,
     MetricStateNonHydro,
     DiagnosticStateNonHydro,
+    PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,

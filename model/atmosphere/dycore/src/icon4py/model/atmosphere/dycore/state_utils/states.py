@@ -148,3 +148,10 @@ class MetricStateNonHydro:
     coeff1_dwdz: Field[[CellDim, KDim], float]
     coeff2_dwdz: Field[[CellDim, KDim], float]
     coeff_gradekin: Field[[ECDim], float]
+
+
+@dataclass
+class PrepAdvection:
+    vn_traj: Field[[EdgeDim, KDim], float]
+    mass_flx_me: Field[[EdgeDim, KDim], float]
+    mass_flx_ic: Field[[CellDim, KDim], float]
