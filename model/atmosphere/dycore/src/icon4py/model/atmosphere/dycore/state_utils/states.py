@@ -113,7 +113,7 @@ class MetricStateNonHydro:
     rayleigh_w: Field[[KDim], float]
 
     wgtfac_c: Field[[CellDim, KDim], float]
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float]
+    wgtfacq_c: Field[[CellDim, KDim], float]
     wgtfac_e: Field[[EdgeDim, KDim], float]
     wgtfacq_e_dsl: Field[[EdgeDim, KDim], float]
 

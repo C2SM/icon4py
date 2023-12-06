@@ -664,7 +664,7 @@ class SolveNonhydro:
 
         if self.config.igradp_method == 3:
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)(
-                wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
+                wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 z_exner_ic=self.z_exner_ic,
                 wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
@@ -709,7 +709,7 @@ class SolveNonhydro:
 
         # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)(
-            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
+            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             z_rth_pr=self.z_rth_pr_2,
             theta_ref_ic=self.metric_state_nonhydro.theta_ref_ic,
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
@@ -1088,7 +1088,7 @@ class SolveNonhydro:
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=self.z_w_concorr_me,
             wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
-            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
+            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             k_field=self.k_field,
             nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
