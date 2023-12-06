@@ -493,6 +493,10 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
+                vertical_start=0,
+                vertical_lower=self.grid.num_levels,
+                horizontal_lower=0,
+                horizontal_upper=end_cell_end,
                 offset_provider={},
             )
 

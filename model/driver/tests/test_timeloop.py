@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.states import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
@@ -33,6 +33,10 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.driver.dycore_driver import TimeLoop
+from icon4py.model.driver.serialbox_helpers import (
+    construct_interpolation_state_for_nonhydro,
+    construct_nh_metric_state,
+)
 
 
 # testing on MCH_CH_r04b09_dsl data
@@ -92,7 +96,7 @@ def test_run_timeloop_single_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     diffusion_interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+        interpolation_savepoint.construct_interpolation_state_for_diffusion(interpolation_savepoint)
     )
     diffusion_metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diffusion_diagnostic_state = (
@@ -157,10 +161,10 @@ def test_run_timeloop_single_step(
         wgt_nnew_vel=sp.wgt_nnew_vel(),
     )
 
-    nonhydro_interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    nonhydro_interpolation_state = construct_interpolation_state_for_nonhydro(
+        interpolation_savepoint
     )
-    nonhydro_metric_state = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
+    nonhydro_metric_state = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -270,7 +274,6 @@ def test_run_timeloop_single_step(
     )
 
     if debug_mode:
-
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_dir = script_dir + "/"
 
