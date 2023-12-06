@@ -23,7 +23,6 @@ from icon4py.model.common.dimension import (
     C2VDim,
     CECDim,
     CEDim,
-    CECDim,
     CellDim,
     E2C2EDim,
     E2C2EODim,
@@ -37,7 +36,6 @@ from icon4py.model.common.dimension import (
     V2CDim,
     V2EDim,
     VertexDim,
-    ECDim
 )
 from icon4py.model.common.grid.base import BaseGrid, GridConfig
 

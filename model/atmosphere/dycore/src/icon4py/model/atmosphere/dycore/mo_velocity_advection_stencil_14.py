@@ -18,6 +18,7 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     abs,
     astype,
     broadcast,
+    int32,
     where,
 )
 
@@ -70,6 +71,10 @@ def mo_velocity_advection_stencil_14(
     vcfl: Field[[CellDim, KDim], vpfloat],
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_velocity_advection_stencil_14(
         ddqz_z_half,
@@ -77,4 +82,8 @@ def mo_velocity_advection_stencil_14(
         cfl_w_limit,
         dtime,
         out=(cfl_clipping, vcfl, z_w_con_c),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

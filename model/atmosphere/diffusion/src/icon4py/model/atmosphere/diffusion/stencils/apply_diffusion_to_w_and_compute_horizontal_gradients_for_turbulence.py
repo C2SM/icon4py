@@ -39,8 +39,8 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     dwdy: Field[[CellDim, KDim], vpfloat],
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
-    vert_idx: Field[[KDim], int32],
-    horz_idx: Field[[CellDim], int32],
+    k: Field[[KDim], int32],
+    cell: Field[[CellDim], int32],
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
@@ -49,10 +49,10 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    vert_idx = broadcast(vert_idx, (CellDim, KDim))
+    k = broadcast(k, (CellDim, KDim))
 
     dwdx, dwdy = where(
-        int32(0) < vert_idx,
+        int32(0) < k,
         _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
         (dwdx, dwdy),
     )
@@ -60,16 +60,13 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
 
     w = where(
-        (interior_idx <= horz_idx) & (horz_idx < halo_idx),
+        (interior_idx <= cell) & (cell < halo_idx),
         _apply_nabla2_to_w(area, z_nabla2_c, geofac_n2s, w_old, diff_multfac_w),
         w_old,
     )
 
     w = where(
-        (int32(0) < vert_idx)
-        & (vert_idx < nrdmax)
-        & (interior_idx <= horz_idx)
-        & (horz_idx < halo_idx),
+        (int32(0) < k) & (k < nrdmax) & (interior_idx <= cell) & (cell < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
@@ -89,8 +86,8 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     dwdy: Field[[CellDim, KDim], vpfloat],
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
-    vert_idx: Field[[KDim], int32],
-    horz_idx: Field[[CellDim], int32],
+    k: Field[[KDim], int32],
+    cell: Field[[CellDim], int32],
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
@@ -109,8 +106,8 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         dwdy,
         diff_multfac_w,
         diff_multfac_n2w,
-        vert_idx,
-        horz_idx,
+        k,
+        cell,
         nrdmax,
         interior_idx,
         halo_idx,

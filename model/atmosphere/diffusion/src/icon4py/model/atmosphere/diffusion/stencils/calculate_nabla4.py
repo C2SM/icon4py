@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -35,9 +35,7 @@ def _calculate_nabla4(
         (
             u_vert_wp(E2C2V[0]) * primal_normal_vert_v1(E2ECV[0])
             + v_vert_wp(E2C2V[0]) * primal_normal_vert_v2(E2ECV[0])
-        )
-        + (
-            u_vert_wp(E2C2V[1]) * primal_normal_vert_v1(E2ECV[1])
+            + u_vert_wp(E2C2V[1]) * primal_normal_vert_v1(E2ECV[1])
             + v_vert_wp(E2C2V[1]) * primal_normal_vert_v2(E2ECV[1])
         ),
         vpfloat,
@@ -47,17 +45,16 @@ def _calculate_nabla4(
         (
             u_vert_wp(E2C2V[2]) * primal_normal_vert_v1(E2ECV[2])
             + v_vert_wp(E2C2V[2]) * primal_normal_vert_v2(E2ECV[2])
-        )
-        + (
-            u_vert_wp(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
+            + u_vert_wp(E2C2V[3]) * primal_normal_vert_v1(E2ECV[3])
             + v_vert_wp(E2C2V[3]) * primal_normal_vert_v2(E2ECV[3])
         ),
         vpfloat,
     )
     nabv_tang_wp, nabv_norm_wp = astype((nabv_tang_vp, nabv_norm_vp), wpfloat)
     z_nabla4_e2_wp = wpfloat("4.0") * (
-        (nabv_norm_wp - wpfloat("2.0") * z_nabla2_e) * inv_vert_vert_length**2
-        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e) * inv_primal_edge_length**2
+        (nabv_norm_wp - wpfloat("2.0") * z_nabla2_e) * (inv_vert_vert_length * inv_vert_vert_length)
+        + (nabv_tang_wp - wpfloat("2.0") * z_nabla2_e)
+        * (inv_primal_edge_length * inv_primal_edge_length)
     )
     return astype(z_nabla4_e2_wp, vpfloat)
 
@@ -72,6 +69,10 @@ def calculate_nabla4(
     inv_vert_vert_length: Field[[EdgeDim], wpfloat],
     inv_primal_edge_length: Field[[EdgeDim], wpfloat],
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calculate_nabla4(
         u_vert,
@@ -82,4 +83,8 @@ def calculate_nabla4(
         inv_vert_vert_length,
         inv_primal_edge_length,
         out=z_nabla4_e2,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

@@ -33,26 +33,26 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _fused_velocity_advection_stencil_8_to_13(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
+def _fused_velocity_advection_stencil_8_to_13_predictor(
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
     k: Field[[KDim], int32],
-    istep: int32,
     nlev: int32,
     nflatlev: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
 ]:
     z_ekinh = where(
         k < nlev,
@@ -60,26 +60,12 @@ def _fused_velocity_advection_stencil_8_to_13(
         z_ekinh,
     )
 
-    #z_w_concorr_mc = (
-    #    where(
-    #        nflatlev <= k < nlev,
-    #        _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
-    #        z_w_concorr_mc,
-    #    )
-    #    if istep == 1
-    #    else z_w_concorr_mc
-    #)
-
     z_w_concorr_mc = _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s)
 
-    w_concorr_c = (
-        where(
-            nflatlev + 1 <= k < nlev,
-            _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c),
-            w_concorr_c,
-        )
-        if istep == 1
-        else w_concorr_c
+    w_concorr_c = where(
+        nflatlev + 1 <= k < nlev,
+        _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c),
+        w_concorr_c,
     )
 
     z_w_con_c = where(
@@ -96,21 +82,113 @@ def _fused_velocity_advection_stencil_8_to_13(
 
     return z_ekinh, w_concorr_c, z_w_con_c
 
+
 @field_operator
-def _fused_velocity_advection_stencil_8_to_13_restricted(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
+def _fused_velocity_advection_stencil_8_to_13_corrector(
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    k: Field[[KDim], int32],
+    nlev: int32,
+    nflatlev: int32,
+) -> tuple[
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
+]:
+    z_ekinh = where(
+        k < nlev,
+        _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
+        z_ekinh,
+    )
+
+    z_w_con_c = where(
+        k < nlev,
+        _mo_velocity_advection_stencil_11(w),
+        _mo_velocity_advection_stencil_12(),
+    )
+
+    z_w_con_c = where(
+        nflatlev + 1 <= k < nlev,
+        _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
+        z_w_con_c,
+    )
+
+    return z_ekinh, w_concorr_c, z_w_con_c
+
+
+@field_operator
+def _fused_velocity_advection_stencil_8_to_13(
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
     k: Field[[KDim], int32],
     istep: int32,
     nlev: int32,
     nflatlev: int32,
-) -> Field[[CellDim, KDim], float]:
+) -> tuple[
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
+]:
+
+    z_ekinh, w_concorr_c, z_w_con_c = (
+        _fused_velocity_advection_stencil_8_to_13_predictor(
+            z_kin_hor_e,
+            e_bln_c_s,
+            z_w_concorr_me,
+            wgtfac_c,
+            w,
+            z_w_concorr_mc,
+            w_concorr_c,
+            z_ekinh,
+            k,
+            nlev,
+            nflatlev,
+        )
+        if istep == 1
+        else _fused_velocity_advection_stencil_8_to_13_corrector(
+            z_kin_hor_e,
+            e_bln_c_s,
+            z_w_concorr_me,
+            wgtfac_c,
+            w,
+            z_w_concorr_mc,
+            w_concorr_c,
+            z_ekinh,
+            k,
+            nlev,
+            nflatlev,
+        )
+    )
+
+    return z_ekinh, w_concorr_c, z_w_con_c
+
+@field_operator
+def _fused_velocity_advection_stencil_8_to_13_restricted(
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    k: Field[[KDim], int32],
+    istep: int32,
+    nlev: int32,
+    nflatlev: int32,
+) -> Field[[CellDim, KDim], vpfloat]:
 
     return _fused_velocity_advection_stencil_8_to_13(
         z_kin_hor_e,
@@ -129,15 +207,15 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_velocity_advection_stencil_8_to_13(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    z_w_concorr_mc: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_ekinh: Field[[CellDim, KDim], float],
-    z_w_con_c: Field[[CellDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
     k: Field[[KDim], int32],
     istep: int32,
     nlev: int32,
