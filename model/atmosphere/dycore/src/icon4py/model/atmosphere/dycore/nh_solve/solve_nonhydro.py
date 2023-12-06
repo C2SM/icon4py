@@ -493,11 +493,11 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
-                vertical_start=0,
-                vertical_lower=self.grid.num_levels,
-                horizontal_lower=0,
-                horizontal_upper=end_cell_end,
                 offset_provider={},
+                horizontal_start=0,
+                horizontal_end=end_cell_end,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
             )
 
             mo_solve_nonhydro_stencil_67.with_backend(backend)(
@@ -508,7 +508,7 @@ class SolveNonhydro:
                 rd_o_p0ref=self.params.rd_o_p0ref,
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
-                vertical_start=0,
+                vertical_start=int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
