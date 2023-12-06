@@ -56,9 +56,9 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
     InterpolationState,
     MetricStateNonHydro,
-    DiagnosticStateNonHydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim

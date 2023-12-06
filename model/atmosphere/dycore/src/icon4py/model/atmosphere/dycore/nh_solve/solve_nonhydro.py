@@ -137,13 +137,13 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
+from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
     InterpolationState,
     MetricStateNonHydro,
-    DiagnosticStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,

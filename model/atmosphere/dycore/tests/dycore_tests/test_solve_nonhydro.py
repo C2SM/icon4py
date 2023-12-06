@@ -20,11 +20,11 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
+from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _calculate_bdy_divdamp,
@@ -38,10 +38,9 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import dallclose
-from .utils import (
-    construct_interpolation_state_for_nonhydro,
-    construct_nh_metric_state,
-)
+
+from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metric_state
+
 
 backend = run_gtfn
 
@@ -679,7 +678,7 @@ def test_nonhydro_corrector_step(
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,  istep_exit, jstep_exit,step_date_exit, vn_only",
     [
-        # (1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000", False),
+        (1, 0, "2021-06-20T12:00:10.000", 2, 0, "2021-06-20T12:00:10.000", False),
         (1, 0, "2021-06-20T12:00:20.000", 2, 0, "2021-06-20T12:00:20.000", True),
     ],
 )
