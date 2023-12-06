@@ -16,14 +16,14 @@ from typing import ClassVar, Optional
 import numpy as np
 import numpy.typing as npt
 import pytest
-
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import constructors
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
+from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
 
 from ..grid.base import BaseGrid
+
 
 try:
     import pytest_benchmark
@@ -163,6 +163,11 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
+            _allocate_field = constructors.as_field.partial(allocator=backend)
+            input_data = {
+                k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
+                for k, v in input_data.items()
+            }
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
