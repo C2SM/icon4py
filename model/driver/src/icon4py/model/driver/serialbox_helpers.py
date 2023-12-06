@@ -68,7 +68,7 @@ def construct_nh_metric_state(savepoint: MetricSavepoint, num_k_lev) -> MetricSt
         ddqz_z_full_e=savepoint.ddqz_z_full_e(),
         ddxt_z_full=savepoint.ddxt_z_full(),
         wgtfac_e=savepoint.wgtfac_e(),
-        wgtfacq_e_dsl=savepoint.wgtfacq_e_dsl(num_k_lev),
+        wgtfacq_e=savepoint.wgtfacq_e_dsl(num_k_lev),
         vwind_impl_wgt=savepoint.vwind_impl_wgt(),
         hmask_dd3d=savepoint.hmask_dd3d(),
         scalfac_dd3d=savepoint.scalfac_dd3d(),

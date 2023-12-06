@@ -251,7 +251,7 @@ class VelocityAdvection:
             offset_provider={},
         )
         velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)(
-            wgtfacq_e=self.metric_state.wgtfacq_e_dsl,
+            wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
             horizontal_start=start_edge_lb_plus4,

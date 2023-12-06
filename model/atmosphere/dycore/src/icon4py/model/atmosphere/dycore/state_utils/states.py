@@ -115,7 +115,7 @@ class MetricStateNonHydro:
     wgtfac_c: Field[[CellDim, KDim], float]
     wgtfacq_c: Field[[CellDim, KDim], float]
     wgtfac_e: Field[[EdgeDim, KDim], float]
-    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float]
+    wgtfacq_e: Field[[EdgeDim, KDim], float]
 
     exner_exfac: Field[[CellDim, KDim], float]
     exner_ref_mc: Field[[CellDim, KDim], float]

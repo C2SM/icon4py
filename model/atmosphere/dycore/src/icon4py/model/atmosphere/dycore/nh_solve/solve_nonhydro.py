@@ -1074,7 +1074,7 @@ class SolveNonhydro:
                 vn_ie=diagnostic_state_nh.vn_ie,
                 z_vt_ie=z_fields.z_vt_ie,
                 z_kin_hor_e=z_fields.z_kin_hor_e,
-                wgtfacq_e_dsl=self.metric_state_nonhydro.wgtfacq_e_dsl,
+                wgtfacq_e_dsl=self.metric_state_nonhydro.wgtfacq_e,
                 k_field=self.k_field,
                 nlev=self.grid.num_levels,
                 horizontal_start=start_edge_lb_plus4,
