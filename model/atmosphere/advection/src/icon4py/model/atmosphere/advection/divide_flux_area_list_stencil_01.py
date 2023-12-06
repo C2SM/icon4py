@@ -33,7 +33,6 @@ def ccw(
     p2_lon: Field[[EdgeDim, KDim], float],
     p2_lat: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], int32]:
-
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -60,7 +59,6 @@ def lintersect(
     line2_p2_lon: Field[[EdgeDim, KDim], float],
     line2_p2_lat: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], bool]:
-
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -108,7 +106,6 @@ def line_intersect(
     line2_p2_lon: Field[[EdgeDim, KDim], float],
     line2_p2_lat: Field[[EdgeDim, KDim], float],
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-
     m1 = (line1_p2_lat - line1_p1_lat) / (line1_p2_lon - line1_p1_lon)
     m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
 
@@ -159,7 +156,6 @@ def _divide_flux_area_list_stencil_01(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-
     arrival_pts_1_lon_dsl = dreg_patch0_1_lon_dsl
     arrival_pts_1_lat_dsl = dreg_patch0_1_lat_dsl
     arrival_pts_2_lon_dsl = dreg_patch0_2_lon_dsl

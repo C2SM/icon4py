@@ -39,7 +39,6 @@ def ccw(
     p2_lon: np.array,
     p2_lat: np.array,
 ) -> np.array:
-
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -65,7 +64,6 @@ def lintersect(
     line2_p2_lon: np.array,
     line2_p2_lat: np.array,
 ) -> np.array:
-
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -112,7 +110,6 @@ def line_intersect(
     line2_p2_lon: np.array,
     line2_p2_lat: np.array,
 ) -> tuple[np.array]:
-
     m1 = (line1_p2_lat - line1_p1_lat) / (line1_p2_lon - line1_p1_lon)
     m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
 

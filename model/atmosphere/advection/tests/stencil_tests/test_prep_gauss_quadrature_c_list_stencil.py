@@ -65,7 +65,6 @@ def prep_gauss_quadrature_c_list_stencil_numpy(
     eps: float,
     p_dreg_area_in: np.array,
 ) -> tuple[np.ndarray]:
-
     z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
     z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
     z_wgt_3 = 0.0625 * wgt_zeta_2 * wgt_eta_1
