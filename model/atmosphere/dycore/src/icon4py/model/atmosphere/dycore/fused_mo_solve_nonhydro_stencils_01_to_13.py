@@ -79,6 +79,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
 ]:
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
@@ -94,19 +96,19 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     else (z_rth_pr_1, z_rth_pr_2)
     )
 
-    # (z_exner_ex_pr, exner_pr) = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02), # & (vert_idx < (n_lev + int32(1))),
-    #     _predictor_stencils_2_3(
-    #         exner_exfac=exner_exfac,
-    #         exner=exner_nnow,
-    #         exner_ref_mc=exner_ref_mc,
-    #         exner_pr=exner_pr,
-    #         z_exner_ex_pr=z_exner_ex_pr,
-    #         k_field=vert_idx_1d,
-    #         nlev=n_lev,
-    #     ),
-    #     (z_exner_ex_pr, exner_pr),
-    # )
+    (z_exner_ex_pr, exner_pr) = where(
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02), # & (vert_idx < (n_lev + int32(1))),
+        _predictor_stencils_2_3(
+            exner_exfac=exner_exfac,
+            exner=exner_nnow,
+            exner_ref_mc=exner_ref_mc,
+            exner_pr=exner_pr,
+            z_exner_ex_pr=z_exner_ex_pr,
+            k_field=vert_idx_1d,
+            nlev=n_lev,
+        ),
+        (z_exner_ex_pr, exner_pr),
+    )
 
     # vert_start = maximum(1, nflatlev)
     # if igradp_method == 3:
@@ -191,6 +193,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     return (
         z_rth_pr_1,
         z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
     )
 
 
@@ -318,11 +322,15 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
 ) -> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
 ]:
     #if istep == 1:
     (
         z_rth_pr_1,
         z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
     ) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         rho_nnow,
         rho_ref_mc,
@@ -402,6 +410,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
     return (
         z_rth_pr_1,
         z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
     )
 
 
@@ -516,6 +526,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         out=(
             z_rth_pr_1,
             z_rth_pr_2,
+            z_exner_ex_pr,
+            exner_pr,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
@@ -577,6 +589,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         out=(
             z_rth_pr_1,
             z_rth_pr_2,
+            z_exner_ex_pr,
+            exner_pr,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
