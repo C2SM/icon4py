@@ -97,7 +97,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     )
 
     (z_exner_ex_pr, exner_pr) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02), # & (vert_idx < (n_lev + int32(1))),
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx < (n_lev + int32(1))),
         _predictor_stencils_2_3(
             exner_exfac=exner_exfac,
             exner=exner_nnow,
