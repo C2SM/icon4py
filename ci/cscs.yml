@@ -48,23 +48,22 @@ test_model_job_embedded_ir_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=embedded_ir -n auto
+    - tox -r -c model/ --verbose -- --benchmark-skip --backend=embedded_ir -n auto
 
 test_tools_job:
   extends: .test_template
   stage: test
   script:
-    - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
-
-benchmark_model_gtfn_gpu_simple_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - tox -r -e benchmark py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
+    - tox -r -c tools/ --verbose
 
 benchmark_model_gtfn_cpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
-      - tox -r -e benchmark py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
-    
+      - tox -r -e benchmark -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+
+benchmark_model_gtfn_gpu_simple_grid:
+  extends: .test_template
+  stage: benchmark
+  script:
+    - tox -r -e benchmark -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
