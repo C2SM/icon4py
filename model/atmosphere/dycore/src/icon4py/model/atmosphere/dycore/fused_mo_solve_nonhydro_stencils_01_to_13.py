@@ -531,7 +531,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
         n_lev,
         nflatlev,
         nflat_gradp,
-    )
+    )[2]
 
     return z_exner_ex_pr
 
