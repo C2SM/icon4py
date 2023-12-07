@@ -96,7 +96,7 @@ def test_run_timeloop_single_step(
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     diffusion_interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion(interpolation_savepoint)
+        interpolation_savepoint.construct_interpolation_state_for_diffusion()
     )
     diffusion_metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
     diffusion_diagnostic_state = (
