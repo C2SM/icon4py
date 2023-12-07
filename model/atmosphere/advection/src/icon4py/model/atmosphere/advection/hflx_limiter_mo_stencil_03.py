@@ -53,7 +53,6 @@ def _hflx_limiter_mo_stencil_03a(
     z_min: Field[[CellDim, KDim], float],
     dbl_eps: float,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-
     r_p = (z_max - z_tracer_new_low) / (z_mflx_anti_in + dbl_eps)
     r_m = (z_tracer_new_low - z_min) / (z_mflx_anti_out + dbl_eps)
 
@@ -71,7 +70,6 @@ def _hflx_limiter_mo_stencil_03(
     z_tracer_new_low: Field[[CellDim, KDim], float],
     dbl_eps: float,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-
     z_max, z_min = _hflx_limiter_mo_stencil_03_min_max(
         z_tracer_max, z_tracer_min, beta_fct, r_beta_fct
     )
@@ -100,7 +98,6 @@ def hflx_limiter_mo_stencil_03(
     r_p: Field[[CellDim, KDim], float],
     r_m: Field[[CellDim, KDim], float],
 ):
-
     _hflx_limiter_mo_stencil_03(
         z_tracer_max,
         z_tracer_min,

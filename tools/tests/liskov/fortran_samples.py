@@ -351,7 +351,7 @@ MULTIPLE_FUSED = """\
         !$DSL     diff_multfac_vn=diff_multfac_vn(:); &
         !$DSL     nudgecoeff_e=p_int%nudgecoeff_e(:,1); &
         !$DSL     vn=p_nh_prog%vn(:,:,1); &
-        !$DSL     horz_idx=horz_idx(:); &
+        !$DSL     edge=horizontal_idx(:); &
         !$DSL     nudgezone_diff=nudgezone_diff; &
         !$DSL     fac_bdydiff_v=fac_bdydiff_v; &
         !$DSL     start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e-1; &
@@ -407,8 +407,8 @@ MULTIPLE_FUSED = """\
         !$DSL       area=p_patch%cells%area(:,1); geofac_grg_x=p_int%geofac_grg(:,:,1,1); &
         !$DSL       geofac_grg_y=p_int%geofac_grg(:,:,1,2); geofac_n2s=p_int%geofac_n2s(:,:,1); &
         !$DSL       w_old=w_old(:,:,1); w=p_nh_prog%w(:,:,1); diff_multfac_w=diff_multfac_w; &
-        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); vert_idx=vert_idx(:); &
-        !$DSL       horz_idx=horz_idx(:); nrdmax=nrdmax(jg); interior_idx=start_interior_idx_c-1; &
+        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); k=vertical_idx(:); &
+        !$DSL       cell=horizontal_idx(:); nrdmax=nrdmax(jg); interior_idx=start_interior_idx_c-1; &
         !$DSL       halo_idx=end_interior_idx_c; dwdx=p_nh_diag%dwdx(:,:,1); &
         !$DSL       dwdy=p_nh_diag%dwdy(:,:,1); &
         !$DSL       w_rel_tol=1e-09_wp; dwdx_rel_tol=1e-09_wp; dwdy_abs_tol=1e-09_wp; &

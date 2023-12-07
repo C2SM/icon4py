@@ -29,7 +29,7 @@ variables:
   variables:
     SLURM_JOB_NUM_NODES: 2
     SLURM_NTASKS: 2
-    SLURM_TIMELIMIT: '01:00:00'
+    SLURM_TIMELIMIT: '02:00:00'
 
 build_job:
   extends: .build_template
