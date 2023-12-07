@@ -13,46 +13,54 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_09(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], vpfloat],
 ]:
-    z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2(Koff[-1])
-    theta_v_ic = wgtfac_c * theta_v + (1.0 - wgtfac_c) * theta_v(Koff[-1])
-    z_th_ddz_exner_c = (
-        vwind_expl_wgt * theta_v_ic * (exner_pr(Koff[-1]) - exner_pr) / ddqz_z_half
-        + z_theta_v_pr_ic * d_exner_dz_ref_ic
+    wgtfac_c_wp, z_rth_pr_2_wp, d_exner_dz_ref_ic_wp, ddqz_z_half_wp = astype(
+        (wgtfac_c, z_rth_pr_2, d_exner_dz_ref_ic, ddqz_z_half), wpfloat
     )
-    return z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
+
+    z_theta_v_pr_ic_vp = wgtfac_c * z_rth_pr_2 + (vpfloat("1.0") - wgtfac_c) * z_rth_pr_2(Koff[-1])
+    theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
+    z_th_ddz_exner_c_wp = vwind_expl_wgt * theta_v_ic_wp * (
+        exner_pr(Koff[-1]) - exner_pr
+    ) / ddqz_z_half_wp + astype(z_theta_v_pr_ic_vp * d_exner_dz_ref_ic, wpfloat)
+    return z_theta_v_pr_ic_vp, theta_v_ic_wp, astype(z_th_ddz_exner_c_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_09(
-    wgtfac_c: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+    d_exner_dz_ref_ic: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_09(
         wgtfac_c,
@@ -62,5 +70,9 @@ def mo_solve_nonhydro_stencil_09(
         exner_pr,
         d_exner_dz_ref_ic,
         ddqz_z_half,
-        out=(z_theta_v_pr_ic[:, 1:], theta_v_ic[:, 1:], z_th_ddz_exner_c[:, 1:]),
+        out=(z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

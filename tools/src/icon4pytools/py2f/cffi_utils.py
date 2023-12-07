@@ -15,12 +15,12 @@ import inspect
 from collections import OrderedDict
 from importlib.resources import files
 from types import MappingProxyType
-from typing import Any
+from typing import Any, Sequence
 
 import cffi
+import gt4py.next as gtx
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4pytools.py2f.typing_utils import parse_annotation
 
@@ -108,7 +108,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
     ffi = cffi.FFI()
     dim_sizes = dim_sizes
 
-    def _dim_sizes(dims: list[Dimension]) -> tuple[int | None, int | None]:
+    def _dim_sizes(dims: Sequence[Dimension]) -> tuple[int | None, int | None]:
         """Extract the size of dimension from a dictionary."""
         v_size = None
         h_size = None
@@ -138,7 +138,6 @@ def to_fields(dim_sizes: dict[Dimension, int]):
         length = np.prod(shape)
         c_type = ffi.getctype(ffi.typeof(ptr).item)
         # TODO (magdalena) fix dtype handling use SCALARTYPE?
-        mem_size = ffi.sizeof(c_type)
         mem_size = np.dtype(c_type).itemsize
         ar = np.frombuffer(  # type: ignore[call-overload]
             ffi.buffer(ptr, length * mem_size),
@@ -167,7 +166,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
             if dims:
                 (size_h, size_v) = _dim_sizes(dims)
                 ar = _unpack(argument, size_h, size_v, dtype)
-                ar = np_as_located_field(*dims)(ar)
+                ar = gtx.as_field(domain=dims, data=ar, dtype=ar.dtype)
             else:
                 ar = argument
             return ar

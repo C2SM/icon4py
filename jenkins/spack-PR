@@ -20,10 +20,18 @@ def map_srun = [
 
 pipeline {
     agent none
+    options{
+        timeout(time: 3, unit: 'HOURS')
+    }
     stages {
         stage('Tests') {
             matrix {
-                agent { label "${NODENAME}" }
+                agent {
+                node {
+                      label "${NODENAME}" 
+                      customWorkspace "workspace/EXCLAIM/icon4py/icon4py-spack-PR_${BUILD_NUMBER}"
+                    }
+                }
                 axes {
                     axis {
                         name 'NODENAME'

@@ -13,37 +13,58 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_40(
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfacq_c: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_w_concorr_me_offset_1 = z_w_concorr_me(Koff[-1])
-    z_w_concorr_me_offset_2 = z_w_concorr_me(Koff[-2])
-    z_w_concorr_me_offset_3 = z_w_concorr_me(Koff[-3])
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfacq_c: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
 
-    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
-    z_w_concorr_mc_m2 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_2(C2E), axis=C2EDim)
-    z_w_concorr_mc_m3 = neighbor_sum(e_bln_c_s * z_w_concorr_me_offset_3(C2E), axis=C2EDim)
+    z_w_concorr_me_offset_1 = z_w_concorr_me_wp(Koff[-1])
+    z_w_concorr_me_offset_2 = z_w_concorr_me_wp(Koff[-2])
+    z_w_concorr_me_offset_3 = z_w_concorr_me_wp(Koff[-3])
 
-    return (
-        wgtfacq_c(Koff[-1]) * z_w_concorr_mc_m1
-        + wgtfacq_c(Koff[-2]) * z_w_concorr_mc_m2
-        + wgtfacq_c(Koff[-3]) * z_w_concorr_mc_m3
+    z_w_concorr_mc_m1 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_1(C2E), axis=C2EDim)
+    z_w_concorr_mc_m2 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_2(C2E), axis=C2EDim)
+    z_w_concorr_mc_m3 = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_offset_3(C2E), axis=C2EDim)
+
+    z_w_concorr_mc_m1_vp = astype(z_w_concorr_mc_m1, vpfloat)
+    z_w_concorr_mc_m2_vp = astype(z_w_concorr_mc_m2, vpfloat)
+    z_w_concorr_mc_m3_vp = astype(z_w_concorr_mc_m3, vpfloat)
+    w_concorr_c_vp = (
+        wgtfacq_c(Koff[-1]) * z_w_concorr_mc_m1_vp
+        + wgtfacq_c(Koff[-2]) * z_w_concorr_mc_m2_vp
+        + wgtfacq_c(Koff[-3]) * z_w_concorr_mc_m3_vp
     )
+
+    return w_concorr_c_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_40(
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfacq_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfacq_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c, out=w_concorr_c[:, -1:])
+    _mo_solve_nonhydro_stencil_40(
+        e_bln_c_s,
+        z_w_concorr_me,
+        wgtfacq_c,
+        out=w_concorr_c,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

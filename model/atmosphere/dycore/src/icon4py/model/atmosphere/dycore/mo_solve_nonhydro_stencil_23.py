@@ -13,51 +13,60 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_23(
-    vn_nnow: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float],
-    ddt_vn_phy: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
-    dtime: float,
-    wgt_nnow_vel: float,
-    wgt_nnew_vel: float,
-    cpd: float,
-) -> Field[[EdgeDim, KDim], float]:
-    vn_nnew = vn_nnow + dtime * (
-        wgt_nnow_vel * ddt_vn_adv_ntl1
-        + wgt_nnew_vel * ddt_vn_adv_ntl2
-        + ddt_vn_phy
-        - cpd * z_theta_v_e * z_gradh_exner
+    vn_nnow: Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    dtime: wpfloat,
+    wgt_nnow_vel: wpfloat,
+    wgt_nnew_vel: wpfloat,
+    cpd: wpfloat,
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    ddt_vn_phy_wp, z_gradh_exner_wp, ddt_vn_apc_ntl1_wp, ddt_vn_apc_ntl2_wp = astype(
+        (ddt_vn_phy, z_gradh_exner, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2), wpfloat
     )
-    return vn_nnew
+
+    vn_nnew_wp = vn_nnow + dtime * (
+        wgt_nnow_vel * ddt_vn_apc_ntl1_wp
+        + wgt_nnew_vel * ddt_vn_apc_ntl2_wp
+        + ddt_vn_phy_wp
+        - cpd * z_theta_v_e * z_gradh_exner_wp
+    )
+    return vn_nnew_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_23(
-    vn_nnow: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv_ntl1: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv_ntl2: Field[[EdgeDim, KDim], float],
-    ddt_vn_phy: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
-    z_gradh_exner: Field[[EdgeDim, KDim], float],
-    vn_nnew: Field[[EdgeDim, KDim], float],
-    dtime: float,
-    wgt_nnow_vel: float,
-    wgt_nnew_vel: float,
-    cpd: float,
+    vn_nnow: Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    vn_nnew: Field[[EdgeDim, KDim], wpfloat],
+    dtime: wpfloat,
+    wgt_nnow_vel: wpfloat,
+    wgt_nnew_vel: wpfloat,
+    cpd: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_23(
         vn_nnow,
-        ddt_vn_adv_ntl1,
-        ddt_vn_adv_ntl2,
+        ddt_vn_apc_ntl1,
+        ddt_vn_apc_ntl2,
         ddt_vn_phy,
         z_theta_v_e,
         z_gradh_exner,
@@ -66,4 +75,8 @@ def mo_solve_nonhydro_stencil_23(
         wgt_nnew_vel,
         cpd,
         out=vn_nnew,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

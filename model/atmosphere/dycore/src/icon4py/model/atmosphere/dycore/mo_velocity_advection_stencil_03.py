@@ -13,25 +13,40 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_03(
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt(Koff[-1])
+    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    wgtfac_e_wp, vt_wp = astype((wgtfac_e, vt), wpfloat)
 
-    return z_vt_ie
+    z_vt_ie_wp = astype(wgtfac_e * vt, wpfloat) + (wpfloat("1.0") - wgtfac_e_wp) * vt_wp(Koff[-1])
+
+    return astype(z_vt_ie_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_03(
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+    z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_03(wgtfac_e, vt, out=z_vt_ie[:, 1:])
+    _mo_velocity_advection_stencil_03(
+        wgtfac_e,
+        vt,
+        out=z_vt_ie,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

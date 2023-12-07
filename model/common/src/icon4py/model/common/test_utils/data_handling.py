@@ -17,7 +17,7 @@ from pathlib import Path
 import wget
 
 
-def download_and_extract(uri: str, local_path: Path, data_file: str) -> None:
+def download_and_extract(uri: str, local_path: Path, data_file: str):
     local_path.mkdir(parents=True, exist_ok=True)
     if not any(local_path.iterdir()):
         print(f"directory {local_path} is empty: downloading data from {uri} and extracting")

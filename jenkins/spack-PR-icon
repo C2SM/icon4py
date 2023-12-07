@@ -6,7 +6,7 @@ def spack_fork = "C2SM"
 def spack_branch = "main"
 
 def gt4py_fork = "GridTools"
-def gt4py_branch = "icon4py_20230621"
+def gt4py_branch = "icon4py_20231124"
 def gt4py_default = true
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
@@ -39,7 +39,12 @@ pipeline {
     stages {
         stage('Tests') {
             matrix {
-                agent { label "${NODENAME}" }
+                agent { 
+                    node {
+                      label "${NODENAME}" 
+                      customWorkspace "workspace/EXCLAIM/icon4py/icon4py-spack-PR-icon_${BUILD_NUMBER}"
+                    }
+                }
                 axes {
                     axis {
                         name 'NODENAME'

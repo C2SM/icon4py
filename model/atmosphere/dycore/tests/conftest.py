@@ -11,23 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
-from icon4py.model.common.test_utils.fixtures import (  # noqa F401
-    backend,
-    damping_height,
-    data_provider,
-    datapath,
-    download_ser_data,
-    grid_savepoint,
-    icon_grid,
-    linit,
-    mesh,
-    step_date_exit,
-    step_date_init,
+from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
+    grid,
 )
-from icon4py.model.common.test_utils.pytest_config import (  # noqa: F401
-    pytest_addoption,
-    pytest_configure,
-    pytest_generate_tests,
-    pytest_runtest_setup,
+from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
+    backend,
 )

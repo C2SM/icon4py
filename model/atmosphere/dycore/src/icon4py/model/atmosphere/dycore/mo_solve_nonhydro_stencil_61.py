@@ -13,43 +13,48 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_61(
-    rho_now: Field[[CellDim, KDim], float],
-    grf_tend_rho: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    grf_tend_thv: Field[[CellDim, KDim], float],
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    dtime: float,
+    rho_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_rho: Field[[CellDim, KDim], wpfloat],
+    theta_v_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_thv: Field[[CellDim, KDim], wpfloat],
+    w_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_w: Field[[CellDim, KDim], wpfloat],
+    dtime: wpfloat,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
 ]:
-    rho_new = rho_now + dtime * grf_tend_rho
-    exner_new = theta_v_now + dtime * grf_tend_thv
-    w_new = w_now + dtime * grf_tend_w
-    return rho_new, exner_new, w_new
+    rho_new_wp = rho_now + dtime * grf_tend_rho
+    exner_new_wp = theta_v_now + dtime * grf_tend_thv
+    w_new_wp = w_now + dtime * grf_tend_w
+    return rho_new_wp, exner_new_wp, w_new_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_61(
-    rho_now: Field[[CellDim, KDim], float],
-    grf_tend_rho: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    grf_tend_thv: Field[[CellDim, KDim], float],
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    rho_new: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    dtime: float,
+    rho_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_rho: Field[[CellDim, KDim], wpfloat],
+    theta_v_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_thv: Field[[CellDim, KDim], wpfloat],
+    w_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_w: Field[[CellDim, KDim], wpfloat],
+    rho_new: Field[[CellDim, KDim], wpfloat],
+    exner_new: Field[[CellDim, KDim], wpfloat],
+    w_new: Field[[CellDim, KDim], wpfloat],
+    dtime: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_61(
         rho_now,
@@ -60,4 +65,8 @@ def mo_solve_nonhydro_stencil_61(
         grf_tend_w,
         dtime,
         out=(rho_new, exner_new, w_new),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

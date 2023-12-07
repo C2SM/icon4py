@@ -13,28 +13,45 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_04(
-    vn: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
-    return z_w_concorr_me
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
+    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    ddxn_z_full_wp = astype(ddxn_z_full, wpfloat)
+
+    z_w_concorr_me_wp = vn * ddxn_z_full_wp + astype(vt * ddxt_z_full, wpfloat)
+    return astype(z_w_concorr_me_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_04(
-    vn: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
+    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt, out=z_w_concorr_me)
+    _mo_velocity_advection_stencil_04(
+        vn,
+        ddxn_z_full,
+        ddxt_z_full,
+        vt,
+        out=z_w_concorr_me,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

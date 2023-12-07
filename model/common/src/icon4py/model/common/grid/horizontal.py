@@ -15,25 +15,28 @@ from typing import Final
 
 from gt4py.next.common import Dimension, Field
 
-from icon4py.model.common.dimension import CellDim, ECVDim, EdgeDim, VertexDim
+from icon4py.model.common import dimension
+from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
 
 
 class HorizontalMarkerIndex:
     """
     Handles constants indexing into the start_index and end_index fields.
 
-    ICON uses a double indexing scheme for field indices marking the start and end of special
-    grid zone: The constants defined here (from mo_impl_constants.f90 and mo_impl_constants_grf.f90)
-    are the indices that are used to index into the start_idx and end_idx arrays
-    provided by the grid file where for each dimension the start index of the horizontal
-    "zones" are defined:
-    f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the lateral boundary zone would be
+     ICON uses a double indexing scheme for field indices marking the start and end of special
+     grid zone: The constants defined here (from mo_impl_constants.f90 and mo_impl_constants_grf.f90)
+     are the indices that are used to index into the start_idx and end_idx arrays
+     provided by the grid file where for each dimension the start index of the horizontal
+     "zones" are defined:
+     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the lateral boundary zone would be
 
-    F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
+     F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
 
-    ICON uses a custom index range from [ICON_INDEX_OFFSET... ] such that the index 0 marks the
-    internal entities for _all_ dimensions (Cell, Edge, Vertex) that is why we define these
-    additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
+
+     ICON uses a custom index range from [ICON_INDEX_OFFSET... ] such that the index 0 marks the
+     internal entities for _all_ dimensions (Cell, Edge, Vertex) that is why we define these
+     additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
+
     """
 
     NUM_GHOST_ROWS: Final[int] = 2
@@ -77,34 +80,34 @@ class HorizontalMarkerIndex:
     _END_VERTICES: Final[int] = 0
 
     _lateral_boundary = {
-        CellDim: _LATERAL_BOUNDARY_CELLS,
-        EdgeDim: _LATERAL_BOUNDARY_EDGES,
-        VertexDim: _LATERAL_BOUNDARY_VERTICES,
+        dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
+        dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
+        dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
     _local = {
-        CellDim: _LOCAL_CELLS,
-        EdgeDim: _LOCAL_EDGES,
-        VertexDim: _LOCAL_VERTICES,
+        dimension.CellDim: _LOCAL_CELLS,
+        dimension.EdgeDim: _LOCAL_EDGES,
+        dimension.VertexDim: _LOCAL_VERTICES,
     }
     _halo = {
-        CellDim: _HALO_CELLS,
-        EdgeDim: _HALO_EDGES,
-        VertexDim: _HALO_VERTICES,
+        dimension.CellDim: _HALO_CELLS,
+        dimension.EdgeDim: _HALO_EDGES,
+        dimension.VertexDim: _HALO_VERTICES,
     }
     _interior = {
-        CellDim: _INTERIOR_CELLS,
-        EdgeDim: _INTERIOR_EDGES,
-        VertexDim: _INTERIOR_VERTICES,
+        dimension.CellDim: _INTERIOR_CELLS,
+        dimension.EdgeDim: _INTERIOR_EDGES,
+        dimension.VertexDim: _INTERIOR_VERTICES,
     }
     _nudging = {
-        CellDim: _NUDGING_CELLS,
-        EdgeDim: _NUDGING_EDGES,
-        VertexDim: _NUDGING_VERTICES,
+        dimension.CellDim: _NUDGING_CELLS,
+        dimension.EdgeDim: _NUDGING_EDGES,
+        dimension.VertexDim: _NUDGING_VERTICES,
     }
     _end = {
-        CellDim: _END_CELLS,
-        EdgeDim: _END_EDGES,
-        VertexDim: _END_VERTICES,
+        dimension.CellDim: _END_CELLS,
+        dimension.EdgeDim: _END_EDGES,
+        dimension.VertexDim: _END_VERTICES,
     }
 
     @classmethod
@@ -147,9 +150,6 @@ class HorizontalGridSize:
     num_cells: int
 
 
-# TODO(Magdalena): allow initialization with only partial values
-#  (becomes tedious for testing otherwise): hence this should
-#  that should not be a data class
 class EdgeParams:
     def __init__(
         self,
@@ -163,9 +163,13 @@ class EdgeParams:
         primal_normal_vert_y=None,
         dual_normal_vert_x=None,
         dual_normal_vert_y=None,
+        primal_normal_cell_x=None,
+        dual_normal_cell_x=None,
+        primal_normal_cell_y=None,
+        dual_normal_cell_y=None,
         edge_areas=None,
+        f_e=None,
     ):
-
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
         r"""
         Orientation of vector product of the edge and the adjacent cell centers
@@ -251,6 +255,16 @@ class EdgeParams:
          defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
         """
 
+        self.primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+            primal_normal_cell_x,
+            primal_normal_cell_y,
+        )
+
+        self.dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+            dual_normal_cell_x,
+            dual_normal_cell_y,
+        )
+
         self.edge_areas: Field[[EdgeDim], float] = edge_areas
         """
         Area of the quadrilateral (two triangles) adjacent to the edge.
@@ -258,10 +272,17 @@ class EdgeParams:
         defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
         """
 
+        self.f_e: Field[[EdgeDim], float] = f_e
+        """
+        Coriolis parameter at cell edges
+        """
+
 
 @dataclass(frozen=True)
 class CellParams:
     area: Field[[CellDim], float]
+    mean_cell_area: float
+
     """
     Area of a cell.
 
