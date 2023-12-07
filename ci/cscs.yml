@@ -6,6 +6,10 @@ stages:
   - test
   - benchmark
 
+.py310: &py310
+  PYVERSION_PREFIX: py310
+  PYVERSION: 3.10.9
+
 variables:
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
   PYTHON_VERSION: "3.10"
@@ -15,10 +19,12 @@ variables:
   extends: .container-builder
   variables:
     DOCKERFILE: ci/docker/Dockerfile.build
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
+    <<: *py310
 
 .test_template:
-  extends: .container-runner-clariden-a100
-  timeout: 2h
+  extends: .container-runner-daint-gpu
+  timeout: 8h
   image: $PERSIST_IMAGE_NAME
   before_script:
     - apt-get update
@@ -26,28 +32,39 @@ variables:
     - cd /icon4py
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
+    - python -c "import cupy"
   variables:
-    SLURM_JOB_NUM_NODES: 2
-    SLURM_NTASKS: 2
-    SLURM_TIMELIMIT: '02:00:00'
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: '06:00:00'
+    CRAY_CUDA_MPS: 1
+    NUM_PROCESSES: auto
+    VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
 
 build_job:
   extends: .build_template
 
-test_model_job_embedded_simple_grid:
+test_model_job_embedded_ir_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip -n auto
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=embedded_ir -n auto
 
-benchmark_model_gtfn_cpu_simple_grid:
+
+test_model_job_gtfn_cpu_simple_grid:
   extends: .test_template
-  stage: benchmark
+  stage: test
   script:
-    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+    - tox -r -e py${pyversion_no_dot} -c model/ --verbose -- --benchmark-skip --backend=gtfn_cpu -n auto
 
 test_tools_job:
   extends: .test_template
   stage: test
   script:
     - tox -r -e py${pyversion_no_dot} -c tools/ --verbose
+
+benchmark_model_gtfn_gpu_simple_grid:
+  extends: .test_template
+  stage: benchmark
+  script:
+    - tox -r -e benchmark py${pyversion_no_dot} -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
