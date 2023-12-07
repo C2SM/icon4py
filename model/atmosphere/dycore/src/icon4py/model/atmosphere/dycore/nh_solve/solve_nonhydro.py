@@ -271,7 +271,19 @@ class NonHydrostaticParams:
         self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
 
         # start level for 3D divergence damping terms
-        self.kstart_dd3d: int = 0
+        self.kstart_dd3d: Final[int] = 0
+
+        #: Weighting coefficients for velocity advection if tendency averaging is used
+        #: The off-centering specified here turned out to be beneficial to numerical
+        #: stability in extreme situations
+        self.wgt_nnow_vel: Final[float] = 0.5 - config.veladv_offctr
+        self.wgt_nnew_vel: Final[float] = 0.5 + config.veladv_offctr
+
+        #: Weighting coefficients for rho and theta at interface levels in the corrector step
+        #: This empirically determined weighting minimizes the vertical wind off-centering
+        #: needed for numerical stability of vertical sound wave propagation
+        self.wgt_nnew_rth: Final[float] = 0.5 + config.rhotheta_offctr
+        self.wgt_nnow_rth: Final[float] = 1.0 - self.wgt_nnew_rth
 
         # start level for moist physics processes (specified by htop_moist_proc)
         self.kstart_moist: int = 1
@@ -493,10 +505,6 @@ class SolveNonhydro:
                 exner=prognostic_state_ls[nnew].exner,
                 rd_o_cvd=self.params.rd_o_cvd,
                 rd_o_p0ref=self.params.rd_o_p0ref,
-                horizontal_start=0,
-                horizontal_end=end_cell_end,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
                 offset_provider={},
                 horizontal_start=0,
                 horizontal_end=end_cell_end,
@@ -628,7 +636,6 @@ class SolveNonhydro:
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
-
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
         #  Precompute Rayleigh damping factor

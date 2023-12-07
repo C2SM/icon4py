@@ -961,6 +961,17 @@ def test_run_solve_nonhydro_multi_step(
     )
 
 
+@pytest.mark.datatest
+def test_non_hydrostatic_params(savepoint_nonhydro_init, experiment):
+    config = construct_config(experiment)
+    params = NonHydrostaticParams(config)
+
+    assert params.wgt_nnew_vel == savepoint_nonhydro_init.wgt_nnew_vel()
+    assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
+    assert params.wgt_nnew_rth == savepoint_nonhydro_init.wgt_nnew_rth()
+    assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
+
+
 def create_nh_constants(sp):
     return NHConstants(
         wgt_nnow_rth=sp.wgt_nnow_rth(),
