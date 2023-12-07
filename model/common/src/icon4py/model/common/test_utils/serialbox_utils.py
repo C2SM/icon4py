@@ -106,6 +106,9 @@ class IconGridSavePoint(IconSavepoint):
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", EdgeDim)
 
+    def edge_orientation(self):
+        return self._get_field("cells_edge_orientation", CellDim, C2EDim)
+
     def inverse_primal_edge_lengths(self):
         return self._get_field("inv_primal_edge_length", EdgeDim)
 
