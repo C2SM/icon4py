@@ -26,6 +26,9 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
 from ..utils import verify_diffusion_fields
 
 
+@pytest.mark.xfail(
+    "TODO(magdalena) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+)
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
