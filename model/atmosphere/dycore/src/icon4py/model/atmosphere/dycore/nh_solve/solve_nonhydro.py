@@ -498,10 +498,6 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
-                horizontal_start=0,
-                horizontal_end=end_cell_end,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
             )
 
             mo_solve_nonhydro_stencil_67.with_backend(backend)(
@@ -533,7 +529,6 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -624,7 +619,6 @@ class SolveNonhydro:
         end_cell_local_minus1 = self.grid.get_end_index(
             CellDim, HorizontalMarkerIndex.local(CellDim) - 1
         )
-        end_cell_halo = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
