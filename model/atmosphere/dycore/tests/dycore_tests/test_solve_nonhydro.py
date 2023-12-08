@@ -172,7 +172,7 @@ def test_nonhydro_predictor_step(
     solve_nonhydro.run_predictor_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state=prognostic_state_ls,
-        z_fields=z_fields,
+        z_fields=solve_nonhydro.z_fields,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
@@ -296,17 +296,17 @@ def test_nonhydro_predictor_step(
     # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
     assert dallclose(
         sp_exit.z_rho_e().asnumpy()[edge_start_lb_plus6:, :],
-        z_fields.z_rho_e.asnumpy()[edge_start_lb_plus6:, :],
+        solve_nonhydro.z_fields.z_rho_e.asnumpy()[edge_start_lb_plus6:, :],
     )
     assert dallclose(
         sp_exit.z_theta_v_e().asnumpy()[edge_start_lb_plus6:, :],
-        z_fields.z_theta_v_e.asnumpy()[edge_start_lb_plus6:, :],
+        solve_nonhydro.z_fields.z_theta_v_e.asnumpy()[edge_start_lb_plus6:, :],
     )
 
     # stencils 18,19, 20, 22
     assert dallclose(
         sp_exit.z_gradh_exner().asnumpy()[edge_start_nuding_plus1:, :],
-        z_fields.z_gradh_exner.asnumpy()[edge_start_nuding_plus1:, :],
+        solve_nonhydro.z_fields.z_gradh_exner.asnumpy()[edge_start_nuding_plus1:, :],
         atol=1e-20,
     )
     # stencil 21
@@ -337,7 +337,7 @@ def test_nonhydro_predictor_step(
     # stencil 30
     assert dallclose(
         sp_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
-        z_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
+        solve_nonhydro.z_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
         atol=5e-20,
     )
     # stencil 30
@@ -371,13 +371,13 @@ def test_nonhydro_predictor_step(
     # stencil 35,36, 37,38
     assert dallclose(
         sp_exit.z_vt_ie().asnumpy(),
-        z_fields.z_vt_ie.asnumpy(),
+        solve_nonhydro.z_fields.z_vt_ie.asnumpy(),
         atol=2e-14,
     )
     # stencil 35,36
     assert dallclose(
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
-        z_fields.z_kin_hor_e.asnumpy()[edge_start_lb_plus4:, :],
+        solve_nonhydro.z_fields.z_kin_hor_e.asnumpy()[edge_start_lb_plus4:, :],
         atol=10e-13,
     )
     # stencil 35
@@ -411,45 +411,45 @@ def test_nonhydro_predictor_step(
     # stencils 43, 46, 47
     assert dallclose(
         sp_exit.z_contr_w_fl_l().asnumpy()[cell_start_nudging:, :],
-        z_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_contr_w_fl_l.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
 
     # stencil 43
     assert dallclose(
         sp_exit.z_w_expl().asnumpy()[cell_start_nudging:, 1:nlev],
-        z_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
+        solve_nonhydro.z_fields.z_w_expl.asnumpy()[cell_start_nudging:, 1:nlev],
         atol=1e-14,
     )
 
     # stencil 44, 45
     assert dallclose(
         sp_exit.z_alpha().asnumpy()[cell_start_nudging:, :],
-        z_fields.z_alpha.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_alpha.asnumpy()[cell_start_nudging:, :],
         atol=5e-13,
     )
     # stencil 44
     assert dallclose(
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
-        z_fields.z_beta.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_beta.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 45_b, 52
     assert dallclose(
         sp_exit.z_q().asnumpy()[cell_start_nudging:, :],
-        z_fields.z_q.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_q.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49
     assert dallclose(
         sp_exit.z_rho_expl().asnumpy()[cell_start_nudging:, :],
-        z_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_rho_expl.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
     # stencil 48, 49
     assert dallclose(
         sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
-        z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
         atol=2e-15,
     )
 
