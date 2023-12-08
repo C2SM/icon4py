@@ -93,35 +93,35 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     (z_rth_pr_1, z_rth_pr_2) = (_set_zero_c_k(), _set_zero_c_k()) if limited_area else (z_rth_pr_1, z_rth_pr_2)
 
 
-    (z_exner_ex_pr, exner_pr) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (int32(0) <= vert_idx < n_lev),
-        _mo_solve_nonhydro_stencil_02(
-            exner_exfac=exner_exfac,
-            exner=exner_nnow,
-            exner_ref_mc=exner_ref_mc,
-            exner_pr=exner_pr,
-        ),
-        (z_exner_ex_pr, exner_pr),
-    )
-
-    z_exner_ex_pr = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx == n_lev),
-        _set_zero_c_k(), z_exner_ex_pr,
-    )
-
     # (z_exner_ex_pr, exner_pr) = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02), #& (vert_idx < (n_lev + int32(1))),
-    #     _predictor_stencils_2_3(
+    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (int32(0) <= vert_idx < n_lev),
+    #     _mo_solve_nonhydro_stencil_02(
     #         exner_exfac=exner_exfac,
     #         exner=exner_nnow,
     #         exner_ref_mc=exner_ref_mc,
     #         exner_pr=exner_pr,
-    #         z_exner_ex_pr=z_exner_ex_pr,
-    #         k_field=vert_idx_1d,
-    #         nlev=n_lev,
     #     ),
     #     (z_exner_ex_pr, exner_pr),
     # )
+    #
+    # z_exner_ex_pr = where(
+    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx == n_lev),
+    #     _set_zero_c_k(), z_exner_ex_pr,
+    # )
+
+    (z_exner_ex_pr, exner_pr) = where(
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02), #& (vert_idx < (n_lev + int32(1))),
+        _predictor_stencils_2_3(
+            exner_exfac=exner_exfac,
+            exner=exner_nnow,
+            exner_ref_mc=exner_ref_mc,
+            exner_pr=exner_pr,
+            z_exner_ex_pr=z_exner_ex_pr,
+            k_field=vert_idx_1d,
+            nlev=n_lev,
+        ),
+        (z_exner_ex_pr, exner_pr),
+    )
 
     # vert_start = maximum(1, nflatlev)
     # if igradp_method == 3:
