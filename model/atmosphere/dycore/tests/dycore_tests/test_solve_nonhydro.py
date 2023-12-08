@@ -20,7 +20,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     PrepAdvection,
@@ -954,8 +953,8 @@ def test_run_solve_nonhydro_multi_step(
 
 
 @pytest.mark.datatest
-def test_non_hydrostatic_params(savepoint_nonhydro_init, experiment):
-    config = construct_config(experiment)
+def test_non_hydrostatic_params(savepoint_nonhydro_init):
+    config = config = NonHydrostaticConfig()
     params = NonHydrostaticParams(config)
 
     assert params.wgt_nnew_vel == savepoint_nonhydro_init.wgt_nnew_vel()

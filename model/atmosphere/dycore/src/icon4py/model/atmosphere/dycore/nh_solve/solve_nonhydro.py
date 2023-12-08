@@ -434,6 +434,7 @@ class SolveNonhydro:
         log.info(
             f"running timestep: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv} "
         )
+
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -626,9 +627,7 @@ class SolveNonhydro:
         start_cell_lb_plus2 = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
         )
-        end_cell_local_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-        )
+
         end_cell_halo = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
@@ -662,7 +661,7 @@ class SolveNonhydro:
             exner_pr=diagnostic_state_nh.exner_pr,
             z_exner_ex_pr=self.z_exner_ex_pr,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
@@ -681,7 +680,7 @@ class SolveNonhydro:
                 k_field=self.k_field,
                 nlev=self.grid.num_levels,
                 horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_local_minus1,
+                horizontal_end=end_cell_halo,
                 vertical_start=max(1, self.vertical_params.nflatlev),
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={"Koff": KDim},
@@ -709,7 +708,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
@@ -725,7 +724,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={"Koff": KDim},
@@ -740,7 +739,7 @@ class SolveNonhydro:
                 z_rth_pr_2=self.z_rth_pr_2,
                 z_dexner_dz_c_2=self.z_dexner_dz_c_2,
                 horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_local_minus1,
+                horizontal_end=end_cell_halo,
                 vertical_start=self.vertical_params.nflat_gradp,
                 vertical_end=self.grid.num_levels,
                 offset_provider={"Koff": KDim},
@@ -801,7 +800,7 @@ class SolveNonhydro:
                 geofac_grg_x=self.interpolation_state.geofac_grg_x,
                 geofac_grg_y=self.interpolation_state.geofac_grg_y,
                 horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_local_minus1,
+                horizontal_end=end_cell_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider={
@@ -1102,7 +1101,7 @@ class SolveNonhydro:
             nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={
