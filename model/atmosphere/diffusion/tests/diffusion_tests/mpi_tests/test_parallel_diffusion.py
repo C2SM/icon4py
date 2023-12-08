@@ -27,7 +27,7 @@ from ..utils import verify_diffusion_fields
 
 
 @pytest.mark.xfail(
-    "TODO(magdalena) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
 )
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
