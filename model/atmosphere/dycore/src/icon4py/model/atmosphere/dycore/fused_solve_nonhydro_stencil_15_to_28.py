@@ -294,9 +294,9 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     z_gradh_exner: gtx.Field[[EdgeDim, KDim], vpfloat],
     z_graddiv2_vn: gtx.Field[[EdgeDim, KDim], vpfloat],
     geofac_grdiv: gtx.Field[[EdgeDim, E2C2EODim], wpfloat],
-    # scal_divdamp: gtx.Field[[KDim], wpfloat],
-    # bdy_divdamp: gtx.Field[[KDim], wpfloat],
-    # nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
+    scal_divdamp: gtx.Field[[KDim], wpfloat],
+    bdy_divdamp: gtx.Field[[KDim], wpfloat],
+    nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
     horz_idx: gtx.Field[[EdgeDim], int32],
     vert_idx: gtx.Field[[KDim], int32],
     wgt_nnow_vel: wpfloat,
@@ -306,11 +306,11 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     # iau_wgt_dyn: wpfloat,
     # is_iau_active: bool,
     lhdiff_rcf: bool,
-    # divdamp_fac: wpfloat,
-    # divdamp_fac_o2: wpfloat,
+    divdamp_fac: wpfloat,
+    divdamp_fac_o2: wpfloat,
     divdamp_order: int32,
     scal_divdamp_o2: wpfloat,
-    # limited_area: bool,
+    limited_area: bool,
     itime_scheme: int32,
     horizontal_lower_0: int32,
     horizontal_upper_0: int32,
@@ -363,28 +363,25 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
         vn,
     ) if (lhdiff_rcf & (divdamp_order == int32(24)) & (scal_divdamp_o2 > 1.0e-6)) else vn
 
-    # if (divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac)):
-    #     if limited_area:
-    #         vn = where(
-    #             (horizontal_lower <= horz_idx < horizontal_upper),
-    #             _mo_solve_nonhydro_stencil_27(
-    #                 scal_divdamp=scal_divdamp,
-    #                 bdy_divdamp=bdy_divdamp,
-    #                 nudgecoeff_e=nudgecoeff_e,
-    #                 z_graddiv2_vn=z_graddiv2_vn,
-    #                 vn=vn,
-    #             ),
-    #             vn,
-    #         )
-    #
-    #     else:
-    #         vn = where(
-    #             (horizontal_lower <= horz_idx < horizontal_upper),
-    #             _mo_solve_nonhydro_4th_order_divdamp(
-    #                 scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
-    #             ),
-    #             vn,
-    #         )
+    vn = where(
+        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+        _mo_solve_nonhydro_stencil_27(
+            scal_divdamp=scal_divdamp,
+            bdy_divdamp=bdy_divdamp,
+            nudgecoeff_e=nudgecoeff_e,
+            z_graddiv2_vn=z_graddiv2_vn,
+            vn=vn,
+        ),
+        vn,
+    ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac)) & limited_area) else vn
+
+    vn = where(
+        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+        _mo_solve_nonhydro_4th_order_divdamp(
+            scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
+        ),
+        vn,
+    ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac))) else vn
     # if is_iau_active:
     #     vn = where(
     #         (horizontal_lower <= horz_idx < horizontal_upper),
@@ -443,8 +440,8 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     z_graddiv2_vn: gtx.Field[[EdgeDim, KDim], vpfloat],
     geofac_grdiv: gtx.Field[[EdgeDim, E2C2EODim], wpfloat],
     # scal_divdamp: gtx.Field[[KDim], wpfloat],
-    # bdy_divdamp: gtx.Field[[KDim], wpfloat],
-    # nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
+    bdy_divdamp: gtx.Field[[KDim], wpfloat],
+    nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
     grav_o_cpd: wpfloat,
     p_dthalf: wpfloat,
     idiv_method: int32,
@@ -456,8 +453,8 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     # iau_wgt_dyn: wpfloat,
     # is_iau_active: bool,
     lhdiff_rcf: bool,
-    # divdamp_fac: wpfloat,
-    # divdamp_fac_o2: wpfloat,
+    divdamp_fac: wpfloat,
+    divdamp_fac_o2: wpfloat,
     divdamp_order: int32,
     scal_divdamp_o2: wpfloat,
     limited_area: bool,
@@ -574,8 +571,8 @@ def _fused_solve_nonhydro_stencil_15_to_28(
             z_graddiv2_vn=z_graddiv2_vn,
             geofac_grdiv=geofac_grdiv,
             # scal_divdamp=scal_divdamp,
-            # bdy_divdamp=bdy_divdamp,
-            # nudgecoeff_e=nudgecoeff_e,
+            bdy_divdamp=bdy_divdamp,
+            nudgecoeff_e=nudgecoeff_e,
             horz_idx=horz_idx,
             vert_idx=vert_idx,
             wgt_nnow_vel=wgt_nnow_vel,
@@ -585,11 +582,11 @@ def _fused_solve_nonhydro_stencil_15_to_28(
             # iau_wgt_dyn=iau_wgt_dyn,
             # is_iau_active=is_iau_active,
             lhdiff_rcf=lhdiff_rcf,
-            # divdamp_fac=divdamp_fac,
-            # divdamp_fac_o2=divdamp_fac_o2,
+            divdamp_fac=divdamp_fac,
+            divdamp_fac_o2=divdamp_fac_o2,
             divdamp_order=divdamp_order,
             scal_divdamp_o2=scal_divdamp_o2,
-            # limited_area=limited_area,
+            limited_area=limited_area,
             itime_scheme=itime_scheme,
             horizontal_lower_0=horizontal_lower_0,
             horizontal_upper_0=horizontal_upper_0,
@@ -650,8 +647,8 @@ def fused_solve_nonhydro_stencil_15_to_28(
     z_rho_e: gtx.Field[[EdgeDim, KDim], wpfloat],
     geofac_grdiv: gtx.Field[[EdgeDim, E2C2EODim], wpfloat],
     # scal_divdamp: gtx.Field[[KDim], wpfloat],
-    # bdy_divdamp: gtx.Field[[KDim], wpfloat],
-    # nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
+    bdy_divdamp: gtx.Field[[KDim], wpfloat],
+    nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
     grav_o_cpd: wpfloat,
     p_dthalf: wpfloat,
     idiv_method: int32,
@@ -663,8 +660,8 @@ def fused_solve_nonhydro_stencil_15_to_28(
     # iau_wgt_dyn: wpfloat,
     # is_iau_active: bool,
     lhdiff_rcf: bool,
-    # divdamp_fac: wpfloat,
-    # divdamp_fac_o2: wpfloat,
+    divdamp_fac: wpfloat,
+    divdamp_fac_o2: wpfloat,
     divdamp_order: int32,
     scal_divdamp_o2: wpfloat,
     limited_area: bool,
@@ -736,8 +733,8 @@ def fused_solve_nonhydro_stencil_15_to_28(
         z_graddiv2_vn,
         geofac_grdiv,
         # scal_divdamp=scal_divdamp,
-        # bdy_divdamp=bdy_divdamp,
-        # nudgecoeff_e=nudgecoeff_e,
+        bdy_divdamp,
+        nudgecoeff_e,
         grav_o_cpd,
         p_dthalf,
         idiv_method,
@@ -749,8 +746,8 @@ def fused_solve_nonhydro_stencil_15_to_28(
         # iau_wgt_dyn=iau_wgt_dyn,
         # is_iau_active=is_iau_active,
         lhdiff_rcf,
-        # divdamp_fac=divdamp_fac,
-        # divdamp_fac_o2=divdamp_fac_o2,
+        divdamp_fac,
+        divdamp_fac_o2,
         divdamp_order,
         scal_divdamp_o2,
         limited_area,
