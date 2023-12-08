@@ -26,8 +26,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     _mo_velocity_advection_stencil_03,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
-    _mo_velocity_advection_stencil_04,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
@@ -97,7 +97,7 @@ def _fused_velocity_advection_stencil_1_to_6(
 
     z_w_concorr_me = where(
         nflatlev < k < nlevp1,
-        _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
 

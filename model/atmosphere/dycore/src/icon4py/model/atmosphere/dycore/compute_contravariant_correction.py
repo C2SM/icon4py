@@ -20,12 +20,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_35(
+def _compute_contravariant_correction(
     vn: Field[[EdgeDim, KDim], wpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
     ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''previously known as _mo_solve_nonhydro_stencil_35 or _compute_contravariant_correction'''
     ddxn_z_full_wp = astype(ddxn_z_full, wpfloat)
 
     z_w_concorr_me_wp = vn * ddxn_z_full_wp + astype(vt * ddxt_z_full, wpfloat)
@@ -33,7 +34,7 @@ def _mo_solve_nonhydro_stencil_35(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_35(
+def compute_contravariant_correction(
     vn: Field[[EdgeDim, KDim], wpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
     ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -44,7 +45,7 @@ def mo_solve_nonhydro_stencil_35(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_35(
+    _compute_contravariant_correction(
         vn,
         ddxn_z_full,
         ddxt_z_full,

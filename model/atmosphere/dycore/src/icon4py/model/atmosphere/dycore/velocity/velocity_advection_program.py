@@ -14,8 +14,8 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
-    _mo_velocity_advection_stencil_04,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
@@ -71,7 +71,7 @@ def _fused_stencils_4_5(
 ]:
     z_w_concorr_me = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
-        _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
 

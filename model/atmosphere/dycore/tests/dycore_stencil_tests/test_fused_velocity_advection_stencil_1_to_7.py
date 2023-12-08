@@ -28,7 +28,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
 from .test_mo_velocity_advection_stencil_01 import mo_velocity_advection_stencil_01_numpy
 from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil_02_numpy
 from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
-from .test_mo_velocity_advection_stencil_04 import mo_velocity_advection_stencil_04_numpy
+from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
 from .test_mo_velocity_advection_stencil_06 import mo_velocity_advection_stencil_06_numpy
 from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
@@ -98,7 +98,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition5 = (nflatlev < k) & (k < nlevp1)
         z_w_concorr_me = np.where(
             condition5,
-            mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
+            compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
             z_w_concorr_me,
         )
 

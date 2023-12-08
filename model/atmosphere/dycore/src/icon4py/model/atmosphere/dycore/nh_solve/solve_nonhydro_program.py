@@ -44,8 +44,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_35 import (
-    _mo_solve_nonhydro_stencil_35,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
@@ -486,7 +486,7 @@ def _predictor_stencils_35_36(
 ]:
     z_w_concorr_me = where(
         k_field >= nflatlev_startindex,
-        _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
