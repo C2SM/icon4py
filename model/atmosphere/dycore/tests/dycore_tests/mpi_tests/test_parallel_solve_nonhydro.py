@@ -40,6 +40,9 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fi
 )
 
 
+@pytest.mark.xfail(
+    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",

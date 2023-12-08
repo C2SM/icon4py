@@ -712,7 +712,7 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
-            horz_idx=self.horizontal_edge_index,
+            edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
@@ -746,8 +746,8 @@ class Diffusion:
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
-            vert_idx=self.vertical_index,
-            horz_idx=self.horizontal_cell_index,
+            k=self.vertical_index,
+            cell=self.horizontal_cell_index,
             nrdmax=int32(
                 self.vertical_params.index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
