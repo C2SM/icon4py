@@ -24,9 +24,11 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
@@ -151,7 +153,6 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         log.info(
             f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
         )
@@ -217,7 +218,6 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -247,7 +247,6 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
         do_recompute = True

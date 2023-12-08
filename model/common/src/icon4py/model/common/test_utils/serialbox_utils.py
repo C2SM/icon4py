@@ -24,9 +24,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
@@ -466,27 +463,6 @@ class InterpolationSavepoint(IconSavepoint):
             nudgecoeff_e=self.nudgecoeff_e(),
         )
 
-    def construct_interpolation_state_for_nonhydro(self) -> InterpolationState:
-        grg = self.geofac_grg()
-        return InterpolationState(
-            c_lin_e=self.c_lin_e(),
-            c_intp=self.c_intp(),
-            e_flx_avg=self.e_flx_avg(),
-            geofac_grdiv=self.geofac_grdiv(),
-            geofac_rot=self.geofac_rot(),
-            pos_on_tplane_e_1=self.pos_on_tplane_e_x(),
-            pos_on_tplane_e_2=self.pos_on_tplane_e_y(),
-            rbf_vec_coeff_e=self.rbf_vec_coeff_e(),
-            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
-            rbf_coeff_1=self.rbf_vec_coeff_v1(),
-            rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
-            geofac_n2s=self.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=self.nudgecoeff_e(),
-        )
-
 
 class MetricSavepoint(IconSavepoint):
     def bdy_halo_c(self):
@@ -548,9 +524,6 @@ class MetricSavepoint(IconSavepoint):
 
     def wgtfacq_c_dsl(self):
         return self._get_field("wgtfacq_c_dsl", CellDim, KDim)
-
-    def wgtfacq_c(self):
-        return self._get_field("wgtfacq_c", CellDim, KDim)
 
     def zdiff_gradp(self):
         field = self._get_field("zdiff_gradp_dsl", EdgeDim, E2CDim, KDim)
@@ -633,43 +606,6 @@ class MetricSavepoint(IconSavepoint):
     def zd_indlist(self):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
-    def construct_nh_metric_state(self, num_k_lev) -> MetricStateNonHydro:
-        return MetricStateNonHydro(
-            bdy_halo_c=self.bdy_halo_c(),
-            mask_prog_halo_c=self.mask_prog_halo_c(),
-            rayleigh_w=self.rayleigh_w(),
-            exner_exfac=self.exner_exfac(),
-            exner_ref_mc=self.exner_ref_mc(),
-            wgtfac_c=self.wgtfac_c(),
-            wgtfacq_c_dsl=self.wgtfacq_c_dsl(),
-            inv_ddqz_z_full=self.inv_ddqz_z_full(),
-            rho_ref_mc=self.rho_ref_mc(),
-            theta_ref_mc=self.theta_ref_mc(),
-            vwind_expl_wgt=self.vwind_expl_wgt(),
-            d_exner_dz_ref_ic=self.d_exner_dz_ref_ic(),
-            ddqz_z_half=self.ddqz_z_half(),
-            theta_ref_ic=self.theta_ref_ic(),
-            d2dexdz2_fac1_mc=self.d2dexdz2_fac1_mc(),
-            d2dexdz2_fac2_mc=self.d2dexdz2_fac2_mc(),
-            rho_ref_me=self.rho_ref_me(),
-            theta_ref_me=self.theta_ref_me(),
-            ddxn_z_full=self.ddxn_z_full(),
-            zdiff_gradp=self.zdiff_gradp(),
-            vertoffset_gradp=self.vertoffset_gradp(),
-            ipeidx_dsl=self.ipeidx_dsl(),
-            pg_exdist=self.pg_exdist(),
-            ddqz_z_full_e=self.ddqz_z_full_e(),
-            ddxt_z_full=self.ddxt_z_full(),
-            wgtfac_e=self.wgtfac_e(),
-            wgtfacq_e_dsl=self.wgtfacq_e_dsl(num_k_lev),
-            vwind_impl_wgt=self.vwind_impl_wgt(),
-            hmask_dd3d=self.hmask_dd3d(),
-            scalfac_dd3d=self.scalfac_dd3d(),
-            coeff1_dwdz=self.coeff1_dwdz(),
-            coeff2_dwdz=self.coeff2_dwdz(),
-            coeff_gradekin=self.coeff_gradekin(),
-        )
-
     def construct_metric_state_for_diffusion(self) -> DiffusionMetricState:
         return DiffusionMetricState(
             mask_hdiff=self.mask_hdiff(),
@@ -751,20 +687,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             div_ic=self.div_ic(),
             dwdx=self.dwdx(),
             dwdy=self.dwdy(),
-        )
-
-    def construct_diagnostics(self) -> DiagnosticState:
-        return DiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
-            vt=None,
-            vn_ie=None,
-            w_concorr_c=None,
-            ddt_w_adv_pc_before=None,
-            ddt_vn_apc_pc_before=None,
-            ntnd=None,
         )
 
 

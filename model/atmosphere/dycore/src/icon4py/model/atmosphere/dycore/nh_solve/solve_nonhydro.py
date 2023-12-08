@@ -13,7 +13,6 @@
 import logging
 from typing import Final, Optional
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
@@ -138,11 +137,13 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
@@ -497,6 +498,10 @@ class SolveNonhydro:
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
+                horizontal_start=0,
+                horizontal_end=end_cell_end,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
             )
 
             mo_solve_nonhydro_stencil_67.with_backend(backend)(
@@ -663,7 +668,7 @@ class SolveNonhydro:
 
         if self.config.igradp_method == 3:
             nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)(
-                wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
+                wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 z_exner_ic=self.z_exner_ic,
                 wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
@@ -708,7 +713,7 @@ class SolveNonhydro:
 
         # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)(
-            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
+            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             z_rth_pr=self.z_rth_pr_2,
             theta_ref_ic=self.metric_state_nonhydro.theta_ref_ic,
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
@@ -1073,7 +1078,7 @@ class SolveNonhydro:
                 vn_ie=diagnostic_state_nh.vn_ie,
                 z_vt_ie=z_fields.z_vt_ie,
                 z_kin_hor_e=z_fields.z_kin_hor_e,
-                wgtfacq_e_dsl=self.metric_state_nonhydro.wgtfacq_e_dsl,
+                wgtfacq_e_dsl=self.metric_state_nonhydro.wgtfacq_e,
                 k_field=self.k_field,
                 nlev=self.grid.num_levels,
                 horizontal_start=start_edge_lb_plus4,
@@ -1087,7 +1092,7 @@ class SolveNonhydro:
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=self.z_w_concorr_me,
             wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
-            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c_dsl,
+            wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             k_field=self.k_field,
             nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
