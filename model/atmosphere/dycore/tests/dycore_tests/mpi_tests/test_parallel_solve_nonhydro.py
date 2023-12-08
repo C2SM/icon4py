@@ -174,13 +174,6 @@ def test_run_solve_nonhydro_single_step(
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-    )
-
     interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
     metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
@@ -211,7 +204,6 @@ def test_run_solve_nonhydro_single_step(
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
         z_fields=z_fields,
-        nh_constants=nh_constants,
         divdamp_fac_o2=0.032,
         dtime=dtime,
         idyn_timestep=dyn_timestep,

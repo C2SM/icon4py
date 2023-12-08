@@ -137,7 +137,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -422,7 +421,6 @@ class SolveNonhydro:
         prognostic_state_ls: list[PrognosticState],
         prep_adv: PrepAdvection,
         z_fields: ZFields,  # TODO (Magdalena): move local fields to SolveNonHydro
-        nh_constants: NHConstants,
         divdamp_fac_o2: float,
         dtime: float,
         idyn_timestep: float,
@@ -483,7 +481,6 @@ class SolveNonhydro:
             nnew=nnew,
             nnow=nnow,
             lclean_mflx=lclean_mflx,
-            nh_constants=nh_constants,
             lprep_adv=lprep_adv,
         )
         log.info(
@@ -1349,7 +1346,6 @@ class SolveNonhydro:
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state: list[PrognosticState],
         z_fields: ZFields,
-        nh_constants: NHConstants,
         divdamp_fac_o2: float,
         prep_adv: PrepAdvection,
         dtime: float,
@@ -1452,8 +1448,8 @@ class SolveNonhydro:
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             dtime=dtime,
-            wgt_nnow_rth=nh_constants.wgt_nnow_rth,
-            wgt_nnew_rth=nh_constants.wgt_nnew_rth,
+            wgt_nnow_rth=self.params.wgt_nnow_rth,
+            wgt_nnew_rth=self.params.wgt_nnew_rth,
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_local,
             vertical_start=1,
@@ -1488,8 +1484,8 @@ class SolveNonhydro:
                 z_gradh_exner=z_fields.z_gradh_exner,
                 vn_nnew=prognostic_state[nnew].vn,
                 dtime=dtime,
-                wgt_nnow_vel=nh_constants.wgt_nnow_vel,
-                wgt_nnew_vel=nh_constants.wgt_nnew_vel,
+                wgt_nnow_vel=self.params.wgt_nnow_vel,
+                wgt_nnew_vel=self.params.wgt_nnew_vel,
                 cpd=constants.CPD,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
@@ -1665,8 +1661,8 @@ class SolveNonhydro:
                 cvd=constants.CVD,
                 dtime=dtime,
                 cpd=constants.CPD,
-                wgt_nnow_vel=nh_constants.wgt_nnow_vel,
-                wgt_nnew_vel=nh_constants.wgt_nnew_vel,
+                wgt_nnow_vel=self.params.wgt_nnow_vel,
+                wgt_nnew_vel=self.params.wgt_nnew_vel,
                 nlev=self.grid.num_levels,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,

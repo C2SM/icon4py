@@ -575,7 +575,6 @@ def test_nonhydro_corrector_step(
         z_vt_ie=sp_v.z_vt_ie(),
     )
 
-    nh_constants = create_nh_constants(sp)
     divdamp_fac_o2 = sp.divdamp_fac_o2()
 
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
@@ -610,7 +609,6 @@ def test_nonhydro_corrector_step(
         nnew=nnew,
         nnow=nnow,
         lclean_mflx=clean_mflx,
-        nh_constants=nh_constants,
         lprep_adv=lprep_adv,
     )
 
@@ -725,8 +723,6 @@ def test_run_solve_nonhydro_single_step(
 
     z_fields = allocate_z_fields(icon_grid)
 
-    nh_constants = create_nh_constants(sp)
-
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
@@ -754,7 +750,6 @@ def test_run_solve_nonhydro_single_step(
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
         z_fields=z_fields,
-        nh_constants=nh_constants,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
         idyn_timestep=dyn_timestep,
@@ -846,8 +841,6 @@ def test_run_solve_nonhydro_multi_step(
 
     z_fields = allocate_z_fields(icon_grid)
 
-    nh_constants = create_nh_constants(sp)
-
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
@@ -873,7 +866,6 @@ def test_run_solve_nonhydro_multi_step(
             prognostic_state_ls=prognostic_state_ls,
             prep_adv=prep_adv,
             z_fields=z_fields,
-            nh_constants=nh_constants,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
             idyn_timestep=dyn_timestep,
@@ -970,15 +962,6 @@ def test_non_hydrostatic_params(savepoint_nonhydro_init, experiment):
     assert params.wgt_nnow_vel == savepoint_nonhydro_init.wgt_nnow_vel()
     assert params.wgt_nnew_rth == savepoint_nonhydro_init.wgt_nnew_rth()
     assert params.wgt_nnow_rth == savepoint_nonhydro_init.wgt_nnow_rth()
-
-
-def create_nh_constants(sp):
-    return NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-    )
 
 
 def create_prognostic_states(sp):
