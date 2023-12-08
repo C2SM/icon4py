@@ -363,17 +363,18 @@ def test_nonhydro_predictor_step(
         diagnostic_state_nh.vn_ie.asnumpy()[edge_start_lb_plus4:, :],
         atol=2e-14,
     )
+    num_levels = icon_grid.num_levels
 
     # stencil 35,36, 37,38
     assert dallclose(
         sp_exit.z_vt_ie().asnumpy(),
-        solve_nonhydro.z_fields.z_vt_ie.asnumpy(),
+        solve_nonhydro.z_fields.z_vt_ie.asnumpy()[:, :num_levels],
         atol=2e-14,
     )
     # stencil 35,36
     assert dallclose(
         sp_exit.z_kin_hor_e().asnumpy()[edge_start_lb_plus4:, :],
-        solve_nonhydro.z_fields.z_kin_hor_e.asnumpy()[edge_start_lb_plus4:, :],
+        solve_nonhydro.z_fields.z_kin_hor_e.asnumpy()[edge_start_lb_plus4:, :num_levels],
         atol=10e-13,
     )
     # stencil 35
@@ -427,13 +428,13 @@ def test_nonhydro_predictor_step(
     # stencil 44
     assert dallclose(
         sp_exit.z_beta().asnumpy()[cell_start_nudging:, :],
-        solve_nonhydro.z_fields.z_beta.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_beta.asnumpy()[cell_start_nudging:, :num_levels],
         atol=2e-15,
     )
     # stencil 45_b, 52
     assert dallclose(
         sp_exit.z_q().asnumpy()[cell_start_nudging:, :],
-        solve_nonhydro.z_fields.z_q.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_q.asnumpy()[cell_start_nudging:, :num_levels],
         atol=2e-15,
     )
     # stencil 48, 49
@@ -445,7 +446,7 @@ def test_nonhydro_predictor_step(
     # stencil 48, 49
     assert dallclose(
         sp_exit.z_exner_expl().asnumpy()[cell_start_nudging:, :],
-        solve_nonhydro.z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :],
+        solve_nonhydro.z_fields.z_exner_expl.asnumpy()[cell_start_nudging:, :num_levels],
         atol=2e-15,
     )
 

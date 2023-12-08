@@ -1731,10 +1731,11 @@ class SolveNonhydro:
             ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
             k_field=self.k_field,
             dtime=dtime,
-            cell_startindex_nudging_plus1=start_cell_nudging,
-            cell_endindex_interior=end_cell_local,
             nlev=self.grid.num_levels,
-            nlev_k=self.grid.num_levels
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels
             + 1,  # TODO (@halungge) nlevp1 issue, overallocated local fields
             offset_provider={
                 "Koff": KDim,
