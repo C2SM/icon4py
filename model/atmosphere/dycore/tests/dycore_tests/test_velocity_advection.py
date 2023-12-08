@@ -70,7 +70,7 @@ def test_velocity_init(
     )
 
     assert dallclose(0.0, velocity_advection.cfl_clipping.asnumpy())
-    assert dallclose(False, velocity_advection.levmask.asnumpy())
+    assert dallclose(False, velocity_advection.level_mask.asnumpy())
     assert dallclose(0.0, velocity_advection.vcfl_dsl.asnumpy())
 
     assert velocity_advection.cfl_w_limit == 0.65

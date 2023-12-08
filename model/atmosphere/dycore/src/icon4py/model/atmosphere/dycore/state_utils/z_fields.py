@@ -15,7 +15,9 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.base import BaseGrid
 
 
 @dataclass
@@ -40,3 +42,32 @@ class ZFields:
     z_graddiv_vn: Field[[EdgeDim, KDim], float]
     z_rho_expl: Field[[CellDim, KDim], float]
     z_dwdz_dd: Field[[CellDim, KDim], float]
+
+
+def _allocate_z_fields(grid: BaseGrid):
+    return ZFields(
+        z_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
+        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+        z_beta=_allocate(
+            CellDim, KDim, is_halfdim=True, grid=grid
+        ),  # TODO (@halungge) overallocated with fake halfdim
+        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+        z_exner_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+        z_q=_allocate(
+            CellDim, KDim, is_halfdim=True, grid=grid
+        ),  # TODO (@halungge) overallocated with fake halfdim
+        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+        z_rho_e=_allocate(EdgeDim, KDim, grid=grid),
+        z_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
+        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
+        z_rho_expl=_allocate(
+            CellDim, KDim, is_halfdim=True, grid=grid
+        ),  # TODO (@halungge) overallocated with fake halfdim
+        z_dwdz_dd=_allocate(CellDim, KDim, grid=grid),
+        z_kin_hor_e=_allocate(
+            EdgeDim, KDim, is_halfdim=True, grid=grid
+        ),  # TODO (@halungge) overallocated with fake halfdim
+        z_vt_ie=_allocate(
+            EdgeDim, KDim, is_halfdim=True, grid=grid
+        ),  # TODO (@halungge) overallocated with fake halfdim
+    )

@@ -111,7 +111,7 @@ class VelocityAdvection:
         self.zeta = _allocate(VertexDim, KDim, grid=self.grid)
         self.z_w_con_c_full = _allocate(CellDim, KDim, grid=self.grid)
         self.cfl_clipping = _allocate(CellDim, KDim, grid=self.grid, dtype=bool)
-        self.levmask = _allocate(KDim, grid=self.grid, dtype=bool)
+        self.level_mask = _allocate(KDim, grid=self.grid, dtype=bool)
         self.vcfl_dsl = _allocate(CellDim, KDim, grid=self.grid)
         self.k_field = _allocate_indices(KDim, grid=self.grid, is_halfdim=True)
 
@@ -376,7 +376,7 @@ class VelocityAdvection:
             )
 
             mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-                levmask=self.levmask,
+                levmask=self.level_mask,
                 cfl_clipping=self.cfl_clipping,
                 owner_mask=self.c_owner_mask,
                 z_w_con_c=self.z_w_con_c,
@@ -396,8 +396,6 @@ class VelocityAdvection:
                     "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
                 },
             )
-
-        self.levelmask = self.levmask
 
         mo_velocity_advection_stencil_19.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
@@ -424,7 +422,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_20.with_backend(backend)(
-            levelmask=self.levelmask,
+            levelmask=self.level_mask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
@@ -451,7 +449,7 @@ class VelocityAdvection:
         )
 
     def _update_levmask_from_cfl_clipping(self):
-        self.levmask = as_field(
+        self.level_mask = as_field(
             domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
@@ -623,7 +621,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_18.with_backend(backend)(
-            levmask=self.levmask,
+            levmask=self.level_mask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
             z_w_con_c=self.z_w_con_c,
@@ -643,9 +641,6 @@ class VelocityAdvection:
                 "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
             },
         )
-
-        # This behaviour needs to change for multiple blocks
-        self.levelmask = self.levmask
 
         mo_velocity_advection_stencil_19.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
@@ -672,7 +667,7 @@ class VelocityAdvection:
         )
 
         mo_velocity_advection_stencil_20.with_backend(backend)(
-            levelmask=self.levelmask,
+            levelmask=self.level_mask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,

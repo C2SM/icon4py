@@ -990,10 +990,11 @@ def stencils_47_48_49(
     ddt_exner_phy: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int32],
     dtime: float,
-    cell_startindex_nudging_plus1: int32,
-    cell_endindex_interior: int32,
     nlev: int32,
-    nlev_k: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _stencils_47_48_49(
         w_nnew,
@@ -1014,8 +1015,8 @@ def stencils_47_48_49(
         nlev,
         out=(w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
         domain={
-            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-            KDim: (0, nlev_k),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1043,10 +1044,6 @@ def predictor_stencils_59_60(
     ddt_exner_phy: Field[[CellDim, KDim], float],
     ndyn_substeps_var: float,
     dtime: float,
-    cell_startindex_nudging_plus1: int32,
-    cell_endindex_interior: int32,
-    kstart_moist: int32,
-    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -1060,8 +1057,8 @@ def predictor_stencils_59_60(
         dtime,
         out=exner_dyn_incr,
         domain={
-            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-            KDim: (kstart_moist, nlev),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
