@@ -85,6 +85,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
 ]:
     vert_idx_1d = vert_idx
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
@@ -123,23 +125,22 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         (z_exner_ex_pr, exner_pr),
     )
 
-    # vert_start = maximum(1, nflatlev)
-    # if igradp_method == 3:
-    #     (z_exner_ic, z_dexner_dz_c_1) = where(
-    #         (horizontal_lower_02 <= horz_idx < horizontal_upper_02)
-    #         & (vert_start <= vert_idx < (n_lev + int32(1))),
-    #         _predictor_stencils_4_5_6(
-    #             wgtfacq_c_dsl=wgtfacq_c_dsl,
-    #             z_exner_ex_pr=z_exner_ex_pr,
-    #             z_exner_ic=z_exner_ic,
-    #             wgtfac_c=wgtfac_c,
-    #             inv_ddqz_z_full=inv_ddqz_z_full,
-    #             z_dexner_dz_c_1=z_dexner_dz_c_1,
-    #             k_field=vert_idx_1d,
-    #             nlev=n_lev,
-    #         ),
-    #         (z_exner_ic, z_dexner_dz_c_1),
-    #     )
+    vert_start = maximum(1, nflatlev)
+
+    (z_exner_ic, z_dexner_dz_c_1) = where(
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_start <= vert_idx),
+        _predictor_stencils_4_5_6(
+            wgtfacq_c_dsl=wgtfacq_c_dsl,
+            z_exner_ex_pr=z_exner_ex_pr,
+            z_exner_ic=z_exner_ic,
+            wgtfac_c=wgtfac_c,
+            inv_ddqz_z_full=inv_ddqz_z_full,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
+            k_field=vert_idx_1d,
+            nlev=n_lev,
+        ),
+        (z_exner_ic, z_dexner_dz_c_1),
+    ) if igradp_method == 3 else (z_exner_ic, z_dexner_dz_c_1)
     #
     # (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
     #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02),
@@ -208,6 +209,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         z_rth_pr_2,
         z_exner_ex_pr,
         exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
     )
 
 
@@ -337,6 +340,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
 ]:
     #if istep == 1:
     (
@@ -344,6 +349,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
         z_rth_pr_2,
         z_exner_ex_pr,
         exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
     ) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         rho_nnow,
         rho_ref_mc,
@@ -425,6 +432,8 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13(
         z_rth_pr_2,
         z_exner_ex_pr,
         exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
     )
 
 
@@ -480,7 +489,10 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
     n_lev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
-) -> Field[[CellDim, KDim], float]:
+) -> tuple[
+    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], float],
+]:
     #if istep == 1:
 
     z_exner_ex_pr = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
@@ -524,9 +536,9 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
         n_lev,
         nflatlev,
         nflat_gradp,
-    )[2]
+    )[2,4]
 
-    return z_exner_ex_pr
+    return z_exner_ex_pr, z_exner_ic
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -642,6 +654,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
             z_rth_pr_2,
             z_exner_ex_pr,
             exner_pr,
+            z_exner_ic,
+            z_dexner_dz_c_1,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
@@ -700,7 +714,7 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         n_lev,
         nflatlev,
         nflat_gradp,
-        out=z_exner_ex_pr,
+        out=(z_exner_ex_pr, z_exner_ic),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_end - 1, vertical_end),
