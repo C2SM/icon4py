@@ -376,6 +376,24 @@ class SolveNonhydro:
     def initialized(self):
         return self._initialized
 
+    def _allocate_z_fields(self):
+        return ZFields(
+            z_gradh_exner=_allocate(EdgeDim, KDim, grid=self.grid),
+            z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=self.grid),
+            z_beta=_allocate(CellDim, KDim, grid=self.grid),
+            z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=self.grid),
+            z_exner_expl=_allocate(CellDim, KDim, grid=self.grid),
+            z_q=_allocate(CellDim, KDim, grid=self.grid),
+            z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=self.grid),
+            z_rho_e=_allocate(EdgeDim, KDim, grid=self.grid),
+            z_theta_v_e=_allocate(EdgeDim, KDim, grid=self.grid),
+            z_graddiv_vn=_allocate(EdgeDim, KDim, grid=self.grid),
+            z_rho_expl=_allocate(CellDim, KDim, grid=self.grid),
+            z_dwdz_dd=_allocate(CellDim, KDim, grid=self.grid),
+            z_kin_hor_e=_allocate(EdgeDim, KDim, grid=self.grid),
+            z_vt_ie=_allocate(EdgeDim, KDim, grid=self.grid),
+        )
+
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
         self.z_exner_ic = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
@@ -405,6 +423,7 @@ class SolveNonhydro:
         self.enh_divdamp_fac = _allocate(KDim, grid=self.grid)
         self._bdy_divdamp = _allocate(KDim, grid=self.grid)
         self.scal_divdamp = _allocate(KDim, grid=self.grid)
+        self.z_fields = self._allocate_z_fields()
 
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
@@ -1101,7 +1120,7 @@ class SolveNonhydro:
             nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
+            horizontal_end=end_cell_end,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={
