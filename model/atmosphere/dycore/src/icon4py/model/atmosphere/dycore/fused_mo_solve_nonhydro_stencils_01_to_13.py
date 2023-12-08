@@ -90,31 +90,24 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
     vert_idx = broadcast(vert_idx, (CellDim, KDim))
 
 
-    (z_rth_pr_1, z_rth_pr_2) = (
-        where(
-            (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
-            (_set_zero_c_k(), _set_zero_c_k()),
-            (z_rth_pr_1, z_rth_pr_2),
-    )
-    if limited_area
-    else (z_rth_pr_1, z_rth_pr_2)
+    (z_rth_pr_1, z_rth_pr_2) = (_set_zero_c_k(), _set_zero_c_k()) if limited_area else (z_rth_pr_1, z_rth_pr_2)
+
+
+    (z_exner_ex_pr, exner_pr) = where(
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (int32(0) <= vert_idx < n_lev),
+        _mo_solve_nonhydro_stencil_02(
+            exner_exfac=exner_exfac,
+            exner=exner_nnow,
+            exner_ref_mc=exner_ref_mc,
+            exner_pr=exner_pr,
+        ),
+        (z_exner_ex_pr, exner_pr),
     )
 
-    # (z_exner_ex_pr, exner_pr) = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (int32(0) <= vert_idx < n_lev),
-    #     _mo_solve_nonhydro_stencil_02(
-    #         exner_exfac=exner_exfac,
-    #         exner=exner_nnow,
-    #         exner_ref_mc=exner_ref_mc,
-    #         exner_pr=exner_pr,
-    #     ),
-    #     (z_exner_ex_pr, exner_pr),
-    # )
-    #
-    # z_exner_ex_pr = where(
-    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx == n_lev),
-    #     _set_zero_c_k(), z_exner_ex_pr,
-    # )
+    z_exner_ex_pr = where(
+        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_idx == n_lev),
+        _set_zero_c_k(), z_exner_ex_pr,
+    )
 
     # (z_exner_ex_pr, exner_pr) = where(
     #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02), #& (vert_idx < (n_lev + int32(1))),
@@ -652,64 +645,64 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end - 1),
         },
     )
 
-    # _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
-    #     rho_nnow,
-    #     rho_ref_mc,
-    #     theta_v_nnow,
-    #     theta_ref_mc,
-    #     z_rth_pr_1,
-    #     z_rth_pr_2,
-    #     z_theta_v_pr_ic,
-    #     theta_ref_ic,
-    #     d2dexdz2_fac1_mc,
-    #     d2dexdz2_fac2_mc,
-    #     wgtfacq_c_dsl,
-    #     wgtfac_c,
-    #     vwind_expl_wgt,
-    #     exner_pr,
-    #     d_exner_dz_ref_ic,
-    #     ddqz_z_half,
-    #     z_th_ddz_exner_c,
-    #     rho_ic,
-    #     z_exner_ic,
-    #     exner_exfac,
-    #     exner_nnow,
-    #     exner_ref_mc,
-    #     z_exner_ex_pr,
-    #     z_dexner_dz_c_1,
-    #     z_dexner_dz_c_2,
-    #     theta_v_ic,
-    #     inv_ddqz_z_full,
-    #     horz_idx,
-    #     vert_idx,
-    #     limited_area,
-    #     igradp_method,
-    #     w,
-    #     w_concorr_c,
-    #     rho_nvar,
-    #     theta_v_nvar,
-    #     dtime,
-    #     wgt_nnow_rth,
-    #     wgt_nnew_rth,
-    #     istep,
-    #     horizontal_lower_01,
-    #     horizontal_upper_01,
-    #     horizontal_lower_02,
-    #     horizontal_upper_02,
-    #     horizontal_lower_03,
-    #     horizontal_upper_03,
-    #     horizontal_lower_11,
-    #     horizontal_upper_11,
-    #     n_lev,
-    #     nflatlev,
-    #     nflat_gradp,
-    #     out=z_exner_ex_pr,
-    #     domain={
-    #         CellDim: (horizontal_start, horizontal_end),
-    #         KDim: (vertical_end - 1, vertical_end),
-    #     },
-    # )
+    _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
+        rho_nnow,
+        rho_ref_mc,
+        theta_v_nnow,
+        theta_ref_mc,
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_theta_v_pr_ic,
+        theta_ref_ic,
+        d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc,
+        wgtfacq_c_dsl,
+        wgtfac_c,
+        vwind_expl_wgt,
+        exner_pr,
+        d_exner_dz_ref_ic,
+        ddqz_z_half,
+        z_th_ddz_exner_c,
+        rho_ic,
+        z_exner_ic,
+        exner_exfac,
+        exner_nnow,
+        exner_ref_mc,
+        z_exner_ex_pr,
+        z_dexner_dz_c_1,
+        z_dexner_dz_c_2,
+        theta_v_ic,
+        inv_ddqz_z_full,
+        horz_idx,
+        vert_idx,
+        limited_area,
+        igradp_method,
+        w,
+        w_concorr_c,
+        rho_nvar,
+        theta_v_nvar,
+        dtime,
+        wgt_nnow_rth,
+        wgt_nnew_rth,
+        istep,
+        horizontal_lower_01,
+        horizontal_upper_01,
+        horizontal_lower_02,
+        horizontal_upper_02,
+        horizontal_lower_03,
+        horizontal_upper_03,
+        horizontal_lower_11,
+        horizontal_upper_11,
+        n_lev,
+        nflatlev,
+        nflat_gradp,
+        out=z_exner_ex_pr,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
+        },
+    )
