@@ -495,7 +495,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
 ]:
     #if istep == 1:
 
-    z_exner_ex_pr = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+    (z_exner_ex_pr,z_exner_ic) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         rho_nnow,
         rho_ref_mc,
         theta_v_nnow,
@@ -536,50 +536,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
         n_lev,
         nflatlev,
         nflat_gradp,
-    )[2]
-
-    z_exner_ic = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
-        rho_nnow,
-        rho_ref_mc,
-        theta_v_nnow,
-        theta_ref_mc,
-        z_rth_pr_1,
-        z_rth_pr_2,
-        z_theta_v_pr_ic,
-        theta_ref_ic,
-        d2dexdz2_fac1_mc,
-        d2dexdz2_fac2_mc,
-        wgtfacq_c_dsl,
-        wgtfac_c,
-        vwind_expl_wgt,
-        exner_pr,
-        d_exner_dz_ref_ic,
-        ddqz_z_half,
-        z_th_ddz_exner_c,
-        rho_ic,
-        z_exner_ic,
-        exner_exfac,
-        exner_nnow,
-        exner_ref_mc,
-        z_exner_ex_pr,
-        z_dexner_dz_c_1,
-        z_dexner_dz_c_2,
-        theta_v_ic,
-        inv_ddqz_z_full,
-        horz_idx,
-        vert_idx,
-        limited_area,
-        igradp_method,
-        horizontal_lower_01,
-        horizontal_upper_01,
-        horizontal_lower_02,
-        horizontal_upper_02,
-        horizontal_lower_03,
-        horizontal_upper_03,
-        n_lev,
-        nflatlev,
-        nflat_gradp,
-    )[4]
+    )[2,4]
 
     return z_exner_ex_pr, z_exner_ic
 
