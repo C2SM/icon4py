@@ -489,13 +489,10 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
     n_lev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
-) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-]:
+) -> Field[[CellDim, KDim], float]:
     #if istep == 1:
 
-    (z_exner_ex_pr,z_exner_ic) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+    z_exner_ic = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         rho_nnow,
         rho_ref_mc,
         theta_v_nnow,
@@ -536,9 +533,9 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
         n_lev,
         nflatlev,
         nflat_gradp,
-    )[2,4]
+    )[4]
 
-    return z_exner_ex_pr, z_exner_ic
+    return z_exner_ic
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -714,7 +711,8 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         n_lev,
         nflatlev,
         nflat_gradp,
-        out=(z_exner_ex_pr, z_exner_ic),
+        #out=(z_exner_ex_pr, z_exner_ic),
+        out=z_exner_ic,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_end - 1, vertical_end),
