@@ -69,7 +69,7 @@ repos:
     - flake8-bugbear
     - flake8-builtins==2.2.0
     - flake8-debugger
-    - flake8-docstrings
+    #- flake8-docstrings todo: (samkellerhals) pydocstyle is deprecated, move to ruff
     - flake8-eradicate
     - flake8-mutable
     - pygments
