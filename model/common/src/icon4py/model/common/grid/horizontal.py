@@ -294,6 +294,8 @@ class EdgeParams:
 @dataclass(frozen=True)
 class CellParams:
     area: Field[[CellDim], float]
+    mean_cell_area: float
+
     """
     Area of a cell.
 

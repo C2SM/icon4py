@@ -20,6 +20,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
@@ -41,11 +42,11 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_e_in = random_field(grid, EdgeDim, KDim)
-        ptr_coeff_1 = random_field(grid, VertexDim, V2EDim)
-        ptr_coeff_2 = random_field(grid, VertexDim, V2EDim)
-        p_v_out = zero_field(grid, VertexDim, KDim)
-        p_u_out = zero_field(grid, VertexDim, KDim)
+        p_e_in = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        ptr_coeff_1 = random_field(grid, VertexDim, V2EDim, dtype=wpfloat)
+        ptr_coeff_2 = random_field(grid, VertexDim, V2EDim, dtype=wpfloat)
+        p_v_out = zero_field(grid, VertexDim, KDim, dtype=wpfloat)
+        p_u_out = zero_field(grid, VertexDim, KDim, dtype=wpfloat)
 
         return dict(
             p_e_in=p_e_in,

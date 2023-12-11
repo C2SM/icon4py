@@ -13,25 +13,26 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
 from icon4py.model.common.dimension import V2C, CellDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-    p_cell_in: Field[[CellDim, KDim], float],
-    c_intp: Field[[VertexDim, V2CDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    p_vert_out = neighbor_sum(p_cell_in(V2C) * c_intp, axis=V2CDim)
-    return p_vert_out
+    p_cell_in: Field[[CellDim, KDim], wpfloat],
+    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+) -> Field[[VertexDim, KDim], vpfloat]:
+    p_vert_out_wp = neighbor_sum(p_cell_in(V2C) * c_intp, axis=V2CDim)
+    return astype(p_vert_out_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
-    p_cell_in: Field[[CellDim, KDim], float],
-    c_intp: Field[[VertexDim, V2CDim], float],
-    p_vert_out: Field[[VertexDim, KDim], float],
+    p_cell_in: Field[[CellDim, KDim], wpfloat],
+    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    p_vert_out: Field[[VertexDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

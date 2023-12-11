@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
+from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil68(StencilTest):
@@ -51,13 +52,13 @@ class TestMoSolveNonhydroStencil68(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         mask_prog_halo_c = random_mask(grid, CellDim)
-        rho_now = random_field(grid, CellDim, KDim)
-        theta_v_now = random_field(grid, CellDim, KDim)
-        exner_new = random_field(grid, CellDim, KDim)
-        exner_now = random_field(grid, CellDim, KDim)
-        rho_new = random_field(grid, CellDim, KDim)
-        theta_v_new = random_field(grid, CellDim, KDim)
-        cvd_o_rd = 10.0
+        rho_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        cvd_o_rd = wpfloat("10.0")
 
         return dict(
             mask_prog_halo_c=mask_prog_halo_c,

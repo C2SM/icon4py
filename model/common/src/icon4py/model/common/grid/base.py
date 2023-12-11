@@ -21,10 +21,7 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.utils import (
-    ClassLevelCache,
-    neighbortable_offset_provider_for_1d_sparse_fields,
-)
+from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
@@ -109,7 +106,6 @@ class BaseGrid(ABC):
             self.connectivities[dim].shape, from_dim, to_dim
         )
 
-    @ClassLevelCache.cache_method
     def get_offset_provider(self, name):
         if name in self.offset_provider_mapping:
             method, *args = self.offset_provider_mapping[name]
@@ -117,7 +113,6 @@ class BaseGrid(ABC):
         else:
             raise Exception(f"Offset provider for {name} not found.")
 
-    @ClassLevelCache.cache_method
     def get_all_offset_providers(self):
         offset_providers = {}
         for key, value in self.offset_provider_mapping.items():

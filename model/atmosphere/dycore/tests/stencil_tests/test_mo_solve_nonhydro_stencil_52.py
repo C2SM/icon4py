@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_solve_nonhydro_stencil_52_numpy(
@@ -61,29 +62,29 @@ def mo_solve_nonhydro_stencil_52_numpy(
 
 def test_mo_solve_nonhydro_stencil_52():
     grid = SimpleGrid()
-    vwind_impl_wgt = random_field(grid, CellDim)
-    theta_v_ic = random_field(grid, CellDim, KDim)
-    ddqz_z_half = random_field(grid, CellDim, KDim)
-    z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1})
-    z_beta = random_field(grid, CellDim, KDim)
-    z_exner_expl = random_field(grid, CellDim, KDim)
-    z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1})
-    dtime = 8.0
-    cpd = 7.0
+    vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
+    theta_v_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+    ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
+    z_alpha = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
+    z_beta = random_field(grid, CellDim, KDim, dtype=vpfloat)
+    z_exner_expl = random_field(grid, CellDim, KDim, dtype=wpfloat)
+    z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    dtime = wpfloat("8.0")
+    cpd = wpfloat("7.0")
 
-    z_q = random_field(grid, CellDim, KDim)
-    w = random_field(grid, CellDim, KDim)
+    z_q = random_field(grid, CellDim, KDim, dtype=vpfloat)
+    w = random_field(grid, CellDim, KDim, dtype=wpfloat)
 
     z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
-        np.asarray(vwind_impl_wgt),
-        np.asarray(theta_v_ic),
-        np.asarray(ddqz_z_half),
-        np.asarray(z_alpha),
-        np.asarray(z_beta),
-        np.asarray(z_exner_expl),
-        np.asarray(z_w_expl),
-        np.asarray(z_q),
-        np.asarray(w),
+        vwind_impl_wgt.asnumpy(),
+        theta_v_ic.asnumpy(),
+        ddqz_z_half.asnumpy(),
+        z_alpha.asnumpy(),
+        z_beta.asnumpy(),
+        z_exner_expl.asnumpy(),
+        z_w_expl.asnumpy(),
+        z_q.asnumpy(),
+        w.asnumpy(),
         dtime,
         cpd,
     )
@@ -111,5 +112,9 @@ def test_mo_solve_nonhydro_stencil_52():
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(z_q_ref[h_start:h_end, v_start:v_end], z_q[h_start:h_end, v_start:v_end])
-    assert np.allclose(w_ref[h_start:h_end, v_start:v_end], w[h_start:h_end, v_start:v_end])
+    assert np.allclose(
+        z_q_ref[h_start:h_end, v_start:v_end], z_q.asnumpy()[h_start:h_end, v_start:v_end]
+    )
+    assert np.allclose(
+        w_ref[h_start:h_end, v_start:v_end], w.asnumpy()[h_start:h_end, v_start:v_end]
+    )

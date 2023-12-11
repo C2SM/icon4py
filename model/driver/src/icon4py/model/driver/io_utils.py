@@ -19,6 +19,7 @@ from pathlib import Path
 import numpy as np
 
 from gt4py.next import Field
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -30,21 +31,27 @@ from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import Inte
 from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.states.diagnostic_state import DiagnosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, P0REF, CVD_O_RD
 
 from gt4py.next import as_field
 
 from icon4py.model.common.interpolation.stencils import mo_cells2edges_scalar_interior
+
+import sys
+
+
+backend = run_gtfn
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
@@ -57,8 +64,80 @@ class SerializationType(str, Enum):
     NC = "netcdf"
 
 
+def mo_cells2edges_scalar_numpy(
+    grid: IconGrid,
+    cells2edges_interpolation_coeff: np.array,
+    cell_scalar: np.array,
+    mask: np.array,
+):
+    e2c = grid.connectivities[E2CDim]
+    cells2edges_interpolation_coeff = np.expand_dims(cells2edges_interpolation_coeff, axis=-1)
+    mask = np.repeat(np.expand_dims(mask, axis=-1), cell_scalar.shape[1], axis=1)
+    edge_scalar = np.where(mask, np.sum(cell_scalar[e2c] * cells2edges_interpolation_coeff, axis=1), 0.0)
+    return edge_scalar
+
+def mo_u2vn_jabw_numpy(
+    jw_u0: float,
+    jw_up: float,
+    latC: float,
+    lonC: float,
+    edge_lat: np.array,
+    edge_lon: np.array,
+    primal_normal_x: np.array,
+    eta_v_e: np.array,
+    mask: np.array,
+):
+    mask = np.repeat(np.expand_dims(mask, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
+    #u = np.zeros((edge_size, num_levels), dtype=float)
+    # [grid_idx_edge_start_plus1:grid_idx_edge_end, :]
+    u = np.where(mask, jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * edge_lat) ** 2), 0.0)
+    if (jw_up > 1.e-20):
+        u = np.where(
+            mask,
+            u + jw_up * np.exp(-10.0 * np.arccos(np.sin(latC) * np.sin(edge_lat) + np.cos(latC) * np.cos(edge_lat) * np.cos(edge_lon - lonC)) ** 2),
+            u
+        )
+    vn = u * primal_normal_x
+
+    return vn
+
+
+def mo_hydro_adjust(
+    wgtfac_c: np.array,
+    ddqz_z_half: np.array,
+    exner_ref_mc: np.array,
+    d_exner_dz_ref_ic: np.array,
+    theta_ref_mc: np.array,
+    theta_ref_ic: np.array,
+    rho: np.array,
+    exner: np.array,
+    theta_v: np.array,
+    num_levels: int,
+):
+    # virtual temperature
+    temp_v = theta_v * exner
+
+    for k in range(num_levels-2,0,-1):
+        fac1 = wgtfac_c[:,k+1] * (temp_v[:,k+1] - theta_ref_mc[:,k+1] * exner[:,k+1]) - (1.0 - wgtfac_c[:,k+1]) * theta_ref_mc[:,k] * exner[:,k+1]
+        fac2 = (1.0 - wgtfac_c[:,k+1]) * temp_v[:,k] * exner[:,k+1]
+        fac3 = exner_ref_mc[:,k+1] - exner_ref_mc[:,k] - exner[:,k+1]
+
+        quadratic_a = (theta_ref_ic[:,k+1] * exner[:,k+1] + fac1)/ddqz_z_half[:,k+1]
+        quadratic_b = -(quadratic_a * fac3 + fac2 / ddqz_z_half[:,k+1] + fac1 * d_exner_dz_ref_ic[:,k+1])
+        quadratic_c = -(fac2 * fac3 / ddqz_z_half[:,k+1] + fac2 * d_exner_dz_ref_ic[:,k+1])
+
+        exner[:,k] = (quadratic_b + np.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (2.0 * quadratic_a)
+        theta_v[:,k] = temp_v[:,k] / exner[:,k]
+        rho[:,k] = exner[:,k]**CVD_O_RD * P0REF / (RD * theta_v[:,k])
+
+    return rho, exner, theta_v
+
+
 def read_icon_grid(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> IconGrid:
     """
     Read icon grid.
@@ -71,7 +150,7 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
             .construct_icon_grid()
         )
@@ -80,7 +159,8 @@ def read_icon_grid(
 
 
 # TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
-def model_initialization(
+def model_initialization_jabw(
+    icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
     interpolation_savepoint,
@@ -94,14 +174,27 @@ def model_initialization(
     rank=0
 ):
     data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+        "jabw", str(path.absolute()), False, mpi_rank=rank
     )
-    icon_grid = (
-        sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-        .from_savepoint_grid()
-        .construct_icon_grid()
-    )
-    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
+    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
+    grid_idx_edge_start_plus1 = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1)
+    grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().asnumpy()
+    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().asnumpy()
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().asnumpy()
+    geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
+
+    cell_lat = cell_param.center_lat.asnumpy()
+    cell_lon = cell_param.center_lon.asnumpy()
+    edge_lat = edge_param.center[0].asnumpy()
+    edge_lon = edge_param.center[1].asnumpy()
+    primal_normal_x = edge_param.primal_normal[0].asnumpy()
+
+    cell_size = cell_lat.size
+    edge_size = edge_lat.size
 
     #jw_up = 1.0
     #jw_u0 = 35.0
@@ -109,33 +202,28 @@ def model_initialization(
     # DEFINED PARAMETERS for jablonowski williamson:
     eta_0 = 0.252
     eta_t = 0.2    # tropopause
-    gamma = 0.005 # temperature elapse rate (K/m)
-    dtemp = 4.8e5 # empirical temperature difference (K)
-    # for baroclinic wave test in the future
+    gamma = 0.005  # temperature elapse rate (K/m)
+    dtemp = 4.8e5  # empirical temperature difference (K)
+    # for baroclinic wave test
     lonC = MATH_PI / 9.0 # longitude of the perturb centre
-    latC = 2.0 * lonC # latitude of the perturb centre
+    latC = 2.0 * lonC    # latitude of the perturb centre
     ps_o_p0ref = p_sfc / P0REF
     cpd_o_rd = 1.0 / RD_O_CPD
 
-    # create two prognostic states, nnow and nnew?
-    # at least two prognostic states are global because they are needed in the dycore, AND possibly nesting and restart processes in the future
-    # one is enough for the JW test
-    cell_lat = np.asarray(cell_param.center_lat)
-    cell_lon = np.asarray(cell_param.center_lon)
-    edge_lat = np.asarray(edge_param.center[0])
-    edge_lon = np.asarray(edge_param.center[1])
-    primal_normal_x = np.asarray(edge_param.primal_normal[0])
-    primal_normal_y = np.asarray(edge_param.primal_normal[1])
-    geopot_numpy = np.asarray(geopot)
-    cell_size = cell_lat.size
-    edge_size = edge_lat.size
-    vn_numpy = np.zeros((edge_size, num_levels), dtype=float)
     w_numpy = np.zeros((cell_size, num_levels+1), dtype=float)
     exner_numpy = np.zeros((cell_size, num_levels), dtype=float)
     rho_numpy = np.zeros((cell_size, num_levels), dtype=float)
     temperature_numpy = np.zeros((cell_size, num_levels), dtype=float)
     pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
     theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
+
+    #print(cells2edges_coeff.size)
+    #print(grid_idx_edge_end, grid_idx_edge_start_plus1)
+    mask_array_edge_start_plus1_to_edge_end = np.ones(edge_size, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
+    #for i in range(edge_size):
+    #    print(i, mask_array_edge_start_plus1_to_edge_end[i])
+    #sys.exit(0)
 
     sin_lat = np.sin(cell_lat)
     cos_lat = np.cos(cell_lat)
@@ -165,7 +253,7 @@ def model_initialization(
 
             geopot_jw = geopot_avg + jw_u0 * (cos_etav ** 1.5) * (fac1 * jw_u0 * (cos_etav ** 1.5) + fac2)
             temperature_jw = temperature_avg + 0.75 * eta_old * MATH_PI * jw_u0 / RD * sin_etav * np.sqrt(cos_etav) * (2.0 * jw_u0 * fac1 * (cos_etav ** 1.5) + fac2)
-            newton_function = geopot_jw - geopot_numpy[:, k_index]
+            newton_function = geopot_jw - geopot[:, k_index]
             newton_function_prime = -RD / eta_old * temperature_jw
             eta_old = eta_old - newton_function / newton_function_prime
 
@@ -179,26 +267,52 @@ def model_initialization(
         pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** cpd_o_rd
         temperature_numpy[:, k_index] = temperature_jw
 
-    eta_v_e = zero_field(icon_grid, EdgeDim, KDim)
-    mo_cells2edges_scalar_interior(
+    '''
+    mo_cells2edges_scalar_interior.with_backend(backend)(
         cells2edges_coeff,
         eta_v,
         eta_v_e,
-
+        grid_idx_edge_start_plus1,
+        grid_idx_edge_end,
+        0,
+        num_levels,
+    )
+    '''
+    eta_v_e = mo_cells2edges_scalar_numpy(
+        icon_grid,
+        cells2edges_coeff,
+        eta_v,
+        mask_array_edge_start_plus1_to_edge_end,
     )
 
-    for edge_index in range(edge_size):
-        for k_index in range(num_levels):
-            z_lat = edge_lat[edge_index, k_index]
-            z_lon = edge_lon[edge_index, k_index]
-            zu = jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * z_lat) ** 2)
-            if (jw_up > 1.e-20):
-                z_fac1 = np.sin(latC) * np.sin(z_lat) + np.cos(latC) * np.cos(z_lat) * np.cos(z_lon - lonC)
-                z_fac2 = 10.0 * np.arccos(z_fac1)
-                zu = zu + jw_up * np.exp(-z_fac2 ** 2)
+    vn_numpy = mo_u2vn_jabw_numpy(
+        jw_u0,
+        jw_up,
+        latC,
+        lonC,
+        edge_lat,
+        edge_lon,
+        primal_normal_x,
+        eta_v_e,
+        mask_array_edge_start_plus1_to_edge_end,
+    )
 
-            zv = 0.0
-            vn_numpy[edge_index, k_index] = zu * primal_normal_x[edge_index, k_index] + zv * primal_normal_y[edge_index, k_index]
+    # perform hydrostatic adjustment on icon grid
+    rho_numpy, exner_numpy, theta_v_numpy = mo_hydro_adjust(
+        wgtfac_c,
+        ddqz_z_half,
+        exner_ref_mc,
+        d_exner_dz_ref_ic,
+        theta_ref_mc,
+        theta_ref_ic,
+        rho_numpy,
+        exner_numpy,
+        theta_v_numpy,
+        num_levels,
+    )
+
+    # diagnose pressure and temperature again after hydrostatic adjustment
+
 
     vn = as_field((EdgeDim, KDim), vn_numpy)
     w = as_field((CellDim, KDim), w_numpy)
@@ -209,9 +323,13 @@ def model_initialization(
     theta_v = as_field((CellDim, KDim), theta_v_numpy)
 
     # set surface pressure to the prescribed value
-    pres_sfc = as_field((CellDim, KDim), np.full((cell_size, num_levels), fill_value=p_sfc, dtype=float))
+    pres_sfc = as_field((CellDim, KDim), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
-    #TODO (Chia Rui): set up diagnostic values of surface pressure, pressure, and temperature
+    diagnostic_state = DiagnosticState(
+        pressure=pressure,
+        temperature=temperature,
+        pressure_sfc=pres_sfc,
+    )
 
     prognostic_state_1 = PrognosticState(
         w=w,
@@ -227,7 +345,7 @@ def model_initialization(
         rho=rho,
         exner=exner,
     )
-    return (prognostic_state_1, prognostic_state_2)
+    return (prognostic_state_1, prognostic_state_2, diagnostic_state)
 
 
 def read_initial_state(
@@ -318,8 +436,6 @@ def read_initial_state(
         wgt_nnew_rth=solve_nonhydro_init_savepoint.wgt_nnew_rth(),
         wgt_nnow_vel=solve_nonhydro_init_savepoint.wgt_nnow_vel(),
         wgt_nnew_vel=solve_nonhydro_init_savepoint.wgt_nnew_vel(),
-        scal_divdamp=solve_nonhydro_init_savepoint.scal_divdamp(),
-        scal_divdamp_o2=solve_nonhydro_init_savepoint.scal_divdamp_o2(),
     )
 
     prognostic_state_next = PrognosticState(
@@ -342,14 +458,14 @@ def read_initial_state(
         z_fields,
         nh_constants,
         prep_adv,
-        solve_nonhydro_init_savepoint.bdy_divdamp(),
+        solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         prognostic_state_now,
         prognostic_state_next,
     )
 
 
 def read_geometry_fields(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
@@ -363,7 +479,7 @@ def read_geometry_fields(
     """
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+            fname_prefix, str(path.absolute()), False, mpi_rank=rank
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
@@ -379,13 +495,14 @@ def read_geometry_fields(
 
 
 def read_decomp_info(
+    fname_prefix: str,
     path: Path,
     procs_props: ProcessProperties,
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), True, procs_props.rank
+            fname_prefix, str(path.absolute()), True, procs_props.rank
         )
         return sp.from_savepoint_grid().construct_decomposition_info()
     else:
@@ -393,7 +510,7 @@ def read_decomp_info(
 
 
 def read_static_fields(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[
     DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
 ]:
@@ -412,7 +529,7 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         dataprovider = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+            fname_prefix, str(path.absolute()), False, mpi_rank=rank
         )
         icon_grid = (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)

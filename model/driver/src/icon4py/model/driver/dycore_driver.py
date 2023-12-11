@@ -17,12 +17,10 @@ from typing import Callable
 
 import click
 from devtools import Timer
-from gt4py.next import Field
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
 )
@@ -36,9 +34,7 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
     configure_logging,
@@ -152,7 +148,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         z_fields: ZFields,  # local constants in solve_nh
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
 
@@ -168,6 +164,7 @@ class TimeLoop:
         # TODO (Chia Rui): Compute diagnostic variables: P, T, zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
 
         # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
+        #end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
         if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization:
             log.info("running initial step to diffuse fields before timeloop starts")
@@ -197,7 +194,7 @@ class TimeLoop:
                 prep_adv,
                 z_fields,
                 nh_constants,
-                bdy_divdamp,
+                inital_divdamp_fac_o2,
                 do_prep_adv,
             )
             timer.capture()
@@ -218,7 +215,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
 
@@ -228,7 +225,7 @@ class TimeLoop:
             prep_adv,
             z_fields,
             nh_constants,
-            bdy_divdamp,
+            inital_divdamp_fac_o2,
             do_prep_adv,
         )
 
@@ -248,7 +245,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         z_fields: ZFields,
         nh_constants: NHConstants,
-        bdy_divdamp: Field[[KDim], float],
+        inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
 
@@ -266,7 +263,7 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 z_fields=z_fields,
                 nh_constants=nh_constants,
-                bdy_divdamp=bdy_divdamp,
+                divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 idyn_timestep=dyn_substep,
                 l_recompute=do_recompute,
@@ -287,8 +284,9 @@ class TimeLoop:
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
+# "icon_pydycore"
 
-def initialize(file_path: Path, props: ProcessProperties):
+def initialize(fname_prefix: str, file_path: Path, props: ProcessProperties):
     """
     Inititalize the driver run.
 
@@ -315,20 +313,20 @@ def initialize(file_path: Path, props: ProcessProperties):
     log.info(f"reading configuration: experiment {experiment_name}")
     config = read_config(experiment_name)
 
-    decomp_info = read_decomp_info(file_path, props)
+    decomp_info = read_decomp_info(fname_prefix, file_path, props)
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(file_path, rank=props.rank)
+    icon_grid = read_icon_grid(fname_prefix, file_path, rank=props.rank)
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        file_path, rank=props.rank
+        fname_prefix, file_path, rank=props.rank
     )
     (
         diffusion_metric_state,
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-    ) = read_static_fields(file_path)
+    ) = read_static_fields(fname_prefix, file_path)
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -347,11 +345,6 @@ def initialize(file_path: Path, props: ProcessProperties):
 
     nonhydro_params = NonHydrostaticParams(config.solve_nonhydro_config)
 
-    enh_smag_fac = zero_field(icon_grid, KDim)
-    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
-
     solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
         grid=icon_grid,
@@ -361,12 +354,8 @@ def initialize(file_path: Path, props: ProcessProperties):
         interpolation_state=solve_nonhydro_interpolation_state,
         vertical_params=vertical_geometry,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=c_owner_mask,
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     (
@@ -375,7 +364,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
         prognostic_state_now,
         prognostic_state_next,
     ) = read_initial_state(file_path, rank=props.rank)
@@ -394,15 +383,16 @@ def initialize(file_path: Path, props: ProcessProperties):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
     )
 
 
 @click.command()
 @click.argument("input_path")
+@click.argument("fname_prefix")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-def main(input_path, run_path, mpi):
+def main(input_path, fname_prefix, run_path, mpi):
     """
     Run the driver.
 
@@ -432,8 +422,8 @@ def main(input_path, run_path, mpi):
         z_fields,
         nh_constants,
         prep_adv,
-        bdy_divdamp,
-    ) = initialize(Path(input_path), parallel_props)
+        inital_divdamp_fac_o2,
+    ) = initialize(fname_prefix, Path(input_path), parallel_props)
     configure_logging(run_path, timeloop.simulation_date, parallel_props)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
@@ -452,7 +442,7 @@ def main(input_path, run_path, mpi):
         prep_adv,
         z_fields,
         nh_constants,
-        bdy_divdamp,
+        inital_divdamp_fac_o2,
         do_prep_adv=False,
     )
 

@@ -36,7 +36,7 @@ def mo_cells2edges_scalar_interior(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _cells2edges_scalar_interior(
+    _mo_cells2edges_scalar_interior(
         cells2edges_interpolation_coeff,
         cell_scalar,
         out=edge_scalar,

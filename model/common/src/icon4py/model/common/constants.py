@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import sys
 from typing import Final
 
 
@@ -45,7 +45,7 @@ EARTH_RADIUS: Final[float] = 6.371229e6
 EARTH_ANGULAR_VELOCITY: Final[float] = 7.29212e-5
 
 # Math constants
-dbl_eps = 0.01  # EPSILON(1._wp)
+dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
 
 #: math constant pi, circumference of a unit circle
 MATH_PI: Final[float] = 3.14159265358979323846264338327950288

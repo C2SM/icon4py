@@ -31,7 +31,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.driver.dycore_driver import TimeLoop
 
 
@@ -130,11 +130,6 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
     )
 
-    enh_smag_fac = zero_field(icon_grid, KDim)
-    a_vec = random_field(icon_grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
-
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
     assert r04b09_iconrun_config.dtime == diffusion_dtime
 
@@ -160,8 +155,6 @@ def test_run_timeloop_single_step(
         wgt_nnew_rth=sp.wgt_nnew_rth(),
         wgt_nnow_vel=sp.wgt_nnow_vel(),
         wgt_nnew_vel=sp.wgt_nnew_vel(),
-        scal_divdamp=sp.scal_divdamp(),
-        scal_divdamp_o2=sp.scal_divdamp_o2(),
     )
 
     nonhydro_interpolation_state = (
@@ -181,12 +174,8 @@ def test_run_timeloop_single_step(
         interpolation_state=nonhydro_interpolation_state,
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
-        cell_areas=cell_geometry.area,
+        cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
-        a_vec=a_vec,
-        enh_smag_fac=enh_smag_fac,
-        fac=fac,
-        z=z,
     )
 
     nonhydro_diagnostic_state = DiagnosticStateNonHydro(
@@ -243,7 +232,7 @@ def test_run_timeloop_single_step(
         prep_adv,
         z_fields,
         nh_constants,
-        sp.bdy_divdamp(),
+        sp.divdamp_fac_o2(),
         do_prep_adv,
     )
 
@@ -253,31 +242,31 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
-    assert np.allclose(
-        np.asarray(vn_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].vn),
+    assert dallclose(
+        vn_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
         atol=5e-13,
     )
 
-    assert np.allclose(
-        np.asarray(w_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].w),
+    assert dallclose(
+        w_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
         atol=8e-14,
     )
 
-    assert np.allclose(
-        np.asarray(exner_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].exner),
+    assert dallclose(
+        exner_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
     )
 
-    assert np.allclose(
-        np.asarray(theta_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v),
+    assert dallclose(
+        theta_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
     )
 
-    assert np.allclose(
-        np.asarray(rho_sp),
-        np.asarray(prognostic_state_list[timeloop.prognostic_now].rho),
+    assert dallclose(
+        rho_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
     )
 
     if debug_mode:
@@ -302,23 +291,27 @@ def test_run_timeloop_single_step(
                         f.write("\n")
 
         printing(
-            np.asarray(rho_sp.rho()),
-            np.asarray(prognostic_state_list[timeloop.prognostic_now].rho),
+            rho_sp.rho().asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
             "rho",
         )
         printing(
-            np.asarray(exner_sp),
-            np.asarray(prognostic_state_list[timeloop.prognostic_now].exner),
+            exner_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
             "exner",
         )
         printing(
-            np.asarray(theta_sp),
-            np.asarray(prognostic_state_list[timeloop.prognostic_now].theta_v),
+            theta_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
             "theta_v",
         )
         printing(
-            np.asarray(w_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].w), "w"
+            w_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+            "w",
         )
         printing(
-            np.asarray(vn_sp), np.asarray(prognostic_state_list[timeloop.prognostic_now].vn), "vn"
+            vn_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+            "vn",
         )

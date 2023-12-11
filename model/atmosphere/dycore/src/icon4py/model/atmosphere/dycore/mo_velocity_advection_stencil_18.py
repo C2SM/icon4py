@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     Field,
     abs,
+    astype,
     int32,
     minimum,
     neighbor_sum,
@@ -23,6 +24,7 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
 )
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
@@ -30,33 +32,37 @@ def _mo_velocity_advection_stencil_18(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
-    z_w_con_c: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    area: Field[[CellDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    w: Field[[CellDim, KDim], float],
-    ddt_w_adv: Field[[CellDim, KDim], float],
-    scalfac_exdiff: float,
-    cfl_w_limit: float,
-    dtime: float,
-) -> Field[[CellDim, KDim], float]:
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], wpfloat],
+    geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    scalfac_exdiff: wpfloat,
+    cfl_w_limit: vpfloat,
+    dtime: wpfloat,
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_w_con_c_wp, ddqz_z_half_wp, ddt_w_adv_wp, cfl_w_limit_wp = astype(
+        (z_w_con_c, ddqz_z_half, ddt_w_adv, cfl_w_limit), wpfloat
+    )
+
     difcoef = where(
         levmask & cfl_clipping & owner_mask,
         scalfac_exdiff
         * minimum(
-            0.85 - cfl_w_limit * dtime,
-            abs(z_w_con_c) * dtime / ddqz_z_half - cfl_w_limit * dtime,
+            wpfloat("0.85") - cfl_w_limit_wp * dtime,
+            abs(z_w_con_c_wp) * dtime / ddqz_z_half_wp - cfl_w_limit_wp * dtime,
         ),
-        0.0,
+        wpfloat("0.0"),
     )
 
-    ddt_w_adv = where(
+    ddt_w_adv_wp = where(
         levmask & cfl_clipping & owner_mask,
-        ddt_w_adv + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
-        ddt_w_adv,
+        ddt_w_adv_wp + difcoef * area * neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim),
+        ddt_w_adv_wp,
     )
 
-    return ddt_w_adv
+    return astype(ddt_w_adv_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -64,15 +70,15 @@ def mo_velocity_advection_stencil_18(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
-    z_w_con_c: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    area: Field[[CellDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    w: Field[[CellDim, KDim], float],
-    ddt_w_adv: Field[[CellDim, KDim], float],
-    scalfac_exdiff: float,
-    cfl_w_limit: float,
-    dtime: float,
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    area: Field[[CellDim], wpfloat],
+    geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    scalfac_exdiff: wpfloat,
+    cfl_w_limit: vpfloat,
+    dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

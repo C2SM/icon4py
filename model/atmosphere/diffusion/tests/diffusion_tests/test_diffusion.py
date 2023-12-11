@@ -14,18 +14,21 @@
 import numpy as np
 import pytest
 
+import icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
 
-from .utils import (
-    diff_multfac_vn_numpy,
-    enhanced_smagorinski_factor_numpy,
-    smag_limit_numpy,
-    verify_diffusion_fields,
-)
+from .utils import diff_multfac_vn_numpy, smag_limit_numpy, verify_diffusion_fields
+
+
+backend = icon4py.model.atmosphere.diffusion.diffusion.backend
+
+
+backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(r04b09_diffusion_config):
@@ -136,10 +139,10 @@ def test_diffusion_init(
         1.0 / 48.0, additional_parameters.K4W * config.substep_as_float
     )
 
-    assert np.allclose(0.0, np.asarray(diffusion.v_vert))
-    assert np.allclose(0.0, np.asarray(diffusion.u_vert))
-    assert np.allclose(0.0, np.asarray(diffusion.kh_smag_ec))
-    assert np.allclose(0.0, np.asarray(diffusion.kh_smag_e))
+    assert np.allclose(0.0, diffusion.v_vert.asnumpy())
+    assert np.allclose(0.0, diffusion.u_vert.asnumpy())
+    assert np.allclose(0.0, diffusion.kh_smag_ec.asnumpy())
+    assert np.allclose(0.0, diffusion.kh_smag_e.asnumpy())
 
     shape_k = (icon_grid.num_levels,)
     expected_smag_limit = smag_limit_numpy(
@@ -150,18 +153,18 @@ def test_diffusion_init(
     )
 
     assert diffusion.smag_offset == 0.25 * additional_parameters.K4 * config.substep_as_float
-    assert np.allclose(expected_smag_limit, diffusion.smag_limit)
+    assert np.allclose(expected_smag_limit, diffusion.smag_limit.asnumpy())
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(
         shape_k, additional_parameters.K4, config.substep_as_float
     )
-    assert np.allclose(expected_diff_multfac_vn, diffusion.diff_multfac_vn)
+    assert np.allclose(expected_diff_multfac_vn, diffusion.diff_multfac_vn.asnumpy())
     expected_enh_smag_fac = enhanced_smagorinski_factor_numpy(
         additional_parameters.smagorinski_factor,
         additional_parameters.smagorinski_height,
-        np.asarray(grid_savepoint.vct_a()),
+        grid_savepoint.vct_a().asnumpy(),
     )
-    assert np.allclose(expected_enh_smag_fac, np.asarray(diffusion.enh_smag_fac))
+    assert np.allclose(expected_enh_smag_fac, diffusion.enh_smag_fac.asnumpy())
 
 
 def _verify_init_values_against_savepoint(
@@ -176,12 +179,14 @@ def _verify_init_values_against_savepoint(
     assert savepoint.diff_multfac_w() == diffusion.diff_multfac_w
 
     # this is done in diffusion.run(...) because it depends on the dtime
-    scale_k(diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={})
-    assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag)
+    scale_k.with_backend(backend)(
+        diffusion.enh_smag_fac, dtime, diffusion.diff_multfac_smag, offset_provider={}
+    )
+    assert np.allclose(savepoint.diff_multfac_smag(), diffusion.diff_multfac_smag.asnumpy())
 
-    assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit)
-    assert np.allclose(savepoint.diff_multfac_n2w(), np.asarray(diffusion.diff_multfac_n2w))
-    assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn)
+    assert np.allclose(savepoint.smag_limit(), diffusion.smag_limit.asnumpy())
+    assert np.allclose(savepoint.diff_multfac_n2w(), diffusion.diff_multfac_n2w.asnumpy())
+    assert np.allclose(savepoint.diff_multfac_vn(), diffusion.diff_multfac_vn.asnumpy())
 
 
 @pytest.mark.datatest
