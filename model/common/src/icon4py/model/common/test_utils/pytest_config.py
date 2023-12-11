@@ -84,14 +84,14 @@ def pytest_generate_tests(metafunc):
         ids = []
 
         if backend_option is None:
-            params.append(None)
-            ids.append("embedded")
+            params.append(run_embedded_iterator_ir)
+            ids.append("embedded_iterator_ir")
         elif backend_option == "gtfn_cpu":
             params.append(run_gtfn)
             ids.append("backend=gtfn_cpu")
-        elif backend_option == "embedded_ir":
-            params.append(run_embedded_iterator_ir)
-            ids.append("backend=embedded_ir")
+        elif backend_option == "embedded":
+            params.append(None)
+            ids.append("backend=embedded")
         elif backend_option == "gtfn_gpu":
             params.append(run_gtfn_gpu)
             ids.append("backend=gtfn_gpu")

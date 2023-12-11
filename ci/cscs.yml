@@ -44,11 +44,11 @@ variables:
 build_job:
   extends: .build_template
 
-test_model_job_embedded_ir_simple_grid:
+test_model_job_embedded_iterator_ir_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -c model/ --verbose -- --benchmark-skip --backend=embedded_ir -n auto
+    - tox -r -c model/ --verbose -- --benchmark-skip -n auto
 
 test_tools_job:
   extends: .test_template
