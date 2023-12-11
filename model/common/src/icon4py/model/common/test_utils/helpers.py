@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from typing import ClassVar, Optional
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_gpu
+
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -21,6 +21,7 @@ from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
+from gt4py.next.program_processors.runners.gtfn import run_gtfn_gpu
 
 from ..grid.base import BaseGrid
 
@@ -180,8 +181,10 @@ if pytest_benchmark:
                 }
             benchmark.pedantic(
                 self.PROGRAM.with_backend(backend),
-                args=(), kwargs={**input_data, "offset_provider": grid.get_all_offset_providers()},
-                iterations=1, rounds=1
+                args=(),
+                kwargs={**input_data, "offset_provider": grid.get_all_offset_providers()},
+                iterations=1,
+                rounds=1,
             )
 
 else:
