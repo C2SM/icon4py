@@ -61,9 +61,9 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     )
 
     fencil_params = [
-            *(p for p in fencil.params if not is_size_param(p)),
-            *(p for p in get_missing_domain_params(fencil.params)),
-        ]
+        *(p for p in fencil.params if not is_size_param(p)),
+        *(p for p in get_missing_domain_params(fencil.params)),
+    ]
 
     ordered_params = order_grid_size_symbols(fencil_params)
 
@@ -76,7 +76,7 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
 
 
 def order_grid_size_symbols(symbols):
-    move_to_end = {'num_cells', 'num_edges', 'num_vertices'}
+    move_to_end = {"num_cells", "num_edges", "num_vertices"}
 
     front, back = [], []
     for symbol in symbols:

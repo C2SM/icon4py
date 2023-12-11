@@ -131,6 +131,7 @@ def check_code_was_generated(stencil_name: str) -> None:
     check_cpp_codegen(f"{stencil_name}.cpp")
 
 
+# TODO: (samkellerhals) add temporaries codegen here once all work.
 @pytest.mark.parametrize(
     ("stencil_module", "stencil_name"),
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
