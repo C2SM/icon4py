@@ -178,10 +178,10 @@ if pytest_benchmark:
                     k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
                     for k, v in input_data.items()
                 }
-            benchmark(
+            benchmark.pedantic(
                 self.PROGRAM.with_backend(backend),
-                **input_data,
-                offset_provider=grid.get_all_offset_providers(),
+                args=(), kwargs={**input_data, "offset_provider": grid.get_all_offset_providers()},
+                iterations=1, rounds=1
             )
 
 else:
