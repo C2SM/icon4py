@@ -125,22 +125,22 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         (z_exner_ex_pr, exner_pr),
     )
 
-    vert_start = maximum(1, nflatlev)
-
-    (z_exner_ic, z_dexner_dz_c_1) = where(
-        (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_start <= vert_idx),
-        _predictor_stencils_4_5_6(
-            wgtfacq_c_dsl=wgtfacq_c_dsl,
-            z_exner_ex_pr=z_exner_ex_pr,
-            z_exner_ic=z_exner_ic,
-            wgtfac_c=wgtfac_c,
-            inv_ddqz_z_full=inv_ddqz_z_full,
-            z_dexner_dz_c_1=z_dexner_dz_c_1,
-            k_field=vert_idx_1d,
-            nlev=n_lev,
-        ),
-        (z_exner_ic, z_dexner_dz_c_1),
-    ) if igradp_method == 3 else (z_exner_ic, z_dexner_dz_c_1)
+    # vert_start = maximum(1, nflatlev)
+    #
+    # (z_exner_ic, z_dexner_dz_c_1) = where(
+    #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02) & (vert_start <= vert_idx),
+    #     _predictor_stencils_4_5_6(
+    #         wgtfacq_c_dsl=wgtfacq_c_dsl,
+    #         z_exner_ex_pr=z_exner_ex_pr,
+    #         z_exner_ic=z_exner_ic,
+    #         wgtfac_c=wgtfac_c,
+    #         inv_ddqz_z_full=inv_ddqz_z_full,
+    #         z_dexner_dz_c_1=z_dexner_dz_c_1,
+    #         k_field=vert_idx_1d,
+    #         nlev=n_lev,
+    #     ),
+    #     (z_exner_ic, z_dexner_dz_c_1),
+    # ) if igradp_method == 3 else (z_exner_ic, z_dexner_dz_c_1)
     #
     # (z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
     #     (horizontal_lower_02 <= horz_idx < horizontal_upper_02),
