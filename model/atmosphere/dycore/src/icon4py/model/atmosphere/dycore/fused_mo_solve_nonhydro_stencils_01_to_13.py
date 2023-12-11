@@ -542,7 +542,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
         nflat_gradp,
     )
 
-    return z_exner_ic
+    return z_exner_ex_pr
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -719,7 +719,7 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
         nflatlev,
         nflat_gradp,
         #out=(z_exner_ex_pr, z_exner_ic),
-        out=z_exner_ic,
+        out=z_exner_ex_pr,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_end - 1, vertical_end),
