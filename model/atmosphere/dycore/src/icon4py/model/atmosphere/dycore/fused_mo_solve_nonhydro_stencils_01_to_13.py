@@ -492,7 +492,14 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
 ) -> Field[[CellDim, KDim], float]:
     #if istep == 1:
 
-    z_exner_ic = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
+    (
+        z_rth_pr_1,
+        z_rth_pr_2,
+        z_exner_ex_pr,
+        exner_pr,
+        z_exner_ic,
+        z_dexner_dz_c_1,
+    ) = _fused_mo_solve_nonhydro_stencils_01_to_13_predictor(
         rho_nnow,
         rho_ref_mc,
         theta_v_nnow,
@@ -533,7 +540,7 @@ def _fused_mo_solve_nonhydro_stencils_01_to_13_restricted(
         n_lev,
         nflatlev,
         nflat_gradp,
-    )[4]
+    )
 
     return z_exner_ic
 
