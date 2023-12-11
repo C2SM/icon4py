@@ -96,9 +96,9 @@ class BaseGrid(ABC):
         self.size[EdgeDim] = self.config.num_edges
         self.size[KDim] = self.config.num_levels
 
-    def _get_offset_provider(self, dim, from_dim, to_dim):
+    def _get_offset_provider(self, dim, from_dim, to_dim, skip_values = False):
         return NeighborTableOffsetProvider(
-            self.connectivities[dim], from_dim, to_dim, self.size[dim]
+            self.connectivities[dim], from_dim, to_dim, self.size[dim], skip_values
         )
 
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):

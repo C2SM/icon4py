@@ -26,7 +26,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
@@ -39,6 +39,8 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.common.test_utils.helpers import zero_field, as_1D_sparse_field, random_field
+from icon4py.model.common.grid.simple import SimpleGrid
 
 
 @pytest.mark.datatest
@@ -64,14 +66,16 @@ def test_compute_c_lin_e(
 
 @pytest.mark.datatest
 def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid):
-    primal_edge_length = 1e0/grid_savepoint.inverse_primal_edge_lengths()
-    edge_orientation = grid_savepoint.tangent_orientation()
-    area = grid_savepoint.edge_areas()
+    mesh = icon_grid
+    primal_edge_length = grid_savepoint.primal_edge_lengths()
+    edge_orientation = grid_savepoint.edge_orientation()
+    area = grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
-    geofac_div = compute_geofac_div(
-        np.asarray(primal_edge_length),
-        np.asarray(edge_orientation),
-        np.asarray(area),
+    geofac_div = zero_field(mesh, CellDim, C2EDim)
+    compute_geofac_div(
+        primal_edge_length,
+        edge_orientation,
+        area, out=geofac_div, offset_provider={"C2E": mesh.get_offset_provider("C2E"), "C2CE":mesh.get_offset_provider("C2CE")}
     )
 
-    assert np.allclose(geofac_div, geofac_div_ref.asnumpy())
+    assert np.allclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())

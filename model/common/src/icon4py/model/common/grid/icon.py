@@ -47,21 +47,21 @@ class IconGrid(BaseGrid):
         self.start_indices = {}
         self.end_indices = {}
         self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
-            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
-            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
-            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
+            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim, False),
+            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim, True),
+            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim, True),
+            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim, True),
             "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
-            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
-            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
-            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
-            "C2V": (self._get_offset_provider, C2VDim, CellDim, VertexDim),
+            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim, True),
+            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim, True),
+            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim, False),
+            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim, False),
+            "C2V": (self._get_offset_provider, C2VDim, CellDim, VertexDim, True),
             "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
             "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
             "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
-            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
-            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
+            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim, True),
+            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim, True),
             "Koff": (lambda: KDim,),  # Koff is a special case
         }
 

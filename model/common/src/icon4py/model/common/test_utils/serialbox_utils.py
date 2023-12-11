@@ -136,6 +136,9 @@ class IconGridSavePoint(IconSavepoint):
     def inverse_primal_edge_lengths(self):
         return self._get_field("inv_primal_edge_length", EdgeDim)
 
+    def primal_edge_lengths(self):
+        return self._get_field("primal_edge_length", EdgeDim)
+
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", EdgeDim)
 
