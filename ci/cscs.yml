@@ -54,13 +54,13 @@ test_model_job_gtfn_cpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_cpu
+    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_cpu
 
 test_model_job_gtfn_gpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_gpu
+    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_gpu
 
 test_tools_job:
   extends: .test_template
@@ -72,10 +72,10 @@ benchmark_model_gtfn_cpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
-      - tox -r -e benchmark -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+      - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
 
 benchmark_model_gtfn_gpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - tox -r -e benchmark -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
+    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
