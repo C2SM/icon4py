@@ -23,8 +23,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
     _mo_velocity_advection_stencil_06,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_09 import (
-    _mo_velocity_advection_stencil_09,
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
+    _interpolate_to_cell_center,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
@@ -156,7 +156,7 @@ def _fused_stencils_9_10(
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
-        _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
+        _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
         local_z_w_concorr_mc,
     )
 
