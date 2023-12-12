@@ -20,29 +20,29 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_09(
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+def _interpolate_to_cell_center(
+    interpolant: Field[[EdgeDim, KDim], vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
-    z_w_concorr_mc_wp = neighbor_sum(e_bln_c_s(C2CE) * z_w_concorr_me_wp(C2E), axis=C2EDim)
-    return astype(z_w_concorr_mc_wp, vpfloat)
+    interpolant_wp = astype(interpolant, wpfloat)
+    interpolation_wp = neighbor_sum(e_bln_c_s(C2CE) * interpolant_wp(C2E), axis=C2EDim)
+    return astype(interpolation_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_09(
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+def interpolate_to_cell_center(
+    interpolant: Field[[EdgeDim, KDim], vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    interpolation: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_09(
-        z_w_concorr_me,
+    _interpolate_to_cell_center(
+        interpolant,
         e_bln_c_s,
-        out=z_w_concorr_mc,
+        out=interpolation,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
