@@ -1239,7 +1239,7 @@ def fused_solve_nonhydro_stencil_41_to_60(
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -1334,6 +1334,6 @@ def fused_solve_nonhydro_stencil_41_to_60(
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            KDim: (vertical_start, vertical_end - 1),
         },
     )
