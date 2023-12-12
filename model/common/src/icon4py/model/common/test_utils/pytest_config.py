@@ -83,7 +83,9 @@ def pytest_generate_tests(metafunc):
         params = []
         ids = []
 
-        if backend_option is None:
+        if (
+            backend_option == "None"
+        ):  # TODO (samkellerhals): set None to default as soon as all tests run in embedded mode
             params.append(None)
             ids.append("embedded")
 
