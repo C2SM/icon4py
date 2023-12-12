@@ -91,7 +91,7 @@ def pytest_generate_tests(metafunc):
             params.append(run_gtfn)
             ids.append("backend=gtfn_cpu")
 
-        elif backend_option == "embedded":
+        elif backend_option == "roundtrip":
             params.append(run_roundtrip)
             ids.append("backend=roundtrip")
 
