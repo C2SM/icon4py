@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,

@@ -100,7 +100,9 @@ def pytest_generate_tests(metafunc):
             ids.append("backend=gtfn_gpu")
 
         if len(params) < 1:
-            raise Exception(f"Selected backend: '{backend_option}' is not supported. Select from: 'embedded', 'gtfn_cpu', 'gtfn_gpu'.")
+            raise Exception(
+                f"Selected backend: '{backend_option}' is not supported. Select from: 'embedded', 'gtfn_cpu', 'gtfn_gpu'."
+            )
 
         metafunc.parametrize("backend", params, ids=ids)
 

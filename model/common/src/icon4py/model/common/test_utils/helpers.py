@@ -21,7 +21,6 @@ from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_gpu
 
 from ..grid.base import BaseGrid
 
