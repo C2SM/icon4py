@@ -50,6 +50,18 @@ test_model_job_roundtrip_simple_grid:
   script:
     - tox -r -c model/ --verbose -- --benchmark-skip -n auto
 
+test_model_job_gtfn_cpu_simple_grid:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_cpu
+
+test_model_job_gtfn_gpu_simple_grid:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_gpu
+
 test_tools_job:
   extends: .test_template
   stage: test
