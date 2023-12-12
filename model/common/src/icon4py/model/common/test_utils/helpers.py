@@ -138,6 +138,15 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
+def allocate_data(backend, input_data):
+    _allocate_field = constructors.as_field.partial(allocator=backend)
+    input_data = {
+        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+        for k, v in input_data.items()
+    }
+    return input_data
+
+
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
@@ -147,12 +156,7 @@ def _test_validation(self, grid, backend, input_data):
         },
     )
 
-    if backend == run_gtfn_gpu:
-        _allocate_field = constructors.as_field.partial(allocator=backend)
-        input_data = {
-            k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
-            for k, v in input_data.items()
-        }
+    input_data = allocate_data(backend, input_data)
 
     self.PROGRAM.with_backend(backend)(
         **input_data,
@@ -172,13 +176,7 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
-
-            if backend == run_gtfn_gpu:
-                _allocate_field = constructors.as_field.partial(allocator=backend)
-                input_data = {
-                    k: _allocate_field(v.domain.dims, v.ndarray) if not is_scalar_type(v) else v
-                    for k, v in input_data.items()
-                }
+            input_data = allocate_data(backend, input_data)
             benchmark.pedantic(
                 self.PROGRAM.with_backend(backend),
                 args=(),

@@ -44,7 +44,7 @@ variables:
 build_job:
   extends: .build_template
 
-test_model_job_embedded_iterator_ir_simple_grid:
+test_model_job_roundtrip_simple_grid:
   extends: .test_template
   stage: test
   script:

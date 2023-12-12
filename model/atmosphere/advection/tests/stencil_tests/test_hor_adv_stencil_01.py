@@ -74,7 +74,7 @@ def test_hor_adv_stencil_01(backend):
         p_dtime,
         offset_provider={
             "C2E": grid.get_offset_provider("C2E"),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2CE": grid.get_offset_provider("C2CE"),
         },
     )
     assert np.allclose(tracer_new.asnumpy(), ref)

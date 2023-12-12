@@ -66,7 +66,7 @@ def test_btraj_dreg_stencil_02(backend):
         opt_famask_dsl,
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
+            "E2EC": grid.get_offset_provider("E2EC"),
         },
     )
 

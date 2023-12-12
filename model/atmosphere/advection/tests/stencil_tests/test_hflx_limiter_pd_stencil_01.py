@@ -69,7 +69,7 @@ def test_hflx_limiter_pd_stencil_01(backend):
         p_dtime,
         dbl_eps,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2CE": grid.get_offset_provider("C2CE"),
             "C2E": grid.get_offset_provider("C2E"),
         },
     )

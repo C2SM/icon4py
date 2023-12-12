@@ -308,7 +308,7 @@ def test_divide_flux_area_list_stencil_02(backend):
         patch2_cell_blk_vmask,
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
+            "E2EC": grid.get_offset_provider("E2EC"),
         },
     )
     assert np.allclose(dreg_patch1_1_lon_vmask.asnumpy(), ref_1)

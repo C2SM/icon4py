@@ -15,7 +15,7 @@ import os
 
 import pytest
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
-from gt4py.next.program_processors.runners.roundtrip import backend as run_embedded_iterator_ir
+from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 
 
 def pytest_configure(config):
@@ -43,7 +43,7 @@ def pytest_addoption(parser):
             "--backend",
             action="store",
             default=None,
-            help="GT4Py backend to use when executing stencils. Defaults to embedded backend, other options include gtfn_cpu, gtfn_gpu, embedded_ir",
+            help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
         pass
@@ -84,17 +84,23 @@ def pytest_generate_tests(metafunc):
         ids = []
 
         if backend_option is None:
-            params.append(run_embedded_iterator_ir)
-            ids.append("embedded_iterator_ir")
+            params.append(run_roundtrip)
+            ids.append("roundtrip")
+
         elif backend_option == "gtfn_cpu":
             params.append(run_gtfn)
             ids.append("backend=gtfn_cpu")
+
         elif backend_option == "embedded":
             params.append(None)
             ids.append("backend=embedded")
+
         elif backend_option == "gtfn_gpu":
             params.append(run_gtfn_gpu)
             ids.append("backend=gtfn_gpu")
+
+        if len(params) < 1:
+            raise Exception(f"Selected backend: '{backend_option}' is not supported. Select from: 'embedded', 'gtfn_cpu', 'gtfn_gpu'.")
 
         metafunc.parametrize("backend", params, ids=ids)
 

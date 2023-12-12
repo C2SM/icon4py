@@ -91,7 +91,7 @@ def test_upwind_hflux_miura_cycl_stencil_02(backend):
         z_rho_new_dsl,
         z_tracer_new_dsl,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2CE": grid.get_offset_provider("C2CE"),
             "C2E": grid.get_offset_provider("C2E"),
         },
     )
