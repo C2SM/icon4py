@@ -84,8 +84,8 @@ def pytest_generate_tests(metafunc):
         ids = []
 
         if backend_option is None:
-            params.append(run_roundtrip)
-            ids.append("roundtrip")
+            params.append(None)
+            ids.append("embedded")
 
         elif backend_option == "gtfn_cpu":
             params.append(run_gtfn)
