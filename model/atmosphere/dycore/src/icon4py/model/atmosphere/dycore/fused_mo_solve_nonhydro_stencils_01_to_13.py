@@ -770,7 +770,6 @@ def fused_mo_solve_nonhydro_stencils_01_to_13(
             z_exner_ex_pr,
             exner_pr,
             z_exner_ic,
-            z_dexner_dz_c_1,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
