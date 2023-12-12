@@ -42,7 +42,7 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default=None,
+            default="roundtrip",
             help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
