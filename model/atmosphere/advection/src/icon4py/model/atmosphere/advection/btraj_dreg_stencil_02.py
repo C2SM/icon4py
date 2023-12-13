@@ -34,7 +34,7 @@ def _btraj_dreg_stencil_02(
     return opt_famask_dsl
 
 
-@program
+@program(grid_type="unstructured")
 def btraj_dreg_stencil_02(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],

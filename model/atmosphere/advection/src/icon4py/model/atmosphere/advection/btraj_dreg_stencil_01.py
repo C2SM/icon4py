@@ -30,7 +30,7 @@ def _btraj_dreg_stencil_01(
     return lvn_sys_pos
 
 
-@program
+@program(grid_type="unstructured")
 def btraj_dreg_stencil_01(
     lcounterclock: bool,
     p_vn: Field[[EdgeDim, KDim], float],

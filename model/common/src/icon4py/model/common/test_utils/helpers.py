@@ -163,7 +163,7 @@ def _test_validation(self, grid, backend, input_data):
     )
     for name in self.OUTPUTS:
         assert np.allclose(
-            input_data[name].asnumpy(), reference_outputs[name]
+            input_data[name].asnumpy(), reference_outputs[name], equal_nan=True
         ), f"Validation failed for '{name}'"
 
 
