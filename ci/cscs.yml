@@ -57,8 +57,6 @@ test_model_job_dace_cpu_simple_grid:
   script:
     - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_cpu
-  only:
-  - main
   allow_failure: true
 
 test_model_job_dace_gpu_simple_grid:
@@ -67,8 +65,6 @@ test_model_job_dace_gpu_simple_grid:
   script:
     - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_gpu
-  only:
-  - main
   allow_failure: true
 
 test_model_job_gtfn_cpu_simple_grid:
@@ -95,8 +91,6 @@ benchmark_model_dace_cpu_simple_grid:
   script:
     - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_cpu --grid=simple_grid
-  only:
-  - main
   when: manual
 
 benchmark_model_dace_gpu_simple_grid:
@@ -105,8 +99,6 @@ benchmark_model_dace_gpu_simple_grid:
   script:
     - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_gpu --grid=simple_grid
-  only:
-  - main
   when: manual
 
 benchmark_model_gtfn_cpu_simple_grid:
