@@ -89,12 +89,17 @@ def pytest_generate_tests(metafunc):
         }
 
         try:
-            from gt4py.next.program_processors.runners.dace_iterator import run_dace_cpu, run_dace_gpu
+            from gt4py.next.program_processors.runners.dace_iterator import (
+                run_dace_cpu,
+                run_dace_gpu,
+            )
 
-            backends.update({
-                "dace_cpu": run_dace_cpu,
-                "dace_gpu": run_dace_gpu,
-            })
+            backends.update(
+                {
+                    "dace_cpu": run_dace_cpu,
+                    "dace_gpu": run_dace_gpu,
+                }
+            )
         except ImportError:
             # dace module not installed, ignore dace backends
             pass
@@ -107,7 +112,9 @@ def pytest_generate_tests(metafunc):
                 + "] and pass it as an argument to --backend when invoking pytest."
             )
 
-        metafunc.parametrize("backend", [backends[backend_option]], ids=[f"backend={backend_option}"])
+        metafunc.parametrize(
+            "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
+        )
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
