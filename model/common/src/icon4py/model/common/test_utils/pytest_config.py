@@ -14,8 +14,8 @@
 import os
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
-from gt4py.next.program_processors.runners.roundtrip import executor
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 
 
 def pytest_configure(config):
@@ -42,8 +42,8 @@ def pytest_addoption(parser):
         parser.addoption(
             "--backend",
             action="store",
-            default="embedded",
-            help="GT4Py backend to use when executing stencils. Defaults to embedded, other options include gtfn_cpu",
+            default="roundtrip",
+            help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
         pass
@@ -83,16 +83,27 @@ def pytest_generate_tests(metafunc):
         params = []
         ids = []
 
-        if backend_option == "gtfn_cpu":
+        if (
+            backend_option == "None"
+        ):  # TODO (samkellerhals): set None to default as soon as all tests run in embedded mode
+            params.append(None)
+            ids.append("embedded")
+
+        elif backend_option == "gtfn_cpu":
             params.append(run_gtfn)
             ids.append("backend=gtfn_cpu")
-        elif backend_option == "embedded":
-            params.append(executor)
-            ids.append("backend=embedded")
-        # TODO (skellerhals): add gpu support
-        else:
+
+        elif backend_option == "roundtrip":
+            params.append(run_roundtrip)
+            ids.append("backend=roundtrip")
+
+        elif backend_option == "gtfn_gpu":
+            params.append(run_gtfn_gpu)
+            ids.append("backend=gtfn_gpu")
+
+        if len(params) < 1:
             raise Exception(
-                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest."
+                f"Selected backend: '{backend_option}' is not supported. Select from: 'embedded', 'gtfn_cpu', 'gtfn_gpu'."
             )
 
         metafunc.parametrize("backend", params, ids=ids)
