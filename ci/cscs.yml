@@ -11,6 +11,7 @@ stages:
   PYVERSION: 3.10.9
 
 variables:
+  DACE_VERSION: "0.15.1"
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
   PYTHON_VERSION: "3.10"
 
@@ -54,7 +55,7 @@ test_model_job_dace_cpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - pip install dace
+    - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_cpu
   only:
   - main
@@ -64,7 +65,7 @@ test_model_job_dace_gpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - pip install dace
+    - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_gpu
   only:
   - main
@@ -92,16 +93,20 @@ benchmark_model_dace_cpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - pip install dace
+    - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_cpu --grid=simple_grid
+  only:
+  - main
   when: manual
 
 benchmark_model_dace_gpu_simple_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - pip install dace
+    - pip install dace==$DACE_VERSION
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_gpu --grid=simple_grid
+  only:
+  - main
   when: manual
 
 benchmark_model_gtfn_cpu_simple_grid:
