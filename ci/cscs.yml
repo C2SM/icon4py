@@ -56,7 +56,9 @@ test_model_job_dace_cpu_simple_grid:
   script:
     - pip install dace
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_cpu
-  when: manual
+  only:
+  - main
+  allow_failure: true
 
 test_model_job_dace_gpu_simple_grid:
   extends: .test_template
@@ -64,7 +66,9 @@ test_model_job_dace_gpu_simple_grid:
   script:
     - pip install dace
     - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_gpu
-  when: manual
+  only:
+  - main
+  allow_failure: true
 
 test_model_job_gtfn_cpu_simple_grid:
   extends: .test_template
