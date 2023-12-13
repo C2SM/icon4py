@@ -39,6 +39,7 @@ def pytest_addoption(parser):
         pass
 
     try:
+        # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
             "--backend",
             action="store",
@@ -80,33 +81,40 @@ def pytest_generate_tests(metafunc):
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
 
-        params = []
-        ids = []
+        backends = {
+            "embedded": None,
+            "roundtrip": run_roundtrip,
+            "gtfn_cpu": run_gtfn,
+            "gtfn_gpu": run_gtfn_gpu,
+        }
 
-        if (
-            backend_option == "None"
-        ):  # TODO (samkellerhals): set None to default as soon as all tests run in embedded mode
-            params.append(None)
-            ids.append("embedded")
-
-        elif backend_option == "gtfn_cpu":
-            params.append(run_gtfn)
-            ids.append("backend=gtfn_cpu")
-
-        elif backend_option == "roundtrip":
-            params.append(run_roundtrip)
-            ids.append("backend=roundtrip")
-
-        elif backend_option == "gtfn_gpu":
-            params.append(run_gtfn_gpu)
-            ids.append("backend=gtfn_gpu")
-
-        if len(params) < 1:
-            raise Exception(
-                f"Selected backend: '{backend_option}' is not supported. Select from: 'embedded', 'gtfn_cpu', 'gtfn_gpu'."
+        try:
+            from gt4py.next.program_processors.runners.dace_iterator import (
+                run_dace_cpu,
+                run_dace_gpu,
             )
 
-        metafunc.parametrize("backend", params, ids=ids)
+            backends.update(
+                {
+                    "dace_cpu": run_dace_cpu,
+                    "dace_gpu": run_dace_gpu,
+                }
+            )
+        except ImportError:
+            # dace module not installed, ignore dace backends
+            pass
+
+        if backend_option not in backends:
+            available_backends = ", ".join([f"'{k}'" for k in backends.keys()])
+            raise Exception(
+                "Need to select a backend. Select from: ["
+                + available_backends
+                + "] and pass it as an argument to --backend when invoking pytest."
+            )
+
+        metafunc.parametrize(
+            "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
+        )
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
