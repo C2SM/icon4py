@@ -13,12 +13,11 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 import (
     upwind_hflux_miura_cycl_stencil_02,
 )
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
 
@@ -91,7 +90,7 @@ def test_upwind_hflux_miura_cycl_stencil_02(backend):
         z_rho_new_dsl,
         z_tracer_new_dsl,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2CE": grid.get_offset_provider("C2CE"),
             "C2E": grid.get_offset_provider("C2E"),
         },
     )
