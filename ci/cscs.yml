@@ -35,7 +35,6 @@ variables:
     - pip install tox clang-format
     - python -c "import cupy"
     - ls ${SERIALIZED_DATA_PATH}
-    - export SERIALIZED_DATA_PATH=${SERIALIZED_DATA_PATH}
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -44,6 +43,7 @@ variables:
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     CSCS_NEEDED_DATA: icon4py
+    SERIALIZED_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
 
 build_job:
   extends: .build_template
