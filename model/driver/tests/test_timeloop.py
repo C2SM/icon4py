@@ -22,7 +22,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -154,13 +153,6 @@ def test_run_timeloop_single_step(
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
-    )
-
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
@@ -285,7 +277,6 @@ def test_run_timeloop_single_step(
         prognostic_state_list,
         prep_adv,
         z_fields,
-        nh_constants,
         sp.divdamp_fac_o2(),
         do_prep_adv,
     )
