@@ -954,7 +954,7 @@ def test_run_solve_nonhydro_multi_step(
 
 @pytest.mark.datatest
 def test_non_hydrostatic_params(savepoint_nonhydro_init):
-    config = config = NonHydrostaticConfig()
+    config = NonHydrostaticConfig()
     params = NonHydrostaticParams(config)
 
     assert params.wgt_nnew_vel == savepoint_nonhydro_init.wgt_nnew_vel()
