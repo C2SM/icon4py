@@ -47,6 +47,7 @@ build_job:
   extends: .build_template
 
 test job:
+  extends: .test_template
   script:
     ls /apps/daint/UES/jenkssl/ciext/icon4py
   variables:
