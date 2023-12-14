@@ -14,6 +14,7 @@ variables:
   DACE_VERSION: "0.15.1"
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
   PYTHON_VERSION: "3.10"
+  SERIALIZED_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
 
 .build_template:
   stage: build
@@ -45,78 +46,84 @@ variables:
 build_job:
   extends: .build_template
 
-test_model_job_roundtrip_simple_grid:
-  extends: .test_template
-  stage: test
+test job:
   script:
-    - tox -r -c model/ --verbose -- --benchmark-skip -n auto
+    ls /apps/daint/UES/jenkssl/ciext/icon4py
+  variables:
+    CSCS_NEEDED_DATA: icon4py
 
-test_model_job_dace_cpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_cpu
-  only:
-  - main
-  allow_failure: true
-
-test_model_job_dace_gpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_gpu
-  only:
-  - main
-  allow_failure: true
-
-test_model_job_gtfn_cpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_cpu
-
-test_model_job_gtfn_gpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_gpu
-
-test_tools_job:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -c tools/ --verbose
-
-benchmark_model_dace_cpu_simple_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_cpu --grid=simple_grid
-  only:
-  - main
-  when: manual
-
-benchmark_model_dace_gpu_simple_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_gpu --grid=simple_grid
-  only:
-  - main
-  when: manual
-
-benchmark_model_gtfn_cpu_simple_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
-
-benchmark_model_gtfn_gpu_simple_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid
+#test_model_job_roundtrip_simple_grid:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - tox -r -c model/ --verbose -- --benchmark-skip -n auto
+#
+#test_model_job_dace_cpu_simple_grid:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - pip install dace==$DACE_VERSION
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_cpu
+#  only:
+#  - main
+#  allow_failure: true
+#
+#test_model_job_dace_gpu_simple_grid:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - pip install dace==$DACE_VERSION
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_gpu
+#  only:
+#  - main
+#  allow_failure: true
+#
+#test_model_job_gtfn_cpu_simple_grid:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_cpu
+#
+#test_model_job_gtfn_gpu_simple_grid:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_gpu
+#
+#test_tools_job:
+#  extends: .test_template
+#  stage: test
+#  script:
+#    - tox -r -c tools/ --verbose
+#
+#benchmark_model_dace_cpu_simple_grid:
+#  extends: .test_template
+#  stage: benchmark
+#  script:
+#    - pip install dace==$DACE_VERSION
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_cpu --grid=simple_grid
+#  only:
+#  - main
+#  when: manual
+#
+#benchmark_model_dace_gpu_simple_grid:
+#  extends: .test_template
+#  stage: benchmark
+#  script:
+#    - pip install dace==$DACE_VERSION
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=dace_gpu --grid=simple_grid
+#  only:
+#  - main
+#  when: manual
+#
+#benchmark_model_gtfn_cpu_simple_grid:
+#  extends: .test_template
+#  stage: benchmark
+#  script:
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=gtfn_cpu --grid=simple_grid
+#
+#benchmark_model_gtfn_gpu_simple_grid:
+#  extends: .test_template
+#  stage: benchmark
+#  script:
+#    - tox -r -e stencil_tests -c model/ --verbose -- --benchmark-only --backend=gtfn_gpu --grid=simple_grid

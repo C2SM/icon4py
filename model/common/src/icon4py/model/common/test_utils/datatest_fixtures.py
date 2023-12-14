@@ -17,7 +17,7 @@ from ..decomposition.definitions import SingleNodeRun
 from .data_handling import download_and_extract
 from .datatest_utils import (
     DATA_URIS,
-    SER_DATA_BASEPATH,
+    SERIALIZED_DATA_BASEPATH,
     create_icon_serial_data_provider,
     get_datapath_for_ranked_data,
     get_processor_properties_for_run,
@@ -35,7 +35,7 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return get_ranked_data_path(SER_DATA_BASEPATH, processor_props)
+    return get_ranked_data_path(SERIALIZED_DATA_BASEPATH, processor_props)
 
 
 @pytest.fixture(scope="session")

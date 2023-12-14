@@ -10,17 +10,26 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import os
 from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
 
 
-TEST_UTILS_PATH = Path(__file__).parent
-MODEL_PATH = TEST_UTILS_PATH.parent.parent
-COMMON_PATH = MODEL_PATH.parent.parent.parent.parent
-BASE_PATH = COMMON_PATH.parent.joinpath("testdata")
+def get_serialized_data_path() -> Path:
+    test_utils_path = Path(__file__).parent
+    model_path = test_utils_path.parent.parent
+    common_path = model_path.parent.parent.parent.parent
+    env_base_path = os.getenv('SERIALIZED_DATA_PATH')
 
+    if env_base_path:
+        return Path(env_base_path)
+    else:
+        return common_path.parent.joinpath("serialized_data")
+
+
+SERIALIZED_DATA_PATH = get_serialized_data_path()
+SERIALIZED_DATA_BASEPATH = SERIALIZED_DATA_PATH.joinpath("ser_icondata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 DATA_URIS = {
@@ -28,7 +37,6 @@ DATA_URIS = {
     2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
-SER_DATA_BASEPATH = BASE_PATH.joinpath("ser_icondata")
 
 
 def get_processor_properties_for_run(run_instance):

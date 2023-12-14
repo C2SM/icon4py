@@ -15,7 +15,7 @@ import pytest
 
 from icon4py.model.common.decomposition.definitions import SingleNodeRun
 from icon4py.model.common.test_utils.datatest_utils import (
-    SER_DATA_BASEPATH,
+    SERIALIZED_DATA_BASEPATH,
     create_icon_serial_data_provider,
     get_datapath_for_ranked_data,
     get_processor_properties_for_run,
@@ -25,7 +25,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
 
 def get_icon_grid():
     processor_properties = get_processor_properties_for_run(SingleNodeRun())
-    ranked_path = get_ranked_data_path(SER_DATA_BASEPATH, processor_properties)
+    ranked_path = get_ranked_data_path(SERIALIZED_DATA_BASEPATH, processor_properties)
     data_path = get_datapath_for_ranked_data(ranked_path)
     icon_data_provider = create_icon_serial_data_provider(data_path, processor_properties)
     grid_savepoint = icon_data_provider.from_savepoint_grid()
