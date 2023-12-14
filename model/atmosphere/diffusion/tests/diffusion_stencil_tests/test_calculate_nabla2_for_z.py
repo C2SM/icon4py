@@ -56,10 +56,11 @@ class TestCalculateNabla2ForZ(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid, backend):
-        if isinstance(backend, OTFCompileExecutor):
-            pytest.skip(
-                "Execution domain needs to be restricted or boundary taken into account in stencil."
-            )
+        if hasattr(backend, 'executor'):
+            if isinstance(backend.executor, OTFCompileExecutor):
+                pytest.skip(
+                    "Execution domain needs to be restricted or boundary taken into account in stencil."
+                )
         kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
         theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
