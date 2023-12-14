@@ -43,8 +43,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     zero_field,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     calculate_diagnostic_quantities_for_turbulence,
@@ -712,7 +712,7 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
-            horz_idx=self.horizontal_edge_index,
+            edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
@@ -731,11 +731,11 @@ class Diffusion:
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
+            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(backend)(
+        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
@@ -746,8 +746,8 @@ class Diffusion:
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
-            vert_idx=self.vertical_index,
-            horz_idx=self.horizontal_cell_index,
+            k=self.vertical_index,
+            cell=self.horizontal_cell_index,
             nrdmax=int32(
                 self.vertical_params.index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
@@ -762,7 +762,7 @@ class Diffusion:
             },
         )
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
+            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
         log.debug(

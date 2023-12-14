@@ -24,10 +24,10 @@ from icon4py.model.common.test_utils.helpers import _shape, random_field
 def face_val_ppm_stencil_01_numpy(
     p_cc: np.array,
     p_cellhgt_mc_now: np.array,
-    vert_idx: np.array,
+    k: np.array,
     elev: int32,
 ):
-    # this is a comment: vert_idx = np.broadcast_to(vert_idx, p_cc.shape)
+    # this is a comment: k = np.broadcast_to(k, p_cc.shape)
 
     # 01a
     zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
@@ -55,7 +55,7 @@ def face_val_ppm_stencil_01_numpy(
         + (p_cellhgt_mc_now[:, 1:-1] + 2.0 * p_cellhgt_mc_now[:, 1:-1]) * zfac_m1
     )
 
-    z_slope = np.where(vert_idx[1:-1] < elev, z_slope_a, z_slope_b)
+    z_slope = np.where(k[1:-1] < elev, z_slope_a, z_slope_b)
 
     return z_slope
 
@@ -65,22 +65,22 @@ def test_face_val_ppm_stencil_01(backend):
     p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
     p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
 
-    vert_idx = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
-    elev = vert_idx[-2]
+    k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
+    elev = k[-2]
 
     z_slope = random_field(grid, CellDim, KDim)
 
     ref = face_val_ppm_stencil_01_numpy(
         p_cc.asnumpy(),
         p_cellhgt_mc_now.asnumpy(),
-        vert_idx.asnumpy(),
+        k.asnumpy(),
         elev,
     )
 
     face_val_ppm_stencil_01.with_backend(backend)(
         p_cc,
         p_cellhgt_mc_now,
-        vert_idx,
+        k,
         elev,
         z_slope,
         offset_provider={"Koff": KDim},

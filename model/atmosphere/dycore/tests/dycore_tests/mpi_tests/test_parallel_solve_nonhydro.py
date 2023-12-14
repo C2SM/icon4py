@@ -20,9 +20,11 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition import definitions
@@ -40,6 +42,9 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fi
 )
 
 
+@pytest.mark.xfail(
+    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+)
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",

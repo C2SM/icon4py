@@ -24,9 +24,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
@@ -160,8 +157,26 @@ class IconGridSavePoint(IconSavepoint):
     def dual_normal_cell_y(self):
         return self._get_field("dual_normal_cell_y", EdgeDim, E2CDim)
 
+    def primal_normal_x(self):
+        return self._get_field("primal_normal_v1", EdgeDim)
+
+    def primal_normal_y(self):
+        return self._get_field("primal_normal_v2", EdgeDim)
+
     def cell_areas(self):
         return self._get_field("cell_areas", CellDim)
+
+    def cell_center_lat(self):
+        return self._get_field("cell_center_lat", CellDim)
+
+    def cell_center_lon(self):
+        return self._get_field("cell_center_lon", CellDim)
+
+    def edge_center_lat(self):
+        return self._get_field("edges_center_lat", EdgeDim)
+
+    def edge_center_lon(self):
+        return self._get_field("edges_center_lon", EdgeDim)
 
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
@@ -387,10 +402,19 @@ class IconGridSavePoint(IconSavepoint):
             dual_normal_cell_y=dual_normal_cell[1],
             edge_areas=self.edge_areas(),
             f_e=self.f_e(),
+            edge_center_lat=self.edge_center_lat(),
+            edge_center_lon=self.edge_center_lon(),
+            primal_normal_x=self.primal_normal_x(),
+            primal_normal_y=self.primal_normal_y()
         )
 
     def construct_cell_geometry(self) -> CellParams:
-        return CellParams(area=self.cell_areas(), mean_cell_area=self.mean_cell_area())
+        return CellParams(
+            area=self.cell_areas(),
+            mean_cell_area=self.mean_cell_area(),
+            cell_center_lat=self.cell_center_lat(),
+            cell_center_lon=self.cell_center_lon()
+        )
 
 
 class InterpolationSavepoint(IconSavepoint):
@@ -466,27 +490,6 @@ class InterpolationSavepoint(IconSavepoint):
             nudgecoeff_e=self.nudgecoeff_e(),
         )
 
-    def construct_interpolation_state_for_nonhydro(self) -> InterpolationState:
-        grg = self.geofac_grg()
-        return InterpolationState(
-            c_lin_e=self.c_lin_e(),
-            c_intp=self.c_intp(),
-            e_flx_avg=self.e_flx_avg(),
-            geofac_grdiv=self.geofac_grdiv(),
-            geofac_rot=self.geofac_rot(),
-            pos_on_tplane_e_1=self.pos_on_tplane_e_x(),
-            pos_on_tplane_e_2=self.pos_on_tplane_e_y(),
-            rbf_vec_coeff_e=self.rbf_vec_coeff_e(),
-            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
-            rbf_coeff_1=self.rbf_vec_coeff_v1(),
-            rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
-            geofac_n2s=self.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=self.nudgecoeff_e(),
-        )
-
 
 class MetricSavepoint(IconSavepoint):
     def bdy_halo_c(self):
@@ -512,6 +515,9 @@ class MetricSavepoint(IconSavepoint):
 
     def inv_ddqz_z_full(self):
         return self._get_field("inv_ddqz_z_full", CellDim, KDim)
+
+    def ddqz_z_full(self):
+        return self._get_field("ddqz_z_full", CellDim, KDim)
 
     def ipeidx_dsl(self):
         return self._get_field("ipeidx_dsl", EdgeDim, KDim, dtype=bool)
@@ -548,9 +554,6 @@ class MetricSavepoint(IconSavepoint):
 
     def wgtfacq_c_dsl(self):
         return self._get_field("wgtfacq_c_dsl", CellDim, KDim)
-
-    def wgtfacq_c(self):
-        return self._get_field("wgtfacq_c", CellDim, KDim)
 
     def zdiff_gradp(self):
         field = self._get_field("zdiff_gradp_dsl", EdgeDim, E2CDim, KDim)
@@ -636,43 +639,6 @@ class MetricSavepoint(IconSavepoint):
     def zd_indlist(self):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
-    def construct_nh_metric_state(self, num_k_lev) -> MetricStateNonHydro:
-        return MetricStateNonHydro(
-            bdy_halo_c=self.bdy_halo_c(),
-            mask_prog_halo_c=self.mask_prog_halo_c(),
-            rayleigh_w=self.rayleigh_w(),
-            exner_exfac=self.exner_exfac(),
-            exner_ref_mc=self.exner_ref_mc(),
-            wgtfac_c=self.wgtfac_c(),
-            wgtfacq_c_dsl=self.wgtfacq_c_dsl(),
-            inv_ddqz_z_full=self.inv_ddqz_z_full(),
-            rho_ref_mc=self.rho_ref_mc(),
-            theta_ref_mc=self.theta_ref_mc(),
-            vwind_expl_wgt=self.vwind_expl_wgt(),
-            d_exner_dz_ref_ic=self.d_exner_dz_ref_ic(),
-            ddqz_z_half=self.ddqz_z_half(),
-            theta_ref_ic=self.theta_ref_ic(),
-            d2dexdz2_fac1_mc=self.d2dexdz2_fac1_mc(),
-            d2dexdz2_fac2_mc=self.d2dexdz2_fac2_mc(),
-            rho_ref_me=self.rho_ref_me(),
-            theta_ref_me=self.theta_ref_me(),
-            ddxn_z_full=self.ddxn_z_full(),
-            zdiff_gradp=self.zdiff_gradp(),
-            vertoffset_gradp=self.vertoffset_gradp(),
-            ipeidx_dsl=self.ipeidx_dsl(),
-            pg_exdist=self.pg_exdist(),
-            ddqz_z_full_e=self.ddqz_z_full_e(),
-            ddxt_z_full=self.ddxt_z_full(),
-            wgtfac_e=self.wgtfac_e(),
-            wgtfacq_e_dsl=self.wgtfacq_e_dsl(num_k_lev),
-            vwind_impl_wgt=self.vwind_impl_wgt(),
-            hmask_dd3d=self.hmask_dd3d(),
-            scalfac_dd3d=self.scalfac_dd3d(),
-            coeff1_dwdz=self.coeff1_dwdz(),
-            coeff2_dwdz=self.coeff2_dwdz(),
-            coeff_gradekin=self.coeff_gradekin(),
-        )
-
     def construct_metric_state_for_diffusion(self) -> DiffusionMetricState:
         return DiffusionMetricState(
             mask_hdiff=self.mask_hdiff(),
@@ -754,20 +720,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             div_ic=self.div_ic(),
             dwdx=self.dwdx(),
             dwdy=self.dwdy(),
-        )
-
-    def construct_diagnostics(self) -> DiagnosticState:
-        return DiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
-            vt=None,
-            vn_ie=None,
-            w_concorr_c=None,
-            ddt_w_adv_pc_before=None,
-            ddt_vn_apc_pc_before=None,
-            ntnd=None,
         )
 
 
@@ -1241,6 +1193,95 @@ class IconNHFinalExitSavepoint(IconSavepoint):
         return self._get_field("x_exner", CellDim, KDim)
 
 
+class IconJabwInitSavepoint(IconSavepoint):
+    def exner(self):
+        return self._get_field("exner_init", CellDim, KDim)
+
+    def rho(self):
+        return self._get_field("rho_init", CellDim, KDim)
+
+    def w(self):
+        return self._get_field("w_init", CellDim, KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v_init", CellDim, KDim)
+
+    def pressure(self):
+        return self._get_field("pressure_init", CellDim, KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("pressure_surface", CellDim)
+
+    def temperature(self):
+        return self._get_field("temperature_init", CellDim, KDim)
+
+    def vn(self):
+        return self._get_field("vn_init", EdgeDim, KDim)
+
+    def eta0(self):
+        return self.serializer.read("eta0", self.savepoint)[0]
+
+    def etat(self):
+        return self.serializer.read("etat", self.savepoint)[0]
+
+    def gamma(self):
+        return self.serializer.read("gamma", self.savepoint)[0]
+
+    def dtemp(self):
+        return self.serializer.read("dtemp", self.savepoint)[0]
+
+    def latC(self):
+        return self.serializer.read("latC", self.savepoint)[0]
+
+    def lonC(self):
+        return self.serializer.read("lonC", self.savepoint)[0]
+
+class IconJabwIntermediateSavepoint(IconSavepoint):
+    def exner(self):
+        return self._get_field("exner_intermediate", CellDim, KDim)
+
+    def rho(self):
+        return self._get_field("rho_intermediate", CellDim, KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v_intermediate", CellDim, KDim)
+
+    def pressure(self):
+        return self._get_field("pressure_intermediate", CellDim, KDim)
+
+    def temperature(self):
+        return self._get_field("temperature_intermediate", CellDim, KDim)
+
+class IconJabwFinalSavepoint(IconSavepoint):
+    def exner(self):
+        return self._get_field("exner_final", CellDim, KDim)
+
+    def rho(self):
+        return self._get_field("rho_final", CellDim, KDim)
+
+    def vn(self):
+        return self._get_field("vn_final", EdgeDim, KDim)
+
+    def w(self):
+        return self._get_field("w_final", CellDim, KDim)
+
+    def theta_v(self):
+        return self._get_field("theta_v_final", CellDim, KDim)
+
+    def pressure(self):
+        return self._get_field("pressure_final", CellDim, KDim)
+
+    def temperature(self):
+        return self._get_field("temperature_final", CellDim, KDim)
+
+    def eta_v(self):
+        return self._get_field("zeta_v_final", CellDim, KDim)
+
+    def eta_v_e(self):
+        return self._get_field("zeta_v_e_final", EdgeDim, KDim)
+
+
+
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
         self.rank = mpi_rank
@@ -1357,3 +1398,27 @@ class IconSerialDataProvider:
             self.serializer.savepoint["solve_nonhydro_step"].date[date].jstep[jstep].as_savepoint()
         )
         return IconNHFinalExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_jabw_init(
+        self
+    ) -> IconJabwInitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
+        )
+        return IconJabwInitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_jabw_intermediate(
+        self
+    ) -> IconJabwIntermediateSavepoint:
+        savepoint = (
+            self.serializer.savepoint["icon-jabw-intermediate"].id[1].as_savepoint()
+        )
+        return IconJabwIntermediateSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_jabw_final(
+        self
+    ) -> IconJabwFinalSavepoint:
+        savepoint = (
+            self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
+        )
+        return IconJabwFinalSavepoint(savepoint, self.serializer, size=self.grid_size)

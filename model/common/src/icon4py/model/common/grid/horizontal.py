@@ -169,8 +169,8 @@ class EdgeParams:
         dual_normal_cell_y=None,
         edge_areas=None,
         f_e=None,
-        center_lat=None,
-        center_lon=None,
+        edge_center_lat=None,
+        edge_center_lon=None,
         primal_normal_x=None,
         primal_normal_y=None,
     ):
@@ -281,9 +281,9 @@ class EdgeParams:
         Coriolis parameter at cell edges
         """
 
-        self.center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
-            center_lat,
-            center_lon,
+        self.edge_center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
+            edge_center_lat,
+            edge_center_lon,
         )
 
         self.primal_normal: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
@@ -302,5 +302,5 @@ class CellParams:
     defined int ICON in mo_model_domain.f90:t_grid_cells%area
     """
 
-    center_lat: Field[[CellDim], float]
-    center_lon: Field[[CellDim], float]
+    cell_center_lat: Field[[CellDim], float]
+    cell_center_lon: Field[[CellDim], float]

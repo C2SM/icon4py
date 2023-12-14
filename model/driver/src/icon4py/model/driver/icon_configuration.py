@@ -38,6 +38,14 @@ class IconRunConfig:
     """linit_dyn in ICON"""
     apply_initial_stabilization: bool = True  # False if in restart mode
 
+    """veladv_offctr"""
+    time_discretization_veladv_offctr: int = 0.25
+
+    """rhotheta_offctr"""
+    time_discretization_rhotheta_offctr: int = -0.1
+
+    output_path="./"
+
 
 @dataclass
 class IconConfig:
@@ -86,8 +94,21 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             NonHydrostaticConfig(),
         )
 
+    def _Jablownoski_Williamson_config():
+        return (
+            IconRunConfig(
+                dtime=300.0,
+                end_date=datetime(1, 1, 1, 0, 5, 0),
+                apply_initial_stabilization=False,
+            ),
+            _default_diffusion_config(),
+            NonHydrostaticConfig(),
+        )
+
     if experiment == "mch_ch_r04b09_dsl":
         (model_run_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
+    elif experiment == "jabw":
+        (model_run_config, diffusion_config, nonhydro_config) = _Jablownoski_Williamson_config()
     else:
         log.warning("Experiment name is not specified, default configuration is used.")
         (model_run_config, diffusion_config, nonhydro_config) = _default_config()

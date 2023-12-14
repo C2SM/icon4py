@@ -50,7 +50,6 @@ def _recon_lsq_cell_c_svd_stencil(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-
     p_coeff_10_dsl = (
         lsq_pseudoinv_9(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_9(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
