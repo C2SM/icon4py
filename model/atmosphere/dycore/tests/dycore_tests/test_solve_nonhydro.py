@@ -814,7 +814,6 @@ def test_run_solve_nonhydro_multi_step(
 
     prognostic_state_ls = create_prognostic_states(sp)
 
-
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
@@ -839,7 +838,6 @@ def test_run_solve_nonhydro_multi_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_ls=prognostic_state_ls,
             prep_adv=prep_adv,
-
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
             idyn_timestep=dyn_timestep,

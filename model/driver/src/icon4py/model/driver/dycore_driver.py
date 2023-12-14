@@ -28,7 +28,6 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     create_exchange,
@@ -147,7 +146,6 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
-        z_fields: ZFields,  # local constants in solve_nh
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -190,7 +188,6 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv,
-                z_fields,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
@@ -210,7 +207,6 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -218,7 +214,6 @@ class TimeLoop:
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
             prep_adv,
-            z_fields,
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
@@ -237,7 +232,6 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
