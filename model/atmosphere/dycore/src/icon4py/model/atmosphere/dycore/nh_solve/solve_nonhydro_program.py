@@ -83,12 +83,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
     _mo_solve_nonhydro_stencil_49,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
-    _mo_solve_nonhydro_stencil_59,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
-    _mo_solve_nonhydro_stencil_60,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
     _mo_solve_nonhydro_stencil_61,
 )
@@ -534,30 +528,6 @@ def predictor_stencils_35_36(
     )
 
 
-@field_operator
-def _predictor_stencils_37_38(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-]:
-    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field == int32(0),
-        _mo_solve_nonhydro_stencil_37(vn, vt),
-        (vn_ie, z_vt_ie, z_kin_hor_e),
-    )
-    vn_ie = where(k_field == nlev, _mo_solve_nonhydro_stencil_38(vn, wgtfacq_e_dsl), vn_ie)
-    return vn_ie, z_vt_ie, z_kin_hor_e
-
-
 @program
 def predictor_stencils_37_38(
     vn: Field[[EdgeDim, KDim], float],
@@ -566,26 +536,27 @@ def predictor_stencils_37_38(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _predictor_stencils_37_38(
+    _mo_solve_nonhydro_stencil_37(
         vn,
         vt,
-        vn_ie,
-        z_vt_ie,
-        z_kin_hor_e,
-        wgtfacq_e_dsl,
-        k_field,
-        nlev,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_start + 1),
+        },
+    )
+    _mo_solve_nonhydro_stencil_38(
+        vn,
+        wgtfacq_e_dsl,
+        out=vn_ie,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
         },
     )
 

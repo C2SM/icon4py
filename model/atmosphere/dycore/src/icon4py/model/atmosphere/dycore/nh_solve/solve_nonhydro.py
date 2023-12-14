@@ -379,12 +379,8 @@ class SolveNonhydro:
             z_graddiv_vn=_allocate(EdgeDim, KDim, grid=self.grid),
             z_rho_expl=_allocate(CellDim, KDim, grid=self.grid),
             z_dwdz_dd=_allocate(CellDim, KDim, grid=self.grid),
-            z_kin_hor_e=_allocate(
-                EdgeDim, KDim, is_halfdim=True, grid=self.grid
-            ),  # TODO (magdalena) overallocated due to num_lev + 1 in domain
-            z_vt_ie=_allocate(
-                EdgeDim, KDim, is_halfdim=True, grid=self.grid
-            ),  # TODO (magdalena) overallocated due to num_lev + 1 in domain
+            z_kin_hor_e=_allocate(EdgeDim, KDim, grid=self.grid),
+            z_vt_ie=_allocate(EdgeDim, KDim, grid=self.grid),
         )
 
     def _allocate_local_fields(self):
@@ -1095,8 +1091,6 @@ class SolveNonhydro:
                 z_vt_ie=z_fields.z_vt_ie,
                 z_kin_hor_e=z_fields.z_kin_hor_e,
                 wgtfacq_e_dsl=self.metric_state_nonhydro.wgtfacq_e,
-                k_field=self.k_field,
-                nlev=self.grid.num_levels,
                 horizontal_start=start_edge_lb_plus4,
                 horizontal_end=end_edge_local_minus2,
                 vertical_start=0,
