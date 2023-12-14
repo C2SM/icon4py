@@ -137,7 +137,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -271,7 +270,19 @@ class NonHydrostaticParams:
         self.grav_o_cpd: Final[float] = constants.GRAV / constants.CPD
 
         # start level for 3D divergence damping terms
-        self.kstart_dd3d: int = 0
+        self.kstart_dd3d: Final[int] = 0
+
+        #: Weighting coefficients for velocity advection if tendency averaging is used
+        #: The off-centering specified here turned out to be beneficial to numerical
+        #: stability in extreme situations
+        self.wgt_nnow_vel: Final[float] = 0.5 - config.veladv_offctr
+        self.wgt_nnew_vel: Final[float] = 0.5 + config.veladv_offctr
+
+        #: Weighting coefficients for rho and theta at interface levels in the corrector step
+        #: This empirically determined weighting minimizes the vertical wind off-centering
+        #: needed for numerical stability of vertical sound wave propagation
+        self.wgt_nnew_rth: Final[float] = 0.5 + config.rhotheta_offctr
+        self.wgt_nnow_rth: Final[float] = 1.0 - self.wgt_nnew_rth
 
         # start level for moist physics processes (specified by htop_moist_proc)
         self.kstart_moist: int = 1
@@ -410,7 +421,6 @@ class SolveNonhydro:
         prognostic_state_ls: list[PrognosticState],
         prep_adv: PrepAdvection,
         z_fields: ZFields,  # TODO (Magdalena): move local fields to SolveNonHydro
-        nh_constants: NHConstants,
         divdamp_fac_o2: float,
         dtime: float,
         idyn_timestep: float,
@@ -424,6 +434,7 @@ class SolveNonhydro:
         log.info(
             f"running timestep: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv} "
         )
+
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -471,7 +482,6 @@ class SolveNonhydro:
             nnew=nnew,
             nnow=nnow,
             lclean_mflx=lclean_mflx,
-            nh_constants=nh_constants,
             lprep_adv=lprep_adv,
         )
         log.info(
@@ -529,6 +539,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
+    # flake8: noqa: C901
     def run_predictor_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -616,13 +627,11 @@ class SolveNonhydro:
         start_cell_lb_plus2 = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
         )
-        end_cell_local_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-        )
+
+        end_cell_halo = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         start_cell_nudging = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.nudging(CellDim)
         )
-
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
         #  Precompute Rayleigh damping factor
@@ -652,7 +661,7 @@ class SolveNonhydro:
             exner_pr=diagnostic_state_nh.exner_pr,
             z_exner_ex_pr=self.z_exner_ex_pr,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
@@ -671,7 +680,7 @@ class SolveNonhydro:
                 k_field=self.k_field,
                 nlev=self.grid.num_levels,
                 horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_local_minus1,
+                horizontal_end=end_cell_halo,
                 vertical_start=max(1, self.vertical_params.nflatlev),
                 vertical_end=self.grid.num_levels + 1,
                 offset_provider={"Koff": KDim},
@@ -699,7 +708,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
@@ -715,7 +724,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={"Koff": KDim},
@@ -730,7 +739,7 @@ class SolveNonhydro:
                 z_rth_pr_2=self.z_rth_pr_2,
                 z_dexner_dz_c_2=self.z_dexner_dz_c_2,
                 horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_local_minus1,
+                horizontal_end=end_cell_halo,
                 vertical_start=self.vertical_params.nflat_gradp,
                 vertical_end=self.grid.num_levels,
                 offset_provider={"Koff": KDim},
@@ -791,7 +800,7 @@ class SolveNonhydro:
                 geofac_grg_x=self.interpolation_state.geofac_grg_x,
                 geofac_grg_y=self.interpolation_state.geofac_grg_y,
                 horizontal_start=start_cell_lb_plus2,
-                horizontal_end=end_cell_local_minus1,
+                horizontal_end=end_cell_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_ccpr,2)
                 offset_provider={
@@ -1092,7 +1101,7 @@ class SolveNonhydro:
             nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_local_minus1,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={
@@ -1336,7 +1345,6 @@ class SolveNonhydro:
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state: list[PrognosticState],
         z_fields: ZFields,
-        nh_constants: NHConstants,
         divdamp_fac_o2: float,
         prep_adv: PrepAdvection,
         dtime: float,
@@ -1439,8 +1447,8 @@ class SolveNonhydro:
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             dtime=dtime,
-            wgt_nnow_rth=nh_constants.wgt_nnow_rth,
-            wgt_nnew_rth=nh_constants.wgt_nnew_rth,
+            wgt_nnow_rth=self.params.wgt_nnow_rth,
+            wgt_nnew_rth=self.params.wgt_nnew_rth,
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_local,
             vertical_start=1,
@@ -1475,8 +1483,8 @@ class SolveNonhydro:
                 z_gradh_exner=z_fields.z_gradh_exner,
                 vn_nnew=prognostic_state[nnew].vn,
                 dtime=dtime,
-                wgt_nnow_vel=nh_constants.wgt_nnow_vel,
-                wgt_nnew_vel=nh_constants.wgt_nnew_vel,
+                wgt_nnow_vel=self.params.wgt_nnow_vel,
+                wgt_nnew_vel=self.params.wgt_nnew_vel,
                 cpd=constants.CPD,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
@@ -1652,8 +1660,8 @@ class SolveNonhydro:
                 cvd=constants.CVD,
                 dtime=dtime,
                 cpd=constants.CPD,
-                wgt_nnow_vel=nh_constants.wgt_nnow_vel,
-                wgt_nnew_vel=nh_constants.wgt_nnew_vel,
+                wgt_nnow_vel=self.params.wgt_nnow_vel,
+                wgt_nnew_vel=self.params.wgt_nnew_vel,
                 nlev=self.grid.num_levels,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
