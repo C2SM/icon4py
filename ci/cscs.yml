@@ -14,7 +14,6 @@ variables:
   DACE_VERSION: "0.15.1"
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
   PYTHON_VERSION: "3.10"
-  SERIALIZED_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
 
 .build_template:
   stage: build
@@ -35,7 +34,8 @@ variables:
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
     - python -c "import cupy"
-    - ls /apps/daint/UES/jenkssl/ciext/icon4py
+    - ls ${SERIALIZED_DATA_PATH}
+    - export SERIALIZED_DATA_PATH=${SERIALIZED_DATA_PATH}
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
