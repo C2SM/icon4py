@@ -26,7 +26,6 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     unflatten_first_two_dims,
     zero_field,
-    uses_icon_grid_with_otf
 )
 
 from .test_calculate_nabla2_for_z import calculate_nabla2_for_z_numpy
@@ -84,7 +83,9 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
     @pytest.fixture
     def input_data(self, grid, uses_icon_grid_with_otf):
         if uses_icon_grid_with_otf:
-            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
 
         kh_smag_e = random_field(grid, EdgeDim, KDim)
         inv_dual_edge_length = random_field(grid, EdgeDim)

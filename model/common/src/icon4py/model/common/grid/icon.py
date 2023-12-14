@@ -19,7 +19,6 @@ from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
-    C2VDim,
     CECDim,
     CEDim,
     CellDim,

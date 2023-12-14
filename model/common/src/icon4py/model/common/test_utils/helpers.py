@@ -26,6 +26,7 @@ from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecuto
 from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
 
+
 try:
     import pytest_benchmark
 except ModuleNotFoundError:
@@ -224,10 +225,11 @@ class StencilTest:
 
 @pytest.fixture
 def uses_icon_grid_with_otf(backend, grid):
-    """Checks whether we are using a compiled backend with the icon_grid.
+    """Check whether we are using a compiled backend with the icon_grid.
+
     Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
     """
-    if hasattr(backend, 'executor') and isinstance(grid, IconGrid):
+    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
         if isinstance(backend.executor, OTFCompileExecutor):
             return True
     return False

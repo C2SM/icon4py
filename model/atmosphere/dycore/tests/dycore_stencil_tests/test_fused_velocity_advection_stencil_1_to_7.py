@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 imp
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field, uses_icon_grid_with_otf
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
@@ -194,7 +194,9 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
     @pytest.fixture
     def input_data(self, grid, uses_icon_grid_with_otf):
         if uses_icon_grid_with_otf:
-            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
 
         c_intp = random_field(grid, VertexDim, V2CDim)
         vn = random_field(grid, EdgeDim, KDim)

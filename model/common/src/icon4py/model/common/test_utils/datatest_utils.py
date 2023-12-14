@@ -20,7 +20,7 @@ def get_serialized_data_path() -> Path:
     test_utils_path = Path(__file__).parent
     model_path = test_utils_path.parent.parent
     common_path = model_path.parent.parent.parent.parent
-    env_base_path = os.getenv('SERIALIZED_DATA_PATH')
+    env_base_path = os.getenv("SERIALIZED_DATA_PATH")
 
     if env_base_path:
         return Path(env_base_path)
