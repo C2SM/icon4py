@@ -13,14 +13,13 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
 
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, uses_icon_grid_with_otf
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -55,12 +54,10 @@ class TestCalculateNabla2ForZ(StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, grid, backend):
-        if hasattr(backend, 'executor'):
-            if isinstance(backend.executor, OTFCompileExecutor):
-                pytest.skip(
-                    "Execution domain needs to be restricted or boundary taken into account in stencil."
-                )
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
+
         kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
         theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)

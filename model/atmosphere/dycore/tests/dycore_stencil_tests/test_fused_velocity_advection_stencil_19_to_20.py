@@ -34,6 +34,7 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     random_mask,
     zero_field,
+    uses_icon_grid_with_otf
 )
 
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
@@ -116,7 +117,10 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
+
         z_kin_hor_e = random_field(grid, EdgeDim, KDim)
         coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)

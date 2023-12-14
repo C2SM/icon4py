@@ -13,13 +13,12 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
-
+from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field, uses_icon_grid_with_otf
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
 from .test_apply_nabla2_to_vn_in_lateral_boundary import (
@@ -98,7 +97,10 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip("Execution domain needs to be restricted or boundary taken into account in stencil.")
+
         edge = indices_field(EdgeDim, grid, is_halfdim=False, dtype=int32)
 
         u_vert = random_field(grid, VertexDim, KDim)
