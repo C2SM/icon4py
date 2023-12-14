@@ -145,8 +145,6 @@ def test_nonhydro_predictor_step(
         exner_incr=None,  # sp.exner_incr(),
     )
 
-    z_fields = allocate_z_fields(icon_grid)
-
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
@@ -487,25 +485,6 @@ def construct_diagnostics(sp, sp_v):
     )
 
 
-def allocate_z_fields(icon_grid):
-    return ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_q=_allocate(CellDim, KDim, grid=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-    )
-
-
 def create_vertical_params(damping_height, grid_savepoint):
     return VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -723,8 +702,6 @@ def test_run_solve_nonhydro_single_step(
 
     diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
-    z_fields = allocate_z_fields(icon_grid)
-
     nh_constants = create_nh_constants(sp)
 
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
@@ -753,7 +730,6 @@ def test_run_solve_nonhydro_single_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
-        z_fields=z_fields,
         nh_constants=nh_constants,
         divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
@@ -844,8 +820,6 @@ def test_run_solve_nonhydro_multi_step(
 
     prognostic_state_ls = create_prognostic_states(sp)
 
-    z_fields = allocate_z_fields(icon_grid)
-
     nh_constants = create_nh_constants(sp)
 
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
@@ -872,7 +846,6 @@ def test_run_solve_nonhydro_multi_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_ls=prognostic_state_ls,
             prep_adv=prep_adv,
-            z_fields=z_fields,
             nh_constants=nh_constants,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
@@ -911,7 +884,7 @@ def test_run_solve_nonhydro_multi_step(
 
     assert dallclose(
         savepoint_nonhydro_exit.z_graddiv_vn().asnumpy()[edge_start_lb_plus4:, :],
-        z_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
+        solve_nonhydro.z_fields.z_graddiv_vn.asnumpy()[edge_start_lb_plus4:, :],
         atol=1.0e-18,
     )
 

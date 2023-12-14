@@ -157,23 +157,6 @@ def test_run_solve_nonhydro_single_step(
         exner=sp.exner_new(),
     )
 
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_q=_allocate(CellDim, KDim, grid=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-    )
-
     nh_constants = NHConstants(
         wgt_nnow_rth=sp.wgt_nnow_rth(),
         wgt_nnew_rth=sp.wgt_nnew_rth(),
@@ -210,7 +193,6 @@ def test_run_solve_nonhydro_single_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
-        z_fields=z_fields,
         nh_constants=nh_constants,
         divdamp_fac_o2=0.032,
         dtime=dtime,

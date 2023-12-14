@@ -259,7 +259,6 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv=prep_adv,
-                z_fields=z_fields,
                 nh_constants=nh_constants,
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
