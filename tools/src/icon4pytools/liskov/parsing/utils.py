@@ -41,7 +41,7 @@ def extract_directive(
     required_type: Type[ts.ParsedDirective],
 ) -> Sequence[ts.ParsedDirective]:
     """Extract a directive type from a list of directives."""
-    directives = [d for d in directives if type(d) == required_type]
+    directives = [d for d in directives if type(d) is required_type]
     return directives
 
 

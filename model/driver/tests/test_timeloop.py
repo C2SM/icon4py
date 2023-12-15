@@ -22,16 +22,19 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
@@ -155,17 +158,60 @@ def test_run_timeloop_single_step(
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
+    grg = interpolation_savepoint.geofac_grg()
+    nonhydro_interpolation_state = InterpolationState(
+        c_lin_e=interpolation_savepoint.c_lin_e(),
+        c_intp=interpolation_savepoint.c_intp(),
+        e_flx_avg=interpolation_savepoint.e_flx_avg(),
+        geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
+        geofac_rot=interpolation_savepoint.geofac_rot(),
+        pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
+        pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
+        rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
+        e_bln_c_s=as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+        rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+        rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+        geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+        geofac_n2s=interpolation_savepoint.geofac_n2s(),
+        geofac_grg_x=grg[0],
+        geofac_grg_y=grg[1],
+        nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-
-    nonhydro_interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    nonhydro_metric_state = MetricStateNonHydro(
+        bdy_halo_c=metrics_savepoint.bdy_halo_c(),
+        mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
+        rayleigh_w=metrics_savepoint.rayleigh_w(),
+        exner_exfac=metrics_savepoint.exner_exfac(),
+        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        wgtfac_c=metrics_savepoint.wgtfac_c(),
+        wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        rho_ref_mc=metrics_savepoint.rho_ref_mc(),
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
+        d_exner_dz_ref_ic=metrics_savepoint.d_exner_dz_ref_ic(),
+        ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+        theta_ref_ic=metrics_savepoint.theta_ref_ic(),
+        d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
+        d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
+        rho_ref_me=metrics_savepoint.rho_ref_me(),
+        theta_ref_me=metrics_savepoint.theta_ref_me(),
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+        vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+        ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+        pg_exdist=metrics_savepoint.pg_exdist(),
+        ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+        ddxt_z_full=metrics_savepoint.ddxt_z_full(),
+        wgtfac_e=metrics_savepoint.wgtfac_e(),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
+        vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+        hmask_dd3d=metrics_savepoint.hmask_dd3d(),
+        scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+        coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
+        coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
+        coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
-    nonhydro_metric_state = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -236,7 +282,6 @@ def test_run_timeloop_single_step(
         prognostic_state_list,
         prep_adv,
         z_fields,
-        nh_constants,
         sp.divdamp_fac_o2(),
         do_prep_adv,
     )

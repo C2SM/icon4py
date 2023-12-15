@@ -23,9 +23,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
@@ -104,7 +107,6 @@ def read_initial_state(
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
     ZFields,
-    NHConstants,
     PrepAdvection,
     Field[[KDim], float],
     PrognosticState,
@@ -181,13 +183,6 @@ def read_initial_state(
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=solve_nonhydro_init_savepoint.wgt_nnow_rth(),
-        wgt_nnew_rth=solve_nonhydro_init_savepoint.wgt_nnew_rth(),
-        wgt_nnow_vel=solve_nonhydro_init_savepoint.wgt_nnow_vel(),
-        wgt_nnew_vel=solve_nonhydro_init_savepoint.wgt_nnew_vel(),
-    )
-
     prognostic_state_next = PrognosticState(
         w=solve_nonhydro_init_savepoint.w_new(),
         vn=solve_nonhydro_init_savepoint.vn_new(),
@@ -206,7 +201,6 @@ def read_initial_state(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         prognostic_state_now,
@@ -260,7 +254,9 @@ def read_decomp_info(
 
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
-) -> tuple[DiffusionMetricState, DiffusionInterpolationState]:
+) -> tuple[
+    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
+]:
     """
     Read fields for metric and interpolation state.
 

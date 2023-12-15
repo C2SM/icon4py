@@ -14,7 +14,7 @@
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.states import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.dimension import CellDim, EdgeDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
@@ -22,6 +22,8 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
+
+from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metric_state
 
 
 @pytest.mark.datatest
@@ -50,8 +52,8 @@ def test_velocity_init(
     step_date_init,
     damping_height,
 ):
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
+    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
+    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -97,8 +99,8 @@ def test_verify_velocity_init_against_regular_savepoint(
     savepoint = savepoint_velocity_init
     dtime = savepoint.get_metadata("dtime").get("dtime")
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
+    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
+    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
@@ -178,9 +180,9 @@ def test_velocity_predictor_step(
         rho=None,
         exner=None,
     )
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
 
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
+    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
@@ -341,9 +343,9 @@ def test_velocity_corrector_step(
         exner=None,
     )
 
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
+    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
 
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
+    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()

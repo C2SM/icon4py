@@ -60,7 +60,7 @@ class VerticalModelParams:
             "_start_index_for_moist_physics",
             self._determine_kstart_moist(vct_a_array, self.htop_moist_proc),
         )
-        log.info(f"computation of moist physics start on layer: {self.kstart_moist}"),
+        log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
 
     @property

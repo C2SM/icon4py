@@ -31,6 +31,9 @@ from ..utils import (
 )
 
 
+@pytest.mark.xfail(
+    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+)
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
