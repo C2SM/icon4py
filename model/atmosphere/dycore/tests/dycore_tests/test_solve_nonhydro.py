@@ -538,6 +538,7 @@ def test_nonhydro_corrector_step(
     )
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
+    dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
@@ -597,6 +598,7 @@ def test_nonhydro_corrector_step(
         prep_adv=prep_adv,
         divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
+        dyn_timestep=dyn_timestep,
         nnew=nnew,
         nnow=nnow,
         lclean_mflx=clean_mflx,

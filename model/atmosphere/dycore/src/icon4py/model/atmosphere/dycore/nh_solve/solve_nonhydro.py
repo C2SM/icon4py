@@ -514,7 +514,7 @@ class SolveNonhydro:
             prep_adv=prep_adv,
             divdamp_fac_o2=divdamp_fac_o2,
             dtime=dtime,
-            idyn_timestep=idyn_timestep,
+            dyn_timestep=idyn_timestep,
             nnew=nnew,
             nnow=nnow,
             lclean_mflx=lclean_mflx,
