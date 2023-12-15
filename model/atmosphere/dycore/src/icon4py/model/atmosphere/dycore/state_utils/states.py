@@ -156,7 +156,7 @@ class MetricStateNonHydro:
 
 @dataclass
 class PrepAdvection:
-    """Dataclass used in SolveNonHydro that pre-calculates fields during the dynamical substepping that are later needed in tracer advection"""
+    """Dataclass used in SolveNonHydro that pre-calculates fields during the dynamical substepping that are later needed in tracer advection."""
 
     vn_traj: Field[[EdgeDim, KDim], float]
     mass_flx_me: Field[[EdgeDim, KDim], float]
