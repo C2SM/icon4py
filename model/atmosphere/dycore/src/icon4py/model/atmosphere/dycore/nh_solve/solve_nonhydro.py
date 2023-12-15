@@ -11,9 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+from dataclasses import dataclass
 from typing import Final, Optional
 
-from gt4py.next import as_field
+from gt4py.next import Field, as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
@@ -151,10 +152,10 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     set_zero_c_k,
     set_zero_e_k,
 )
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -165,6 +166,58 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 backend = run_gtfn
 # flake8: noqa
 log = logging.getLogger(__name__)
+
+
+@dataclass
+class ZFields:
+    """
+    Encapsulate internal fields of SolveNonHydro that contain shared state over predictor and corrector step.
+
+    Encapsulates internal fields used in SolveNonHydro. Fields (and the class!)
+    follow the naming convention of ICON to prepend local fields of a module with z_. Contrary to
+    other such z_ fields inside SolveNonHydro the fields in this dataclass
+    contain state that is built up over the predictor and corrector part in a timestep.
+    """
+
+    z_gradh_exner: Field[[EdgeDim, KDim], float]
+    z_alpha: Field[
+        [EdgeDim, KDim], float
+    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    z_beta: Field[[CellDim, KDim], float]
+    z_w_expl: Field[
+        [EdgeDim, KDim], float
+    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    z_exner_expl: Field[[CellDim, KDim], float]
+    z_q: Field[[CellDim, KDim], float]
+    z_contr_w_fl_l: Field[
+        [EdgeDim, KDim], float
+    ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
+    z_rho_e: Field[[EdgeDim, KDim], float]
+    z_theta_v_e: Field[[EdgeDim, KDim], float]
+    z_kin_hor_e: Field[[EdgeDim, KDim], float]
+    z_vt_ie: Field[[EdgeDim, KDim], float]
+    z_graddiv_vn: Field[[EdgeDim, KDim], float]
+    z_rho_expl: Field[[CellDim, KDim], float]
+    z_dwdz_dd: Field[[CellDim, KDim], float]
+
+    @classmethod
+    def allocate(cls, grid: BaseGrid):
+        return ZFields(
+            z_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
+            z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+            z_beta=_allocate(CellDim, KDim, grid=grid),
+            z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+            z_exner_expl=_allocate(CellDim, KDim, grid=grid),
+            z_q=_allocate(CellDim, KDim, grid=grid),
+            z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
+            z_rho_e=_allocate(EdgeDim, KDim, grid=grid),
+            z_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
+            z_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
+            z_rho_expl=_allocate(CellDim, KDim, grid=grid),
+            z_dwdz_dd=_allocate(CellDim, KDim, grid=grid),
+            z_kin_hor_e=_allocate(EdgeDim, KDim, grid=grid),
+            z_vt_ie=_allocate(EdgeDim, KDim, grid=grid),
+        )
 
 
 class NonHydrostaticConfig:
@@ -376,24 +429,6 @@ class SolveNonhydro:
     def initialized(self):
         return self._initialized
 
-    def _allocate_z_fields(self):
-        return ZFields(
-            z_gradh_exner=_allocate(EdgeDim, KDim, grid=self.grid),
-            z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=self.grid),
-            z_beta=_allocate(CellDim, KDim, grid=self.grid),
-            z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=self.grid),
-            z_exner_expl=_allocate(CellDim, KDim, grid=self.grid),
-            z_q=_allocate(CellDim, KDim, grid=self.grid),
-            z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=self.grid),
-            z_rho_e=_allocate(EdgeDim, KDim, grid=self.grid),
-            z_theta_v_e=_allocate(EdgeDim, KDim, grid=self.grid),
-            z_graddiv_vn=_allocate(EdgeDim, KDim, grid=self.grid),
-            z_rho_expl=_allocate(CellDim, KDim, grid=self.grid),
-            z_dwdz_dd=_allocate(CellDim, KDim, grid=self.grid),
-            z_kin_hor_e=_allocate(EdgeDim, KDim, grid=self.grid),
-            z_vt_ie=_allocate(EdgeDim, KDim, grid=self.grid),
-        )
-
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
         self.z_exner_ic = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
@@ -423,7 +458,7 @@ class SolveNonhydro:
         self.enh_divdamp_fac = _allocate(KDim, grid=self.grid)
         self._bdy_divdamp = _allocate(KDim, grid=self.grid)
         self.scal_divdamp = _allocate(KDim, grid=self.grid)
-        self.z_fields = self._allocate_z_fields()
+        self.z_fields = ZFields.allocate(self.grid)
 
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies

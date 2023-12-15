@@ -289,7 +289,9 @@ def initialize(file_path: Path, props: ProcessProperties):
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
-         other temporary fields: to be removed in the future
+         prep_advection: fields collecting data for advection during the solve nonhydro timestep
+         inital_divdamp_fac_o2: initial divergence damping factor
+
     """
     log.info("initialize parallel runtime")
     experiment_name = "mch_ch_r04b09_dsl"
@@ -344,7 +346,6 @@ def initialize(file_path: Path, props: ProcessProperties):
     (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
         prognostic_state_now,
@@ -362,7 +363,6 @@ def initialize(file_path: Path, props: ProcessProperties):
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
     )

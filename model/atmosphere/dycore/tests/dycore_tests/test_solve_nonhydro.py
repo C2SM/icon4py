@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
+    ZFields,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -29,7 +30,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
     _calculate_scal_divdamp,
 )
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex

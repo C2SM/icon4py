@@ -29,11 +29,9 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -101,7 +99,6 @@ def read_initial_state(
 ) -> tuple[
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
-    ZFields,
     PrepAdvection,
     Field[[KDim], float],
     PrognosticState,
@@ -121,11 +118,6 @@ def read_initial_state(
     """
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-    )
-    icon_grid = (
-        sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-        .from_savepoint_grid()
-        .construct_icon_grid()
     )
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
@@ -161,23 +153,6 @@ def read_initial_state(
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
     )
 
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_q=_allocate(CellDim, KDim, grid=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-    )
-
     prognostic_state_next = PrognosticState(
         w=solve_nonhydro_init_savepoint.w_new(),
         vn=solve_nonhydro_init_savepoint.vn_new(),
@@ -195,7 +170,6 @@ def read_initial_state(
     return (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         prognostic_state_now,
