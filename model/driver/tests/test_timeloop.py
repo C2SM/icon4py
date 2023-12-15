@@ -36,6 +36,11 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
 from icon4py.model.driver.dycore_driver import TimeLoop
+from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
+)
 
 
 # testing on MCH_CH_r04b09_dsl data
@@ -94,12 +99,12 @@ def test_run_timeloop_single_step(
     diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    diffusion_interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+        interpolation_savepoint
     )
-    diffusion_metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
-    diffusion_diagnostic_state = (
-        timeloop_diffusion_savepoint_init.construct_diagnostics_for_diffusion()
+    diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        timeloop_diffusion_savepoint_init
     )
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -245,6 +250,7 @@ def test_run_timeloop_single_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
     timeloop = TimeLoop(r04b09_iconrun_config, diffusion, solve_nonhydro)
