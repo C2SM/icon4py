@@ -132,29 +132,7 @@ def test_nonhydro_predictor_step(
     nnow = 0
     nnew = 1
 
-    diagnostic_state_nh = DiagnosticStateNonHydro(
-        theta_v_ic=sp.theta_v_ic(),
-        exner_pr=sp.exner_pr(),
-        rho_ic=sp.rho_ic(),
-        ddt_exner_phy=sp.ddt_exner_phy(),
-        grf_tend_rho=sp.grf_tend_rho(),
-        grf_tend_thv=sp.grf_tend_thv(),
-        grf_tend_w=sp.grf_tend_w(),
-        mass_fl_e=sp.mass_fl_e(),
-        ddt_vn_phy=sp.ddt_vn_phy(),
-        grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
-        vt=sp_v.vt(),
-        vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
-        rho_incr=None,  # sp.rho_incr(),
-        vn_incr=None,  # sp.vn_incr(),
-        exner_incr=None,  # sp.exner_incr(),
-        exner_dyn_incr=None,  # sp.exner_dyn_incr(),
-    )
+    diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
     z_fields = allocate_z_fields(icon_grid)
 
@@ -490,6 +468,7 @@ def construct_diagnostics(sp, sp_v):
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
 

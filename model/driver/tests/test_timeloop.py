@@ -250,6 +250,7 @@ def test_run_timeloop_single_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
     timeloop = TimeLoop(r04b09_iconrun_config, diffusion, solve_nonhydro)

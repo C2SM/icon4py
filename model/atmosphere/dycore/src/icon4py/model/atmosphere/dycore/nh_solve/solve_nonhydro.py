@@ -191,7 +191,6 @@ class NonHydrostaticConfig:
         divdamp_type: int = 3,
         lhdiff_rcf: bool = True,
         l_vert_nested: bool = False,
-        l_open_ubc: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
         max_nudging_coeff: float = 0.02,
@@ -422,6 +421,7 @@ class SolveNonhydro:
         self.z_grad_rth_3 = _allocate(CellDim, KDim, grid=self.grid)
         self.z_grad_rth_4 = _allocate(CellDim, KDim, grid=self.grid)
         self.z_dexner_dz_c_2 = _allocate(CellDim, KDim, grid=self.grid)
+        # TODO (magdalena) missing stencil_60 in corrector remove! this is a field from the diagnostics!
         self.exner_dyn_incr = _allocate(CellDim, KDim, grid=self.grid)
         self.z_hydro_corr = _allocate(EdgeDim, KDim, grid=self.grid)
         self.z_vn_avg = _allocate(EdgeDim, KDim, grid=self.grid)
@@ -1490,9 +1490,6 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-
-        if self.config.l_open_ubc and not self.l_vert_nested:
-            raise NotImplementedError("l_open_ubc not implemented")
 
         log.debug(f"corrector: start stencil 17")
         mo_solve_nonhydro_stencil_17.with_backend(backend)(
