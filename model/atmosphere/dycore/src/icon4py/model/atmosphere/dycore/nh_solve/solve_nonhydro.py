@@ -125,6 +125,9 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
     mo_solve_nonhydro_stencil_59,
 )
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
+    mo_solve_nonhydro_stencil_60,
+)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
 )
@@ -421,8 +424,6 @@ class SolveNonhydro:
         self.z_grad_rth_3 = _allocate(CellDim, KDim, grid=self.grid)
         self.z_grad_rth_4 = _allocate(CellDim, KDim, grid=self.grid)
         self.z_dexner_dz_c_2 = _allocate(CellDim, KDim, grid=self.grid)
-        # TODO (magdalena) missing stencil_60 in corrector remove! this is a field from the diagnostics!
-        self.exner_dyn_incr = _allocate(CellDim, KDim, grid=self.grid)
         self.z_hydro_corr = _allocate(EdgeDim, KDim, grid=self.grid)
         self.z_vn_avg = _allocate(EdgeDim, KDim, grid=self.grid)
         self.z_theta_v_fl_e = _allocate(EdgeDim, KDim, grid=self.grid)
@@ -513,6 +514,7 @@ class SolveNonhydro:
             prep_adv=prep_adv,
             divdamp_fac_o2=divdamp_fac_o2,
             dtime=dtime,
+            idyn_timestep=idyn_timestep,
             nnew=nnew,
             nnow=nnow,
             lclean_mflx=lclean_mflx,
@@ -1327,7 +1329,7 @@ class SolveNonhydro:
         if idyn_timestep == 1:
             mo_solve_nonhydro_stencil_59.with_backend(backend)(
                 exner=prognostic_state[nnow].exner,
-                exner_dyn_incr=self.exner_dyn_incr,
+                exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
@@ -1382,6 +1384,7 @@ class SolveNonhydro:
         divdamp_fac_o2: float,
         prep_adv: PrepAdvection,
         dtime: float,
+        dyn_timestep: int,
         nnew: int,
         nnow: int,
         lclean_mflx: bool,
@@ -1894,7 +1897,21 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        # TODO (magdalena) stencil_60 is missing here?
+
+        if dyn_timestep == self.config.ndyn_substeps_var:
+            mo_solve_nonhydro_stencil_60(
+                exner=prognostic_state[nnew].exner,
+                ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+                exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
+                ndyn_substeps_var=float(
+                    self.config.ndyn_substeps_var
+                ),  # TODO (magdalena) should not be a config parameter... where does it get changed?
+                dtime=dtime,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=self.vertical_params.kstart_moist,
+                vertical_end=self.grid.num_levels,
+            )
 
         if lprep_adv:
             if lclean_mflx:

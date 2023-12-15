@@ -674,6 +674,12 @@ def test_nonhydro_corrector_step(
         savepoint_nonhydro_exit.vn_traj().asnumpy(),
         rtol=5e-7,  # TODO (magdalena) was rtol=1e-10 for local experiment only
     )
+    # stencil 60 only relevant for last substep
+    assert dallclose(
+        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+        atol=1e-14,
+    )
 
 
 @pytest.mark.datatest
@@ -790,6 +796,12 @@ def test_run_solve_nonhydro_single_step(
         prognostic_state_nnew.w.asnumpy(),
         savepoint_nonhydro_exit.w_new().asnumpy(),
         atol=8e-14,
+    )
+
+    assert dallclose(
+        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+        atol=1e-14,
     )
 
 
@@ -951,6 +963,11 @@ def test_run_solve_nonhydro_multi_step(
         prognostic_state_ls[nnew].vn.asnumpy(),
         savepoint_nonhydro_exit.vn_new().asnumpy(),
         atol=5e-13,
+    )
+    assert dallclose(
+        diagnostic_state_nh.exner_dyn_incr.asnumpy(),
+        savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
+        atol=1e-14,
     )
 
 
