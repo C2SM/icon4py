@@ -681,6 +681,13 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
 
 class IconNonHydroInitSavepoint(IconSavepoint):
+    def w_concorr_c(self):
+        return self._get_field("w_concorr_c", CellDim, KDim)
+
+    # TODO (magdalena) NEW!!
+    def vn_ie(self):
+        return self._get_field("vn_ie", EdgeDim, KDim)
+
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", KDim)
 
@@ -723,21 +730,11 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def grf_tend_vn(self):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
-    def ddt_vn_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float))[
-            :, :, ntl - 1
-        ]
-        dims = (EdgeDim, KDim)
-        buffer = self._reduce_to_dim_size(buffer, dims)
-        return as_field(dims, buffer)
+    def ddt_vn_apc_pc(self, ntl):
+        return self._get_field_component("ddt_vn_apc_pc", ntl, (EdgeDim, KDim))
 
     def ddt_w_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float))[
-            :, :, ntl - 1
-        ]
-        dims = (CellDim, KDim)
-        buffer = self._reduce_to_dim_size(buffer, dims)
-        return as_field(dims, buffer)
+        return self._get_field_component("ddt_w_adv_ntl", ntl, (CellDim, KDim))
 
     def grf_tend_w(self):
         return self._get_field("grf_tend_w", CellDim, KDim)

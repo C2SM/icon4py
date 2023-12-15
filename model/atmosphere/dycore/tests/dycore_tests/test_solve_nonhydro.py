@@ -124,7 +124,7 @@ def test_nonhydro_predictor_step(
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    dtime = sp.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
     dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
@@ -458,13 +458,14 @@ def construct_diagnostics(sp, sp_v):
         mass_fl_e=sp.mass_fl_e(),
         ddt_vn_phy=sp.ddt_vn_phy(),
         grf_tend_vn=sp.grf_tend_vn(),
-        ddt_vn_apc_ntl1=sp_v.ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=sp_v.ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=sp_v.ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=sp_v.ddt_w_adv_pc(2),
+        ddt_vn_apc_ntl1=sp.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=sp.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=sp.ddt_w_adv_ntl(1),
+        ddt_w_adv_ntl2=sp.ddt_w_adv_ntl(2),
         vt=sp_v.vt(),
+        # TODO (magdalena) new data on sp
         vn_ie=sp_v.vn_ie(),
-        w_concorr_c=sp_v.w_concorr_c(),
+        w_concorr_c=sp.w_concorr_c(),
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
@@ -537,7 +538,7 @@ def test_nonhydro_corrector_step(
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    dtime = sp.get_metadata("dtime").get("dtime")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
@@ -713,7 +714,7 @@ def test_run_solve_nonhydro_single_step(
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
@@ -723,8 +724,8 @@ def test_run_solve_nonhydro_single_step(
     nnow = 0
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
-    linit = sp_v.get_metadata("linit").get("linit")
-    dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
+    is_init = sp_v.get_metadata("linit").get("linit")
+    dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
 
     diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
@@ -761,7 +762,7 @@ def test_run_solve_nonhydro_single_step(
         dtime=dtime,
         idyn_timestep=dyn_timestep,
         l_recompute=recompute,
-        l_init=linit,
+        l_init=is_init,
         nnew=nnew,
         nnow=nnow,
         lclean_mflx=clean_mflx,
@@ -823,7 +824,7 @@ def test_run_solve_nonhydro_multi_step(
     nonhydro_params = NonHydrostaticParams(config)
     vertical_params = create_vertical_params(damping_height, grid_savepoint)
     sp_v = savepoint_velocity_init
-    dtime = sp_v.get_metadata("dtime").get("dtime")
+    dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
@@ -834,7 +835,7 @@ def test_run_solve_nonhydro_multi_step(
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
     linit = sp_v.get_metadata("linit").get("linit")
-    dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
+    dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
 
     diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
