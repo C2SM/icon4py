@@ -28,7 +28,6 @@ def _upwind_hflux_miura_cycl_stencil_01(
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
     cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
-
     z_tracer_mflx_dsl = (
         where(
             cell_rel_idx_dsl == int32(1),

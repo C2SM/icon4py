@@ -16,15 +16,14 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_01 import v_limit_prbl_sm_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def v_limit_prbl_sm_stencil_01_numpy(
     p_face: np.array,
     p_cc: np.array,
 ):
-
     z_delta = p_face[:, :-1] - p_face[:, 1:]
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
 
@@ -33,22 +32,22 @@ def v_limit_prbl_sm_stencil_01_numpy(
     return l_limit
 
 
-def test_v_limit_prbl_sm_stencil_01():
-    mesh = SimpleMesh()
-    p_cc = random_field(mesh, CellDim, KDim)
-    p_face = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    l_limit = zero_field(mesh, CellDim, KDim, dtype=int32)
+def test_v_limit_prbl_sm_stencil_01(backend):
+    grid = SimpleGrid()
+    p_cc = random_field(grid, CellDim, KDim)
+    p_face = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    l_limit = zero_field(grid, CellDim, KDim, dtype=int32)
 
     l_limit_ref = v_limit_prbl_sm_stencil_01_numpy(
-        np.asarray(p_face),
-        np.asarray(p_cc),
+        p_face.asnumpy(),
+        p_cc.asnumpy(),
     )
 
-    v_limit_prbl_sm_stencil_01(
+    v_limit_prbl_sm_stencil_01.with_backend(backend)(
         p_face,
         p_cc,
         l_limit,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(l_limit_ref, l_limit)
+    assert np.allclose(l_limit_ref, l_limit.asnumpy())

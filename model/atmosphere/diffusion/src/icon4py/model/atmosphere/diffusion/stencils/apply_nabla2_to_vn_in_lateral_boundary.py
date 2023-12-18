@@ -12,27 +12,42 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _apply_nabla2_to_vn_in_lateral_boundary(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    fac_bdydiff_v: float,
-) -> Field[[EdgeDim, KDim], float]:
-    vn = vn + (z_nabla2_e * area_edge * fac_bdydiff_v)
-    return vn
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    area_edge: Field[[EdgeDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    fac_bdydiff_v: wpfloat,
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
+    return vn_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def apply_nabla2_to_vn_in_lateral_boundary(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    fac_bdydiff_v: float,
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    area_edge: Field[[EdgeDim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    fac_bdydiff_v: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _apply_nabla2_to_vn_in_lateral_boundary(z_nabla2_e, area_edge, vn, fac_bdydiff_v, out=vn)
+    _apply_nabla2_to_vn_in_lateral_boundary(
+        z_nabla2_e,
+        area_edge,
+        vn,
+        fac_bdydiff_v,
+        out=vn,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

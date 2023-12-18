@@ -29,10 +29,11 @@ import pytest
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401  # import fixtures from test_utils package
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -54,10 +55,10 @@ def test_compute_c_lin_e(
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
     c_lin_e = compute_c_lin_e(
-        np.asarray(edge_cell_length),
-        np.asarray(inv_dual_edge_length),
-        np.asarray(owner_mask),
+        edge_cell_length.asnumpy(),
+        inv_dual_edge_length.asnumpy(),
+        owner_mask.asnumpy(),
         lateral_boundary,
     )
 
-    assert np.allclose(c_lin_e, c_lin_e_ref)
+    assert np.allclose(c_lin_e, c_lin_e_ref.asnumpy())

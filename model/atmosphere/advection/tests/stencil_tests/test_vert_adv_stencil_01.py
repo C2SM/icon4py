@@ -15,8 +15,8 @@ import numpy as np
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def vert_adv_stencil_01_numpy(
@@ -28,7 +28,6 @@ def vert_adv_stencil_01_numpy(
     rhodz_new: np.array,
     p_dtime,
 ) -> np.array:
-
     tracer_new = (
         tracer_now * rhodz_now
         + p_dtime
@@ -38,28 +37,28 @@ def vert_adv_stencil_01_numpy(
     return tracer_new
 
 
-def test_vert_adv_stencil_01():
-    mesh = SimpleMesh()
+def test_vert_adv_stencil_01(backend):
+    grid = SimpleGrid()
 
-    tracer_now = random_field(mesh, CellDim, KDim)
-    rhodz_now = random_field(mesh, CellDim, KDim)
-    p_mflx_tracer_v = random_field(mesh, CellDim, KDim, extend={KDim: 1})
-    deepatmo_divzl = random_field(mesh, KDim)
-    deepatmo_divzu = random_field(mesh, KDim)
-    rhodz_new = random_field(mesh, CellDim, KDim)
-    tracer_new = zero_field(mesh, CellDim, KDim)
+    tracer_now = random_field(grid, CellDim, KDim)
+    rhodz_now = random_field(grid, CellDim, KDim)
+    p_mflx_tracer_v = random_field(grid, CellDim, KDim, extend={KDim: 1})
+    deepatmo_divzl = random_field(grid, KDim)
+    deepatmo_divzu = random_field(grid, KDim)
+    rhodz_new = random_field(grid, CellDim, KDim)
+    tracer_new = zero_field(grid, CellDim, KDim)
     p_dtime = np.float64(5.0)
 
     ref = vert_adv_stencil_01_numpy(
-        np.asarray(tracer_now),
-        np.asarray(rhodz_now),
-        np.asarray(p_mflx_tracer_v),
-        np.asarray(deepatmo_divzl),
-        np.asarray(deepatmo_divzu),
-        np.asarray(rhodz_new),
+        tracer_now.asnumpy(),
+        rhodz_now.asnumpy(),
+        p_mflx_tracer_v.asnumpy(),
+        deepatmo_divzl.asnumpy(),
+        deepatmo_divzu.asnumpy(),
+        rhodz_new.asnumpy(),
         p_dtime,
     )
-    vert_adv_stencil_01(
+    vert_adv_stencil_01.with_backend(backend)(
         tracer_now,
         rhodz_now,
         p_mflx_tracer_v,
@@ -70,4 +69,4 @@ def test_vert_adv_stencil_01():
         p_dtime,
         offset_provider={"Koff": KDim},
     )
-    assert np.allclose(tracer_new[:, :-1], ref[:, :-1])
+    assert np.allclose(tracer_new.asnumpy()[:, :-1], ref[:, :-1])

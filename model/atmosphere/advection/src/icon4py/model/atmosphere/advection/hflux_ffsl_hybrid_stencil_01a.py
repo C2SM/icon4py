@@ -42,7 +42,6 @@ def _hflux_ffsl_hybrid_stencil_01a(
     z_quad_vector_sum0_10: Field[[EdgeDim, KDim], float],
     patch0_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
-
     p_out_e_hybrid_1a = (
         where(
             patch0_cell_rel_idx_dsl == int32(1),

@@ -12,14 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
     hflx_limiter_mo_stencil_01b,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflx_limiter_mo_stencil_01b_numpy(
@@ -68,35 +67,35 @@ def hflx_limiter_mo_stencil_01b_numpy(
     )
 
 
-def test_hflx_limiter_mo_stencil_01b():
-    mesh = SimpleMesh()
+def test_hflx_limiter_mo_stencil_01b(backend):
+    grid = SimpleGrid()
 
-    geofac_div = random_field(mesh, CellDim, C2EDim)
+    geofac_div = random_field(grid, CellDim, C2EDim)
     geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
-    p_rhodz_now = random_field(mesh, CellDim, KDim)
-    p_rhodz_new = random_field(mesh, CellDim, KDim)
-    z_mflx_low = random_field(mesh, EdgeDim, KDim)
-    z_anti = random_field(mesh, EdgeDim, KDim)
-    p_cc = random_field(mesh, CellDim, KDim)
+    p_rhodz_now = random_field(grid, CellDim, KDim)
+    p_rhodz_new = random_field(grid, CellDim, KDim)
+    z_mflx_low = random_field(grid, EdgeDim, KDim)
+    z_anti = random_field(grid, EdgeDim, KDim)
+    p_cc = random_field(grid, CellDim, KDim)
     p_dtime = 5.0
-    z_mflx_anti_in = random_field(mesh, CellDim, KDim)
-    z_mflx_anti_out = random_field(mesh, CellDim, KDim)
-    z_tracer_new_low = random_field(mesh, CellDim, KDim)
-    z_tracer_max = random_field(mesh, CellDim, KDim)
-    z_tracer_min = random_field(mesh, CellDim, KDim)
+    z_mflx_anti_in = random_field(grid, CellDim, KDim)
+    z_mflx_anti_out = random_field(grid, CellDim, KDim)
+    z_tracer_new_low = random_field(grid, CellDim, KDim)
+    z_tracer_max = random_field(grid, CellDim, KDim)
+    z_tracer_min = random_field(grid, CellDim, KDim)
 
     ref_1, ref_2, ref_3, ref_4, ref_5 = hflx_limiter_mo_stencil_01b_numpy(
-        mesh.c2e,
-        np.asarray(geofac_div),
-        np.asarray(p_rhodz_now),
-        np.asarray(p_rhodz_new),
-        np.asarray(z_mflx_low),
-        np.asarray(z_anti),
-        np.asarray(p_cc),
-        np.asarray(p_dtime),
+        grid.connectivities[C2EDim],
+        geofac_div.asnumpy(),
+        p_rhodz_now.asnumpy(),
+        p_rhodz_new.asnumpy(),
+        z_mflx_low.asnumpy(),
+        z_anti.asnumpy(),
+        p_cc.asnumpy(),
+        p_dtime,
     )
 
-    hflx_limiter_mo_stencil_01b(
+    hflx_limiter_mo_stencil_01b.with_backend(backend)(
         geofac_div_new,
         p_rhodz_now,
         p_rhodz_new,
@@ -110,13 +109,13 @@ def test_hflx_limiter_mo_stencil_01b():
         z_tracer_max,
         z_tracer_min,
         offset_provider={
-            "C2E": mesh.get_c2e_offset_provider(),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, mesh.n_c2e),
+            "C2E": grid.get_offset_provider("C2E"),
+            "C2CE": grid.get_offset_provider("C2CE"),
         },
     )
 
-    assert np.allclose(z_mflx_anti_in, ref_1)
-    assert np.allclose(z_mflx_anti_out, ref_2)
-    assert np.allclose(z_tracer_new_low, ref_3)
-    assert np.allclose(z_tracer_max, ref_4)
-    assert np.allclose(z_tracer_min, ref_5)
+    assert np.allclose(z_mflx_anti_in.asnumpy(), ref_1)
+    assert np.allclose(z_mflx_anti_out.asnumpy(), ref_2)
+    assert np.allclose(z_tracer_new_low.asnumpy(), ref_3)
+    assert np.allclose(z_tracer_max.asnumpy(), ref_4)
+    assert np.allclose(z_tracer_min.asnumpy(), ref_5)

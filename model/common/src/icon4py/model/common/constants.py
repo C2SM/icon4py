@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import sys
 from typing import Final
 
 
@@ -39,7 +39,7 @@ P0REF: Final[float] = 100000.0
 
 
 # Math constants
-dbl_eps = 0.01  # EPSILON(1._wp)
+dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
 
 # Implementation constants
 #: default physics to dynamics time step ratio

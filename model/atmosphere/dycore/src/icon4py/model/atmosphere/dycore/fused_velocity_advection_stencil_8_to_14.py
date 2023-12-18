@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where, maximum
+from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
     _mo_velocity_advection_stencil_08,
@@ -35,48 +35,48 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
 )
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     cfl_clipping: Field[[CellDim, KDim], bool],
     pre_levelmask: Field[[CellDim, KDim], bool],
-    vcfl: Field[[CellDim, KDim], float],
-    z_w_concorr_mc : Field[[CellDim, KDim], float],
-    w_concorr_c : Field[[CellDim, KDim], float],
-    z_ekinh : Field[[CellDim, KDim], float],
-    vert_idx: Field[[KDim], int32],
+    vcfl: Field[[CellDim, KDim], vpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    k: Field[[KDim], int32],
     istep: int32,
-    cfl_w_limit: float,
-    dtime: float,
+    cfl_w_limit: vpfloat,
+    dtime: wpfloat,
     nlevp1: int32,
     nlev: int32,
     nflatlev: int32,
     nrdmax: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], bool],
     Field[[CellDim, KDim], bool],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
 ]:
-
     z_ekinh = where(
-            vert_idx < nlev,
-            _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
-            z_ekinh,
-        )
+        k < nlev,
+        _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
+        z_ekinh,
+    )
 
     z_w_concorr_mc = (
         where(
-            nflatlev < vert_idx < nlev,
+            nflatlev < k < nlev,
             _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
             z_w_concorr_mc,
         )
@@ -86,7 +86,7 @@ def _fused_velocity_advection_stencil_8_to_14(
 
     w_concorr_c = (
         where(
-            nflatlev + 1 < vert_idx < nlev,
+            nflatlev + 1 < k < nlev,
             _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c),
             w_concorr_c,
         )
@@ -94,19 +94,21 @@ def _fused_velocity_advection_stencil_8_to_14(
         else w_concorr_c
     )
 
-    z_w_con_c = where(vert_idx < nlevp1,
-                    _mo_velocity_advection_stencil_11(w),
-                    _mo_velocity_advection_stencil_12(),
-                )
+    z_w_con_c = where(
+        k < nlevp1,
+        _mo_velocity_advection_stencil_11(w),
+        _mo_velocity_advection_stencil_12(),
+    )
 
-    z_w_con_c = where(nflatlev + 1 < vert_idx < nlev,
-                      _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
-                      z_w_con_c,
-                     )
-    cfl_clipping, pre_levelmask, vcfl, z_w_con_c = where(
-        maximum(3, nrdmax - 2) < vert_idx < nlev - 3,
-        _mo_velocity_advection_stencil_14(ddqz_z_half, z_w_con_c, cfl_clipping, pre_levelmask, vcfl, cfl_w_limit, dtime),
-        (cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
+    z_w_con_c = where(
+        nflatlev + 1 < k < nlev,
+        _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
+        z_w_con_c,
+    )
+    cfl_clipping, vcfl, z_w_con_c = where(
+        maximum(3, nrdmax - 2) < k < nlev - 3,
+        _mo_velocity_advection_stencil_14(ddqz_z_half, z_w_con_c, cfl_w_limit, dtime),
+        (cfl_clipping, vcfl, z_w_con_c),
     )
 
     return z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c
@@ -114,23 +116,23 @@ def _fused_velocity_advection_stencil_8_to_14(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_velocity_advection_stencil_8_to_14(
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
+    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     cfl_clipping: Field[[CellDim, KDim], bool],
     pre_levelmask: Field[[CellDim, KDim], bool],
-    vcfl: Field[[CellDim, KDim], float],
-    z_w_concorr_mc : Field[[CellDim, KDim], float],
-    w_concorr_c : Field[[CellDim, KDim], float],
-    z_ekinh : Field[[CellDim, KDim], float],
-    z_w_con_c: Field[[CellDim, KDim], float],
-    vert_idx: Field[[KDim], int32],
+    vcfl: Field[[CellDim, KDim], vpfloat],
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_ekinh: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    k: Field[[KDim], int32],
     istep: int32,
-    cfl_w_limit: float,
-    dtime: float,
+    cfl_w_limit: wpfloat,
+    dtime: wpfloat,
     nlevp1: int32,
     nlev: int32,
     nflatlev: int32,
@@ -146,10 +148,10 @@ def fused_velocity_advection_stencil_8_to_14(
         cfl_clipping,
         pre_levelmask,
         vcfl,
-        z_w_concorr_mc ,
-        w_concorr_c ,
-        z_ekinh ,
-        vert_idx,
+        z_w_concorr_mc,
+        w_concorr_c,
+        z_ekinh,
+        k,
         istep,
         cfl_w_limit,
         dtime,
@@ -157,5 +159,5 @@ def fused_velocity_advection_stencil_8_to_14(
         nlev,
         nflatlev,
         nrdmax,
-        out=(z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c)
+        out=(z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c),
     )

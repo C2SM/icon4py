@@ -23,7 +23,6 @@ classifiers = [
 ]
 dependencies = [
   "gt4py>=1.0.1",
-  "pytz>=2023.2",
   "icon4py-common>=0.0.5",
   "icon4py-atmosphere-dycore>=0.0.5",
   "icon4py-atmosphere-diffusion>=0.0.5"
@@ -91,7 +90,7 @@ line_length = 100  # It should be the same as in `tool.black.line-length` above
 lines_after_imports = 2
 multi_line_output = 3
 profile = 'black'
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'TESTS', 'LOCALFOLDER']
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
 skip_gitignore = true
 skip_glob = ['*.venv/**', '_local/**']
 use_parentheses = true

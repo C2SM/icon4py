@@ -28,11 +28,12 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.test_utils.datatest_helpers import (  # noqa: F401 # import fixtures from test_utils
+from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     datapath,
     decomposition_info,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     ranked_data_path,
@@ -181,15 +182,15 @@ def test_decomposition_info_matches_gridsize(
         decomposition_info.global_index(
             dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
         ).shape[0]
-        == icon_grid.num_cells()
+        == icon_grid.n_cells()
     )
     assert (
         decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
-        == icon_grid.num_vertices()
+        == icon_grid.num_vertices
     )
     assert (
         decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
-        == icon_grid.num_edges()
+        == icon_grid.num_edges
     )
 
 

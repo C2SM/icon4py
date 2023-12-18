@@ -150,9 +150,6 @@ class HorizontalGridSize:
     num_cells: int
 
 
-# TODO(Magdalena): allow initialization with only partial values
-#  (becomes tedious for testing otherwise): hence this should
-#  that should not be a data class
 class EdgeParams:
     def __init__(
         self,
@@ -171,6 +168,7 @@ class EdgeParams:
         primal_normal_cell_y=None,
         dual_normal_cell_y=None,
         edge_areas=None,
+        f_e=None,
     ):
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
         r"""
@@ -274,10 +272,17 @@ class EdgeParams:
         defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
         """
 
+        self.f_e: Field[[EdgeDim], float] = f_e
+        """
+        Coriolis parameter at cell edges
+        """
+
 
 @dataclass(frozen=True)
 class CellParams:
     area: Field[[CellDim], float]
+    mean_cell_area: float
+
     """
     Area of a cell.
 

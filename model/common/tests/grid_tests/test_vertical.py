@@ -13,6 +13,7 @@
 
 import math
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -26,11 +27,11 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 )
 def test_nrdmax_calculation(max_h, damping, delta, grid_savepoint):
     vct_a = np.arange(0, max_h, delta)
-    vct_a = vct_a[::-1]
+    vct_a_field = gtx.as_field((KDim,), data=vct_a[::-1])
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping,
-        vct_a=vct_a,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        vct_a=vct_a_field,
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     assert vertical_params.index_of_damping_layer == vct_a.shape[0] - math.ceil(damping / delta) - 1
@@ -43,11 +44,11 @@ def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
     vertical_params = VerticalModelParams(
         rayleigh_damping_height=damping_height,
         vct_a=a,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        nflat_gradp=grid_savepoint.nflat_gradp,
         nflatlev=grid_savepoint.nflatlev(),
     )
     assert nrdmax == vertical_params.index_of_damping_layer
-    a_array = np.asarray(a)
+    a_array = a.asnumpy()
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
 
@@ -55,3 +56,15 @@ def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
 @pytest.mark.datatest
 def test_grid_size(grid_savepoint):
     assert 65 == grid_savepoint.num(KDim)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, kmoist_level", [("mch_ch_r04b09_dsl", 0), ("exclaim_ape_R02B04", 25)]
+)
+def test_kmoist_calculation(grid_savepoint, experiment, kmoist_level):
+    threshold = 22500.0
+    vct_a = grid_savepoint.vct_a().asnumpy()
+    assert kmoist_level == VerticalModelParams._determine_kstart_moist(
+        vct_a, threshold, nshift_total=0
+    )

@@ -17,8 +17,8 @@ from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
     hflux_ffsl_hybrid_stencil_02,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 def hflux_ffsl_hybrid_stencil_02_numpy(
@@ -26,29 +26,28 @@ def hflux_ffsl_hybrid_stencil_02_numpy(
     p_mass_flx_e: np.ndarray,
     z_dreg_area: np.ndarray,
 ):
-
     p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
     return p_out_e_hybrid_2
 
 
-def test_hflux_ffsl_hybrid_stencil_02():
-    mesh = SimpleMesh()
-    p_out_e_hybrid_2 = random_field(mesh, EdgeDim, KDim)
-    p_mass_flx_e = random_field(mesh, EdgeDim, KDim)
-    z_dreg_area = random_field(mesh, EdgeDim, KDim)
+def test_hflux_ffsl_hybrid_stencil_02(backend):
+    grid = SimpleGrid()
+    p_out_e_hybrid_2 = random_field(grid, EdgeDim, KDim)
+    p_mass_flx_e = random_field(grid, EdgeDim, KDim)
+    z_dreg_area = random_field(grid, EdgeDim, KDim)
 
     ref = hflux_ffsl_hybrid_stencil_02_numpy(
-        np.asarray(p_out_e_hybrid_2),
-        np.asarray(p_mass_flx_e),
-        np.asarray(z_dreg_area),
+        p_out_e_hybrid_2.asnumpy(),
+        p_mass_flx_e.asnumpy(),
+        z_dreg_area.asnumpy(),
     )
 
-    hflux_ffsl_hybrid_stencil_02(
+    hflux_ffsl_hybrid_stencil_02.with_backend(backend)(
         p_out_e_hybrid_2,
         p_mass_flx_e,
         z_dreg_area,
         offset_provider={},
     )
 
-    assert np.allclose(p_out_e_hybrid_2, ref)
+    assert np.allclose(p_out_e_hybrid_2.asnumpy(), ref)

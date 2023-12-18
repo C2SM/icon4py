@@ -13,18 +13,19 @@
 from typing import Tuple
 
 import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, minimum
-from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
-def zero_field(mesh, *dims: Dimension, dtype=float):
-    shapex = tuple(map(lambda x: mesh.size[x], dims))
-    return np_as_located_field(*dims)(np.zeros(shapex, dtype=dtype))
+def zero_field(grid, *dims: Dimension, dtype=float):
+    shapex = tuple(map(lambda x: grid.size[x], dims))
+    return as_field(dims, np.zeros(shapex, dtype=dtype))
 
 
 @field_operator
@@ -99,35 +100,6 @@ def setup_fields_for_initial_step(
 
 
 @field_operator
-def _en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
-    hdiff_smag_fac: float,
-    hdiff_smag_fac2: float,
-    hdiff_smag_fac3: float,
-    hdiff_smag_fac4: float,
-    hdiff_smag_z: float,
-    hdiff_smag_z2: float,
-    hdiff_smag_z3: float,
-    hdiff_smag_z4: float,
-) -> Field[[KDim], float]:
-    dz21 = hdiff_smag_z2 - hdiff_smag_z
-    alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
-    df32 = hdiff_smag_fac3 - hdiff_smag_fac2
-    df42 = hdiff_smag_fac4 - hdiff_smag_fac2
-    dz32 = hdiff_smag_z3 - hdiff_smag_z2
-    dz42 = hdiff_smag_z4 - hdiff_smag_z2
-
-    bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
-    aqdr = df32 / dz32 - bqdr * dz32
-    zf = 0.5 * (vect_a + vect_a(Koff[1]))
-
-    dzlin = minimum(dz21, maximum(0.0, zf - hdiff_smag_z))
-    dzqdr = minimum(dz42, maximum(0.0, zf - hdiff_smag_z2))
-    enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
-    return enh_smag_fac
-
-
-@field_operator
 def _init_diffusion_local_fields_for_regular_timestemp(
     k4: float,
     dyn_substeps: float,
@@ -143,7 +115,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
 ) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
-    enh_smag_fac = _en_smag_fac_for_zero_nshift(
+    enh_smag_fac = en_smag_fac_for_zero_nshift(
         vect_a,
         hdiff_smag_fac,
         hdiff_smag_fac2,
@@ -199,7 +171,7 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int, nrdmax: int32, nshift: int, physical_heights: np.ndarray
+    k_size: int, nrdmax: int32, nshift: int, physical_heights: Field[[KDim], float]
 ) -> Field[[KDim], float]:
     """
     Calculate diff_multfac_n2w.
@@ -213,18 +185,15 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-
+    heights = physical_heights.asnumpy()
     buffer = np.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
         / 12.0
         * (
-            (
-                physical_heights[1 + nshift : nrdmax + 1 + nshift]
-                - physical_heights[nshift + nrdmax + 1]
-            )
-            / (physical_heights[1] - physical_heights[nshift + nrdmax + 1])
+            (heights[1 + nshift : nrdmax + 1 + nshift] - heights[nshift + nrdmax + 1])
+            / (heights[1] - heights[nshift + nrdmax + 1])
         )
         ** 4
     )
-    return np_as_located_field(KDim)(buffer)
+    return as_field((KDim,), buffer)

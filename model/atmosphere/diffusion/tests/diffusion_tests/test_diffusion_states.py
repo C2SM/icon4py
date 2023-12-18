@@ -14,15 +14,17 @@
 import numpy as np
 import pytest
 
+from .utils import construct_interpolation_state
+
 
 @pytest.mark.datatest
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid):
-    geofac_n2s = np.asarray(interpolation_savepoint.geofac_n2s())
-    int_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
-    geofac_c = np.asarray(int_state.geofac_n2s_c)
-    geofac_nbh = np.asarray(int_state.geofac_n2s_nbh)
+    geofac_n2s = interpolation_savepoint.geofac_n2s().asnumpy()
+    int_state = construct_interpolation_state(interpolation_savepoint)
+    geofac_c = int_state.geofac_n2s_c.asnumpy()
+    geofac_nbh = int_state.geofac_n2s_nbh.asnumpy()
     assert np.count_nonzero(geofac_nbh) > 0
-    cec_table = icon_grid.get_c2cec_connectivity().table
+    cec_table = icon_grid.get_offset_provider("C2CEC").table
     assert np.allclose(geofac_c, geofac_n2s[:, 0])
     assert geofac_nbh[cec_table].shape == geofac_n2s[:, 1:].shape
     assert np.allclose(geofac_nbh[cec_table], geofac_n2s[:, 1:])

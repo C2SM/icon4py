@@ -11,13 +11,23 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import os
+
 import pytest
-from gt4py.next.program_processors.runners.gtfn_cpu import run_gtfn
-from gt4py.next.program_processors.runners.roundtrip import executor
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
+    config.addinivalue_line("markers", "slow_tests: this test takes a very long time")
+    config.addinivalue_line(
+        "markers", "with_netcdf: test uses netcdf which is an optional dependency"
+    )
+
+    # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
+    if config.getoption("--enable-mixed-precision"):
+        os.environ["FLOAT_PRECISION"] = "mixed"
 
 
 def pytest_addoption(parser):
@@ -33,11 +43,32 @@ def pytest_addoption(parser):
         pass
 
     try:
+        # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
             "--backend",
             action="store",
-            default=None,
-            help="GT4Py backend to use when executing stencils. Defaults to 'executor' embedded backend. Currently the other option is 'run_gtfn' which is the GTFN CPU backend.",
+            default="roundtrip",
+            help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--grid",
+            action="store",
+            default="simple_grid",
+            help="Grid to use. Defaults to simple_grid, other options include icon_grid",
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--enable-mixed-precision",
+            action="store_true",
+            help="Switch unit tests from double to mixed-precision",
+            default=False,
         )
     except ValueError:
         pass
@@ -50,13 +81,61 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
-    # parametrise backends
+    # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
 
-        params = [executor]  # default
-        if backend_option == "run_gtfn":
-            params.append(run_gtfn)
-        # TODO: add gpu support
+        backends = {
+            "embedded": None,
+            "roundtrip": run_roundtrip,
+            "gtfn_cpu": run_gtfn,
+            "gtfn_gpu": run_gtfn_gpu,
+        }
 
-        metafunc.parametrize("backend", params)
+        try:
+            from gt4py.next.program_processors.runners.dace_iterator import (
+                run_dace_cpu,
+                run_dace_gpu,
+            )
+
+            backends.update(
+                {
+                    "dace_cpu": run_dace_cpu,
+                    "dace_gpu": run_dace_gpu,
+                }
+            )
+        except ImportError:
+            # dace module not installed, ignore dace backends
+            pass
+
+        if backend_option not in backends:
+            available_backends = ", ".join([f"'{k}'" for k in backends.keys()])
+            raise Exception(
+                "Need to select a backend. Select from: ["
+                + available_backends
+                + "] and pass it as an argument to --backend when invoking pytest."
+            )
+
+        metafunc.parametrize(
+            "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
+        )
+
+    # parametrise grid
+    if "grid" in metafunc.fixturenames:
+        selected_grid_type = metafunc.config.getoption("--grid")
+
+        try:
+            if selected_grid_type == "simple_grid":
+                from icon4py.model.common.grid.simple import SimpleGrid
+
+                grid_instance = SimpleGrid()
+            elif selected_grid_type == "icon_grid":
+                from icon4py.model.common.test_utils.grid_utils import get_icon_grid
+
+                grid_instance = get_icon_grid()
+            else:
+                raise ValueError(f"Unknown grid type: {selected_grid_type}")
+            metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
+        except ValueError as e:
+            available_grids = ["simple_grid", "icon_grid"]
+            raise Exception(f"{e}. Select from: {available_grids}")

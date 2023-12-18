@@ -14,19 +14,18 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     random_field,
     random_mask,
     zero_field,
 )
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
 
 
 # FUNCTIONS
@@ -39,7 +38,6 @@ def ccw(
     p2_lon: np.array,
     p2_lat: np.array,
 ) -> np.array:
-
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -65,7 +63,6 @@ def lintersect(
     line2_p2_lon: np.array,
     line2_p2_lat: np.array,
 ) -> np.array:
-
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -112,7 +109,6 @@ def line_intersect(
     line2_p2_lon: np.array,
     line2_p2_lat: np.array,
 ) -> tuple[np.array]:
-
     m1 = (line1_p2_lat - line1_p1_lat) / (line1_p2_lon - line1_p1_lon)
     m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
 
@@ -661,40 +657,40 @@ def divide_flux_area_list_stencil_01_numpy(
 
 
 @pytest.mark.slow_tests
-def test_divide_flux_area_list_stencil_01():
-    mesh = SimpleMesh()
+def test_divide_flux_area_list_stencil_01(backend):
+    grid = SimpleGrid()
 
-    famask_int = random_mask(mesh, EdgeDim, KDim, dtype=int32)
-    p_vn = random_field(mesh, EdgeDim, KDim)
-    ptr_v3_lon = random_field(mesh, EdgeDim, E2CDim)
+    famask_int = random_mask(grid, EdgeDim, KDim, dtype=int32)
+    p_vn = random_field(grid, EdgeDim, KDim)
+    ptr_v3_lon = random_field(grid, EdgeDim, E2CDim)
     ptr_v3_lon_field = as_1D_sparse_field(ptr_v3_lon, ECDim)
-    ptr_v3_lat = random_field(mesh, EdgeDim, E2CDim)
+    ptr_v3_lat = random_field(grid, EdgeDim, E2CDim)
     ptr_v3_lat_field = as_1D_sparse_field(ptr_v3_lat, ECDim)
-    tangent_orientation_dsl = random_field(mesh, EdgeDim)
-    dreg_patch0_1_lon_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_1_lat_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_2_lon_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_2_lat_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_3_lon_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_3_lat_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_4_lon_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch0_4_lat_dsl = random_field(mesh, EdgeDim, KDim)
-    dreg_patch1_1_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_1_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_2_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_2_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_3_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_3_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_4_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch1_4_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_1_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_1_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_2_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_2_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_3_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_3_lat_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_4_lon_vmask = zero_field(mesh, EdgeDim, KDim)
-    dreg_patch2_4_lat_vmask = zero_field(mesh, EdgeDim, KDim)
+    tangent_orientation_dsl = random_field(grid, EdgeDim)
+    dreg_patch0_1_lon_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_1_lat_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_2_lon_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_2_lat_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_3_lon_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_3_lat_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_4_lon_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch0_4_lat_dsl = random_field(grid, EdgeDim, KDim)
+    dreg_patch1_1_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_1_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_2_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_2_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_3_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_3_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_4_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch1_4_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_1_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_1_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_2_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_2_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_3_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_3_lat_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_4_lon_vmask = zero_field(grid, EdgeDim, KDim)
+    dreg_patch2_4_lat_vmask = zero_field(grid, EdgeDim, KDim)
 
     (
         ref_1,
@@ -722,7 +718,7 @@ def test_divide_flux_area_list_stencil_01():
         ref_23,
         ref_24,
     ) = divide_flux_area_list_stencil_01_numpy(
-        mesh.e2c,
+        grid.connectivities[E2CDim],
         np.asarray(famask_int),
         np.asarray(p_vn),
         np.asarray(ptr_v3_lon),
@@ -738,7 +734,7 @@ def test_divide_flux_area_list_stencil_01():
         np.asarray(dreg_patch0_4_lat_dsl),
     )
 
-    divide_flux_area_list_stencil_01(
+    divide_flux_area_list_stencil_01.with_backend(backend)(
         famask_int,
         p_vn,
         ptr_v3_lon_field,
@@ -769,8 +765,8 @@ def test_divide_flux_area_list_stencil_01():
         dreg_patch2_4_lon_vmask,
         dreg_patch2_4_lat_vmask,
         offset_provider={
-            "E2C": mesh.get_e2c_offset_provider(),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, mesh.n_e2c),
+            "E2C": grid.get_offset_provider("E2C"),
+            "E2EC": grid.get_offset_provider("E2EC"),
         },
     )
     assert np.allclose(dreg_patch0_1_lon_dsl, ref_1)

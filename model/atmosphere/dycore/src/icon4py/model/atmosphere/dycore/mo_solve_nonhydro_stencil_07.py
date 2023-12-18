@@ -13,32 +13,47 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_07(
-    rho: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_rth_pr_1 = rho - rho_ref_mc
-    z_rth_pr_2 = theta_v - theta_ref_mc
-    return z_rth_pr_1, z_rth_pr_2
+    rho: Field[[CellDim, KDim], wpfloat],
+    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+    rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
+
+    z_rth_pr_1_wp = rho - rho_ref_mc_wp
+    z_rth_pr_2_wp = theta_v - theta_ref_mc_wp
+    return astype((z_rth_pr_1_wp, z_rth_pr_2_wp), vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_07(
-    rho: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-    z_rth_pr_1: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], wpfloat],
+    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_07(
-        rho, rho_ref_mc, theta_v, theta_ref_mc, out=(z_rth_pr_1, z_rth_pr_2)
+        rho,
+        rho_ref_mc,
+        theta_v,
+        theta_ref_mc,
+        out=(z_rth_pr_1, z_rth_pr_2),
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
