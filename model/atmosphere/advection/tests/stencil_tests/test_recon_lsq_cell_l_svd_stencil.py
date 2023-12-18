@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
     recon_lsq_cell_l_svd_stencil,
@@ -66,7 +65,7 @@ def test_recon_lsq_cell_l_svd_stencil(backend):
         p_coeff_3,
         offset_provider={
             "C2E2C": grid.get_offset_provider("C2E2C"),
-            "C2CEC": StridedNeighborOffsetProvider(CellDim, CECDim, grid.size[C2E2CDim]),
+            "C2CEC": grid.get_offset_provider("C2CEC"),
         },
     )
     co1 = p_coeff_1.asnumpy()

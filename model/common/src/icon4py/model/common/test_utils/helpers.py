@@ -16,8 +16,10 @@ from typing import ClassVar, Optional
 import numpy as np
 import numpy.typing as npt
 import pytest
+from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
+from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
 
 from ..grid.base import BaseGrid
@@ -135,6 +137,15 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
 
 
+def allocate_data(backend, input_data):
+    _allocate_field = constructors.as_field.partial(allocator=backend)
+    input_data = {
+        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+        for k, v in input_data.items()
+    }
+    return input_data
+
+
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
@@ -143,6 +154,9 @@ def _test_validation(self, grid, backend, input_data):
             for k, v in input_data.items()
         },
     )
+
+    input_data = allocate_data(backend, input_data)
+
     self.PROGRAM.with_backend(backend)(
         **input_data,
         offset_provider=grid.get_all_offset_providers(),
@@ -161,10 +175,13 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
-            benchmark(
+            input_data = allocate_data(backend, input_data)
+            benchmark.pedantic(
                 self.PROGRAM.with_backend(backend),
-                **input_data,
-                offset_provider=grid.get_all_offset_providers(),
+                args=(),
+                kwargs={**input_data, "offset_provider": grid.get_all_offset_providers()},
+                iterations=1,
+                rounds=1,
             )
 
 else:

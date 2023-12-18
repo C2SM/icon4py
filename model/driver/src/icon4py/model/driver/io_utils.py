@@ -23,11 +23,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
@@ -38,6 +39,11 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
+)
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -75,7 +81,6 @@ def read_icon_grid(
 
 # TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
 def model_initialization():
-
     # create two prognostic states, nnow and nnew?
     # at least two prognostic states are global because they are needed in the dycore, AND possibly nesting and restart processes in the future
     # one is enough for the JW test
@@ -102,7 +107,6 @@ def read_initial_state(
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
     ZFields,
-    NHConstants,
     PrepAdvection,
     Field[[KDim], float],
     PrognosticState,
@@ -138,7 +142,7 @@ def read_initial_state(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = diffusion_init_savepoint.construct_diagnostics_for_diffusion()
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
@@ -179,13 +183,6 @@ def read_initial_state(
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
-    nh_constants = NHConstants(
-        wgt_nnow_rth=solve_nonhydro_init_savepoint.wgt_nnow_rth(),
-        wgt_nnew_rth=solve_nonhydro_init_savepoint.wgt_nnew_rth(),
-        wgt_nnow_vel=solve_nonhydro_init_savepoint.wgt_nnow_vel(),
-        wgt_nnew_vel=solve_nonhydro_init_savepoint.wgt_nnew_vel(),
-    )
-
     prognostic_state_next = PrognosticState(
         w=solve_nonhydro_init_savepoint.w_new(),
         vn=solve_nonhydro_init_savepoint.vn_new(),
@@ -204,7 +201,6 @@ def read_initial_state(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         prognostic_state_now,
@@ -283,11 +279,11 @@ def read_static_fields(
             .from_savepoint_grid()
             .construct_icon_grid()
         )
-        diffusion_interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
+        diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+            dataprovider.from_interpolation_savepoint()
         )
-        diffusion_metric_state = (
-            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        diffusion_metric_state = construct_metric_state_for_diffusion(
+            dataprovider.from_metrics_savepoint()
         )
         solve_nonhydro_interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()

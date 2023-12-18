@@ -86,7 +86,7 @@ class IconGrid(BaseGrid):
 
     @property
     def num_edges(self):
-        return self.config.num_edges
+        return self.config.num_edges if self.config else 0
 
     @property
     def limited_area(self):
@@ -96,12 +96,6 @@ class IconGrid(BaseGrid):
     @property
     def n_shift(self):
         return self.config.n_shift_total if self.config else 0
-
-    @property
-    def nflat_gradp(self):
-        return (
-            self.config.num_levels if self.config else 0
-        )  # according to line 1168 in mo_vertical_grid.f90
 
     @property
     def lvert_nest(self):

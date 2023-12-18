@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hor_adv_stencil_01 import hor_adv_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
@@ -74,7 +73,7 @@ def test_hor_adv_stencil_01(backend):
         p_dtime,
         offset_provider={
             "C2E": grid.get_offset_provider("C2E"),
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2CE": grid.get_offset_provider("C2CE"),
         },
     )
     assert np.allclose(tracer_new.asnumpy(), ref)
