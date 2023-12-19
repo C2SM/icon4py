@@ -95,7 +95,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     assert all(
         is_list_of_names(body.args) for body in fvprog.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args)
+    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args) #type: ignore[attr-defined] # Checked in the assert
 
     out_args = (body.kwargs["out"] for body in fvprog.past_node.body)
     output_fields = []

@@ -38,7 +38,7 @@ def mo_velocity_advection_stencil_07_numpy(
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
     w_e2c = w[grid.connectivities[E2CDim]]
-    z_w_v_e2v = z_w_v()[grid.connectivities[E2VDim]]
+    z_w_v_e2v = z_w_v[grid.connectivities[E2VDim]]
 
     red_w = w_e2c[:, 0] - w_e2c[:, 1]
     red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]

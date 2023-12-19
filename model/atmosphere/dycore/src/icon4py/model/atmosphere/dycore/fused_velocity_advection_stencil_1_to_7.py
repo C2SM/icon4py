@@ -43,9 +43,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_interface_vt_vn_and_kinetic_energy(
+def compute_interface_vt_vn_and_kinetic_energy(
     vn: Field[[EdgeDim, KDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -80,6 +81,8 @@ def _compute_interface_vt_vn_and_kinetic_energy(
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
+    vn_ie = where(k == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e, vn), vn_ie)
+
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
@@ -113,11 +116,9 @@ def _fused_velocity_advection_stencil_1_to_6(
         vt,
     )
 
-    (vn_ie, z_vt_ie, z_kin_hor_e) = _compute_interface_vt_vn_and_kinetic_energy(
-        vn, wgtfac_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
+    (vn_ie, z_vt_ie, z_kin_hor_e) = compute_interface_vt_vn_and_kinetic_energy(
+        vn, wgtfac_e, wgtfacq_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
     )
-
-    vn_ie = where(k == nlev, _mo_velocity_advection_stencil_06(wgtfacq_e, vn), vn_ie)
 
     z_w_concorr_me = where(
         nflatlev <= k < nlev,
