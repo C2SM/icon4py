@@ -69,7 +69,9 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition1 = k_nlev < nlev
         vt = np.where(
-            condition1, mo_velocity_advection_stencil_01_numpy(grid, vn, rbf_vec_coeff_e), vt,
+            condition1,
+            mo_velocity_advection_stencil_01_numpy(grid, vn, rbf_vec_coeff_e),
+            vt,
         )
 
         condition2 = (1 <= k_nlev) & (k_nlev < nlev)
@@ -81,7 +83,9 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         if not lvn_only:
             z_vt_ie = np.where(
-                condition2, mo_velocity_advection_stencil_03_numpy(grid, wgtfac_e, vt), z_vt_ie,
+                condition2,
+                mo_velocity_advection_stencil_03_numpy(grid, wgtfac_e, vt),
+                z_vt_ie,
             )
 
         condition3 = k_nlev == 0
@@ -93,7 +97,9 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition4 = k == nlev
         vn_ie = np.where(
-                condition4, mo_velocity_advection_stencil_06_numpy(grid, wgtfacq_e, vn), vn_ie,
+            condition4,
+            mo_velocity_advection_stencil_06_numpy(grid, wgtfacq_e, vn),
+            vn_ie,
         )
 
         condition5 = (nflatlev <= k_nlev) & (k_nlev < nlev)
@@ -168,7 +174,8 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
 
-        z_v_w = lambda: mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
+        def z_v_w():
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
 
         if not lvn_only:
             z_v_grad_w = np.where(
@@ -229,10 +236,10 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         lateral_boundary_7 = 12
         halo_1 = 14
 
-        horizontal_start=0
-        horizontal_end=grid.num_edges
-        vertical_start=0
-        vertical_end=nlev + 1
+        horizontal_start = 0
+        horizontal_end = grid.num_edges
+        vertical_start = 0
+        vertical_end = nlev + 1
 
         return dict(
             vn=vn,

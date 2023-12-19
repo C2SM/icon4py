@@ -174,6 +174,7 @@ def _fused_velocity_advection_stencil_8_to_13(
 
     return z_ekinh, w_concorr_c, z_w_con_c
 
+
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_restricted(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -204,6 +205,7 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
         nlev,
         nflatlev,
     )[2]
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def fused_velocity_advection_stencil_8_to_13(

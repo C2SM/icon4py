@@ -227,19 +227,26 @@ class F90RunFun(eve.Node):
             + [F90Field(name=field.name, suffix="k_size") for field in self.out_fields]
             + [F90Field(name=name) for name in _DOMAIN_ARGS]
         )
-        bind_fields = [
-            F90TypedField(
-                name=field.name,
-                dtype=field.renderer.render_ctype("f90"),
-                dims=field.renderer.render_dim_string(),
-            )
-            for field in self.all_fields
-        ] + [
-            F90TypedField(name=field.name, suffix="k_size", dtype="integer(c_int)", dims="value")
-            for field in self.out_fields
-        ] + [
-            F90TypedField(name=name, dtype="integer(c_int)", dims="value") for name in _DOMAIN_ARGS
-        ]
+        bind_fields = (
+            [
+                F90TypedField(
+                    name=field.name,
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_dim_string(),
+                )
+                for field in self.all_fields
+            ]
+            + [
+                F90TypedField(
+                    name=field.name, suffix="k_size", dtype="integer(c_int)", dims="value"
+                )
+                for field in self.out_fields
+            ]
+            + [
+                F90TypedField(name=name, dtype="integer(c_int)", dims="value")
+                for name in _DOMAIN_ARGS
+            ]
+        )
 
         self.params = F90EntityList(fields=param_fields, line_end=", &", line_end_last=" &")
         self.binds = F90EntityList(fields=bind_fields)
@@ -280,7 +287,9 @@ class F90RunAndVerifyFun(eve.Node):
                 for field in self.out_fields
             ]
             + [
-                F90TypedField(name=field.name, suffix="k_size", dtype="integer(c_int)", dims="value")
+                F90TypedField(
+                    name=field.name, suffix="k_size", dtype="integer(c_int)", dims="value"
+                )
                 for field in self.out_fields
             ]
             + [

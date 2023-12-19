@@ -113,7 +113,7 @@ def _fused_velocity_advection_stencil_1_to_6(
         vt,
     )
 
-    (vn_ie, z_vt_ie, z_kin_hor_e) =_compute_interface_vt_vn_and_kinetic_energy(
+    (vn_ie, z_vt_ie, z_kin_hor_e) = _compute_interface_vt_vn_and_kinetic_energy(
         vn, wgtfac_e, z_vt_ie, vt, vn_ie, z_kin_hor_e, k, nlev, lvn_only
     )
 
@@ -162,22 +162,22 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     Field[[EdgeDim, KDim], vpfloat],
 ]:
     vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me = _fused_velocity_advection_stencil_1_to_6(
-            vn,
-            rbf_vec_coeff_e,
-            wgtfac_e,
-            ddxn_z_full,
-            ddxt_z_full,
-            z_w_concorr_me,
-            wgtfacq_e,
-            nflatlev,
-            z_vt_ie,
-            vt,
-            vn_ie,
-            z_kin_hor_e,
-            k,
-            nlev,
-            lvn_only,
-        )
+        vn,
+        rbf_vec_coeff_e,
+        wgtfac_e,
+        ddxn_z_full,
+        ddxt_z_full,
+        z_w_concorr_me,
+        wgtfacq_e,
+        nflatlev,
+        z_vt_ie,
+        vt,
+        vn_ie,
+        z_kin_hor_e,
+        k,
+        nlev,
+        lvn_only,
+    )
 
     k = broadcast(k, (EdgeDim, KDim))
 
@@ -324,8 +324,8 @@ def _fused_velocity_advection_stencil_1_to_7(
             lateral_boundary_7,
             halo_1,
         )
-    if istep == 1
-    else _fused_velocity_advection_stencil_1_to_7_corrector(
+        if istep == 1
+        else _fused_velocity_advection_stencil_1_to_7_corrector(
             vn,
             rbf_vec_coeff_e,
             wgtfac_e,
@@ -355,6 +355,7 @@ def _fused_velocity_advection_stencil_1_to_7(
 
     return vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w
 
+
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_restricted(
     vn: Field[[EdgeDim, KDim], wpfloat],
@@ -383,7 +384,6 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> Field[[EdgeDim, KDim], float]:
-
 
     return _fused_velocity_advection_stencil_1_to_7(
         vn,

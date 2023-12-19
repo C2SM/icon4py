@@ -24,7 +24,6 @@ from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,
-    random_mask,
     zero_field,
 )
 
@@ -118,14 +117,13 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         nlev = grid.num_levels
         nflatlev = 13
-        nrdmax = 10
 
         istep = 1
 
-        horizontal_start=0
-        horizontal_end=grid.num_cells
-        vertical_start=0
-        vertical_end=nlev + 1
+        horizontal_start = 0
+        horizontal_end = grid.num_cells
+        vertical_start = 0
+        vertical_end = nlev + 1
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,

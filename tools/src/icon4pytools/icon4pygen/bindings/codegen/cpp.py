@@ -506,6 +506,7 @@ class CppDefGenerator(TemplatedGenerator):
         """
     )
 
+
 class CppFunc(Node):
     funcname: str
 
