@@ -14,6 +14,7 @@ import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable, Optional
+import numpy as np
 
 import click
 from devtools import Timer
@@ -40,6 +41,7 @@ from icon4py.model.common.states.diagnostic_state import DiagnosticState, Diagno
 from icon4py.model.common.diagnostic_calculations.mo_init_exner_pr import mo_init_exner_pr
 from icon4py.model.common.diagnostic_calculations.mo_init_zero import mo_init_ddt_cell_zero, mo_init_ddt_edge_zero
 from icon4py.model.common.diagnostic_calculations.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
+from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.io_utils import (
@@ -73,11 +75,14 @@ class TimeLoop:
         grid: Optional[IconGrid],
         diffusion: Diffusion,
         solve_nonhydro: SolveNonhydro,
+        is_run_from_serializedData: bool = False,
     ):
         self.run_config: IconRunConfig = run_config
         self.grid: Optional[IconGrid] = grid
         self.diffusion = diffusion
         self.solve_nonhydro = solve_nonhydro
+        # TODO (Chia Rui): find a more elegant way to determine whether this timeloop is run for comparison with serialized data
+        self.is_run_from_serializedData = is_run_from_serializedData
 
         self._n_time_steps: int = int(
             (self.run_config.end_date - self.run_config.start_date)
@@ -168,35 +173,47 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
+        # TODO (Chia Rui): create a netcdf output method instead of this temptative simple formatted data output
         def printing_data(data, title: str, first_write: bool = False):
             if first_write:
                 write_mode = "w"
             else:
                 write_mode = "a"
-            with open(self.run_config.output_path + "data_" + title + ".dat", write_mode) as f:
-                cell_size = data.shape[0]
-                k_size = data.shape[1]
-                log.info(f"Writing {title} with sizes of {cell_size}, {k_size} into a formatted file")
-                for i in range(cell_size):
-                    for k in range(k_size):
-                        f.write("{0:7d} {1:7d}".format(i, k))
-                        f.write(
-                            " {0:.20e} ".format(
-                                data[i, k]
+            with open(self.run_config.output_path + "jw_data_" + title + ".dat", write_mode) as f:
+                no_dim = len(data.shape)
+                f.write("{0:7d}\n".format(self._n_time_steps + 1))
+                if no_dim == 2:
+                    cell_size = data.shape[0]
+                    k_size = data.shape[1]
+                    f.write("{0:7d} {1:7d}\n".format(cell_size, k_size))
+                    log.info(f"Writing {title} with sizes of {cell_size}, {k_size} into a formatted file")
+                    for i in range(cell_size):
+                        for k in range(k_size):
+                            f.write("{0:7d} {1:7d}".format(i, k))
+                            f.write(
+                                " {0:.20e}\n".format(
+                                    data[i, k]
+                                )
                             )
-                        )
-                        f.write("\n")
+                elif no_dim == 1:
+                    cell_size = data.shape[0]
+                    f.write("{0:7d}\n".format(cell_size))
+                    log.info(f"Writing {title} with sizes of {cell_size} into a formatted file")
+                    for i in range(cell_size):
+                        f.write("{0:7d} {1:.20e}\n".format(i, data[i]))
 
         def printing_grid(data_lat, data_lon, vertical_grid):
-            with open(self.run_config.output_path + "grid.dat", "w") as f:
+            with open(self.run_config.output_path + "jw_grid.dat", "w") as f:
                 cell_size = data_lat.shape[0]
+                if cell_size != data_lon.shape[0]:
+                    log.warning(f"Sizes of lat and lon are not equal, {cell_size}, {data_lon.shape[0]}, please check")
                 k_size = vertical_grid.shape[0]
                 log.info(f"Writing grid data with sizes of {cell_size}, {k_size} into a formatted file")
-                f.write("{0:7d} {1:7d}".format(cell_size, k_size))
+                f.write("{0:7d} {1:7d}\n".format(cell_size, k_size))
                 for i in range(cell_size):
                     f.write("{0:7d}".format(i))
                     f.write(
-                        " {0:.20e} ".format(
+                        " {0:.20e} {1:.20e}".format(
                             data_lat[i], data_lon[i]
                         )
                     )
@@ -204,11 +221,24 @@ class TimeLoop:
                 for i in range(k_size):
                     f.write("{0:7d}".format(i))
                     f.write(
-                        " {0:.20e} ".format(
+                        " {0:.20e}".format(
                             vertical_grid[i]
                         )
                     )
                     f.write("\n")
+
+        full_height = np.zeros(self.grid.num_levels, dtype=float)
+        half_height = self.solve_nonhydro.vertical_params.vct_a.asnumpy()
+        log.info(
+            f"Writing grid file. vct_a size is {half_height.shape}"
+        )
+        for k in range(self.grid.num_levels):
+            full_height[k] = 0.5 * (half_height[k] + half_height[k+1])
+        printing_grid(
+            self.solve_nonhydro.cell_params.cell_center_lat.asnumpy(),
+            self.solve_nonhydro.cell_params.cell_center_lon.asnumpy(),
+            full_height,
+        )
 
         log.info(
             f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
@@ -216,8 +246,22 @@ class TimeLoop:
         log.info(
             f"Initialization of diagnostic variables for output."
         )
+        # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
+        mo_rbf_vec_interpol_cell.with_backend(backend)(
+            prognostic_state_list[self._now].vn,
+            diagnostic_metric_state.rbf_vec_coeff_c1,
+            diagnostic_metric_state.rbf_vec_coeff_c2,
+            diagnostic_state.u,
+            diagnostic_state.v,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            0,
+            self.grid.num_levels,
+            offset_provider={
+                "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
+            },
+        )
 
-        # TODO (Chia Rui): Compute diagnostic variables: zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
         mo_diagnose_temperature.with_backend(backend)(
             prognostic_state_list[self._now].theta_v,
             prognostic_state_list[self._now].exner,
@@ -269,16 +313,37 @@ class TimeLoop:
         )
         '''
 
-        mo_init_exner_pr.with_backend(backend)(
-            prognostic_state_list[self._now].exner,
-            self.solve_nonhydro.metric_state_nonhydro.exner_ref_mc,
-            solve_nonhydro_diagnostic_state.exner_pr,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider={}
-        )
+        printing_data(diagnostic_state.temperature.asnumpy(),"temperature_init",first_write=True)
+        printing_data(prognostic_state_list[self._now].vn.asnumpy(), "vn_init", first_write=True)
+        printing_data(prognostic_state_list[self._now].rho.asnumpy(), "rho_init", first_write=True)
+        printing_data(diagnostic_state.u.asnumpy(), "u_init", first_write=True)
+        printing_data(diagnostic_state.v.asnumpy(), "v_init", first_write=True)
+        printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres_init", first_write=True)
+        printing_data(diagnostic_state.u.asnumpy()[:, 0], "sfc_u_init", first_write=True)
+        printing_data(diagnostic_state.v.asnumpy()[:, 0], "sfc_v_init", first_write=True)
+
+
+        if not self.is_run_from_serializedData:
+            mo_init_exner_pr.with_backend(backend)(
+                prognostic_state_list[self._now].exner,
+                self.solve_nonhydro.metric_state_nonhydro.exner_ref_mc,
+                solve_nonhydro_diagnostic_state.exner_pr,
+                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+                0,
+                self.grid.num_levels,
+                offset_provider={}
+            )
+
+        printing_data(solve_nonhydro_diagnostic_state.exner_pr.asnumpy(), "exner_pr_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.exner_pr.asnumpy()[:, 0], "sfc_exner_pr_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.exner_pr.asnumpy()[:, 20], "sfc20_exner_pr_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.ddt_exner_phy.asnumpy(), "ddt_exner_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.ddt_vn_phy.asnumpy(), "ddt_vn_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1.asnumpy(), "ddt_w1_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2.asnumpy(), "ddt_w2_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1.asnumpy(), "ddt_vn1_init", first_write=True)
+        printing_data(solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2.asnumpy(), "ddt_vn2_init", first_write=True)
 
         log.info(
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
@@ -299,26 +364,27 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
             )
 
-            mo_init_ddt_cell_zero.with_backend(backend)(
-                solve_nonhydro_diagnostic_state.ddt_exner_phy,
-                solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
-                solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2,
-                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-                0,
-                self.grid.num_levels,
-                offset_provider={}
-            )
-            mo_init_ddt_edge_zero.with_backend(backend)(
-                solve_nonhydro_diagnostic_state.ddt_vn_phy,
-                solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,
-                solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2,
-                self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.interior(EdgeDim)),
-                self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim)),
-                0,
-                self.grid.num_levels,
-                offset_provider={}
-            )
+            if not self.is_run_from_serializedData:
+                mo_init_ddt_cell_zero.with_backend(backend)(
+                    solve_nonhydro_diagnostic_state.ddt_exner_phy,
+                    solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
+                    solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2,
+                    self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+                    self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+                    0,
+                    self.grid.num_levels,
+                    offset_provider={}
+                )
+                mo_init_ddt_edge_zero.with_backend(backend)(
+                    solve_nonhydro_diagnostic_state.ddt_vn_phy,
+                    solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,
+                    solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2,
+                    self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.interior(EdgeDim)),
+                    self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim)),
+                    0,
+                    self.grid.num_levels,
+                    offset_provider={}
+                )
 
             self._next_simulation_date()
 
@@ -339,7 +405,22 @@ class TimeLoop:
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            # TODO (Chia Rui): compute diagnostic variables: zonal and meridonial winds, necessary for JW test output (diag_for_output_dyn subroutine)
+            # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
+            mo_rbf_vec_interpol_cell.with_backend(backend)(
+                prognostic_state_list[self._now].vn,
+                diagnostic_metric_state.rbf_vec_coeff_c1,
+                diagnostic_metric_state.rbf_vec_coeff_c2,
+                diagnostic_state.u,
+                diagnostic_state.v,
+                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
+                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+                0,
+                self.grid.num_levels,
+                offset_provider={
+                    "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
+                },
+            )
+
             mo_diagnose_temperature.with_backend(backend)(
                 prognostic_state_list[self._now].theta_v,
                 prognostic_state_list[self._now].exner,
@@ -393,6 +474,20 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
+            #printing_data(diagnostic_state.temperature.asnumpy(), "temperature")
+            #printing_data(diagnostic_state.u.asnumpy(), "u")
+            #printing_data(diagnostic_state.v.asnumpy(), "v")
+            #printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres")
+
+            printing_data(diagnostic_state.temperature.asnumpy(), "temperature_final", first_write=True)
+            printing_data(prognostic_state_list[self._now].vn.asnumpy(), "vn_final", first_write=True)
+            printing_data(prognostic_state_list[self._now].rho.asnumpy(), "rho_final", first_write=True)
+            printing_data(diagnostic_state.u.asnumpy(), "u_final", first_write=True)
+            printing_data(diagnostic_state.v.asnumpy(), "v_final", first_write=True)
+            printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres_final", first_write=True)
+            printing_data(diagnostic_state.u.asnumpy()[:, 0], "sfc_u_final", first_write=True)
+            printing_data(diagnostic_state.v.asnumpy()[:, 0], "sfc_v_final", first_write=True)
+
         timer.summary(True)
 
     def _integrate_one_time_step(
@@ -406,6 +501,7 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
+
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -415,14 +511,14 @@ class TimeLoop:
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
-
+        '''
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
             )
 
         self._swap()
-
+        '''
         # TODO (Chia Rui): add tracer advection here
 
     def _do_dyn_substepping(
@@ -512,7 +608,7 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
-    ) = read_static_fields(fname_prefix, file_path, ser_type=ser_type)
+    ) = read_static_fields(fname_prefix, file_path, ser_type=ser_type, init_type=init_type)
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)

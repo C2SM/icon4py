@@ -218,13 +218,17 @@ def test_jabw_initial_condition(
         )
 
 # testing on MCH_CH_r04b09_dsl data
+'''
+
+'''
+
 @pytest.mark.datatest
 @pytest.mark.skip
 @pytest.mark.parametrize(
     "debug_mode,istep_init, istep_exit, jstep_init, jstep_exit,timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            False,
+            True,
             1,
             2,
             0,
@@ -434,7 +438,7 @@ def test_run_timeloop_single_step(
         exner_incr=None,  # sp.exner_incr(),
     )
 
-    timeloop = TimeLoop(r04b09_iconrun_config, diffusion, solve_nonhydro)
+    timeloop = TimeLoop(r04b09_iconrun_config, icon_grid, diffusion, solve_nonhydro,is_run_from_serializedData=True)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
@@ -488,6 +492,53 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
+
+    if debug_mode:
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        base_dir = script_dir + "/"
+
+        def printing(ref, predict, title: str):
+            with open(base_dir + "analysis_" + title + ".dat", "w") as f:
+                cell_size = ref.shape[0]
+                k_size = ref.shape[1]
+                print(title, cell_size, k_size)
+                difference = np.abs(ref - predict)
+                for i in range(cell_size):
+                    for k in range(k_size):
+                        f.write("{0:7d} {1:7d}".format(i, k))
+                        f.write(
+                            " {0:.20e} {1:.20e} {2:.20e} ".format(
+                                difference[i, k], ref[i, k], predict[i, k]
+                            )
+                        )
+                        f.write("\n")
+
+        printing(
+            rho_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+            "rho",
+        )
+        printing(
+            exner_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+            "exner",
+        )
+        printing(
+            theta_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+            "theta_v",
+        )
+        printing(
+            w_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+            "w",
+        )
+        printing(
+            vn_sp.asnumpy(),
+            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+            "vn",
+        )
+
     assert dallclose(
         vn_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
@@ -515,48 +566,4 @@ def test_run_timeloop_single_step(
         prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
     )
 
-    if debug_mode:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = script_dir + "/"
 
-        def printing(ref, predict, title: str):
-            with open(base_dir + "analysis_" + title + ".dat", "w") as f:
-                cell_size = ref.shape[0]
-                k_size = ref.shape[1]
-                print(title, cell_size, k_size)
-                difference = np.abs(ref - predict)
-                for i in range(cell_size):
-                    for k in range(k_size):
-                        f.write("{0:7d} {1:7d}".format(i, k))
-                        f.write(
-                            " {0:.20e} {1:.20e} {2:.20e} ".format(
-                                difference[i, k], ref[i, k], predict[i, k]
-                            )
-                        )
-                        f.write("\n")
-
-        printing(
-            rho_sp.rho().asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-            "rho",
-        )
-        printing(
-            exner_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-            "exner",
-        )
-        printing(
-            theta_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-            "theta_v",
-        )
-        printing(
-            w_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-            "w",
-        )
-        printing(
-            vn_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-            "vn",
-        )

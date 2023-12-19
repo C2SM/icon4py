@@ -35,7 +35,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, CEDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -44,12 +44,15 @@ from icon4py.model.common.states.diagnostic_state import DiagnosticState, Diagno
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, CPD_O_RD, P0REF, CVD_O_RD, GRAV_O_RD
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
+from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 
 from gt4py.next import as_field
 from gt4py.next.common import Field
 
 import sys
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
+backend = run_gtfn
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -103,7 +106,7 @@ def mo_u2vn_jabw_numpy(
         )
     vn = u * primal_normal_x
 
-    return vn
+    return vn, u
 
 
 def mo_hydro_adjust(
@@ -248,6 +251,12 @@ def model_initialization_jabw(
     edge_lon = edge_param.edge_center[1].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
 
+    c2e2c2e = icon_grid.connectivities[C2E2C2EDim]
+    c2e = icon_grid.connectivities[C2EDim]
+    rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
+    rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
+    geofac_div = data_provider.from_interpolation_savepoint().geofac_div()
+
     cell_size = cell_lat.size
     edge_size = edge_lat.size
     num_levels = icon_grid.num_levels
@@ -337,7 +346,7 @@ def model_initialization_jabw(
         mask_array_edge_start_plus1_to_edge_end,
     )
 
-    vn_numpy = mo_u2vn_jabw_numpy(
+    vn_numpy, u_numpy = mo_u2vn_jabw_numpy(
         jw_u0,
         jw_up,
         latC,
@@ -349,7 +358,6 @@ def model_initialization_jabw(
         mask_array_edge_start_plus1_to_edge_end,
     )
 
-    # perform hydrostatic adjustment on icon grid
     rho_numpy, exner_numpy, theta_v_numpy = mo_hydro_adjust(
         wgtfac_c,
         ddqz_z_half,
@@ -375,6 +383,46 @@ def model_initialization_jabw(
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
+    u_try = _allocate(CellDim, KDim, grid=icon_grid)
+    v_try = _allocate(CellDim, KDim, grid=icon_grid)
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
+    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+
+    mo_rbf_vec_interpol_cell.with_backend(backend)(
+        vn,
+        rbv_vec_coeff_c1,
+        rbv_vec_coeff_c2,
+        u_try,
+        v_try,
+        grid_idx_cell_start_plus1,
+        grid_idx_cell_end,
+        0,
+        num_levels,
+        offset_provider={
+            "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
+        },
+    )
+
+    u_try_numpy = u_try.asnumpy()
+    v_try_numpy = v_try.asnumpy()
+    rbv_vec_coeff_c1_numpy = rbv_vec_coeff_c1.asnumpy()
+    rbv_vec_coeff_c2_numpy = rbv_vec_coeff_c2.asnumpy()
+    with open("debug_rbf.dat", "w") as f:
+        for i in range(cell_size):
+            #for k in range(num_levels):
+                #f.write("{0:7d} {1:7d} {2:.10e} {3:.10e} {4:.10e}\n".format(i, k, rbv_vec_coeff_c1_numpy[i,k], rbv_vec_coeff_c2_numpy[i,k], c2e2c2e[i,k]))
+                #f.write("{0:7d} {1:7d} {2:.10e} {3:.10e} {4:.10e} {5:.10e} {6:.10e} {7:.10e}\n".format(i, k, cell_lat[i], cell_lon[i], u_try_numpy[i, k], v_try_numpy[i, k]))
+                f.write("{0:7d} {1:.10e} {2:.10e} {3:.10e} {4:.10e} {5:.10e} {6:.10e}\n".format(
+                    i,
+                    cell_lat[i],
+                    cell_lon[i],
+                    u_try_numpy[i, num_levels-1],
+                    v_try_numpy[i, num_levels-1],
+                    u_numpy[i,num_levels-1],
+                    u_try_numpy[i, num_levels-1] - u_numpy[i, num_levels-1]
+                )
+                )
+
     # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment
     #temperature_numpy = mo_diagnose_temperature_numpy(theta_v_numpy,exner_numpy)
     #pressure_sfc_numpy = mo_diagnose_pressure_sfc_numpy(exner_numpy,temperature_numpy,ddqz_z_full,num_levels)
@@ -384,6 +432,8 @@ def model_initialization_jabw(
         pressure_ifc=pressure_ifc,
         temperature=temperature,
         pressure_sfc=pressure_sfc,
+        u=_allocate(CellDim, KDim, grid=icon_grid),
+        v=_allocate(CellDim, KDim, grid=icon_grid),
     )
 
     prognostic_state_now = PrognosticState(
@@ -567,6 +617,8 @@ def model_initialization_serialbox(
         pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
         temperature=_allocate(CellDim, KDim, grid=icon_grid),
         pressure_sfc=_allocate(CellDim, grid=icon_grid),
+        u=_allocate(CellDim, KDim, grid=icon_grid),
+        v=_allocate(CellDim, KDim, grid=icon_grid),
     )
 
     prognostic_state_next = PrognosticState(
@@ -806,10 +858,14 @@ def read_static_fields(
         if init_type == InitializationType.SB:
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
+                rbv_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+                rbv_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
             )
         elif init_type == InitializationType.JABW:
             diagnostic_metric_state = DiagnosticMetricState(
-                ddqz_z_ful=metrics_savepoint.ddqz_z_full(),
+                ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+                rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
+                rbf_vec_coeff_c2=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(),
             )
         return (
             diffusion_metric_state,

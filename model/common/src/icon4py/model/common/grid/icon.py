@@ -18,6 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
+    C2E2C2EDim,
     C2EDim,
     C2VDim,
     CECDim,
@@ -51,6 +52,7 @@ class IconGrid(BaseGrid):
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
+            "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
             "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
             "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),

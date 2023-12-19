@@ -29,6 +29,7 @@ from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
+    C2E2C2EDim,
     C2EDim,
     CECDim,
     CEDim,
@@ -231,8 +232,11 @@ class IconGridSavePoint(IconSavepoint):
     def c2e(self):
         return self._get_connectivity_array("c2e", CellDim)
 
-    def _get_connectivity_array(self, name: str, target_dim: Dimension):
-        connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
+    def _get_connectivity_array(self, name: str, target_dim: Dimension, reverse: bool=False):
+        if reverse:
+            connectivity = np.transpose(self._read_int32(name, offset=1))[: self.sizes[target_dim], :]
+        else:
+            connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
         return connectivity
 
@@ -241,6 +245,9 @@ class IconGridSavePoint(IconSavepoint):
 
     def e2c2e(self):
         return self._get_connectivity_array("e2c2e", EdgeDim)
+
+    def c2e2c2e(self):
+        return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
 
     def e2c(self):
         return self._get_connectivity_array("e2c", EdgeDim)
@@ -344,6 +351,7 @@ class IconGridSavePoint(IconSavepoint):
                     E2CDim: self.e2c(),
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
+                    C2E2C2EDim: self.c2e2c2e(),
                     E2C2EDim: e2c2e,
                     E2C2EODim: e2c2e0,
                 }
@@ -468,6 +476,18 @@ class InterpolationSavepoint(IconSavepoint):
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
         return as_field((EdgeDim, E2C2EDim), buffer)
+
+    def rbf_vec_coeff_c1(self):
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
+        ).transpose()
+        return as_field((CellDim, C2E2C2EDim), buffer)
+
+    def rbf_vec_coeff_c2(self):
+        buffer = np.squeeze(
+            self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
+        ).transpose()
+        return as_field((CellDim, C2E2C2EDim), buffer)
 
     def rbf_vec_coeff_v1(self):
         return self._get_field("rbf_vec_coeff_v1", VertexDim, V2EDim)

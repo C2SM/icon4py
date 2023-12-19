@@ -74,8 +74,35 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             max_nudging_coeff=0.075,
         )
 
+    def jabw_diffusion_config(n_substeps: int):
+        return DiffusionConfig(
+            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+            hdiff_w=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            n_substeps=n_substeps,
+            hdiff_rcf=True,
+            type_t_diffu=2,
+            type_vn_diffu=1,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            zdiffu_t=True,
+            velocity_boundary_diffusion_denom=150.0,
+            max_nudging_coeff=0.075,
+        )
+
     def _default_diffusion_config():
         return DiffusionConfig()
+
+    def jabw_nonhydro_config(n_substeps: int):
+        return NonHydrostaticConfig(
+            # original igradp_method is 2
+            # original divdamp_order is 4
+            ndyn_substeps_var=n_substeps,
+            max_nudging_coeff=0.02,
+            divdamp_fac = 0.0025,
+        )
 
     def _default_config():
         run_config = _default_run_config()
@@ -95,14 +122,18 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     def _Jablownoski_Williamson_config():
+        icon_run_config = IconRunConfig(
+            dtime=30.0,
+            end_date=datetime(1, 1, 1, 0, 0, 30),
+            apply_initial_stabilization=False,
+            n_substeps=1,
+        )
+        diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
+        nonhydro_config = jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
-            IconRunConfig(
-                dtime=300.0,
-                end_date=datetime(1, 1, 1, 0, 5, 0),
-                apply_initial_stabilization=False,
-            ),
-            _default_diffusion_config(),
-            NonHydrostaticConfig(),
+            icon_run_config,
+            diffusion_config,
+            nonhydro_config,
         )
 
     if experiment == "mch_ch_r04b09_dsl":
