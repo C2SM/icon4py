@@ -31,7 +31,7 @@ def mo_velocity_advection_stencil_07_numpy(
     z_vt_ie: np.array,
     inv_primal_edge_length: np.array,
     tangent_orientation: np.array,
-    z_w_v,
+    z_w_v: np.array,
 ) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
