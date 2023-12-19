@@ -168,7 +168,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition_mask = (lateral_boundary_7 <= edge) & (edge < halo_1) & (k_nlev < nlev)
 
-        z_v_w = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
+        z_v_w = lambda: mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy(grid, w, c_intp)
 
         if not lvn_only:
             z_v_grad_w = np.where(

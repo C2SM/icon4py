@@ -243,7 +243,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
 
     z_v_grad_w = (
         where(
-            (lateral_boundary_7 <= edge) & (edge < halo_1) & (k < nlev),
+            (lateral_boundary_7 <= edge < halo_1) & (k < nlev),
             _mo_velocity_advection_stencil_07(
                 vn_ie,
                 inv_dual_edge_length,

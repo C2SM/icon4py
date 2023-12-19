@@ -38,13 +38,11 @@ class GTHeader:
 
     def __call__(self, outpath: Path, imperative: bool) -> None:
         """Generate C++ code using the GTFN backend and write it to a file."""
-        param_ids = []
-        for param in self.stencil_info.itir.params:
-            param_ids.append(param.id)
+        param_ids = [param.id for param in self.stencil_info.itir.params]
         if ((H_START in param_ids) and (H_END in param_ids) and (V_START in param_ids) and (V_END in param_ids)):
             gtheader = self._generate_cpp_code(self.stencil_info.itir, imperative=imperative)
         else:
-            # raise warning of missing arguments
+            warnings.warn("Domain boundaries are missing or have non standard name for '{self.stencil_info.itir.id}'. Adapting domain to use the standard names. This feature will be removed in the future.", DeprecationWarning)
             gtheader = self._generate_cpp_code(
                 self._adapt_domain(self.stencil_info.itir), imperative=imperative
             )
