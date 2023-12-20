@@ -26,11 +26,9 @@ from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 
-from icon4pytools.icon4pygen.exceptions import (
-    InvalidConnectivityException,
-    MultipleFieldOperatorException,
-)
+from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+
 
 H_START = "horizontal_start"
 H_END = "horizontal_end"
@@ -38,6 +36,7 @@ V_START = "vertical_start"
 V_END = "vertical_end"
 
 SPECIAL_DOMAIN_MARKERS = [H_START, H_END, V_START, V_END]
+
 
 @dataclass(frozen=True)
 class StencilInfo:
@@ -93,10 +92,10 @@ def _ignore_subscript(node: past.Expr) -> past.Name:
 
 def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
-    assert is_list_of_names(
-        fvprog.past_node.body[0].args
+    assert all(
+        is_list_of_names(body.args) for body in fvprog.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args)
+    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args)  # type: ignore[attr-defined] # Checked in the assert
 
     out_args = (body.kwargs["out"] for body in fvprog.past_node.body)
     output_fields = []
@@ -107,8 +106,6 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             output_fields.extend([_ignore_subscript(out_arg)])
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)
-
-    #domain_arg_ids = _get_domain_arg_ids(fvprog)
 
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
