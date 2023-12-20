@@ -34,9 +34,7 @@ def _mo_solve_nonhydro_stencil_08(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    wgtfac_c_wp, rho_ref_mc_wp, theta_ref_mc_wp = astype(
-        (wgtfac_c, rho_ref_mc, theta_ref_mc), wpfloat
-    )
+    wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
     z_rth_pr_1, z_rth_pr_2 = _mo_solve_nonhydro_stencil_07(
