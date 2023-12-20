@@ -40,8 +40,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    mo_velocity_advection_stencil_08,
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
+    interpolate_to_cell_center,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,
@@ -281,7 +281,7 @@ class VelocityAdvection:
                 },
             )
 
-        mo_velocity_advection_stencil_08.with_backend(backend)(
+        interpolate_to_cell_center.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_ekinh=self.z_ekinh,
@@ -549,7 +549,7 @@ class VelocityAdvection:
                 },
             )
 
-        mo_velocity_advection_stencil_08.with_backend(backend)(
+        interpolate_to_cell_center.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_ekinh=self.z_ekinh,
