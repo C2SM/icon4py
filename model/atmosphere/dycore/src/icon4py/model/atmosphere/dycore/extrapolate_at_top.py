@@ -24,6 +24,7 @@ def _extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    """Formerly known as mo_velocity_advection_stencil_06 or mo_solve_nonhydro_stencil_38."""
     wgtfacq_e_wp = astype(wgtfacq_e, wpfloat)
 
     vn_ie_wp = (
