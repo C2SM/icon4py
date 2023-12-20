@@ -23,6 +23,11 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_contravariant_correction_numpy(
+    vn: np.array, ddxn_z_full: np.array, ddxt_z_full: np.array, vt: np.array
+) -> np.array:
+    z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
+    return z_w_concorr_me
 class TestMoSolveNonhydroStencil35(StencilTest):
     PROGRAM = compute_contravariant_correction
     OUTPUTS = ("z_w_concorr_me",)
@@ -36,7 +41,7 @@ class TestMoSolveNonhydroStencil35(StencilTest):
         vt: np.array,
         **kwargs,
     ) -> dict:
-        z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
+        z_w_concorr_me = compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
     @pytest.fixture
