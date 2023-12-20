@@ -22,6 +22,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -39,9 +40,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
-)
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
-    interpolate_to_cell_center,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,

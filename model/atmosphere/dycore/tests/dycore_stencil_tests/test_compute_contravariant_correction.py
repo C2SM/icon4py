@@ -28,6 +28,8 @@ def compute_contravariant_correction_numpy(
 ) -> np.array:
     z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
     return z_w_concorr_me
+
+
 class TestMoSolveNonhydroStencil35(StencilTest):
     PROGRAM = compute_contravariant_correction
     OUTPUTS = ("z_w_concorr_me",)

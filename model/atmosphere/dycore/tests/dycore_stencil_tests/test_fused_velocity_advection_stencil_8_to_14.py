@@ -28,7 +28,6 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
-from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_velocity_advection_stencil_10 import mo_velocity_advection_stencil_10_numpy
 from .test_mo_velocity_advection_stencil_11 import mo_velocity_advection_stencil_11_numpy
 from .test_mo_velocity_advection_stencil_12 import mo_velocity_advection_stencil_12_numpy
