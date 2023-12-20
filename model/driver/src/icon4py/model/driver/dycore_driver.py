@@ -344,6 +344,7 @@ class TimeLoop:
         printing_data(solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2.asnumpy(), "ddt_w2_init", first_write=True)
         printing_data(solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1.asnumpy(), "ddt_vn1_init", first_write=True)
         printing_data(solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2.asnumpy(), "ddt_vn2_init", first_write=True)
+        printing_data(prognostic_state_list[self._now].w.asnumpy(), "w_init", first_write=True)
 
         log.info(
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
@@ -406,6 +407,7 @@ class TimeLoop:
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
             # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
+            '''
             mo_rbf_vec_interpol_cell.with_backend(backend)(
                 prognostic_state_list[self._now].vn,
                 diagnostic_metric_state.rbf_vec_coeff_c1,
@@ -420,6 +422,7 @@ class TimeLoop:
                     "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
                 },
             )
+            '''
 
             mo_diagnose_temperature.with_backend(backend)(
                 prognostic_state_list[self._now].theta_v,
@@ -487,6 +490,12 @@ class TimeLoop:
             printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres_final", first_write=True)
             printing_data(diagnostic_state.u.asnumpy()[:, 0], "sfc_u_final", first_write=True)
             printing_data(diagnostic_state.v.asnumpy()[:, 0], "sfc_v_final", first_write=True)
+            printing_data(z_fields.z_q.asnumpy(), "z_q_final", first_write=True)
+            printing_data(prognostic_state_list[self._now].w.asnumpy(), "w_final", first_write=True)
+            printing_data(z_fields.z_alpha.asnumpy(), "z_alpha_final", first_write=True)
+            printing_data(z_fields.z_beta.asnumpy(), "z_beta_final", first_write=True)
+            printing_data(z_fields.z_exner_expl.asnumpy(), "z_exner_expl_final", first_write=True)
+            printing_data(z_fields.z_w_expl.asnumpy(), "z_w_expl_final", first_write=True)
 
         timer.summary(True)
 

@@ -32,7 +32,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim, C2E2C2EDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -223,7 +223,6 @@ def test_jabw_initial_condition(
 '''
 
 @pytest.mark.datatest
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "debug_mode,istep_init, istep_exit, jstep_init, jstep_exit,timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
@@ -467,10 +466,14 @@ def test_run_timeloop_single_step(
         pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
         temperature=_allocate(CellDim, KDim, grid=icon_grid),
         pressure_sfc=_allocate(CellDim, grid=icon_grid),
+        u=_allocate(CellDim, KDim, grid=icon_grid),
+        v=_allocate(CellDim, KDim, grid=icon_grid),
     )
 
     diagnostic_metric_state = DiagnosticMetricState(
         ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
+        rbf_vec_coeff_c1=_allocate(CellDim, KDim, grid=icon_grid, dtype=float), # TODO: change to C2E2C2EDim
+        rbf_vec_coeff_c2=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
     )
 
     timeloop.time_integration(
