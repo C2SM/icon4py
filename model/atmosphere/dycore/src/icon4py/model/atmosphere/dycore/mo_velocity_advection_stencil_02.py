@@ -15,6 +15,9 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
+from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
+    _mo_velocity_advection_stencil_05,
+)
 from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -28,9 +31,9 @@ def _mo_velocity_advection_stencil_02(
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
 
     vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])
-    z_kin_hor_e_wp = wpfloat("0.5") * (vn * vn + astype(vt * vt, wpfloat))
+    _,_,z_kin_hor_e = _mo_velocity_advection_stencil_05(vn=vn,vt=vt)
 
-    return astype((vn_ie_wp, z_kin_hor_e_wp), vpfloat)
+    return astype(vn_ie_wp, vpfloat), z_kin_hor_e
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
