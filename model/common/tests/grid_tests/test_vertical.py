@@ -56,3 +56,15 @@ def test_nrdmax_calculation_from_icon_input(grid_savepoint, damping_height):
 @pytest.mark.datatest
 def test_grid_size(grid_savepoint):
     assert 65 == grid_savepoint.num(KDim)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, kmoist_level", [("mch_ch_r04b09_dsl", 0), ("exclaim_ape_R02B04", 25)]
+)
+def test_kmoist_calculation(grid_savepoint, experiment, kmoist_level):
+    threshold = 22500.0
+    vct_a = grid_savepoint.vct_a().asnumpy()
+    assert kmoist_level == VerticalModelParams._determine_kstart_moist(
+        vct_a, threshold, nshift_total=0
+    )
