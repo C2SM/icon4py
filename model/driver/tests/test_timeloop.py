@@ -23,7 +23,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -41,6 +40,12 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclos
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.driver.io_utils import model_initialization_jabw
+from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
+)
+
 @pytest.mark.datatest
 @pytest.mark.parametrize(
 "path, experiment_name, fname_prefix, rank, time_discretization_veladv_offctr, time_discretization_rhotheta_offctr, debug",
@@ -277,12 +282,12 @@ def test_run_timeloop_single_step(
     diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    diffusion_interpolation_state = (
-        interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+        interpolation_savepoint
     )
-    diffusion_metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
-    diffusion_diagnostic_state = (
-        timeloop_diffusion_savepoint_init.construct_diagnostics_for_diffusion()
+    diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        timeloop_diffusion_savepoint_init
     )
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -334,13 +339,6 @@ def test_run_timeloop_single_step(
         z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
         z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-    )
-
-    nh_constants = NHConstants(
-        wgt_nnow_rth=sp.wgt_nnow_rth(),
-        wgt_nnew_rth=sp.wgt_nnew_rth(),
-        wgt_nnow_vel=sp.wgt_nnow_vel(),
-        wgt_nnew_vel=sp.wgt_nnew_vel(),
     )
 
     grg = interpolation_savepoint.geofac_grg()
@@ -435,6 +433,7 @@ def test_run_timeloop_single_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
     timeloop = TimeLoop(r04b09_iconrun_config, icon_grid, diffusion, solve_nonhydro,is_run_from_serializedData=True)
@@ -484,7 +483,6 @@ def test_run_timeloop_single_step(
         prognostic_state_list,
         prep_adv,
         z_fields,
-        nh_constants,
         sp.divdamp_fac_o2(),
         do_prep_adv,
     )

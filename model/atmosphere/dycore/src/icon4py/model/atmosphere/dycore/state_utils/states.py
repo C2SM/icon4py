@@ -58,6 +58,7 @@ class DiagnosticStateNonHydro:
     rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
     vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]
     exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
+    exner_dyn_incr: Field[[CellDim, KDim], float]  # exner pressure dynamics increment
 
     @property
     def ddt_vn_apc_pc(

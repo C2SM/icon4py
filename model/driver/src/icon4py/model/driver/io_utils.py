@@ -24,7 +24,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -41,6 +40,11 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
+from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
+)
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, CPD_O_RD, P0REF, CVD_O_RD, GRAV_O_RD
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
@@ -251,11 +255,8 @@ def model_initialization_jabw(
     edge_lon = edge_param.edge_center[1].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
 
-    c2e2c2e = icon_grid.connectivities[C2E2C2EDim]
-    c2e = icon_grid.connectivities[C2EDim]
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-    geofac_div = data_provider.from_interpolation_savepoint().geofac_div()
 
     cell_size = cell_lat.size
     edge_size = edge_lat.size
@@ -452,32 +453,33 @@ def model_initialization_jabw(
     )
 
     diffusion_diagnostic_state = DiffusionDiagnosticState(
-        hdef_ic=_allocate(CellDim, KDim, grid=icon_grid),
-        div_ic=_allocate(CellDim, KDim, grid=icon_grid),
-        dwdx=_allocate(CellDim, KDim, grid=icon_grid),
-        dwdy=_allocate(CellDim, KDim, grid=icon_grid)
+        hdef_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        div_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdx=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdy=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True)
     )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
-        theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid),
+        theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         exner_pr=_allocate(CellDim, KDim, grid=icon_grid),
-        rho_ic=_allocate(CellDim, KDim, grid=icon_grid),
+        rho_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         ddt_exner_phy=_allocate(CellDim, KDim, grid=icon_grid),
         grf_tend_rho=_allocate(CellDim, KDim, grid=icon_grid),
         grf_tend_thv=_allocate(CellDim, KDim, grid=icon_grid),
-        grf_tend_w=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_w=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         mass_fl_e=_allocate(EdgeDim, KDim, grid=icon_grid),
         ddt_vn_phy=_allocate(EdgeDim, KDim, grid=icon_grid),
         grf_tend_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
         ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=icon_grid),
         ddt_vn_apc_ntl2=_allocate(EdgeDim, KDim, grid=icon_grid),
-        ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid),
-        ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid),
+        ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         vt=_allocate(EdgeDim, KDim, grid=icon_grid),
-        vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-        w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid),
+        vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
+        w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=None,
     )
 
     z_fields = ZFields(
@@ -497,22 +499,6 @@ def model_initialization_jabw(
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
     )
 
-    (
-        wgt_nnow_rth,
-        wgt_nnew_rth,
-        wgt_nnow_vel,
-        wgt_nnew_vel
-    ) = compute_time_discretization_implicit_parameters(
-        time_discretization_veladv_offctr,
-        time_discretization_rhotheta_offctr
-    )
-    nh_constants = NHConstants(
-        wgt_nnow_rth=wgt_nnow_rth,
-        wgt_nnew_rth=wgt_nnew_rth,
-        wgt_nnow_vel=wgt_nnow_vel,
-        wgt_nnew_vel=wgt_nnew_vel,
-    )
-
     prep_adv = PrepAdvection(
         vn_traj=_allocate(EdgeDim, KDim, grid=icon_grid),
         mass_flx_me=_allocate(EdgeDim, KDim, grid=icon_grid),
@@ -523,15 +509,12 @@ def model_initialization_jabw(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         0.0,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next
     )
-
-
 
 
 def model_initialization_serialbox(
@@ -564,7 +547,7 @@ def model_initialization_serialbox(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = diffusion_init_savepoint.construct_diagnostics_for_diffusion()
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
@@ -586,6 +569,7 @@ def model_initialization_serialbox(
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=None,
     )
 
     z_fields = ZFields(
@@ -603,13 +587,6 @@ def model_initialization_serialbox(
         z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
         z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
         z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-    )
-
-    nh_constants = NHConstants(
-        wgt_nnow_rth=solve_nonhydro_init_savepoint.wgt_nnow_rth(),
-        wgt_nnew_rth=solve_nonhydro_init_savepoint.wgt_nnew_rth(),
-        wgt_nnow_vel=solve_nonhydro_init_savepoint.wgt_nnow_vel(),
-        wgt_nnew_vel=solve_nonhydro_init_savepoint.wgt_nnew_vel(),
     )
 
     diagnostic_state = DiagnosticState(
@@ -639,7 +616,6 @@ def model_initialization_serialbox(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         diagnostic_state,
@@ -660,7 +636,6 @@ def read_initial_state(
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
     ZFields,
-    NHConstants,
     PrepAdvection,
     float,
     DiagnosticState,
@@ -674,7 +649,6 @@ def read_initial_state(
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
             z_fields,
-            nh_constants,
             prep_adv,
             divdamp_fac_o2,
             diagnostic_state,
@@ -688,7 +662,6 @@ def read_initial_state(
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
             z_fields,
-            nh_constants,
             prep_adv,
             divdamp_fac_o2,
             diagnostic_state,
@@ -711,7 +684,6 @@ def read_initial_state(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         divdamp_fac_o2,
         diagnostic_state,
@@ -792,11 +764,11 @@ def read_static_fields(
             .from_savepoint_grid()
             .construct_icon_grid()
         )
-        diffusion_interpolation_state = (
-            data_provider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
+        diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+            data_provider.from_interpolation_savepoint()
         )
-        diffusion_metric_state = (
-            data_provider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        diffusion_metric_state = construct_metric_state_for_diffusion(
+            data_provider.from_metrics_savepoint()
         )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
         grg = interpolation_savepoint.geofac_grg()

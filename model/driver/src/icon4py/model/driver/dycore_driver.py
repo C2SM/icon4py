@@ -25,7 +25,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     PrepAdvection,
@@ -169,7 +168,6 @@ class TimeLoop:
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
         z_fields: ZFields,  # local constants in solve_nh
-        nh_constants: NHConstants,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -398,7 +396,6 @@ class TimeLoop:
                 prognostic_state_list,
                 prep_adv,
                 z_fields,
-                nh_constants,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
@@ -407,7 +404,6 @@ class TimeLoop:
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
             # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
-            '''
             mo_rbf_vec_interpol_cell.with_backend(backend)(
                 prognostic_state_list[self._now].vn,
                 diagnostic_metric_state.rbf_vec_coeff_c1,
@@ -422,7 +418,6 @@ class TimeLoop:
                     "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
                 },
             )
-            '''
 
             mo_diagnose_temperature.with_backend(backend)(
                 prognostic_state_list[self._now].theta_v,
@@ -506,28 +501,25 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
         z_fields: ZFields,
-        nh_constants: NHConstants,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
             prep_adv,
             z_fields,
-            nh_constants,
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
-        '''
+
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
             )
 
         self._swap()
-        '''
+
         # TODO (Chia Rui): add tracer advection here
 
     def _do_dyn_substepping(
@@ -536,7 +528,6 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
         z_fields: ZFields,
-        nh_constants: NHConstants,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -553,7 +544,6 @@ class TimeLoop:
                 prognostic_state_list,
                 prep_adv=prep_adv,
                 z_fields=z_fields,
-                nh_constants=nh_constants,
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 idyn_timestep=dyn_substep,
@@ -653,7 +643,6 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         inital_divdamp_fac_o2,
         diagnostic_state,
@@ -685,7 +674,6 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         diagnostic_state,
         prognostic_state_list,
         z_fields,
-        nh_constants,
         prep_adv,
         inital_divdamp_fac_o2,
     )
@@ -739,7 +727,6 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         diagnostic_state,
         prognostic_state_list,
         z_fields,
-        nh_constants,
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(experiment_name, fname_prefix, ser_type, init_type, Path(input_path), parallel_props)
@@ -762,7 +749,6 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         prognostic_state_list,
         prep_adv,
         z_fields,
-        nh_constants,
         inital_divdamp_fac_o2,
         do_prep_adv=False,
     )

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     InterpolationState,
     MetricStateNonHydro,
@@ -18,6 +19,35 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 from icon4py.model.common.dimension import CEDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4py.model.common.test_utils.serialbox_utils import InterpolationSavepoint, MetricSavepoint
+
+
+def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration matching the mch_chR04b09_dsl experiment."""
+    config = NonHydrostaticConfig(
+        ndyn_substeps_var=ndyn_substeps,
+        divdamp_order=24,
+        iau_wgt_dyn=1.0,
+        divdamp_fac=0.004,
+        max_nudging_coeff=0.075,
+    )
+    return config
+
+
+def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration for EXCLAIM APE experiment."""
+    return NonHydrostaticConfig(
+        rayleigh_coeff=0.1,
+        divdamp_order=24,
+        ndyn_substeps_var=ndyn_substeps,
+        ltestcase=True,
+    )
+
+
+def construct_config(name: str, ndyn_substeps: int = 5):
+    if name.lower() in "mch_ch_r04b09_dsl":
+        return mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps)
+    elif name.lower() in "exclaim_ape_r02b04":
+        return exclaim_ape_nonhydrostatic_config(ndyn_substeps)
 
 
 def construct_interpolation_state_for_nonhydro(

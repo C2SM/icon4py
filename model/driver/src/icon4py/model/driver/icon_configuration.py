@@ -123,10 +123,10 @@ def read_config(experiment: Optional[str]) -> IconConfig:
 
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=30.0,
-            end_date=datetime(1, 1, 1, 0, 0, 30),
+            dtime=300.0,
+            end_date=datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
-            n_substeps=1,
+            n_substeps=5,
         )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
         nonhydro_config = jabw_nonhydro_config(icon_run_config.n_substeps)
