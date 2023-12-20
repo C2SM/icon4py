@@ -248,7 +248,7 @@ class VelocityAdvection:
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_proextrapolate_at_top
+            offset_provider={},
         )
         velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)(
             wgtfacq_e=self.metric_state.wgtfacq_e,

@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -31,9 +32,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
-)
-from icon4py.model.atmosphere.dycore.extrapolate_at_top import (
-    _extrapolate_at_top,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     _mo_velocity_advection_stencil_07,

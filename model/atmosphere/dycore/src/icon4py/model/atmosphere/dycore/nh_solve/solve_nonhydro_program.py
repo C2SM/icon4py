@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
     _mo_solve_nonhydro_stencil_02,
 )
@@ -52,9 +53,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_37 import (
     _mo_solve_nonhydro_stencil_37,
-)
-from icon4py.model.atmosphere.dycore.extrapolate_at_top import (
-    _extrapolate_at_top,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,
