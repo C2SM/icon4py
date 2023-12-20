@@ -20,9 +20,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_38(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+def _extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     wgtfacq_e_wp = astype(wgtfacq_e, wpfloat)
 
@@ -31,22 +31,23 @@ def _mo_solve_nonhydro_stencil_38(
         + wgtfacq_e_wp(Koff[-2]) * vn(Koff[-2])
         + wgtfacq_e_wp(Koff[-3]) * vn(Koff[-3])
     )
+
     return astype(vn_ie_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_38(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+def extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_38(
-        vn,
+    _extrapolate_at_top(
         wgtfacq_e,
+        vn,
         out=vn_ie,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),

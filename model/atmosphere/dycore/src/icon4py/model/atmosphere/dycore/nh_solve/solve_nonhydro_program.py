@@ -53,8 +53,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_37 import (
     _mo_solve_nonhydro_stencil_37,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_38 import (
-    _mo_solve_nonhydro_stencil_38,
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import (
+    _extrapolate_at_top,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,
@@ -557,7 +557,7 @@ def _predictor_stencils_37_38(
         _mo_solve_nonhydro_stencil_37(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
-    vn_ie = where(k_field == nlev, _mo_solve_nonhydro_stencil_38(vn, wgtfacq_e_dsl), vn_ie)
+    vn_ie = where(k_field == nlev, _extrapolate_at_top(vn, wgtfacq_e_dsl), vn_ie)
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 

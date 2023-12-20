@@ -30,7 +30,7 @@ from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil
 from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
-from .test_mo_velocity_advection_stencil_06 import mo_velocity_advection_stencil_06_numpy
+from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
 
 
@@ -92,7 +92,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
         condition4 = k == nlevp1
         vn_ie = np.where(
-            condition4, mo_velocity_advection_stencil_06_numpy(wgtfacq_e_dsl, vn), vn_ie
+            condition4, extrapolate_at_top_numpy(wgtfacq_e_dsl, vn), vn_ie
         )
 
         condition5 = (nflatlev < k) & (k < nlevp1)

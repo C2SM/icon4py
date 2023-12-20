@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
-    mo_velocity_advection_stencil_06,
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import (
+    extrapolate_at_top,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_06_numpy(wgtfacq_e: np.array, vn: np.array) -> np.array:
+def extrapolate_at_top_numpy(wgtfacq_e: np.array, vn: np.array) -> np.array:
     vn_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_k_minus_2 = np.roll(vn, shift=2, axis=1)
     vn_k_minus_3 = np.roll(vn, shift=3, axis=1)
@@ -40,12 +40,12 @@ def mo_velocity_advection_stencil_06_numpy(wgtfacq_e: np.array, vn: np.array) ->
 
 
 class TestMoVelocityAdvectionStencil06(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_06
+    PROGRAM = extrapolate_at_top
     OUTPUTS = ("vn_ie",)
 
     @staticmethod
     def reference(grid, wgtfacq_e: np.array, vn: np.array, **kwargs) -> dict:
-        vn_ie = mo_velocity_advection_stencil_06_numpy(wgtfacq_e, vn)
+        vn_ie = extrapolate_at_top_numpy(wgtfacq_e, vn)
         return dict(vn_ie=vn_ie)
 
     @pytest.fixture

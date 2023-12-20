@@ -20,8 +20,8 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
-    _mo_velocity_advection_stencil_06,
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import (
+    _extrapolate_at_top,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
     _interpolate_to_cell_center,
@@ -123,7 +123,7 @@ def fused_stencils_4_5(
 
 
 @program
-def mo_velocity_advection_stencil_06(
+def extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
@@ -132,7 +132,7 @@ def mo_velocity_advection_stencil_06(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_06(
+    _extrapolate_at_top(
         wgtfacq_e,
         vn,
         out=vn_ie,
