@@ -31,7 +31,7 @@ def _mo_velocity_advection_stencil_02(
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
 
     vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])
-    _,_,z_kin_hor_e = _mo_velocity_advection_stencil_05(vn=vn,vt=vt)
+    _, _, z_kin_hor_e = _mo_velocity_advection_stencil_05(vn=vn, vt=vt)
 
     return astype(vn_ie_wp, vpfloat), z_kin_hor_e
 
