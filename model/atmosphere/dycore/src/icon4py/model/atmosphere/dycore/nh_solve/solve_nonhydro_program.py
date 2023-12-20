@@ -14,6 +14,9 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
+)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
     _mo_solve_nonhydro_stencil_02,
 )
@@ -43,9 +46,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
-)
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
-    _compute_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,

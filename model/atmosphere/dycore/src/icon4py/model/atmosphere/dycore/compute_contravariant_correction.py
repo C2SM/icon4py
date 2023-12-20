@@ -26,7 +26,7 @@ def _compute_contravariant_correction(
     ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    '''previously known as _mo_solve_nonhydro_stencil_35 or _compute_contravariant_correction'''
+    """Formerly known as _mo_solve_nonhydro_stencil_35 or mo_velocity_advection_stencil_04."""
     ddxn_z_full_wp = astype(ddxn_z_full, wpfloat)
 
     z_w_concorr_me_wp = vn * ddxn_z_full_wp + astype(vt * ddxt_z_full, wpfloat)

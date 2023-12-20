@@ -22,13 +22,13 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
 from .test_mo_velocity_advection_stencil_01 import mo_velocity_advection_stencil_01_numpy
 from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil_02_numpy
 from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
-from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
