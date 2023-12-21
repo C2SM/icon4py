@@ -20,6 +20,9 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
+from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
+    compute_pertubation_of_rho_and_theta,
+)
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -37,9 +40,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_12 import (
     mo_solve_nonhydro_stencil_12,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_13 import (
-    mo_solve_nonhydro_stencil_13,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
@@ -783,7 +783,7 @@ class SolveNonhydro:
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
 
-        mo_solve_nonhydro_stencil_13.with_backend(backend)(
+        compute_pertubation_of_rho_and_theta.with_backend(backend)(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,

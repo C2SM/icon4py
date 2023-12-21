@@ -15,9 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    mo_velocity_advection_stencil_08,
-)
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
@@ -28,37 +26,37 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_08_numpy(
-    grid, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs
+def interpolate_to_cell_center_numpy(
+    grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
-    z_ekinh = np.sum(
-        z_kin_hor_e[grid.connectivities[C2EDim]]
+    interpolation = np.sum(
+        interpolant[grid.connectivities[C2EDim]]
         * e_bln_c_s[grid.get_offset_provider("C2CE").table],
         axis=1,
     )
-    return z_ekinh
+    return interpolation
 
 
-class TestMoVelocityAdvectionStencil08(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_08
-    OUTPUTS = ("z_ekinh",)
+class TestMoVelocityAdvectionStencil09(StencilTest):
+    PROGRAM = interpolate_to_cell_center
+    OUTPUTS = ("interpolation",)
 
     @staticmethod
-    def reference(grid, z_kin_hor_e: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
-        z_ekinh = mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s)
-        return dict(z_ekinh=z_ekinh)
+    def reference(grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs) -> dict:
+        interpolation = interpolate_to_cell_center_numpy(grid, interpolant, e_bln_c_s)
+        return dict(interpolation=interpolation)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_kin_hor_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        interpolant = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         e_bln_c_s = random_field(grid, CellDim, C2EDim, dtype=wpfloat)
-        z_ekinh = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        interpolation = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
-            z_kin_hor_e=z_kin_hor_e,
+            interpolant=interpolant,
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
-            z_ekinh=z_ekinh,
+            interpolation=interpolation,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
