@@ -15,23 +15,23 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
-    mo_velocity_advection_stencil_04,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    compute_contravariant_correction,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_04_numpy(
+def compute_contravariant_correction_numpy(
     vn: np.array, ddxn_z_full: np.array, ddxt_z_full: np.array, vt: np.array
 ) -> np.array:
     z_w_concorr_me = vn * ddxn_z_full + vt * ddxt_z_full
     return z_w_concorr_me
 
 
-class TestMoVelocityAdvectionStencil04(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_04
+class TestMoSolveNonhydroStencil35(StencilTest):
+    PROGRAM = compute_contravariant_correction
     OUTPUTS = ("z_w_concorr_me",)
 
     @staticmethod
@@ -43,7 +43,7 @@ class TestMoVelocityAdvectionStencil04(StencilTest):
         vt: np.array,
         **kwargs,
     ) -> dict:
-        z_w_concorr_me = mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
+        z_w_concorr_me = compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt)
         return dict(z_w_concorr_me=z_w_concorr_me)
 
     @pytest.fixture
