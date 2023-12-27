@@ -49,13 +49,15 @@ def _scan_pressure(
     temperature: float,
     pressure_sfc: float,
     ddqz_z_full: float,
-) -> tuple[bool, float, float]:
+):
     if state[0]:
         pressure_first_level = pressure_sfc * exp( -ddqz_z_full / temperature )
-        return False, pressure_first_level, sqrt( pressure_first_level * pressure_sfc )
+        pressure = sqrt( pressure_sfc * pressure_first_level )
+        return False, pressure, pressure_first_level
     else:
         pressure_interface = state[1] * exp( -ddqz_z_full / temperature )
-        return False, pressure_interface, sqrt( pressure_interface * state[1] )
+        pressure = sqrt( state[1] * pressure_interface )
+        return False, pressure, pressure_interface
 
 @field_operator
 def _mo_diagnose_pressure(
@@ -63,8 +65,8 @@ def _mo_diagnose_pressure(
     pressure_sfc: Field[[CellDim], float],
     ddqz_z_full: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    redundant, pressure_ifc, pressure = _scan_pressure(
-        broadcast(pressure_sfc, (CellDim, KDim)),
+    redundant, pressure, pressure_ifc = _scan_pressure(
+        pressure_sfc,
         temperature,
         ddqz_z_full
     )

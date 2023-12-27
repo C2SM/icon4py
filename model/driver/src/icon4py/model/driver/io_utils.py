@@ -34,7 +34,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -110,7 +110,7 @@ def mo_u2vn_jabw_numpy(
         )
     vn = u * primal_normal_x
 
-    return vn, u
+    return vn
 
 
 def mo_hydro_adjust(
@@ -340,6 +340,9 @@ def model_initialization_jabw(
         num_levels,
     )
     '''
+    print(cells2edges_coeff.shape)
+    print(eta_v_numpy.shape)
+    print(mask_array_edge_start_plus1_to_edge_end.shape)
     eta_v_e_numpy = mo_cells2edges_scalar_numpy(
         icon_grid,
         cells2edges_coeff,
@@ -347,7 +350,7 @@ def model_initialization_jabw(
         mask_array_edge_start_plus1_to_edge_end,
     )
 
-    vn_numpy, u_numpy = mo_u2vn_jabw_numpy(
+    vn_numpy = mo_u2vn_jabw_numpy(
         jw_u0,
         jw_up,
         latC,
@@ -384,8 +387,8 @@ def model_initialization_jabw(
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
-    u_try = _allocate(CellDim, KDim, grid=icon_grid)
-    v_try = _allocate(CellDim, KDim, grid=icon_grid)
+    u = _allocate(CellDim, KDim, grid=icon_grid)
+    v = _allocate(CellDim, KDim, grid=icon_grid)
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
@@ -393,8 +396,8 @@ def model_initialization_jabw(
         vn,
         rbv_vec_coeff_c1,
         rbv_vec_coeff_c2,
-        u_try,
-        v_try,
+        u,
+        v,
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
         0,
@@ -403,26 +406,6 @@ def model_initialization_jabw(
             "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
         },
     )
-
-    u_try_numpy = u_try.asnumpy()
-    v_try_numpy = v_try.asnumpy()
-    rbv_vec_coeff_c1_numpy = rbv_vec_coeff_c1.asnumpy()
-    rbv_vec_coeff_c2_numpy = rbv_vec_coeff_c2.asnumpy()
-    with open("debug_rbf.dat", "w") as f:
-        for i in range(cell_size):
-            #for k in range(num_levels):
-                #f.write("{0:7d} {1:7d} {2:.10e} {3:.10e} {4:.10e}\n".format(i, k, rbv_vec_coeff_c1_numpy[i,k], rbv_vec_coeff_c2_numpy[i,k], c2e2c2e[i,k]))
-                #f.write("{0:7d} {1:7d} {2:.10e} {3:.10e} {4:.10e} {5:.10e} {6:.10e} {7:.10e}\n".format(i, k, cell_lat[i], cell_lon[i], u_try_numpy[i, k], v_try_numpy[i, k]))
-                f.write("{0:7d} {1:.10e} {2:.10e} {3:.10e} {4:.10e} {5:.10e} {6:.10e}\n".format(
-                    i,
-                    cell_lat[i],
-                    cell_lon[i],
-                    u_try_numpy[i, num_levels-1],
-                    v_try_numpy[i, num_levels-1],
-                    u_numpy[i,num_levels-1],
-                    u_try_numpy[i, num_levels-1] - u_numpy[i, num_levels-1]
-                )
-                )
 
     # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment
     #temperature_numpy = mo_diagnose_temperature_numpy(theta_v_numpy,exner_numpy)
@@ -433,8 +416,8 @@ def model_initialization_jabw(
         pressure_ifc=pressure_ifc,
         temperature=temperature,
         pressure_sfc=pressure_sfc,
-        u=_allocate(CellDim, KDim, grid=icon_grid),
-        v=_allocate(CellDim, KDim, grid=icon_grid),
+        u=u,
+        v=v,
     )
 
     prognostic_state_now = PrognosticState(
@@ -832,12 +815,22 @@ def read_static_fields(
                 ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
                 rbv_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
                 rbv_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+                cell_center_lat=_allocate(CellDim, grid=icon_grid, dtype=float),
+                cell_center_lon=_allocate(CellDim, grid=icon_grid, dtype=float),
+                v_lat=_allocate(VertexDim, grid=icon_grid, dtype=float),
+                v_lon=_allocate(VertexDim, grid=icon_grid, dtype=float),
+                vct_a=_allocate(KDim,grid=icon_grid,is_halfdim=True,dtype=float),
             )
         elif init_type == InitializationType.JABW:
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=metrics_savepoint.ddqz_z_full(),
                 rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
                 rbf_vec_coeff_c2=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(),
+                cell_center_lat=data_provider.from_savepoint_grid().cell_center_lat(),
+                cell_center_lon=data_provider.from_savepoint_grid().cell_center_lon(),
+                v_lat=data_provider.from_savepoint_grid().v_lat(),
+                v_lon=data_provider.from_savepoint_grid().v_lon(),
+                vct_a=data_provider.from_savepoint_grid().vct_a(),
             )
         return (
             diffusion_metric_state,
@@ -851,7 +844,7 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str, start_time: datetime, processor_procs: ProcessProperties = None
+    run_path: str, experiment_name: str, processor_procs: ProcessProperties = None
 ) -> None:
     """
     Configure logging.
@@ -860,12 +853,12 @@ def configure_logging(
 
     Args:
         run_path: path to the output folder where the logfile should be stored
-        start_time: start time of the model run
+        experiment_name: name of the simulation
 
     """
     run_dir = Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
     run_dir.mkdir(exist_ok=True)
-    logfile = run_dir.joinpath(f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log")
+    logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
     logging.basicConfig(
         level=logging.DEBUG,

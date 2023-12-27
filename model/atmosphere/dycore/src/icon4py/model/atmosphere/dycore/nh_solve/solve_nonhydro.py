@@ -606,9 +606,6 @@ class SolveNonhydro:
                 ntnd=self.ntl1,
                 cell_areas=self.cell_params.area,
             )
-            log.info(
-                f"debugging info (predictor VA): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
-            )
 
         p_dthalf = 0.5 * dtime
 
@@ -1030,9 +1027,6 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        log.info(
-            f"debugging info (predictor 24): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
-        )
 
         if self.config.is_iau_active:
             mo_solve_nonhydro_stencil_28(
@@ -1077,9 +1071,6 @@ class SolveNonhydro:
                 "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 "E2C2E": self.grid.get_offset_provider("E2C2E"),
             },
-        )
-        log.info(
-            f"debugging info (predictor 30): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
         )
 
         if self.config.idiv_method == 1:
@@ -1236,9 +1227,6 @@ class SolveNonhydro:
                 "Koff": KDim,
             },
         )
-        log.info(
-            f"debugging info (predictor 49): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
-        )
 
         if self.config.is_iau_active:
             mo_solve_nonhydro_stencil_50.with_backend(backend)(
@@ -1254,9 +1242,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        log.info(
-            f"debugging info (predictor 52): {np.max(z_fields.z_q.asnumpy())}  {np.min(z_fields.z_q.asnumpy())}"
-        )
         mo_solve_nonhydro_stencil_52.with_backend(backend)(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -1275,33 +1260,6 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
         )
-        log.info(
-            f"debugging info (predictor 52): {np.max(self.metric_state_nonhydro.vwind_impl_wgt.asnumpy())}  {np.min(self.metric_state_nonhydro.vwind_impl_wgt.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(self.metric_state_nonhydro.ddqz_z_half.asnumpy())}  {np.min(self.metric_state_nonhydro.ddqz_z_half.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(z_fields.z_alpha.asnumpy())}  {np.min(z_fields.z_alpha.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(z_fields.z_beta.asnumpy())}  {np.min(z_fields.z_beta.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(z_fields.z_w_expl.asnumpy())}  {np.min(z_fields.z_w_expl.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(z_fields.z_q.asnumpy())}  {np.min(z_fields.z_q.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(diagnostic_state_nh.theta_v_ic.asnumpy())}  {np.min(diagnostic_state_nh.theta_v_ic.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(z_fields.z_exner_expl.asnumpy())}  {np.min(z_fields.z_exner_expl.asnumpy())}"
-        )
-        log.info(
-            f"debugging info (predictor 52): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
-        )
 
         mo_solve_nonhydro_stencil_53.with_backend(backend)(
             z_q=z_fields.z_q,
@@ -1311,9 +1269,6 @@ class SolveNonhydro:
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={},
-        )
-        log.info(
-            f"debugging info (predictor 53): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
         )
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
@@ -1353,9 +1308,6 @@ class SolveNonhydro:
             vertical_start=int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider={"Koff": KDim},
-        )
-        log.info(
-            f"debugging info (predictor 55): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
         )
 
         # compute dw/dz for divergence damping term
@@ -1421,9 +1373,6 @@ class SolveNonhydro:
         else:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
-        log.info(
-            f"debugging info (predictor final): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())}"
-        )
 
     def run_corrector_step(
         self,
@@ -1504,9 +1453,6 @@ class SolveNonhydro:
             ntnd=self.ntl2,
             cell_areas=self.cell_params.area,
         )
-        log.info(
-            f"debugging info (corrector VA): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())} {np.max(prognostic_state[nnow].vn.asnumpy())}  {np.min(prognostic_state[nnow].vn.asnumpy())}"
-        )
 
         nvar = nnew
 
@@ -1581,9 +1527,6 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-        log.info(
-            f"debugging info (corrector 23): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())}"
-        )
 
         if self.config.lhdiff_rcf and (
             self.config.divdamp_order == 24 or self.config.divdamp_order == 4
@@ -1602,9 +1545,6 @@ class SolveNonhydro:
                     "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
                 },
             )
-        log.info(
-            f"debugging info (corrector 25): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())}"
-        )
 
         if self.config.lhdiff_rcf:
             if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
@@ -1619,9 +1559,6 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-            log.info(
-                f"debugging info (corrector 26): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())}"
-            )
 
             # TODO: this does not get accessed in FORTRAN
             if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
@@ -1651,9 +1588,6 @@ class SolveNonhydro:
                         vertical_end=self.grid.num_levels,
                         offset_provider={},
                     )
-            log.info(
-                f"debugging info (corrector 27): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())}"
-            )
 
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
@@ -1682,9 +1616,6 @@ class SolveNonhydro:
             offset_provider={
                 "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
             },
-        )
-        log.info(
-            f"debugging info (corrector 31): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())} {np.max(prognostic_state[nnew].w.asnumpy())}  {np.min(prognostic_state[nnew].w.asnumpy())} {np.max(prognostic_state[nnew].rho.asnumpy())}  {np.min(prognostic_state[nnew].rho.asnumpy())} {np.max(prognostic_state[nnew].exner.asnumpy())}  {np.min(prognostic_state[nnew].exner.asnumpy())}"
         )
 
         if self.config.idiv_method == 1:
@@ -1999,6 +1930,4 @@ class SolveNonhydro:
                 prognostic_state[nnew].exner,
                 prognostic_state[nnew].w,
             )
-        log.info(
-            f"debugging info (corrector final): {np.max(prognostic_state[nnew].vn.asnumpy())}  {np.min(prognostic_state[nnew].vn.asnumpy())}"
-        )
+

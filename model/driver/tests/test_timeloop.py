@@ -31,8 +31,8 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim, C2E2C2EDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
@@ -45,6 +45,11 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
+from icon4py.model.common.diagnostic_calculations.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
+from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
+
+backend = run_gtfn
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -57,7 +62,7 @@ from icon4py.model.driver.serialbox_helpers import (
             0,
             0.25,
             -0.1,
-            False
+            True
         ),
     ],
 )
@@ -84,7 +89,6 @@ def test_jabw_initial_condition(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         z_fields,
-        nh_constants,
         prep_adv,
         divdamp_fac_o2,
         diagnostic_state,
@@ -136,6 +140,58 @@ def test_jabw_initial_condition(
         data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
         diagnostic_state.pressure_sfc.asnumpy()
     )
+
+    # verify GT4Py version
+    mo_diagnose_temperature.with_backend(backend)(
+        prognostic_state_now.theta_v,
+        prognostic_state_now.exner,
+        diagnostic_state.temperature,
+        icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        0,
+        icon_grid.num_levels,
+        offset_provider={}
+    )
+
+    exner_nlev_minus2 = prognostic_state_now.exner[:, icon_grid.num_levels - 3]
+    temperature_nlev = diagnostic_state.temperature[:, icon_grid.num_levels - 1]
+    temperature_nlev_minus1 = diagnostic_state.temperature[:, icon_grid.num_levels - 2]
+    temperature_nlev_minus2 = diagnostic_state.temperature[:, icon_grid.num_levels - 3]
+    # TODO (Chia Rui): ddqz_z_full is constant, move slicing to initialization
+    ddqz_z_full_nlev = data_provider.from_metrics_savepoint().ddqz_z_full()[:, icon_grid.num_levels - 1]
+    ddqz_z_full_nlev_minus1 = data_provider.from_metrics_savepoint().ddqz_z_full()[:, icon_grid.num_levels - 2]
+    ddqz_z_full_nlev_minus2 = data_provider.from_metrics_savepoint().ddqz_z_full()[:, icon_grid.num_levels - 3]
+    mo_diagnose_pressure_sfc.with_backend(backend)(
+        exner_nlev_minus2,
+        temperature_nlev,
+        temperature_nlev_minus1,
+        temperature_nlev_minus2,
+        ddqz_z_full_nlev,
+        ddqz_z_full_nlev_minus1,
+        ddqz_z_full_nlev_minus2,
+        diagnostic_state.pressure_sfc,
+        CPD_O_RD,
+        P0REF,
+        GRAV_O_RD,
+        icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        offset_provider={}
+    )
+
+    '''
+    mo_diagnose_pressure.with_backend(backend)(
+        diagnostic_state.temperature,
+        diagnostic_state.pressure,
+        diagnostic_state.pressure_ifc,
+        diagnostic_state.pressure_sfc,
+        data_provider.from_metrics_savepoint().ddqz_z_full,
+        icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        0,
+        icon_grid.num_levels,
+        offset_provider={}
+    )
+    '''
 
     if debug:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -222,10 +278,63 @@ def test_jabw_initial_condition(
             "pressure_sfc",
         )
 
-# testing on MCH_CH_r04b09_dsl data
-'''
+        printing(
+            data_provider.from_savepoint_jabw_first_output().u().asnumpy(),
+            diagnostic_state.u.asnumpy(),
+            "u",
+        )
 
-'''
+        printing(
+            data_provider.from_savepoint_jabw_first_output().v().asnumpy(),
+            diagnostic_state.v.asnumpy(),
+            "v",
+        )
+
+        printing(
+            data_provider.from_savepoint_jabw_first_output().temperature().asnumpy(),
+            diagnostic_state.temperature.asnumpy(),
+            "temperature1",
+        )
+
+        printing(
+            data_provider.from_savepoint_jabw_first_output().pressure_sfc().asnumpy(),
+            diagnostic_state.pressure_sfc.asnumpy(),
+            "pressure_sfc1",
+        )
+
+        printing(
+            data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
+            diagnostic_state.pressure.asnumpy(),
+            "pressure1",
+        )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().u().asnumpy(),
+        diagnostic_state.u.asnumpy()
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().v().asnumpy(),
+        diagnostic_state.v.asnumpy(),
+        atol=1.e-13
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().temperature().asnumpy(),
+        diagnostic_state.temperature.asnumpy()
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().pressure_sfc().asnumpy(),
+        diagnostic_state.pressure_sfc.asnumpy()
+    )
+
+    #assert dallclose(
+    #    data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
+    #    diagnostic_state.pressure.asnumpy()
+    #)
+
+# testing on MCH_CH_r04b09_dsl data
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(

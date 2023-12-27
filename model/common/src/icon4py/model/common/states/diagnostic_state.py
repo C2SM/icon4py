@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
-from icon4py.model.common.dimension import CellDim, KDim, C2E2C2EDim
+from icon4py.model.common.dimension import CellDim, KDim, C2E2C2EDim, VertexDim
 
 
 @dataclass
@@ -42,3 +42,8 @@ class DiagnosticMetricState:
     ddqz_z_full: Field[[CellDim, KDim], float]
     rbf_vec_coeff_c1: Field[[CellDim, C2E2C2EDim], float]
     rbf_vec_coeff_c2: Field[[CellDim, C2E2C2EDim], float]
+    v_lat: Field[[VertexDim], float]
+    v_lon: Field[[VertexDim], float]
+    cell_center_lat: Field[[CellDim], float]
+    cell_center_lon: Field[[CellDim], float]
+    vct_a: Field[[KDim], float]

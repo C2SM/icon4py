@@ -27,6 +27,7 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     C2E2C2EDim,
     C2EDim,
+    C2VDim,
     CECDim,
     CEDim,
     CellDim,
@@ -190,6 +191,12 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_center_lon(self):
         return self._get_field("edges_center_lon", EdgeDim)
+
+    def v_lat(self):
+        return self._get_field("v_lat", VertexDim)
+
+    def v_lon(self):
+        return self._get_field("v_lon", VertexDim)
 
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
@@ -361,6 +368,7 @@ class IconGridSavepoint(IconSavepoint):
             .with_connectivities(
                 {
                     C2EDim: self.c2e(),
+                    C2VDim: self.c2v(),
                     E2CDim: self.e2c(),
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
@@ -1225,7 +1233,24 @@ class IconJabwFinalSavepoint(IconSavepoint):
     def eta_v_e(self):
         return self._get_field("zeta_v_e_final", EdgeDim, KDim)
 
+class IconJabwFirstOutputSavepoint(IconSavepoint):
+    def pressure(self):
+        return self._get_field("output_diag_pres", CellDim, KDim)
 
+    def temperature(self):
+        return self._get_field("output_diag_temperature", CellDim, KDim)
+
+    def u(self):
+        return self._get_field("output_diag_u", CellDim, KDim)
+
+    def v(self):
+        return self._get_field("output_diag_v", CellDim, KDim)
+
+    def exner(self):
+        return self._get_field("output_diag_exner", CellDim, KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("output_diag_pressure_sfc", CellDim)
 
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
@@ -1369,3 +1394,11 @@ class IconSerialDataProvider:
             self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
         )
         return IconJabwFinalSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_jabw_first_output(
+        self
+    ) -> IconJabwFirstOutputSavepoint:
+        savepoint = (
+            self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
+        )
+        return IconJabwFirstOutputSavepoint(savepoint, self.serializer, size=self.grid_size)

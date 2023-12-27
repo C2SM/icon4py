@@ -15,6 +15,8 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable, Optional
 import numpy as np
+from cftime import date2num, num2date
+import netCDF4 as nf4
 
 import click
 from devtools import Timer
@@ -55,7 +57,7 @@ from icon4py.model.driver.io_utils import (
 )
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.dimension import E2CDim, CellDim, EdgeDim
+from icon4py.model.common.dimension import C2VDim, CellDim, EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
@@ -171,7 +173,61 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-        # TODO (Chia Rui): create a netcdf output method instead of this temptative simple formatted data output
+        # TODO (Chia Rui): this is only a tentative output method, use a proper netcdf output infrastructure in the future
+        nf4_basegrp = nf4.Dataset(self.run_config.output_path+"data_output.nc", "w", format="NETCDF4")
+        nf4_basegrp.createDimension("ncells", self.grid.num_cells)
+        nf4_basegrp.createDimension("vertices", 3)
+        nf4_basegrp.createDimension("levels", self.grid.num_levels)
+        nf4_basegrp.createDimension("half_levels", self.grid.num_levels+1)
+        nf4_basegrp.createDimension("time", self._n_time_steps+1)
+
+        nf4_times = nf4_basegrp.createVariable("time", "f8", ("time",))
+        nf4_levels = nf4_basegrp.createVariable("levels", "f8", ("levels",))
+        nf4_halflevels = nf4_basegrp.createVariable("half_levels", "f8", ("half_levels",))
+        nf4_cells = nf4_basegrp.createVariable("cells", "i4", ("ncells",))
+        nf4_latitudes = nf4_basegrp.createVariable("clat", "f8", ("ncells",))
+        nf4_longitudes = nf4_basegrp.createVariable("clon", "f8", ("ncells",))
+        nf4_lat_bounds = nf4_basegrp.createVariable("clat_bnds", "f8", ("ncells", "vertices",))
+        nf4_lon_bounds = nf4_basegrp.createVariable("clon_bnds", "f8", ("ncells", "vertices",))
+
+        nf4_cells[:] = np.arange(self.grid.num_cells, dtype=int)
+        nf4_cells.units = ""
+        nf4_latitudes.units = "rad"
+        nf4_longitudes.units = "rad"
+        nf4_lat_bounds.units = "rad"
+        nf4_lon_bounds.units = "rad"
+        nf4_levels.units = "m"
+        nf4_halflevels.units = "m"
+        nf4_times.units = "seconds since 0001-01-01 00:00:00.0"
+        nf4_times.calendar = "gregorian"
+
+        nf4_u = nf4_basegrp.createVariable("u", "f8", ("time", "ncells", "levels",))
+        nf4_v = nf4_basegrp.createVariable("v", "f8", ("time", "ncells", "levels",))
+        nf4_temperature = nf4_basegrp.createVariable("temperature", "f8", ("time", "ncells", "levels",))
+        nf4_pressure = nf4_basegrp.createVariable("pressure", "f8", ("time", "ncells", "levels",))
+        nf4_pressure_sfc = nf4_basegrp.createVariable("pressure_sfc", "f8", ("time", "ncells",))
+        nf4_exner = nf4_basegrp.createVariable("exner", "f8", ("time", "ncells", "levels",))
+        nf4_theta_v = nf4_basegrp.createVariable("theta_v", "f8", ("time", "ncells", "levels",))
+        nf4_rho = nf4_basegrp.createVariable("rho", "f8", ("time", "ncells", "levels",))
+        nf4_w = nf4_basegrp.createVariable("w", "f8", ("time", "ncells", "half_levels",))
+
+        nf4_u.units = "m s-1"
+        nf4_v.units = "m s-1"
+        nf4_w.units = "m s-1"
+        nf4_temperature.units = "K"
+        nf4_pressure.units = "Pa"
+        nf4_pressure_sfc.units = "Pa"
+        nf4_rho.units = "kg m-3"
+        nf4_theta_v.units = "K"
+        nf4_exner.units = ""
+
+        nf4_latitudes[:] = diagnostic_metric_state.cell_center_lat.asnumpy()
+        nf4_longitudes[:] = diagnostic_metric_state.cell_center_lon.asnumpy()
+        nf4_lat_bounds[:, :] = diagnostic_metric_state.v_lat.asnumpy()[self.grid.connectivities[C2VDim]]
+        nf4_lon_bounds[:, :] = diagnostic_metric_state.v_lon.asnumpy()[self.grid.connectivities[C2VDim]]
+        nf4_times[0] = date2num(self._simulation_date, units=nf4_times.units, calendar=nf4_times.calendar)
+        # dates = num2date(times[:], units=times.units, calendar=times.calendar)
+
         def printing_data(data, title: str, first_write: bool = False):
             if first_write:
                 write_mode = "w"
@@ -226,15 +282,17 @@ class TimeLoop:
                     f.write("\n")
 
         full_height = np.zeros(self.grid.num_levels, dtype=float)
-        half_height = self.solve_nonhydro.vertical_params.vct_a.asnumpy()
+        half_height = diagnostic_metric_state.vct_a.asnumpy()
         log.info(
             f"Writing grid file. vct_a size is {half_height.shape}"
         )
         for k in range(self.grid.num_levels):
             full_height[k] = 0.5 * (half_height[k] + half_height[k+1])
+        nf4_levels[:] = full_height
+        nf4_halflevels[:] = half_height
         printing_grid(
-            self.solve_nonhydro.cell_params.cell_center_lat.asnumpy(),
-            self.solve_nonhydro.cell_params.cell_center_lon.asnumpy(),
+            diagnostic_metric_state.cell_center_lat.asnumpy(),
+            diagnostic_metric_state.cell_center_lon.asnumpy(),
             full_height,
         )
 
@@ -320,6 +378,15 @@ class TimeLoop:
         printing_data(diagnostic_state.u.asnumpy()[:, 0], "sfc_u_init", first_write=True)
         printing_data(diagnostic_state.v.asnumpy()[:, 0], "sfc_v_init", first_write=True)
 
+        nf4_u[0, :, :] = diagnostic_state.u.asnumpy()
+        nf4_v[0, :, :] = diagnostic_state.v.asnumpy()
+        nf4_w[0, :, :] = prognostic_state_list[self._now].w.asnumpy()
+        nf4_temperature[0, :, :] = diagnostic_state.temperature.asnumpy()
+        nf4_pressure[0, :, :] = diagnostic_state.pressure.asnumpy()
+        nf4_pressure_sfc[0, :] = diagnostic_state.pressure_sfc.asnumpy()
+        nf4_rho[0, :, :] = prognostic_state_list[self._now].rho.asnumpy()
+        nf4_exner[0, :, :] = prognostic_state_list[self._now].exner.asnumpy()
+        nf4_theta_v[0, :, :] = prognostic_state_list[self._now].theta_v.asnumpy()
 
         if not self.is_run_from_serializedData:
             mo_init_exner_pr.with_backend(backend)(
@@ -343,6 +410,7 @@ class TimeLoop:
         printing_data(solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1.asnumpy(), "ddt_vn1_init", first_write=True)
         printing_data(solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2.asnumpy(), "ddt_vn2_init", first_write=True)
         printing_data(prognostic_state_list[self._now].w.asnumpy(), "w_init", first_write=True)
+        log.info(f"Debugging U (before diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
         log.info(
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
@@ -471,28 +539,39 @@ class TimeLoop:
             '''
 
             # TODO (Chia Rui): simple IO enough for JW test
+            log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
-            #printing_data(diagnostic_state.temperature.asnumpy(), "temperature")
-            #printing_data(diagnostic_state.u.asnumpy(), "u")
-            #printing_data(diagnostic_state.v.asnumpy(), "v")
-            #printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres")
-
-            printing_data(diagnostic_state.temperature.asnumpy(), "temperature_final", first_write=True)
-            printing_data(prognostic_state_list[self._now].vn.asnumpy(), "vn_final", first_write=True)
-            printing_data(prognostic_state_list[self._now].rho.asnumpy(), "rho_final", first_write=True)
-            printing_data(diagnostic_state.u.asnumpy(), "u_final", first_write=True)
-            printing_data(diagnostic_state.v.asnumpy(), "v_final", first_write=True)
-            printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres_final", first_write=True)
-            printing_data(diagnostic_state.u.asnumpy()[:, 0], "sfc_u_final", first_write=True)
-            printing_data(diagnostic_state.v.asnumpy()[:, 0], "sfc_v_final", first_write=True)
-            printing_data(z_fields.z_q.asnumpy(), "z_q_final", first_write=True)
-            printing_data(prognostic_state_list[self._now].w.asnumpy(), "w_final", first_write=True)
-            printing_data(z_fields.z_alpha.asnumpy(), "z_alpha_final", first_write=True)
-            printing_data(z_fields.z_beta.asnumpy(), "z_beta_final", first_write=True)
-            printing_data(z_fields.z_exner_expl.asnumpy(), "z_exner_expl_final", first_write=True)
-            printing_data(z_fields.z_w_expl.asnumpy(), "z_w_expl_final", first_write=True)
+            nf4_u[time_step + 1, :, :] = diagnostic_state.u.asnumpy()
+            nf4_v[time_step + 1, :, :] = diagnostic_state.v.asnumpy()
+            nf4_w[time_step + 1, :, :] = prognostic_state_list[self._now].w.asnumpy()
+            nf4_temperature[time_step + 1, :, :] = diagnostic_state.temperature.asnumpy()
+            nf4_pressure[time_step + 1, :, :] = diagnostic_state.pressure.asnumpy()
+            nf4_pressure_sfc[time_step + 1, :] = diagnostic_state.pressure_sfc.asnumpy()
+            nf4_rho[time_step + 1, :, :] = prognostic_state_list[self._now].rho.asnumpy()
+            nf4_exner[time_step + 1, :, :] = prognostic_state_list[self._now].exner.asnumpy()
+            nf4_theta_v[time_step + 1, :, :] = prognostic_state_list[self._now].theta_v.asnumpy()
 
         timer.summary(True)
+
+        # printing_data(diagnostic_state.temperature.asnumpy(), "temperature")
+        # printing_data(diagnostic_state.u.asnumpy(), "u")
+        # printing_data(diagnostic_state.v.asnumpy(), "v")
+        # printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres")
+
+        printing_data(diagnostic_state.temperature.asnumpy(), "temperature_final", first_write=True)
+        printing_data(prognostic_state_list[self._now].vn.asnumpy(), "vn_final", first_write=True)
+        printing_data(prognostic_state_list[self._now].rho.asnumpy(), "rho_final", first_write=True)
+        printing_data(diagnostic_state.u.asnumpy(), "u_final", first_write=True)
+        printing_data(diagnostic_state.v.asnumpy(), "v_final", first_write=True)
+        printing_data(diagnostic_state.pressure_sfc.asnumpy(), "sfc_pres_final", first_write=True)
+        printing_data(diagnostic_state.u.asnumpy()[:, 0], "sfc_u_final", first_write=True)
+        printing_data(diagnostic_state.v.asnumpy()[:, 0], "sfc_v_final", first_write=True)
+        printing_data(z_fields.z_q.asnumpy(), "z_q_final", first_write=True)
+        printing_data(prognostic_state_list[self._now].w.asnumpy(), "w_final", first_write=True)
+        printing_data(z_fields.z_alpha.asnumpy(), "z_alpha_final", first_write=True)
+        printing_data(z_fields.z_beta.asnumpy(), "z_beta_final", first_write=True)
+        printing_data(z_fields.z_exner_expl.asnumpy(), "z_exner_expl_final", first_write=True)
+        printing_data(z_fields.z_w_expl.asnumpy(), "z_w_expl_final", first_write=True)
 
     def _integrate_one_time_step(
         self,
@@ -504,6 +583,7 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
+
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -719,6 +799,9 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         print("3", init_type)
     elif init_type == InitializationType.JABW:
         print("4", init_type)
+
+    configure_logging(run_path, experiment_name, parallel_props)
+
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -730,7 +813,7 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(experiment_name, fname_prefix, ser_type, init_type, Path(input_path), parallel_props)
-    configure_logging(run_path, timeloop.simulation_date, parallel_props)
+
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
         f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
