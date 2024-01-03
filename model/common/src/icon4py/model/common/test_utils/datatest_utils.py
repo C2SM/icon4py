@@ -15,6 +15,8 @@ from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
 
+DEFAULT_SERIALIZED_DATA_FOLDER = "serialized_data"
+
 
 def get_serialized_data_path() -> Path:
     test_utils_path = Path(__file__).parent
@@ -25,7 +27,7 @@ def get_serialized_data_path() -> Path:
     if env_base_path:
         return Path(env_base_path)
     else:
-        return common_path.parent.joinpath("serialized_data")
+        return common_path.parent.joinpath(DEFAULT_SERIALIZED_DATA_FOLDER)
 
 
 SERIALIZED_DATA_PATH = get_serialized_data_path()

@@ -18,7 +18,7 @@ See the general instructions in the [README.md](../../README.md) in the base fol
 
 ```bash
 export ICON4PY_ROOT=<path to the icon4py clone>
-dycore_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --run_path=$ICON4PY_ROOT/output
+dycore_driver $ICON4PY_ROOT/serialized_data/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --run_path=$ICON4PY_ROOT/output
 ```
 
 The driver code runs in parallel, in order to do this you need to install the optional communication libraries with:
@@ -32,7 +32,7 @@ pip install -r requirements-dev-opt.txt
 then run
 
 ```bash
-mpirun -np 2 dycore_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_r04b09_dsl/ser_data --mpi=True --run_path=$ICON4PY_ROOT/output
+mpirun -np 2 dycore_driver $ICON4PY_ROOT/serialized_data/ser_icondata/mpitask2/mch_ch_r04b09_dsl/ser_data --mpi=True --run_path=$ICON4PY_ROOT/output
 ```
 
 #### Remarks
