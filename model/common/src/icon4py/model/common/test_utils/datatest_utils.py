@@ -32,7 +32,7 @@ def get_serialized_data_root_path() -> Path:
 
 
 SERIALIZED_DATA_ROOT = get_serialized_data_root_path()
-SERIALIZED_DATA_BASEPATH = SERIALIZED_DATA_ROOT.joinpath("ser_icondata")
+SERIALIZED_DATA_PATH = SERIALIZED_DATA_ROOT.joinpath("ser_icondata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 DATA_URIS = {
