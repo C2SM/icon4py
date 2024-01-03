@@ -34,7 +34,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, V2C2VDim, E2C2VDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -340,9 +340,9 @@ def model_initialization_jabw(
         num_levels,
     )
     '''
-    print(cells2edges_coeff.shape)
-    print(eta_v_numpy.shape)
-    print(mask_array_edge_start_plus1_to_edge_end.shape)
+    #print(cells2edges_coeff.shape)
+    #print(eta_v_numpy.shape)
+    #print(mask_array_edge_start_plus1_to_edge_end.shape)
     eta_v_e_numpy = mo_cells2edges_scalar_numpy(
         icon_grid,
         cells2edges_coeff,
@@ -819,6 +819,8 @@ def read_static_fields(
                 cell_center_lon=_allocate(CellDim, grid=icon_grid, dtype=float),
                 v_lat=_allocate(VertexDim, grid=icon_grid, dtype=float),
                 v_lon=_allocate(VertexDim, grid=icon_grid, dtype=float),
+                e_lat=_allocate(EdgeDim, grid=icon_grid, dtype=float),
+                e_lon=_allocate(EdgeDim, grid=icon_grid, dtype=float),
                 vct_a=_allocate(KDim,grid=icon_grid,is_halfdim=True,dtype=float),
             )
         elif init_type == InitializationType.JABW:
@@ -830,6 +832,8 @@ def read_static_fields(
                 cell_center_lon=data_provider.from_savepoint_grid().cell_center_lon(),
                 v_lat=data_provider.from_savepoint_grid().v_lat(),
                 v_lon=data_provider.from_savepoint_grid().v_lon(),
+                e_lat=data_provider.from_savepoint_grid().edge_center_lat(),
+                e_lon=data_provider.from_savepoint_grid().edge_center_lon(),
                 vct_a=data_provider.from_savepoint_grid().vct_a(),
             )
         return (

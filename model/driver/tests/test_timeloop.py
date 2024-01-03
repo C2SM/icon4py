@@ -31,7 +31,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, VertexDim, C2E2C2EDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -62,7 +62,7 @@ backend = run_gtfn
             0,
             0.25,
             -0.1,
-            True
+            False
         ),
     ],
 )
@@ -341,7 +341,7 @@ def test_jabw_initial_condition(
     "debug_mode,istep_init, istep_exit, jstep_init, jstep_exit,timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            True,
+            False,
             1,
             2,
             0,
@@ -545,7 +545,7 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = TimeLoop(r04b09_iconrun_config, icon_grid, diffusion, solve_nonhydro,is_run_from_serializedData=True)
+    timeloop = TimeLoop(r04b09_iconrun_config, icon_grid, diffusion, solve_nonhydro, is_run_from_serializedData=True)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
@@ -580,8 +580,15 @@ def test_run_timeloop_single_step(
 
     diagnostic_metric_state = DiagnosticMetricState(
         ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
-        rbf_vec_coeff_c1=_allocate(CellDim, KDim, grid=icon_grid, dtype=float), # TODO: change to C2E2C2EDim
-        rbf_vec_coeff_c2=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
+        rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float), # TODO: change to C2E2C2EDim
+        rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+        v_lat=_allocate(VertexDim, grid=icon_grid),
+        v_lon=_allocate(VertexDim, grid=icon_grid),
+        e_lat=_allocate(EdgeDim, grid=icon_grid),
+        e_lon=_allocate(EdgeDim, grid=icon_grid),
+        cell_center_lat=_allocate(CellDim, grid=icon_grid),
+        cell_center_lon=_allocate(CellDim, grid=icon_grid),
+        vct_a=grid_savepoint.vct_a(),
     )
 
     timeloop.time_integration(

@@ -44,6 +44,8 @@ class DiagnosticMetricState:
     rbf_vec_coeff_c2: Field[[CellDim, C2E2C2EDim], float]
     v_lat: Field[[VertexDim], float]
     v_lon: Field[[VertexDim], float]
+    e_lat: Field[[VertexDim], float]
+    e_lon: Field[[VertexDim], float]
     cell_center_lat: Field[[CellDim], float]
     cell_center_lon: Field[[CellDim], float]
     vct_a: Field[[KDim], float]

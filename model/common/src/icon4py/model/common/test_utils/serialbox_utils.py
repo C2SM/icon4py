@@ -41,6 +41,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     V2CDim,
+    V2C2VDim,
     V2EDim,
     VertexDim,
 )
@@ -266,7 +267,12 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("e2c2e", EdgeDim)
 
     def c2e2c2e(self):
-        return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
+        try:
+            return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
+        except:
+            print("c2e2c2e connectivity is not in serialized data. Please check.")
+            print("Initiliaze with zero field")
+            return np.zeros((self.sizes[CellDim], 9), dtype=int)
 
     def e2c(self):
         return self._get_connectivity_array("e2c", EdgeDim)
@@ -286,6 +292,15 @@ class IconGridSavepoint(IconSavepoint):
 
     def v2c(self):
         return self._get_connectivity_array("v2c", VertexDim)
+
+    def v2c2v(self):
+        try:
+            return self._get_connectivity_array("v2c2v", VertexDim)
+        except:
+            print("v2c2v connectivity is not in serialized data. Please check.")
+            print("Initiliaze with zero field")
+            return np.zeros((self.sizes[VertexDim], 6), dtype=int)
+
 
     def c2v(self):
         return self._get_connectivity_array("c2v", CellDim)
@@ -382,6 +397,7 @@ class IconGridSavepoint(IconSavepoint):
                     E2VDim: self.e2v(),
                     V2EDim: self.v2e(),
                     V2CDim: self.v2c(),
+                    V2C2VDim: self.v2c2v(),
                     E2C2VDim: self.e2c2v(),
                 }
             )
