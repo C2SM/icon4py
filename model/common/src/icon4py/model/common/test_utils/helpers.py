@@ -178,13 +178,12 @@ if pytest_benchmark:
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
             input_data = allocate_data(backend, input_data)
-            benchmark.pedantic(
+            benchmark(
                 self.PROGRAM.with_backend(backend),
-                args=(),
-                kwargs={**input_data, "offset_provider": grid.get_all_offset_providers()},
-                iterations=1,
-                rounds=1,
+                **input_data,
+                offset_provider=grid.get_all_offset_providers()
             )
+
 
 else:
 
