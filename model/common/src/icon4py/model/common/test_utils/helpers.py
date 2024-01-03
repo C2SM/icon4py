@@ -181,9 +181,8 @@ if pytest_benchmark:
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
-                offset_provider=grid.get_all_offset_providers()
+                offset_provider=grid.get_all_offset_providers(),
             )
-
 
 else:
 
