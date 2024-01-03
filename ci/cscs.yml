@@ -43,7 +43,7 @@ variables:
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     CSCS_NEEDED_DATA: icon4py
-    SERIALIZED_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
+    TEST_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
 
 build_job:
   extends: .build_template
@@ -52,14 +52,14 @@ test_model_job_roundtrip_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -c model/ --verbose -- --benchmark-skip -n auto
+    - tox -r -e run_stencil_tests -c model/ --verbose
 
 test_model_job_dace_cpu_simple_grid:
   extends: .test_template
   stage: test
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_cpu
+    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=dace_cpu
   only:
   - main
   allow_failure: true
@@ -69,7 +69,7 @@ test_model_job_dace_gpu_simple_grid:
   stage: test
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=dace_gpu
+    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=dace_gpu
   only:
   - main
   allow_failure: true
@@ -78,13 +78,13 @@ test_model_job_gtfn_cpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_cpu
+    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=gtfn_cpu
 
 test_model_job_gtfn_gpu_simple_grid:
   extends: .test_template
   stage: test
   script:
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --benchmark-skip -n auto --backend=gtfn_gpu
+    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=gtfn_gpu
 
 test_tools_job:
   extends: .test_template
@@ -97,7 +97,7 @@ benchmark_model_dace_cpu_icon_grid:
   stage: benchmark
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_benchmarks -c model/ -- --benchmark-only --backend=dace_cpu --grid=icon_grid
+    - tox -r -e run_benchmarks -c model/ -- --backend=dace_cpu --grid=icon_grid
   only:
   - main
   when: manual
@@ -107,7 +107,7 @@ benchmark_model_dace_gpu_icon_grid:
   stage: benchmark
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_benchmarks -c model/ -- --benchmark-only --backend=dace_gpu --grid=icon_grid
+    - tox -r -e run_benchmarks -c model/ -- --backend=dace_gpu --grid=icon_grid
   only:
   - main
   when: manual
@@ -116,10 +116,10 @@ benchmark_model_gtfn_cpu_icon_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - tox -r -e run_benchmarks -c model/ -- --benchmark-only --backend=gtfn_cpu --grid=icon_grid
+    - tox -r -e run_benchmarks -c model/ -- --backend=gtfn_cpu --grid=icon_grid
 
 benchmark_model_gtfn_gpu_icon_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - tox -r -e run_benchmarks -c model/ -- --benchmark-only --backend=gtfn_gpu --grid=icon_grid
+    - tox -r -e run_benchmarks -c model/ -- --backend=gtfn_gpu --grid=icon_grid

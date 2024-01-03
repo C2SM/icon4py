@@ -383,7 +383,7 @@ def main(input_path, run_path, mpi):
     """
     Run the driver.
 
-    usage: python dycore_driver.py abs_path_to_icon4py/serialized_data/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
+    usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
 
     steps:
     1. initialize model from serialized data:

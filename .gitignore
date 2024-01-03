@@ -4,7 +4,7 @@ _local
 _external_src
 _reports
 tmp
-serialized_data
+testdata
 simple_mesh*.nc
 
 ### GT4Py ####

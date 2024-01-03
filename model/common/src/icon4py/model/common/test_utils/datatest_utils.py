@@ -16,23 +16,23 @@ from pathlib import Path
 from icon4py.model.common.decomposition.definitions import get_processor_properties
 
 
-DEFAULT_SERIALIZED_DATA_FOLDER = "serialized_data"
+DEFAULT_TEST_DATA_FOLDER = "testdata"
 
 
-def get_serialized_data_root_path() -> Path:
+def get_test_data_root_path() -> Path:
     test_utils_path = Path(__file__).parent
     model_path = test_utils_path.parent.parent
     common_path = model_path.parent.parent.parent.parent
-    env_base_path = os.getenv("SERIALIZED_DATA_PATH")
+    env_base_path = os.getenv("TEST_DATA_PATH")
 
     if env_base_path:
         return Path(env_base_path)
     else:
-        return common_path.parent.joinpath(DEFAULT_SERIALIZED_DATA_FOLDER)
+        return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
 
 
-SERIALIZED_DATA_ROOT = get_serialized_data_root_path()
-SERIALIZED_DATA_PATH = SERIALIZED_DATA_ROOT.joinpath("ser_icondata")
+TEST_DATA_ROOT = get_test_data_root_path()
+SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 DATA_URIS = {
