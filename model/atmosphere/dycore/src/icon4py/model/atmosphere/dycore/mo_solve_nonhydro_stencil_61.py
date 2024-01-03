@@ -15,6 +15,9 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
+    _mo_solve_nonhydro_stencil_62,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
@@ -35,7 +38,7 @@ def _mo_solve_nonhydro_stencil_61(
 ]:
     rho_new_wp = rho_now + dtime * grf_tend_rho
     exner_new_wp = theta_v_now + dtime * grf_tend_thv
-    w_new_wp = w_now + dtime * grf_tend_w
+    w_new_wp = _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime)
     return rho_new_wp, exner_new_wp, w_new_wp
 
 
