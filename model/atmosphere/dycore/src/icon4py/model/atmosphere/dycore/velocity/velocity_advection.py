@@ -280,9 +280,9 @@ class VelocityAdvection:
             )
 
         interpolate_to_cell_center.with_backend(backend)(
-            z_kin_hor_e=z_kin_hor_e,
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
@@ -548,9 +548,9 @@ class VelocityAdvection:
             )
 
         interpolate_to_cell_center.with_backend(backend)(
-            z_kin_hor_e=z_kin_hor_e,
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
             vertical_start=0,
