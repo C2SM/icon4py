@@ -14,12 +14,7 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    _mo_velocity_advection_stencil_08,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_09 import (
-    _mo_velocity_advection_stencil_09,
-)
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
 )
@@ -70,14 +65,14 @@ def _fused_velocity_advection_stencil_8_to_14(
 ]:
     z_ekinh = where(
         k < nlev,
-        _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
+        _interpolate_to_cell_center(z_kin_hor_e, e_bln_c_s),
         z_ekinh,
     )
 
     z_w_concorr_mc = (
         where(
             nflatlev < k < nlev,
-            _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
+            _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
             z_w_concorr_mc,
         )
         if istep == 1

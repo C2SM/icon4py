@@ -27,8 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_mo_velocity_advection_stencil_08 import mo_velocity_advection_stencil_08_numpy
-from .test_mo_velocity_advection_stencil_09 import mo_velocity_advection_stencil_09_numpy
+from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_velocity_advection_stencil_10 import mo_velocity_advection_stencil_10_numpy
 from .test_mo_velocity_advection_stencil_11 import mo_velocity_advection_stencil_11_numpy
 from .test_mo_velocity_advection_stencil_12 import mo_velocity_advection_stencil_12_numpy
@@ -75,14 +74,14 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         z_ekinh = np.where(
             k < nlev,
-            mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s),
+            interpolate_to_cell_center_numpy(grid, z_kin_hor_e, e_bln_c_s),
             z_ekinh,
         )
 
         if istep == 1:
             z_w_concorr_mc = np.where(
                 (nflatlev < k) & (k < nlev),
-                mo_velocity_advection_stencil_09_numpy(grid, z_w_concorr_me, e_bln_c_s),
+                interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s),
                 z_w_concorr_mc,
             )
 
