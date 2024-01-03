@@ -169,7 +169,7 @@ log = logging.getLogger(__name__)
 
 
 @dataclass
-class ZFields:
+class IntermediateFields:
     """
     Encapsulate internal fields of SolveNonHydro that contain shared state over predictor and corrector step.
 
@@ -202,7 +202,7 @@ class ZFields:
 
     @classmethod
     def allocate(cls, grid: BaseGrid):
-        return ZFields(
+        return IntermediateFields(
             z_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
             z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
             z_beta=_allocate(CellDim, KDim, grid=grid),
@@ -491,7 +491,7 @@ class SolveNonhydro:
         self.enh_divdamp_fac = _allocate(KDim, grid=self.grid)
         self._bdy_divdamp = _allocate(KDim, grid=self.grid)
         self.scal_divdamp = _allocate(KDim, grid=self.grid)
-        self.z_fields = ZFields.allocate(self.grid)
+        self.intermediate_fields = IntermediateFields.allocate(self.grid)
 
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
@@ -531,10 +531,10 @@ class SolveNonhydro:
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields.with_backend(backend)(
-                self.z_fields.z_rho_e,
-                self.z_fields.z_theta_v_e,
-                self.z_fields.z_dwdz_dd,
-                self.z_fields.z_graddiv_vn,
+                self.intermediate_fields.z_rho_e,
+                self.intermediate_fields.z_theta_v_e,
+                self.intermediate_fields.z_dwdz_dd,
+                self.intermediate_fields.z_graddiv_vn,
                 start_edge_lb,
                 end_edge_local,
                 start_cell_lb,
@@ -548,7 +548,7 @@ class SolveNonhydro:
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls,
-            z_fields=self.z_fields,
+            z_fields=self.intermediate_fields,
             dtime=dtime,
             idyn_timestep=idyn_timestep,
             l_recompute=l_recompute,
@@ -562,7 +562,7 @@ class SolveNonhydro:
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls,
-            z_fields=self.z_fields,
+            z_fields=self.intermediate_fields,
             prep_adv=prep_adv,
             divdamp_fac_o2=divdamp_fac_o2,
             dtime=dtime,
@@ -631,7 +631,7 @@ class SolveNonhydro:
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state: list[PrognosticState],
-        z_fields: ZFields,
+        z_fields: IntermediateFields,
         dtime: float,
         idyn_timestep: float,
         l_recompute: bool,
@@ -1429,7 +1429,7 @@ class SolveNonhydro:
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
         prognostic_state: list[PrognosticState],
-        z_fields: ZFields,
+        z_fields: IntermediateFields,
         divdamp_fac_o2: float,
         prep_adv: PrepAdvection,
         dtime: float,
