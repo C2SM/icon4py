@@ -37,6 +37,11 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
+)
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -129,7 +134,7 @@ def read_initial_state(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = diffusion_init_savepoint.construct_diagnostics_for_diffusion()
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
@@ -248,11 +253,11 @@ def read_static_fields(
             .from_savepoint_grid()
             .construct_icon_grid()
         )
-        diffusion_interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
+        diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+            dataprovider.from_interpolation_savepoint()
         )
-        diffusion_metric_state = (
-            dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
+        diffusion_metric_state = construct_metric_state_for_diffusion(
+            dataprovider.from_metrics_savepoint()
         )
         solve_nonhydro_interpolation_state = (
             dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()

@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_07 import (
-    mo_solve_nonhydro_stencil_07,
+from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
+    compute_pertubation_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil07(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_07
+    PROGRAM = compute_pertubation_of_rho_and_theta
     OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
 
     @staticmethod

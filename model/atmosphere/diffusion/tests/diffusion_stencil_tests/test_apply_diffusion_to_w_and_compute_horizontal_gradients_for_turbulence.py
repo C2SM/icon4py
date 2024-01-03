@@ -43,6 +43,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         geofac_grg_x,
         geofac_grg_y,
         w_old,
+        type_shear,
         dwdx,
         dwdy,
         diff_multfac_w,
@@ -56,14 +57,14 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
     ):
         reshaped_k = k[np.newaxis, :]
         reshaped_cell = cell[:, np.newaxis]
-
-        dwdx, dwdy = np.where(
-            0 < reshaped_k,
-            calculate_horizontal_gradients_for_turbulence_numpy(
-                grid, w_old, geofac_grg_x, geofac_grg_y
-            ),
-            (dwdx, dwdy),
-        )
+        if type_shear == 2:
+            dwdx, dwdy = np.where(
+                0 < reshaped_k,
+                calculate_horizontal_gradients_for_turbulence_numpy(
+                    grid, w_old, geofac_grg_x, geofac_grg_y
+                ),
+                (dwdx, dwdy),
+            )
 
         z_nabla2_c = calculate_nabla2_for_w_numpy(grid, w_old, geofac_n2s)
 
@@ -96,6 +97,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
         nrdmax = 13
         interior_idx = 1
         halo_idx = 5
+        type_shear = 2
 
         geofac_grg_x = random_field(grid, CellDim, C2E2CODim)
         geofac_grg_y = random_field(grid, CellDim, C2E2CODim)
@@ -115,6 +117,7 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
             geofac_grg_x=geofac_grg_x,
             geofac_grg_y=geofac_grg_y,
             w_old=w_old,
+            type_shear=type_shear,
             diff_multfac_w=diff_multfac_w,
             diff_multfac_n2w=diff_multfac_n2w,
             k=k,

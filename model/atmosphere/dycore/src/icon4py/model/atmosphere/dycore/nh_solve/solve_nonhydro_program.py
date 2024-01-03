@@ -14,6 +14,13 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
+    _compute_pertubation_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
     _mo_solve_nonhydro_stencil_02,
 )
@@ -25,9 +32,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
     _mo_solve_nonhydro_stencil_06,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_07 import (
-    _mo_solve_nonhydro_stencil_07,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
     _mo_solve_nonhydro_stencil_08,
@@ -44,17 +48,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_35 import (
-    _mo_solve_nonhydro_stencil_35,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_37 import (
     _mo_solve_nonhydro_stencil_37,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_38 import (
-    _mo_solve_nonhydro_stencil_38,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,
@@ -270,7 +268,7 @@ def _predictor_stencils_7_8_9(
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
         k_field == int32(0),
-        _mo_solve_nonhydro_stencil_07(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_pertubation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
@@ -479,7 +477,7 @@ def _predictor_stencils_35_36(
 ]:
     z_w_concorr_me = where(
         k_field >= nflatlev_startindex,
-        _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
@@ -550,7 +548,7 @@ def predictor_stencils_37_38(
             KDim: (vertical_start, vertical_start + 1),
         },
     )
-    _mo_solve_nonhydro_stencil_38(
+    _extrapolate_at_top(
         vn,
         wgtfacq_e_dsl,
         out=vn_ie,

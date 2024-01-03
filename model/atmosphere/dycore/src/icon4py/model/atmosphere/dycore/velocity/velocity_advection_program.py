@@ -14,17 +14,13 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
-    _mo_velocity_advection_stencil_04,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
-    _mo_velocity_advection_stencil_06,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_09 import (
-    _mo_velocity_advection_stencil_09,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
@@ -71,7 +67,7 @@ def _fused_stencils_4_5(
 ]:
     z_w_concorr_me = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
-        _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
 
@@ -123,7 +119,7 @@ def fused_stencils_4_5(
 
 
 @program
-def mo_velocity_advection_stencil_06(
+def extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
     vn_ie: Field[[EdgeDim, KDim], float],
@@ -132,7 +128,7 @@ def mo_velocity_advection_stencil_06(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_06(
+    _extrapolate_at_top(
         wgtfacq_e,
         vn,
         out=vn_ie,
@@ -156,7 +152,7 @@ def _fused_stencils_9_10(
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
-        _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
+        _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
         local_z_w_concorr_mc,
     )
 
