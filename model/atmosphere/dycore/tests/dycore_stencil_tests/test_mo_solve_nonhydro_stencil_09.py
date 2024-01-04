@@ -23,6 +23,34 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def mo_solve_nonhydro_stencil_09_numpy(
+    grid,
+    wgtfac_c: np.array,
+    z_rth_pr_2: np.array,
+    theta_v: np.array,
+    vwind_expl_wgt: np.array,
+    exner_pr: np.array,
+    d_exner_dz_ref_ic: np.array,
+    ddqz_z_half: np.array,
+) -> tuple[np.array, np.array, np.array]:
+    z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
+    theta_v_offset = np.roll(theta_v, axis=1, shift=1)
+    exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+
+    z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
+    z_theta_v_pr_ic[:, 0] = 0
+    theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
+    theta_v_ic[:, 0] = 0
+    z_th_ddz_exner_c = (
+        vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
+        + z_theta_v_pr_ic * d_exner_dz_ref_ic
+    )
+    z_th_ddz_exner_c[:, 0] = 0
+
+    return z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
+
+
 class TestMoSolveNonhydroStencil09(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_09
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
@@ -38,21 +66,18 @@ class TestMoSolveNonhydroStencil09(StencilTest):
         d_exner_dz_ref_ic: np.array,
         ddqz_z_half: np.array,
         **kwargs,
-    ) -> tuple[np.array, np.array, np.array]:
-        z_rth_pr_2_offset = np.roll(z_rth_pr_2, axis=1, shift=1)
-        theta_v_offset = np.roll(theta_v, axis=1, shift=1)
-        exner_pr_offset = np.roll(exner_pr, axis=1, shift=1)
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-
-        z_theta_v_pr_ic = wgtfac_c * z_rth_pr_2 + (1.0 - wgtfac_c) * z_rth_pr_2_offset
-        z_theta_v_pr_ic[:, 0] = 0
-        theta_v_ic = wgtfac_c * theta_v + (1 - wgtfac_c) * theta_v_offset
-        theta_v_ic[:, 0] = 0
-        z_th_ddz_exner_c = (
-            vwind_expl_wgt * theta_v_ic * (exner_pr_offset - exner_pr) / ddqz_z_half
-            + z_theta_v_pr_ic * d_exner_dz_ref_ic
+    ) -> dict:
+        z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c = mo_solve_nonhydro_stencil_09_numpy(
+            grid,
+            wgtfac_c,
+            z_rth_pr_2,
+            theta_v,
+            vwind_expl_wgt,
+            exner_pr,
+            d_exner_dz_ref_ic,
+            ddqz_z_half,
         )
-        z_th_ddz_exner_c[:, 0] = 0
+
         return dict(
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,

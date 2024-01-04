@@ -23,6 +23,18 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def mo_solve_nonhydro_stencil_02_numpy(
+    grid: np.array,
+    exner_exfac: np.array,
+    exner: np.array,
+    exner_ref_mc: np.array,
+    exner_pr: np.array,
+) -> tuple[np.array, np.array]:
+    z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
+    exner_pr = exner - exner_ref_mc
+    return z_exner_ex_pr, exner_pr
+
+
 class TestMoSolveNonhydroStencil02(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_02
     OUTPUTS = ("z_exner_ex_pr", "exner_pr")
@@ -36,8 +48,10 @@ class TestMoSolveNonhydroStencil02(StencilTest):
         exner_exfac: np.array,
         **kwargs,
     ) -> dict:
-        z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
-        exner_pr = exner - exner_ref_mc
+        z_exner_ex_pr, exner_pr = mo_solve_nonhydro_stencil_02_numpy(
+            exner_exfac, exner, exner_ref_mc, exner_pr
+        )
+
         return dict(z_exner_ex_pr=z_exner_ex_pr, exner_pr=exner_pr)
 
     @pytest.fixture
