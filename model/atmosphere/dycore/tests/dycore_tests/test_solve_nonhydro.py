@@ -494,7 +494,6 @@ def test_nonhydro_corrector_step(
     savepoint_nonhydro_init,
     damping_height,
     grid_savepoint,
-    savepoint_velocity_init,
     metrics_savepoint,
     interpolation_savepoint,
     savepoint_nonhydro_exit,
@@ -537,8 +536,8 @@ def test_nonhydro_corrector_step(
         z_graddiv_vn=sp.z_graddiv_vn(),
         z_rho_expl=sp.z_rho_expl(),
         z_dwdz_dd=sp.z_dwdz_dd(),
-        z_kin_hor_e=savepoint_velocity_init.z_kin_hor_e(),
-        z_vt_ie=savepoint_velocity_init.z_vt_ie(),
+        z_kin_hor_e=sp.z_kin_hor_e(),
+        z_vt_ie=sp.z_vt_ie(),
     )
 
     divdamp_fac_o2 = sp.divdamp_fac_o2()

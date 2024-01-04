@@ -681,6 +681,12 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
 
 class IconNonHydroInitSavepoint(IconSavepoint):
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", EdgeDim, KDim)
+
     def vn_ie(self):
         return self._get_field("vn_ie", EdgeDim, KDim)
 
