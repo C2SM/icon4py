@@ -23,6 +23,19 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat
 
 
+def mo_solve_nonhydro_stencil_04_numpy(
+    grid: np.array,
+    z_exner_ex_pr: np.array,
+    wgtfacq_c: np.array,
+    z_exner_ic: np.array,
+) -> np.array:
+    z_exner_ic[:, 3:] = (
+                            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
+                            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
+                            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
+                        )[:, 3:]
+    return z_exner_ic
+
 class TestMoSolveNonhydroStencil04(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_04
     OUTPUTS = ("z_exner_ic",)
@@ -31,11 +44,12 @@ class TestMoSolveNonhydroStencil04(StencilTest):
     def reference(
         grid, z_exner_ex_pr: np.array, wgtfacq_c: np.array, z_exner_ic: np.array, **kwargs
     ) -> dict:
-        z_exner_ic[:, 3:] = (
-            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_exner_ex_pr, shift=1, axis=1)
-            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_exner_ex_pr, shift=2, axis=1)
-            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_exner_ex_pr, shift=3, axis=1)
-        )[:, 3:]
+        z_exner_ic = mo_solve_nonhydro_stencil_04_numpy(
+            grid,
+            z_exner_ex_pr,
+            wgtfacq_c,
+            z_exner_ic,
+        )
         return dict(z_exner_ic=z_exner_ic)
 
     @pytest.fixture

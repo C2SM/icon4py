@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def mo_solve_nonhydro_stencil_10_numpy(
-    mesh,
+    grid,
     w: np.array,
     w_concorr_c: np.array,
     ddqz_z_half: np.array,
@@ -103,7 +103,7 @@ class TestMoSolveNonhydroStencil10(StencilTest):
         **kwargs,
     ) -> dict:
         rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c = mo_solve_nonhydro_stencil_10_numpy(
-            mesh,
+            grid,
             w,
             w_concorr_c,
             ddqz_z_half,

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
@@ -21,6 +22,11 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
+def mo_solve_nonhydro_stencil_11_lower_numpy(
+    grid,
+) -> np.array:
+    z_theta_v_pr_ic = 0
+    return z_theta_v_pr_ic
 
 class TestMoSolveNonhydroStencil11Lower(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_11_lower
@@ -28,7 +34,7 @@ class TestMoSolveNonhydroStencil11Lower(StencilTest):
 
     @staticmethod
     def reference(grid, **kwargs) -> dict:
-        z_theta_v_pr_ic = 0
+        z_theta_v_pr_ic = mo_solve_nonhydro_stencil_11_lower_numpy(grid)
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic)
 
     @pytest.fixture

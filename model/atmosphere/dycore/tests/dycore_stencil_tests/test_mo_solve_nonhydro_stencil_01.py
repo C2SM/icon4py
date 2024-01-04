@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 def mo_solve_nonhydro_stencil_01_numpy(
-    mesh,
+    grid,
     z_rth_pr_1: np.array,
     z_rth_pr_2: np.array,
 ) -> tuple[np.array, np.array]:
@@ -44,7 +44,7 @@ class TestMoSolveNonhydroStencil01(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ) -> dict:
-        z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_01_numpy(mesh, z_rth_pr_1, z_rth_pr_2)
+        z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_01_numpy(grid, z_rth_pr_1, z_rth_pr_2)
         return dict(z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)
 
     @pytest.fixture

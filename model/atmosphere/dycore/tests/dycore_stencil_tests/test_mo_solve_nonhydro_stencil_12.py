@@ -23,6 +23,20 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat
 
 
+def mo_solve_nonhydro_stencil_12_numpy(
+    grid,
+    z_theta_v_pr_ic: np.array,
+    d2dexdz2_fac1_mc: np.array,
+    d2dexdz2_fac2_mc: np.array,
+    z_rth_pr_2: np.array,
+) -> np.array:
+    z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
+    z_dexner_dz_c_2 = -0.5 * (
+        (z_theta_v_pr_ic[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
+        + z_rth_pr_2 * d2dexdz2_fac2_mc
+    )
+    return z_dexner_dz_c_2
+
 class TestMoSolveNonhydroStencil12(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_12
     OUTPUTS = ("z_dexner_dz_c_2",)
@@ -36,11 +50,14 @@ class TestMoSolveNonhydroStencil12(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ) -> dict:
-        z_theta_v_pr_ic_offset_1 = z_theta_v_pr_ic[:, 1:]
-        z_dexner_dz_c_2 = -0.5 * (
-            (z_theta_v_pr_ic[:, :-1] - z_theta_v_pr_ic_offset_1) * d2dexdz2_fac1_mc
-            + z_rth_pr_2 * d2dexdz2_fac2_mc
+        z_dexner_dz_c_2 = mo_solve_nonhydro_stencil_12_numpy(
+            grid,
+            z_theta_v_pr_ic,
+            d2dexdz2_fac1_mc,
+            d2dexdz2_fac2_mc,
+            z_rth_pr_2,
         )
+
         return dict(z_dexner_dz_c_2=z_dexner_dz_c_2)
 
     @pytest.fixture

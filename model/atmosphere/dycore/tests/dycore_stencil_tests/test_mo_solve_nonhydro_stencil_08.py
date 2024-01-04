@@ -22,6 +22,24 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+def mo_solve_nonhydro_stencil_08_numpy(
+    grid,
+    wgtfac_c: np.array,
+    rho: np.array,
+    rho_ref_mc: np.array,
+    theta_v: np.array,
+    theta_ref_mc: np.array,
+    **kwargs,
+) -> tuple[np.array, np.array, np.array]:
+    rho_offset_1 = np.roll(rho, shift=1, axis=1)
+    rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
+    rho_ic[:, 0] = 0
+    z_rth_pr_1 = rho - rho_ref_mc
+    z_rth_pr_1[:, 0] = 0
+    z_rth_pr_2 = theta_v - theta_ref_mc
+    z_rth_pr_2[:, 0] = 0
+
+    return rho_ic, z_rth_pr_1, z_rth_pr_2
 
 class TestMoSolveNonhydroStencil08(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_08
@@ -63,12 +81,13 @@ class TestMoSolveNonhydroStencil08(StencilTest):
         theta_ref_mc: np.array,
         **kwargs,
     ) -> tuple[np.array, np.array, np.array]:
-        rho_offset_1 = np.roll(rho, shift=1, axis=1)
-        rho_ic = wgtfac_c * rho + (1.0 - wgtfac_c) * rho_offset_1
-        rho_ic[:, 0] = 0
-        z_rth_pr_1 = rho - rho_ref_mc
-        z_rth_pr_1[:, 0] = 0
-        z_rth_pr_2 = theta_v - theta_ref_mc
-        z_rth_pr_2[:, 0] = 0
+        rho_ic, z_rth_pr_1, z_rth_pr_2 = mo_solve_nonhydro_stencil_08_numpy(
+            grid,
+            wgtfac_c,
+            rho,
+            rho_ref_mc,
+            theta_v,
+            theta_ref_mc,
+        )
 
         return dict(rho_ic=rho_ic, z_rth_pr_1=z_rth_pr_1, z_rth_pr_2=z_rth_pr_2)

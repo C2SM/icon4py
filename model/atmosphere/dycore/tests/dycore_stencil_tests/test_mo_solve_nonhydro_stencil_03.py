@@ -23,13 +23,20 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
+def mo_solve_nonhydro_stencil_03_numpy(
+    grid: np.array,
+    z_exner_ex_pr: np.array,
+) -> np.array:
+    z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
+    return z_exner_ex_pr
+
 class TestMoSolveNonhydroStencil03(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_03
     OUTPUTS = ("z_exner_ex_pr",)
 
     @staticmethod
     def reference(grid, z_exner_ex_pr: np.array, **kwargs) -> dict:
-        z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
+        z_exner_ex_pr = mo_solve_nonhydro_stencil_03_numpy(grid, z_exner_ex_pr)
         return dict(z_exner_ex_pr=z_exner_ex_pr)
 
     @pytest.fixture
