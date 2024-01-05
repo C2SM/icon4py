@@ -14,18 +14,12 @@ from typing import Tuple
 
 import numpy as np
 from gt4py.next import as_field
-from gt4py.next.common import Dimension, Field
+from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-
-
-# TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
-def zero_field(grid, *dims: Dimension, dtype=float):
-    shapex = tuple(map(lambda x: grid.size[x], dims))
-    return as_field(dims, np.zeros(shapex, dtype=dtype))
 
 
 @field_operator

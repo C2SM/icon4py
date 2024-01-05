@@ -19,9 +19,10 @@ import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
-from gt4py.next import constructors
+from gt4py.next import constructors, int32
 from gt4py.next.ffront.decorator import Program
 
+from ..dimension import KDim
 from ..grid.base import BaseGrid
 
 
@@ -219,3 +220,7 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
+
+
+def k_field(grid: BaseGrid, extend: Optional[dict[gt_common.Dimension, int]] = None):
+    return as_field((KDim,), np.arange(0, _shape(grid, KDim, extend=extend)[0], dtype=int32))

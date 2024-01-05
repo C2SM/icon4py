@@ -16,13 +16,13 @@ import pytest
 
 import icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.common.utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
+from icon4py.model.common.utils import scale_k
 
 from .utils import (
     construct_config,

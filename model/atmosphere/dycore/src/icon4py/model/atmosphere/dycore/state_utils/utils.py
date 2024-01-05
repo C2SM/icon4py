@@ -11,31 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
-from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
-    abs,
-    broadcast,
-    int32,
-    maximum,
-)
+from gt4py.next.ffront.fbuiltins import abs, int32, maximum  # noqa: A004 # import gt4py builtin
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
-
-def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
-    shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return as_field((dim,), np.arange(shapex, dtype=dtype))
-
-
-def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
-    shapex = tuple(map(lambda x: grid.size[x], dims))
-    if is_halfdim:
-        assert len(shapex) == 2
-        shapex = (shapex[0], shapex[1] + 1)
-    return as_field(dims, np.zeros(shapex, dtype=dtype))
+from icon4py.model.common.dimension import KDim
+from icon4py.model.common.utils import indices_field, zero_field
 
 
 def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
@@ -44,50 +25,6 @@ def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
 
 def _allocate_indices(*dims: Dimension, grid, is_halfdim=False, dtype=int32):
     return indices_field(*dims, grid=grid, is_halfdim=is_halfdim, dtype=dtype)
-
-
-@field_operator
-def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
-    return broadcast(0.0, (EdgeDim, KDim))
-
-
-@program
-def set_zero_e_k(
-    field: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _set_zero_e_k(
-        out=field,
-        domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@field_operator
-def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
-    return broadcast(0.0, (CellDim, KDim))
-
-
-@program
-def set_zero_c_k(
-    field: Field[[CellDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _set_zero_c_k(
-        out=field,
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 @field_operator

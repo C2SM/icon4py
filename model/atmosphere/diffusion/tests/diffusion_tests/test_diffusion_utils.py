@@ -19,12 +19,11 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
-    set_zero_v_k,
     setup_fields_for_initial_step,
 )
-from icon4py.model.common.dimension import KDim, VertexDim
+from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import zero_field
 
 from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
 

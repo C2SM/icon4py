@@ -149,8 +149,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate_indices,
     _calculate_divdamp_fields,
     compute_z_raylfac,
-    set_zero_c_k,
-    set_zero_e_k,
 )
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
@@ -161,6 +159,7 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utils import set_zero_c_k, set_zero_e_k
 
 
 backend = run_gtfn

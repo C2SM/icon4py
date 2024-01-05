@@ -12,13 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import _shape, random_field
+from icon4py.model.common.test_utils.helpers import k_field, random_field
 
 
 def face_val_ppm_stencil_01_numpy(
@@ -65,7 +64,7 @@ def test_face_val_ppm_stencil_01(backend):
     p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
     p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
 
-    k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
+    k = k_field(grid, extend={KDim: 1})
     elev = k[-2]
 
     z_slope = random_field(grid, CellDim, KDim)

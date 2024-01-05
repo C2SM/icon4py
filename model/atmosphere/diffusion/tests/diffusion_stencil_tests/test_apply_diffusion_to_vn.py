@@ -16,9 +16,9 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
+from icon4py.model.common.utils import indices_field
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
 from .test_apply_nabla2_and_nabla4_to_vn import apply_nabla2_and_nabla4_to_vn_numpy
@@ -54,7 +54,6 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area,
         **kwargs,
     ):
-
         z_nabla4_e2 = calculate_nabla4_numpy(
             grid,
             u_vert,

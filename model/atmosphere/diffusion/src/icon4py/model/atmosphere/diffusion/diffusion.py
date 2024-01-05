@@ -38,9 +38,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     setup_fields_for_initial_step,
-    zero_field,
 )
-from icon4py.model.common.utils import scale_k
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -78,6 +76,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utils import scale_k, zero_field
 
 
 """
