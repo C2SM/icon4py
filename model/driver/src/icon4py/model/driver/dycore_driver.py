@@ -45,7 +45,7 @@ from icon4py.model.common.diagnostic_calculations.mo_init_zero import mo_init_dd
 from icon4py.model.common.diagnostic_calculations.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
 from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
+from icon4py.model.driver.icon_configuration import IconRunConfig, IconOutputConfig, read_config
 from icon4py.model.driver.io_utils import (
     configure_logging,
     read_decomp_info,
@@ -67,9 +67,18 @@ log = logging.getLogger(__name__)
 
 
 class OutputState:
-    def __init__(self,path: Path, grid: IconGrid, diagnostic_metric_state: DiagnosticMetricState):
+    def __init__(
+        self,
+        output_config: IconOutputConfig,
+        start_date: datetime,
+        grid: IconGrid,
+        diagnostic_metric_state: DiagnosticMetricState,
+        prognostic_state: PrognosticState,
+        diagnostic_state: DiagnosticState
+    ):
+        self.config: IconOutputConfig = output_config
         # TODO (Chia Rui or others): this is only a tentative output method, use a proper netcdf output infrastructure in the future
-        nf4_basegrp = nf4.Dataset(str(path.absolute()) + "/data_output.nc", "w", format="NETCDF4")
+        nf4_basegrp = nf4.Dataset(str(self.config.output_path.absolute()) + "/data_output.nc", "w", format="NETCDF4")
         nf4_basegrp.createDimension("ncells", grid.num_cells)
         nf4_basegrp.createDimension("ncells_2", grid.num_edges)
         nf4_basegrp.createDimension("ncells_3", grid.num_vertices)
@@ -82,10 +91,16 @@ class OutputState:
         nf4_basegrp.createDimension("time", None)
 
         self._nf4_basegrp = nf4_basegrp
+        self._current_write_step: int = 0
 
         self._create_variables(grid)
-
         self._write_dimension(grid, diagnostic_metric_state)
+
+        self._write_initial_data(start_date, prognostic_state, diagnostic_state)
+
+    @property
+    def current_time_step(self):
+        return self._current_write_step
 
     def _create_variables(self, grid: IconGrid):
         """
@@ -153,15 +168,15 @@ class OutputState:
         self.theta_v.units = "K"
         self.exner.units = ""
 
-        self.u.units = "m s-1"
-        self.v.units = "m s-1"
-        self.w.units = "m s-1"
-        self.temperature.units = "K"
-        self.pressure.units = "Pa"
-        self.pressure_sfc.units = "Pa"
-        self.rho.units = "kg m-3"
-        self.theta_v.units = "K"
-        self.exner.units = ""
+        self.u.param = "2.2.0"
+        self.v.param = "3.2.0"
+        self.w.param = "9.2.0"
+        self.temperature.param = "0.0.0"
+        self.pressure.param = "0.3.0"
+        self.pressure_sfc.param = "0.3.0"
+        self.rho.param = "10.3.0"
+        self.theta_v.param = "15.0.0"
+        self.exner.param = "26.3.0"
 
         self.times.standard_name = "time"
         self.cell_latitudes.standard_name = "latitude"
@@ -200,6 +215,7 @@ class OutputState:
         self.rho.standard_name = "air_density"
         self.theta_v.standard_name = "virtual_potential_temperature"
         self.exner.standard_name = "exner_pressure"
+
         self.u.long_name = "Zonal wind"
         self.v.long_name = "Meridional wind"
         self.w.long_name = "Vertical velocity"
@@ -265,20 +281,44 @@ class OutputState:
         self.levels[:] = full_height
         self.half_levels[:] = half_height
 
-    def write_first_date(self, first_date: datetime):
-        self.times[0] = date2num(first_date, units=self.times.units, calendar=self.times.calendar)
-        # dates = num2date(times[:], units=times.units, calendar=times.calendar)
+    def _write_initial_data(self, current_date: datetime, prognostic_state: PrognosticState, diagnostic_state: DiagnosticState):
 
-    def write_data(self, timestep: int, prognostic_state: PrognosticState, diagnostic_state: DiagnosticState):
-        self.u[timestep, :, :] = diagnostic_state.u.asnumpy().transpose()
-        self.v[timestep, :, :] = diagnostic_state.v.asnumpy().transpose()
-        self.w[timestep, :, :] = prognostic_state.w.asnumpy().transpose()
-        self.temperature[timestep, :, :] = diagnostic_state.temperature.asnumpy().transpose()
-        self.pressure[timestep, :, :] = diagnostic_state.pressure.asnumpy().transpose()
-        self.pressure_sfc[timestep, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
-        self.rho[timestep, :, :] = prognostic_state.rho.asnumpy().transpose()
-        self.exner[timestep, :, :] = prognostic_state.exner.asnumpy().transpose()
-        self.theta_v[timestep, :, :] = prognostic_state.theta_v.asnumpy().transpose()
+        log.info(f"Writing initial output at {current_date} and {self._current_write_step}")
+        self.times[self._current_write_step] = date2num(current_date, units=self.times.units, calendar=self.times.calendar)
+        self.u[self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
+        self.v[self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
+        self.w[self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
+        self.temperature[self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
+        self.pressure[self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
+        self.pressure_sfc[self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
+        self.rho[self._current_write_step, :, :] = prognostic_state.rho.asnumpy().transpose()
+        self.exner[self._current_write_step, :, :] = prognostic_state.exner.asnumpy().transpose()
+        self.theta_v[self._current_write_step, :, :] = prognostic_state.theta_v.asnumpy().transpose()
+
+    def write_data(self, current_date: datetime, prognostic_state: PrognosticState, diagnostic_state: DiagnosticState):
+
+        output_date = num2date(
+            self.times[self._current_write_step],
+            units=self.times.units,
+            calendar=self.times.calendar
+        )
+        current_date_in_cftime = date2num(current_date, units=self.times.units, calendar=self.times.calendar)
+        current_date_in_cftime = num2date(current_date_in_cftime, units=self.times.units, calendar=self.times.calendar)
+        if current_date_in_cftime - output_date == self.config.output_time_interval:
+            self._current_write_step += 1
+            log.info(f"Writing output at {current_date} and {self._current_write_step}")
+            self.times[self._current_write_step] = date2num(current_date, units=self.times.units,calendar=self.times.calendar)
+            self.u[self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
+            self.v[self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
+            self.w[self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
+            self.temperature[self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
+            self.pressure[self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
+            self.pressure_sfc[self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
+            self.rho[self._current_write_step, :, :] = prognostic_state.rho.asnumpy().transpose()
+            self.exner[self._current_write_step, :, :] = prognostic_state.exner.asnumpy().transpose()
+            self.theta_v[self._current_write_step, :, :] = prognostic_state.theta_v.asnumpy().transpose()
+        else:
+            log.info(f"SKIP writing output at {current_date} and {self._current_write_step}")
 
 
 class TimeLoop:
@@ -413,6 +453,7 @@ class TimeLoop:
                 "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
             },
         )
+        log.debug(f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}")
 
         mo_diagnose_temperature.with_backend(backend)(
             prognostic_state_list[self._now].theta_v,
@@ -464,9 +505,6 @@ class TimeLoop:
             offset_provider={}
         )
         '''
-
-        if not self.is_run_from_serializedData:
-            output_state.write_data(0, prognostic_state_list[self._now], diagnostic_state)
 
         if not self.is_run_from_serializedData:
             mo_init_exner_pr.with_backend(backend)(
@@ -556,6 +594,7 @@ class TimeLoop:
                     "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
                 },
             )
+            log.debug(f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}")
 
             mo_diagnose_temperature.with_backend(backend)(
                 prognostic_state_list[self._now].theta_v,
@@ -612,7 +651,7 @@ class TimeLoop:
             log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
             if not self.is_run_from_serializedData:
-                output_state.write_data(time_step + 1, prognostic_state_list[self._now], diagnostic_state)
+                output_state.write_data(self._simulation_date, prognostic_state_list[self._now], diagnostic_state)
 
         timer.summary(True)
 
@@ -691,7 +730,7 @@ class TimeLoop:
 
 # "icon_pydycore"
 
-def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationType, init_type: InitializationType, run_path: Path, file_path: Path, props: ProcessProperties):
+def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationType, init_type: InitializationType, file_path: Path, props: ProcessProperties):
     """
     Inititalize the driver run.
 
@@ -732,9 +771,6 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
     ) = read_static_fields(fname_prefix, file_path, ser_type=ser_type, init_type=init_type)
-
-    log.info("initializing netCDF4 output state")
-    output_state = OutputState(run_path, icon_grid, diagnostic_metric_state)
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -786,6 +822,16 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         initialization_type=init_type
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
+
+    log.info("initializing netCDF4 output state")
+    output_state = OutputState(
+        config.output_config,
+        config.run_config.start_date,
+        icon_grid,
+        diagnostic_metric_state,
+        prognostic_state_list[0],
+        diagnostic_state,
+    )
 
     timeloop = TimeLoop(
         run_config=config.run_config,
@@ -861,7 +907,7 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(experiment_name, fname_prefix, ser_type, init_type, Path(run_path), Path(input_path), parallel_props)
+    ) = initialize(experiment_name, fname_prefix, ser_type, init_type, Path(input_path), parallel_props)
 
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

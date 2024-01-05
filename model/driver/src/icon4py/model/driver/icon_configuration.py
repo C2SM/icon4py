@@ -11,8 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+from pathlib import Path
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
@@ -44,12 +45,17 @@ class IconRunConfig:
     """rhotheta_offctr"""
     time_discretization_rhotheta_offctr: int = -0.1
 
-    output_path="./"
 
+
+@dataclass(frozen=True)
+class IconOutputConfig:
+    output_time_interval: timedelta = timedelta(minutes=1)
+    output_path: Path = Path("./")
 
 @dataclass
 class IconConfig:
     run_config: IconRunConfig
+    output_config: IconOutputConfig
     diffusion_config: DiffusionConfig
     solve_nonhydro_config: NonHydrostaticConfig
 
@@ -57,6 +63,9 @@ class IconConfig:
 def read_config(experiment: Optional[str]) -> IconConfig:
     def _default_run_config():
         return IconRunConfig()
+
+    def _default_output_config():
+        return IconOutputConfig()
 
     def mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
@@ -105,8 +114,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     def _default_config():
-        run_config = _default_run_config()
-        return run_config, _default_diffusion_config(), NonHydrostaticConfig()
+        return _default_run_config(), _default_output_config(), _default_diffusion_config(), NonHydrostaticConfig()
 
     def _mch_ch_r04b09_config():
         return (
@@ -116,6 +124,10 @@ def read_config(experiment: Optional[str]) -> IconConfig:
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
                 n_substeps=2,
                 apply_initial_stabilization=True,
+            ),
+            IconOutputConfig(
+                output_time_interval=timedelta(minutes=50),
+                output_path=Path("./"),
             ),
             mch_ch_r04b09_diffusion_config(),
             NonHydrostaticConfig(),
@@ -128,23 +140,29 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             apply_initial_stabilization=False,
             n_substeps=5,
         )
+        output_config = IconOutputConfig(
+            output_time_interval=timedelta(minutes=5),
+            output_path=Path("./"),
+        )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
         nonhydro_config = jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
             icon_run_config,
+            output_config,
             diffusion_config,
             nonhydro_config,
         )
 
     if experiment == "mch_ch_r04b09_dsl":
-        (model_run_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
+        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
     elif experiment == "jabw":
-        (model_run_config, diffusion_config, nonhydro_config) = _Jablownoski_Williamson_config()
+        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _Jablownoski_Williamson_config()
     else:
         log.warning("Experiment name is not specified, default configuration is used.")
-        (model_run_config, diffusion_config, nonhydro_config) = _default_config()
+        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _default_config()
     return IconConfig(
         run_config=model_run_config,
+        output_config=model_output_config,
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
     )
