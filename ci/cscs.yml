@@ -34,7 +34,7 @@ variables:
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
     - python -c "import cupy"
-    - ls ${SERIALIZED_DATA_PATH}
+    - ls ${TEST_DATA_PATH}
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -48,43 +48,15 @@ variables:
 build_job:
   extends: .build_template
 
-test_model_job_roundtrip_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -e run_stencil_tests -c model/ --verbose
-
-test_model_job_dace_cpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=dace_cpu
-  only:
-  - main
-  allow_failure: true
-
-test_model_job_dace_gpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=dace_gpu
-  only:
-  - main
-  allow_failure: true
-
-test_model_job_gtfn_cpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=gtfn_cpu
-
-test_model_job_gtfn_gpu_simple_grid:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=gtfn_gpu
+test_model_job_variants:
+    extends: .test_template
+    stage: test
+    script:
+      - if [ "$BACKEND" = "dace_cpu" ] || [ "$BACKEND" = "dace_gpu" ]; then pip install dace==$DACE_VERSION; fi
+      - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=$BACKEND
+    parallel:
+      matrix:
+        - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu, roundtrip]
 
 test_tools_job:
   extends: .test_template
@@ -92,34 +64,12 @@ test_tools_job:
   script:
     - tox -r -c tools/ --verbose
 
-benchmark_model_dace_cpu_icon_grid:
+benchmark_model_variants:
   extends: .test_template
   stage: benchmark
   script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e run_benchmarks -c model/ -- --backend=dace_cpu --grid=icon_grid
-  only:
-  - main
-  when: manual
-
-benchmark_model_dace_gpu_icon_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - pip install dace==$DACE_VERSION
-    - tox -r -e run_benchmarks -c model/ -- --backend=dace_gpu --grid=icon_grid
-  only:
-  - main
-  when: manual
-
-benchmark_model_gtfn_cpu_icon_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - tox -r -e run_benchmarks -c model/ -- --backend=gtfn_cpu --grid=icon_grid
-
-benchmark_model_gtfn_gpu_icon_grid:
-  extends: .test_template
-  stage: benchmark
-  script:
-    - tox -r -e run_benchmarks -c model/ -- --backend=gtfn_gpu --grid=icon_grid
+    - if [ "$BACKEND" = "dace_cpu" ] || [ "$BACKEND" = "dace_gpu" ]; then pip install dace==$DACE_VERSION; fi
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid
+  parallel:
+    matrix:
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
