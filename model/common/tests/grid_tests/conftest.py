@@ -26,10 +26,10 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.datatest_utils import BASE_PATH
+from icon4py.model.common.test_utils.datatest_utils import TEST_DATA_ROOT
 
 
-grids_path = BASE_PATH.joinpath("grids")
+grids_path = TEST_DATA_ROOT.joinpath("grids")
 r04b09_dsl_grid_path = grids_path.joinpath("mch_ch_r04b09_dsl")
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
 r02b04_global_grid_path = grids_path.joinpath("r02b04_global")

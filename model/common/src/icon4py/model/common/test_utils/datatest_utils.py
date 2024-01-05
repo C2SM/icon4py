@@ -10,17 +10,29 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import os
 from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
 
 
-TEST_UTILS_PATH = Path(__file__).parent
-MODEL_PATH = TEST_UTILS_PATH.parent.parent
-COMMON_PATH = MODEL_PATH.parent.parent.parent.parent
-BASE_PATH = COMMON_PATH.parent.joinpath("testdata")
+DEFAULT_TEST_DATA_FOLDER = "testdata"
 
+
+def get_test_data_root_path() -> Path:
+    test_utils_path = Path(__file__).parent
+    model_path = test_utils_path.parent.parent
+    common_path = model_path.parent.parent.parent.parent
+    env_base_path = os.getenv("TEST_DATA_PATH")
+
+    if env_base_path:
+        return Path(env_base_path)
+    else:
+        return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
+
+
+TEST_DATA_ROOT = get_test_data_root_path()
+SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
 
 # TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 DATA_URIS = {
@@ -29,7 +41,6 @@ DATA_URIS = {
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/SdlHTlsHCwcn5J5/download"}
-SER_DATA_BASEPATH = BASE_PATH.joinpath("ser_icondata")
 
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
