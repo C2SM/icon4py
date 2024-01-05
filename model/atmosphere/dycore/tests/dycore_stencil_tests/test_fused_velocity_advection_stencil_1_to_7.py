@@ -190,7 +190,12 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+
         c_intp = random_field(grid, VertexDim, V2CDim)
         vn = random_field(grid, EdgeDim, KDim)
         rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim)

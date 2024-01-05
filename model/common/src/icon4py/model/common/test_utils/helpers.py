@@ -21,8 +21,10 @@ from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
+from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
 
 from ..grid.base import BaseGrid
+from ..grid.icon import IconGrid
 
 
 try:
@@ -176,12 +178,10 @@ if pytest_benchmark:
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
             input_data = allocate_data(backend, input_data)
-            benchmark.pedantic(
+            benchmark(
                 self.PROGRAM.with_backend(backend),
-                args=(),
-                kwargs={**input_data, "offset_provider": grid.get_all_offset_providers()},
-                iterations=1,
-                rounds=1,
+                **input_data,
+                offset_provider=grid.get_all_offset_providers(),
             )
 
 else:
@@ -219,3 +219,15 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
+
+
+@pytest.fixture
+def uses_icon_grid_with_otf(backend, grid):
+    """Check whether we are using a compiled backend with the icon_grid.
+
+    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
+    """
+    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
+        if isinstance(backend.executor, OTFCompileExecutor):
+            return True
+    return False
