@@ -363,7 +363,8 @@ class GridManager:
         c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
         e2v = self._get_index_field(reader, GridFile.OffsetName.E2V)
 
-        e2c2v = self._construct_diamond_array(c2v, e2c)
+        e2c2v = self._construct_diamond_vertices(c2v, e2c)
+        e2c2e = self._construct_diamond_edges(c2e, e2c)
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
@@ -405,7 +406,7 @@ class GridManager:
 
         return icon_grid
 
-    def _construct_diamond_array(self, c2v: np.ndarray, e2c: np.ndarray):
+    def _construct_diamond_vertices(self, c2v: np.ndarray, e2c: np.ndarray):
         dummy_c2v = np.append(
             c2v,
             GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32),
@@ -415,3 +416,6 @@ class GridManager:
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
         return np.apply_along_axis(np.unique, 1, flattened)
+
+    def _construct_diamond_edges(self, c2e, e2c):
+        pass
