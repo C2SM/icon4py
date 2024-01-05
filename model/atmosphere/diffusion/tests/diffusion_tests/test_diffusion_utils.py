@@ -19,7 +19,6 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
-    scale_k,
     set_zero_v_k,
     setup_fields_for_initial_step,
 )
@@ -35,15 +34,6 @@ backend = run_gtfn
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
-
-
-def test_scale_k():
-    grid = SimpleGrid()
-    field = random_field(grid, KDim)
-    scaled_field = zero_field(grid, KDim)
-    factor = 2.0
-    scale_k(field, factor, scaled_field, offset_provider={})
-    assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
 
 
 def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
@@ -105,13 +95,6 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
 
     assert np.allclose(expected_diff_multfac_vn, diff_multfac_vn.asnumpy())
     assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
-
-
-def test_set_zero_vertex_k(backend):
-    grid = SimpleGrid()
-    f = random_field(grid, VertexDim, KDim)
-    set_zero_v_k(f, offset_provider={})
-    assert np.allclose(0.0, f.asnumpy())
 
 
 @pytest.mark.datatest

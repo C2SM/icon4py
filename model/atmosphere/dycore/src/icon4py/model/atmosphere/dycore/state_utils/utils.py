@@ -22,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     maximum,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
@@ -44,26 +44,6 @@ def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
 
 def _allocate_indices(*dims: Dimension, grid, is_halfdim=False, dtype=int32):
     return indices_field(*dims, grid=grid, is_halfdim=is_halfdim, dtype=dtype)
-
-
-@field_operator
-def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]:
-    return field * factor
-
-
-@program
-def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
-    _scale_k(field, factor, out=scaled_field)
-
-
-@field_operator
-def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
-    return broadcast(0.0, (VertexDim, KDim))
-
-
-@program
-def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _set_zero_v_k(out=field)
 
 
 @field_operator

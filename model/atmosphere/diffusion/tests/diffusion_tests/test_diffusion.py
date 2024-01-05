@@ -16,7 +16,7 @@ import pytest
 
 import icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
+from icon4py.model.common.utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
@@ -207,7 +207,7 @@ def _verify_init_values_against_savepoint(
         (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", 12500.0),
         (REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", 12500.0),
         (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", 50000.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:08.000", 50000.0),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000", 50000.0),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))

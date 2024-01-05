@@ -39,26 +39,6 @@ def copy_field_c_k(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, 
 
 
 @field_operator
-def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]:
-    return field * factor
-
-
-@program
-def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
-    _scale_k(field, factor, out=scaled_field)
-
-
-@field_operator
-def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
-    return broadcast(0.0, (VertexDim, KDim))
-
-
-@program
-def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _set_zero_v_k(out=field)
-
-
-@field_operator
 def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
     return 0.125 - 4.0 * diff_multfac_vn
 
