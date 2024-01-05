@@ -34,7 +34,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    copy_field,
+    copy_field_c_k,
     init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
     scale_k,
@@ -782,7 +782,7 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
+        copy_field_c_k.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,

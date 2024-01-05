@@ -34,13 +34,8 @@ def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim]
 
 
 @program
-def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
+def copy_field_c_k(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
     _identity_c_k(old_f, out=new_f)
-
-
-@field_operator
-def _identity_e_k(field: Field[[EdgeDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
-    return field
 
 
 @field_operator
