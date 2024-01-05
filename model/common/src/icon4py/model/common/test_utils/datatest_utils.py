@@ -21,14 +21,12 @@ MODEL_PATH = TEST_UTILS_PATH.parent.parent
 COMMON_PATH = MODEL_PATH.parent.parent.parent.parent
 BASE_PATH = COMMON_PATH.parent.joinpath("testdata")
 
-
-# TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
 DATA_URIS = {
-    1: "https://polybox.ethz.ch/index.php/s/re46l1xnJZ4uCMx/download",
+    1: "https://polybox.ethz.ch/index.php/s/y2IMUx4pOQ6lyZ7/download",
     2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
-DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/SdlHTlsHCwcn5J5/download"}
+DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/uK3jtrWK90Z4kHC/download"}
 SER_DATA_BASEPATH = BASE_PATH.joinpath("ser_icondata")
 
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
