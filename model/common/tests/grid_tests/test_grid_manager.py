@@ -384,7 +384,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-@pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
+# @pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
 # TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
@@ -396,7 +396,7 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     assert np.allclose(grid.get_offset_provider("E2C2E").table, serialized_e2c2e)
 
 
-@pytest.mark.xfail
+# @pytest.mark.xfail
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
@@ -404,9 +404,10 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
     # the "far" (adjacent to edge normal ) is not there. why?
     # despite that: ordering is different
+    serialized_ref = grid_savepoint.e2c2v()[: grid.num_edges, :]
     assert np.allclose(
         grid.get_offset_provider("E2C2V").table,
-        grid_savepoint.e2c2v()[0 : grid.num_edges, :],
+        serialized_ref,
     )
 
 

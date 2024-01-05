@@ -415,7 +415,8 @@ class GridManager:
         expanded = dummy_c2v[e2c[:, :], :]
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
-        return np.apply_along_axis(np.unique, 1, flattened)
+        result = np.apply_along_axis(np.unique, 1, flattened)
+        return result
 
     def _construct_diamond_edges(self, c2e, e2c):
         pass
