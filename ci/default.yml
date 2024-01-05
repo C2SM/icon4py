@@ -40,10 +40,10 @@ variables:
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
 
-build_job:
+build:
   extends: .build_template
 
-test_model_job_variants:
+test_model_simple_grid:
     extends: .test_template
     stage: test
     script:
@@ -52,7 +52,7 @@ test_model_job_variants:
       matrix:
         - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
 
-test_tools_job:
+test_tools:
   extends: .test_template
   stage: test
   script:

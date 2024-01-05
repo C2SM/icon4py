@@ -44,16 +44,10 @@ variables:
     CSCS_NEEDED_DATA: icon4py
     TEST_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
 
-build_job:
+build:
   extends: .build_template
 
-test_tools_job:
-  extends: .test_template
-  stage: test
-  script:
-    - tox -r -c tools/ --verbose
-
-benchmark_model_variants:
+benchmark_model_icon_grid:
   extends: .test_template
   stage: benchmark
   script:
