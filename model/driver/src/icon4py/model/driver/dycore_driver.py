@@ -28,7 +28,6 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     create_exchange,
@@ -147,7 +146,6 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
-        z_fields: ZFields,  # local constants in solve_nh
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -190,7 +188,6 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv,
-                z_fields,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
@@ -210,7 +207,6 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -218,7 +214,6 @@ class TimeLoop:
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
             prep_adv,
-            z_fields,
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
@@ -237,7 +232,6 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -253,7 +247,6 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv=prep_adv,
-                z_fields=z_fields,
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 idyn_timestep=dyn_substep,
@@ -296,7 +289,9 @@ def initialize(file_path: Path, props: ProcessProperties):
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
-         other temporary fields: to be removed in the future
+         prep_advection: fields collecting data for advection during the solve nonhydro timestep
+         inital_divdamp_fac_o2: initial divergence damping factor
+
     """
     log.info("initialize parallel runtime")
     experiment_name = "mch_ch_r04b09_dsl"
@@ -351,7 +346,6 @@ def initialize(file_path: Path, props: ProcessProperties):
     (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
         prognostic_state_now,
@@ -369,7 +363,6 @@ def initialize(file_path: Path, props: ProcessProperties):
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
     )
