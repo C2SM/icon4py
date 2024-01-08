@@ -116,7 +116,12 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+
         z_kin_hor_e = random_field(grid, EdgeDim, KDim)
         coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)
