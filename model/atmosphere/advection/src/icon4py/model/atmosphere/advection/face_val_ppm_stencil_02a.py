@@ -29,7 +29,7 @@ def _face_val_ppm_stencil_02a(
     return p_face
 
 
-@program
+@program(grid_type="unstructured")
 def face_val_ppm_stencil_02a(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
