@@ -35,6 +35,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     w_old: Field[[CellDim, KDim], wpfloat],
+    type_shear: int32,
     dwdx: Field[[CellDim, KDim], vpfloat],
     dwdy: Field[[CellDim, KDim], vpfloat],
     diff_multfac_w: wpfloat,
@@ -50,11 +51,14 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     Field[[CellDim, KDim], vpfloat],
 ]:
     k = broadcast(k, (CellDim, KDim))
-
-    dwdx, dwdy = where(
-        int32(0) < k,
-        _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
-        (dwdx, dwdy),
+    dwdx, dwdy = (
+        where(
+            int32(0) < k,
+            _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
+            (dwdx, dwdy),
+        )
+        if type_shear == int32(2)
+        else (dwdx, dwdy)
     )
 
     z_nabla2_c = _calculate_nabla2_for_w(w_old, geofac_n2s)
@@ -82,6 +86,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     w_old: Field[[CellDim, KDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
+    type_shear: int32,
     dwdx: Field[[CellDim, KDim], vpfloat],
     dwdy: Field[[CellDim, KDim], vpfloat],
     diff_multfac_w: wpfloat,
@@ -102,6 +107,7 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         geofac_grg_x,
         geofac_grg_y,
         w_old,
+        type_shear,
         dwdx,
         dwdy,
         diff_multfac_w,

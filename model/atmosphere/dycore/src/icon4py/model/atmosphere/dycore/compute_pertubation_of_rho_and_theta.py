@@ -20,12 +20,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_07(
+def _compute_pertubation_of_rho_and_theta(
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+    """Formerly known as mo_solve_nonhydro_stencil_07 or mo_solve_nonhydro_stencil_13."""
     rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
 
     z_rth_pr_1_wp = rho - rho_ref_mc_wp
@@ -34,7 +35,7 @@ def _mo_solve_nonhydro_stencil_07(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_07(
+def compute_pertubation_of_rho_and_theta(
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -46,7 +47,7 @@ def mo_solve_nonhydro_stencil_07(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_07(
+    _compute_pertubation_of_rho_and_theta(
         rho,
         rho_ref_mc,
         theta_v,

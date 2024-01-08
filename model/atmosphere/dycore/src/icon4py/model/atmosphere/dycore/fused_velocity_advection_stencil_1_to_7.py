@@ -14,6 +14,10 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -26,14 +30,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     _mo_velocity_advection_stencil_03,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_04 import (
-    _mo_velocity_advection_stencil_04,
-)
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
     _mo_velocity_advection_stencil_05,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_06 import (
-    _mo_velocity_advection_stencil_06,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     _mo_velocity_advection_stencil_07,
@@ -93,11 +91,11 @@ def _fused_velocity_advection_stencil_1_to_6(
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
-    vn_ie = where(k == nlevp1, _mo_velocity_advection_stencil_06(wgtfacq_e_dsl, vn), vn_ie)
+    vn_ie = where(k == nlevp1, _extrapolate_at_top(wgtfacq_e_dsl, vn), vn_ie)
 
     z_w_concorr_me = where(
         nflatlev < k < nlevp1,
-        _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
 
