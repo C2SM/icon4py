@@ -1,0 +1,45 @@
+include:
+  - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
+
+stages:
+  - build
+  - test
+  - benchmark
+
+.py310: &py310
+  PYVERSION_PREFIX: py310
+  PYVERSION: 3.10.9
+
+variables:
+  PYTHON_VERSION: "3.10"
+  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
+
+.build_template:
+  stage: build
+  extends: .container-builder
+  variables:
+    DOCKERFILE: ci/docker/Dockerfile.build
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
+    <<: *py310
+
+.test_template:
+  extends: .container-runner-daint-gpu
+  timeout: 8h
+  image: $PERSIST_IMAGE_NAME
+  before_script:
+    - apt-get update
+    - python3 -m pip install --upgrade pip setuptools wheel
+    - cd /icon4py
+    - pyversion_no_dot="${PYTHON_VERSION//./}"
+    - pip install tox clang-format
+    - python -c "import cupy"
+    - ls ${TEST_DATA_PATH}
+  variables:
+    SLURM_JOB_NUM_NODES: 1
+    SLURM_NTASKS: 1
+    SLURM_TIMELIMIT: '06:00:00'
+    CRAY_CUDA_MPS: 1
+    NUM_PROCESSES: auto
+    VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
+    CSCS_NEEDED_DATA: icon4py
+    TEST_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
