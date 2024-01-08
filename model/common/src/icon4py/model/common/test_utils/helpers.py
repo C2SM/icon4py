@@ -163,9 +163,15 @@ def _test_validation(self, grid, backend, input_data):
         **input_data,
         offset_provider=grid.get_all_offset_providers(),
     )
-    for name in self.OUTPUTS:
+    for out in self.OUTPUTS:
+        if isinstance(out, tuple):
+            name, subset = out
+        else:
+            name = out
+            subset = slice(None)
+
         assert np.allclose(
-            input_data[name].asnumpy(), reference_outputs[name], equal_nan=True
+            input_data[name].asnumpy()[subset], reference_outputs[name][subset], equal_nan=True
         ), f"Validation failed for '{name}'"
 
 

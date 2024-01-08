@@ -25,7 +25,7 @@ def _face_val_ppm_stencil_02c(
     return p_face
 
 
-@program
+@program(grid_type="unstructured")
 def face_val_ppm_stencil_02c(
     p_cc: Field[[CellDim, KDim], float],
     p_face: Field[[CellDim, KDim], float],
