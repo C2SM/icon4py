@@ -45,6 +45,7 @@ from icon4py.model.common.dimension import (
     V2E2VDim,
     V2EDim,
     VertexDim,
+    E2C2EDim,
 )
 from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
@@ -363,8 +364,8 @@ class GridManager:
         c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
         e2v = self._get_index_field(reader, GridFile.OffsetName.E2V)
 
-        e2c2v = self._construct_diamond_vertices(c2v, e2c)
-        e2c2e = self._construct_diamond_edges(c2e, e2c)
+        e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
+        e2c2e = self._construct_diamond_edges(e2c, c2e)
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
@@ -397,6 +398,7 @@ class GridManager:
                     C2E2CODim: c2e2c0,
                     E2C2VDim: e2c2v,
                     V2E2VDim: v2e2v,
+                    E2C2EDim: e2c2e,
                 }
             )
             .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
@@ -406,7 +408,11 @@ class GridManager:
 
         return icon_grid
 
-    def _construct_diamond_vertices(self, c2v: np.ndarray, e2c: np.ndarray):
+    def _construct_diamond_vertices(self, e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray):
+        n_edges = e2v.shape[0]
+        e2c2v = -55 * np.ones((n_edges, 4), dtype=np.int32)
+        e2c2v[:, 0:2] = e2v
+        # enlarge this table to contain an entry at the end for INVALID_VALUES
         dummy_c2v = np.append(
             c2v,
             GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32),
@@ -414,14 +420,24 @@ class GridManager:
         )
         expanded = dummy_c2v[e2c[:, :], :]
         sh = expanded.shape
-        flattened = expanded.reshape(sh[0], sh[1] * sh[2])
-        return np.apply_along_axis(_unique_keep_order, 1, flattened)
+        flat = expanded.reshape(sh[0], sh[1] * sh[2])
+        # TODO (magdalena) vectorize speed this up!
+        for x in range(sh[0]):
+            e2c2v[x, 2:] = flat[x, ~np.in1d(flat[x, :], e2c2v[x, :])][:2]
+
+        return e2c2v
 
     def _construct_diamond_edges(self, e2c: np.ndarray, c2e: np.ndarray):
-        expanded = c2e[e2c[:, :], :]
+        dummy_c2e = np.append(
+            c2e,
+            GridFile.INVALID_INDEX * np.ones((1, c2e.shape[1]), dtype=np.int32),
+            axis=0,
+        )
+        expanded = dummy_c2e[e2c, :]
         sh = expanded.shape
-
-
-def _unique_keep_order(ar: np.ndarray):
-    uniq, index = np.unique(ar, return_index=True)
-    return uniq[np.argsort(index)]
+        flattened = expanded.reshape(sh[0], sh[1] * sh[2])
+        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], 4), dtype=np.int32)
+        for x in range(sh[0]):
+            var = flattened[x, (~np.in1d(flattened[x, :], np.asarray([x, GridFile.INVALID_INDEX])))]
+            e2c2e[x, : var.shape[0]] = var
+        return e2c2e

@@ -335,7 +335,11 @@ def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 
 def has_invalid_index(ar: np.ndarray):
-    return np.any(np.where(ar == GridFile.INVALID_INDEX))
+    return np.any(invalid_index(ar))
+
+
+def invalid_index(ar):
+    return np.where(ar == GridFile.INVALID_INDEX)
 
 
 # e2c : exists in serial, simple, grid
@@ -384,31 +388,34 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-# @pytest.mark.skip("does not directly exist in the grid file, needs to be constructed")
-# TODO (Magdalena) construct from adjacent_cell_of_edge and then edge_of_cell
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
-    gm, num_cells, num_edges, num_vertex = init_grid_manager(r04b09_dsl_gridfile)
-    serialized_e2c2e = grid_savepoint.e2c2e()[0:num_cells, :]
+    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    serialized_e2c2e = grid_savepoint.e2c2e()[0 : grid.num_edges, :]
     assert has_invalid_index(serialized_e2c2e)
-    grid = gm.get_grid()
-    assert has_invalid_index(grid.get_offset_provider("E2C2E").table)
-    assert np.allclose(grid.get_offset_provider("E2C2E").table, serialized_e2c2e)
+
+    e2c2e_table = grid.get_offset_provider("E2C2E").table
+    assert has_invalid_index(e2c2e_table)
+    # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(EdgeDim) + 1 for
+    # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
+    assert_unless_invalid(e2c2e_table, serialized_e2c2e)
 
 
-# @pytest.mark.xfail
+def assert_unless_invalid(table, serialized_ref):
+    invalid_positions = invalid_index(table)
+    np.allclose(table[invalid_positions], serialized_ref[invalid_positions])
+
+
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
     caplog.set_level(logging.DEBUG)
     grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    # the "far" (adjacent to edge normal ) is not there. why?
-    # despite that: ordering is different
+    # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
+    #   (lateral_boundary(EdgeDim) + 1) to end(EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
     serialized_ref = grid_savepoint.e2c2v()[: grid.num_edges, :]
-    assert np.allclose(
-        grid.get_offset_provider("E2C2V").table,
-        serialized_ref,
-    )
+    table = grid.get_offset_provider("E2C2V").table
+    assert_unless_invalid(table, serialized_ref)
 
 
 @pytest.mark.datatest
@@ -435,6 +442,12 @@ def test_grid_manager_getsize(simple_grid_gridfile, dim, size, caplog):
     assert size == gm.get_size(dim)
 
 
+def assert_up_to_order(table, diamond_table):
+    assert table.shape == diamond_table.shape
+    for n in range(table.shape[0]):
+        assert np.all(np.in1d(table[n, :], diamond_table[n, :]))
+
+
 @pytest.mark.with_netcdf
 def test_grid_manager_diamond_offset(simple_grid_gridfile):
     simple_grid = SimpleGrid()
@@ -445,10 +458,8 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
     )
     gm()
     icon_grid = gm.get_grid()
-    assert np.allclose(
-        icon_grid.get_offset_provider("E2C2V").table,
-        np.sort(simple_grid.diamond_table, 1),
-    )
+    table = icon_grid.get_offset_provider("E2C2V").table
+    assert_up_to_order(table, simple_grid.diamond_table)
 
 
 @pytest.mark.with_netcdf
