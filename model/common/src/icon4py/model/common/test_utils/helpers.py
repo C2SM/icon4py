@@ -16,12 +16,19 @@ from typing import ClassVar, Optional, Union
 import numpy as np
 import numpy.typing as npt
 import pytest
+from gt4py._core.definitions import is_scalar_type
+from gt4py.next import as_field
 from gt4py.next import common as gt_common
+from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.iterator import embedded as it_embedded
+from gt4py.next import as_field
 from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays as hypothesis_array
+from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
+
+from ..grid.base import BaseGrid
+from ..grid.icon import IconGrid
 
 
 try:
@@ -29,7 +36,12 @@ try:
 except ModuleNotFoundError:
     pytest_benchmark = None
 
-from .simple_mesh import SimpleMesh
+from ..grid.simple import SimpleGrid
+
+
+@pytest.fixture
+def backend(request):
+    return request.param
 
 
 def objShape(
@@ -45,7 +57,7 @@ def objShape(
 
 
 def _shape(
-    mesh,
+    grid,
     *dims: gt_common.Dimension,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ):
@@ -54,62 +66,64 @@ def _shape(
     for d in dims:
         if d not in extend.keys():
             extend[d] = 0
-    return tuple(mesh.size[dim] + extend[dim] for dim in dims)
+    return tuple(grid.size[dim] + extend[dim] for dim in dims)
 
 
 def random_mask(
-    mesh: SimpleMesh,
+    grid: SimpleGrid,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
-    shape = _shape(mesh, *dims, extend=extend)
+) -> gt_common.Field:
+    shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
     np.random.shuffle(arr)
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
-    return it_embedded.np_as_located_field(*dims)(arr)
+    return as_field(dims, arr)
 
 
 def to_icon4py_field(
     field: Union[tuple, np.ndarray, SimpleMesh],
     *dims: gt_common.Dimension,
     dtype=float,
-) -> it_embedded.MutableLocatedField:
+) -> gt_common.Field:
     """Copy a numpy field into an field with named dimensions."""
-    return it_embedded.np_as_located_field(*dims)(field.copy())
+    return as_field(*dims, field.copy())
 
 
 def random_field(
-    mesh,
+    grid,
     *dims,
     low: float = -1.0,
     high: float = 1.0,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.random.default_rng().uniform(low=low, high=high, size=_shape(mesh, *dims, extend=extend))
+    dtype: Optional[npt.DTypeLike] = None,
+) -> gt_common.Field:
+    arr = np.random.default_rng().uniform(
+        low=low, high=high, size=_shape(grid, *dims, extend=extend)
     )
+    if dtype:
+        arr = arr.astype(dtype)
+    return as_field(dims, arr)
 
 
 def zero_field(
-    mesh: SimpleMesh,
+    grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype=float,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        np.zeros(shape=_shape(mesh, *dims, extend=extend), dtype=dtype)
-    )
+) -> gt_common.Field:
+    return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
 
 
 def constant_field(
-    mesh: SimpleMesh, value: float, *dims: gt_common.Dimension, dtype=float
-) -> it_embedded.MutableLocatedField:
-    return it_embedded.np_as_located_field(*dims)(
-        value * np.ones(shape=tuple(map(lambda x: mesh.size[x], dims)), dtype=dtype)
+    grid: SimpleGrid, value: float, *dims: gt_common.Dimension, dtype=float
+) -> gt_common.Field:
+    return as_field(
+        dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
     )
 
 
@@ -130,7 +144,7 @@ def random_field_strategy(
             allow_nan=False,
             allow_infinity=False,
         ),
-    ).map(it_embedded.np_as_located_field(*dims))
+    ).map(as_field(*dims))
 
 
 def maximizeTendency(fld, refFld, varname):
@@ -140,58 +154,91 @@ def maximizeTendency(fld, refFld, varname):
     target(np.std(tendency), label=f"{varname} stdev. tendency")
 
 
-def as_1D_sparse_field(
-    field: it_embedded.MutableLocatedField, dim: gt_common.Dimension
-) -> it_embedded.MutableLocatedField:
+def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    old_shape = np.asarray(field).shape
+    buffer = field.asnumpy()
+    return numpy_to_1D_sparse_field(buffer, target_dim)
+
+
+def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_common.Field:
+    """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
+    old_shape = field.shape
     assert len(old_shape) == 2
     new_shape = (old_shape[0] * old_shape[1],)
-    return it_embedded.np_as_located_field(dim)(np.asarray(field).reshape(new_shape))
+    return as_field((dim,), field.reshape(new_shape))
 
 
-def flatten_first_two_dims(
-    *dims: gt_common.Dimension, field: it_embedded.MutableLocatedField
-) -> it_embedded.MutableLocatedField:
+def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    old_shape = np.asarray(field).shape
+    buffer = field.asnumpy()
+    old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
     flattened_shape = (flattened_size,)
     new_shape = flattened_shape + old_shape[2:]
-    newarray = np.asarray(field).reshape(new_shape)
-    return it_embedded.np_as_located_field(*dims)(newarray)
+    newarray = buffer.reshape(new_shape)
+    return as_field(dims, newarray)
 
 
-def _test_validation(self, mesh, backend, input_data):
-    reference_outputs = self.reference(mesh, **{k: np.array(v) for k, v in input_data.items()})
+def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
+    """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
+    old_shape = np.asarray(field).shape
+    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
+    return np.asarray(field).reshape(new_shape)
+
+
+def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
+    return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+
+def allocate_data(backend, input_data):
+    _allocate_field = constructors.as_field.partial(allocator=backend)
+    input_data = {
+        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+        for k, v in input_data.items()
+    }
+    return input_data
+
+
+def _test_validation(self, grid, backend, input_data):
+    reference_outputs = self.reference(
+        grid,
+        **{
+            k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
+            for k, v in input_data.items()
+        },
+    )
+
+    input_data = allocate_data(backend, input_data)
+
     self.PROGRAM.with_backend(backend)(
         **input_data,
-        offset_provider=mesh.get_offset_provider(),
+        offset_provider=grid.get_all_offset_providers(),
     )
     for name in self.OUTPUTS:
         assert np.allclose(
-            input_data[name], reference_outputs[name]
+            input_data[name].asnumpy(), reference_outputs[name]
         ), f"Validation failed for '{name}'"
 
 
 if pytest_benchmark:
 
-    def _bench_execution(self, pytestconfig, mesh, backend, input_data, benchmark):
+    def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
+            input_data = allocate_data(backend, input_data)
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
-                offset_provider=mesh.get_offset_provider(),
+                offset_provider=grid.get_all_offset_providers(),
             )
 
 else:
 
-    def _bench_execution(self, pytestconfig):
+    def _test_execution_benchmark(self, pytestconfig):
         pytest.skip("Test skipped as `pytest-benchmark` is not installed.")
 
 
@@ -223,4 +270,16 @@ class StencilTest:
         # inheritance.
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
-        setattr(cls, f"bench_{cls.__name__}", _bench_execution)
+        setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
+
+
+@pytest.fixture
+def uses_icon_grid_with_otf(backend, grid):
+    """Check whether we are using a compiled backend with the icon_grid.
+
+    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
+    """
+    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
+        if isinstance(backend.executor, OTFCompileExecutor):
+            return True
+    return False

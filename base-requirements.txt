@@ -1,6 +1,9 @@
 # VCS
+# old versions
 #gt4py @ git+https://github.com/GridTools/gt4py.git@main
-pyghex @ git+https://github.com/boeschf/GHEX.git@pipify#subdirectory=bindings/python
-
+#pyghex @ git+https://github.com/boeschf/GHEX.git@pipify#subdirectory=bindings/python
 #gt4py @ git+https://github.com/tehrengruber/gt4py.git@test_scan_vertical_bcs
-gt4py @ git+https://github.com/nfarabullini/gt4py.git@temp_patch_tuple_fields_scan
+#gt4py @ git+https://github.com/nfarabullini/gt4py.git@temp_patch_tuple_fields_scan
+
+# new version
+gt4py @ git+https://github.com/GridTools/gt4py.git@main

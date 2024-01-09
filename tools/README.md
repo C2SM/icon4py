@@ -192,6 +192,66 @@ Additionally, there are the following keyword arguments:
 
 - `noaccenddata`: Takes a boolean string input and controls whether a `!$ACC END DATA` directive is generated or not. Defaults to false.<br><br>
 
+#### `!$DSL FUSED START STENCIL()`
+
+This directive denotes the start of a fused stencil. Required arguments are `name`, `vertical_lower`, `vertical_upper`, `horizontal_lower`, `horizontal_upper`. The value for `name` must correspond to a stencil found in one of the stencil modules inside `icon4py`, and all fields defined in the directive must correspond to the fields defined in the respective icon4py stencil. Optionally, absolute and relative tolerances for the output fields can also be set using the `_tol` or `_abs` suffixes respectively. For each stencil, an ACC ENTER/EXIT DATA statements will be created. This ACC ENTER/EXIT DATA region contains the before fileds of the according stencil. An example call looks like this:
+
+```fortran
+        !$DSL START FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence; &
+        !$DSL  kh_smag_ec=kh_smag_ec(:,:,1); vn=p_nh_prog%vn(:,:,1); e_bln_c_s=p_int%e_bln_c_s(:,:,1); &
+        !$DSL  geofac_div=p_int%geofac_div(:,:,1); diff_multfac_smag=diff_multfac_smag(:); &
+        !$DSL  wgtfac_c=p_nh_metrics%wgtfac_c(:,:,1); div_ic=p_nh_diag%div_ic(:,:,1); &
+        !$DSL  hdef_ic=p_nh_diag%hdef_ic(:,:,1); &
+        !$DSL  div_ic_abs_tol=1e-18_wp; vertical_lower=2; &
+        !$DSL  vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+```
+
+#### `!$DSL END FUSED STENCIL()`
+
+This directive denotes the end of a fused stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
+
+Note that each `START STENCIL` and `END STENCIL` will be transformed into a `DELETE` section, when using the `--fused` mode.
+Together, the `START FUSED STENCIL` and `END FUSED STENCIL` directives result in the following generated code at the start and end of a stencil respectively.
+
+```fortran
+        !$ACC DATA CREATE( &
+        !$ACC   kh_smag_e_before, &
+        !$ACC   kh_smag_ec_before, &
+        !$ACC   z_nabla2_e_before ) &
+        !$ACC      IF ( i_am_accel_node )
+
+#ifdef __DSL_VERIFY
+        !$ACC KERNELS IF( i_am_accel_node ) DEFAULT(PRESENT) ASYNC(1)
+        kh_smag_e_before(:, :, :) = kh_smag_e(:, :, :)
+        kh_smag_ec_before(:, :, :) = kh_smag_ec(:, :, :)
+        z_nabla2_e_before(:, :, :) = z_nabla2_e(:, :, :)
+        !$ACC END KERNELS
+```
+
+```fortran
+call wrap_run_calculate_diagnostic_quantities_for_turbulence( &
+    kh_smag_ec=kh_smag_ec(:, :, 1), &
+    vn=p_nh_prog%vn(:, :, 1), &
+    e_bln_c_s=p_int%e_bln_c_s(:, :, 1), &
+    geofac_div=p_int%geofac_div(:, :, 1), &
+    diff_multfac_smag=diff_multfac_smag(:), &
+    wgtfac_c=p_nh_metrics%wgtfac_c(:, :, 1), &
+    div_ic=p_nh_diag%div_ic(:, :, 1), &
+    div_ic_before=div_ic_before(:, :, 1), &
+    hdef_ic=p_nh_diag%hdef_ic(:, :, 1), &
+    hdef_ic_before=hdef_ic_before(:, :, 1), &
+    div_ic_abs_tol=1e-18_wp, &
+    vertical_lower=2, &
+    vertical_upper=nlev, &
+    horizontal_lower=i_startidx, &
+    horizontal_upper=i_endidx)
+
+!$ACC EXIT DATA DELETE( &
+!$ACC   div_ic_before, &
+!$ACC   hdef_ic_before ) &
+!$ACC      IF ( i_am_accel_node )
+```
+
 #### `!$DSL INSERT()`
 
 This directive allows the user to generate any text that is placed between the parentheses. This is useful for situations where custom code generation is necessary.
@@ -203,6 +263,16 @@ This directive allows generating an nvtx start profile data statement, and takes
 #### `!$DSL END PROFILE()`
 
 This directive allows generating an nvtx end profile statement.
+
+#### `!$DSL START DELETE
+
+This directive allows to disable code. The code is only disabled if both the fused mode and the substition mode are enabled.
+The `START DELETE` indicates the starting line from which on code is deleted.
+
+#### `!$DSL END DELETE`
+
+This directive allows to disable code. The code is only disabled if both the fused mode and the substition mode are enabled.
+The `END DELETE` indicates the ending line from which on code is deleted.
 
 #### `!$DSL ENDIF()`
 

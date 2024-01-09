@@ -13,24 +13,37 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_nabla2_of_theta(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CEDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_temp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
-    return z_temp
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    geofac_div: Field[[CEDim], wpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
+    return astype(z_temp_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla2_of_theta(
-    z_nabla2_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CEDim], float],
-    z_temp: Field[[CellDim, KDim], float],
+    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    geofac_div: Field[[CEDim], wpfloat],
+    z_temp: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _calculate_nabla2_of_theta(z_nabla2_e, geofac_div, out=z_temp)
+    _calculate_nabla2_of_theta(
+        z_nabla2_e,
+        geofac_div,
+        out=z_temp,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

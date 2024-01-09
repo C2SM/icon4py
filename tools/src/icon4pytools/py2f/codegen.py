@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from pathlib import Path
 from typing import Sequence
 
 from gt4py.eve import Node, codegen
@@ -140,6 +140,6 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_and_write_f90_interface(build_path: str, plugin: CffiPlugin):
+def generate_and_write_f90_interface(build_path: Path, plugin: CffiPlugin):
     generated_code = F90InterfaceGenerator.apply(plugin)
     write_string(generated_code, build_path, f"{plugin.name}.f90")

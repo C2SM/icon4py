@@ -6,6 +6,7 @@ It includes the following packages:
 
 - `atmosphere/dycore`: Contains implementations of the dynamical core of the ICON model
 - `atmosphere/diffusion`: Contains the implementation of diffusion in the ICON model
+- `atmosphere/advection`: Contains implementations of the advection component of the ICON model
 - `common`: Contains shared functionality that is required by multiple components.
 - `driver`: Contains the driving code for the model
 
@@ -18,6 +19,7 @@ In the following example it is assumed that you have already created and activat
 ```bash
 # changing into the corresponding directory
 cd model/atmosphere/dycore
+cd model/atmosphere/advection
 
 # installing a development version
 pip install -r requirements-dev.txt
@@ -28,6 +30,18 @@ pip install -r requirements-dev.txt
 ### Testing
 
 See the repository [README](../README.md) for general information.
+
+#### Unit tests for stencils
+The `gt4py` stencils in the `icon4py-model` packages are used for integration into Fortran code
+via [icon4pygen](../tools/src/icon4py/icon4pygen). To make integration easier
+unit tests for the stencils need to be placed into
+a `stencil_tests` subfolder of the packages test path. For example
+```
+model/atmosphere/diffusion/tests/stencil_tests
+model/atmosphere/dycore/tests/stencil_tests
+model/atmosphere/advection/tests/stencil_tests
+model/common/tests/tests/stencil_tests
+```
 
 #### Data dependent tests
 
@@ -44,27 +58,35 @@ pytest -v --datatest model/atmosphere/diffusion
 ```
 
 #### Testing parallel code
+Icon4Py uses GHEX as communication library. It is an optional dependency of the model. In order to install and
+run the parallel version do the following:
 
-Tests for parallel codes using MPI are collected in specific subpackages of the model components test folders (e.g. `diffusion_tests/mpi_tests`). All parallel tests are marked with `@pytest.mark.mpi` and are skipped if the `--with-mpi` is not passed option is not passed to `pytest` In order to run them, you need a MPI installation on your system: On Debian-Linux do
+1. You need to have a MPI installation in your system, so do the following
 
 ```bash
 sudo apt-get install libopenmpi-dev
 ```
-
 or
-
 ```bash
 sudo apt-get install mpich
 ```
-
-on MacOs
-
+On MacOS run 
 ```bash
 brew install mpich
 ```
+2. Install optional python libraries:
+In the main folder of the repository run
+```bash
+pip install -r requirements-dev-opt.txt
+```
+Note that the current Python build for GHEX seems not to run on MacOS.
 
-Then you can run the tests with
+3. Run parallel tests
+In order to run the parallel tests you need to specify specify the `--with-mpi` option to `pytest`
+and _pass the exact folder location of the tests_ to `pytest`.
+
 
 ```bash
-mpirun -np 2 pytest -v -s --with-mpi path/to/test/folder/mpi_tests
+mpirun -np 4 pytest -v -s --with-mpi --datatest model/atmosphere/diffusion/diffusion_tests/mpi_tests/
+mpirun -np 4 pytest -v -s --with-mpi --datatest model/common/tests/mpi_tests/
 ```

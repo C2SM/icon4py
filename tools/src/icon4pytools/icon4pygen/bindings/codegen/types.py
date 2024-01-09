@@ -13,7 +13,7 @@
 import abc
 from abc import ABC
 from dataclasses import dataclass
-from typing import Union
+from typing import Optional, Union
 
 from gt4py.next.type_system import type_specifications as ts
 
@@ -36,7 +36,7 @@ class FieldEntity(ABC):
     intent: FieldIntent
     has_vertical_dimension: bool
     includes_center: bool
-    location: ChainedLocation | CompoundLocation | BasicLocation | None
+    location: Optional[ChainedLocation | CompoundLocation | BasicLocation]
 
     @abc.abstractmethod
     def is_sparse(self) -> bool:

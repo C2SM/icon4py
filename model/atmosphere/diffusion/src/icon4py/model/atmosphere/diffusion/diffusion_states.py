@@ -13,10 +13,9 @@
 import functools
 from dataclasses import dataclass
 
-import numpy as np
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import np_as_located_field
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -89,27 +88,15 @@ class DiffusionInterpolationState:
 
     @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
-        return np_as_located_field(CellDim)(np.asarray(self.geofac_n2s)[:, 0])
+        return as_field((CellDim,), data=self.geofac_n2s.asnumpy()[:, 0])
 
     @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
-        geofac_nbh_ar = np.asarray(self.geofac_n2s)[:, 1:]
+        geofac_nbh_ar = self.geofac_n2s.asnumpy()[:, 1:]
         old_shape = geofac_nbh_ar.shape
-        return np_as_located_field(CECDim)(
+        return as_field(
+            (CECDim,),
             geofac_nbh_ar.reshape(
                 old_shape[0] * old_shape[1],
-            )
+            ),
         )
-
-
-@dataclass
-class PrognosticState:
-    """Class that contains the prognostic state.
-
-    Corresponds to ICON t_nh_prog
-    """
-
-    w: Field[[CellDim, KDim], float]  # vertical_wind field,  w(nproma, nlevp1, nblks_c) [m/s]
-    vn: Field[[EdgeDim, KDim], float]  # vn(nproma, nlev, nblks_e)  [m/s]
-    exner_pressure: Field[[CellDim, KDim], float]  # exner(nrpoma, nlev, nblks_c)
-    theta_v: Field[[CellDim, KDim], float]  # (nproma, nlev, nlbks_c) [K]

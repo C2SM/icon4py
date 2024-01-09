@@ -30,7 +30,7 @@ def test_deserialiser_diffusion_codegen(diffusion_granule, diffusion_granule_dep
 def expected_no_deps_serialization_directives():
     serialization_directives = [
         GeneratedCode(
-            startln=12,
+            startln=14,
             source="\n"
             '    !$ser init directory="." prefix="f2ser"\n'
             "\n"
@@ -45,7 +45,7 @@ def expected_no_deps_serialization_directives():
             "    !$ser data b=b",
         ),
         GeneratedCode(
-            startln=14,
+            startln=16,
             source="\n"
             "    !$ser savepoint no_deps_init_out\n"
             "\n"
@@ -58,7 +58,7 @@ def expected_no_deps_serialization_directives():
             "    !$ser data b=b",
         ),
         GeneratedCode(
-            startln=20,
+            startln=22,
             source="\n"
             "    !$ser savepoint no_deps_run_in\n"
             "\n"
@@ -71,7 +71,7 @@ def expected_no_deps_serialization_directives():
             "    !$ser data b=b",
         ),
         GeneratedCode(
-            startln=22,
+            startln=24,
             source="\n"
             "    !$ser savepoint no_deps_run_out\n"
             "\n"

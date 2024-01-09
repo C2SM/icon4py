@@ -95,7 +95,6 @@ class GTHeader:
     @staticmethod
     def _missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
         """Get domain limit params that are not present in param list."""
-        return map(
-            lambda p: itir.Sym(id=p),
-            filter(lambda s: s not in map(lambda p: p.id, params), _DOMAIN_ARGS),
-        )
+        param_ids = [p.id for p in params]
+        missing_args = [s for s in _DOMAIN_ARGS if s not in param_ids]
+        return (itir.Sym(id=p) for p in missing_args)

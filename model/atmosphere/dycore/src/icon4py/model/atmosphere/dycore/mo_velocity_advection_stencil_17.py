@@ -13,25 +13,40 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_17(
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    z_v_grad_w: Field[[EdgeDim, KDim], float],
-    ddt_w_adv: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    ddt_w_adv = ddt_w_adv + neighbor_sum(z_v_grad_w(C2E) * e_bln_c_s, axis=C2EDim)
-    return ddt_w_adv
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
+    ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
+    return astype(ddt_w_adv_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_17(
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    z_v_grad_w: Field[[EdgeDim, KDim], float],
-    ddt_w_adv: Field[[CellDim, KDim], float],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_17(e_bln_c_s, z_v_grad_w, ddt_w_adv, out=ddt_w_adv)
+    _mo_velocity_advection_stencil_17(
+        e_bln_c_s,
+        z_v_grad_w,
+        ddt_w_adv,
+        out=ddt_w_adv,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

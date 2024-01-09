@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Callable
+from typing import Callable, Type
 
 import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
@@ -25,9 +25,11 @@ logger = setup_logger(__name__)
 
 class Deserialiser(Step):
     _FACTORIES: dict[str, Callable] = {}
-    _INTERFACE_TYPE: SerialisationCodeInterface | IntegrationCodeInterface
+    _INTERFACE_TYPE: Type[SerialisationCodeInterface | IntegrationCodeInterface]
 
-    def __call__(self, directives: ts.ParsedDict):
+    def __call__(
+        self, directives: ts.ParsedDict
+    ) -> SerialisationCodeInterface | IntegrationCodeInterface:
         """Deserialises parsed directives into an Interface object.
 
         Args:

@@ -13,22 +13,34 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_59(
-    exner: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    exner_dyn_incr = exner
-    return exner_dyn_incr
+    exner: Field[[CellDim, KDim], wpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    exner_dyn_incr_wp = exner
+    return astype(exner_dyn_incr_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_59(
-    exner: Field[[CellDim, KDim], float],
-    exner_dyn_incr: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], wpfloat],
+    exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_59(exner, out=exner_dyn_incr)
+    _mo_solve_nonhydro_stencil_59(
+        exner,
+        out=exner_dyn_incr,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

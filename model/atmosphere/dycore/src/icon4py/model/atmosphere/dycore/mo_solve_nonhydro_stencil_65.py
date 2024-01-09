@@ -13,38 +13,45 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_65(
-    rho_ic: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    w_now: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    mass_flx_ic: Field[[CellDim, KDim], float],
-    r_nsubsteps: float,
-) -> Field[[CellDim, KDim], float]:
-    mass_flx_ic = mass_flx_ic + (
-        r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
+    rho_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    w_now: Field[[CellDim, KDim], wpfloat],
+    w_new: Field[[CellDim, KDim], wpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+) -> Field[[CellDim, KDim], wpfloat]:
+    w_concorr_c_wp = astype(w_concorr_c, wpfloat)
+
+    mass_flx_ic_wp = mass_flx_ic + (
+        r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c_wp)
     )
-    return mass_flx_ic
+    return mass_flx_ic_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_65(
-    rho_ic: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    w_now: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    mass_flx_ic: Field[[CellDim, KDim], float],
-    r_nsubsteps: float,
+    rho_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    w_now: Field[[CellDim, KDim], wpfloat],
+    w_new: Field[[CellDim, KDim], wpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_65(
         rho_ic,
@@ -56,4 +63,8 @@ def mo_solve_nonhydro_stencil_65(
         mass_flx_ic,
         r_nsubsteps,
         out=mass_flx_ic,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

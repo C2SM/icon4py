@@ -1,0 +1,43 @@
+# Byte-compiled Python files
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual environments
+venv/
+*.venv/
+env/
+
+# IDE directories
+.idea/
+.vscode/
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# Unit test / coverage reports
+htmlcov/
+*.coverage
+.tox/
+.nox/
+.pytest_cache
+.mypy_cache
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+*.egg
+*.whl
+
+# Cache directories
+.cache/
+.benchmarks
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Git directory
+.git/

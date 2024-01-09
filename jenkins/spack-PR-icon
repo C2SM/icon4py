@@ -1,14 +1,12 @@
 def repo_identifier = "Project"
 def icon_fork = "C2SM"
 def icon_branch = "icon-dsl"
-def icon_default = true
 
 def spack_fork = "C2SM"
 def spack_branch = "main"
-def spack_default = true
 
 def gt4py_fork = "GridTools"
-def gt4py_branch = "icon4py_20230621"
+def gt4py_branch = "icon4py_20231124"
 def gt4py_default = true
 String[] triggerPhrase = env.ghprbCommentBody.split(" ")
 
@@ -20,19 +18,16 @@ def parseTriggerPhrase(it) {
 triggerPhrase.each {
     if(it.contains("icon${repo_identifier}")) {
         (icon_fork, icon_branch) = parseTriggerPhrase(it)
-        icon_default = false
     }
 }
 triggerPhrase.each {
     if(it.contains("spack${repo_identifier}")) {
         (spack_fork, spack_branch) = parseTriggerPhrase(it)
-        spack_default = false
     }
 }
 triggerPhrase.each {
     if(it.contains("gt4py${repo_identifier}")) {
         (gt4py_fork, gt4py_branch) = parseTriggerPhrase(it)
-        gt4py_default = false
     }
 }
 
@@ -44,7 +39,12 @@ pipeline {
     stages {
         stage('Tests') {
             matrix {
-                agent { label "${NODENAME}" }
+                agent { 
+                    node {
+                      label "${NODENAME}" 
+                      customWorkspace "workspace/EXCLAIM/icon4py/icon4py-spack-PR-icon_${BUILD_NUMBER}"
+                    }
+                }
                 axes {
                     axis {
                         name 'NODENAME'

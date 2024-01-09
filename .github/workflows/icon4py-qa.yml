@@ -5,21 +5,10 @@ on:
     push:
         branches:
             - main
-        paths-ignore:
-            - "tools/**"
     pull_request:
         branches:
             - main
-        paths-ignore:
-            - "tools/**"
-        types: [opened, reopened, assigned, ready_for_review]
-    pull_request_review:
-        branches:
-            - main
-        paths-ignore:
-            - "tools/**"
-        types: [submitted]
-
+        types: [opened, reopened, synchronize]
 jobs:
     pre-commit-icon4py-model:
         runs-on: ubuntu-latest
@@ -46,16 +35,6 @@ jobs:
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install -r ./requirements-dev.txt
                   python -m pip list
-            - name: Run checks icon4py-model-common
+            - name: Run checks
               run: |
-                  pre-commit run --config model/common/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-driver
-              run: |
-                  pre-commit run --config model/driver/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-atmosphere-dycore
-              run: |
-                  pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-atmosphere-diffusion
-              run: |
-                  pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files
-
+                  pre-commit run

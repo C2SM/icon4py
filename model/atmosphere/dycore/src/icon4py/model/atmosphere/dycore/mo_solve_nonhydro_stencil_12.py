@@ -13,32 +13,37 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_12(
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float],
-    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-    z_dexner_dz_c_2 = -0.5 * (
+    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    z_dexner_dz_c_2_vp = -vpfloat("0.5") * (
         (z_theta_v_pr_ic - z_theta_v_pr_ic(Koff[1])) * d2dexdz2_fac1_mc
         + z_rth_pr_2 * d2dexdz2_fac2_mc
     )
-    return z_dexner_dz_c_2
+    return z_dexner_dz_c_2_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_12(
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float],
-    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    z_dexner_dz_c_2: Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    z_dexner_dz_c_2: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_12(
         z_theta_v_pr_ic,
@@ -46,4 +51,8 @@ def mo_solve_nonhydro_stencil_12(
         d2dexdz2_fac2_mc,
         z_rth_pr_2,
         out=z_dexner_dz_c_2,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

@@ -13,7 +13,6 @@
 from __future__ import annotations
 
 import importlib
-import inspect
 import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
@@ -69,8 +68,21 @@ def is_list_of_names(obj: Any) -> TypeGuard[list[past.Name]]:
     return isinstance(obj, list) and all(isinstance(i, past.Name) for i in obj)
 
 
-def _ignore_subscript(node: past.Name | past.Subscript) -> past.Name:
-    return node if isinstance(node, past.Name) else node.value
+def is_name(node: past.Expr) -> TypeGuard[past.Name]:
+    return isinstance(node, past.Name)
+
+
+def is_subscript(node: past.Expr) -> TypeGuard[past.Subscript]:
+    return isinstance(node, past.Subscript)
+
+
+def _ignore_subscript(node: past.Expr) -> past.Name:
+    if is_name(node):
+        return node
+    elif is_subscript(node):
+        return node.value
+    else:
+        raise Exception("Need only past.Name in output kwargs.")
 
 
 def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
@@ -87,7 +99,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
         else [_ignore_subscript(out_arg)]
     )
     assert all(isinstance(f, past.Name) for f in output_fields)
-    output_arg_ids = set(arg.id for arg in output_fields)  # type: ignore
+    output_arg_ids = set(arg.id for arg in output_fields)
 
     domain_arg_ids = _get_domain_arg_ids(fvprog)
 
@@ -104,7 +116,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     return fields
 
 
-def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
+def _get_domain_arg_ids(fvprog: Program) -> set[Optional[eve.concepts.SymbolRef]]:
     """Collect all argument names that are used within the 'domain' keyword argument."""
     domain_arg_ids = []
     if "domain" in fvprog.past_node.body[0].kwargs.keys():
@@ -114,8 +126,7 @@ def _get_domain_arg_ids(fvprog: Program) -> list | set[str]:
             for arg_elt in arg.elts:
                 if isinstance(arg_elt, past.Name):
                     domain_arg_ids.append(arg_elt.id)
-        domain_arg_ids = set(domain_arg_ids)
-    return domain_arg_ids
+    return set(domain_arg_ids)
 
 
 def import_definition(name: str) -> Program | FieldOperator | types.FunctionType:
@@ -215,23 +226,15 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 
 def get_stencil_info(
-    fencil_def: Program | FieldOperator | types.FunctionType, is_global: bool = False
+    fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher,
+    is_global: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
-    if isinstance(fencil_def, FendefDispatcher):
-        # this branch can be removed once we don't have plain itir programs
-        params = inspect.signature(fencil_def.function).parameters
-        num_params = len(params)
-        itir = fencil_def.itir(*[None] * num_params)  # TODO do this in GT4Py?
-        offsets = fencil_def.offsets
-        fields = fencil_def.metadata
-        column_axis = None
-    else:
-        fvprog = get_fvprog(fencil_def)
-        offsets = scan_for_offsets(fvprog)
-        itir = fvprog.itir
-        fields = _get_field_infos(fvprog)
-        column_axis = fvprog._column_axis
+    fvprog = get_fvprog(fencil_def)
+    offsets = scan_for_offsets(fvprog)
+    itir = fvprog.itir
+    fields = _get_field_infos(fvprog)
+    column_axis = fvprog._column_axis
 
     offset_provider = {}
     for offset in offsets:

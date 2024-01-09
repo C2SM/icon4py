@@ -13,24 +13,37 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
 from icon4py.model.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_math_divrot_rot_vertex_ri_dsl(
-    vec_e: Field[[EdgeDim, KDim], float],
-    geofac_rot: Field[[VertexDim, V2EDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    rot_vec = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
-    return rot_vec
+    vec_e: Field[[EdgeDim, KDim], wpfloat],
+    geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
+) -> Field[[VertexDim, KDim], vpfloat]:
+    rot_vec_wp = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
+    return astype(rot_vec_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_math_divrot_rot_vertex_ri_dsl(
-    vec_e: Field[[EdgeDim, KDim], float],
-    geofac_rot: Field[[VertexDim, V2EDim], float],
-    rot_vec: Field[[VertexDim, KDim], float],
+    vec_e: Field[[EdgeDim, KDim], wpfloat],
+    geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
+    rot_vec: Field[[VertexDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
-    _mo_math_divrot_rot_vertex_ri_dsl(vec_e, geofac_rot, out=rot_vec)
+    _mo_math_divrot_rot_vertex_ri_dsl(
+        vec_e,
+        geofac_rot,
+        out=rot_vec,
+        domain={
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
