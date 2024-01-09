@@ -21,25 +21,25 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _copy_cell_field_to_vp(
-    w: Field[[CellDim, KDim], wpfloat]
+    field: Field[[CellDim, KDim], wpfloat]
 ) -> Field[[CellDim, KDim], vpfloat]:
-    """Formerly known as _mo_velocity_advection_stencil_11."""
-    z_w_con_c_wp = w
-    return astype(z_w_con_c_wp, vpfloat)
+    """Formerly known as _mo_velocity_advection_stencil_11 or _mo_solve_nonhydro_stencil_59."""
+    field_copy = astype(field, vpfloat)
+    return field_copy
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def copy_cell_field_to_vp(
-    w: Field[[CellDim, KDim], wpfloat],
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    field: Field[[CellDim, KDim], wpfloat],
+    field_copy: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
     _copy_cell_field_to_vp(
-        w,
-        out=z_w_con_c,
+        field,
+        out=field_copy,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
