@@ -20,15 +20,16 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_11(
+def _copy_cell_field_to_vp(
     w: Field[[CellDim, KDim], wpfloat]
 ) -> Field[[CellDim, KDim], vpfloat]:
+    """Formerly known as _mo_velocity_advection_stencil_11."""
     z_w_con_c_wp = w
     return astype(z_w_con_c_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_11(
+def copy_cell_field_to_vp(
     w: Field[[CellDim, KDim], wpfloat],
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -36,7 +37,7 @@ def mo_velocity_advection_stencil_11(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_11(
+    _copy_cell_field_to_vp(
         w,
         out=z_w_con_c,
         domain={
