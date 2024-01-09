@@ -22,6 +22,7 @@ from icon4py.model.common.test_utils.helpers import (
     constant_field,
     numpy_to_1D_sparse_field,
     random_field,
+    reshape,
 )
 
 
@@ -64,15 +65,13 @@ class TestBtrajDregStencil03(StencilTest):
         p_dt: float,
         **kwargs,
     ):
-        def reshape(arr):
-            return np.reshape(arr, grid.connectivities[E2CDim].shape)
-
-        cell_idx = reshape(cell_idx)
-        cell_blk = reshape(cell_blk)
-        primal_normal_cell_x = reshape(primal_normal_cell_x)
-        dual_normal_cell_x = reshape(dual_normal_cell_x)
-        primal_normal_cell_y = reshape(primal_normal_cell_y)
-        dual_normal_cell_y = reshape(dual_normal_cell_y)
+        e2c_shape = grid.connectivities[E2CDim].shape
+        cell_idx = reshape(cell_idx, e2c_shape)
+        cell_blk = reshape(cell_blk, e2c_shape)
+        primal_normal_cell_x = reshape(primal_normal_cell_x, e2c_shape)
+        dual_normal_cell_x = reshape(dual_normal_cell_x, e2c_shape)
+        primal_normal_cell_y = reshape(primal_normal_cell_y, e2c_shape)
+        dual_normal_cell_y = reshape(dual_normal_cell_y, e2c_shape)
 
         lvn_pos = np.where(p_vn >= 0.0, True, False)
         cell_idx = np.expand_dims(cell_idx, axis=-1)

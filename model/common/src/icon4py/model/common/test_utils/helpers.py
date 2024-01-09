@@ -245,3 +245,7 @@ def uses_icon_grid_with_otf(backend, grid):
         if isinstance(backend.executor, OTFCompileExecutor):
             return True
     return False
+
+
+def reshape(arr: np.array, shape: tuple[int, ...]):
+    return np.reshape(arr, shape)
