@@ -37,6 +37,7 @@ from icon4py.model.common.dimension import (
     C2EDim,
     C2VDim,
     CellDim,
+    E2C2EDim,
     E2C2VDim,
     E2CDim,
     E2VDim,
@@ -45,7 +46,6 @@ from icon4py.model.common.dimension import (
     V2E2VDim,
     V2EDim,
     VertexDim,
-    E2C2EDim,
 )
 from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
@@ -408,31 +408,24 @@ class GridManager:
 
         return icon_grid
 
-    def _construct_diamond_vertices(self, e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray):
+    @staticmethod
+    def _construct_diamond_vertices(e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray):
         n_edges = e2v.shape[0]
         e2c2v = -55 * np.ones((n_edges, 4), dtype=np.int32)
         e2c2v[:, 0:2] = e2v
-        # enlarge this table to contain an entry at the end for INVALID_VALUES
-        dummy_c2v = np.append(
-            c2v,
-            GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32),
-            axis=0,
-        )
+        dummy_c2v = _patch_with_dummy_lastline(c2v)
         expanded = dummy_c2v[e2c[:, :], :]
         sh = expanded.shape
         flat = expanded.reshape(sh[0], sh[1] * sh[2])
-        # TODO (magdalena) vectorize speed this up!
+        # TODO (magdalena) vectorize speed this up?
         for x in range(sh[0]):
             e2c2v[x, 2:] = flat[x, ~np.in1d(flat[x, :], e2c2v[x, :])][:2]
 
         return e2c2v
 
-    def _construct_diamond_edges(self, e2c: np.ndarray, c2e: np.ndarray):
-        dummy_c2e = np.append(
-            c2e,
-            GridFile.INVALID_INDEX * np.ones((1, c2e.shape[1]), dtype=np.int32),
-            axis=0,
-        )
+    @staticmethod
+    def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray):
+        dummy_c2e = _patch_with_dummy_lastline(c2e)
         expanded = dummy_c2e[e2c, :]
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
@@ -441,3 +434,24 @@ class GridManager:
             var = flattened[x, (~np.in1d(flattened[x, :], np.asarray([x, GridFile.INVALID_INDEX])))]
             e2c2e[x, : var.shape[0]] = var
         return e2c2e
+
+
+def _patch_with_dummy_lastline(ar):
+    """
+    Patch an array for easy access with an another offset containing invalid indices (-1).
+
+    Enlarges this table to contain a fake last line to account for numpy wrap around when
+    encountering a -1 = GridFile.INVALID_INDEX value
+
+    Args:
+        ar: np.ndarray connectivity array to be patched
+
+    Returns: same array with an additional line containing only GridFile.INVALID_INDEX
+
+    """
+    patched_ar = np.append(
+        ar,
+        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=np.int32),
+        axis=0,
+    )
+    return patched_ar
