@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
 import numpy as np
@@ -148,6 +149,13 @@ def allocate_data(backend, input_data):
     return input_data
 
 
+@dataclass(frozen=True)
+class Output:
+    name: str
+    refslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+    gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+
+
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
@@ -164,14 +172,14 @@ def _test_validation(self, grid, backend, input_data):
         offset_provider=grid.get_all_offset_providers(),
     )
     for out in self.OUTPUTS:
-        if isinstance(out, tuple):
-            name, subset = out
-        else:
-            name = out
-            subset = slice(None)
+        name, refslice, gtslice = (
+            (out.name, out.refslice, out.gtslice)
+            if isinstance(out, Output)
+            else (out, (slice(None),), (slice(None),))
+        )
 
         assert np.allclose(
-            input_data[name].asnumpy()[subset], reference_outputs[name][subset], equal_nan=True
+            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
         ), f"Validation failed for '{name}'"
 
 
