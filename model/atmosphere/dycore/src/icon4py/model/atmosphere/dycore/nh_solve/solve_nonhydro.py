@@ -123,8 +123,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
-    mo_solve_nonhydro_stencil_59,
+from icon4py.model.atmosphere.dycore.copy_cell_field_to_vp import (
+    copy_cell_field_to_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
@@ -1376,7 +1376,7 @@ class SolveNonhydro:
             )
 
         if idyn_timestep == 1:
-            mo_solve_nonhydro_stencil_59.with_backend(backend)(
+            copy_cell_field_to_vp.with_backend(backend)(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=self.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
