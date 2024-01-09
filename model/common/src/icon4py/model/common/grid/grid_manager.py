@@ -38,6 +38,7 @@ from icon4py.model.common.dimension import (
     C2VDim,
     CellDim,
     E2C2EDim,
+    E2C2EODim,
     E2C2VDim,
     E2CDim,
     E2VDim,
@@ -366,6 +367,7 @@ class GridManager:
 
         e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
         e2c2e = self._construct_diamond_edges(e2c, c2e)
+        e2c2e0 = np.column_stack((e2c2e, np.asarray(range(e2c2e.shape[0]))))
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
@@ -399,6 +401,7 @@ class GridManager:
                     E2C2VDim: e2c2v,
                     V2E2VDim: v2e2v,
                     E2C2EDim: e2c2e,
+                    E2C2EODim: e2c2e0,
                 }
             )
             .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
