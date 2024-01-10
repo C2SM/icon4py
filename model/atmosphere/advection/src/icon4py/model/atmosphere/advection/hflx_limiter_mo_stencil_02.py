@@ -45,7 +45,7 @@ def _hflx_limiter_mo_stencil_02(
     return (z_tracer_new_out, z_tracer_max_out, z_tracer_min_out)
 
 
-@program
+@program(grid_type="unstructured")
 def hflx_limiter_mo_stencil_02(
     refin_ctrl: Field[[CellDim], int32],
     p_cc: Field[[CellDim, KDim], float],
