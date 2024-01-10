@@ -263,12 +263,18 @@ class IconGridSavepoint(IconSavepoint):
 
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
-        return self._read_field_for_dim(field_name, self._read_int32, dim)
+        return as_field(
+            (dim,),
+            np.squeeze(
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+            ),
+        )
 
     def num(self, dim: Dimension):
         return self.sizes[dim]
 
-    def _read_field_for_dim(self, field_name, read_func, dim: Dimension):
+    @staticmethod
+    def _read_field_for_dim(field_name, read_func, dim: Dimension):
         match (dim):
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
