@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_03 import (
-    mo_solve_nonhydro_stencil_03,
+from icon4py.model.atmosphere.dycore.set_cell_field_to_zero_vp import (
+    set_cell_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,20 +24,20 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 class TestMoSolveNonhydroStencil03(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_03
-    OUTPUTS = ("z_exner_ex_pr",)
+    PROGRAM = set_cell_field_to_zero_vp
+    OUTPUTS = ("field",)
 
     @staticmethod
-    def reference(grid, z_exner_ex_pr: np.array, **kwargs) -> dict:
-        z_exner_ex_pr = np.zeros_like(z_exner_ex_pr)
-        return dict(z_exner_ex_pr=z_exner_ex_pr)
+    def reference(grid, field: np.array, **kwargs) -> dict:
+        field = np.zeros_like(field)
+        return dict(field=field)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        field = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
-            z_exner_ex_pr=z_exner_ex_pr,
+            field=field,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
