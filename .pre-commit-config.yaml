@@ -1,0 +1,44 @@
+repos:
+  - repo: local
+    hooks:
+      - id: run-common-precommit
+        name: Run Model Common Pre-commit
+        entry: pre-commit run --config model/common/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: run-driver-precommit
+        name: Run Model Driver Pre-commit
+        entry: pre-commit run --config model/driver/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: run-atmosphere-advection-precommit
+        name: Run Model Atmosphere Advection Pre-commit
+        entry: pre-commit run --config model/atmosphere/advection/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: run-atmosphere-diffusion-precommit
+        name: Run Model Atmosphere Diffusion Pre-commit
+        entry: pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: run-atmosphere-dycore-precommit
+        name: Run Model Atmosphere Dycore Pre-commit
+        entry: pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: run-tools-precommit
+        name: Run Tools Pre-commit
+        entry: pre-commit run --config tools/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true

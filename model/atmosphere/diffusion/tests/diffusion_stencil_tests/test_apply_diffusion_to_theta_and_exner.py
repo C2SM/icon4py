@@ -81,7 +81,12 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+
         kh_smag_e = random_field(grid, EdgeDim, KDim)
         inv_dual_edge_length = random_field(grid, EdgeDim)
         theta_v_in = random_field(grid, CellDim, KDim)
