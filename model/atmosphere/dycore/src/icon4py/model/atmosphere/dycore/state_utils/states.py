@@ -32,6 +32,8 @@ from icon4py.model.common.dimension import (
 
 @dataclass
 class DiagnosticStateNonHydro:
+    """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
+
     vt: Field[[EdgeDim, KDim], float]
     vn_ie: Field[
         [EdgeDim, KDim], float
@@ -75,7 +77,7 @@ class DiagnosticStateNonHydro:
 
 @dataclass
 class InterpolationState:
-    """Represents the ICON interpolation state used int SolveNonHydro."""
+    """Represents the ICON interpolation state used in the dynamical core (SolveNonhydro)."""
 
     e_bln_c_s: Field[[CEDim], float]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: Field[
@@ -108,6 +110,8 @@ class InterpolationState:
 
 @dataclass
 class MetricStateNonHydro:
+    """Dataclass containing metric fields needed in dynamical core (SolveNonhydro)."""
+
     bdy_halo_c: Field[[CellDim], bool]
     # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: Field[[CellDim, KDim], bool]
@@ -153,6 +157,8 @@ class MetricStateNonHydro:
 
 @dataclass
 class PrepAdvection:
+    """Dataclass used in SolveNonHydro that pre-calculates fields during the dynamical substepping that are later needed in tracer advection."""
+
     vn_traj: Field[[EdgeDim, KDim], float]
     mass_flx_me: Field[[EdgeDim, KDim], float]
     mass_flx_ic: Field[[CellDim, KDim], float]
