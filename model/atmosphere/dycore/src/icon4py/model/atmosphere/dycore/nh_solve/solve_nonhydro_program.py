@@ -39,8 +39,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
     _mo_solve_nonhydro_stencil_09,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_lower import (
-    _mo_solve_nonhydro_stencil_11_lower,
+from icon4py.model.atmosphere.dycore.set_cell_field_to_zero_vp import (
+    _set_cell_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     _mo_solve_nonhydro_stencil_11_upper,
@@ -363,7 +363,7 @@ def _predictor_stencils_11_lower_upper(
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_theta_v_pr_ic = where(
-        k_field == int32(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
+        k_field == int32(0), _set_cell_field_to_zero_vp(), z_theta_v_pr_ic
     )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
