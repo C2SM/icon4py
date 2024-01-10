@@ -72,8 +72,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import (
     _mo_solve_nonhydro_stencil_45,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45_b import (
-    _mo_solve_nonhydro_stencil_45_b,
+from icon4py.model.atmosphere.dycore.set_cell_field_to_zero_vp import (
+    _set_cell_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
@@ -688,7 +688,7 @@ def _stencils_42_44_45_45b(
     )
     z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
 
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _set_cell_field_to_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -823,7 +823,7 @@ def _stencils_43_44_45_45b(
         (z_beta, z_alpha),
     )
     z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _set_cell_field_to_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 

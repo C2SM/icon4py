@@ -20,19 +20,19 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_45_b() -> Field[[CellDim, KDim], vpfloat]:
+def _set_cell_field_to_zero_vp() -> Field[[CellDim, KDim], vpfloat]:
     return broadcast(vpfloat("0.0"), (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_45_b(
+def set_cell_field_to_zero_vp(
     z_q: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_45_b(
+    _set_cell_field_to_zero_vp(
         out=z_q,
         domain={
             CellDim: (horizontal_start, horizontal_end),
