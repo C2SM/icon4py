@@ -233,5 +233,6 @@ def uses_icon_grid_with_otf(backend, grid):
             return True
     return False
 
+
 def k_field(grid: BaseGrid, extend: Optional[dict[gt_common.Dimension, int]] = None):
     return as_field((KDim,), np.arange(0, _shape(grid, KDim, extend=extend)[0], dtype=int32))
