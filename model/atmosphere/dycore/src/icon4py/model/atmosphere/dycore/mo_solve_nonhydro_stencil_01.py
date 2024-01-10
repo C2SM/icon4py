@@ -15,6 +15,9 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
+from icon4py.model.atmosphere.dycore.set_cell_field_to_zero_vp import (
+    _set_cell_field_to_zero_vp,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat
 
@@ -23,8 +26,8 @@ from icon4py.model.common.type_alias import vpfloat
 def _mo_solve_nonhydro_stencil_01() -> (
     tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
 ):
-    z_rth_pr_1_vp = broadcast(vpfloat("0.0"), (CellDim, KDim))
-    z_rth_pr_2_vp = broadcast(vpfloat("0.0"), (CellDim, KDim))
+    z_rth_pr_1_vp = _set_cell_field_to_zero_vp()
+    z_rth_pr_2_vp = _set_cell_field_to_zero_vp()
     return z_rth_pr_1_vp, z_rth_pr_2_vp
 
 

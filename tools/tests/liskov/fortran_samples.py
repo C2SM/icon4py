@@ -232,12 +232,12 @@ CONSECUTIVE_STENCIL = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; field=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
 
     !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
-    !$DSL START STENCIL(name=set_cell_field_to_zero_vp; z_q=z_q(:,:); vertical_lower=1; vertical_upper=1; &
+    !$DSL START STENCIL(name=set_cell_field_to_zero_vp; field=z_q(:,:); vertical_lower=1; vertical_upper=1; &
     !$DSL               horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
