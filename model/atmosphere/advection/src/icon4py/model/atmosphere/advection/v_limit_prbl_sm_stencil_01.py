@@ -39,7 +39,7 @@ def _v_limit_prbl_sm_stencil_01(
     return l_limit
 
 
-@program
+@program(grid_type="unstructured")
 def v_limit_prbl_sm_stencil_01(
     p_face: Field[[CellDim, KDim], float],
     p_cc: Field[[CellDim, KDim], float],
