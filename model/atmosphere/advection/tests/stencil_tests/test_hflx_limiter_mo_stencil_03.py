@@ -118,5 +118,5 @@ def test_hflx_diffusion_mo_stencil_03(backend):
         r_m,
         offset_provider={"C2E2C": grid.get_offset_provider("C2E2C")},
     )
-    np.allclose(r_p_ref, r_p.asnumpy())
-    np.allclose(r_m_ref, r_m.asnumpy())
+    assert np.allclose(r_p_ref, r_p.asnumpy())
+    assert np.allclose(r_m_ref, r_m.asnumpy())
