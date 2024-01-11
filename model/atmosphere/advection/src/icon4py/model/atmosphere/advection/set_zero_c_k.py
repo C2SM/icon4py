@@ -23,6 +23,6 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
-@program
+@program(grid_type="unstructured")
 def set_zero_c_k(field: Field[[CellDim, KDim], float]):
     _set_zero_c_k(out=field)
