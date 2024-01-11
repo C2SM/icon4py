@@ -35,7 +35,7 @@ def _vert_adv_stencil_01(
     return tracer_new
 
 
-@program
+@program(grid_type="unstructured")
 def vert_adv_stencil_01(
     tracer_now: Field[[CellDim, KDim], float],
     rhodz_now: Field[[CellDim, KDim], float],
