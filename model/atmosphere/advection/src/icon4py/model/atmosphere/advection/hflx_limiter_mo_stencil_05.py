@@ -25,7 +25,6 @@ def _hflx_limiter_mo_stencil_05(
     r_m: Field[[CellDim, KDim], float],
     r_p: Field[[CellDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-
     z_signum = where((z_anti > 0.0), 1.0, -1.0)
 
     r_frac = 0.5 * (

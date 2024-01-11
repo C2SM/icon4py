@@ -42,7 +42,7 @@ def _apply_diffusion_to_vn(
     diff_multfac_vn: Field[[KDim], wpfloat],
     nudgecoeff_e: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
-    horz_idx: Field[[EdgeDim], int32],
+    edge: Field[[EdgeDim], int32],
     nudgezone_diff: vpfloat,
     fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: int32,
@@ -61,7 +61,7 @@ def _apply_diffusion_to_vn(
     # TODO: Use if-else statement instead
     vn = (
         where(
-            start_2nd_nudge_line_idx_e <= horz_idx,
+            start_2nd_nudge_line_idx_e <= edge,
             _apply_nabla2_and_nabla4_to_vn(
                 area_edge,
                 kh_smag_e,
@@ -76,7 +76,7 @@ def _apply_diffusion_to_vn(
         )
         if limited_area
         else where(
-            start_2nd_nudge_line_idx_e <= horz_idx,
+            start_2nd_nudge_line_idx_e <= edge,
             _apply_nabla2_and_nabla4_global_to_vn(
                 area_edge,
                 kh_smag_e,
@@ -106,7 +106,7 @@ def apply_diffusion_to_vn(
     diff_multfac_vn: Field[[KDim], wpfloat],
     nudgecoeff_e: Field[[EdgeDim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
-    horz_idx: Field[[EdgeDim], int32],
+    edge: Field[[EdgeDim], int32],
     nudgezone_diff: vpfloat,
     fac_bdydiff_v: wpfloat,
     start_2nd_nudge_line_idx_e: int32,
@@ -129,7 +129,7 @@ def apply_diffusion_to_vn(
         diff_multfac_vn,
         nudgecoeff_e,
         vn,
-        horz_idx,
+        edge,
         nudgezone_diff,
         fac_bdydiff_v,
         start_2nd_nudge_line_idx_e,

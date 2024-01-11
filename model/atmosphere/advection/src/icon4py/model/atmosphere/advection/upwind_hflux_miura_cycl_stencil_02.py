@@ -33,7 +33,6 @@ def _upwind_hflux_miura_cycl_stencil_02(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-
     z_rhofluxdiv_c_out = (
         neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim)
         if nsub == int32(1)

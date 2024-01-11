@@ -14,7 +14,6 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
@@ -39,7 +38,6 @@ def ccw(
     p2_lon: np.array,
     p2_lat: np.array,
 ) -> np.array:
-
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -65,7 +63,6 @@ def lintersect(
     line2_p2_lon: np.array,
     line2_p2_lat: np.array,
 ) -> np.array:
-
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -112,7 +109,6 @@ def line_intersect(
     line2_p2_lon: np.array,
     line2_p2_lat: np.array,
 ) -> tuple[np.array]:
-
     m1 = (line1_p2_lat - line1_p1_lat) / (line1_p2_lon - line1_p1_lon)
     m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
 
@@ -770,7 +766,7 @@ def test_divide_flux_area_list_stencil_01(backend):
         dreg_patch2_4_lat_vmask,
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
+            "E2EC": grid.get_offset_provider("E2EC"),
         },
     )
     assert np.allclose(dreg_patch0_1_lon_dsl, ref_1)

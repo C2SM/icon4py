@@ -22,6 +22,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -40,9 +41,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    mo_velocity_advection_stencil_08,
-)
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,
 )
@@ -55,9 +53,11 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
@@ -248,8 +248,8 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)(
-            wgtfacq_e=self.metric_state.wgtfacq_e_dsl,
+        velocity_prog.extrapolate_at_top.with_backend(backend)(
+            wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
             horizontal_start=start_edge_lb_plus4,
@@ -279,10 +279,10 @@ class VelocityAdvection:
                 },
             )
 
-        mo_velocity_advection_stencil_08.with_backend(backend)(
-            z_kin_hor_e=z_kin_hor_e,
+        interpolate_to_cell_center.with_backend(backend)(
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
@@ -547,10 +547,10 @@ class VelocityAdvection:
                 },
             )
 
-        mo_velocity_advection_stencil_08.with_backend(backend)(
-            z_kin_hor_e=z_kin_hor_e,
+        interpolate_to_cell_center.with_backend(backend)(
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
             vertical_start=0,

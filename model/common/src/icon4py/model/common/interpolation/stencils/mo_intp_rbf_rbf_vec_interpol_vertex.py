@@ -25,8 +25,8 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
     ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
 ) -> tuple[Field[[VertexDim, KDim], wpfloat], Field[[VertexDim, KDim], wpfloat]]:
-    p_u_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_1, axis=V2EDim)
-    p_v_out = neighbor_sum(p_e_in(V2E) * ptr_coeff_2, axis=V2EDim)
+    p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(V2E), axis=V2EDim)
+    p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(V2E), axis=V2EDim)
     return p_u_out, p_v_out
 
 
