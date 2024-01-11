@@ -873,7 +873,7 @@ class SolveNonhydro:
                 horizontal_start=start_vertex_lb_plus1,
                 horizontal_end=end_vertex_local_minus1,
                 vertical_start=0,
-                vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
+                vertical_end=self.grid.num_levels,
                 offset_provider={
                     "V2C": self.grid.get_offset_provider("V2C"),
                 },
@@ -1377,7 +1377,8 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        if idyn_timestep == 1:
+        if self._at_first_substep(idyn_timestep):
+            # TODO (magdalena) this is a simple copy stencil... copies exner to exner_dyn_incr
             mo_solve_nonhydro_stencil_59.with_backend(backend)(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
@@ -1426,6 +1427,13 @@ class SolveNonhydro:
         else:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
+
+    @staticmethod
+    def _at_first_substep(dyn_substep):
+        return dyn_substep == 0
+
+    def _at_last_substep(self, dyn_substep):
+        return dyn_substep == self.config.ndyn_substeps_var - 1
 
     def run_corrector_step(
         self,
@@ -1949,20 +1957,19 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-
-        if dyn_timestep == self.config.ndyn_substeps_var:
+        # TODO (magdalena) should not be a config parameter... where does it get changed?
+        if self._at_last_substep(dyn_timestep):
             mo_solve_nonhydro_stencil_60(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
-                ndyn_substeps_var=float(
-                    self.config.ndyn_substeps_var
-                ),  # TODO (magdalena) should not be a config parameter... where does it get changed?
+                ndyn_substeps_var=float(self.config.ndyn_substeps_var),
                 dtime=dtime,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
-                vertical_end=self.grid.num_levels,
+                vertical_end=int32(self.grid.num_levels),
+                offset_provider={},
             )
 
         if lprep_adv:

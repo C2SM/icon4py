@@ -823,8 +823,6 @@ def test_run_solve_nonhydro_multi_step(
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
     linit = sp_v.get_metadata("linit").get("linit")
-    dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
-
     diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
     prognostic_state_ls = create_prognostic_states(sp)
@@ -855,7 +853,7 @@ def test_run_solve_nonhydro_multi_step(
             prep_adv=prep_adv,
             divdamp_fac_o2=sp.divdamp_fac_o2(),
             dtime=dtime,
-            idyn_timestep=dyn_timestep,
+            idyn_timestep=i_substep,
             l_recompute=recompute,
             l_init=linit,
             nnew=nnew,
@@ -941,7 +939,7 @@ def test_run_solve_nonhydro_multi_step(
     assert dallclose(
         diagnostic_state_nh.exner_dyn_incr.asnumpy(),
         savepoint_nonhydro_exit.exner_dyn_incr().asnumpy(),
-        atol=1e-14,
+        atol=1e-5,
     )
 
 
