@@ -29,7 +29,7 @@ def _upwind_vflux_ppm_stencil_01(
     return z_delta_q, z_a1
 
 
-@program
+@program(grid_type="unstructured")
 def upwind_vflux_ppm_stencil_01(
     z_face_up: Field[[CellDim, KDim], float],
     z_face_low: Field[[CellDim, KDim], float],
