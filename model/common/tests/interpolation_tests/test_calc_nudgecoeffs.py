@@ -32,17 +32,8 @@ from icon4py.model.common.interpolation.stencils.calc_nudgecoeffs import calc_nu
 from gt4py.next.ffront.fbuiltins import Field, int32
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.test_utils.helpers import zero_field
-from gt4py.next import as_field
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
-    data_provider,
-    datapath,
-    download_ser_data,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
-)
+    grid_savepoint, interpolation_savepoint, icon_grid)
 
 
 @pytest.mark.datatest
@@ -51,7 +42,7 @@ def test_calc_nudgecoeffs_e(
 ):
     nudgecoeff_e = zero_field(icon_grid,EdgeDim, dtype=wpfloat)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
-    refin_ctrl = as_field((EdgeDim,),np.squeeze(grid_savepoint.refin_ctrl(EdgeDim)))[0:31588]
+    refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
     grf_nudge_start_e = HorizontalMarkerIndex.nudging(EdgeDim)
     nudge_max_coeff = wpfloat(0.075)
     nudge_efold_width = wpfloat(2.0)
