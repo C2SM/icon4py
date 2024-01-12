@@ -36,7 +36,7 @@ def hflx_limiter_mo_stencil_03_numpy(
         c2e2c, z_tracer_max, z_tracer_min, beta_fct, r_beta_fct
     )
     r_p = (z_max - z_tracer_new_low) / (z_mflx_anti_in + dbl_eps)
-    r_m = (z_tracer_new_low - z_min) / (z_mflx_anti_out * dbl_eps)
+    r_m = (z_tracer_new_low - z_min) / (z_mflx_anti_out + dbl_eps)
     return r_p, r_m
 
 
