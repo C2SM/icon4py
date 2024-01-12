@@ -178,7 +178,7 @@ class RunType:
 
 class MultiNodeRun(RunType):
     """
-    Mark mulinode run.
+    Mark multinode run.
 
     Dummy marker type used to initialize a multinode run and initialize
     construction multinode ProcessProperties.

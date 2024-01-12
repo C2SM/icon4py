@@ -13,38 +13,45 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_09(
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
-    z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
-    z_w_concorr_mc_wp = neighbor_sum(z_w_concorr_me_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
-    return astype(z_w_concorr_mc_wp, vpfloat)
+def _extrapolate_at_top(
+    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    """Formerly known as mo_velocity_advection_stencil_06 or mo_solve_nonhydro_stencil_38."""
+    wgtfacq_e_wp = astype(wgtfacq_e, wpfloat)
+
+    vn_ie_wp = (
+        wgtfacq_e_wp(Koff[-1]) * vn(Koff[-1])
+        + wgtfacq_e_wp(Koff[-2]) * vn(Koff[-2])
+        + wgtfacq_e_wp(Koff[-3]) * vn(Koff[-3])
+    )
+
+    return astype(vn_ie_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_09(
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+def extrapolate_at_top(
+    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn_ie: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_09(
-        z_w_concorr_me,
-        e_bln_c_s,
-        out=z_w_concorr_mc,
+    _extrapolate_at_top(
+        wgtfacq_e,
+        vn,
+        out=vn_ie,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

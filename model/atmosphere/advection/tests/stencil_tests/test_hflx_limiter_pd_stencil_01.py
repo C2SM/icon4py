@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_01 import hflx_limiter_pd_stencil_01
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
@@ -69,7 +68,7 @@ def test_hflx_limiter_pd_stencil_01(backend):
         p_dtime,
         dbl_eps,
         offset_provider={
-            "C2CE": StridedNeighborOffsetProvider(CellDim, CEDim, grid.size[C2EDim]),
+            "C2CE": grid.get_offset_provider("C2CE"),
             "C2E": grid.get_offset_provider("C2E"),
         },
     )

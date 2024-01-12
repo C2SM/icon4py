@@ -34,6 +34,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     data_provider,
     datapath,
     download_ser_data,
+    experiment,
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
@@ -92,25 +93,13 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
     geofac_rot = zero_field(mesh, VertexDim, V2EDim)
     horizontal_start = int32(icon_grid.get_start_index(VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1))
-    horizontal_start = int32(429)
-    horizontal_end = int32(icon_grid.get_end_index(VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1))
-#    vertical_start = int32(max(3, VerticalModelParams.nflatlev - 2))
-    vertical_start = int32(max(3, 3))
-    vertical_end = int32(icon_grid.num_levels - 3)
     compute_geofac_rot(
         dual_edge_length,
         edge_orientation,
         dual_area,
         owner_mask,
-        out=geofac_rot,
-        domain={
-          CellDim: (horizontal_start, horizontal_end)
-#          KDim: (vertical_start, vertical_end),
-        }, offset_provider={"V2E": mesh.get_offset_provider("V2E")}
+        out=geofac_rot[horizontal_start:, :],
+        offset_provider={"V2E": mesh.get_offset_provider("V2E")}
     )
 
-#    np.set_printoptions(threshold=np.inf)
-    print(geofac_rot_ref.asnumpy())
-    print(geofac_rot.asnumpy())
-#    print(geofac_rot_ref.asnumpy()-geofac_rot.asnumpy())
     assert np.allclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())

@@ -14,7 +14,6 @@
 import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
@@ -767,7 +766,7 @@ def test_divide_flux_area_list_stencil_01(backend):
         dreg_patch2_4_lat_vmask,
         offset_provider={
             "E2C": grid.get_offset_provider("E2C"),
-            "E2EC": StridedNeighborOffsetProvider(EdgeDim, ECDim, grid.size[E2CDim]),
+            "E2EC": grid.get_offset_provider("E2EC"),
         },
     )
     assert np.allclose(dreg_patch0_1_lon_dsl, ref_1)

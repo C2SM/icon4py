@@ -13,43 +13,39 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_38(
-    vn: Field[[EdgeDim, KDim], wpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
-    wgtfacq_e_wp = astype(wgtfacq_e, wpfloat)
-
-    vn_ie_wp = (
-        wgtfacq_e_wp(Koff[-1]) * vn(Koff[-1])
-        + wgtfacq_e_wp(Koff[-2]) * vn(Koff[-2])
-        + wgtfacq_e_wp(Koff[-3]) * vn(Koff[-3])
-    )
-    return astype(vn_ie_wp, vpfloat)
+def _interpolate_to_cell_center(
+    interpolant: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    """Formerly known as mo_velocity_advection_stencil_08 or mo_velocity_advection_stencil_09."""
+    interpolant_wp = astype(interpolant, wpfloat)
+    interpolation_wp = neighbor_sum(e_bln_c_s(C2CE) * interpolant_wp(C2E), axis=C2EDim)
+    return astype(interpolation_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_38(
-    vn: Field[[EdgeDim, KDim], wpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+def interpolate_to_cell_center(
+    interpolant: Field[[EdgeDim, KDim], vpfloat],
+    e_bln_c_s: Field[[CEDim], wpfloat],
+    interpolation: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_38(
-        vn,
-        wgtfacq_e,
-        out=vn_ie,
+    _interpolate_to_cell_center(
+        interpolant,
+        e_bln_c_s,
+        out=interpolation,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
+            CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

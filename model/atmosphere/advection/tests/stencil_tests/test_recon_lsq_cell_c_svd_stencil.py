@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.iterator.embedded import StridedNeighborOffsetProvider
 
 from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,
@@ -314,7 +313,7 @@ def test_recon_lsq_cell_c_svd_stencil(backend):
         p_coeff_10_dsl,
         offset_provider={
             "C2E2C2E2C": grid.get_offset_provider("C2E2C2E2C"),
-            "C2CECEC": StridedNeighborOffsetProvider(CellDim, CECECDim, grid.size[C2E2C2E2CDim]),
+            "C2CECEC": grid.get_offset_provider("C2CECEC"),
         },
     )
     co1 = p_coeff_1_dsl.asnumpy()

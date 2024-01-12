@@ -35,21 +35,6 @@ jobs:
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install -r ./requirements-dev.txt
                   python -m pip list
-            - name: Run checks in icon4pytools
+            - name: Run checks
               run: |
-                  pre-commit run --config tools/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-common
-              run: |
-                  pre-commit run --config model/common/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-driver
-              run: |
-                  pre-commit run --config model/driver/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-atmosphere-dycore
-              run: |
-                  pre-commit run --config model/atmosphere/dycore/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-atmosphere-diffusion
-              run: |
-                  pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files
-            - name: Run checks icon4py-model-atmosphere-advection
-              run: |
-                  pre-commit run --config model/atmosphere/advection/.pre-commit-config.yaml --all-files
+                  pre-commit run

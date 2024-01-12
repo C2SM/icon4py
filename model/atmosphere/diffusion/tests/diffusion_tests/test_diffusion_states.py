@@ -14,11 +14,13 @@
 import numpy as np
 import pytest
 
+from .utils import construct_interpolation_state
+
 
 @pytest.mark.datatest
 def test_verify_geofac_n2s_field_manipulation(interpolation_savepoint, icon_grid):
     geofac_n2s = interpolation_savepoint.geofac_n2s().asnumpy()
-    int_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    int_state = construct_interpolation_state(interpolation_savepoint)
     geofac_c = int_state.geofac_n2s_c.asnumpy()
     geofac_nbh = int_state.geofac_n2s_nbh.asnumpy()
     assert np.count_nonzero(geofac_nbh) > 0
