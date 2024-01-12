@@ -20,9 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _copy_cell_field_to_vp(
-    w: Field[[CellDim, KDim], wpfloat]
-) -> Field[[CellDim, KDim], vpfloat]:
+def _copy_cell_field_to_vp(w: Field[[CellDim, KDim], wpfloat]) -> Field[[CellDim, KDim], vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_11."""
     z_w_con_c_wp = w
     return astype(z_w_con_c_wp, vpfloat)
