@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass
 from typing import Final, Optional
 
-from gt4py.next import Field, as_field
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
@@ -443,7 +443,7 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
+        en_smag_fac_for_zero_nshift.with_backend(backend)(
             self.vertical_params.vct_a,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
@@ -510,16 +510,17 @@ class SolveNonhydro:
         prep_adv: PrepAdvection,
         divdamp_fac_o2: float,
         dtime: float,
-        idyn_timestep: float,
         l_recompute: bool,
         l_init: bool,
         nnow: int,
         nnew: int,
         lclean_mflx: bool,
         lprep_adv: bool,
+        at_first_substep: bool,
+        at_last_substep: bool,
     ):
         log.info(
-            f"running timestep: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv} "
+            f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
@@ -551,15 +552,13 @@ class SolveNonhydro:
             prognostic_state=prognostic_state_ls,
             z_fields=self.intermediate_fields,
             dtime=dtime,
-            idyn_timestep=idyn_timestep,
             l_recompute=l_recompute,
             l_init=l_init,
+            is_first_substep=at_first_substep,
             nnow=nnow,
             nnew=nnew,
         )
-        log.info(
-            f"running corrector step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, prep_adv = {lprep_adv},  divdamp_fac_od = {divdamp_fac_o2} "
-        )
+
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls,
@@ -567,15 +566,13 @@ class SolveNonhydro:
             prep_adv=prep_adv,
             divdamp_fac_o2=divdamp_fac_o2,
             dtime=dtime,
-            dyn_timestep=idyn_timestep,
             nnew=nnew,
             nnow=nnow,
             lclean_mflx=lclean_mflx,
             lprep_adv=lprep_adv,
+            is_last_substep=at_last_substep,
         )
-        log.info(
-            f"running corrector step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, prep_adv = {lprep_adv},  divdamp_fac_od = {divdamp_fac_o2} "
-        )
+
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -635,14 +632,14 @@ class SolveNonhydro:
         prognostic_state: list[PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
-        idyn_timestep: float,
         l_recompute: bool,
         l_init: bool,
+        is_first_substep: bool,
         nnow: int,
         nnew: int,
     ):
         log.info(
-            f"running predictor step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute} "
+            f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
         if l_init or l_recompute:
             if self.config.itime_scheme == 4 and not l_init:
@@ -1377,7 +1374,7 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        if self._at_first_substep(idyn_timestep):
+        if is_first_substep:
             # TODO (magdalena) this is a simple copy stencil... copies exner to exner_dyn_incr
             mo_solve_nonhydro_stencil_59.with_backend(backend)(
                 exner=prognostic_state[nnow].exner,
@@ -1428,13 +1425,6 @@ class SolveNonhydro:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
 
-    @staticmethod
-    def _at_first_substep(dyn_substep):
-        return dyn_substep == 0
-
-    def _at_last_substep(self, dyn_substep):
-        return dyn_substep == self.config.ndyn_substeps_var - 1
-
     def run_corrector_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,
@@ -1443,12 +1433,18 @@ class SolveNonhydro:
         divdamp_fac_o2: float,
         prep_adv: PrepAdvection,
         dtime: float,
-        dyn_timestep: int,
         nnew: int,
         nnow: int,
         lclean_mflx: bool,
         lprep_adv: bool,
+        is_last_substep: bool,
     ):
+        log.info(
+            f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
+        )
+        # TODO (magdalena) is it correcto to use a config parameter here? the actual number of substeps can vary dynmically...
+        #                  should this config parameter exist at all in SolveNonHydro?
+
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / self.config.ndyn_substeps_var
 
@@ -1457,7 +1453,7 @@ class SolveNonhydro:
         # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
-        _calculate_divdamp_fields.with_backend(run_gtfn)(
+        _calculate_divdamp_fields.with_backend(backend)(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
@@ -1810,7 +1806,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
+            mo_solve_nonhydro_stencil_46.with_backend(backend)(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1957,9 +1953,8 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        # TODO (magdalena) should not be a config parameter... where does it get changed?
-        if self._at_last_substep(dyn_timestep):
-            mo_solve_nonhydro_stencil_60(
+        if is_last_substep:
+            mo_solve_nonhydro_stencil_60.with_backend(backend)(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,

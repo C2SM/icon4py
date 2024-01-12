@@ -99,6 +99,13 @@ class TimeLoop:
     def _not_first_step(self):
         self._do_initial_stabilization = False
 
+    def _is_last_substep(self, step_nr: int):
+        return step_nr == (self.n_substeps_var - 1)
+
+    @staticmethod
+    def _is_first_substep(step_nr: int):
+        return step_nr == 0
+
     def _next_simulation_date(self):
         self._simulation_date += timedelta(seconds=self.run_config.dtime)
 
@@ -241,7 +248,9 @@ class TimeLoop:
         do_clean_mflx = True
         for dyn_substep in range(self._n_substeps_var):
             log.info(
-                f"simulation date : {self._simulation_date} sub timestep : {dyn_substep}, initial_stabilization : {self._do_initial_stabilization}, nnow: {self._now}, nnew : {self._next}"
+                f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
+                f"{self.n_substeps_var} , initial_stabilization : {self._do_initial_stabilization}, "
+                f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
@@ -249,19 +258,20 @@ class TimeLoop:
                 prep_adv=prep_adv,
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
-                idyn_timestep=dyn_substep,
                 l_recompute=do_recompute,
                 l_init=self._do_initial_stabilization,
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
                 lprep_adv=do_prep_adv,
+                at_first_substep=self._is_first_substep(dyn_substep),
+                at_last_substep=self._is_last_substep(dyn_substep),
             )
 
             do_recompute = False
             do_clean_mflx = False
 
-            if dyn_substep != self._n_substeps_var - 1:
+            if not self._is_last_substep(dyn_substep):
                 self._swap()
 
             self._not_first_step()
