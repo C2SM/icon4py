@@ -67,13 +67,20 @@ def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl(backend):
     assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
 
 
-# TODO (Nina) what is this test for? its trivially true
 def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl(backend):
     grid = SimpleGrid()
     bound = np.int32(7)
     refin_ctrl = constant_field(grid, bound, EdgeDim, dtype=np.int32)
     r_m = random_field(grid, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
+
+    ref = hflx_limiter_pd_stencil_02_numpy(
+        grid.connectivities[E2CDim],
+        refin_ctrl.asnumpy(),
+        r_m.asnumpy(),
+        p_mflx_tracer_h_in.asnumpy(),
+        bound,
+    )
 
     hflx_limiter_pd_stencil_02.with_backend(backend)(
         refin_ctrl,
@@ -84,10 +91,9 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl(backend):
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), p_mflx_tracer_h_in.asnumpy())
+    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
 
 
-# TODO (Nina) what is this test for? its trivially true
 def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl(backend):
     grid = SimpleGrid()
     bound = np.int32(4)
@@ -96,27 +102,13 @@ def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl(backend):
     r_m = random_field(grid, CellDim, KDim)
     p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
-    hflx_limiter_pd_stencil_02.with_backend(backend)(
-        refin_ctrl,
-        r_m,
-        p_mflx_tracer_h_in,
+    ref = hflx_limiter_pd_stencil_02_numpy(
+        grid.connectivities[E2CDim],
+        refin_ctrl.asnumpy(),
+        r_m.asnumpy(),
+        p_mflx_tracer_h_in.asnumpy(),
         bound,
-        offset_provider={
-            "E2C": grid.get_offset_provider("E2C"),
-        },
     )
-    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), p_mflx_tracer_h_in.asnumpy())
-
-
-# TODO (Nina) what is this test for? its trivially true
-def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_change_inout_arg(
-    backend,
-):
-    grid = SimpleGrid()
-    bound = np.int32(7)
-    refin_ctrl = constant_field(grid, bound, EdgeDim, dtype=np.int32)
-    r_m = random_field(grid, CellDim, KDim)
-    p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
     hflx_limiter_pd_stencil_02.with_backend(backend)(
         refin_ctrl,
@@ -127,4 +119,4 @@ def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl_does_not_chang
             "E2C": grid.get_offset_provider("E2C"),
         },
     )
-    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), p_mflx_tracer_h_in.asnumpy())
+    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
