@@ -19,6 +19,7 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
+from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT
 
 if typing.TYPE_CHECKING:
     import netCDF4
@@ -52,6 +53,7 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
+from .utils import MCH_GRID_FILE, R02B04_GLOBAL, resolve_file_from_gridfile_name
 
 SIMPLE_GRID_NC = "simple_grid.nc"
 
@@ -232,9 +234,14 @@ def test_gridparser_dimension(simple_grid_gridfile):
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, r04b09_dsl_gridfile):
-    data = netCDF4.Dataset(r04b09_dsl_gridfile, "r")
-    grid_file = GridFile(data)
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
+    file = resolve_file_from_gridfile_name(grid_file)
+    dataset = netCDF4.Dataset(file, "r")
+    grid_file = GridFile(dataset)
 
     assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
     assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
@@ -261,25 +268,36 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
 # v2e: exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_v2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
     seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices, :]
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
     # they get substituted by the "last valid index" in preprocessing step in icon.
     assert not has_invalid_index(seralized_v2e)
-    assert has_invalid_index(grid.get_offset_provider("V2E").table)
+    v2e_table = grid.get_offset_provider("V2E").table
+    assert has_invalid_index(v2e_table)
     reset_invalid_index(seralized_v2e)
-    assert np.allclose(grid.get_offset_provider("V2E").table, seralized_v2e)
+    assert np.allclose(v2e_table, seralized_v2e)
 
 
 # v2c: exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_v2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_v2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
     serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices, :]
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
@@ -322,9 +340,14 @@ def reset_invalid_index(index_array: np.ndarray):
 # e2v: exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_e2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_e2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
 
     serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges, :]
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
@@ -342,27 +365,62 @@ def invalid_index(ar):
     return np.where(ar == GridFile.INVALID_INDEX)
 
 
+def _is_local(grid_file: str):
+    return grid_file == MCH_GRID_FILE
+
+
+def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
+    """
+    Assert invalid indices for E2C connectivity.
+
+    Local grids: there are edges at the boundary that have only one
+    neighboring cell, there are "missing values" in the grid file
+    and for E2C they do not get substituted in the ICON preprocessing.
+
+    Global grids have no "missing values" indices since all edges always have 2 neighboring cells.
+
+    Args:
+
+        e2c_table: E2C connectivity
+        grid_file: name of grid file used
+
+
+    """
+    if _is_local(grid_file):
+        assert has_invalid_index(e2c_table)
+    else:
+        assert not has_invalid_index(e2c_table)
+
+
 # e2c : exists in serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
     serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges, :]
-    # there are edges at the boundary that have only one
-    # neighboring cell, there are "missing values" in the grid file
-    # and here they do not get substituted in the ICON preprocessing
-    assert has_invalid_index(serialized_e2c)
-    assert has_invalid_index(grid.get_offset_provider("E2C").table)
-    assert np.allclose(grid.get_offset_provider("E2C").table, serialized_e2c)
+    e2c_table = grid.get_offset_provider("E2C").table
+    assert_invalid_indices(serialized_e2c, grid_file)
+    assert_invalid_indices(e2c_table, grid_file)
+    assert np.allclose(e2c_table, serialized_e2c)
 
 
 # c2e: serial, simple, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
 
     serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells, :]
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
@@ -376,9 +434,14 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
 # c2e2c: exists in  serial, simple_mesh, grid
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
     assert np.allclose(
         grid.get_offset_provider("C2E2C").table,
         grid_savepoint.c2e2c()[0 : grid.num_cells, :],
@@ -388,14 +451,20 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, r04b09_dsl_gridfile):
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
-    serialized_e2c2e = grid_savepoint.e2c2e()[0 : grid.num_edges, :]
-    assert has_invalid_index(serialized_e2c2e)
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
+    serialized_e2c2e = grid_savepoint.e2c2e()[0 : grid.num_cells, :]
+    assert_invalid_indices(serialized_e2c2e, grid_file)
 
     e2c2e_table = grid.get_offset_provider("E2C2E").table
-    assert has_invalid_index(e2c2e_table)
+
+    assert_invalid_indices(e2c2e_table, grid_file)
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(EdgeDim) + 1 for
     # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
     assert_unless_invalid(e2c2e_table, serialized_e2c2e)
@@ -408,9 +477,14 @@ def assert_unless_invalid(table, serialized_ref):
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(EdgeDim) + 1) to end(EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
     serialized_ref = grid_savepoint.e2c2v()[: grid.num_edges, :]
@@ -420,15 +494,20 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
 
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
-def test_gridmanager_eval_c2v(caplog, grid_savepoint, r04b09_dsl_gridfile):
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(MCH_GRID_FILE, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    grid = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
     c2v = grid.get_offset_provider("C2V").table
     assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells, :])
 
 
-def init_grid_manager(fname):
-    grid_manager = GridManager(ToGt4PyTransformation(), fname, VerticalGridSize(65))
+def init_grid_manager(fname, num_levels=65):
+    grid_manager = GridManager(ToGt4PyTransformation(), fname, VerticalGridSize(num_levels))
     grid_manager()
     return grid_manager
 
@@ -482,6 +561,7 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     assert np.allclose(expected, offset)
 
 
+# TODO (magdalena) speed this up...
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
@@ -521,8 +601,9 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 0),
     ],
 )
-def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
-    grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+def test_get_start_index(icon_grid, dim, marker, index):
+    file = resolve_file_from_gridfile_name(MCH_GRID_FILE)
+    grid_from_manager = init_grid_manager(file).get_grid()
     assert grid_from_manager.get_start_index(dim, marker) == index
     assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(dim, marker)
 
@@ -570,7 +651,12 @@ def test_get_start_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 428),
     ],
 )
-def test_get_end_index(r04b09_dsl_gridfile, icon_grid, dim, marker, index):
-    grid_from_manager = init_grid_manager(r04b09_dsl_gridfile).get_grid()
+@pytest.mark.parametrize(
+    "grid_file, experiment, num_levels", [(MCH_GRID_FILE, REGIONAL_EXPERIMENT, 65)]
+)
+def test_get_end_index_for_local_grid(grid_file, num_levels, grid_savepoint, dim, marker, index):
+    file = resolve_file_from_gridfile_name(grid_file)
+    icon_grid = grid_savepoint.construct_icon_grid()
+    grid_from_manager = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert grid_from_manager.get_end_index(dim, marker) == index
     assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(dim, marker)
