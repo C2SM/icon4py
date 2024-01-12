@@ -554,7 +554,7 @@ class SolveNonhydro:
             dtime=dtime,
             l_recompute=l_recompute,
             l_init=l_init,
-            is_first_substep=at_first_substep,
+            at_first_substep=at_first_substep,
             nnow=nnow,
             nnew=nnew,
         )
@@ -570,7 +570,7 @@ class SolveNonhydro:
             nnow=nnow,
             lclean_mflx=lclean_mflx,
             lprep_adv=lprep_adv,
-            is_last_substep=at_last_substep,
+            at_last_substep=at_last_substep,
         )
 
         start_cell_lb = self.grid.get_start_index(
@@ -634,7 +634,7 @@ class SolveNonhydro:
         dtime: float,
         l_recompute: bool,
         l_init: bool,
-        is_first_substep: bool,
+        at_first_substep: bool,
         nnow: int,
         nnew: int,
     ):
@@ -1374,8 +1374,7 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        if is_first_substep:
-            # TODO (magdalena) this is a simple copy stencil... copies exner to exner_dyn_incr
+        if at_first_substep:
             mo_solve_nonhydro_stencil_59.with_backend(backend)(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
@@ -1437,7 +1436,7 @@ class SolveNonhydro:
         nnow: int,
         lclean_mflx: bool,
         lprep_adv: bool,
-        is_last_substep: bool,
+        at_last_substep: bool,
     ):
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
@@ -1953,7 +1952,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        if is_last_substep:
+        if at_last_substep:
             mo_solve_nonhydro_stencil_60.with_backend(backend)(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,

@@ -102,6 +102,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
 def test_nonhydro_predictor_step(
     istep_init,
     istep_exit,
+    jstep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -125,7 +126,6 @@ def test_nonhydro_predictor_step(
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
     recompute = sp_v.get_metadata("recompute").get("recompute")
-    dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     linit = sp_v.get_metadata("linit").get("linit")
 
     nnow = 0
@@ -162,7 +162,7 @@ def test_nonhydro_predictor_step(
         dtime=dtime,
         l_recompute=recompute,
         l_init=linit,
-        is_first_substep=(dyn_timestep == 1),
+        at_first_substep=(jstep_init == 0),
         nnow=nnow,
         nnew=nnew,
     )
@@ -489,6 +489,7 @@ def create_vertical_params(damping_height, grid_savepoint):
 def test_nonhydro_corrector_step(
     istep_init,
     istep_exit,
+    jstep_init,
     step_date_init,
     step_date_exit,
     icon_grid,
@@ -515,7 +516,6 @@ def test_nonhydro_corrector_step(
     )
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
-    dyn_timestep = sp.get_metadata("dyn_timestep").get("dyn_timestep")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
@@ -579,7 +579,7 @@ def test_nonhydro_corrector_step(
         nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
-        is_last_substep=(dyn_timestep == ndyn_substeps),
+        at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
     if icon_grid.limited_area:
         assert dallclose(solve_nonhydro._bdy_divdamp.asnumpy(), sp.bdy_divdamp().asnumpy())
@@ -709,7 +709,6 @@ def test_run_solve_nonhydro_single_step(
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
     linit = sp_v.get_metadata("linit").get("linit")
-    dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
     diagnostic_state_nh = construct_diagnostics(sp, sp_v)
 
@@ -748,7 +747,7 @@ def test_run_solve_nonhydro_single_step(
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
         at_first_substep=jstep_init == 0,
-        at_last_substep=jstep_init == ndyn_substeps - 1,
+        at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
     prognostic_state_nnew = prognostic_state_ls[1]
     assert dallclose(
@@ -804,9 +803,9 @@ def test_run_solve_nonhydro_multi_step(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     experiment,
+    ndyn_substeps,
 ):
-    nsubsteps = grid_savepoint.get_metadata("nsteps").get("nsteps")
-    config = construct_config(experiment, nsubsteps)
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
@@ -846,9 +845,9 @@ def test_run_solve_nonhydro_multi_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    for i_substep in range(nsubsteps):
+    for i_substep in range(ndyn_substeps):
         is_first_substep = i_substep == 0
-        is_last_substep = i_substep == (nsubsteps - 1)
+        is_last_substep = i_substep == (ndyn_substeps - 1)
         solve_nonhydro.time_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state_ls=prognostic_state_ls,
