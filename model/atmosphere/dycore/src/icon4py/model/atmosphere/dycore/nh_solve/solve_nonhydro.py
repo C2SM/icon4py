@@ -1441,9 +1441,9 @@ class SolveNonhydro:
         log.info(
             f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
         )
-        # TODO (magdalena) is it correcto to use a config parameter here? the actual number of substeps can vary dynmically...
-        #                  should this config parameter exist at all in SolveNonHydro?
 
+        # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
+        #                  should this config parameter exist at all in SolveNonHydro?
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / self.config.ndyn_substeps_var
 
