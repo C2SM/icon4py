@@ -156,8 +156,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         limited_area,
         itime_scheme,
         istep,
-        horizontal_lower,
-        horizontal_upper,
+        horizontal_lower_0,
+        horizontal_upper_0,
         horizontal_lower_00,
         horizontal_upper_00,
         horizontal_lower_01,
@@ -171,13 +171,14 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         horizontal_lower_4,
         horizontal_upper_4,
         kstart_dd3d,
-        nlev,
         nflatlev,
         nflat_gradp,
     ):
         iadv_rhotheta = 2
         horz_idx = horz_idx[:, np.newaxis]
-
+        horizontal_lower = horizontal_lower_0
+        horizontal_upper = horizontal_upper_0
+        nlev = 10
         z_grad_rth_1 = zero_field(grid, CellDim, KDim)
         z_grad_rth_2 = zero_field(grid, CellDim, KDim)
         z_grad_rth_3 = zero_field(grid, CellDim, KDim)
@@ -555,8 +556,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         limited_area = True
         itime_scheme = 4
         istep = 2
-        horizontal_lower = 5387
-        horizontal_upper = 31558
+        horizontal_lower_0 = 5387
+        horizontal_upper_0 = 31558
         horizontal_lower_00 = 31558
         horizontal_upper_00 = 31558
         horizontal_lower_01 = 31558
@@ -609,20 +610,20 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             vn_nnow=vn_nnow,
             ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
             ddt_vn_phy=ddt_vn_phy,
-            z_graddiv_vn=z_graddiv_vn,
             vn_incr=vn_incr,
+            horz_idx=horz_idx,
+            vert_idx=vert_idx,
+            z_hydro_corr=z_hydro_corr,
+            z_graddiv_vn=z_graddiv_vn,
             vn=vn,
             z_rho_e=z_rho_e,
             z_theta_v_e=z_theta_v_e,
             z_gradh_exner=z_gradh_exner,
             z_graddiv2_vn=z_graddiv2_vn,
-            z_hydro_corr=z_hydro_corr,
             geofac_grdiv=geofac_grdiv,
             scal_divdamp=scal_divdamp,
             bdy_divdamp=bdy_divdamp,
             nudgecoeff_e=nudgecoeff_e,
-            horz_idx=horz_idx,
-            vert_idx=vert_idx,
             grav_o_cpd=grav_o_cpd,
             p_dthalf=p_dthalf,
             idiv_method=idiv_method,
@@ -641,8 +642,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             limited_area=limited_area,
             itime_scheme=itime_scheme,
             istep=istep,
-            horizontal_lower=horizontal_lower,
-            horizontal_upper=horizontal_upper,
+            horizontal_lower_0=horizontal_lower_0,
+            horizontal_upper_0=horizontal_upper_0,
             horizontal_lower_00=horizontal_lower_00,
             horizontal_upper_00=horizontal_upper_00,
             horizontal_lower_01=horizontal_lower_01,
@@ -656,7 +657,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             horizontal_lower_4=horizontal_lower_4,
             horizontal_upper_4=horizontal_upper_4,
             kstart_dd3d=kstart_dd3d,
-            nlev=nlev,
             nflatlev=nflatlev,
             nflat_gradp=nflat_gradp,
         )

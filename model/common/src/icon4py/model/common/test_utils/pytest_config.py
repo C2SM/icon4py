@@ -14,7 +14,8 @@
 import os
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu, run_gtfn_with_temporaries
+from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from gt4py.next.program_processors.runners.roundtrip import executor
 
 
@@ -78,24 +79,45 @@ def pytest_runtest_setup(item):
 def pytest_generate_tests(metafunc):
     # parametrise backend
     if "backend" in metafunc.fixturenames:
-        backend_option = metafunc.config.getoption("backend")
+        # backend_option = metafunc.config.getoption
+        backend_option = "roundtrip"
+        # backend_option = "gtfn_cpu_with_temporaries"
 
-        params = []
-        ids = []
+        backends = {
+            "embedded": None,
+            "roundtrip": run_roundtrip,
+            "gtfn_cpu": run_gtfn,
+            "gtfn_cpu_with_temporaries": run_gtfn_with_temporaries,
+            "gtfn_gpu": run_gtfn_gpu,
+        }
 
-        if backend_option == "gtfn_cpu":
-            params.append(run_gtfn)
-            ids.append("backend=gtfn_cpu")
-        elif backend_option == "embedded":
-            params.append(executor)
-            ids.append("backend=embedded")
-        # TODO (skellerhals): add gpu support
-        else:
-            raise Exception(
-                "Need to select a backend. Select from: ['embedded', 'gtfn_cpu'] and pass it as an argument to --backend when invoking pytest."
+        try:
+            from gt4py.next.program_processors.runners.dace_iterator import (
+                run_dace_cpu,
+                run_dace_gpu,
             )
 
-        metafunc.parametrize("backend", params, ids=ids)
+            backends.update(
+                {
+                    "dace_cpu": run_dace_cpu,
+                    "dace_gpu": run_dace_gpu,
+                }
+            )
+        except ImportError:
+            # dace module not installed, ignore dace backends
+            pass
+
+        if backend_option not in backends:
+            available_backends = ", ".join([f"'{k}'" for k in backends.keys()])
+            raise Exception(
+                "Need to select a backend. Select from: ["
+                + available_backends
+                + "] and pass it as an argument to --backend when invoking pytest."
+            )
+
+        metafunc.parametrize(
+            "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
+        )
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
