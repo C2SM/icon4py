@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _set_cell_field_to_zero_vp() -> Field[[CellDim, KDim], vpfloat]:
-    """Formerly known as _mo_solve_nonhydro_stencil_03, _mo_solve_nonhydro_stencil_11_lower, or _mo_solve_nonhydro_stencil_45_b."""
+    """Formerly known as _mo_solve_nonhydro_stencil_03, _mo_solve_nonhydro_stencil_11_lower, _mo_solve_nonhydro_stencil_45, or _mo_solve_nonhydro_stencil_45_b."""
     return broadcast(vpfloat("0.0"), (CellDim, KDim))
 
 
