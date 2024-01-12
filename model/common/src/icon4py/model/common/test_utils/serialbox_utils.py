@@ -133,10 +133,16 @@ class IconGridSavePoint(IconSavepoint):
     def edge_orientation(self):
         return self._get_field("cells_edge_orientation", CellDim, C2EDim)
 
-    def inverse_primal_edge_lengths(self):
+    def vertex_edge_orientation(self):
+        return self._get_field("v_edge_orientation", VertexDim, V2EDim)
+
+    def vertex_dual_area(self):
+        return self._get_field("v_dual_area", VertexDim)
+
+    def inverse_primal_edge_length(self):
         return self._get_field("inv_primal_edge_length", EdgeDim)
 
-    def primal_edge_lengths(self):
+    def primal_edge_length(self):
         return self._get_field("primal_edge_length", EdgeDim)
 
     def inv_vert_vert_length(self):
@@ -178,6 +184,9 @@ class IconGridSavePoint(IconSavepoint):
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
+    def dual_edge_length(self):
+        return self._get_field("dual_edge_length", EdgeDim)
+
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
 
@@ -212,6 +221,9 @@ class IconGridSavePoint(IconSavepoint):
 
     def e_owner_mask(self):
         return self._get_field("e_owner_mask", EdgeDim, dtype=bool)
+
+    def v_owner_mask(self):
+        return self._get_field("v_owner_mask", VertexDim, dtype=bool)
 
     def f_e(self):
         return self._get_field("f_e", EdgeDim)

@@ -24,9 +24,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.model.common.dimension import CellDim, C2EDim, EdgeDim, C2E, CEDim, C2CE
+from icon4py.model.common.dimension import CellDim, C2EDim, EdgeDim, C2E, CEDim, C2CE, VertexDim, V2E, V2EDim
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next import where
 
 def compute_c_lin_e(
     edge_cell_length: np.array,
@@ -87,6 +88,24 @@ def compute_geofac_div(
     """
     geofac_div_ = primal_edge_length(C2E)*edge_orientation/area
     return geofac_div_
+
+@field_operator
+def compute_geofac_rot(
+    dual_edge_length: Field[[EdgeDim], float],
+    edge_orientation: Field[[VertexDim, V2EDim], float],
+    dual_area: Field[[VertexDim], float],
+    owner_mask: Field[[VertexDim], bool],
+) -> Field[[VertexDim, V2EDim], float]:
+    """
+    Args:
+        dual_edge_length:
+        edge_orientation:
+        dual_area:
+        owner_mask:
+    """
+#    geofac_rot_ = dual_edge_length(V2E)*edge_orientation/dual_area
+    geofac_rot_ = where(owner_mask, dual_edge_length(V2E)*edge_orientation/dual_area, dual_edge_length(V2E)-dual_edge_length(V2E))
+    return geofac_rot_
 
 #def compute_geofac_rot(
 #    dual_edge_length: np.array,
