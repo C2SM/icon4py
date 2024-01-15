@@ -27,14 +27,14 @@ def _set_cell_field_to_zero_vp() -> Field[[CellDim, KDim], vpfloat]:
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def set_cell_field_to_zero_vp(
-    field: Field[[CellDim, KDim], vpfloat],
+    field_to_zero: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
     _set_cell_field_to_zero_vp(
-        out=field,
+        out=field_to_zero,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

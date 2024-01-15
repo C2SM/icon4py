@@ -33,8 +33,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_01 import (
-    mo_solve_nonhydro_stencil_01,
+from icon4py.model.atmosphere.dycore.set_two_cell_fields_to_zero_vp import (
+    set_two_cell_fields_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
@@ -731,7 +731,7 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_01.with_backend(backend)(
+            set_two_cell_fields_to_zero_vp.with_backend(backend)(
                 z_rth_pr_1=self.z_rth_pr_1,
                 z_rth_pr_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,

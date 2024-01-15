@@ -23,25 +23,24 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_01() -> (
+def _set_two_cell_fields_to_zero_vp() -> (
     tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
 ):
-    z_rth_pr_1_vp = _set_cell_field_to_zero_vp()
-    z_rth_pr_2_vp = _set_cell_field_to_zero_vp()
-    return z_rth_pr_1_vp, z_rth_pr_2_vp
+    """Formerly known as_mo_solve_nonhydro_stencil_01."""
+    return _set_cell_field_to_zero_vp(), _set_cell_field_to_zero_vp()
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_01(
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+def set_two_cell_fields_to_zero_vp(
+    field_to_zero_1: Field[[CellDim, KDim], vpfloat],
+    field_to_zero_2: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_01(
-        out=(z_rth_pr_1, z_rth_pr_2),
+    _set_two_cell_fields_to_zero_vp(
+        out=(field_to_zero_1, field_to_zero_2),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
