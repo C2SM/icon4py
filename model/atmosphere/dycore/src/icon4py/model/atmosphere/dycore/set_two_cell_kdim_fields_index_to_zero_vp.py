@@ -23,15 +23,22 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _set_two_cell_kdim_fields_index_to_zero_vp(field_index_to_zero_1: Field[[CellDim, KDim], vpfloat], field_index_to_zero_2: Field[[CellDim, KDim], vpfloat], k: Field[[KDim], int32],k1: int32, k2:int32) -> (
-    tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
-):
+def _set_two_cell_kdim_fields_index_to_zero_vp(
+    field_index_to_zero_1: Field[[CellDim, KDim], vpfloat],
+    field_index_to_zero_2: Field[[CellDim, KDim], vpfloat],
+    k: Field[[KDim], int32],
+    k1: int32,
+    k2: int32,
+) -> (tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]):
     """Formerly known as _mo_solve_nonhydro_stencil_45 and _mo_solve_nonhydro_stencil_45_b."""
-
     k = broadcast(k, (CellDim, KDim))
 
-    field_index_to_zero_1 = where((k==k1), _set_cell_kdim_field_to_zero_vp(), field_index_to_zero_1)
-    field_index_to_zero_2 = where((k==k2), _set_cell_kdim_field_to_zero_vp(), field_index_to_zero_2)
+    field_index_to_zero_1 = where(
+        (k == k1), _set_cell_kdim_field_to_zero_vp(), field_index_to_zero_1
+    )
+    field_index_to_zero_2 = where(
+        (k == k2), _set_cell_kdim_field_to_zero_vp(), field_index_to_zero_2
+    )
 
     return field_index_to_zero_1, field_index_to_zero_2
 

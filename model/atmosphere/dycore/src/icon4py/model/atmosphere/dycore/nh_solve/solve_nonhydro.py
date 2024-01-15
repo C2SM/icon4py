@@ -24,6 +24,7 @@ import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.copy_cell_field_to_vp import copy_cell_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -32,9 +33,6 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
-)
-from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
-    set_two_cell_kdim_fields_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
@@ -123,9 +121,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
-from icon4py.model.atmosphere.dycore.copy_cell_field_to_vp import (
-    copy_cell_field_to_vp,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
 )
@@ -137,6 +132,9 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
+)
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
+    set_two_cell_kdim_fields_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
