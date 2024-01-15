@@ -15,23 +15,24 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
-from icon4py.model.atmosphere.dycore.set_cell_field_to_zero_vp import (
-    _set_cell_field_to_zero_vp,
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _set_two_cell_fields_to_zero_vp() -> (
+def _set_two_cell_fields_to_zero_vp(k: Field[[KDim], int32]) -> (
     tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
 ):
     """Formerly known as_mo_solve_nonhydro_stencil_01."""
-    return _set_cell_field_to_zero_vp(), _set_cell_field_to_zero_vp()
+    return _set_cell_kdim_field_to_zero_vp(), _set_cell_kdim_field_to_zero_vp()
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def set_two_cell_fields_to_zero_vp(
+    k: Field[[KDim], int32],
     field_to_zero_1: Field[[CellDim, KDim], vpfloat],
     field_to_zero_2: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -40,6 +41,7 @@ def set_two_cell_fields_to_zero_vp(
     vertical_end: int32,
 ):
     _set_two_cell_fields_to_zero_vp(
+        k,
         out=(field_to_zero_1, field_to_zero_2),
         domain={
             CellDim: (horizontal_start, horizontal_end),

@@ -237,7 +237,7 @@ CONSECUTIVE_STENCIL = """\
     !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
-    !$DSL START STENCIL(name=set_cell_field_to_zero_vp; field=z_q(:,:); vertical_lower=1; vertical_upper=1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field=z_q(:,:); vertical_lower=1; vertical_upper=1; &
     !$DSL               horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -255,7 +255,7 @@ CONSECUTIVE_STENCIL = """\
     !$DSL ENDIF()
 
     !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45; noendif=true; noprofile=true)
-    !$DSL END STENCIL(name=set_cell_field_to_zero_vp; noendif=true; noprofile=true)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp; noendif=true; noprofile=true)
 
     !$DSL END CREATE()
 """
