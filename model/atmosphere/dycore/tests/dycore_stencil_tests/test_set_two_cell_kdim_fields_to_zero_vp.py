@@ -15,8 +15,8 @@ import numpy as np
 import pytest as pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.set_two_cell_fields_to_zero_vp import (
-    set_two_cell_fields_to_zero_vp,
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
+    set_two_cell_kdim_fields_to_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 class TestMoSolveNonhydroStencil01(StencilTest):
-    PROGRAM = set_two_cell_fields_to_zero_vp
+    PROGRAM = set_two_cell_kdim_fields_to_zero_vp
     OUTPUTS = ("field_to_zero_1", "field_to_zero_2")
 
     @staticmethod
