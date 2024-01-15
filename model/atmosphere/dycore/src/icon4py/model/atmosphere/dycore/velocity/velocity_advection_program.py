@@ -26,8 +26,8 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_12 import (
-    _mo_velocity_advection_stencil_12,
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
@@ -210,7 +210,7 @@ def _fused_stencils_11_to_13(
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = where(k_field == nlev, _mo_velocity_advection_stencil_12(), local_z_w_con_c)
+    local_z_w_con_c = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), local_z_w_con_c)
 
     local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),

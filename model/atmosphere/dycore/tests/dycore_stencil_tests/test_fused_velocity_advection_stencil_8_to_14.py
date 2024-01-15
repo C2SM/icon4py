@@ -30,7 +30,7 @@ from icon4py.model.common.test_utils.helpers import (
 from .test_copy_cell_field_to_vp import copy_cell_field_to_vp_numpy
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_velocity_advection_stencil_10 import mo_velocity_advection_stencil_10_numpy
-from .test_mo_velocity_advection_stencil_12 import mo_velocity_advection_stencil_12_numpy
+from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 from .test_mo_velocity_advection_stencil_13 import mo_velocity_advection_stencil_13_numpy
 from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
 
@@ -94,7 +94,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         z_w_con_c = np.where(
             k < nlevp1,
             copy_cell_field_to_vp_numpy(w),
-            mo_velocity_advection_stencil_12_numpy(z_w_con_c),
+            set_cell_kdim_field_to_zero_vp_numpy(z_w_con_c),
         )
 
         z_w_con_c = np.where(

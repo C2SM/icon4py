@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_12 import (
-    _mo_velocity_advection_stencil_12,
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
@@ -90,7 +90,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     z_w_con_c = where(
         k < nlevp1,
         _copy_cell_field_to_vp(w),
-        _mo_velocity_advection_stencil_12(),
+        _set_cell_kdim_field_to_zero_vp(),
     )
 
     z_w_con_c = where(
