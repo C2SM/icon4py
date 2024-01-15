@@ -19,14 +19,14 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
+)
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat

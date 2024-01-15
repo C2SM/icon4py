@@ -66,9 +66,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_43 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
     _mo_solve_nonhydro_stencil_44,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
 )
