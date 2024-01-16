@@ -47,9 +47,11 @@ from icon4py.model.driver.serialbox_helpers import (
 )
 from icon4py.model.common.diagnostic_calculations.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
-backend = run_gtfn
+compiler_backend = run_gtfn
+compiler_cached_backend = run_gtfn_cached
+backend = compiler_backend
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -178,20 +180,20 @@ def test_jabw_initial_condition(
         offset_provider={}
     )
 
-    '''
+
     mo_diagnose_pressure.with_backend(backend)(
+        data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.temperature,
+        diagnostic_state.pressure_sfc,
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,
-        diagnostic_state.pressure_sfc,
-        data_provider.from_metrics_savepoint().ddqz_z_full,
         icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
         icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
         0,
         icon_grid.num_levels,
         offset_provider={}
     )
-    '''
+
 
     if debug:
         script_dir = os.path.dirname(os.path.abspath(__file__))

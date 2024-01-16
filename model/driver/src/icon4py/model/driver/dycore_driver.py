@@ -60,9 +60,11 @@ from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.dimension import C2VDim, V2C2VDim, E2C2VDim, CellDim, EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
-backend = run_gtfn
+compiler_backend = run_gtfn
+compiler_cached_backend = run_gtfn_cached
+backend = compiler_cached_backend
 log = logging.getLogger(__name__)
 
 
@@ -266,22 +268,22 @@ class OutputState:
 
     def _write_dimension(self, grid: IconGrid, diagnostic_metric_state: DiagnosticMetricState):
         for i in range(self._number_of_files):
-            self._nf4_basegrp[self._current_file_number].variables["clat"][:] = diagnostic_metric_state.cell_center_lat.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["clon"][:] = diagnostic_metric_state.cell_center_lon.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["clat_bnds"][:, :] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[C2VDim]]
-            self._nf4_basegrp[self._current_file_number].variables["clon_bnds"][:, :] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[C2VDim]]
+            self._nf4_basegrp[i].variables["clat"][:] = diagnostic_metric_state.cell_center_lat.asnumpy()
+            self._nf4_basegrp[i].variables["clon"][:] = diagnostic_metric_state.cell_center_lon.asnumpy()
+            self._nf4_basegrp[i].variables["clat_bnds"][:, :] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[C2VDim]]
+            self._nf4_basegrp[i].variables["clon_bnds"][:, :] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[C2VDim]]
 
-            self._nf4_basegrp[self._current_file_number].variables["elat"][:] = diagnostic_metric_state.e_lat.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["elon"][:] = diagnostic_metric_state.e_lon.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["elat_bnds"][:, :] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[E2C2VDim]]
-            self._nf4_basegrp[self._current_file_number].variables["elon_bnds"][:, :] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]]
+            self._nf4_basegrp[i].variables["elat"][:] = diagnostic_metric_state.e_lat.asnumpy()
+            self._nf4_basegrp[i].variables["elon"][:] = diagnostic_metric_state.e_lon.asnumpy()
+            self._nf4_basegrp[i].variables["elat_bnds"][:, :] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[E2C2VDim]]
+            self._nf4_basegrp[i].variables["elon_bnds"][:, :] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]]
             log.info(f"E2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]].shape}")
             log.info(f"V2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]].shape}")
 
-            self._nf4_basegrp[self._current_file_number].variables["vlat"][:] = diagnostic_metric_state.v_lat.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["vlon"][:] = diagnostic_metric_state.v_lon.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["vlat_bnds"][:, :] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[V2C2VDim]]
-            self._nf4_basegrp[self._current_file_number].variables["vlon_bnds"][:, :] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]]
+            self._nf4_basegrp[i].variables["vlat"][:] = diagnostic_metric_state.v_lat.asnumpy()
+            self._nf4_basegrp[i].variables["vlon"][:] = diagnostic_metric_state.v_lon.asnumpy()
+            self._nf4_basegrp[i].variables["vlat_bnds"][:, :] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[V2C2VDim]]
+            self._nf4_basegrp[i].variables["vlon_bnds"][:, :] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]]
 
             full_height = np.zeros(grid.num_levels, dtype=float)
             half_height = diagnostic_metric_state.vct_a.asnumpy()
@@ -290,9 +292,9 @@ class OutputState:
                 full_height[k] = 0.5 * (half_height[k] + half_height[k + 1])
                 full_height_bnds[k, 0] = half_height[k]
                 full_height_bnds[k, 1] = half_height[k + 1]
-            self._nf4_basegrp[self._current_file_number].variables["height_2"][:] = full_height
-            self._nf4_basegrp[self._current_file_number].variables["height"][:] = half_height
-            self._nf4_basegrp[self._current_file_number].variables["height_2_bnds"][:, :] = full_height_bnds
+            self._nf4_basegrp[i].variables["height_2"][:] = full_height
+            self._nf4_basegrp[i].variables["height"][:] = half_height
+            self._nf4_basegrp[i].variables["height_2_bnds"][:, :] = full_height_bnds
 
     def _write_to_netcdf(self, current_date: datetime, prognostic_state: PrognosticState, diagnostic_state: DiagnosticState):
 
@@ -510,11 +512,11 @@ class TimeLoop:
 
         '''
         mo_diagnose_pressure.with_backend(backend)(
+            diagnostic_metric_state.ddqz_z_full,
             diagnostic_state.temperature,
+            diagnostic_state.pressure_sfc,
             diagnostic_state.pressure,
             diagnostic_state.pressure_ifc,
-            diagnostic_state.pressure_sfc,
-            diagnostic_metric_state.ddqz_z_full,
             self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
             self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             0,
@@ -651,11 +653,11 @@ class TimeLoop:
 
             '''
             mo_diagnose_pressure.with_backend(backend)(
+                diagnostic_metric_state.ddqz_z_full,
                 diagnostic_state.temperature,
+                diagnostic_state.pressure_sfc,
                 diagnostic_state.pressure,
                 diagnostic_state.pressure_ifc,
-                diagnostic_state.pressure_sfc,
-                diagnostic_metric_state.ddqz_z_full,
                 self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
                 self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
                 0,

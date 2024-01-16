@@ -46,9 +46,9 @@ def _mo_diagnose_pressure_sfc(
 @scan_operator(axis=KDim,forward=False,init=(True,0.0,0.0))
 def _scan_pressure(
     state: tuple[bool, float, float],
+    ddqz_z_full: float,
     temperature: float,
     pressure_sfc: float,
-    ddqz_z_full: float,
 ):
     if state[0]:
         pressure_first_level = pressure_sfc * exp( -ddqz_z_full / temperature )
@@ -61,14 +61,14 @@ def _scan_pressure(
 
 @field_operator
 def _mo_diagnose_pressure(
+    ddqz_z_full: Field[[CellDim, KDim], float],
     temperature: Field[[CellDim, KDim], float],
     pressure_sfc: Field[[CellDim], float],
-    ddqz_z_full: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     redundant, pressure, pressure_ifc = _scan_pressure(
-        pressure_sfc,
+        ddqz_z_full,
         temperature,
-        ddqz_z_full
+        pressure_sfc
     )
     return pressure, pressure_ifc
 
@@ -127,22 +127,22 @@ def mo_diagnose_pressure_sfc(
         },
     )
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program
 def mo_diagnose_pressure(
-    temperature: Field[[CellDim, KDim], float],
-    pressure: Field[[CellDim,KDim], float],
-    pressure_ifc: Field[[CellDim, KDim], float],
-    pressure_sfc: Field[[CellDim], float],
     ddqz_z_full: Field[[CellDim, KDim], float],
+    temperature: Field[[CellDim, KDim], float],
+    pressure_sfc: Field[[CellDim], float],
+    pressure: Field[[CellDim, KDim], float],
+    pressure_ifc: Field[[CellDim, KDim], float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
     _mo_diagnose_pressure(
+        ddqz_z_full,
         temperature,
         pressure_sfc,
-        ddqz_z_full,
         out=(
             pressure,
             pressure_ifc

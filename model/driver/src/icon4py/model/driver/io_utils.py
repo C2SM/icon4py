@@ -54,9 +54,11 @@ from gt4py.next import as_field
 from gt4py.next.common import Field
 
 import sys
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
-backend = run_gtfn
+compiler_backend = run_gtfn
+compiler_cached_backend = run_gtfn_cached
+backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -294,6 +296,7 @@ def model_initialization_jabw(
     lapse_rate = RD * gamma / GRAV
     for k_index in range(num_levels-1,-1,-1):
         eta_old = np.full(cell_size,fill_value=1.0e-7, dtype=float)
+        log.info(f'In Newton iteration, k = {k_index}')
         # Newton iteration to determine zeta
         for newton_iter_index in range(100):
             eta_v_numpy[:, k_index] = (eta_old - eta_0) * MATH_PI_2
@@ -329,6 +332,7 @@ def model_initialization_jabw(
         pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** CPD_O_RD
         temperature_numpy[:, k_index] = temperature_jw
 
+    log.info(f'Newton iteration completed!')
     '''
     mo_cells2edges_scalar_interior.with_backend(backend)(
         cells2edges_coeff,
@@ -349,6 +353,7 @@ def model_initialization_jabw(
         eta_v_numpy,
         mask_array_edge_start_plus1_to_edge_end,
     )
+    log.info(f'Cell-to-edge computation completed.')
 
     vn_numpy = mo_u2vn_jabw_numpy(
         jw_u0,
@@ -361,6 +366,7 @@ def model_initialization_jabw(
         eta_v_e_numpy,
         mask_array_edge_start_plus1_to_edge_end,
     )
+    log.info(f'U2vn computation completed.')
 
     rho_numpy, exner_numpy, theta_v_numpy = mo_hydro_adjust(
         wgtfac_c,
@@ -374,6 +380,7 @@ def model_initialization_jabw(
         theta_v_numpy,
         num_levels,
     )
+    log.info(f'Hydrostatis adjustment computation completed.')
 
     vn = as_field((EdgeDim, KDim), vn_numpy)
     w = as_field((CellDim, KDim), w_numpy)
@@ -406,6 +413,7 @@ def model_initialization_jabw(
             "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
         },
     )
+    log.info(f'U, V computation completed.')
 
     # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment
     #temperature_numpy = mo_diagnose_temperature_numpy(theta_v_numpy,exner_numpy)
@@ -487,6 +495,7 @@ def model_initialization_jabw(
         mass_flx_me=_allocate(EdgeDim, KDim, grid=icon_grid),
         mass_flx_ic=_allocate(CellDim, KDim, grid=icon_grid),
     )
+    log.info(f'Initialization completed.')
 
     return (
         diffusion_diagnostic_state,

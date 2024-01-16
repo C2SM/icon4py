@@ -26,6 +26,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
+    run_gtfn_gpu,
 )
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -262,6 +263,7 @@ class DiffusionConfig:
                 "diffusion` is implemented"
             )
 
+        '''
         if self.diffusion_type < 0:
             self.apply_to_temperature = False
             self.apply_to_horizontal_wind = False
@@ -269,6 +271,7 @@ class DiffusionConfig:
         else:
             self.apply_to_temperature = True
             self.apply_to_horizontal_wind = True
+        '''
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,

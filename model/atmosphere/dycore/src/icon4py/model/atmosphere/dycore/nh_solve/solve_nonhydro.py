@@ -17,7 +17,7 @@ import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
@@ -163,7 +163,9 @@ from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
-backend = run_gtfn
+compiler_backend = run_gtfn
+compiler_cached_backend = run_gtfn_cached
+backend = compiler_cached_backend
 # flake8: noqa
 log = logging.getLogger(__name__)
 
