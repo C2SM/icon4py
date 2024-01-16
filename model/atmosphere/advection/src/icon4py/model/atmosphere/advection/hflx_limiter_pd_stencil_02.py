@@ -36,17 +36,18 @@ def _hflx_limiter_pd_stencil_02(
     return p_mflx_tracer_h_out
 
 
-@program
+@program(grid_type="unstructured")
 def hflx_limiter_pd_stencil_02(
     refin_ctrl: Field[[EdgeDim], int32],
     r_m: Field[[CellDim, KDim], float],
+    p_mflx_tracer_h_in: Field[[EdgeDim, KDim], float],
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     bound: int32,
 ):
     _hflx_limiter_pd_stencil_02(
         refin_ctrl,
         r_m,
-        p_mflx_tracer_h,
+        p_mflx_tracer_h_in,
         bound,
         out=p_mflx_tracer_h,
     )

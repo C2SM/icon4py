@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 
@@ -31,7 +32,7 @@ def _step_advection_stencil_01(
     return rhodz_ast + k_offset_up_low
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def step_advection_stencil_01(
     rhodz_ast: Field[[CellDim, KDim], float],
     p_mflx_contra_v: Field[[CellDim, KDim], float],
