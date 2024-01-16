@@ -265,12 +265,11 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         vn,
     )
 
-    if is_iau_active:
-        vn = where(
-            (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-            _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
-            vn,
-        )
+    vn = where(
+        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+        _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
+        vn,
+    ) if is_iau_active else vn
 
     return z_rho_e, z_theta_v_e, z_gradh_exner, vn
 
@@ -381,12 +380,11 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
         vn,
     ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac))) else vn
 
-    if is_iau_active:
-        vn = where(
-            (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-            _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
-            vn,
-        )
+    vn = where(
+        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+        _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
+        vn,
+    ) if is_iau_active else vn
 
     return z_graddiv_vn, vn
 
@@ -553,46 +551,46 @@ def _fused_solve_nonhydro_stencil_15_to_28(
         nflat_gradp=nflat_gradp,
     ) if istep == 1 else (z_rho_e, z_theta_v_e, z_gradh_exner, vn)
 
-    (z_graddiv_vn, vn) = _fused_solve_nonhydro_stencil_15_to_28_corrector(
-            hmask_dd3d=hmask_dd3d,
-            scalfac_dd3d=scalfac_dd3d,
-            z_dwdz_dd=z_dwdz_dd,
-            inv_dual_edge_length=inv_dual_edge_length,
-            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-            vn_nnow=vn_nnow,
-            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-            ddt_vn_phy=ddt_vn_phy,
-            z_graddiv_vn=z_graddiv_vn,
-            vn_incr=vn_incr,
-            vn=vn,
-            z_theta_v_e=z_theta_v_e,
-            z_gradh_exner=z_gradh_exner,
-            z_graddiv2_vn=z_graddiv2_vn,
-            geofac_grdiv=geofac_grdiv,
-            scal_divdamp=scal_divdamp,
-            bdy_divdamp=bdy_divdamp,
-            nudgecoeff_e=nudgecoeff_e,
-            horz_idx=horz_idx,
-            vert_idx=vert_idx,
-            wgt_nnow_vel=wgt_nnew_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
-            dtime=dtime,
-            cpd=cpd,
-            iau_wgt_dyn=iau_wgt_dyn,
-            is_iau_active=is_iau_active,
-            lhdiff_rcf=lhdiff_rcf,
-            divdamp_fac=divdamp_fac,
-            divdamp_fac_o2=divdamp_fac_o2,
-            divdamp_order=divdamp_order,
-            scal_divdamp_o2=scal_divdamp_o2,
-            limited_area=limited_area,
-            itime_scheme=itime_scheme,
-            horizontal_lower_0=horizontal_lower_0,
-            horizontal_upper_0=horizontal_upper_0,
-            horizontal_lower_2=horizontal_lower_2,
-            horizontal_upper_2=horizontal_upper_2,
-            kstart_dd3d=kstart_dd3d,
-        ) if istep > 1 else (z_graddiv_vn, vn)
+    # (z_graddiv_vn, vn) = _fused_solve_nonhydro_stencil_15_to_28_corrector(
+    #         hmask_dd3d=hmask_dd3d,
+    #         scalfac_dd3d=scalfac_dd3d,
+    #         z_dwdz_dd=z_dwdz_dd,
+    #         inv_dual_edge_length=inv_dual_edge_length,
+    #         ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+    #         vn_nnow=vn_nnow,
+    #         ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+    #         ddt_vn_phy=ddt_vn_phy,
+    #         z_graddiv_vn=z_graddiv_vn,
+    #         vn_incr=vn_incr,
+    #         vn=vn,
+    #         z_theta_v_e=z_theta_v_e,
+    #         z_gradh_exner=z_gradh_exner,
+    #         z_graddiv2_vn=z_graddiv2_vn,
+    #         geofac_grdiv=geofac_grdiv,
+    #         scal_divdamp=scal_divdamp,
+    #         bdy_divdamp=bdy_divdamp,
+    #         nudgecoeff_e=nudgecoeff_e,
+    #         horz_idx=horz_idx,
+    #         vert_idx=vert_idx,
+    #         wgt_nnow_vel=wgt_nnew_vel,
+    #         wgt_nnew_vel=wgt_nnew_vel,
+    #         dtime=dtime,
+    #         cpd=cpd,
+    #         iau_wgt_dyn=iau_wgt_dyn,
+    #         is_iau_active=is_iau_active,
+    #         lhdiff_rcf=lhdiff_rcf,
+    #         divdamp_fac=divdamp_fac,
+    #         divdamp_fac_o2=divdamp_fac_o2,
+    #         divdamp_order=divdamp_order,
+    #         scal_divdamp_o2=scal_divdamp_o2,
+    #         limited_area=limited_area,
+    #         itime_scheme=itime_scheme,
+    #         horizontal_lower_0=horizontal_lower_0,
+    #         horizontal_upper_0=horizontal_upper_0,
+    #         horizontal_lower_2=horizontal_lower_2,
+    #         horizontal_upper_2=horizontal_upper_2,
+    #         kstart_dd3d=kstart_dd3d,
+    #     ) if istep > 1 else (z_graddiv_vn, vn)
 
 
     return z_rho_e, z_theta_v_e, z_gradh_exner, vn, z_graddiv_vn
