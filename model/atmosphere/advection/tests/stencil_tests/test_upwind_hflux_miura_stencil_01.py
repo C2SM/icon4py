@@ -85,7 +85,7 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
             z_lsq_coeff_2=z_lsq_coeff_2,
             z_lsq_coeff_3=z_lsq_coeff_3,
             distv_bary_1=distv_bary_1,
-            distv_bary_2=distv_bary_1,
+            distv_bary_2=distv_bary_2,
             p_mass_flx_e=p_mass_flx_e,
             cell_rel_idx_dsl=cell_rel_idx_dsl,
             p_out_e=p_out_e,
