@@ -10,113 +10,53 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_02 import hflx_limiter_pd_stencil_02
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import constant_field, random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, random_field
 
 
-def hflx_limiter_pd_stencil_02_numpy(
-    e2c: np.array,
-    refin_ctrl: np.array,
-    r_m: np.array,
-    p_mflx_tracer_h_in: np.array,
-    bound,
-):
-    r_m_e2c = r_m[e2c]
-    refin_ctrl = np.expand_dims(refin_ctrl, axis=-1)
-    p_mflx_tracer_h_out = np.where(
-        refin_ctrl != bound,
-        np.where(
-            p_mflx_tracer_h_in >= 0,
-            p_mflx_tracer_h_in * r_m_e2c[:, 0],
-            p_mflx_tracer_h_in * r_m_e2c[:, 1],
-        ),
-        p_mflx_tracer_h_in,
-    )
-    return p_mflx_tracer_h_out
+class TestHflxLimiterPdStencil02(StencilTest):
+    PROGRAM = hflx_limiter_pd_stencil_02
+    OUTPUTS = ("p_mflx_tracer_h",)
 
+    @staticmethod
+    def reference(grid, refin_ctrl, r_m, p_mflx_tracer_h, bound, **kwargs):
+        e2c = grid.connectivities[E2CDim]
+        r_m_e2c = r_m[e2c]
+        refin_ctrl_expanded = np.expand_dims(refin_ctrl, axis=-1)
+        p_mflx_tracer_h_out = np.where(
+            refin_ctrl_expanded != bound,
+            np.where(
+                p_mflx_tracer_h >= 0,
+                p_mflx_tracer_h * r_m_e2c[:, 0],
+                p_mflx_tracer_h * r_m_e2c[:, 1],
+            ),
+            p_mflx_tracer_h,
+        )
+        return dict(p_mflx_tracer_h=p_mflx_tracer_h_out)
 
-def test_hflx_limiter_pd_stencil_02_nowhere_matching_refin_ctl(backend):
-    grid = SimpleGrid()
-    bound = np.int32(7)
-    refin_ctrl = constant_field(grid, 4, EdgeDim, dtype=np.int32)
-    r_m = random_field(grid, CellDim, KDim)
-    p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
+    @pytest.fixture(params=[("no_match", 4), ("everywhere_match", 7), ("partly_match", 4)])
+    def input_data(self, request, grid):
+        bound = np.int32(7)
+        scenario, ctrl_value = request.param
 
-    ref = hflx_limiter_pd_stencil_02_numpy(
-        grid.connectivities[E2CDim],
-        refin_ctrl.asnumpy(),
-        r_m.asnumpy(),
-        p_mflx_tracer_h_in.asnumpy(),
-        bound,
-    )
+        if scenario == "no_match":
+            refin_ctrl = constant_field(grid, ctrl_value, EdgeDim, dtype=np.int32)
+        elif scenario == "everywhere_match":
+            refin_ctrl = constant_field(grid, bound, EdgeDim, dtype=np.int32)
+        elif scenario == "partly_match":
+            refin_ctrl = constant_field(grid, 5, EdgeDim, dtype=np.int32)
+            refin_ctrl[2:6] = bound
 
-    hflx_limiter_pd_stencil_02.with_backend(backend)(
-        refin_ctrl,
-        r_m,
-        p_mflx_tracer_h_in,
-        bound,
-        offset_provider={
-            "E2C": grid.get_offset_provider("E2C"),
-        },
-    )
-    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
+        r_m = random_field(grid, CellDim, KDim)
+        p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
-
-def test_hflx_limiter_pd_stencil_02_everywhere_matching_refin_ctl(backend):
-    grid = SimpleGrid()
-    bound = np.int32(7)
-    refin_ctrl = constant_field(grid, bound, EdgeDim, dtype=np.int32)
-    r_m = random_field(grid, CellDim, KDim)
-    p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
-
-    ref = hflx_limiter_pd_stencil_02_numpy(
-        grid.connectivities[E2CDim],
-        refin_ctrl.asnumpy(),
-        r_m.asnumpy(),
-        p_mflx_tracer_h_in.asnumpy(),
-        bound,
-    )
-
-    hflx_limiter_pd_stencil_02.with_backend(backend)(
-        refin_ctrl,
-        r_m,
-        p_mflx_tracer_h_in,
-        bound,
-        offset_provider={
-            "E2C": grid.get_offset_provider("E2C"),
-        },
-    )
-    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
-
-
-def test_hflx_limiter_pd_stencil_02_partly_matching_refin_ctl(backend):
-    grid = SimpleGrid()
-    bound = np.int32(4)
-    refin_ctrl = constant_field(grid, 5, EdgeDim, dtype=np.int32)
-    refin_ctrl[2:6] = bound
-    r_m = random_field(grid, CellDim, KDim)
-    p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
-
-    ref = hflx_limiter_pd_stencil_02_numpy(
-        grid.connectivities[E2CDim],
-        refin_ctrl.asnumpy(),
-        r_m.asnumpy(),
-        p_mflx_tracer_h_in.asnumpy(),
-        bound,
-    )
-
-    hflx_limiter_pd_stencil_02.with_backend(backend)(
-        refin_ctrl,
-        r_m,
-        p_mflx_tracer_h_in,
-        bound,
-        offset_provider={
-            "E2C": grid.get_offset_provider("E2C"),
-        },
-    )
-    assert np.allclose(p_mflx_tracer_h_in.asnumpy(), ref)
+        return dict(
+            refin_ctrl=refin_ctrl,
+            r_m=r_m,
+            p_mflx_tracer_h=p_mflx_tracer_h_in,
+            bound=bound,
+        )
