@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 class TestStepAdvectionStencil03(StencilTest):
     PROGRAM = step_advection_stencil_03
-    OUTPUTS = ("p_tracer_new", )
+    OUTPUTS = ("p_tracer_new",)
 
     @staticmethod
     def reference(

@@ -16,17 +16,19 @@ import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, Output, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field, zero_field
 
 
 class TestStepAdvectionStencil02(StencilTest):
     PROGRAM = step_advection_stencil_02
     OUTPUTS = (
         Output(
-            "rhodz_ast2", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(None, -1))
+            "rhodz_ast2",
+            refslice=(slice(None), slice(None, -1)),
+            gtslice=(slice(None), slice(None, -1)),
         ),
     )
-    
+
     @staticmethod
     def reference(
         grid,

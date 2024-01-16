@@ -19,13 +19,19 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_01 impor
     upwind_hflux_miura_cycl_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    random_mask,
+    zero_field,
+)
+
 
 class TestUpwindHfluxMiuraCyclStencil01(StencilTest):
     PROGRAM = upwind_hflux_miura_cycl_stencil_01
     OUTPUTS = ("z_tracer_mflx_dsl",)
 
-    @staticmethod 
+    @staticmethod
     def reference(
         grid,
         z_lsq_coeff_1_dsl: np.array,

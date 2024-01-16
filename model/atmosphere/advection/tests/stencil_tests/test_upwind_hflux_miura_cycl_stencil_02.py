@@ -19,15 +19,15 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 impor
     upwind_hflux_miura_cycl_stencil_02,
 )
 from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, zero_field, random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
     PROGRAM = upwind_hflux_miura_cycl_stencil_02
     OUTPUTS = (
         "z_rhofluxdiv_c_out",
-        "z_fluxdiv_c_dsl", 
-        "z_rho_new_dsl", 
+        "z_fluxdiv_c_dsl",
+        "z_rho_new_dsl",
         "z_tracer_new_dsl",
     )
 
@@ -60,7 +60,7 @@ class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
             z_rhofluxdiv_c_out=z_rhofluxdiv_c_out,
             z_fluxdiv_c_dsl=z_fluxdiv_c_dsl,
             z_rho_new_dsl=z_rho_new_dsl,
-            z_tracer_new_dsl=z_tracer_new_dsl
+            z_tracer_new_dsl=z_tracer_new_dsl,
         )
 
     @pytest.fixture

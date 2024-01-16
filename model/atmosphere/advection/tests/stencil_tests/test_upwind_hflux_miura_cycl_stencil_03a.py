@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03a impo
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+
 class TestUpwindHfluxMiuraCyclStencil03a(StencilTest):
     PROGRAM = upwind_hflux_miura_cycl_stencil_03a
     OUTPUTS = ("p_out_e",)

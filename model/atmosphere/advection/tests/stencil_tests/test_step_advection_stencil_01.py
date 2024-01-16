@@ -23,7 +23,9 @@ class TestStepAdvectionStencil01(StencilTest):
     PROGRAM = step_advection_stencil_01
     OUTPUTS = (
         Output(
-            "rhodz_ast2", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(None, -1))
+            "rhodz_ast2",
+            refslice=(slice(None), slice(None, -1)),
+            gtslice=(slice(None), slice(None, -1)),
         ),
     )
 
@@ -38,7 +40,7 @@ class TestStepAdvectionStencil01(StencilTest):
         **kwargs,
     ):
         tmp = p_dtime * (
-        p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
+            p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
         )
         rhodz_ast2 = rhodz_ast + tmp
 

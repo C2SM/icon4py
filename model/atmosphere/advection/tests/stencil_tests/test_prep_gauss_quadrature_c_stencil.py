@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+
 class TestPrepGaussQuadratureCStencil(StencilTest):
     PROGRAM = prep_gauss_quadrature_c_stencil
     OUTPUTS = (
@@ -401,4 +402,4 @@ class TestPrepGaussQuadratureCStencil(StencilTest):
             p_quad_vector_sum_9=p_quad_vector_sum_9,
             p_quad_vector_sum_10=p_quad_vector_sum_10,
             p_dreg_area_out=p_dreg_area_out,
-            )
+        )

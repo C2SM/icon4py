@@ -23,7 +23,7 @@ class TestStepAdvectionStencil04(StencilTest):
     PROGRAM = step_advection_stencil_04
     OUTPUTS = ("opt_ddt_tracer_adv",)
 
-    @staticmethod 
+    @staticmethod
     def reference(
         grid,
         p_tracer_now: np.array,
@@ -34,7 +34,7 @@ class TestStepAdvectionStencil04(StencilTest):
         opt_ddt_tracer_adv = (p_tracer_new - p_tracer_now) / p_dtime
 
         return dict(opt_ddt_tracer_adv=opt_ddt_tracer_adv)
-    
+
     @pytest.fixture
     def input_data(self, grid):
         p_tracer_now = random_field(grid, CellDim, KDim)
@@ -45,5 +45,5 @@ class TestStepAdvectionStencil04(StencilTest):
             p_tracer_now=p_tracer_now,
             p_tracer_new=p_tracer_new,
             p_dtime=p_dtime,
-            opt_ddt_tracer_adv=opt_ddt_tracer_adv
+            opt_ddt_tracer_adv=opt_ddt_tracer_adv,
         )

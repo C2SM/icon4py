@@ -19,7 +19,13 @@ from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
     upwind_hflux_miura_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    constant_field,
+    random_field,
+    zero_field,
+)
+
 
 class TestUpwindHfluxMiuraStencil01(StencilTest):
     PROGRAM = upwind_hflux_miura_stencil_01

@@ -19,7 +19,12 @@ from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_01a import (
     hflux_ffsl_hybrid_stencil_01a,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    constant_field,
+    random_field,
+    zero_field,
+)
 
 
 class TestHfluxFfslHybridStencil01a(StencilTest):
