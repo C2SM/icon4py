@@ -15,12 +15,18 @@ import pytest
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02c import face_val_ppm_stencil_02c
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field
 
 
 class TestFaceValPpmStencil02c(StencilTest):
     PROGRAM = face_val_ppm_stencil_02c
-    OUTPUTS = (("p_face", (slice(None), slice(1, None))),)
+    OUTPUTS = (
+        Output(
+            name="p_face",
+            refslice=(slice(None), slice(1, None)),
+            gtslice=(slice(None), slice(1, None)),
+        ),
+    )
 
     @staticmethod
     def reference(grid, p_cc: np.array, **kwargs):
