@@ -20,20 +20,20 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_64() -> Field[[CellDim, KDim], wpfloat]:
-    mass_flx_ic_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
-    return mass_flx_ic_wp
+def _set_cell_kdim_field_to_zero_wp() -> Field[[CellDim, KDim], wpfloat]:
+    '''formerly known as _mo_solve_nonhydro_stencil_64.'''
+    return broadcast(wpfloat("0.0"), (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_64(
+def set_cell_kdim_field_to_zero_wp(
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_64(
+    _set_cell_kdim_field_to_zero_wp(
         out=mass_flx_ic,
         domain={
             CellDim: (horizontal_start, horizontal_end),
