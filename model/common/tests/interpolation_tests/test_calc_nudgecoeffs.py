@@ -52,8 +52,8 @@ def test_calc_nudgecoeffs_e(
     nudgecoeff_e = zero_field(icon_grid, EdgeDim, dtype=wpfloat)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
     refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
-    grf_nudge_start_e = HorizontalMarkerIndex.nudging(EdgeDim)
-    nudge_max_coeff = wpfloat(0.075)
+    grf_nudge_start_e = 10
+    nudge_max_coeff = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
     nudge_zone_width = int32(10)
 
@@ -76,8 +76,5 @@ def test_calc_nudgecoeffs_e(
         horizontal_end,
         offset_provider={},
     )
-
-    np.savetxt("e", nudgecoeff_e.asnumpy())
-    np.savetxt("ref", nudgecoeff_e_ref.asnumpy())
 
     assert np.allclose(nudgecoeff_e.asnumpy(), nudgecoeff_e_ref.asnumpy())
