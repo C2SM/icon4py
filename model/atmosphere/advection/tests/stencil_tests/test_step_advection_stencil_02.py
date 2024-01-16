@@ -12,49 +12,48 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_02 import step_advection_stencil_02
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, Output, random_field, zero_field
 
 
-def step_advection_stencil_02_numpy(
-    rhodz_new: np.ndarray,
-    p_mflx_contra_v: np.ndarray,
-    deepatmo_divzl: np.ndarray,
-    deepatmo_divzu: np.ndarray,
-    pd_time: float,
-) -> np.ndarray:
-    tmp = p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
-    return np.maximum(0.1 * rhodz_new, rhodz_new) - pd_time * tmp
-
-
-def test_step_advection_stencil_02(backend):
-    grid = SimpleGrid()
-    rhodz_ast = random_field(grid, CellDim, KDim)
-    p_mflx_contra = random_field(grid, CellDim, KDim, extend={KDim: 1})
-    deepatmo_divzl = random_field(grid, KDim)
-    deepatmo_divzu = random_field(grid, KDim)
-    result = zero_field(grid, CellDim, KDim)
-    p_dtime = 0.1
-
-    ref = step_advection_stencil_02_numpy(
-        rhodz_ast.asnumpy(),
-        p_mflx_contra.asnumpy(),
-        deepatmo_divzl.asnumpy(),
-        deepatmo_divzu.asnumpy(),
-        p_dtime,
+class TestStepAdvectionStencil02(StencilTest):
+    PROGRAM = step_advection_stencil_02
+    OUTPUTS = (
+        Output(
+            "rhodz_ast2", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(None, -1))
+        ),
     )
+    
+    @staticmethod
+    def reference(
+        grid,
+        p_rhodz_new: np.array,
+        p_mflx_contra_v: np.array,
+        deepatmo_divzl: np.array,
+        deepatmo_divzu: np.array,
+        p_dtime: float,
+        **kwargs,
+    ):
+        tmp = p_mflx_contra_v[:, 1:] * deepatmo_divzl - p_mflx_contra_v[:, :-1] * deepatmo_divzu
+        rhodz_ast2 = np.maximum(0.1 * p_rhodz_new, p_rhodz_new) - p_dtime * tmp
+        return dict(rhodz_ast2=rhodz_ast2)
 
-    step_advection_stencil_02.with_backend(backend)(
-        rhodz_ast,
-        p_mflx_contra,
-        deepatmo_divzl,
-        deepatmo_divzu,
-        p_dtime,
-        result,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(ref[:, :-1], result.asnumpy()[:, :-1])
+    @pytest.fixture
+    def input_data(self, grid):
+        p_rhodz_new = random_field(grid, CellDim, KDim)
+        p_mflx_contra_v = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        deepatmo_divzl = random_field(grid, KDim)
+        deepatmo_divzu = random_field(grid, KDim)
+        p_dtime = 0.1
+        rhodz_ast2 = zero_field(grid, CellDim, KDim)
+        return dict(
+            p_rhodz_new=p_rhodz_new,
+            p_mflx_contra_v=p_mflx_contra_v,
+            deepatmo_divzl=deepatmo_divzl,
+            deepatmo_divzu=deepatmo_divzu,
+            p_dtime=p_dtime,
+            rhodz_ast2=rhodz_ast2,
+        )
