@@ -438,9 +438,9 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             p_quad_vector_sum_4=p_quad_vector_sum_4,
             p_quad_vector_sum_5=p_quad_vector_sum_5,
             p_quad_vector_sum_6=p_quad_vector_sum_6,
-            p_quad_vector_sum_7=p_quad_vector_sum_6,
-            p_quad_vector_sum_8=p_quad_vector_sum_7,
-            p_quad_vector_sum_9=p_quad_vector_sum_8,
+            p_quad_vector_sum_7=p_quad_vector_sum_7,
+            p_quad_vector_sum_8=p_quad_vector_sum_8,
+            p_quad_vector_sum_9=p_quad_vector_sum_9,
             p_quad_vector_sum_10=p_quad_vector_sum_10,
             p_dreg_area=p_dreg_area,
         )

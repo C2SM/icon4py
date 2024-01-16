@@ -82,8 +82,8 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
         p_out_e = zero_field(grid, EdgeDim, KDim)
         return dict(
             z_lsq_coeff_1=z_lsq_coeff_1,
-            z_lsq_coeff_2=z_lsq_coeff_1,
-            z_lsq_coeff_3=z_lsq_coeff_1,
+            z_lsq_coeff_2=z_lsq_coeff_2,
+            z_lsq_coeff_3=z_lsq_coeff_3,
             distv_bary_1=distv_bary_1,
             distv_bary_2=distv_bary_1,
             p_mass_flx_e=p_mass_flx_e,
