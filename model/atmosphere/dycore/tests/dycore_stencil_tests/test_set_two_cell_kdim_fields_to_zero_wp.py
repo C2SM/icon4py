@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
-    mo_solve_nonhydro_stencil_46,
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
+    set_two_cell_kdim_fields_to_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil46(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_46
+    PROGRAM = set_two_cell_kdim_fields_to_zero_wp
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
     @staticmethod

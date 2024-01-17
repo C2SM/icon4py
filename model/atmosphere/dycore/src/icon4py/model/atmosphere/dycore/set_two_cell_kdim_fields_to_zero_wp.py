@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_46() -> (
+def _set_two_cell_kdim_fields_to_zero_wp() -> (
     tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]
 ):
     '''formerly known as _mo_solve_nonhydro_stencil_46.'''
@@ -31,7 +31,7 @@ def _mo_solve_nonhydro_stencil_46() -> (
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_46(
+def set_two_cell_kdim_fields_to_zero_wp(
     w_nnew: Field[[CellDim, KDim], wpfloat],
     z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
@@ -39,7 +39,7 @@ def mo_solve_nonhydro_stencil_46(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_46(
+    _set_two_cell_kdim_fields_to_zero_wp(
         out=(w_nnew, z_contr_w_fl_l),
         domain={
             CellDim: (horizontal_start, horizontal_end),

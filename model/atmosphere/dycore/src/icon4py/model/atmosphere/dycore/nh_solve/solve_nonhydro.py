@@ -97,8 +97,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
-    mo_solve_nonhydro_stencil_46,
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
+    set_two_cell_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
@@ -1242,7 +1242,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(backend)(
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1797,7 +1797,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(run_gtfn)(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
