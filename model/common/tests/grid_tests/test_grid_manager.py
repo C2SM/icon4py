@@ -660,3 +660,44 @@ def test_get_end_index_for_local_grid(grid_file, num_levels, grid_savepoint, dim
     grid_from_manager = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert grid_from_manager.get_end_index(dim, marker) == index
     assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(dim, marker)
+
+
+@pytest.mark.datatest
+@pytest.mark.with_netcdf
+@pytest.mark.parametrize(
+    "dim, marker,start_index,end_index",
+    [
+        (CellDim, HorizontalMarkerIndex.interior(CellDim), 0, 0),
+        (CellDim, HorizontalMarkerIndex.local(CellDim), 0, 20480),
+        (CellDim, HorizontalMarkerIndex.nudging(CellDim), 0, 0),
+        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim), 0, 0),
+        (CellDim, HorizontalMarkerIndex.end(CellDim), 20480, 20480),
+        (CellDim, HorizontalMarkerIndex.halo(CellDim), 20480, 20480),
+        (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 0, 0),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 0, 30720),
+        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 0, 0),
+        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim), 0, 0),
+        (EdgeDim, HorizontalMarkerIndex.end(EdgeDim), 30720, 30720),
+        (EdgeDim, HorizontalMarkerIndex.halo(EdgeDim), 30720, 30720),
+        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 0, 0),
+        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 0, 10242),
+        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 0, 0),
+        (VertexDim, HorizontalMarkerIndex.end(VertexDim), 10242, 10242),
+        (VertexDim, HorizontalMarkerIndex.halo(VertexDim), 10242, 10242),
+    ],
+)
+@pytest.mark.parametrize(
+    "grid_file, experiment, num_levels", [(R02B04_GLOBAL, GLOBAL_EXPERIMENT, 80)]
+)
+def test_get_start_end_index_for_global_grid(
+    grid_file, num_levels, grid_savepoint, dim, marker, start_index, end_index
+):
+    file = resolve_file_from_gridfile_name(grid_file)
+    from_savepoint = grid_savepoint.construct_icon_grid()
+    from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
+    assert from_grid_file.get_start_index(dim, marker) == start_index
+    assert from_grid_file.get_start_index(dim, marker) == from_savepoint.get_start_index(
+        dim, marker
+    )
+    assert from_grid_file.get_end_index(dim, marker) == end_index
+    assert from_grid_file.get_end_index(dim, marker) == from_savepoint.get_end_index(dim, marker)
