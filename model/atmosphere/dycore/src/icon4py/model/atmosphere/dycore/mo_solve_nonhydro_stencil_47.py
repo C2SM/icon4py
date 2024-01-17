@@ -13,13 +13,13 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
     _set_cell_kdim_field_to_zero_wp,
 )
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator

@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _set_cell_kdim_field_to_zero_wp() -> Field[[CellDim, KDim], wpfloat]:
-    '''formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64."""
     return broadcast(wpfloat("0.0"), (CellDim, KDim))
 
 

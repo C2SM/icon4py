@@ -28,10 +28,18 @@ class TestMoSolveNonhydroStencil14(StencilTest):
     OUTPUTS = ("edge_kdim_field_to_zero_wp_1", "edge_kdim_field_to_zero_wp_2")
 
     @staticmethod
-    def reference(grid, edge_kdim_field_to_zero_wp_1: np.array, edge_kdim_field_to_zero_wp_2: np.array, **kwargs) -> dict:
+    def reference(
+        grid,
+        edge_kdim_field_to_zero_wp_1: np.array,
+        edge_kdim_field_to_zero_wp_2: np.array,
+        **kwargs,
+    ) -> dict:
         edge_kdim_field_to_zero_wp_1 = np.zeros_like(edge_kdim_field_to_zero_wp_1)
         edge_kdim_field_to_zero_wp_2 = np.zeros_like(edge_kdim_field_to_zero_wp_2)
-        return dict(edge_kdim_field_to_zero_wp_1=edge_kdim_field_to_zero_wp_1, edge_kdim_field_to_zero_wp_2=edge_kdim_field_to_zero_wp_2)
+        return dict(
+            edge_kdim_field_to_zero_wp_1=edge_kdim_field_to_zero_wp_1,
+            edge_kdim_field_to_zero_wp_2=edge_kdim_field_to_zero_wp_2,
+        )
 
     @pytest.fixture
     def input_data(self, grid):

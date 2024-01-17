@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
     _set_cell_kdim_field_to_zero_wp,
@@ -26,7 +26,7 @@ from icon4py.model.common.type_alias import wpfloat
 def _set_two_cell_kdim_fields_to_zero_wp() -> (
     tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]
 ):
-    '''formerly known as _mo_solve_nonhydro_stencil_46.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_46."""
     return _set_cell_kdim_field_to_zero_wp(), _set_cell_kdim_field_to_zero_wp()
 
 

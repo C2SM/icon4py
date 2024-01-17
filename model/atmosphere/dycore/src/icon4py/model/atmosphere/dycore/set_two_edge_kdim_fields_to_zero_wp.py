@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 def _set_two_edge_kdim_fields_to_zero_wp() -> (
     tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]
 ):
-    '''formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33.'''
+    """Formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33."""
     return broadcast(wpfloat("0.0"), (EdgeDim, KDim)), broadcast(wpfloat("0.0"), (EdgeDim, KDim))
 
 

@@ -17,13 +17,15 @@ from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
     Field,
     abs,
     astype,
-    broadcast,
     int32,
     minimum,
     neighbor_sum,
     where,
 )
 
+from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
+    _set_two_edge_kdim_fields_to_zero_wp,
+)
 from icon4py.model.common.dimension import (
     E2C,
     E2C2EO,
@@ -37,9 +39,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
-    _set_two_edge_kdim_fields_to_zero_wp,
-)
 
 
 @field_operator
@@ -63,7 +62,7 @@ def _mo_velocity_advection_stencil_20(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
     )
 
-    w_con_e, difcoef=   _set_two_edge_kdim_fields_to_zero_wp()
+    w_con_e, difcoef = _set_two_edge_kdim_fields_to_zero_wp()
 
     w_con_e = where(
         levelmask | levelmask(Koff[1]),

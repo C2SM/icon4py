@@ -88,17 +88,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
 )
-from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
-    set_two_edge_kdim_fields_to_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
-)
-from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
-    set_two_cell_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
@@ -135,6 +129,12 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
 )
 from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
     set_two_cell_kdim_fields_to_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
+    set_two_cell_kdim_fields_to_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
+    set_two_edge_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,

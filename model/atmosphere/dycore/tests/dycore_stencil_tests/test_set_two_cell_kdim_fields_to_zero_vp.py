@@ -36,7 +36,10 @@ class TestMoSolveNonhydroStencil01(StencilTest):
     ) -> tuple[np.array]:
         cell_kdim_field_to_zero_vp_1 = np.zeros_like(cell_kdim_field_to_zero_vp_1)
         cell_kdim_field_to_zero_vp_2 = np.zeros_like(cell_kdim_field_to_zero_vp_2)
-        return dict(cell_kdim_field_to_zero_vp_1=cell_kdim_field_to_zero_vp_1, cell_kdim_field_to_zero_vp_2=cell_kdim_field_to_zero_vp_2)
+        return dict(
+            cell_kdim_field_to_zero_vp_1=cell_kdim_field_to_zero_vp_1,
+            cell_kdim_field_to_zero_vp_2=cell_kdim_field_to_zero_vp_2,
+        )
 
     @pytest.fixture
     def input_data(self, grid):
