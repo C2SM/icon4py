@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
+import functools
 import logging
 import typing
 from uuid import uuid4
@@ -506,8 +507,9 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
     assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells, :])
 
 
-def init_grid_manager(fname, num_levels=65):
-    grid_manager = GridManager(ToGt4PyTransformation(), fname, VerticalGridSize(num_levels))
+@functools.cache
+def init_grid_manager(fname, num_levels=65, transformation=ToGt4PyTransformation()):
+    grid_manager = GridManager(transformation, fname, VerticalGridSize(num_levels))
     grid_manager()
     return grid_manager
 
@@ -516,7 +518,9 @@ def init_grid_manager(fname, num_levels=65):
 @pytest.mark.with_netcdf
 def test_grid_manager_getsize(simple_grid_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
-    gm = GridManager(IndexTransformation(), simple_grid_gridfile, VerticalGridSize(num_lev=80))
+    gm = init_grid_manager(
+        simple_grid_gridfile, num_levels=10, transformation=IndexTransformation()
+    )
     gm()
     assert size == gm.get_size(dim)
 
@@ -530,10 +534,10 @@ def assert_up_to_order(table, diamond_table):
 @pytest.mark.with_netcdf
 def test_grid_manager_diamond_offset(simple_grid_gridfile):
     simple_grid = SimpleGrid()
-    gm = GridManager(
-        IndexTransformation(),
+    gm = init_grid_manager(
         simple_grid_gridfile,
-        VerticalGridSize(num_lev=simple_grid.num_levels),
+        num_levels=simple_grid.num_levels,
+        transformation=IndexTransformation(),
     )
     gm()
     icon_grid = gm.get_grid()

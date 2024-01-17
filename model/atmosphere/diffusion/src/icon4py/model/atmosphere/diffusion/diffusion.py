@@ -466,6 +466,7 @@ class Diffusion:
             offset_provider={"Koff": KDim},
         )
 
+        # TODO (magdalena) port to gt4py?
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
             nshift=0,
