@@ -88,8 +88,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_33 import (
-    mo_solve_nonhydro_stencil_33,
+from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
+    set_two_edge_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
@@ -1687,7 +1687,7 @@ class SolveNonhydro:
                 log.debug("corrector: doing prep advection")
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
-                    mo_solve_nonhydro_stencil_33.with_backend(backend)(
+                    set_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
                         vn_traj=prep_adv.vn_traj,
                         mass_flx_me=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
