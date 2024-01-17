@@ -23,25 +23,25 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-def set_cell_kdim_field_to_zero_vp_numpy(field_to_zero: np.array) -> np.array:
-    field_to_zero = np.zeros_like(field_to_zero)
-    return field_to_zero
+def set_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp: np.array) -> np.array:
+    field_to_zero_vp = np.zeros_like(field_to_zero_vp)
+    return field_to_zero_vp
 
 class TestMoSolveNonhydroStencil03(StencilTest):
     PROGRAM = set_cell_kdim_field_to_zero_vp
-    OUTPUTS = ("field_to_zero",)
+    OUTPUTS = ("field_to_zero_vp",)
 
     @staticmethod
-    def reference(grid, field_to_zero: np.array, **kwargs) -> dict:
-        field_to_zero = set_cell_kdim_field_to_zero_vp_numpy(field_to_zero=field_to_zero)
-        return dict(field_to_zero=field_to_zero)
+    def reference(grid, field_to_zero_vp: np.array, **kwargs) -> dict:
+        field_to_zero_vp = set_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp=field_to_zero_vp)
+        return dict(field_to_zero_vp=field_to_zero_vp)
 
     @pytest.fixture
     def input_data(self, grid):
-        field_to_zero = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        field_to_zero_vp = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
-            field_to_zero=field_to_zero,
+            field_to_zero_vp=field_to_zero_vp,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
