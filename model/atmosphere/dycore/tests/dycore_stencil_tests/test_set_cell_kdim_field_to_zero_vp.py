@@ -23,13 +23,17 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
+def set_cell_kdim_field_to_zero_vp_numpy(field_to_zero: np.array) -> np.array:
+    field_to_zero = np.zeros_like(field_to_zero)
+    return field_to_zero
+
 class TestMoSolveNonhydroStencil03(StencilTest):
     PROGRAM = set_cell_kdim_field_to_zero_vp
     OUTPUTS = ("field_to_zero",)
 
     @staticmethod
     def reference(grid, field_to_zero: np.array, **kwargs) -> dict:
-        field_to_zero = np.zeros_like(field_to_zero)
+        field_to_zero = set_cell_kdim_field_to_zero_vp_numpy(field_to_zero=field_to_zero)
         return dict(field_to_zero=field_to_zero)
 
     @pytest.fixture
