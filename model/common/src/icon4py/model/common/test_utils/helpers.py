@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
 import numpy as np
@@ -148,6 +149,13 @@ def allocate_data(backend, input_data):
     return input_data
 
 
+@dataclass(frozen=True)
+class Output:
+    name: str
+    refslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+    gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+
+
 def _test_validation(self, grid, backend, input_data):
     reference_outputs = self.reference(
         grid,
@@ -163,9 +171,15 @@ def _test_validation(self, grid, backend, input_data):
         **input_data,
         offset_provider=grid.get_all_offset_providers(),
     )
-    for name in self.OUTPUTS:
+    for out in self.OUTPUTS:
+        name, refslice, gtslice = (
+            (out.name, out.refslice, out.gtslice)
+            if isinstance(out, Output)
+            else (out, (slice(None),), (slice(None),))
+        )
+
         assert np.allclose(
-            input_data[name].asnumpy(), reference_outputs[name]
+            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
         ), f"Validation failed for '{name}'"
 
 
@@ -231,3 +245,7 @@ def uses_icon_grid_with_otf(backend, grid):
         if isinstance(backend.executor, OTFCompileExecutor):
             return True
     return False
+
+
+def reshape(arr: np.array, shape: tuple[int, ...]):
+    return np.reshape(arr, shape)

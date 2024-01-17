@@ -12,61 +12,53 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-def vert_adv_stencil_01_numpy(
-    tracer_now: np.array,
-    rhodz_now: np.array,
-    p_mflx_tracer_v: np.array,
-    deepatmo_divzl: np.array,
-    deepatmo_divzu: np.array,
-    rhodz_new: np.array,
-    p_dtime,
-) -> np.array:
-    tracer_new = (
-        tracer_now * rhodz_now
-        + p_dtime
-        * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
-    ) / rhodz_new
+class TestVertAdvStencil01(StencilTest):
+    PROGRAM = vert_adv_stencil_01
+    OUTPUTS = ("tracer_new",)
 
-    return tracer_new
-
-
-def test_vert_adv_stencil_01(backend):
-    grid = SimpleGrid()
-
-    tracer_now = random_field(grid, CellDim, KDim)
-    rhodz_now = random_field(grid, CellDim, KDim)
-    p_mflx_tracer_v = random_field(grid, CellDim, KDim, extend={KDim: 1})
-    deepatmo_divzl = random_field(grid, KDim)
-    deepatmo_divzu = random_field(grid, KDim)
-    rhodz_new = random_field(grid, CellDim, KDim)
-    tracer_new = zero_field(grid, CellDim, KDim)
-    p_dtime = np.float64(5.0)
-
-    ref = vert_adv_stencil_01_numpy(
-        tracer_now.asnumpy(),
-        rhodz_now.asnumpy(),
-        p_mflx_tracer_v.asnumpy(),
-        deepatmo_divzl.asnumpy(),
-        deepatmo_divzu.asnumpy(),
-        rhodz_new.asnumpy(),
+    @staticmethod
+    def reference(
+        grid,
+        tracer_now: np.array,
+        rhodz_now: np.array,
+        p_mflx_tracer_v: np.array,
+        deepatmo_divzl: np.array,
+        deepatmo_divzu: np.array,
+        rhodz_new: np.array,
         p_dtime,
-    )
-    vert_adv_stencil_01.with_backend(backend)(
-        tracer_now,
-        rhodz_now,
-        p_mflx_tracer_v,
-        deepatmo_divzl,
-        deepatmo_divzu,
-        rhodz_new,
-        tracer_new,
-        p_dtime,
-        offset_provider={"Koff": KDim},
-    )
-    assert np.allclose(tracer_new.asnumpy()[:, :-1], ref[:, :-1])
+        **kwargs,
+    ) -> np.array:
+        tracer_new = (
+            tracer_now * rhodz_now
+            + p_dtime
+            * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
+        ) / rhodz_new
+        return dict(tracer_new=tracer_new)
+
+    @pytest.fixture
+    def input_data(self, grid):
+        tracer_now = random_field(grid, CellDim, KDim)
+        rhodz_now = random_field(grid, CellDim, KDim)
+        p_mflx_tracer_v = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        deepatmo_divzl = random_field(grid, KDim)
+        deepatmo_divzu = random_field(grid, KDim)
+        rhodz_new = random_field(grid, CellDim, KDim)
+        p_dtime = np.float64(5.0)
+        tracer_new = zero_field(grid, CellDim, KDim)
+        return dict(
+            tracer_now=tracer_now,
+            rhodz_now=rhodz_now,
+            p_mflx_tracer_v=p_mflx_tracer_v,
+            deepatmo_divzl=deepatmo_divzl,
+            deepatmo_divzu=deepatmo_divzu,
+            rhodz_new=rhodz_new,
+            p_dtime=p_dtime,
+            tracer_new=tracer_new,
+        )

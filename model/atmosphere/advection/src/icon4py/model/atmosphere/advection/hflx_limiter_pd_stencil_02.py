@@ -21,16 +21,16 @@ from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 def _hflx_limiter_pd_stencil_02(
     refin_ctrl: Field[[EdgeDim], int32],
     r_m: Field[[CellDim, KDim], float],
-    p_mflx_tracer_h_in: Field[[EdgeDim, KDim], float],
+    p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     bound: int32,
 ) -> Field[[EdgeDim, KDim], float]:
     p_mflx_tracer_h_out = where(
         refin_ctrl == bound,
-        p_mflx_tracer_h_in,
+        p_mflx_tracer_h,
         where(
-            p_mflx_tracer_h_in >= 0.0,
-            p_mflx_tracer_h_in * r_m(E2C[0]),
-            p_mflx_tracer_h_in * r_m(E2C[1]),
+            p_mflx_tracer_h >= 0.0,
+            p_mflx_tracer_h * r_m(E2C[0]),
+            p_mflx_tracer_h * r_m(E2C[1]),
         ),
     )
     return p_mflx_tracer_h_out
