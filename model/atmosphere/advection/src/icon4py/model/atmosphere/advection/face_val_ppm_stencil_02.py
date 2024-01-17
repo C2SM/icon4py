@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
@@ -71,7 +71,7 @@ def _face_val_ppm_stencil_02(
     return p_face
 
 
-@program(grid_type="unstructured")
+@program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],

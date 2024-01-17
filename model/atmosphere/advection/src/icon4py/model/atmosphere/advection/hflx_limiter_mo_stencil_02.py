@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
+from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, minimum, where
 
@@ -45,7 +45,7 @@ def _hflx_limiter_mo_stencil_02(
     return (z_tracer_new_out, z_tracer_max_out, z_tracer_min_out)
 
 
-@program(grid_type="unstructured")
+@program(grid_type=GridType.UNSTRUCTURED)
 def hflx_limiter_mo_stencil_02(
     refin_ctrl: Field[[CellDim], int32],
     p_cc: Field[[CellDim, KDim], float],
