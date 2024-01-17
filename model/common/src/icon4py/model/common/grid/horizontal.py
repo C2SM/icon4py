@@ -61,6 +61,7 @@ class HorizontalMarkerIndex:
     _LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
     _INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
     _NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
+    _NUDGING_EDGES_FORTRAN: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + 1
     _HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
     _LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
     _END_EDGES: Final[int] = 0
@@ -104,6 +105,9 @@ class HorizontalMarkerIndex:
         dimension.EdgeDim: _NUDGING_EDGES,
         dimension.VertexDim: _NUDGING_VERTICES,
     }
+    _nudging_fortran = {
+        dimension.EdgeDim: _NUDGING_EDGES_FORTRAN,
+    }
     _end = {
         dimension.CellDim: _END_CELLS,
         dimension.EdgeDim: _END_EDGES,
@@ -132,6 +136,16 @@ class HorizontalMarkerIndex:
     def nudging(cls, dim: Dimension) -> int:
         """Indicate the nudging zone."""
         return cls._nudging[dim]
+
+    @classmethod
+    def nudging_2nd_level(cls, dim: Dimension) -> int:
+        """Indicate the nudging zone for 2nd level."""
+        return cls.nudging(dim) + 1
+
+    @classmethod
+    def nudging_fortran(cls, dim: Dimension) -> int:
+        """Indicate the nudging zone in Fortran indexing."""
+        return cls._nudging_fortran[dim]
 
     @classmethod
     def interior(cls, dim: Dimension) -> int:
