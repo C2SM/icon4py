@@ -25,22 +25,22 @@ from icon4py.model.common.type_alias import wpfloat
 
 class TestMoSolveNonhydroStencil46(StencilTest):
     PROGRAM = set_two_cell_kdim_fields_to_zero_wp
-    OUTPUTS = ("field_to_zero_wp_1", "field_to_zero_wp_2")
+    OUTPUTS = ("cell_kdim_field_to_zero_wp_1", "cell_kdim_field_to_zero_wp_2")
 
     @staticmethod
-    def reference(grid, field_to_zero_wp_1: np.array, field_to_zero_wp_2: np.array, **kwargs) -> dict:
-        field_to_zero_wp_1 = np.zeros_like(field_to_zero_wp_1)
-        field_to_zero_wp_2 = np.zeros_like(field_to_zero_wp_2)
-        return dict(field_to_zero_wp_1=field_to_zero_wp_1, field_to_zero_wp_2=field_to_zero_wp_2)
+    def reference(grid, cell_kdim_field_to_zero_wp_1: np.array, cell_kdim_field_to_zero_wp_2: np.array, **kwargs) -> dict:
+        cell_kdim_field_to_zero_wp_1 = np.zeros_like(cell_kdim_field_to_zero_wp_1)
+        cell_kdim_field_to_zero_wp_2 = np.zeros_like(cell_kdim_field_to_zero_wp_2)
+        return dict(cell_kdim_field_to_zero_wp_1=cell_kdim_field_to_zero_wp_1, cell_kdim_field_to_zero_wp_2=cell_kdim_field_to_zero_wp_2)
 
     @pytest.fixture
     def input_data(self, grid):
-        field_to_zero_wp_1 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        field_to_zero_wp_2 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        cell_kdim_field_to_zero_wp_1 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        cell_kdim_field_to_zero_wp_2 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
-            field_to_zero_wp_1=field_to_zero_wp_1,
-            field_to_zero_wp_2=field_to_zero_wp_2,
+            cell_kdim_field_to_zero_wp_1=cell_kdim_field_to_zero_wp_1,
+            cell_kdim_field_to_zero_wp_2=cell_kdim_field_to_zero_wp_2,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

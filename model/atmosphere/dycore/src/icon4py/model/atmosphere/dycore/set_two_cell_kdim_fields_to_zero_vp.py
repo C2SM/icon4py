@@ -32,15 +32,15 @@ def _set_two_cell_kdim_fields_to_zero_vp() -> (
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def set_two_cell_kdim_fields_to_zero_vp(
-    field_to_zero_vp_1: Field[[CellDim, KDim], vpfloat],
-    field_to_zero_vp_2: Field[[CellDim, KDim], vpfloat],
+    cell_kdim_field_to_zero_vp_1: Field[[CellDim, KDim], vpfloat],
+    cell_kdim_field_to_zero_vp_2: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
     _set_two_cell_kdim_fields_to_zero_vp(
-        out=(field_to_zero_vp_1, field_to_zero_vp_2),
+        out=(cell_kdim_field_to_zero_vp_1, cell_kdim_field_to_zero_vp_2),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

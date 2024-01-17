@@ -25,22 +25,22 @@ from icon4py.model.common.type_alias import wpfloat
 
 class TestMoSolveNonhydroStencil14(StencilTest):
     PROGRAM = set_two_edge_kdim_fields_to_zero_wp
-    OUTPUTS = ("z_rho_e", "z_theta_v_e")
+    OUTPUTS = ("edge_kdim_field_to_zero_wp_1", "edge_kdim_field_to_zero_wp_2")
 
     @staticmethod
-    def reference(grid, z_rho_e: np.array, z_theta_v_e: np.array, **kwargs) -> dict:
-        z_rho_e = np.zeros_like(z_rho_e)
-        z_theta_v_e = np.zeros_like(z_theta_v_e)
-        return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)
+    def reference(grid, edge_kdim_field_to_zero_wp_1: np.array, edge_kdim_field_to_zero_wp_2: np.array, **kwargs) -> dict:
+        edge_kdim_field_to_zero_wp_1 = np.zeros_like(edge_kdim_field_to_zero_wp_1)
+        edge_kdim_field_to_zero_wp_2 = np.zeros_like(edge_kdim_field_to_zero_wp_2)
+        return dict(edge_kdim_field_to_zero_wp_1=edge_kdim_field_to_zero_wp_1, edge_kdim_field_to_zero_wp_2=edge_kdim_field_to_zero_wp_2)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_rho_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_theta_v_e = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        edge_kdim_field_to_zero_wp_1 = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        edge_kdim_field_to_zero_wp_2 = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
 
         return dict(
-            z_rho_e=z_rho_e,
-            z_theta_v_e=z_theta_v_e,
+            edge_kdim_field_to_zero_wp_1=edge_kdim_field_to_zero_wp_1,
+            edge_kdim_field_to_zero_wp_2=edge_kdim_field_to_zero_wp_2,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
