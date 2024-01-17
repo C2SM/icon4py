@@ -140,8 +140,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         vert_idx,
         grav_o_cpd,
         p_dthalf,
-        idiv_method,
-        igradp_method,
         wgt_nnow_vel,
         wgt_nnew_vel,
         dtime,
@@ -202,8 +200,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if iadv_rhotheta <= 2:
                 (tmp_0_0, tmp_0_1) = (horizontal_lower_00, horizontal_upper_00)
-                if idiv_method == 1:
-                    (tmp_0_0, tmp_0_1) = (horizontal_lower_01, horizontal_upper_01)
+                #if idiv_method == 1:
+                (tmp_0_0, tmp_0_1) = (horizontal_lower_01, horizontal_upper_01)
 
                 z_rho_e = np.where(
                     (tmp_0_0 <= horz_idx) & (horz_idx < tmp_0_1),
@@ -273,68 +271,68 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 z_gradh_exner,
             )
 
-            if igradp_method == 3:
-                # horizontal gradient of Exner pressure, including metric correction
-                # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
-                z_gradh_exner = np.where(
-                    (horizontal_lower <= horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx >= nflatlev)
-                    & (vert_idx < (nflat_gradp + int32(1))),
-                    mo_solve_nonhydro_stencil_19_numpy(
-                        grid=grid,
-                        inv_dual_edge_length=inv_dual_edge_length,
-                        z_exner_ex_pr=z_exner_ex_pr,
-                        ddxn_z_full=ddxn_z_full,
-                        c_lin_e=c_lin_e,
-                        z_dexner_dz_c_1=z_dexner_dz_c_1,
-                    ),
-                    z_gradh_exner,
-                )
-
-                new_shape = list(grid.e2c.shape)
-                new_shape.append(nlev)
-                new_shape = tuple(new_shape)
-                z_gradh_exner = np.where(
-                    (horizontal_lower <= horz_idx)
-                    & (horz_idx < horizontal_upper)
-                    & (vert_idx >= (nflat_gradp + int32(1))),
-                    mo_solve_nonhydro_stencil_20_numpy(
-                        grid=grid,
-                        inv_dual_edge_length=inv_dual_edge_length,
-                        z_exner_ex_pr=z_exner_ex_pr,
-                        zdiff_gradp=zdiff_gradp.reshape(new_shape),
-                        ikoffset=ikoffset.reshape(new_shape),
-                        z_dexner_dz_c_1=z_dexner_dz_c_1,
-                        z_dexner_dz_c_2=z_dexner_dz_c_2,
-                    ),
-                    z_gradh_exner,
-                )
-            # compute hydrostatically approximated correction term that replaces downward extrapolation
-            if igradp_method == 3:
-                z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+            #if igradp_method == 3:
+            # horizontal gradient of Exner pressure, including metric correction
+            # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
+            z_gradh_exner = np.where(
+                (horizontal_lower <= horz_idx)
+                & (horz_idx < horizontal_upper)
+                & (vert_idx >= nflatlev)
+                & (vert_idx < (nflat_gradp + int32(1))),
+                mo_solve_nonhydro_stencil_19_numpy(
                     grid=grid,
-                    theta_v=theta_v,
-                    ikoffset=ikoffset.reshape(new_shape),
-                    zdiff_gradp=zdiff_gradp.reshape(new_shape),
-                    theta_v_ic=theta_v_ic,
-                    inv_ddqz_z_full=inv_ddqz_z_full,
                     inv_dual_edge_length=inv_dual_edge_length,
-                    grav_o_cpd=grav_o_cpd,
-                )
+                    z_exner_ex_pr=z_exner_ex_pr,
+                    ddxn_z_full=ddxn_z_full,
+                    c_lin_e=c_lin_e,
+                    z_dexner_dz_c_1=z_dexner_dz_c_1,
+                ),
+                z_gradh_exner,
+            )
 
-            if igradp_method == 3:
-                z_gradh_exner = np.where(
-                    (horizontal_lower_3 <= horz_idx) & (horz_idx < horizontal_upper_3),
-                    mo_solve_nonhydro_stencil_22_numpy(
-                        grid=grid,
-                        ipeidx_dsl=ipeidx_dsl,
-                        pg_exdist=pg_exdist,
-                        z_hydro_corr=z_hydro_corr,
-                        z_gradh_exner=z_gradh_exner,
-                    ),
-                    z_gradh_exner,
-                )
+            new_shape = list(grid.e2c.shape)
+            new_shape.append(nlev)
+            new_shape = tuple(new_shape)
+            z_gradh_exner = np.where(
+                (horizontal_lower <= horz_idx)
+                & (horz_idx < horizontal_upper)
+                & (vert_idx >= (nflat_gradp + int32(1))),
+                mo_solve_nonhydro_stencil_20_numpy(
+                    grid=grid,
+                    inv_dual_edge_length=inv_dual_edge_length,
+                    z_exner_ex_pr=z_exner_ex_pr,
+                    zdiff_gradp=zdiff_gradp.reshape(new_shape),
+                    ikoffset=ikoffset.reshape(new_shape),
+                    z_dexner_dz_c_1=z_dexner_dz_c_1,
+                    z_dexner_dz_c_2=z_dexner_dz_c_2,
+                ),
+                z_gradh_exner,
+            )
+        # compute hydrostatically approximated correction term that replaces downward extrapolation
+            #if igradp_method == 3:
+            z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+                grid=grid,
+                theta_v=theta_v,
+                ikoffset=ikoffset.reshape(new_shape),
+                zdiff_gradp=zdiff_gradp.reshape(new_shape),
+                theta_v_ic=theta_v_ic,
+                inv_ddqz_z_full=inv_ddqz_z_full,
+                inv_dual_edge_length=inv_dual_edge_length,
+                grav_o_cpd=grav_o_cpd,
+            )
+
+            #if igradp_method == 3:
+            z_gradh_exner = np.where(
+                (horizontal_lower_3 <= horz_idx) & (horz_idx < horizontal_upper_3),
+                mo_solve_nonhydro_stencil_22_numpy(
+                    grid=grid,
+                    ipeidx_dsl=ipeidx_dsl,
+                    pg_exdist=pg_exdist,
+                    z_hydro_corr=z_hydro_corr,
+                    z_gradh_exner=z_gradh_exner,
+                ),
+                z_gradh_exner,
+            )
 
             vn = np.where(
                 (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
@@ -541,8 +539,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         grav_o_cpd = 9.80665 / 1004.64
         dtime = 0.9
         p_dthalf = 0.5 * dtime
-        idiv_method = 1
-        igradp_method = 3
         wgt_nnow_vel = 0.25
         wgt_nnew_vel = 0.75
         cpd = 1004.64
@@ -626,8 +622,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             nudgecoeff_e=nudgecoeff_e,
             grav_o_cpd=grav_o_cpd,
             p_dthalf=p_dthalf,
-            idiv_method=idiv_method,
-            igradp_method=igradp_method,
             wgt_nnow_vel=wgt_nnow_vel,
             wgt_nnew_vel=wgt_nnew_vel,
             dtime=dtime,

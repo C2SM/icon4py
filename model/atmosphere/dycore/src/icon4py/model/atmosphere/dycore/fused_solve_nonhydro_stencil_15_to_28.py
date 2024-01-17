@@ -115,8 +115,6 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     vert_idx: gtx.Field[[KDim], int32],
     grav_o_cpd: wpfloat,
     p_dthalf: wpfloat,
-    idiv_method: int32,
-    igradp_method: int32,
     dtime: wpfloat,
     cpd: wpfloat,
     iau_wgt_dyn: wpfloat,
@@ -156,7 +154,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         geofac_grg_y=geofac_grg_y,
     )
 
-    (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01) if idiv_method == 1 else (horizontal_lower_00, horizontal_upper_00)
+    (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01)
 
     (z_rho_e, z_theta_v_e) = where(
         (zero_lower_bound <= horz_idx < zero_upper_bound),
@@ -213,7 +211,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
             z_dexner_dz_c_1=z_dexner_dz_c_1,
         ),
         z_gradh_exner,
-    ) if igradp_method == 3 else z_gradh_exner
+    )
 
     # z_gradh_exner = where(
     #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
@@ -227,7 +225,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     #         z_dexner_dz_c_2=z_dexner_dz_c_2,
     #     ),
     #     z_gradh_exner,
-    # ) if igradp_method == 3 else z_gradh_exner
+    # )
 
 
     # z_hydro_corr = _mo_solve_nonhydro_stencil_21(
@@ -238,7 +236,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     #     inv_ddqz_z_full=inv_ddqz_z_full,
     #     inv_dual_edge_length=inv_dual_edge_length,
     #     grav_o_cpd=grav_o_cpd,
-    # ) if igradp_method == 3 else z_hydro_corr
+    # )
 
     z_gradh_exner = where(
         (horizontal_lower_3 <= horz_idx < horizontal_upper_3),
@@ -249,7 +247,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
             z_gradh_exner=z_gradh_exner,
         ),
         z_gradh_exner,
-    ) if igradp_method == 3 else z_gradh_exner
+    )
 
     vn = where(
         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
@@ -441,8 +439,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
     grav_o_cpd: wpfloat,
     p_dthalf: wpfloat,
-    idiv_method: int32,
-    igradp_method: int32,
     wgt_nnow_vel: wpfloat,
     wgt_nnew_vel: wpfloat,
     dtime: wpfloat,
@@ -533,8 +529,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
         iau_wgt_dyn=iau_wgt_dyn,
         is_iau_active=is_iau_active,
         limited_area=limited_area,
-        idiv_method=idiv_method,
-        igradp_method=igradp_method,
         horizontal_lower_0=horizontal_lower_0,
         horizontal_upper_0=horizontal_upper_0,
         horizontal_lower_00=horizontal_lower_00,
@@ -648,8 +642,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
     nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
     grav_o_cpd: wpfloat,
     p_dthalf: wpfloat,
-    idiv_method: int32,
-    igradp_method: int32,
     wgt_nnow_vel: wpfloat,
     wgt_nnew_vel: wpfloat,
     dtime: wpfloat,
@@ -734,8 +726,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
         nudgecoeff_e,
         grav_o_cpd,
         p_dthalf,
-        idiv_method,
-        igradp_method,
         wgt_nnow_vel,
         wgt_nnew_vel,
         dtime,
