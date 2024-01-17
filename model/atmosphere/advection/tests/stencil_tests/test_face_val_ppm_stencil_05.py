@@ -16,12 +16,12 @@ import pytest
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_05 import face_val_ppm_stencil_05
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field, zero_field
 
 
 class TestFaceValPpmStencil05(StencilTest):
     PROGRAM = face_val_ppm_stencil_05
-    OUTPUTS = ("p_face",)
+    OUTPUTS = (Output("p_face", gtslice=(slice(None), slice(2, None))),)
 
     @staticmethod
     def reference(grid, p_cc: np.array, p_cellhgt_mc_now: np.array, z_slope: np.array, **kwargs):
@@ -59,10 +59,6 @@ class TestFaceValPpmStencil05(StencilTest):
                 + zgeo4 * p_cellhgt_mc_now * z_slope_k_minus_1
             )
         )
-
-        # Concatenate the NaN column to the existing array
-        nan_column = np.full((p_face.shape[0], 2), np.nan)
-        p_face = np.concatenate((nan_column, p_face), axis=1)
         return dict(p_face=p_face)
 
     @pytest.fixture
