@@ -20,16 +20,15 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_14() -> (
+def _set_two_edge_kdim_fields_to_zero_wp() -> (
     tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]
 ):
-    z_rho_e_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
-    z_theta_v_e_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
-    return z_rho_e_wp, z_theta_v_e_wp
+    '''formerly know as _mo_solve_nonhydro_stencil_14.'''
+    return broadcast(wpfloat("0.0"), (EdgeDim, KDim)), broadcast(wpfloat("0.0"), (EdgeDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_14(
+def set_two_edge_kdim_fields_to_zero_wp(
     z_rho_e: Field[[EdgeDim, KDim], wpfloat],
     z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
     horizontal_start: int32,
@@ -37,7 +36,7 @@ def mo_solve_nonhydro_stencil_14(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_14(
+    _set_two_edge_kdim_fields_to_zero_wp(
         out=(z_rho_e, z_theta_v_e),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
