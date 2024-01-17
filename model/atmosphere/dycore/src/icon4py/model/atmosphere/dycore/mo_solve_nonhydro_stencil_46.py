@@ -15,6 +15,9 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
+    _set_cell_kdim_field_to_zero_wp,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
@@ -23,9 +26,8 @@ from icon4py.model.common.type_alias import wpfloat
 def _mo_solve_nonhydro_stencil_46() -> (
     tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]
 ):
-    w_nnew_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
-    z_contr_w_fl_l_wp = broadcast(wpfloat("0.0"), (CellDim, KDim))
-    return w_nnew_wp, z_contr_w_fl_l_wp
+    '''formerly known as _mo_solve_nonhydro_stencil_46.'''
+    return _set_cell_kdim_field_to_zero_wp(), _set_cell_kdim_field_to_zero_wp()
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
