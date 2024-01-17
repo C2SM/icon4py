@@ -32,15 +32,15 @@ def _set_two_cell_kdim_fields_to_zero_wp() -> (
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def set_two_cell_kdim_fields_to_zero_wp(
-    w_nnew: Field[[CellDim, KDim], wpfloat],
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
+    field_to_zero_wp_1: Field[[CellDim, KDim], wpfloat],
+    field_to_zero_wp_2: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
     _set_two_cell_kdim_fields_to_zero_wp(
-        out=(w_nnew, z_contr_w_fl_l),
+        out=(field_to_zero_wp_1, field_to_zero_wp_2),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

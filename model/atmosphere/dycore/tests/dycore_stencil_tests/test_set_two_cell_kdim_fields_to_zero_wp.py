@@ -25,22 +25,22 @@ from icon4py.model.common.type_alias import wpfloat
 
 class TestMoSolveNonhydroStencil46(StencilTest):
     PROGRAM = set_two_cell_kdim_fields_to_zero_wp
-    OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
+    OUTPUTS = ("field_to_zero_wp_1", "field_to_zero_wp_2")
 
     @staticmethod
-    def reference(grid, w_nnew: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
-        w_nnew = np.zeros_like(w_nnew)
-        z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
-        return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
+    def reference(grid, field_to_zero_wp_1: np.array, field_to_zero_wp_2: np.array, **kwargs) -> dict:
+        field_to_zero_wp_1 = np.zeros_like(field_to_zero_wp_1)
+        field_to_zero_wp_2 = np.zeros_like(field_to_zero_wp_2)
+        return dict(field_to_zero_wp_1=field_to_zero_wp_1, field_to_zero_wp_2=field_to_zero_wp_2)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_contr_w_fl_l = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        w_nnew = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        field_to_zero_wp_1 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        field_to_zero_wp_2 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
-            w_nnew=w_nnew,
-            z_contr_w_fl_l=z_contr_w_fl_l,
+            field_to_zero_wp_1=field_to_zero_wp_1,
+            field_to_zero_wp_2=field_to_zero_wp_2,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

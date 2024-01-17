@@ -24,7 +24,7 @@ import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.copy_cell_field_to_vp import copy_cell_field_to_vp
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -1374,7 +1374,7 @@ class SolveNonhydro:
             )
 
         if idyn_timestep == 1:
-            copy_cell_field_to_vp.with_backend(backend)(
+            copy_cell_kdim_field_to_vp.with_backend(backend)(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=self.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,

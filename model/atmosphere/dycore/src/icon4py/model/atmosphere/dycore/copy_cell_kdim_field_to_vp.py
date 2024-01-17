@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _copy_cell_field_to_vp(
+def _copy_cell_kdim_field_to_vp(
     field: Field[[CellDim, KDim], wpfloat]
 ) -> Field[[CellDim, KDim], vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_11 or _mo_solve_nonhydro_stencil_59."""
@@ -29,7 +29,7 @@ def _copy_cell_field_to_vp(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def copy_cell_field_to_vp(
+def copy_cell_kdim_field_to_vp(
     field: Field[[CellDim, KDim], wpfloat],
     field_copy: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -37,7 +37,7 @@ def copy_cell_field_to_vp(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _copy_cell_field_to_vp(
+    _copy_cell_kdim_field_to_vp(
         field,
         out=field_copy,
         domain={
