@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
+from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
@@ -23,6 +23,6 @@ def _set_zero_c() -> Field[[CellDim], float]:
     return broadcast(0.0, (CellDim,))
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def set_zero_c(field: Field[[CellDim], float]):
     _set_zero_c(out=field)
