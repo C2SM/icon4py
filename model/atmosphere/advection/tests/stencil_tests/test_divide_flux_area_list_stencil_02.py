@@ -22,7 +22,6 @@ from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
-    numpy_to_1D_sparse_field,
     random_field,
     random_mask,
     reshape,
