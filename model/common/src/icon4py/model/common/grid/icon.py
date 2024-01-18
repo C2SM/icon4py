@@ -63,7 +63,12 @@ class IconGrid(BaseGrid):
             "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
             "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
-            "C2CECEC ": (self._get_offset_provider_for_sparse_fields, C2E2C2E2CDim, CellDim, CECECDim),
+            "C2CECEC ": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2C2E2CDim,
+                CellDim,
+                CECECDim,
+            ),
         }
 
     @builder

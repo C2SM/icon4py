@@ -19,10 +19,10 @@ from icon4py.model.atmosphere.advection.recon_lsq_cell_l_svd_stencil import (
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import (
-    reshape,
     StencilTest,
     as_1D_sparse_field,
     random_field,
+    reshape,
     zero_field,
 )
 
@@ -62,12 +62,8 @@ class TestReconLsqCellLSvdStencil(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         p_cc = random_field(grid, CellDim, KDim)
-        lsq_pseudoinv_1_field = as_1D_sparse_field(
-        random_field(grid, CellDim, C2E2CDim), CECDim
-        )
-        lsq_pseudoinv_2_field = as_1D_sparse_field(
-        random_field(grid, CellDim, C2E2CDim), CECDim
-        )
+        lsq_pseudoinv_1_field = as_1D_sparse_field(random_field(grid, CellDim, C2E2CDim), CECDim)
+        lsq_pseudoinv_2_field = as_1D_sparse_field(random_field(grid, CellDim, C2E2CDim), CECDim)
         p_coeff_1_dsl = zero_field(grid, CellDim, KDim)
         p_coeff_2_dsl = zero_field(grid, CellDim, KDim)
         p_coeff_3_dsl = zero_field(grid, CellDim, KDim)

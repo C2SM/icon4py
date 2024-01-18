@@ -19,10 +19,10 @@ from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
 )
 from icon4py.model.common.dimension import C2E2C2E2CDim, CECECDim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import (
-    reshape,
     StencilTest,
     as_1D_sparse_field,
     random_field,
+    reshape,
     zero_field,
 )
 
@@ -103,7 +103,6 @@ class TestReconLsqCellCSvdStencil(StencilTest):
         lsq_pseudoinv_1 = reshape(lsq_pseudoinv_1, c2e2c2e2c.shape)
         lsq_pseudoinv_1 = np.expand_dims(lsq_pseudoinv_1, axis=-1)
 
-
         p_coeff_10_dsl = (
             lsq_pseudoinv_9[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
             + lsq_pseudoinv_9[:, 1] * (p_cc[c2e2c2e2c[:, 1]] - p_cc)
@@ -114,7 +113,7 @@ class TestReconLsqCellCSvdStencil(StencilTest):
             + lsq_pseudoinv_9[:, 6] * (p_cc[c2e2c2e2c[:, 6]] - p_cc)
             + lsq_pseudoinv_9[:, 7] * (p_cc[c2e2c2e2c[:, 7]] - p_cc)
             + lsq_pseudoinv_9[:, 8] * (p_cc[c2e2c2e2c[:, 8]] - p_cc)
-        ) 
+        )
 
         p_coeff_9_dsl = (
             lsq_pseudoinv_8[:, 0] * (p_cc[c2e2c2e2c[:, 0]] - p_cc)
