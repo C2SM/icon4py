@@ -54,10 +54,11 @@ from gt4py.next import as_field
 from gt4py.next.common import Field
 
 import sys
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
+compiler_gpu_backend = run_gtfn_gpu
 backend = compiler_cached_backend
 
 
@@ -76,6 +77,34 @@ class InitializationType(str, Enum):
     SB = "serialbox"
     JABW = "jabw"
 
+
+def mo_rbf_vec_interpol_cell_numpy(
+    p_e_in: np.array,
+    ptr_coeff_1: np.array,
+    ptr_coeff_2: np.array,
+    c2e2c2e: np.array,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
+) -> tuple[np.array, np.array]:
+    expanded_ptr_coeff_1 = np.expand_dims(ptr_coeff_1[0:horizontal_end,:], axis=-1)
+    expanded_ptr_coeff_2 = np.expand_dims(ptr_coeff_2[0:horizontal_end,:], axis=-1)
+    mask = np.ones(c2e2c2e.shape[0], dtype=bool)
+    mask[horizontal_end:] = False
+    mask[0:horizontal_start] = False
+    mask = np.repeat(np.expand_dims(mask, axis=-1), p_e_in.shape[1], axis=1)
+    mask[:, vertical_end:] = False
+    mask[:, 0:vertical_start] = False
+    #print("debug:", horizontal_start, ' - ', horizontal_end, ' - ', vertical_start, ' - ', vertical_end)
+    #print("debug:", ptr_coeff_1.shape, ' - ', ptr_coeff_2.shape)
+    #print("debug:", expanded_ptr_coeff_1.shape, ' - ', expanded_ptr_coeff_2.shape)
+    #print("debug:", p_e_in.shape, ' - ', mask.shape)
+    #print("debug:", p_e_in[c2e2c2e].shape)
+    p_u_out = np.where(mask, np.sum(p_e_in[c2e2c2e] * expanded_ptr_coeff_1, axis=1), 0.0)
+    p_v_out = np.where(mask, np.sum(p_e_in[c2e2c2e] * expanded_ptr_coeff_2, axis=1), 0.0)
+    return p_u_out, p_v_out
+
 def mo_cells2edges_scalar_numpy(
     grid: IconGrid,
     cells2edges_interpolation_coeff: np.array,
@@ -85,6 +114,10 @@ def mo_cells2edges_scalar_numpy(
     e2c = grid.connectivities[E2CDim]
     cells2edges_interpolation_coeff = np.expand_dims(cells2edges_interpolation_coeff, axis=-1)
     mask = np.repeat(np.expand_dims(mask, axis=-1), cell_scalar.shape[1], axis=1)
+    #print()
+    #print("reference: ", cells2edges_interpolation_coeff.shape)
+    #print("reference: ", cell_scalar.shape, ' - ', mask.shape)
+    #print("reference: ", cell_scalar[e2c].shape)
     edge_scalar = np.where(mask, np.sum(cell_scalar[e2c] * cells2edges_interpolation_coeff, axis=1), 0.0)
     return edge_scalar
 
@@ -413,6 +446,7 @@ def model_initialization_jabw(
             "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
         },
     )
+
     log.info(f'U, V computation completed.')
 
     # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment

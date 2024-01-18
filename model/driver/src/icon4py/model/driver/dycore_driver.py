@@ -55,12 +55,14 @@ from icon4py.model.driver.io_utils import (
     read_static_fields,
     SerializationType,
     InitializationType,
+    mo_rbf_vec_interpol_cell_numpy,
 )
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.dimension import C2VDim, V2C2VDim, E2C2VDim, CellDim, EdgeDim
+from icon4py.model.common.dimension import C2VDim, V2C2VDim, E2C2VDim, CellDim, EdgeDim, C2E2C2EDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
+from gt4py.next import as_field
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
@@ -449,8 +451,6 @@ class TimeLoop:
         do_prep_adv: bool,
         output_state: OutputState = None
     ):
-
-
         log.info(
             f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
         )
@@ -510,20 +510,19 @@ class TimeLoop:
             offset_provider={}
         )
 
-        '''
-        mo_diagnose_pressure.with_backend(backend)(
-            diagnostic_metric_state.ddqz_z_full,
-            diagnostic_state.temperature,
-            diagnostic_state.pressure_sfc,
-            diagnostic_state.pressure,
-            diagnostic_state.pressure_ifc,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider={}
-        )
-        '''
+        # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
+        #mo_diagnose_pressure.with_backend(backend)(
+        #    diagnostic_metric_state.ddqz_z_full,
+        #    diagnostic_state.temperature,
+        #    diagnostic_state.pressure_sfc,
+        #    diagnostic_state.pressure,
+        #    diagnostic_state.pressure_ifc,
+        #    self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        #    self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        #    0,
+        #    self.grid.num_levels,
+        #    offset_provider={}
+        #)
 
         if not self.is_run_from_serializedData:
             mo_init_exner_pr.with_backend(backend)(
@@ -549,9 +548,7 @@ class TimeLoop:
                 prognostic_state_list[self._now],
                 self.run_config.dtime,
             )
-        log.info(
-            f"starting real time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
-        )
+
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(
@@ -651,20 +648,19 @@ class TimeLoop:
                 offset_provider={}
             )
 
-            '''
-            mo_diagnose_pressure.with_backend(backend)(
-                diagnostic_metric_state.ddqz_z_full,
-                diagnostic_state.temperature,
-                diagnostic_state.pressure_sfc,
-                diagnostic_state.pressure,
-                diagnostic_state.pressure_ifc,
-                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-                0,
-                self.grid.num_levels,
-                offset_provider={}
-            )
-            '''
+            # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
+            #mo_diagnose_pressure.with_backend(backend)(
+            #    diagnostic_metric_state.ddqz_z_full,
+            #    diagnostic_state.temperature,
+            #    diagnostic_state.pressure_sfc,
+            #    diagnostic_state.pressure,
+            #    diagnostic_state.pressure_ifc,
+            #    self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            #    self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            #    0,
+            #    self.grid.num_levels,
+            #    offset_provider={}
+            #)
 
             # TODO (Chia Rui): simple IO enough for JW test
             log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
@@ -674,6 +670,84 @@ class TimeLoop:
 
         timer.summary(True)
 
+    def time_integration_speed_test(
+        self,
+        diagnostic_metric_state: DiagnosticMetricState,
+        diagnostic_state: DiagnosticState,
+        prognostic_state_list: list[PrognosticState]
+    ):
+
+        ##### TESTING SPEED
+        test_vn = prognostic_state_list[self._now].vn
+        test_u = diagnostic_state.u
+        test_v = diagnostic_state.v
+        test_c1 = diagnostic_metric_state.rbf_vec_coeff_c1
+        test_c2 = diagnostic_metric_state.rbf_vec_coeff_c2
+        test_vn_np = prognostic_state_list[self._now].vn.asnumpy()
+        # test_u_np = diagnostic_state.u.asnumpy()
+        # test_v_np = diagnostic_state.v.asnumpy()
+        test_c2e2c2e_np = self.grid.connectivities[C2E2C2EDim]
+        test_c1_np = diagnostic_metric_state.rbf_vec_coeff_c1.asnumpy()
+        test_c2_np = diagnostic_metric_state.rbf_vec_coeff_c2.asnumpy()
+        test_h1 = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
+        test_h2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+        test_v1 = 0
+        test_v2 = self.grid.num_levels
+
+        log.info(
+            f"starting speed-test time loop for gt4py-version rbf interpolation with n_timesteps={self._n_time_steps}"
+        )
+        timer = Timer(self._full_name(self._integrate_one_time_step))
+        for time_step in range(self._n_time_steps):
+            log.info(
+                f"run timestep : {time_step}"
+            )
+
+            timer.start()
+            mo_rbf_vec_interpol_cell.with_backend(backend)(
+                test_vn,
+                test_c1,
+                test_c2,
+                test_u,
+                test_v,
+                test_h1,
+                test_h2,
+                test_v1,
+                test_v2,
+                offset_provider={
+                    "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
+                },
+            )
+            timer.capture()
+
+        timer.summary(True)
+
+        log.info(
+            f"starting speed-test time loop for numpy-version rbf interpolation with n_timesteps={self._n_time_steps}"
+        )
+        timer = Timer(self._full_name(self._integrate_one_time_step))
+        for time_step in range(self._n_time_steps):
+            log.info(
+                f"run timestep : {time_step}"
+            )
+
+            timer.start()
+            test_u_np, test_v_np = mo_rbf_vec_interpol_cell_numpy(
+                test_vn_np,
+                test_c1_np,
+                test_c2_np,
+                test_c2e2c2e_np,
+                test_h1,
+                test_h2,
+                test_v1,
+                test_v2,
+            )
+            timer.capture()
+
+            diagnostic_state.u = as_field((CellDim, KDim), test_u_np)
+            diagnostic_state.v = as_field((CellDim, KDim), test_v_np)
+
+        timer.summary(True)
 
     def _integrate_one_time_step(
         self,
@@ -881,7 +955,8 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
 @click.option("--init_type", default="serialbox")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_path, mpi):
+@click.option("--speed_test", default=False)
+def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_path, mpi, speed_test):
     """
     Run the driver.
 
@@ -905,14 +980,6 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
-    if ser_type == SerializationType.SB:
-        print("1", ser_type)
-    elif ser_type == SerializationType.NC:
-        print("2", ser_type)
-    if init_type == InitializationType.SB:
-        print("3", init_type)
-    elif init_type == InitializationType.JABW:
-        print("4", init_type)
 
     configure_logging(run_path, experiment_name, parallel_props)
 
@@ -939,18 +1006,25 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
     log.info("dycore configuring: DONE")
     log.info("timeloop: START")
 
-    timeloop.time_integration(
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        diagnostic_metric_state,
-        diagnostic_state,
-        prognostic_state_list,
-        prep_adv,
-        z_fields,
-        inital_divdamp_fac_o2,
-        do_prep_adv=False,
-        output_state=output_state,
-    )
+    if (speed_test):
+        timeloop.time_integration_speed_test(
+            diagnostic_metric_state,
+            diagnostic_state,
+            prognostic_state_list
+        )
+    else:
+        timeloop.time_integration(
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            diagnostic_metric_state,
+            diagnostic_state,
+            prognostic_state_list,
+            prep_adv,
+            z_fields,
+            inital_divdamp_fac_o2,
+            do_prep_adv=False,
+            output_state=output_state,
+        )
 
     log.info("timeloop:  DONE")
 

@@ -263,15 +263,10 @@ class DiffusionConfig:
                 "diffusion` is implemented"
             )
 
-        '''
         if self.diffusion_type < 0:
             self.apply_to_temperature = False
             self.apply_to_horizontal_wind = False
             self.apply_to_vertical_wind = False
-        else:
-            self.apply_to_temperature = True
-            self.apply_to_horizontal_wind = True
-        '''
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,

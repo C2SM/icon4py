@@ -39,7 +39,7 @@ from icon4py.model.common.states.diagnostic_state import DiagnosticState, Diagno
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.common.test_utils import serialbox_utils as sb
-from icon4py.model.driver.io_utils import model_initialization_jabw
+from icon4py.model.driver.io_utils import model_initialization_jabw, mo_rbf_vec_interpol_cell_numpy
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
@@ -52,6 +52,7 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
 backend = compiler_backend
+
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
@@ -155,6 +156,23 @@ def test_jabw_initial_condition(
         offset_provider={}
     )
 
+
+    c2e2c2e = icon_grid.connectivities[C2E2C2EDim]
+    rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
+    rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
+    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+    ref_u, ref_v = mo_rbf_vec_interpol_cell_numpy(
+        prognostic_state_now.vn.asnumpy(),
+        rbv_vec_coeff_c1.asnumpy(),
+        rbv_vec_coeff_c2.asnumpy(),
+        c2e2c2e,
+        grid_idx_cell_start_plus1,
+        grid_idx_cell_end,
+        0,
+        icon_grid.num_levels,
+    )
+
     exner_nlev_minus2 = prognostic_state_now.exner[:, icon_grid.num_levels - 3]
     temperature_nlev = diagnostic_state.temperature[:, icon_grid.num_levels - 1]
     temperature_nlev_minus1 = diagnostic_state.temperature[:, icon_grid.num_levels - 2]
@@ -180,7 +198,8 @@ def test_jabw_initial_condition(
         offset_provider={}
     )
 
-
+    # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
+    '''
     mo_diagnose_pressure.with_backend(backend)(
         data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.temperature,
@@ -193,7 +212,7 @@ def test_jabw_initial_condition(
         icon_grid.num_levels,
         offset_provider={}
     )
-
+    '''
 
     if debug:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -304,11 +323,11 @@ def test_jabw_initial_condition(
             "pressure_sfc1",
         )
 
-        printing(
-            data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
-            diagnostic_state.pressure.asnumpy(),
-            "pressure1",
-        )
+        #printing(
+        #    data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
+        #    diagnostic_state.pressure.asnumpy(),
+        #    "pressure1",
+        #)
 
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().u().asnumpy(),
@@ -331,6 +350,17 @@ def test_jabw_initial_condition(
         diagnostic_state.pressure_sfc.asnumpy()
     )
 
+    assert dallclose(
+        ref_u,
+        diagnostic_state.u.asnumpy()
+    )
+
+    assert dallclose(
+        ref_v,
+        diagnostic_state.v.asnumpy()
+    )
+
+    # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
     #assert dallclose(
     #    data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
     #    diagnostic_state.pressure.asnumpy()
