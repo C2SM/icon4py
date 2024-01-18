@@ -60,8 +60,7 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 428),
     ],
 )
-def test_horizontal_end_index(grid_savepoint, dim, marker, index):
-    icon_grid = grid_savepoint.construct_icon_grid()
+def test_horizontal_end_index(icon_grid, dim, marker, index):
     assert index == icon_grid.get_end_index(dim, marker)
 
 
@@ -107,8 +106,7 @@ def test_horizontal_end_index(grid_savepoint, dim, marker, index):
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 0),
     ],
 )
-def test_horizontal_start_index(grid_savepoint, dim, marker, index):
-    icon_grid = grid_savepoint.construct_icon_grid()
+def test_horizontal_start_index(icon_grid, dim, marker, index):
     assert index == icon_grid.get_start_index(dim, marker)
 
 
