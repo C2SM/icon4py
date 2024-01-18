@@ -132,7 +132,6 @@ class HorizontalMarkerIndex:
     @classmethod
     def nudging(cls, dim: Dimension) -> int:
         """Indicate the nudging zone."""
-
         return cls._nudging[dim]
 
     @classmethod

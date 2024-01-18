@@ -20,14 +20,12 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     download_ser_data,
     experiment,
     grid_savepoint,
-    icon_grid,
     interpolation_savepoint,
     processor_props,
     ranked_data_path,
 )
-from .utils import (
-    MCH_GRID_FILE,
-)
+
+from .utils import MCH_GRID_FILE
 
 
 @pytest.fixture

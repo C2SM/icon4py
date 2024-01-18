@@ -20,7 +20,8 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT
+from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
+
 
 if typing.TYPE_CHECKING:
     import netCDF4
@@ -55,6 +56,7 @@ from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 from .utils import MCH_GRID_FILE, R02B04_GLOBAL, resolve_file_from_gridfile_name
+
 
 SIMPLE_GRID_NC = "simple_grid.nc"
 
@@ -381,10 +383,8 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
     Global grids have no "missing values" indices since all edges always have 2 neighboring cells.
 
     Args:
-
         e2c_table: E2C connectivity
         grid_file: name of grid file used
-
 
     """
     if _is_local(grid_file):
@@ -565,11 +565,10 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     assert np.allclose(expected, offset)
 
 
-# TODO (magdalena) speed this up...
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
-    "dim, marker, index",
+    "dim, marker, start_index",
     [
         (CellDim, HorizontalMarkerIndex.interior(CellDim), 4104),
         (CellDim, HorizontalMarkerIndex.interior(CellDim) + 1, 0),
@@ -605,11 +604,14 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 0),
     ],
 )
-def test_get_start_index(icon_grid, dim, marker, index):
+def test_get_start_index_for_local_grid(grid_savepoint, dim, marker, start_index):
     file = resolve_file_from_gridfile_name(MCH_GRID_FILE)
-    grid_from_manager = init_grid_manager(file).get_grid()
-    assert grid_from_manager.get_start_index(dim, marker) == index
-    assert grid_from_manager.get_start_index(dim, marker) == icon_grid.get_start_index(dim, marker)
+    from_savepoint = grid_savepoint.construct_icon_grid()
+    from_grid_file = init_grid_manager(file).get_grid()
+    assert from_grid_file.get_start_index(dim, marker) == start_index
+    assert from_grid_file.get_start_index(dim, marker) == from_savepoint.get_start_index(
+        dim, marker
+    )
 
 
 @pytest.mark.datatest
@@ -660,10 +662,10 @@ def test_get_start_index(icon_grid, dim, marker, index):
 )
 def test_get_end_index_for_local_grid(grid_file, num_levels, grid_savepoint, dim, marker, index):
     file = resolve_file_from_gridfile_name(grid_file)
-    icon_grid = grid_savepoint.construct_icon_grid()
-    grid_from_manager = init_grid_manager(file, num_levels=num_levels).get_grid()
-    assert grid_from_manager.get_end_index(dim, marker) == index
-    assert grid_from_manager.get_end_index(dim, marker) == icon_grid.get_end_index(dim, marker)
+    from_savepoint = grid_savepoint.construct_icon_grid()
+    from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
+    assert from_grid_file.get_end_index(dim, marker) == index
+    assert from_grid_file.get_end_index(dim, marker) == from_savepoint.get_end_index(dim, marker)
 
 
 @pytest.mark.datatest
@@ -696,8 +698,8 @@ def test_get_end_index_for_local_grid(grid_file, num_levels, grid_savepoint, dim
 def test_get_start_end_index_for_global_grid(
     grid_file, num_levels, grid_savepoint, dim, marker, start_index, end_index
 ):
-    file = resolve_file_from_gridfile_name(grid_file)
     from_savepoint = grid_savepoint.construct_icon_grid()
+    file = resolve_file_from_gridfile_name(grid_file)
     from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_start_index(dim, marker) == from_savepoint.get_start_index(
