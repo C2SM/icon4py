@@ -470,8 +470,6 @@ def initialize(props: ProcessProperties):
     "reads" in
         - load configuration
 
-        - load grid information
-
         - initialize components: diffusion and solve_nh
 
         - load diagnostic and prognostic variables (serialized data)
@@ -480,11 +478,8 @@ def initialize(props: ProcessProperties):
 
      Returns:
          tl: configured timeloop,
-         diffusion_diagnostic_state: initial state for diffusion diagnostic variables
-         nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
-         prep_advection: fields collecting data for advection during the solve nonhydro timestep
-         inital_divdamp_fac_o2: initial divergence damping factor
+         and other dimensional values
 
     """
     log.info("initialize")
@@ -546,20 +541,16 @@ def main(run_path, mpi):
     """
     Run the driver.
 
-    usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
+    usage: python dycore_driver.py
 
     steps:
     1. initialize model from serialized data:
 
         a) load config of icon and components: diffusion and solve_nh
 
-        b) initialize grid
+        b) load local, diagnostic and prognostic variables
 
-        c) initialize/configure components ie "granules"
-
-        d) load local, diagnostic and prognostic variables
-
-        e) setup the time loop
+        c) setup the time loop
 
     2. run time loop
     """
