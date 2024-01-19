@@ -26,10 +26,10 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim
+from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -103,3 +103,31 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
     )
 
     assert np.allclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
+
+@pytest.mark.datatest
+def test_compute_geofac_n2s(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    dual_edge_length = grid_savepoint.dual_edge_length()
+    geofac_div = interpolation_savepoint.geofac_div()
+#    geofac_n2s = zero_field(icon_grid, CellDim, C2EDim)
+    geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
+    C2E_ = icon_grid.connectivities[C2EDim]
+    E2C_ = icon_grid.connectivities[E2CDim]
+    C2E2C_ = icon_grid.connectivities[C2E2CDim]
+#    lateral_boundary = icon_grid.get_start_index(
+#        EdgeDim,
+#        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+#    )
+    geofac_n2s = compute_geofac_n2s(
+        dual_edge_length.asnumpy(),
+        geofac_div.asnumpy(),
+        C2E_,
+        E2C_,
+        C2E2C_,
+#        lateral_boundary,
+    )
+#    np.set_printoptions(threshold=np.inf)
+    print(geofac_n2s_ref.asnumpy())
+    print(geofac_n2s)
+    assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
