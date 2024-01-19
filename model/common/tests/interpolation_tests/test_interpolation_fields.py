@@ -115,19 +115,23 @@ def test_compute_geofac_n2s(
     C2E_ = icon_grid.connectivities[C2EDim]
     E2C_ = icon_grid.connectivities[E2CDim]
     C2E2C_ = icon_grid.connectivities[C2E2CDim]
-#    lateral_boundary = icon_grid.get_start_index(
-#        EdgeDim,
-#        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-#    )
+    lateral_boundary = np.arange(2)
+    lateral_boundary[0] = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    )
+    lateral_boundary[1] = icon_grid.get_end_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+    )
+    geofac_n2s = np.zeros([lateral_boundary[1], 4])
     geofac_n2s = compute_geofac_n2s(
+        geofac_n2s,
         dual_edge_length.asnumpy(),
         geofac_div.asnumpy(),
         C2E_,
         E2C_,
         C2E2C_,
-#        lateral_boundary,
+        lateral_boundary,
     )
-#    np.set_printoptions(threshold=np.inf)
-    print(geofac_n2s_ref.asnumpy())
-    print(geofac_n2s)
     assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())

@@ -87,38 +87,36 @@ def compute_geofac_rot(
     return geofac_rot_
 
 def compute_geofac_n2s(
+    geofac_n2s: np.array,
     dual_edge_length: np.array,
     geofac_div: np.array,
     C2E_: np.array,
     E2C_: np.array,
     C2E2C_: np.array,
+    lateral_boundary: np.array,
 ) -> np.array:
     """
     Args:
         dual_edge_length:
         geofac_div:
     """
-    geofac_n2s_ = np.zeros([20896, 3])
-    geofac_n2s__ = np.zeros(20896)
-#    index = np.matmul(np.transpose(np.arange(20896)), np.ones(3))
-    index = np.transpose(np.vstack((np.arange(20896), np.arange(20896), np.arange(20896))))
+    llb = lateral_boundary[0]
+    index = np.transpose(np.vstack((np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]))))
     fac = E2C_[C2E_, 0] == index
-    geofac_n2s__[:] = (geofac_n2s__[:]
-                       - fac[:, 0] * (geofac_div/dual_edge_length[C2E_])[:, 0]
-                       - fac[:, 1] * (geofac_div/dual_edge_length[C2E_])[:, 1]
-                       - fac[:, 2] * (geofac_div/dual_edge_length[C2E_])[:, 2])
+    geofac_n2s[llb:, 0] = (geofac_n2s[llb:, 0]
+                       - fac[llb:, 0] * (geofac_div/dual_edge_length[C2E_])[llb:, 0]
+                       - fac[llb:, 1] * (geofac_div/dual_edge_length[C2E_])[llb:, 1]
+                       - fac[llb:, 2] * (geofac_div/dual_edge_length[C2E_])[llb:, 2])
     fac = E2C_[C2E_, 1] == index
-    geofac_n2s__[:] = (geofac_n2s__[:]
-                       + fac[:, 0] * (geofac_div/dual_edge_length[C2E_])[:, 0]
-                       + fac[:, 1] * (geofac_div/dual_edge_length[C2E_])[:, 1]
-                       + fac[:, 2] * (geofac_div/dual_edge_length[C2E_])[:, 2])
+    geofac_n2s[llb:, 0] = (geofac_n2s[llb:, 0]
+                       + fac[llb:, 0] * (geofac_div/dual_edge_length[C2E_])[llb:, 0]
+                       + fac[llb:, 1] * (geofac_div/dual_edge_length[C2E_])[llb:, 1]
+                       + fac[llb:, 2] * (geofac_div/dual_edge_length[C2E_])[llb:, 2])
     fac = E2C_[C2E_, 0] == C2E2C_
-    geofac_n2s_[:, :] = geofac_n2s_[:, :] - fac[:, :] * (geofac_div/dual_edge_length[C2E_])[:, :]
+    geofac_n2s[llb:, 1:] = geofac_n2s[llb:, 1:] - fac[llb:, :] * (geofac_div/dual_edge_length[C2E_])[llb:, :]
     fac = E2C_[C2E_, 1] == C2E2C_
-    geofac_n2s_[:, :] = geofac_n2s_[:, :] + fac[:, :] * (geofac_div/dual_edge_length[C2E_])[:, :]
-    geofac_n2s___ = np.transpose(np.vstack((geofac_n2s__, np.transpose(geofac_n2s_))))
-    geofac_n2s___[0:850, :] = 0.0
-    return geofac_n2s___
+    geofac_n2s[llb:, 1:] = geofac_n2s[llb:, 1:] + fac[llb:, :] * (geofac_div/dual_edge_length[C2E_])[llb:, :]
+    return geofac_n2s
 
 #def compute_geofac_qdiv(
 #    primal_edge_length: np.array,
