@@ -78,7 +78,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             IconRunConfig(
                 dtime=10.0,
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
-                end_date=datetime(2021, 6, 20, 12, 0, 10),
+                end_date=datetime(2021, 6, 20, 12, 10, 0),
                 n_substeps=2,
                 apply_initial_stabilization=True,
             ),

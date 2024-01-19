@@ -502,6 +502,38 @@ class SolveNonhydro:
             self.ntl1 = 0
             self.ntl2 = 0
 
+    def speed_test_step(
+        self,
+        prognostic_state_ls: list[PrognosticState],
+        ddt_vn_apc_pc: Field[[EdgeDim,KDim], float],
+        ddt_vn_phy: Field[[EdgeDim, KDim], float],
+        z_theta_v_e: Field[[EdgeDim, KDim], float],
+        z_gradh_exner: Field[[EdgeDim, KDim], float],
+        dtime: float,
+        nnow: int,
+        nnew: int,
+        start_edge_nudging_plus1: int,
+        end_edge_local: int,
+        num_levels: int
+    ):
+
+        # testing the performance of stencil 24
+        mo_solve_nonhydro_stencil_24.with_backend(backend)(
+            vn_nnow=prognostic_state_ls[nnow].vn,
+            ddt_vn_apc_ntl1=ddt_vn_apc_pc,
+            ddt_vn_phy=ddt_vn_phy,
+            z_theta_v_e=z_theta_v_e,
+            z_gradh_exner=z_gradh_exner,
+            vn_nnew=prognostic_state_ls[nnew].vn,
+            dtime=dtime,
+            cpd=constants.CPD,
+            horizontal_start=start_edge_nudging_plus1,
+            horizontal_end=end_edge_local,
+            vertical_start=0,
+            vertical_end=num_levels,
+            offset_provider={},
+        )
+
     def time_step(
         self,
         diagnostic_state_nh: DiagnosticStateNonHydro,

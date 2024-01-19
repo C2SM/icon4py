@@ -18,6 +18,10 @@ from typing import Callable
 import click
 from devtools import Timer
 
+from gt4py.next import Field, as_field
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
@@ -44,10 +48,71 @@ from icon4py.model.driver.io_utils import (
     read_initial_state,
     read_static_fields,
 )
-
+import icon4py.model.common.constants as constants
+import numpy as np
+from icon4py.model.common.test_utils.helpers import dallclose
 
 log = logging.getLogger(__name__)
 
+
+# numpy version
+def mo_solve_nonhydro_stencil_24_numpy(
+    vn_nnow: np.array,
+    ddt_vn_apc_ntl1: np.array,
+    ddt_vn_phy: np.array,
+    z_theta_v_e: np.array,
+    z_gradh_exner: np.array,
+    vn_nnew: np.array,
+    dtime: float,
+    cpd: float,
+    horizontal_start: int,
+    horizontal_end: int,
+    vertical_start: int,
+    vertical_end: int,
+):
+    vn_nnew_update = np.array(vn_nnew)
+    vn_nnew_update[horizontal_start:horizontal_end, vertical_start:vertical_end] = (
+        vn_nnow[horizontal_start:horizontal_end, vertical_start:vertical_end] + dtime * (
+            ddt_vn_apc_ntl1[horizontal_start:horizontal_end, vertical_start:vertical_end]
+            - cpd * z_theta_v_e[horizontal_start:horizontal_end, vertical_start:vertical_end] *
+            z_gradh_exner[horizontal_start:horizontal_end, vertical_start:vertical_end]
+            + ddt_vn_phy[horizontal_start:horizontal_end, vertical_start:vertical_end]
+        )
+    )
+    return vn_nnew_update
+
+# stencil 24 of solve_nonhydro
+def speed_test_step_numpy(
+    prognostic_state_ls: list[PrognosticState],
+    ddt_vn_apc_pc: np.array,
+    ddt_vn_phy: np.array,
+    z_theta_v_e: np.array,
+    z_gradh_exner: np.array,
+    dtime: float,
+    nnow: int,
+    nnew: int,
+    start_edge_nudging_plus1: int,
+    end_edge_local: int,
+    num_levels: int
+):
+
+    # testing the performance of stencil 24
+    vn_new = mo_solve_nonhydro_stencil_24_numpy(
+        vn_nnow=prognostic_state_ls[nnow].vn.asnumpy(),
+        ddt_vn_apc_ntl1=ddt_vn_apc_pc,
+        ddt_vn_phy=ddt_vn_phy,
+        z_theta_v_e=z_theta_v_e,
+        z_gradh_exner=z_gradh_exner,
+        vn_nnew=prognostic_state_ls[nnew].vn.asnumpy(),
+        dtime=dtime,
+        cpd=constants.CPD,
+        horizontal_start=start_edge_nudging_plus1,
+        horizontal_end=end_edge_local,
+        vertical_start=0,
+        vertical_end=num_levels
+    )
+
+    prognostic_state_ls[nnew].vn = as_field((EdgeDim, KDim), vn_new)
 
 class TimeLoop:
     @classmethod
@@ -89,12 +154,12 @@ class TimeLoop:
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def _validate_config(self):
-        if self._n_time_steps < 0:
+        if self._n_time_steps <= 0:
             raise ValueError("end_date should be larger than start_date. Please check.")
-        if not self.diffusion.initialized:
-            raise Exception("diffusion is not initialized before time loop")
-        if not self.solve_nonhydro.initialized:
-            raise Exception("nonhydro solver is not initialized before time loop")
+        #if not self.diffusion.initialized:
+        #    raise Exception("diffusion is not initialized before time loop")
+        #if not self.solve_nonhydro.initialized:
+        #    raise Exception("nonhydro solver is not initialized before time loop")
 
     def _not_first_step(self):
         self._do_initial_stabilization = False
@@ -137,6 +202,134 @@ class TimeLoop:
 
     def _full_name(self, func: Callable):
         return ":".join((self.__class__.__name__, func.__name__))
+
+    def speed_test_time_integration(
+        self,
+        prognostic_state_list: list[PrognosticState],
+        start_edge_nudging_plus1,
+        end_edge_local,
+        num_edges,
+        num_levels
+    ):
+        log.info(
+            f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+        )
+
+        #start_edge_nudging_plus1 = self.solve_nonhydro.grid.get_start_index(
+        #    EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        #)
+        #end_edge_local = self.solve_nonhydro.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+        #num_levels = self.solve_nonhydro.grid.num_levels
+        #num_edges = self.solve_nonhydro.grid.num_edges
+
+        log.info(
+            f"num_edges={num_edges} num_levels={num_levels}"
+        )
+        ddt_vn_apc_pc_np = np.random.rand(num_edges,num_levels)
+        ddt_vn_phy_np = np.random.rand(num_edges,num_levels)
+        z_theta_v_e_np = np.random.rand(num_edges,num_levels)
+        z_gradh_exner_np = np.random.rand(num_edges,num_levels)
+
+        ddt_vn_apc_pc = as_field((EdgeDim,KDim), ddt_vn_apc_pc_np)
+        ddt_vn_phy = as_field((EdgeDim,KDim), ddt_vn_phy_np)
+        z_theta_v_e = as_field((EdgeDim,KDim), z_theta_v_e_np)
+        z_gradh_exner = as_field((EdgeDim,KDim), z_gradh_exner_np)
+
+        vn_now_np = prognostic_state_list[self._now].vn.asnumpy()
+
+        ref_prognostic_now = PrognosticState(
+            w=prognostic_state_list[self._now].w,
+            vn=prognostic_state_list[self._now].vn,
+            theta_v=prognostic_state_list[self._now].theta_v,
+            rho=prognostic_state_list[self._now].rho,
+            exner=prognostic_state_list[self._now].exner,
+        )
+        ref_prognostic_new = PrognosticState(
+            w=prognostic_state_list[self._next].w,
+            vn=prognostic_state_list[self._next].vn,
+            theta_v=prognostic_state_list[self._next].theta_v,
+            rho=prognostic_state_list[self._next].rho,
+            exner=prognostic_state_list[self._next].exner,
+        )
+        ref_prognostic_state_list = [ref_prognostic_now, ref_prognostic_new]
+
+        log.info(
+            f"Checking numerics {np.abs(ddt_vn_apc_pc_np).max()} {np.abs(ddt_vn_phy_np).max()} {np.abs(z_theta_v_e_np).max()} {np.abs(z_gradh_exner_np).max()} {np.abs(vn_now_np).max()}"
+        )
+        log.info(
+            f"Checking initial values {np.abs(prognostic_state_list[self._next].vn.asnumpy()).max()} {np.abs(prognostic_state_list[self._next].vn.asnumpy()).min()}"
+        )
+        log.info(
+            f"Checking initial values {np.abs(ref_prognostic_state_list[self._next].vn.asnumpy()).max()} {np.abs(ref_prognostic_state_list[self._next].vn.asnumpy()).min()}"
+        )
+        log.info(
+            f"starting speed test time loop in gt4py version for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+        )
+        timer = Timer(self._full_name(self._integrate_one_time_step))
+        for time_step in range(self._n_time_steps):
+            log.info(
+                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
+            )
+
+            self._next_simulation_date()
+
+            # update boundary condition
+
+            timer.start()
+            self.solve_nonhydro.speed_test_step(
+                prognostic_state_list,
+                ddt_vn_apc_pc,
+                ddt_vn_phy,
+                z_theta_v_e,
+                z_gradh_exner,
+                self.run_config.dtime,
+                self._now,
+                self._next,
+                start_edge_nudging_plus1,
+                end_edge_local,
+                num_levels
+            )
+            timer.capture()
+
+        timer.summary(True)
+
+        self.re_init()
+
+        log.info(
+            f"starting speed test time loop in numpy version for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+        )
+        timer = Timer(self._full_name(self._integrate_one_time_step))
+        for time_step in range(self._n_time_steps):
+            log.info(
+                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
+            )
+
+            self._next_simulation_date()
+
+            # update boundary condition
+
+            timer.start()
+            speed_test_step_numpy(
+                ref_prognostic_state_list,
+                ddt_vn_apc_pc_np,
+                ddt_vn_phy_np,
+                z_theta_v_e_np,
+                z_gradh_exner_np,
+                self.run_config.dtime,
+                self._now,
+                self._next,
+                start_edge_nudging_plus1,
+                end_edge_local,
+                num_levels
+            )
+            timer.capture()
+
+        timer.summary(True)
+
+        assert dallclose(
+            ref_prognostic_state_list[self._next].vn.asnumpy(),
+            prognostic_state_list[self._next].vn.asnumpy(),
+        )
 
     def time_integration(
         self,
@@ -200,6 +393,7 @@ class TimeLoop:
             # TODO (Chia Rui): simple IO enough for JW test
 
         timer.summary(True)
+
 
     def _integrate_one_time_step(
         self,
@@ -269,7 +463,7 @@ class TimeLoop:
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
-def initialize(file_path: Path, props: ProcessProperties):
+def initialize(props: ProcessProperties):
     """
     Inititalize the driver run.
 
@@ -293,86 +487,62 @@ def initialize(file_path: Path, props: ProcessProperties):
          inital_divdamp_fac_o2: initial divergence damping factor
 
     """
-    log.info("initialize parallel runtime")
+    log.info("initialize")
     experiment_name = "mch_ch_r04b09_dsl"
     log.info(f"reading configuration: experiment {experiment_name}")
     config = read_config(experiment_name)
 
-    decomp_info = read_decomp_info(file_path, props)
-
-    log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(file_path, rank=props.rank)
-    log.info(f"reading input fields from '{file_path}'")
-    (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        file_path, rank=props.rank
-    )
-    (
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        solve_nonhydro_metric_state,
-        solve_nonhydro_interpolation_state,
-    ) = read_static_fields(file_path)
-
     log.info("initializing diffusion")
-    diffusion_params = DiffusionParams(config.diffusion_config)
-    exchange = create_exchange(props, decomp_info)
-    diffusion = Diffusion(exchange)
-    diffusion.init(
-        icon_grid,
-        config.diffusion_config,
-        diffusion_params,
-        vertical_geometry,
-        diffusion_metric_state,
-        diffusion_interpolation_state,
-        edge_geometry,
-        cell_geometry,
-    )
-
-    nonhydro_params = NonHydrostaticParams(config.solve_nonhydro_config)
+    diffusion = Diffusion()
 
     solve_nonhydro = SolveNonhydro()
-    solve_nonhydro.init(
-        grid=icon_grid,
-        config=config.solve_nonhydro_config,
-        params=nonhydro_params,
-        metric_state_nonhydro=solve_nonhydro_metric_state,
-        interpolation_state=solve_nonhydro_interpolation_state,
-        vertical_params=vertical_geometry,
-        edge_geometry=edge_geometry,
-        cell_geometry=cell_geometry,
-        owner_mask=c_owner_mask,
-    )
-
-    (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        inital_divdamp_fac_o2,
-        prognostic_state_now,
-        prognostic_state_next,
-    ) = read_initial_state(file_path, rank=props.rank)
-    prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
     timeloop = TimeLoop(
         run_config=config.run_config,
         diffusion=diffusion,
         solve_nonhydro=solve_nonhydro,
     )
+
+    start_edge_nudging_plus1 = 100
+    end_edge_local = 49900
+    num_edges = 55000
+    num_levels = 65
+    vn = np.random.rand(num_edges, num_levels)
+    w = np.random.rand(num_edges, num_levels)
+    theta_v = np.random.rand(num_edges, num_levels)
+    rho = np.random.rand(num_edges, num_levels)
+    exner = np.random.rand(num_edges, num_levels)
+    prognostic_state_now = PrognosticState(
+        w=as_field((EdgeDim,KDim), w),
+        vn=as_field((EdgeDim, KDim), vn),
+        theta_v=as_field((EdgeDim, KDim), theta_v),
+        rho=as_field((EdgeDim, KDim), rho),
+        exner=as_field((EdgeDim, KDim), exner),
+    )
+    prognostic_state_next = PrognosticState(
+        w=as_field((EdgeDim, KDim), w),
+        vn=as_field((EdgeDim, KDim), vn),
+        theta_v=as_field((EdgeDim, KDim), theta_v),
+        rho=as_field((EdgeDim, KDim), rho),
+        exner=as_field((EdgeDim, KDim), exner),
+    )
+    prognostic_state_list = [prognostic_state_now, prognostic_state_next]
+
     return (
         timeloop,
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        prep_adv,
-        inital_divdamp_fac_o2,
+        start_edge_nudging_plus1,
+        end_edge_local,
+        num_edges,
+        num_levels,
     )
 
 
 @click.command()
-@click.argument("input_path")
+#@click.argument("input_path")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-def main(input_path, run_path, mpi):
+def main(run_path, mpi):
     """
     Run the driver.
 
@@ -396,34 +566,32 @@ def main(input_path, run_path, mpi):
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
     (
         timeloop,
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        z_fields,
-        nh_constants,
-        prep_adv,
-        inital_divdamp_fac_o2,
-    ) = initialize(Path(input_path), parallel_props)
+        start_edge_nudging_plus1,
+        end_edge_local,
+        num_edges,
+        num_levels,
+    ) = initialize(parallel_props)
     configure_logging(run_path, timeloop.simulation_date, parallel_props)
+    log.info(
+        f"num_edges={num_edges} num_levels={num_levels}"
+    )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
-        f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
+        f"input args: n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
     )
 
-    log.info(f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}")
+    log.info(f"input args: n_time_steps={timeloop.n_time_steps}")
 
     log.info("dycore configuring: DONE")
     log.info("timeloop: START")
 
-    timeloop.time_integration(
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
+    timeloop.speed_test_time_integration(
         prognostic_state_list,
-        prep_adv,
-        z_fields,
-        nh_constants,
-        inital_divdamp_fac_o2,
-        do_prep_adv=False,
+        start_edge_nudging_plus1,
+        end_edge_local,
+        num_edges,
+        num_levels
     )
 
     log.info("timeloop:  DONE")
