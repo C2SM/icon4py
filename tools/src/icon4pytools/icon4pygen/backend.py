@@ -13,8 +13,9 @@
 from pathlib import Path
 from typing import Any, Iterable, List
 
+from gt4py._core.definitions import DeviceType
 from gt4py.next.iterator import ir as itir
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_imperative
+from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from icon4py.model.common.dimension import Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
@@ -46,8 +47,15 @@ class GTHeader:
     def _generate_cpp_code(
         self, fencil: itir.FencilDefinition, imperative: bool, **kwargs: Any
     ) -> str:
-        backend = run_gtfn_imperative if imperative else run_gtfn
-        return backend.executor.otf_workflow.translation.generate_stencil_source(
+        translation = gtfn_module.GTFNTranslationStep(
+            enable_itir_transforms=True,
+            use_imperative_backend=False,
+            device_type=DeviceType.CPU,
+        )
+        if imperative:
+            translation = translation.replace(use_imperative_backend=True)
+
+        return translation.generate_stencil_source(
             fencil,
             offset_provider=self.stencil_info.offset_provider,
             column_axis=self.stencil_info.column_axis,
