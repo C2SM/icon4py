@@ -6,13 +6,12 @@ variables:
 
 build:
   extends: .build_template
-  script:
-    - pip install dace==$DACE_VERSION
 
 benchmark_model_icon_grid:
   extends: .test_template
   stage: benchmark
   script:
+    - if [ "$BACKEND" = "dace_cpu" ] || [ "$BACKEND" = "dace_gpu" ]; then pip install dace==$DACE_VERSION; fi
     - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid --disable-warnings
   parallel:
     matrix:
