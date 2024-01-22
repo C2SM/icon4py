@@ -36,7 +36,7 @@ from icon4py.atm_phy_schemes.gscp_graupel_Ong import _graupel_scan, _graupel_t_t
 from icon4py.atm_phy_schemes.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
 from typing import Final
 from icon4py.model.common.dimension import CellDim, KDim
-from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next import as_field
 from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn,
     run_gtfn_cached,
@@ -476,23 +476,23 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
     velocity_field = {}
     for item in ser_field_name:
         if (item != "ser_graupel_qnc"):
-            ser_field[item] = np_as_located_field(CellDim, KDim)(np.array(ser_data[item], dtype=float64))
-            predict_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size,k_size), dtype=float64))
+            ser_field[item] = as_field((CellDim, KDim), np.array(ser_data[item], dtype=float64))
+            predict_field[item] = as_field((CellDim, KDim), np.zeros((cell_size,k_size), dtype=float64))
         else:
-            ser_field[item] = np_as_located_field(CellDim)(np.array(ser_data[item], dtype=float64))
-            predict_field[item] = np_as_located_field(CellDim)(np.zeros(cell_size, dtype=float64))
+            ser_field[item] = as_field((CellDim,), np.array(ser_data[item], dtype=float64))
+            predict_field[item] = as_field((CellDim,), np.zeros(cell_size, dtype=float64))
     for item in ser_tend_name:
-        tend_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+        tend_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
     for item in ser_redundant_name:
         if (item != "ser_graupel_klev"):
-            redundant_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+            redundant_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
         else:
-            redundant_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=int32))
+            redundant_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=int32))
     for item in velocity_field_name:
-        velocity_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+        velocity_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
 
-    print("max and min dz: ", ser_field["ser_graupel_dz"].array().min(), ser_field["ser_graupel_dz"].array().max())
-    print("max and min pres: ", ser_field["ser_graupel_pres"].array().min(), ser_field["ser_graupel_pres"].array().max())
+    print("max and min dz: ", ser_field["ser_graupel_dz"].asnumpy().min(), ser_field["ser_graupel_dz"].asnumpy().max())
+    print("max and min pres: ", ser_field["ser_graupel_pres"].asnumpy().min(), ser_field["ser_graupel_pres"].asnumpy().max())
 
     # run graupel
 
@@ -632,26 +632,26 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
 
     diff_data = {}
     for item in mixT_name:
-        diff_data[item] = np.abs(predict_field[item].array() - ref_data[item]) / ref_data[item]
-        diff_data[item] = np.where(np.abs(ref_data[item]) <= 1.e-20 , predict_field[item].array(), diff_data[item])
+        diff_data[item] = np.abs(predict_field[item].asnumpy() - ref_data[item]) / ref_data[item]
+        diff_data[item] = np.where(np.abs(ref_data[item]) <= 1.e-20 , predict_field[item].asnumpy(), diff_data[item])
 
     if (tendency_serialization):
         for item in ser_tend_name:
             diff_data[item] = np.abs(tend_field[item] - tend_data[item]) / tend_data[item]
-            diff_data[item] = np.where(np.abs(tend_data[item]) <= 1.e-30, tend_field[item].array(), tend_data[item])
+            diff_data[item] = np.where(np.abs(tend_data[item]) <= 1.e-30, tend_field[item].asnumpy(), tend_data[item])
 
     if ( tendency_serialization ):
         print("Max predict-ref tendency difference:")
         for item in ser_tend_name:
-            print(item, ": ", np.abs(tend_field[item].array() - tend_data[item]).max(), diff_data[item].max())
+            print(item, ": ", np.abs(tend_field[item].asnumpy() - tend_data[item]).max(), diff_data[item].max())
 
     print("Max predict-ref difference:")
     for item in mixT_name:
-        print(item, ": ", np.abs(predict_field[item].array() - ref_data[item]).max(), diff_data[item].max())
+        print(item, ": ", np.abs(predict_field[item].asnumpy() - ref_data[item]).max(), diff_data[item].max())
 
     print("Max init-ref difference:")
     for item in mixT_name:
-        print(item, ": ", np.abs(ser_field[item].array() - ref_data[item]).max())
+        print(item, ": ", np.abs(ser_field[item].asnumpy() - ref_data[item]).max())
 
     print("Max init:")
     for item in mixT_name:
@@ -663,30 +663,30 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
 
     print("Max predict:")
     for item in mixT_name:
-        print(item, ": ", predict_field[item].array().max())
+        print(item, ": ", predict_field[item].asnumpy().max())
 
     print("Max abs predict:")
     for item in mixT_name:
-        print(item, ": ", np.abs(predict_field[item].array()).max())
+        print(item, ": ", np.abs(predict_field[item].asnumpy()).max())
 
     print("Max init-ref total difference:")
     print("qv: ", np.abs(
-        ser_field["ser_graupel_qv"].array() - ref_data["ser_graupel_qv"] +
-        ser_field["ser_graupel_qc"].array() - ref_data["ser_graupel_qc"] +
-        ser_field["ser_graupel_qi"].array() - ref_data["ser_graupel_qi"] +
-        ser_field["ser_graupel_qr"].array() - ref_data["ser_graupel_qr"] +
-        ser_field["ser_graupel_qs"].array() - ref_data["ser_graupel_qs"] +
-        ser_field["ser_graupel_qg"].array() - ref_data["ser_graupel_qg"]
+        ser_field["ser_graupel_qv"].asnumpy() - ref_data["ser_graupel_qv"] +
+        ser_field["ser_graupel_qc"].asnumpy() - ref_data["ser_graupel_qc"] +
+        ser_field["ser_graupel_qi"].asnumpy() - ref_data["ser_graupel_qi"] +
+        ser_field["ser_graupel_qr"].asnumpy() - ref_data["ser_graupel_qr"] +
+        ser_field["ser_graupel_qs"].asnumpy() - ref_data["ser_graupel_qs"] +
+        ser_field["ser_graupel_qg"].asnumpy() - ref_data["ser_graupel_qg"]
     ).max())
 
     print("Max predict-init total difference:")
     print("qv: ", np.abs(
-        predict_field["ser_graupel_qv"].array() - ref_data["ser_graupel_qv"] +
-        predict_field["ser_graupel_qc"].array() - ref_data["ser_graupel_qc"] +
-        predict_field["ser_graupel_qi"].array() - ref_data["ser_graupel_qi"] +
-        predict_field["ser_graupel_qr"].array() - ref_data["ser_graupel_qr"] +
-        predict_field["ser_graupel_qs"].array() - ref_data["ser_graupel_qs"] +
-        predict_field["ser_graupel_qg"].array() - ref_data["ser_graupel_qg"]
+        predict_field["ser_graupel_qv"].asnumpy() - ref_data["ser_graupel_qv"] +
+        predict_field["ser_graupel_qc"].asnumpy() - ref_data["ser_graupel_qc"] +
+        predict_field["ser_graupel_qi"].asnumpy() - ref_data["ser_graupel_qi"] +
+        predict_field["ser_graupel_qr"].asnumpy() - ref_data["ser_graupel_qr"] +
+        predict_field["ser_graupel_qs"].asnumpy() - ref_data["ser_graupel_qs"] +
+        predict_field["ser_graupel_qg"].asnumpy() - ref_data["ser_graupel_qg"]
     ).max())
 
     if (data_output):
@@ -694,7 +694,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
             for i in range(cell_size):
                 for k in range(k_size):
                     f.write( "{0:7d} {1:7d}".format(i,k))
-                    f.write(" {0:.20e} ".format(ser_field["ser_graupel_dz"].array()[i,k]))
+                    f.write(" {0:.20e} ".format(ser_field["ser_graupel_dz"].asnumpy()[i,k]))
                     f.write("\n")
 
         with open(base_dir+'analysis_ser_rho_rank'+str(rank)+'.dat','w') as f:
@@ -716,7 +716,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
                 for k in range(k_size):
                     f.write( "{0:7d} {1:7d}".format(i,k))
                     for item in mixT_name:
-                        f.write(" {0:.20e} ".format(predict_field[item].array()[i,k]))
+                        f.write(" {0:.20e} ".format(predict_field[item].asnumpy()[i,k]))
                     f.write("\n")
 
         with open(base_dir+'analysis_tend_rank' + str(rank) + '.dat', 'w') as f:
@@ -724,7 +724,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
                 for k in range(k_size):
                     f.write("{0:7d} {1:7d}".format(i, k))
                     for item in ser_tend_name:
-                        f.write(" {0:.20e} ".format(tend_field[item].array()[i, k]))
+                        f.write(" {0:.20e} ".format(tend_field[item].asnumpy()[i, k]))
                     f.write("\n")
 
         with open(base_dir+'analysis_redundant_rank' + str(rank) + '.dat', 'w') as f:
@@ -732,7 +732,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
                 for k in range(k_size):
                     f.write("{0:7d} {1:7d}".format(i, k))
                     for item in ser_redundant_name:
-                        f.write(" {0:.20e} ".format(redundant_field[item].array()[i, k]))
+                        f.write(" {0:.20e} ".format(redundant_field[item].asnumpy()[i, k]))
                     f.write("\n")
 
         with open(base_dir+'analysis_velocity_rank'+str(rank)+'.dat','w') as f:
@@ -740,7 +740,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
                 for k in range(k_size):
                     f.write("{0:7d} {1:7d}".format(i, k))
                     for item in velocity_field_name:
-                        f.write(" {0:.20e} ".format(velocity_field[item].array()[i, k]))
+                        f.write(" {0:.20e} ".format(velocity_field[item].asnumpy()[i, k]))
                     f.write("\n")
 
         with open(base_dir+'analysis_ser_rank'+str(rank)+'.dat','w') as f:
@@ -774,5 +774,5 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
         # just realized that sometimes the diagnostic variables such as qv tendency output from the
         # _graupel_q_tendency does not pass rtol=1.e-12 even though rtol=1.e-12 can be satisfied
         # for the main graupel scan, why?
-        assert(np.allclose(predict_field[item].array(),ref_data[item], rtol=1e-10, atol=1e-16))
+        assert(np.allclose(predict_field[item].asnumpy(),ref_data[item], rtol=1e-10, atol=1e-16))
 

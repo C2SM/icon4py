@@ -49,3 +49,29 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 #: Klemp (2008) type Rayleigh damping
 # TODO (magdalena) not a constant, move somewhere else, convert to enum
 RAYLEIGH_KLEMP: Final[int] = 2
+
+# Constants for physics schemes
+#: Melting temperature of ice/snow [K]
+TMELT: Final[float] = 273.15
+
+#: Latent heat of vaporisation for water [J/kg]
+ALV: Final[float] = 2.5008e6
+
+#: Latent heat of sublimation for water [J/kg]
+ALS: Final[float] = 2.8345e6
+
+#: latent heat of fusion for water [J/kg]
+ALF: Final[float] = ALS - ALV
+
+#: cp_d / cp_l - 1
+RCPL: Final[float] = 3.1733
+
+CLW: Final[float] = (RCPL + 1.0) * CPD
+
+#: Inverse of specific heat at constant pressure  [K*kg/J]
+RCPD = 1.0 / CPD
+
+#: Inverse of specific heat at constant volume [K*kg/J]
+RCVD = 1.0 / CVD
+
+

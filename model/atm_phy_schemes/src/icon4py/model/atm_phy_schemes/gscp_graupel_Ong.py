@@ -36,10 +36,10 @@ from gt4py.next.ffront.fbuiltins import (
 #from gt4py.next.program_processors.runners import roundtrip
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.shared.mo_math_utilities import gamma_fct
-from icon4py.shared.mo_math_constants import math_const
+from icon4py.model.common.math.math_utilities import gamma_fct
+from icon4py.model.common.math.math_constants import math_const
 #from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
-from icon4py.shared.mo_physical_constants import phy_const
+from icon4py.model.common.mo_physical_constants import phy_const
 
 
 sys.setrecursionlimit(350000)
