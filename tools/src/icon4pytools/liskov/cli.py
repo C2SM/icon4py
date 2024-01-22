@@ -56,6 +56,12 @@ def main(ctx: click.Context) -> None:
     default=True,
     help="Adds fused or unfused stencils.",
 )
+@click.option(
+    "--enable-dsl-optional",
+    type=click.Choice(['advection', 'graupel', 'no']),
+    default='no',
+    help="Specify the DSL optional module to enable.",
+)
 @click.argument(
     "input_path",
     type=click.Path(exists=True, dir_okay=False, resolve_path=True, path_type=pathlib.Path),
@@ -70,10 +76,11 @@ def integrate(
     fused: bool,
     profile: bool,
     metadatagen: bool,
+    enable_dsl_optional: str,
 ) -> None:
     mode = "integration"
     iface = parse_fortran_file(input_path, output_path, mode)
-    iface_gt4py = process_stencils(iface, fused)
+    iface_gt4py = process_stencils(iface, fused, optional_modules_to_enable=enable_dsl_optional)
     run_code_generation(
         input_path,
         output_path,

@@ -95,6 +95,10 @@ class StartStencilData(BaseStartStencilData):
 class StartFusedStencilData(BaseStartStencilData):
     ...
 
+@dataclass
+class StartOptionalStencilData(BaseStartStencilData):
+    optional_module: str
+
 
 @dataclass
 class BaseEndStencilData(CodeGenInput):
@@ -110,6 +114,10 @@ class EndStencilData(BaseEndStencilData):
 
 @dataclass
 class EndFusedStencilData(BaseEndStencilData):
+    ...
+
+@dataclass
+class EndOptionalStencilData(BaseEndStencilData):
     ...
 
 
@@ -134,6 +142,8 @@ class IntegrationCodeInterface:
     EndStencil: Sequence[EndStencilData]
     StartFusedStencil: Sequence[StartFusedStencilData]
     EndFusedStencil: Sequence[EndFusedStencilData]
+    StartOptionalStencil: Sequence[StartOptionalStencilData]
+    EndOptionalStencil: Sequence[EndOptionalStencilData]
     StartDelete: Sequence[StartDeleteData] | UnusedDirective
     EndDelete: Sequence[EndDeleteData] | UnusedDirective
     Declare: Sequence[DeclareData]

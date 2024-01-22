@@ -192,6 +192,14 @@ class EndFusedStencil(WithArguments):
     pattern = "END FUSED STENCIL"
 
 
+class StartOptionalStencil(WithArguments):
+    pattern = "START OPTIONAL STENCIL"
+
+
+class EndOptionalStencil(WithArguments):
+    pattern = "END OPTIONAL STENCIL"
+
+
 class Declare(WithArguments):
     pattern = "DECLARE"
 
@@ -237,6 +245,8 @@ SUPPORTED_DIRECTIVES: Sequence[Type[ParsedDirective]] = [
     EndStencil,
     StartFusedStencil,
     EndFusedStencil,
+    StartOptionalStencil,
+    EndOptionalStencil,
     StartDelete,
     EndDelete,
     Imports,

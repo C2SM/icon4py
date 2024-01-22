@@ -31,9 +31,10 @@ logger = setup_logger(__name__)
 
 
 class StencilTransformer(Step):
-    def __init__(self, parsed: IntegrationCodeInterface, fused: bool) -> None:
+    def __init__(self, parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: str) -> None:
         self.parsed = parsed
         self.fused = fused
+        self.optional_modules_to_enable = optional_modules_to_enable
 
     def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         """Transform stencils in the parse tree based on the 'fused' flag, transforming or removing as necessary.
@@ -55,6 +56,12 @@ class StencilTransformer(Step):
             logger.info("Removing fused stencils.")
             self._remove_fused_stencils()
             self._remove_delete()
+
+        # Conditionally process optional stencils based on self.optional_modules_to_enable
+        if self.optional_modules_to_enable.lower() != "no":
+            self.process_optional_stencils_to_enable()
+        else:
+            self._remove_optional_stencils()
 
         return self.parsed
 
@@ -118,3 +125,25 @@ class StencilTransformer(Step):
     def _remove_delete(self) -> None:
         self.parsed.StartDelete = []
         self.parsed.EndDelete = []
+
+    def _process_optional_stencils_to_enable(self):
+        # Check if optional_module_to_enable matches the optional_module in StartOptionalStencil
+        if self.parsed.StartOptionalStencil.optional_module == self.optional_modules_to_enable:
+            # Remove optional_module attribute from StartOptionalStencil
+            del self.parsed.StartOptionalStencil.optional_module
+
+            # Add elements of StartOptionalStencil to StartStencil
+            self.parsed.StartStencil.__dict__.update(self.parsed.StartOptionalStencil.__dict__)
+
+            # Optionally, you can remove the StartOptionalStencil object itself if needed
+            del self.parsed.StartOptionalStencil
+
+        # Add any other logic you might need after processing optional stencils
+        
+    def _remove_optional_stencils(self):
+        pass
+        # Implement the logic to remove optional stencils when not enabled
+        # This method will be called when self.optional_modules_to_enable is "no"
+        self.parsed.StartOptionalStencil = []
+        self.parsed.EndOptionalStencil = []
+       # delete other liskov statements?    
