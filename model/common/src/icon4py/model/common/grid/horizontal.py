@@ -304,7 +304,7 @@ class RefinCtrlLevel:
 
     @classmethod
     def boundary_nudging_start(cls, dim: Dimension) -> int:
-        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)"""
+        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
         try:
             return cls._boundary_nudging_start[dim]
         except KeyError:
