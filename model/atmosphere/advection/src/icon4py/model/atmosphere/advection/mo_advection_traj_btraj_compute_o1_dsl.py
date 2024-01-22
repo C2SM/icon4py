@@ -35,12 +35,14 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 ) -> tuple[
     Field[[EdgeDim, KDim], int32],
     Field[[EdgeDim, KDim], int32],
+    Field[[EdgeDim, KDim], int32],
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
     lvn_pos = where(p_vn > 0.0, True, False)
 
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
+    p_cell_rel_idx_dsl = where(lvn_pos, int32(0), int32(1))
     p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
     z_ntdistv_bary_1 = -(
@@ -67,7 +69,7 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
         + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]),
     )
 
-    return p_cell_idx, p_cell_blk, astype(p_distv_bary_1, vpfloat), astype(p_distv_bary_2, vpfloat)
+    return p_cell_idx, p_cell_rel_idx_dsl, p_cell_blk, astype(p_distv_bary_1, vpfloat), astype(p_distv_bary_2, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -83,6 +85,7 @@ def mo_advection_traj_btraj_compute_o1_dsl(
     primal_normal_cell_2: Field[[ECDim], wpfloat],
     dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_cell_idx: Field[[EdgeDim, KDim], int32],
+    p_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
     p_cell_blk: Field[[EdgeDim, KDim], int32],
     p_distv_bary_1: Field[[EdgeDim, KDim], vpfloat],
     p_distv_bary_2: Field[[EdgeDim, KDim], vpfloat],
@@ -104,7 +107,13 @@ def mo_advection_traj_btraj_compute_o1_dsl(
         primal_normal_cell_2,
         dual_normal_cell_2,
         p_dthalf,
-        out=(p_cell_idx, p_cell_blk, p_distv_bary_1, p_distv_bary_2),
+        out=(
+            p_cell_idx,
+            p_cell_rel_idx_dsl,
+            p_cell_blk,
+            p_distv_bary_1,
+            p_distv_bary_2,
+        ),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
