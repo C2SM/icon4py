@@ -11,17 +11,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.set_zero_c import set_zero_c
 from icon4py.model.common.dimension import CellDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-def test_set_zero_cell_k(backend):
-    grid = SimpleGrid()
-    field = random_field(grid, CellDim)
+class TestSetZeroCellK(StencilTest):
+    PROGRAM = set_zero_c
+    OUTPUTS = ("field",)
 
-    set_zero_c.with_backend(backend)(field, offset_provider={})
-    assert np.allclose(field.asnumpy(), zero_field(grid, CellDim).asnumpy())
+    @staticmethod
+    def reference(grid, **kwargs):
+        return dict(field=zero_field(grid, CellDim).asnumpy())
+
+    @pytest.fixture
+    def input_data(self, grid):
+        field = random_field(grid, CellDim)
+        return dict(field=field)

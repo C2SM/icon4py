@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
@@ -28,7 +29,7 @@ class TestMoSolveNonhydroStencil11Lower(StencilTest):
 
     @staticmethod
     def reference(grid, **kwargs) -> dict:
-        z_theta_v_pr_ic = 0
+        z_theta_v_pr_ic = np.zeros((grid.num_cells, grid.num_levels))
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic)
 
     @pytest.fixture
