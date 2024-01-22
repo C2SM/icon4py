@@ -18,6 +18,7 @@ from gt4py.next.common import Dimension, Field
 from icon4py.model.common import dimension
 from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
 
+
 NUM_GHOST_ROWS: Final[int] = 2
 # values from mo_impl_constants.f90
 _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
@@ -58,6 +59,7 @@ _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
 _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
 _END_VERTICES: Final[int] = 0
 
+
 class HorizontalMarkerIndex:
     """
     Handles constants indexing into the start_index and end_index fields.
@@ -77,7 +79,6 @@ class HorizontalMarkerIndex:
      additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
 
     """
-
 
     _lateral_boundary = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
@@ -293,6 +294,7 @@ class CellParams:
 
     defined int ICON in mo_model_domain.f90:t_grid_cells%area
     """
+
 
 class RefinCtrlLevel:
     _boundary_nudging_start = {
