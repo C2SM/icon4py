@@ -82,7 +82,8 @@ class GridFile:
     class OffsetName(GridFileName):
         """Names for connectivities used in the grid file."""
 
-        # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> calculate?
+        # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
+        #               from e2c and c2e
         # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
 
         #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
@@ -412,9 +413,39 @@ class GridManager:
         return icon_grid
 
     @staticmethod
-    def _construct_diamond_vertices(e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray):
+    def _construct_diamond_vertices(
+        e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray
+    ) -> np.ndarray:
+        """
+        Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
+
+        Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
+
+                     v0
+                    / \
+                  /    \
+                 /      \
+                /        \
+               v1---e0---v3
+                \       /
+                 \     /
+                  \   /
+                   \ /
+                    v2
+        For example for this diamond: e0 -> (v0, v1, v2, v3)
+        Ordering is the same as ICON uses.
+
+        Args:
+            e2v: np.ndarray containing the connectivity table for edge-to-vertex
+            c2v: np.ndarray containing the connectivity table for cell-to-vertex
+            e2c: np.ndarray containing the connectivity table for edge-to-cell
+
+        Returns: np.ndarray containing the connectivity table for edge-to-vertex on the diamond
+        """
+
         n_edges = e2v.shape[0]
-        e2c2v = -55 * np.ones((n_edges, 4), dtype=np.int32)
+        diamond_size = 4
+        e2c2v = -55 * np.ones((n_edges, diamond_size), dtype=np.int32)
         e2c2v[:, 0:2] = e2v
         dummy_c2v = _patch_with_dummy_lastline(c2v)
         expanded = dummy_c2v[e2c[:, :], :]
@@ -427,7 +458,32 @@ class GridManager:
         return e2c2v
 
     @staticmethod
-    def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray):
+    def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray) -> np.ndarray:
+        """
+        Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
+
+        Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
+
+
+            / \
+          /    \
+         e2    e1
+        /    c0  \
+        ----e0----
+        \   c1   /
+         e3    e4
+          \   /
+           \ /
+
+        For example, for this diamond for e0 -> (e1, e2, e3, e4)
+
+
+        Args:
+            e2c: np.ndarray containing the connectivity table for edge-to-cell
+            c2e: np.ndarray containing the connectivity table for cell-to-edge
+
+        Returns: np.ndarray containing the connectivity table for edge-to-edge on the diamond
+        """
         dummy_c2e = _patch_with_dummy_lastline(c2e)
         expanded = dummy_c2e[e2c, :]
         sh = expanded.shape
