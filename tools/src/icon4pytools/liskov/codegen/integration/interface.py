@@ -95,6 +95,7 @@ class StartStencilData(BaseStartStencilData):
 class StartFusedStencilData(BaseStartStencilData):
     ...
 
+
 @dataclass
 class StartOptionalStencilData(BaseStartStencilData):
     optional_module: str
@@ -115,6 +116,7 @@ class EndStencilData(BaseEndStencilData):
 @dataclass
 class EndFusedStencilData(BaseEndStencilData):
     ...
+
 
 @dataclass
 class EndOptionalStencilData(BaseEndStencilData):

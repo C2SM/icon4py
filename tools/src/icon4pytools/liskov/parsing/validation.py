@@ -142,13 +142,17 @@ class DirectiveSemanticsValidator:
         group_2 = (parse.StartOptionalStencil, parse.EndOptionalStencil)
 
         if not (
-            (any(isinstance(d, group_1[0]) for d in directives) and
-            any(isinstance(d, group_1[1]) for d in directives)) or
-            (any(isinstance(d, group_2[0]) for d in directives) and
-            any(isinstance(d, group_2[1]) for d in directives))
+            (
+                any(isinstance(d, group_1[0]) for d in directives)
+                and any(isinstance(d, group_1[1]) for d in directives)
+            )
+            or (
+                any(isinstance(d, group_2[0]) for d in directives)
+                and any(isinstance(d, group_2[1]) for d in directives)
+            )
         ) or not (
-            any(isinstance(d, parse.Declare) for d in directives) and
-            any(isinstance(d, parse.Imports) for d in directives)
+            any(isinstance(d, parse.Declare) for d in directives)
+            and any(isinstance(d, parse.Imports) for d in directives)
         ):
             raise RequiredDirectivesError(
                 f"Error in {self.filepath}.\n Missing required directive(s) in source. "

@@ -70,7 +70,9 @@ def parse_fortran_file(
 
 
 @linear_pipeline
-def process_stencils(parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: str) -> list[Step]:
+def process_stencils(
+    parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: str
+) -> list[Step]:
     """Execute a linear pipeline to transform stencils and produce either fused or unfused execution.
 
     This function takes an input `parsed` object of type `IntegrationCodeInterface` and a `fused` boolean flag.
@@ -84,7 +86,10 @@ def process_stencils(parsed: IntegrationCodeInterface, fused: bool, optional_mod
     Returns:
         The updated and transformed object with fields containing information from GT4Py stencils.
     """
-    return [StencilTransformer(parsed, fused, optional_modules_to_enable), UpdateFieldsWithGt4PyStencils(parsed)]
+    return [
+        StencilTransformer(parsed, fused, optional_modules_to_enable),
+        UpdateFieldsWithGt4PyStencils(parsed),
+    ]
 
 
 @linear_pipeline

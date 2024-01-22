@@ -31,7 +31,9 @@ logger = setup_logger(__name__)
 
 
 class StencilTransformer(Step):
-    def __init__(self, parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: str) -> None:
+    def __init__(
+        self, parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: str
+    ) -> None:
         self.parsed = parsed
         self.fused = fused
         self.optional_modules_to_enable = optional_modules_to_enable
@@ -139,11 +141,12 @@ class StencilTransformer(Step):
             del self.parsed.StartOptionalStencil
 
         # Add any other logic you might need after processing optional stencils
-        
+
     def _remove_optional_stencils(self):
         pass
         # Implement the logic to remove optional stencils when not enabled
         # This method will be called when self.optional_modules_to_enable is "no"
         self.parsed.StartOptionalStencil = []
         self.parsed.EndOptionalStencil = []
-       # delete other liskov statements?    
+
+    # delete other liskov statements?

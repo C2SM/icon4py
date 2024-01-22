@@ -22,8 +22,8 @@ from icon4pytools.liskov.codegen.integration.interface import (
     EndCreateData,
     EndDeleteData,
     EndFusedStencilData,
-    EndOptionalStencilData,
     EndIfData,
+    EndOptionalStencilData,
     EndProfileData,
     EndStencilData,
     FieldAssociationData,
@@ -465,7 +465,6 @@ class StartOptionalStencilDataFactory(StartStencilDataFactoryBase):
                 )
             )
         return deserialised
-
 
 
 class StartStencilDataFactory(StartStencilDataFactoryBase):
