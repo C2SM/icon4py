@@ -12,34 +12,24 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02b import face_val_ppm_stencil_02b
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
-def face_val_ppm_stencil_02b_numpy(
-    p_cc: np.array,
-):
-    p_face = p_cc.copy()
+class TestFaceValPpmStencil02b(StencilTest):
+    PROGRAM = face_val_ppm_stencil_02b
+    OUTPUTS = ("p_face",)
 
-    return p_face
+    @staticmethod
+    def reference(grid, p_cc: np.array, **kwargs):
+        p_face = p_cc.copy()
+        return dict(p_face=p_face)
 
-
-def test_face_val_ppm_stencil_02b(backend):
-    grid = SimpleGrid()
-    p_cc = random_field(grid, CellDim, KDim)
-    p_face = random_field(grid, CellDim, KDim)
-
-    ref = face_val_ppm_stencil_02b_numpy(
-        p_cc.asnumpy(),
-    )
-
-    face_val_ppm_stencil_02b.with_backend(backend)(
-        p_cc,
-        p_face,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(ref, p_face.asnumpy())
+    @pytest.fixture
+    def input_data(self, grid):
+        p_cc = random_field(grid, CellDim, KDim)
+        p_face = random_field(grid, CellDim, KDim)
+        return dict(p_cc=p_cc, p_face=p_face)
