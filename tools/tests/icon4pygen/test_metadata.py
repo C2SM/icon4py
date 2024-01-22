@@ -22,7 +22,8 @@ from icon4pytools.icon4pygen.metadata import (
     add_grid_element_size_args,
     provide_neighbor_table,
 )
-from tools.tests.icon4pygen.helpers import testee_prog
+
+from .helpers import testee_prog
 
 
 chain_false_skipvalues = [

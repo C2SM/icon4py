@@ -14,7 +14,6 @@ import functools
 import logging
 import math
 import sys
-from collections import namedtuple
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
@@ -43,8 +42,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     zero_field,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance,
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
     calculate_diagnostic_quantities_for_turbulence,
@@ -68,6 +67,7 @@ from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
+    dbl_eps,
 )
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -80,10 +80,14 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
+"""
+Diffusion module ported from ICON mo_nh_diffusion.f90.
+
+Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
+"""
+
 # flake8: noqa
 log = logging.getLogger(__name__)
-
-VectorTuple = namedtuple("VectorTuple", "x y")
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
@@ -94,6 +98,7 @@ backend = run_gtfn_cached  #
 class DiffusionType(int, Enum):
     """
     Order of nabla operator for diffusion.
+
     Note: Called `hdiff_order` in `mo_diffusion_nml.f90`.
     Note: We currently only support type 5.
     """
@@ -103,6 +108,23 @@ class DiffusionType(int, Enum):
     SMAGORINSKY_NO_BACKGROUND = 3  #: Smagorinsky diffusion without background diffusion
     LINEAR_4TH_ORDER = 4  #: 4th order linear diffusion on all vertical levels
     SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
+
+
+class TurbulenceShearForcingType(int, Enum):
+    """
+    Type of shear forcing used in turbulance.
+
+    Note: called `itype_sher` in `mo_turbdiff_nml.f90`
+    """
+
+    VERTICAL_OF_HORIZONTAL_WIND = 0  #: only vertical shear of horizontal wind
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND = (
+        1  #: as `VERTICAL_ONLY` plus horizontal shar correction
+    )
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND = (
+        2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
+    )
+    VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
 
 class DiffusionConfig:
@@ -131,11 +153,14 @@ class DiffusionConfig:
         smagorinski_scaling_factor: float = 0.015,
         n_substeps: int = 5,
         zdiffu_t: bool = True,
+        thslp_zdiffu: float = 0.025,
+        thhgtd_zdiffu: float = 200.0,
         hdiff_rcf: bool = True,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
         max_nudging_coeff: float = 0.02,
         nudging_decay_rate: float = 2.0,
+        shear_type: TurbulenceShearForcingType = TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
     ):
         """Set the diffusion configuration parameters with the ICON default values."""
         # parameters from namelist diffusion_nml
@@ -175,18 +200,28 @@ class DiffusionConfig:
         self.hdiff_w_efdt_ratio: float = hdiff_w_efdt_ratio
 
         #: Scaling factor for Smagorinsky diffusion at height hdiff_smag_z and below
-        #: Called `hdiff_smag_fac` inmo_diffusion_nml.f90
+        #: Called `hdiff_smag_fac` in mo_diffusion_nml.f90
         self.smagorinski_scaling_factor: float = smagorinski_scaling_factor
 
         #: If True, apply truly horizontal temperature diffusion over steep slopes
         #: Called 'l_zdiffu_t' in mo_nonhydrostatic_nml.f90
         self.apply_zdiffusion_t: bool = zdiffu_t
 
+        #:slope threshold (temperature diffusion): is used to build up an index list for application of truly horizontal diffusion in mo_vertical_grid.f89
+        self.thslp_zdiffu = thslp_zdiffu
+        #: threshold [m] for height difference between adjacent grid points, defaults to 200m (temperature diffusion)
+        self.thhgtd_zdiffu = thhgtd_zdiffu
+
         # from other namelists:
         # from parent namelist mo_nonhydrostatic_nml
 
         #: Number of dynamics substeps per fast-physics step
         #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
+
+        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
+        #       reduce instabilities. Need to figure out whether the parameter is the configured
+        #       (constant!) one or the dynamical one. In the latter case it should be removed from
+        #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
 
         #: If True, compute horizontal diffusion only at the large time step
@@ -218,6 +253,10 @@ class DiffusionConfig:
         #: Called `nudge_efold_width` in mo_interpol_nml.f90
         self.nudge_efold_width: float = nudging_decay_rate
 
+        #: Type of shear forcing used in turbulence
+        #: Called itype_shear in `mo_turbdiff_nml.f90
+        self.shear_type = shear_type
+
         self._validate()
 
     def _validate(self):
@@ -236,8 +275,15 @@ class DiffusionConfig:
             self.apply_to_temperature = True
             self.apply_to_horizontal_wind = True
 
-        if not self.apply_zdiffusion_t:
-            raise NotImplementedError("zdiffu_t = False is not implemented (leaves out stencil_15)")
+        if self.shear_type not in (
+            TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
+            TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        ):
+            raise NotImplementedError(
+                f"Turbulence Shear only {TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND} "
+                f"and {TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND} "
+                f"implemented"
+            )
 
     @functools.cached_property
     def substep_as_float(self):
@@ -617,7 +663,7 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        h = self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -648,30 +694,38 @@ class Diffusion:
             },
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-        log.debug("running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start")
-        calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
-            kh_smag_ec=self.kh_smag_ec,
-            vn=prognostic_state.vn,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            geofac_div=self.interpolation_state.geofac_div,
-            diff_multfac_smag=self.diff_multfac_smag,
-            wgtfac_c=self.metric_state.wgtfac_c,
-            div_ic=diagnostic_state.div_ic,
-            hdef_ic=diagnostic_state.hdef_ic,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=1,
-            vertical_end=klevels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
-        )
-        log.debug("running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end")
+        if (
+            self.config.shear_type
+            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+        ):
+            log.debug(
+                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
+            )
+            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
+                kh_smag_ec=self.kh_smag_ec,
+                vn=prognostic_state.vn,
+                e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                geofac_div=self.interpolation_state.geofac_div,
+                diff_multfac_smag=self.diff_multfac_smag,
+                wgtfac_c=self.metric_state.wgtfac_c,
+                div_ic=diagnostic_state.div_ic,
+                hdef_ic=diagnostic_state.hdef_ic,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_local,
+                vertical_start=1,
+                vertical_end=klevels,
+                offset_provider={
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
+                    "Koff": KDim,
+                },
+            )
+            log.debug(
+                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
+            )
 
-        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array -> false for MCH
-
+        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
+        # TODO (magdalena) move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
@@ -711,7 +765,7 @@ class Diffusion:
             diff_multfac_vn=diff_multfac_vn,
             nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
             vn=prognostic_state.vn,
-            horz_idx=self.horizontal_edge_index,
+            edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
             start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
@@ -730,23 +784,24 @@ class Diffusion:
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): start"
+            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance.with_backend(backend)(
+        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
             w_old=self.w_tmp,
             w=prognostic_state.w,
+            type_shear=int32(self.config.shear_type.value),
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
-            vert_idx=self.vertical_index,
-            horz_idx=self.horizontal_cell_index,
+            k=self.vertical_index,
+            cell=self.horizontal_cell_index,
             nrdmax=int32(
                 self.vertical_params.index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
@@ -761,7 +816,7 @@ class Diffusion:
             },
         )
         log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance): end"
+            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
 
         log.debug(
@@ -771,6 +826,7 @@ class Diffusion:
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
+            smallest_vpfloat=dbl_eps,
             kh_smag_e=self.kh_smag_e,
             horizontal_start=edge_start_nudging,
             horizontal_end=edge_end_halo,
@@ -805,29 +861,30 @@ class Diffusion:
         log.debug(
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
-        truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
-            mask=self.metric_state.mask_hdiff,
-            zd_vertoffset=self.metric_state.zd_vertoffset,
-            zd_diffcoef=self.metric_state.zd_diffcoef,
-            geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
-            geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
-            vcoef=self.metric_state.zd_intcoef,
-            theta_v=prognostic_state.theta_v,
-            z_temp=self.z_temp,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "C2CEC": self.grid.get_offset_provider("C2CEC"),
-                "C2E2C": self.grid.get_offset_provider("C2E2C"),
-                "Koff": KDim,
-            },
-        )
+        if self.config.apply_zdiffusion_t:
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
+                mask=self.metric_state.mask_hdiff,
+                zd_vertoffset=self.metric_state.zd_vertoffset,
+                zd_diffcoef=self.metric_state.zd_diffcoef,
+                geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+                geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+                vcoef=self.metric_state.zd_intcoef,
+                theta_v=prognostic_state.theta_v,
+                z_temp=self.z_temp,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_local,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={
+                    "C2CEC": self.grid.get_offset_provider("C2CEC"),
+                    "C2E2C": self.grid.get_offset_provider("C2E2C"),
+                    "Koff": KDim,
+                },
+            )
 
-        log.debug(
-            "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
-        )
+            log.debug(
+                "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+            )
         log.debug("running stencil 16 (update_theta_and_exner): start")
         update_theta_and_exner.with_backend(backend)(
             z_temp=self.z_temp,

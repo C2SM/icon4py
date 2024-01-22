@@ -16,18 +16,32 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
+from gt4py.next import Field
+
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.driver.serialbox_helpers import (
+    construct_diagnostics_for_diffusion,
+    construct_interpolation_state_for_diffusion,
+    construct_metric_state_for_diffusion,
+)
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -63,14 +77,44 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
+# TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
+def model_initialization():
+    # create two prognostic states, nnow and nnew?
+    # at least two prognostic states are global because they are needed in the dycore, AND possibly nesting and restart processes in the future
+    # one is enough for the JW test
+    prognostic_state_1 = PrognosticState(
+        w=None,
+        vn=None,
+        theta_v=None,
+        rho=None,
+        exner=None,
+    )
+    prognostic_state_2 = PrognosticState(
+        w=None,
+        vn=None,
+        theta_v=None,
+        rho=None,
+        exner=None,
+    )
+    return (prognostic_state_1, prognostic_state_2)
+
+
 def read_initial_state(
-    gridfile_path: Path, rank=0
-) -> tuple[sb.IconSerialDataProvider, DiffusionDiagnosticState, PrognosticState]:
+    path: Path, rank=0
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+    Field[[KDim], float],
+    PrognosticState,
+    PrognosticState,
+]:
     """
     Read prognostic and diagnostic state from serialized data.
 
     Args:
-        gridfile_path: path the serialized input data
+        path: path to the serialized input data
+        rank: mpi rank of the current compute node
 
     Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
         The data_provider is returned such that further timesteps of diagnostics and prognostics
@@ -78,19 +122,69 @@ def read_initial_state(
 
     """
     data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(gridfile_path), False, mpi_rank=rank
+        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
-    init_savepoint = data_provider.from_savepoint_diffusion_init(
+    diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
-    prognostic_state = init_savepoint.construct_prognostics()
-    diagnostic_state = init_savepoint.construct_diagnostics_for_diffusion()
-    return data_provider, diagnostic_state, prognostic_state
+    solve_nonhydro_init_savepoint = data_provider.from_savepoint_nonhydro_init(
+        istep=1, date=SIMULATION_START_DATE, jstep=0
+    )
+    velocity_init_savepoint = data_provider.from_savepoint_velocity_init(
+        istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
+    )
+    prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
+    solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
+        theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
+        exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
+        rho_ic=solve_nonhydro_init_savepoint.rho_ic(),
+        ddt_exner_phy=solve_nonhydro_init_savepoint.ddt_exner_phy(),
+        grf_tend_rho=solve_nonhydro_init_savepoint.grf_tend_rho(),
+        grf_tend_thv=solve_nonhydro_init_savepoint.grf_tend_thv(),
+        grf_tend_w=solve_nonhydro_init_savepoint.grf_tend_w(),
+        mass_fl_e=solve_nonhydro_init_savepoint.mass_fl_e(),
+        ddt_vn_phy=solve_nonhydro_init_savepoint.ddt_vn_phy(),
+        grf_tend_vn=solve_nonhydro_init_savepoint.grf_tend_vn(),
+        ddt_vn_apc_ntl1=velocity_init_savepoint.ddt_vn_apc_pc(1),
+        ddt_vn_apc_ntl2=velocity_init_savepoint.ddt_vn_apc_pc(2),
+        ddt_w_adv_ntl1=velocity_init_savepoint.ddt_w_adv_pc(1),
+        ddt_w_adv_ntl2=velocity_init_savepoint.ddt_w_adv_pc(2),
+        vt=velocity_init_savepoint.vt(),
+        vn_ie=velocity_init_savepoint.vn_ie(),
+        w_concorr_c=velocity_init_savepoint.w_concorr_c(),
+        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
+        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+    )
+
+    prognostic_state_next = PrognosticState(
+        w=solve_nonhydro_init_savepoint.w_new(),
+        vn=solve_nonhydro_init_savepoint.vn_new(),
+        theta_v=solve_nonhydro_init_savepoint.theta_v_new(),
+        rho=solve_nonhydro_init_savepoint.rho_new(),
+        exner=solve_nonhydro_init_savepoint.exner_new(),
+    )
+
+    prep_adv = PrepAdvection(
+        vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
+        mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
+        mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
+    )
+
+    return (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        solve_nonhydro_init_savepoint.divdamp_fac_o2(),
+        prognostic_state_now,
+        prognostic_state_next,
+    )
 
 
 def read_geometry_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
-) -> tuple[EdgeParams, CellParams, VerticalModelParams]:
+) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
 
@@ -107,8 +201,13 @@ def read_geometry_fields(
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vertical_geometry = VerticalModelParams(vct_a=sp.vct_a(), rayleigh_damping_height=12500)
-        return edge_geometry, cell_geometry, vertical_geometry
+        vertical_geometry = VerticalModelParams(
+            vct_a=sp.vct_a(),
+            rayleigh_damping_height=12500,
+            nflatlev=sp.nflatlev(),
+            nflat_gradp=sp.nflat_gradp(),
+        )
+        return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -129,7 +228,9 @@ def read_decomp_info(
 
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
-) -> tuple[DiffusionMetricState, DiffusionInterpolationState]:
+) -> tuple[
+    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
+]:
     """
     Read fields for metric and interpolation state.
 
@@ -147,16 +248,36 @@ def read_static_fields(
         dataprovider = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
-        interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_diffusion()
+        icon_grid = (
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+            .from_savepoint_grid()
+            .construct_icon_grid()
         )
-        metric_state = dataprovider.from_metrics_savepoint().construct_metric_state_for_diffusion()
-        return metric_state, interpolation_state
+        diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+            dataprovider.from_interpolation_savepoint()
+        )
+        diffusion_metric_state = construct_metric_state_for_diffusion(
+            dataprovider.from_metrics_savepoint()
+        )
+        solve_nonhydro_interpolation_state = (
+            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()
+        )
+        solve_nonhydro_metric_state = (
+            dataprovider.from_metrics_savepoint().construct_nh_metric_state(icon_grid.num_levels)
+        )
+        return (
+            diffusion_metric_state,
+            diffusion_interpolation_state,
+            solve_nonhydro_metric_state,
+            solve_nonhydro_interpolation_state,
+        )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def configure_logging(run_path: str, start_time, processor_procs: ProcessProperties = None) -> None:
+def configure_logging(
+    run_path: str, start_time: datetime, processor_procs: ProcessProperties = None
+) -> None:
     """
     Configure logging.
 

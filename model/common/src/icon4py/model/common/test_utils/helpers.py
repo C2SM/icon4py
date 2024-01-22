@@ -11,15 +11,21 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
 import numpy as np
 import numpy.typing as npt
 import pytest
+from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field
 from gt4py.next import common as gt_common
+from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.iterator import embedded as it_embedded
+from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
+
+from ..grid.base import BaseGrid
+from ..grid.icon import IconGrid
 
 
 try:
@@ -53,7 +59,7 @@ def random_mask(
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
-) -> it_embedded.MutableLocatedField:
+) -> gt_common.Field:
     shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
     arr[: int(arr.size * 0.5)] = True
@@ -81,7 +87,7 @@ def random_field(
 
 
 def zero_field(
-    grid: SimpleGrid,
+    grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype=float,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
@@ -123,8 +129,31 @@ def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -
     return as_field(dims, newarray)
 
 
+def unflatten_first_two_dims(field: gt_common.Field) -> np.array:
+    """Convert a (n-1)-D flattened (Felix-style) sparse field back to a n-D sparse field."""
+    old_shape = np.asarray(field).shape
+    new_shape = (old_shape[0] // 3, 3) + old_shape[1:]
+    return np.asarray(field).reshape(new_shape)
+
+
 def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
     return np.allclose(a, b, rtol=rtol, atol=atol, equal_nan=equal_nan)
+
+
+def allocate_data(backend, input_data):
+    _allocate_field = constructors.as_field.partial(allocator=backend)
+    input_data = {
+        k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
+        for k, v in input_data.items()
+    }
+    return input_data
+
+
+@dataclass(frozen=True)
+class Output:
+    name: str
+    refslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+    gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
 
 
 def _test_validation(self, grid, backend, input_data):
@@ -135,13 +164,22 @@ def _test_validation(self, grid, backend, input_data):
             for k, v in input_data.items()
         },
     )
+
+    input_data = allocate_data(backend, input_data)
+
     self.PROGRAM.with_backend(backend)(
         **input_data,
         offset_provider=grid.get_all_offset_providers(),
     )
-    for name in self.OUTPUTS:
+    for out in self.OUTPUTS:
+        name, refslice, gtslice = (
+            (out.name, out.refslice, out.gtslice)
+            if isinstance(out, Output)
+            else (out, (slice(None),), (slice(None),))
+        )
+
         assert np.allclose(
-            input_data[name].asnumpy(), reference_outputs[name]
+            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
         ), f"Validation failed for '{name}'"
 
 
@@ -153,6 +191,7 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
+            input_data = allocate_data(backend, input_data)
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
@@ -194,3 +233,19 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
+
+
+@pytest.fixture
+def uses_icon_grid_with_otf(backend, grid):
+    """Check whether we are using a compiled backend with the icon_grid.
+
+    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
+    """
+    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
+        if isinstance(backend.executor, OTFCompileExecutor):
+            return True
+    return False
+
+
+def reshape(arr: np.array, shape: tuple[int, ...]):
+    return np.reshape(arr, shape)

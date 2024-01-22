@@ -24,7 +24,7 @@ def _mo_velocity_advection_stencil_01(
     vn: Field[[EdgeDim, KDim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    vt_wp = neighbor_sum(vn(E2C2E) * rbf_vec_coeff_e, axis=E2C2EDim)
+    vt_wp = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return astype(vt_wp, vpfloat)
 
 

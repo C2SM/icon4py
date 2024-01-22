@@ -11,13 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
-from typing import Iterable, List, Optional
+from typing import Any, Iterable, List, Optional
 
 from gt4py.next import common
 from gt4py.next.common import Connectivity
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
-from gt4py.next.program_processors.runners import gtfn
+from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from icon4py.model.common.dimension import Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
@@ -105,31 +105,31 @@ def generate_gtheader(
     column_axis: Optional[common.Dimension],
     imperative: bool,
     temporaries: bool,
+    **kwargs: Any,
 ) -> str:
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
-    gtfn_translation = gtfn.run_gtfn.executor.otf_workflow.translation  # type: ignore
-    assert isinstance(gtfn_translation, gtfn.gtfn_module.GTFNTranslationStep)
-
-    lift_mode = LiftMode.FORCE_TEMPORARIES if temporaries else LiftMode.FORCE_INLINE
-
-    # configure backend
-    gtfn_translation = gtfn_translation.replace(
-        use_imperative_backend=imperative, lift_mode=lift_mode
+    translation = gtfn_module.GTFNTranslationStep(
+        enable_itir_transforms=True, use_imperative_backend=False, lift_mode=LiftMode.FORCE_INLINE
     )
+    if imperative:
+        translation = translation.replace(use_imperative_backend=True)
 
     if temporaries:
-        gtfn_translation = gtfn_translation.replace(
+        translation = translation.replace(
+            use_imperative_backend=imperative,
+            lift_mode=LiftMode.FORCE_TEMPORARIES,
             symbolic_domain_sizes={
                 "Cell": "num_cells",
                 "Edge": "num_edges",
                 "Vertex": "num_vertices",
-            }
+            },
         )
 
-    return gtfn_translation.generate_stencil_source(
+    return translation.generate_stencil_source(
         fencil,
         offset_provider=offset_provider,  # type: ignore
         column_axis=column_axis,
+        **kwargs,
     )
 
 

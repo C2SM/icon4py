@@ -22,6 +22,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -40,9 +41,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    mo_velocity_advection_stencil_08,
-)
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,
 )
@@ -55,9 +53,11 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    InterpolationState,
+    MetricStateNonHydro,
+)
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
@@ -69,7 +69,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_cached
+backend = run_gtfn
 #
 
 
@@ -164,7 +164,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -177,7 +177,7 @@ class VelocityAdvection:
                 },
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl.with_backend(run_gtfn)(
+        mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
@@ -190,7 +190,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_01.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_01.with_backend(backend)(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
             vt=diagnostic_state.vt,
@@ -203,7 +203,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_02.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_02.with_backend(backend)(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
@@ -219,7 +219,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_03.with_backend(run_gtfn)(
+            mo_velocity_advection_stencil_03.with_backend(backend)(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
@@ -230,7 +230,7 @@ class VelocityAdvection:
                 offset_provider={"Koff": KDim},
             )
 
-        velocity_prog.fused_stencils_4_5_6.with_backend(run_gtfn)(
+        velocity_prog.fused_stencils_4_5.with_backend(backend)(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
@@ -239,21 +239,28 @@ class VelocityAdvection:
             ddxn_z_full=self.metric_state.ddxn_z_full,
             ddxt_z_full=self.metric_state.ddxt_z_full,
             z_w_concorr_me=z_w_concorr_me,
-            wgtfacq_e_dsl=self.metric_state.wgtfacq_e_dsl,
             k_field=self.k_field,
             nflatlev_startindex=self.vertical_params.nflatlev,
             nlev=self.grid.num_levels,
             horizontal_start=start_edge_lb_plus4,
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+        velocity_prog.extrapolate_at_top.with_backend(backend)(
+            wgtfacq_e=self.metric_state.wgtfacq_e,
+            vn=prognostic_state.vn,
+            vn_ie=diagnostic_state.vn_ie,
+            horizontal_start=start_edge_lb_plus4,
+            horizontal_end=end_edge_local_minus2,
+            vertical_start=self.grid.num_levels,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={
-                "Koff": KDim,
-            },
+            offset_provider={"Koff": KDim},
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
+            mo_velocity_advection_stencil_07.with_backend(backend)(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -272,10 +279,10 @@ class VelocityAdvection:
                 },
             )
 
-        mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-            z_kin_hor_e=z_kin_hor_e,
+        interpolate_to_cell_center.with_backend(backend)(
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
@@ -286,7 +293,7 @@ class VelocityAdvection:
             },
         )
 
-        velocity_prog.fused_stencils_9_10.with_backend(run_gtfn)(
+        velocity_prog.fused_stencils_9_10.with_backend(backend)(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             local_z_w_concorr_mc=self.z_w_concorr_mc,
@@ -306,7 +313,7 @@ class VelocityAdvection:
             },
         )
 
-        velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
+        velocity_prog.fused_stencils_11_to_13.with_backend(backend)(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -320,7 +327,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14.with_backend(run_gtfn)(
+        velocity_prog.fused_stencil_14.with_backend(backend)(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -336,7 +343,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_15.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -346,51 +353,51 @@ class VelocityAdvection:
             offset_provider={"Koff": KDim},
         )
 
-        velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
-            w=prognostic_state.w,
-            local_z_v_grad_w=self.z_v_grad_w,
-            e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            local_z_w_con_c=self.z_w_con_c,
-            coeff1_dwdz=self.metric_state.coeff1_dwdz,
-            coeff2_dwdz=self.metric_state.coeff2_dwdz,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=1,
-            vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
-        )
+        if not vn_only:
+            velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
+                w=prognostic_state.w,
+                local_z_v_grad_w=self.z_v_grad_w,
+                e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                local_z_w_con_c=self.z_w_con_c,
+                coeff1_dwdz=self.metric_state.coeff1_dwdz,
+                coeff2_dwdz=self.metric_state.coeff2_dwdz,
+                ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=1,
+                vertical_end=self.grid.num_levels,
+                offset_provider={
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
+                    "Koff": KDim,
+                },
+            )
 
-        mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
-            levmask=self.levmask,
-            cfl_clipping=self.cfl_clipping,
-            owner_mask=self.c_owner_mask,
-            z_w_con_c=self.z_w_con_c,
-            ddqz_z_half=self.metric_state.ddqz_z_half,
-            area=cell_areas,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            w=prognostic_state.w,
-            ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
-            scalfac_exdiff=scalfac_exdiff,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 3),
-            offset_provider={
-                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-            },
-        )
+            mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
+                levmask=self.levmask,
+                cfl_clipping=self.cfl_clipping,
+                owner_mask=self.c_owner_mask,
+                z_w_con_c=self.z_w_con_c,
+                ddqz_z_half=self.metric_state.ddqz_z_half,
+                area=cell_areas,
+                geofac_n2s=self.interpolation_state.geofac_n2s,
+                w=prognostic_state.w,
+                ddt_w_adv=diagnostic_state.ddt_w_adv_pc[ntnd],
+                scalfac_exdiff=scalfac_exdiff,
+                cfl_w_limit=cfl_w_limit,
+                dtime=dtime,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
+                vertical_end=int32(self.grid.num_levels - 3),
+                offset_provider={
+                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+                },
+            )
 
-        # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_19.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -414,7 +421,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_20.with_backend(backend)(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -494,7 +501,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(run_gtfn)(
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -507,7 +514,7 @@ class VelocityAdvection:
                 },
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl.with_backend(run_gtfn)(
+        mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
@@ -521,7 +528,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_07.with_backend(run_gtfn)(
+            mo_velocity_advection_stencil_07.with_backend(backend)(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -540,10 +547,10 @@ class VelocityAdvection:
                 },
             )
 
-        mo_velocity_advection_stencil_08.with_backend(run_gtfn)(
-            z_kin_hor_e=z_kin_hor_e,
+        interpolate_to_cell_center.with_backend(backend)(
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
             vertical_start=0,
@@ -554,7 +561,7 @@ class VelocityAdvection:
             },
         )
 
-        velocity_prog.fused_stencils_11_to_13.with_backend(run_gtfn)(
+        velocity_prog.fused_stencils_11_to_13.with_backend(backend)(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -568,7 +575,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14.with_backend(run_gtfn)(
+        velocity_prog.fused_stencil_14.with_backend(backend)(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -584,7 +591,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        mo_velocity_advection_stencil_15.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_15.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -594,7 +601,7 @@ class VelocityAdvection:
             offset_provider={"Koff": KDim},
         )
 
-        velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
+        velocity_prog.fused_stencils_16_to_17.with_backend(backend)(
             w=prognostic_state.w,
             local_z_v_grad_w=self.z_v_grad_w,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -613,7 +620,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_18.with_backend(backend)(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
@@ -638,7 +645,7 @@ class VelocityAdvection:
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        mo_velocity_advection_stencil_19.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_19.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -662,7 +669,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20.with_backend(run_gtfn)(
+        mo_velocity_advection_stencil_20.with_backend(backend)(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,

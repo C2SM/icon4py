@@ -19,7 +19,8 @@ from icon4py.model.common.grid.simple import SimpleGrid
 from icon4pytools.icon4pygen import backend
 from icon4pytools.icon4pygen.backend import generate_gtheader, get_missing_domain_params
 from icon4pytools.icon4pygen.metadata import add_grid_element_size_args
-from tools.tests.icon4pygen.helpers import testee_prog
+
+from .helpers import testee_prog
 
 
 @pytest.mark.parametrize(

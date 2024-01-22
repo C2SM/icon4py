@@ -13,10 +13,10 @@
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    _en_smag_fac_for_zero_nshift,
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
     scale_k,
@@ -27,19 +27,22 @@ from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
-from .utils import diff_multfac_vn_numpy, enhanced_smagorinski_factor_numpy, smag_limit_numpy
+from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
+
+
+backend = run_gtfn
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
 
 
-def test_scale_k(backend):
+def test_scale_k():
     grid = SimpleGrid()
     field = random_field(grid, KDim)
     scaled_field = zero_field(grid, KDim)
     factor = 2.0
-    scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
+    scale_k(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
 
 
@@ -49,7 +52,7 @@ def test_diff_multfac_vn_and_smag_limit_for_initial_step(backend):
     smag_limit_init = zero_field(grid, KDim)
     k4 = 1.0
     efdt_ratio = 24.0
-    shape = np.asarray(diff_multfac_vn_init).shape
+    shape = diff_multfac_vn_init.asnumpy().shape
 
     expected_diff_multfac_vn_init = initial_diff_multfac_vn_numpy(shape, k4, efdt_ratio)
     expected_smag_limit_init = smag_limit_numpy(
@@ -71,7 +74,7 @@ def test_diff_multfac_vn_smag_limit_for_time_step_with_const_value(backend):
     k4 = 1.0
     substeps = 5.0
     efdt_ratio = 24.0
-    shape = np.asarray(diff_multfac_vn).shape
+    shape = diff_multfac_vn.asnumpy().shape
 
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
@@ -92,7 +95,7 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     k4 = 0.003
     substeps = 1.0
 
-    shape = np.asarray(diff_multfac_vn).shape
+    shape = diff_multfac_vn.asnumpy().shape
     expected_diff_multfac_vn = diff_multfac_vn_numpy(shape, k4, substeps)
     expected_smag_limit = smag_limit_numpy(diff_multfac_vn_numpy, shape, k4, substeps)
     _setup_runtime_diff_multfac_vn.with_backend(backend)(
@@ -104,35 +107,20 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
-def test_init_enh_smag_fac(backend):
-    grid = SimpleGrid()
-    enh_smag_fac = zero_field(grid, KDim)
-    a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
-    fac = (0.67, 0.5, 1.3, 0.8)
-    z = (0.1, 0.2, 0.3, 0.4)
-
-    enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
-
-    _en_smag_fac_for_zero_nshift.with_backend(backend)(
-        a_vec, *fac, *z, out=enh_smag_fac, offset_provider={"Koff": KDim}
-    )
-    assert np.allclose(enhanced_smag_fac_np, enh_smag_fac.asnumpy())
-
-
 def test_set_zero_vertex_k(backend):
     grid = SimpleGrid()
     f = random_field(grid, VertexDim, KDim)
-    set_zero_v_k.with_backend(backend)(f, offset_provider={})
+    set_zero_v_k(f, offset_provider={})
     assert np.allclose(0.0, f.asnumpy())
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid, linit, backend
+    diffusion_savepoint_init, experiment, icon_grid, linit, ndyn_substeps
 ):
     savepoint = diffusion_savepoint_init
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
 
     params = DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

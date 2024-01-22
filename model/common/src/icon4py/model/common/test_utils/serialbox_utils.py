@@ -10,23 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import functools
 import logging
 
 import numpy as np
+import serialbox
 import serialbox as ser
 from gt4py.next import as_field
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.diffusion.diffusion import VectorTuple
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
-)
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticState
-from icon4py.model.atmosphere.dycore.state_utils.interpolation_state import InterpolationState
-from icon4py.model.atmosphere.dycore.state_utils.metric_state import MetricStateNonHydro
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
@@ -56,6 +49,22 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 
+log = logging.getLogger(__name__)
+
+
+def optionally_registered(func):
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        try:
+            name = func.__name__
+            return func(self, *args, **kwargs)
+        except serialbox.SerialboxError:
+            log.warning(f"{name}: field not registered in savepoint {self.savepoint.metainfo}")
+            return None
+
+    return wrapper
+
+
 class IconSavepoint:
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict):
         self.savepoint = sp
@@ -73,6 +82,14 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
 
+    def _get_field_component(self, name: str, ntnd: int, dims: tuple[Dimension, Dimension]):
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
+            :, :, ntnd - 1
+        ]
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        self.log.debug(f"{name} {buffer.shape}")
+        return as_field(dims, buffer)
+
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
             self.sizes[d] if d.kind is DimensionKind.HORIZONTAL else s
@@ -82,6 +99,7 @@ class IconSavepoint:
         return buffer
 
     def _get_field_from_ndarray(self, ar, *dimensions, dtype=float):
+        ar = self._reduce_to_dim_size(ar, dimensions)
         return as_field(dimensions, ar)
 
     def get_metadata(self, *names):
@@ -114,7 +132,7 @@ class IconSavepoint:
         return (self.serializer.read(name, self.savepoint) - offset).astype(dtype)
 
 
-class IconGridSavePoint(IconSavepoint):
+class IconGridSavepoint(IconSavepoint):
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -128,31 +146,34 @@ class IconGridSavePoint(IconSavepoint):
         return self._get_field("inv_vert_vert_length", EdgeDim)
 
     def primal_normal_vert_x(self):
-        return self._get_field("primal_normal_vert_x", VertexDim, E2C2VDim)
+        return self._get_field("primal_normal_vert_x", EdgeDim, E2C2VDim)
 
     def primal_normal_vert_y(self):
-        return self._get_field("primal_normal_vert_y", VertexDim, E2C2VDim)
+        return self._get_field("primal_normal_vert_y", EdgeDim, E2C2VDim)
 
     def dual_normal_vert_y(self):
-        return self._get_field("dual_normal_vert_y", VertexDim, E2C2VDim)
+        return self._get_field("dual_normal_vert_y", EdgeDim, E2C2VDim)
 
     def dual_normal_vert_x(self):
-        return self._get_field("dual_normal_vert_x", VertexDim, E2C2VDim)
+        return self._get_field("dual_normal_vert_x", EdgeDim, E2C2VDim)
 
     def primal_normal_cell_x(self):
-        return self._get_field("primal_normal_cell_x", CellDim, E2CDim)
+        return self._get_field("primal_normal_cell_x", EdgeDim, E2CDim)
 
     def primal_normal_cell_y(self):
-        return self._get_field("primal_normal_cell_y", CellDim, E2CDim)
+        return self._get_field("primal_normal_cell_y", EdgeDim, E2CDim)
 
     def dual_normal_cell_x(self):
-        return self._get_field("dual_normal_cell_x", CellDim, E2CDim)
+        return self._get_field("dual_normal_cell_x", EdgeDim, E2CDim)
 
     def dual_normal_cell_y(self):
-        return self._get_field("dual_normal_cell_y", CellDim, E2CDim)
+        return self._get_field("dual_normal_cell_y", EdgeDim, E2CDim)
 
     def cell_areas(self):
         return self._get_field("cell_areas", CellDim)
+
+    def mean_cell_area(self):
+        return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
 
     def edge_areas(self):
         return self._get_field("edge_areas", EdgeDim)
@@ -242,12 +263,18 @@ class IconGridSavePoint(IconSavepoint):
 
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
-        return self._read_field_for_dim(field_name, self._read_int32, dim)
+        return as_field(
+            (dim,),
+            np.squeeze(
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+            ),
+        )
 
     def num(self, dim: Dimension):
         return self.sizes[dim]
 
-    def _read_field_for_dim(self, field_name, read_func, dim: Dimension):
+    @staticmethod
+    def _read_field_for_dim(field_name, read_func, dim: Dimension):
         match (dim):
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
@@ -300,6 +327,7 @@ class IconGridSavePoint(IconSavepoint):
                 num_edges=self.num(EdgeDim),
             ),
             vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
+            limited_area=self.get_metadata("limited_area").get("limited_area"),
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
@@ -342,21 +370,21 @@ class IconGridSavePoint(IconSavepoint):
         return grid
 
     def construct_edge_geometry(self) -> EdgeParams:
-        primal_normal_vert: VectorTuple = (
+        primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.primal_normal_vert_x(), ECVDim),
             as_1D_sparse_field(self.primal_normal_vert_y(), ECVDim),
         )
-        dual_normal_vert: VectorTuple = (
+        dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.dual_normal_vert_x(), ECVDim),
             as_1D_sparse_field(self.dual_normal_vert_y(), ECVDim),
         )
 
-        primal_normal_cell: VectorTuple = (
+        primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             as_1D_sparse_field(self.primal_normal_cell_x(), ECDim),
             as_1D_sparse_field(self.primal_normal_cell_y(), ECDim),
         )
 
-        dual_normal_cell: VectorTuple = (
+        dual_normal_cell: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.dual_normal_cell_x(), ECDim),
             as_1D_sparse_field(self.dual_normal_cell_y(), ECDim),
         )
@@ -378,7 +406,7 @@ class IconGridSavePoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> CellParams:
-        return CellParams(area=self.cell_areas())
+        return CellParams(area=self.cell_areas(), mean_cell_area=self.mean_cell_area())
 
 
 class InterpolationSavepoint(IconSavepoint):
@@ -407,6 +435,7 @@ class InterpolationSavepoint(IconSavepoint):
             (CellDim, C2E2CODim), grg[:num_cells, :, 1]
         )
 
+    @optionally_registered
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
@@ -438,42 +467,6 @@ class InterpolationSavepoint(IconSavepoint):
 
     def rbf_vec_coeff_v2(self):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
-
-    def construct_interpolation_state_for_diffusion(
-        self,
-    ) -> DiffusionInterpolationState:
-        grg = self.geofac_grg()
-        return DiffusionInterpolationState(
-            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
-            rbf_coeff_1=self.rbf_vec_coeff_v1(),
-            rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
-            geofac_n2s=self.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=self.nudgecoeff_e(),
-        )
-
-    def construct_interpolation_state_for_nonhydro(self) -> InterpolationState:
-        grg = self.geofac_grg()
-        return InterpolationState(
-            c_lin_e=self.c_lin_e(),
-            c_intp=self.c_intp(),
-            e_flx_avg=self.e_flx_avg(),
-            geofac_grdiv=self.geofac_grdiv(),
-            geofac_rot=self.geofac_rot(),
-            pos_on_tplane_e_1=self.pos_on_tplane_e_x(),
-            pos_on_tplane_e_2=self.pos_on_tplane_e_y(),
-            rbf_vec_coeff_e=self.rbf_vec_coeff_e(),
-            e_bln_c_s=as_1D_sparse_field(self.e_bln_c_s(), CEDim),
-            rbf_coeff_1=self.rbf_vec_coeff_v1(),
-            rbf_coeff_2=self.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(self.geofac_div(), CEDim),
-            geofac_n2s=self.geofac_n2s(),
-            geofac_grg_x=grg[0],
-            geofac_grg_y=grg[1],
-            nudgecoeff_e=self.nudgecoeff_e(),
-        )
 
 
 class MetricSavepoint(IconSavepoint):
@@ -537,9 +530,6 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_c_dsl(self):
         return self._get_field("wgtfacq_c_dsl", CellDim, KDim)
 
-    def wgtfacq_c(self):
-        return self._get_field("wgtfacq_c", CellDim, KDim)
-
     def zdiff_gradp(self):
         field = self._get_field("zdiff_gradp_dsl", EdgeDim, E2CDim, KDim)
         return flatten_first_two_dims(ECDim, KDim, field=field)
@@ -570,6 +560,7 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", EdgeDim, KDim)
 
+    @optionally_registered
     def mask_hdiff(self):
         return self._get_field("mask_hdiff", CellDim, KDim, dtype=bool)
 
@@ -590,16 +581,18 @@ class MetricSavepoint(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
 
+    @optionally_registered
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
+    @optionally_registered
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
         if ser_input.shape[1] != sparse_size:
-            ser_input = np.moveaxis((ser_input), 1, -1)
+            ser_input = np.moveaxis(ser_input, 1, -1)
 
         return self._linearize_first_2dims(
             ser_input, sparse_size=sparse_size, target_dims=(CECDim, KDim)
@@ -612,6 +605,7 @@ class MetricSavepoint(IconSavepoint):
         assert old_shape[1] == sparse_size
         return as_field(target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]))
 
+    @optionally_registered
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 
@@ -621,53 +615,6 @@ class MetricSavepoint(IconSavepoint):
     def zd_indlist(self):
         return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
-    def construct_nh_metric_state(self, num_k_lev) -> MetricStateNonHydro:
-        return MetricStateNonHydro(
-            bdy_halo_c=self.bdy_halo_c(),
-            mask_prog_halo_c=self.mask_prog_halo_c(),
-            rayleigh_w=self.rayleigh_w(),
-            exner_exfac=self.exner_exfac(),
-            exner_ref_mc=self.exner_ref_mc(),
-            wgtfac_c=self.wgtfac_c(),
-            wgtfacq_c_dsl=self.wgtfacq_c_dsl(),
-            inv_ddqz_z_full=self.inv_ddqz_z_full(),
-            rho_ref_mc=self.rho_ref_mc(),
-            theta_ref_mc=self.theta_ref_mc(),
-            vwind_expl_wgt=self.vwind_expl_wgt(),
-            d_exner_dz_ref_ic=self.d_exner_dz_ref_ic(),
-            ddqz_z_half=self.ddqz_z_half(),
-            theta_ref_ic=self.theta_ref_ic(),
-            d2dexdz2_fac1_mc=self.d2dexdz2_fac1_mc(),
-            d2dexdz2_fac2_mc=self.d2dexdz2_fac2_mc(),
-            rho_ref_me=self.rho_ref_me(),
-            theta_ref_me=self.theta_ref_me(),
-            ddxn_z_full=self.ddxn_z_full(),
-            zdiff_gradp=self.zdiff_gradp(),
-            vertoffset_gradp=self.vertoffset_gradp(),
-            ipeidx_dsl=self.ipeidx_dsl(),
-            pg_exdist=self.pg_exdist(),
-            ddqz_z_full_e=self.ddqz_z_full_e(),
-            ddxt_z_full=self.ddxt_z_full(),
-            wgtfac_e=self.wgtfac_e(),
-            wgtfacq_e_dsl=self.wgtfacq_e_dsl(num_k_lev),
-            vwind_impl_wgt=self.vwind_impl_wgt(),
-            hmask_dd3d=self.hmask_dd3d(),
-            scalfac_dd3d=self.scalfac_dd3d(),
-            coeff1_dwdz=self.coeff1_dwdz(),
-            coeff2_dwdz=self.coeff2_dwdz(),
-            coeff_gradekin=self.coeff_gradekin(),
-        )
-
-    def construct_metric_state_for_diffusion(self) -> DiffusionMetricState:
-        return DiffusionMetricState(
-            mask_hdiff=self.mask_hdiff(),
-            theta_ref_mc=self.theta_ref_mc(),
-            wgtfac_c=self.wgtfac_c(),
-            zd_intcoef=self.zd_intcoef(),
-            zd_vertoffset=self.zd_vertoffset(),
-            zd_diffcoef=self.zd_diffcoef(),
-        )
-
 
 class IconDiffusionInitSavepoint(IconSavepoint):
     def hdef_ic(self):
@@ -676,9 +623,11 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def div_ic(self):
         return self._get_field("div_ic", CellDim, KDim)
 
+    @optionally_registered
     def dwdx(self):
         return self._get_field("dwdx", CellDim, KDim)
 
+    @optionally_registered
     def dwdy(self):
         return self._get_field("dwdy", CellDim, KDim)
 
@@ -696,6 +645,9 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def diff_multfac_smag(self):
         return np.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
+
+    def enh_smag_fac(self):
+        return np.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
 
     def smag_limit(self):
         return np.squeeze(self.serializer.read("smag_limit", self.savepoint))
@@ -733,32 +685,13 @@ class IconDiffusionInitSavepoint(IconSavepoint):
             rho=self.rho(),
         )
 
-    def construct_diagnostics_for_diffusion(self) -> DiffusionDiagnosticState:
-        return DiffusionDiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
-        )
-
-    def construct_diagnostics(self) -> DiagnosticState:
-        return DiagnosticState(
-            hdef_ic=self.hdef_ic(),
-            div_ic=self.div_ic(),
-            dwdx=self.dwdx(),
-            dwdy=self.dwdy(),
-            vt=None,
-            vn_ie=None,
-            w_concorr_c=None,
-            ddt_w_adv_pc_before=None,
-            ddt_vn_apc_pc_before=None,
-            ntnd=None,
-        )
-
 
 class IconNonHydroInitSavepoint(IconSavepoint):
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", KDim)
+
+    def divdamp_fac_o2(self):
+        return self.serializer.read("divdamp_fac_o2", self.savepoint).astype(float)[0]
 
     def ddt_exner_phy(self):
         return self._get_field("ddt_exner_phy", CellDim, KDim)
@@ -797,12 +730,20 @@ class IconNonHydroInitSavepoint(IconSavepoint):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
     def ddt_vn_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float))
-        return as_field((EdgeDim, KDim), buffer[:, :, ntl - 1])
+        buffer = np.squeeze(self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float))[
+            :, :, ntl - 1
+        ]
+        dims = (EdgeDim, KDim)
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        return as_field(dims, buffer)
 
     def ddt_w_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float))
-        return as_field((CellDim, KDim), buffer[:, :, ntl - 1])
+        buffer = np.squeeze(self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float))[
+            :, :, ntl - 1
+        ]
+        dims = (CellDim, KDim)
+        buffer = self._reduce_to_dim_size(buffer, dims)
+        return as_field(dims, buffer)
 
     def grf_tend_w(self):
         return self._get_field("grf_tend_w", CellDim, KDim)
@@ -828,11 +769,14 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def vn_incr(self):
         return self._get_field("vn_incr", EdgeDim, KDim)
 
-    def scal_divdamp(self) -> float:
-        return self.serializer.read("scal_divdamp", self.savepoint)[0]
+    def exner_dyn_incr(self):
+        return self._get_field("exner_dyn_incr", CellDim, KDim)
 
     def scal_divdamp_o2(self) -> float:
         return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
+
+    def scal_divdamp(self) -> Field[[KDim], float]:
+        return self._get_field("scal_divdamp", KDim)
 
     def theta_v_ic(self):
         return self._get_field("theta_v_ic", CellDim, KDim)
@@ -906,12 +850,10 @@ class IconVelocityInitSavepoint(IconSavepoint):
         return self.serializer.read("cfl_w_limit", self.savepoint)[0]
 
     def ddt_vn_apc_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("ddt_vn_apc_pc", self.savepoint).astype(float))
-        return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (EdgeDim, KDim))
 
     def ddt_w_adv_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("ddt_w_adv_pc", self.savepoint).astype(float))
-        return as_field((CellDim, KDim), buffer[:, :, ntnd - 1])
+        return self._get_field_component("ddt_w_adv_pc", ntnd, (CellDim, KDim))
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
@@ -970,7 +912,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
         return self._get_field("x_hdef_ic", CellDim, KDim)
 
 
-class IconExitSavepoint(IconSavepoint):
+class IconNonhydroExitSavepoint(IconSavepoint):
     def rho_new(self):
         return self._get_field("x_rho_new", CellDim, KDim)
 
@@ -984,26 +926,10 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_theta_v_now", CellDim, KDim)
 
     def ddt_vn_apc_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_vn_apc_pc", self.savepoint).astype(float))
-        return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
-
-    def ddt_vn_apc_pc_19(self, ntnd):
-        buffer = np.squeeze(
-            self.serializer.read("x_ddt_vn_apc_pc_19", self.savepoint).astype(float)
-        )
-        return as_field((EdgeDim, KDim), buffer[:, :, ntnd - 1])
+        return self._get_field_component("x_ddt_vn_apc_pc", ntnd, (EdgeDim, KDim))
 
     def ddt_w_adv_pc(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc", self.savepoint).astype(float))
-        return as_field((CellDim, KDim), buffer[:, :, ntnd - 1])
-
-    def ddt_w_adv_pc_16(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_16", self.savepoint).astype(float))
-        return as_field((CellDim, KDim), buffer[:, :, ntnd - 1])
-
-    def ddt_w_adv_pc_17(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_ddt_w_adv_pc_17", self.savepoint).astype(float))
-        return as_field((CellDim, KDim, buffer[:, :, ntnd - 1]))
+        return self._get_field_component("x_ddt_w_adv_pc", ntnd, (CellDim, KDim))
 
     def scalfac_exdiff(self) -> float:
         return self.serializer.read("scalfac_exdiff", self.savepoint)[0]
@@ -1090,18 +1016,10 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_w_new", CellDim, KDim)
 
     def z_dexner_dz_c(self, ntnd):
-        buffer = np.squeeze(self.serializer.read("x_z_dexner_dz_c", self.savepoint).astype(float))[
-            :, :, ntnd - 1
-        ]
-        buffer = self._reduce_to_dim_size(buffer, (CellDim, KDim))
-        return as_field((CellDim, KDim), buffer)
+        return self._get_field_component("x_z_dexner_dz_c", ntnd, (CellDim, KDim))
 
     def z_rth_pr(self, ind):
-        buffer = np.squeeze(self.serializer.read("x_z_rth_pr", self.savepoint).astype(float))[
-            :, :, ind - 1
-        ]
-        buffer = self._reduce_to_dim_size(buffer, (CellDim, KDim))
-        return as_field((CellDim, KDim), buffer)
+        return self._get_field_component("x_z_rth_pr", ind, (CellDim, KDim))
 
     def z_th_ddz_exner_c(self):
         return self._get_field("x_z_th_ddz_exner_c", CellDim, KDim)
@@ -1155,89 +1073,16 @@ class IconExitSavepoint(IconSavepoint):
         return self._get_field("x_z_graddiv_vn", EdgeDim, KDim)
 
     def z_grad_rth(self, ind):
-        buffer = np.squeeze(self.serializer.read("x_z_grad_rth", self.savepoint).astype(float))[
-            :, :, ind - 1
-        ]
-
-        dims = (CellDim, KDim)
-        return as_field(dims, self._reduce_to_dim_size(buffer, dims))
-
-    def z_gradh_exner_18(self):
-        return self._get_field("x_z_gradh_exner_18", EdgeDim, KDim)
-
-    def z_gradh_exner_19(self):
-        return self._get_field("x_z_gradh_exner_19", EdgeDim, KDim)
-
-    def z_gradh_exner_20(self):
-        return self._get_field("x_z_gradh_exner_20", EdgeDim, KDim)
-
-    def z_gradh_exner_22(self):
-        return self._get_field("x_z_gradh_exner_22", EdgeDim, KDim)
-
-    def vn_new_23(self):
-        return self._get_field("x_vn_new_23", EdgeDim, KDim)
-
-    def vn_new_24(self):
-        return self._get_field("x_vn_new_24", EdgeDim, KDim)
-
-    def vn_new_26(self):
-        return self._get_field("x_vn_new_26", EdgeDim, KDim)
-
-    def vn_new_27(self):
-        return self._get_field("x_vn_new_27", EdgeDim, KDim)
-
-    def vn_new_29(self):
-        return self._get_field("x_vn_new_29", EdgeDim, KDim)
-
-    def z_rho_e_01(self):
-        return self._get_field("x_z_rho_e_01", EdgeDim, KDim)
-
-    def z_theta_v_e_01(self):
-        return self._get_field("x_z_theta_v_e_01", EdgeDim, KDim)
-
-    def z_rho_e_00(self):
-        return self._get_field("x_z_rho_e_00", EdgeDim, KDim)
-
-    def z_theta_v_e_00(self):
-        return self._get_field("x_z_theta_v_e_00", EdgeDim, KDim)
-
-    def w_new_52(self):
-        return self._get_field("x_w_new_52", CellDim, KDim)
-
-    def w_new_53(self):
-        return self._get_field("x_w_new_53", CellDim, KDim)
-
-    def exner_new_55(self):
-        return self._get_field("x_exner_new_55", CellDim, KDim)
-
-    def theta_v_new_55(self):
-        return self._get_field("x_theta_v_new_55", CellDim, KDim)
-
-    def rho_new_55(self):
-        return self._get_field("x_rho_new_55", CellDim, KDim)
-
-    def w_10_start(self):
-        return self._get_field("w_10_start", CellDim, KDim)
-
-    def z_graddiv_vn_26_start(self):
-        return self._get_field("z_graddiv_vn_26_start", EdgeDim, KDim)
-
-    def z_graddiv2_vn_27_start(self):
-        return self._get_field("z_graddiv2_vn_27_start", EdgeDim, KDim)
-
-    def x_vn_new_26_end(self):
-        return self._get_field("x_vn_new_26_end", EdgeDim, KDim)
-
-    def x_vn_new_27_end(self):
-        return self._get_field("x_vn_new_27_end", EdgeDim, KDim)
-
-    def vn_26_start(self):
-        return self._get_field("vn_26_start", EdgeDim, KDim)
+        return self._get_field_component("x_z_grad_rth", ind, (CellDim, KDim))
 
     def z_dwdz_dd(self):
         return self._get_field("x_z_dwdz_dd", CellDim, KDim)
 
+    def exner_dyn_incr(self):
+        return self._get_field("x_exner_dyn_incr", CellDim, KDim)
 
+
+# TODO (magdalena) rename?
 class IconNHFinalExitSavepoint(IconSavepoint):
     def theta_v_new(self):
         return self._get_field("x_theta_v", CellDim, KDim)
@@ -1277,9 +1122,9 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self) -> IconGridSavePoint:
+    def from_savepoint_grid(self) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
-        return IconGridSavePoint(savepoint, self.serializer, size=self.grid_size)
+        return IconGridSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def _get_icon_grid_savepoint(self):
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()
@@ -1336,7 +1181,7 @@ class IconSerialDataProvider:
 
     def from_savepoint_velocity_exit(
         self, istep: int, vn_only: bool, date: str, jstep: int
-    ) -> IconExitSavepoint:
+    ) -> IconNonhydroExitSavepoint:
         savepoint = (
             self.serializer.savepoint["call-velocity-tendencies"]
             .istep[istep]
@@ -1345,9 +1190,11 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+        return IconNonhydroExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_nonhydro_exit(self, istep: int, date: str, jstep: int) -> IconExitSavepoint:
+    def from_savepoint_nonhydro_exit(
+        self, istep: int, date: str, jstep: int
+    ) -> IconNonhydroExitSavepoint:
         savepoint = (
             self.serializer.savepoint["solve_nonhydro"]
             .istep[istep]
@@ -1355,7 +1202,7 @@ class IconSerialDataProvider:
             .jstep[jstep]
             .as_savepoint()
         )
-        return IconExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+        return IconNonhydroExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_nonhydro_step_exit(self, date: str, jstep: int) -> IconNHFinalExitSavepoint:
         savepoint = (
