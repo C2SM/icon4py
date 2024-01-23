@@ -315,10 +315,6 @@ class IconGridSavepoint(IconSavepoint):
         return dim, global_index, mask
 
     def construct_icon_grid(self, on_gpu: bool) -> IconGrid:
-        if on_gpu:
-            import cupy as xp
-        else:
-            xp = np
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -333,11 +329,12 @@ class IconGridSavepoint(IconSavepoint):
             ),
             vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
+            on_gpu=on_gpu,
         )
-        c2e2c = xp.asarray(self.c2e2c())
-        e2c2e = xp.asarray(self.e2c2e())
-        c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
-        e2c2e0 = xp.column_stack(((xp.asarray(range(e2c2e.shape[0]))), e2c2e))
+        c2e2c = self.c2e2c()
+        e2c2e = self.e2c2e()
+        c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
+        e2c2e0 = np.column_stack(((np.asarray(range(e2c2e.shape[0]))), e2c2e))
         grid = (
             IconGrid()
             .with_config(config)
@@ -346,8 +343,8 @@ class IconGridSavepoint(IconSavepoint):
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
             .with_connectivities(
                 {
-                    C2EDim: xp.asarray(self.c2e()),
-                    E2CDim: xp.asarray(self.e2c()),
+                    C2EDim: self.c2e(),
+                    E2CDim: self.e2c(),
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
                     E2C2EDim: e2c2e,
@@ -356,11 +353,11 @@ class IconGridSavepoint(IconSavepoint):
             )
             .with_connectivities(
                 {
-                    E2VDim: xp.asarray(self.e2v()),
-                    V2EDim: xp.asarray(self.v2e()),
-                    V2CDim: xp.asarray(self.v2c()),
-                    E2C2VDim: xp.asarray(self.e2c2v()),
-                    C2VDim: xp.asarray(self.c2v()),
+                    E2VDim: self.e2v(),
+                    V2EDim: self.v2e(),
+                    V2CDim: self.v2c(),
+                    E2C2VDim: self.e2c2v(),
+                    C2VDim: self.c2v(),
                 }
             )
         )
