@@ -43,7 +43,7 @@ class TestMoSolveNonhydroStencil58(StencilTest):
         vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
         z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
         mass_flx_ic = mass_flx_ic + z_a
-        vol_flx_ic = mass_flx_ic + z_a / rho_ic
+        vol_flx_ic = vol_flx_ic + z_a / rho_ic
         return dict(mass_flx_ic=mass_flx_ic, vol_flx_ic=vol_flx_ic)
 
     @pytest.fixture
