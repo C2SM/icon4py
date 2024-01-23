@@ -308,4 +308,4 @@ class RefinCtrlLevel:
         try:
             return cls._boundary_nudging_start[dim]
         except KeyError:
-            raise LookupError(f"nudging start level only exists for {CellDim} and {EdgeDim}")
+            raise ValueError(f"nudging start level only exists for {CellDim} and {EdgeDim}")

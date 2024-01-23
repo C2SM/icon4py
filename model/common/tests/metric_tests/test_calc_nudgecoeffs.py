@@ -29,7 +29,7 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
-from icon4py.model.common.interpolation.stencils.calc_nudgecoeffs import calc_nudgecoeffs
+from icon4py.model.common.metrics.stencils.calc_nudgecoeffs import calc_nudgecoeffs
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
