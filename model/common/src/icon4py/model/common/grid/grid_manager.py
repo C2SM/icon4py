@@ -416,7 +416,7 @@ class GridManager:
     def _construct_diamond_vertices(
         e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray
     ) -> np.ndarray:
-        """
+        r"""
         Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
 
         Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
@@ -442,28 +442,22 @@ class GridManager:
 
         Returns: np.ndarray containing the connectivity table for edge-to-vertex on the diamond
         """
-
-        n_edges = e2v.shape[0]
-        diamond_size = 4
-        e2c2v = -55 * np.ones((n_edges, diamond_size), dtype=np.int32)
-        e2c2v[:, 0:2] = e2v
         dummy_c2v = _patch_with_dummy_lastline(c2v)
         expanded = dummy_c2v[e2c[:, :], :]
         sh = expanded.shape
         flat = expanded.reshape(sh[0], sh[1] * sh[2])
+        far_indices = np.zeros_like(e2v)
         # TODO (magdalena) vectorize speed this up?
         for x in range(sh[0]):
-            e2c2v[x, 2:] = flat[x, ~np.in1d(flat[x, :], e2c2v[x, :])][:2]
-
-        return e2c2v
+            far_indices[x, :] = flat[x, ~np.in1d(flat[x, :], e2v[x, :])][:2]
+        return np.hstack((e2v, far_indices))
 
     @staticmethod
     def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray) -> np.ndarray:
-        """
+        r"""
         Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
 
         Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
-
 
             / \
           /    \
@@ -482,13 +476,16 @@ class GridManager:
             e2c: np.ndarray containing the connectivity table for edge-to-cell
             c2e: np.ndarray containing the connectivity table for cell-to-edge
 
-        Returns: np.ndarray containing the connectivity table for edge-to-edge on the diamond
+        Returns: np.ndarray containing the connectivity table for central edge-to- boundary edges
+                 on the diamond
         """
         dummy_c2e = _patch_with_dummy_lastline(c2e)
         expanded = dummy_c2e[e2c, :]
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
-        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], 4), dtype=np.int32)
+
+        diamond_sides = 4
+        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=np.int32)
         for x in range(sh[0]):
             var = flattened[x, (~np.in1d(flattened[x, :], np.asarray([x, GridFile.INVALID_INDEX])))]
             e2c2e[x, : var.shape[0]] = var
