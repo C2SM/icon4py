@@ -18,7 +18,6 @@ from icon4py.model.common.grid.simple import SimpleGrid
 
 from icon4pytools.icon4pygen import backend
 from icon4pytools.icon4pygen.backend import generate_gtheader, get_missing_domain_params
-from icon4pytools.icon4pygen.metadata import add_grid_element_size_args
 
 from .helpers import testee_prog
 
@@ -28,8 +27,8 @@ from .helpers import testee_prog
     [
         ([backend.H_START], [backend.H_END, backend.V_START, backend.V_END]),
         ([backend.H_START, backend.H_END], [backend.V_END, backend.V_START]),
-        (backend._DOMAIN_ARGS, []),
-        ([], backend._DOMAIN_ARGS),
+        (backend.DOMAIN_ARGS, []),
+        ([], backend.DOMAIN_ARGS),
     ],
 )
 def test_missing_domain_args(input_params, expected_complement):
@@ -50,7 +49,6 @@ def search_for_grid_sizes(code: str) -> bool:
 def test_grid_size_param_generation(temporaries, imperative):
     grid = SimpleGrid()
     offset_provider = {"E2V": grid.get_offset_provider("E2V")}
-    new_prog = add_grid_element_size_args(testee_prog)
-    fencil = new_prog.itir
+    fencil = testee_prog.itir
     gtheader = generate_gtheader(fencil, offset_provider, None, temporaries, imperative)
     assert search_for_grid_sizes(gtheader)

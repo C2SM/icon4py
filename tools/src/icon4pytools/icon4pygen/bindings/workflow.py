@@ -18,7 +18,7 @@ from icon4pytools.icon4pygen.bindings.codegen.f90 import generate_f90_file
 from icon4pytools.icon4pygen.bindings.codegen.header import generate_cpp_header
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import check_dir_exists
-from icon4pytools.icon4pygen.metadata import GRID_SIZE_SYMBOLS, StencilInfo, remove_symbols
+from icon4pytools.icon4pygen.metadata import StencilInfo
 
 
 class PyBindGen:
@@ -45,8 +45,7 @@ class PyBindGen:
         stencil_info: StencilInfo,
     ) -> tuple[list[Field], list[Offset]]:
         chains = stencil_info.connectivity_chains
-        fields = remove_symbols(stencil_info.fields, GRID_SIZE_SYMBOLS)
-        binding_fields = [Field(name, info) for name, info in fields.items()]
+        binding_fields = [Field(name, info) for name, info in stencil_info.fields.items()]
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 

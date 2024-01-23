@@ -12,18 +12,15 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from __future__ import annotations
 
-import copy
 import importlib
 import types
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
-from gt4py.next.ffront import dialect_ast_enums
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
-from gt4py.next.ffront.type_specifications import ProgramType
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
@@ -34,9 +31,6 @@ from icon4pytools.icon4pygen.exceptions import (
     MultipleFieldOperatorException,
 )
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
-
-
-GRID_SIZE_SYMBOLS = ["num_cells", "num_edges", "num_vertices"]
 
 
 @dataclass(frozen=True)
@@ -232,67 +226,12 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     return sorted_dims
 
 
-def _create_symbol(
-    symbol_name, symbol_type, starting_line, starting_column, filename
-) -> past.DataSymbol:
-    """Create a new DataSymbol instance for the given symbol name."""
-    location = eve.SourceLocation(
-        filename=filename,
-        line=starting_line,
-        end_line=starting_line,
-        column=starting_column,
-        end_column=starting_column,
-    )
-    return past.DataSymbol(
-        id=symbol_name,
-        type=symbol_type,
-        namespace=dialect_ast_enums.Namespace.LOCAL,
-        location=location,
-    )
-
-
-def add_grid_element_size_args(program_decorator: Program) -> Program:
-    """Add grid element size parameters to the given program."""
-    past_node = program_decorator.past_node
-    symbol_type = ts.ScalarType(kind=ts.ScalarKind.INT32)
-
-    # Create new type definitions
-    new_program_type = copy.deepcopy(past_node.type)
-    assert isinstance(new_program_type, ProgramType)
-    new_types = {"num_cells": symbol_type, "num_edges": symbol_type, "num_vertices": symbol_type}
-    new_program_type.definition.pos_or_kw_args.update(new_types)
-
-    last_param = past_node.params[-1]
-    new_params = list(past_node.params)  # Clone the existing params list
-
-    # Starting location for new symbols
-    symbol_line = last_param.location.line
-    symbol_column = last_param.location.column
-    fname = last_param.location.filename
-
-    for i, symbol in enumerate(GRID_SIZE_SYMBOLS, start=1):
-        param = _create_symbol(symbol, symbol_type, symbol_line + i, symbol_column, fname)
-        new_params.append(param)
-
-    new_past = past.Program(
-        id=past_node.id,
-        type=new_program_type,
-        params=new_params,
-        body=past_node.body,
-        closure_vars=past_node.closure_vars,
-        location=past_node.location,
-    )
-    new_program = replace(program_decorator, past_node=new_past)
-    return new_program
-
-
 def get_stencil_info(
     fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher,
     is_global: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
-    fvprog = add_grid_element_size_args(fvprog)
     offsets = scan_for_offsets(fvprog)
     itir = fvprog.itir
     fields = _get_field_infos(fvprog)
@@ -303,11 +242,3 @@ def get_stencil_info(
         offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(itir, fields, connectivity_chains, offset_provider, column_axis)
-
-
-def remove_symbols(symbol_dict, to_remove):
-    return {
-        symbol_name: info
-        for symbol_name, info in symbol_dict.items()
-        if symbol_name not in to_remove
-    }

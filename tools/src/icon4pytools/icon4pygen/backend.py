@@ -30,11 +30,14 @@ H_END = "horizontal_end"
 V_START = "vertical_start"
 V_END = "vertical_end"
 
-_DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
+DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
+GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 
 
 def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     """Replace field view size parameters by horizontal and vertical range parameters."""
+    grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
+
     if len(fencil.closures) > 1:
         raise MultipleFieldOperatorException()
 
@@ -61,30 +64,17 @@ def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     )
 
     fencil_params = [
-        *(p for p in fencil.params if not is_size_param(p)),
+        *(p for p in fencil.params if not is_size_param(p) and p not in grid_size_symbols),
         *(p for p in get_missing_domain_params(fencil.params)),
+        *grid_size_symbols,
     ]
-
-    ordered_params = order_grid_size_symbols(fencil_params)
 
     return itir.FencilDefinition(
         id=fencil.id,
         function_definitions=fencil.function_definitions,
-        params=ordered_params,
+        params=fencil_params,
         closures=fencil.closures,
     )
-
-
-def order_grid_size_symbols(symbols):
-    move_to_end = {"num_cells", "num_edges", "num_vertices"}
-
-    front, back = [], []
-    for symbol in symbols:
-        if str(symbol.id) in move_to_end:
-            back.append(symbol)
-        else:
-            front.append(symbol)
-    return front + back
 
 
 def is_size_param(param: itir.Sym) -> bool:
@@ -95,7 +85,7 @@ def is_size_param(param: itir.Sym) -> bool:
 def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
     """Get domain limit params that are not present in param list."""
     param_ids = [p.id for p in params]
-    missing_args = [s for s in _DOMAIN_ARGS if s not in param_ids]
+    missing_args = [s for s in DOMAIN_ARGS if s not in param_ids]
     return (itir.Sym(id=p) for p in missing_args)
 
 
@@ -108,6 +98,8 @@ def generate_gtheader(
     **kwargs: Any,
 ) -> str:
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
+    fencil_with_adapted_domain = adapt_domain(fencil)
+
     translation = gtfn_module.GTFNTranslationStep(
         enable_itir_transforms=True, use_imperative_backend=False, lift_mode=LiftMode.FORCE_INLINE
     )
@@ -126,7 +118,7 @@ def generate_gtheader(
         )
 
     return translation.generate_stencil_source(
-        fencil,
+        fencil_with_adapted_domain,
         offset_provider=offset_provider,  # type: ignore
         column_axis=column_axis,
         **kwargs,
@@ -141,9 +133,8 @@ class GTHeader:
 
     def __call__(self, outpath: Path, imperative: bool, temporaries: bool) -> None:
         """Generate C++ code using the GTFN backend and write it to a file."""
-        fencil_with_adapted_domain = adapt_domain(self.stencil_info.itir)
         gtheader = generate_gtheader(
-            fencil=fencil_with_adapted_domain,
+            fencil=self.stencil_info.itir,
             offset_provider=self.stencil_info.offset_provider,
             column_axis=self.stencil_info.column_axis,
             imperative=imperative,

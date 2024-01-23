@@ -10,20 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import copy
 
 import pytest
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from icon4py.model.common.dimension import CellDim, E2VDim, KDim
 
-from icon4pytools.icon4pygen.metadata import (
-    _get_field_infos,
-    add_grid_element_size_args,
-    provide_neighbor_table,
-)
-
-from .helpers import testee_prog
+from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
 
 
 chain_false_skipvalues = [
@@ -148,23 +141,3 @@ def test_get_field_infos_does_not_contain_domain_args(program):
 def reference(grid, a):
     amul = a * 2.0
     return amul[grid.connectivities[E2VDim][:, 0]] + amul[grid.connectivities[E2VDim][:, 1]]
-
-
-def test_add_grid_element_size_args():
-    original_past = copy.deepcopy(testee_prog).past_node
-    result_past = add_grid_element_size_args(testee_prog).past_node
-
-    new_symbols = {"num_cells", "num_edges", "num_vertices"}
-    result_symbols = {param.id for param in result_past.params}
-    for symbol in new_symbols:
-        assert symbol in result_symbols, f"Symbol {symbol} is not in program params"
-
-    type_symbols = set(result_past.type.definition.pos_or_kw_args.keys())
-    for symbol in new_symbols:
-        assert symbol in type_symbols, f"Symbol {symbol} is not in new_program_type definition"
-
-    assert result_past.id == original_past.id, "Program ID has changed"
-    assert result_past.body == original_past.body, "Program body has changed"
-    assert (
-        result_past.closure_vars == original_past.closure_vars
-    ), "Program closure_vars have changed"
