@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import pytest
-
 from click.testing import CliRunner
 
 from icon4pytools.py2f.py2fgen import main
