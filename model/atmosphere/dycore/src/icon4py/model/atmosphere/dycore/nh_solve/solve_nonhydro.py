@@ -729,8 +729,8 @@ class SolveNonhydro:
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
             set_two_cell_kdim_fields_to_zero_vp.with_backend(backend)(
-                z_rth_pr_1=self.z_rth_pr_1,
-                z_rth_pr_2=self.z_rth_pr_2,
+                cell_kdim_field_to_zero_vp_1=self.z_rth_pr_1,
+                cell_kdim_field_to_zero_vp_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_end,
                 vertical_start=0,
@@ -1242,8 +1242,8 @@ class SolveNonhydro:
 
         if not self.l_vert_nested:
             set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
-                w_nnew=prognostic_state[nnew].w,
-                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
@@ -1374,8 +1374,8 @@ class SolveNonhydro:
 
         if at_first_substep:
             copy_cell_kdim_field_to_vp.with_backend(backend)(
-                exner=prognostic_state[nnow].exner,
-                exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
+                field=prognostic_state[nnow].exner,
+                field_copy=diagnostic_state_nh.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
@@ -1694,8 +1694,8 @@ class SolveNonhydro:
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
                     set_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
-                        vn_traj=prep_adv.vn_traj,
-                        mass_flx_me=prep_adv.mass_flx_me,
+                        edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
+                        edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
                         horizontal_end=end_edge_end,
                         vertical_start=0,
@@ -1804,8 +1804,8 @@ class SolveNonhydro:
             )
         if not self.l_vert_nested:
             set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
-                w_nnew=prognostic_state[nnew].w,
-                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
