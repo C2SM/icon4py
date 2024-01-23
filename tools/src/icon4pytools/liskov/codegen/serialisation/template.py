@@ -72,11 +72,11 @@ class SavepointStatementGenerator(TemplatedGenerator):
         !$ser verbatim integer, save :: call_counter = 0
         !$ser verbatim integer :: serialization_iteration_number = 0
         !$ser verbatim character(len=32) :: serialization_iteration_number_char
-        !$ser verbatim integer :: length
-        !$ser verbatim integer :: rc
+        !$ser verbatim integer :: env_variable_length
+        !$ser verbatim integer :: get_env_var_error
         !$ser init directory="{{_this_node.init.directory}}" prefix="{{ _this_node.init.prefix }}" {% if _this_node.multinode %}mpi_rank=get_my_mpi_work_id(){% endif %}
         !$ser verbatim call_counter = call_counter + 1
-        !$ser verbatim call get_environment_variable("SERIALIZATION_ITERATION_NUMBER", serialization_iteration_number_char, length, rc)
+        !$ser verbatim call get_environment_variable("SERIALIZATION_ITERATION_NUMBER", serialization_iteration_number_char, env_variable_length, get_env_var_error)
         !$ser verbatim read (serialization_iteration_number_char,'(I32)') serialization_iteration_number
         !$ser verbatim IF (serialization_iteration_number <= 0) THEN
         !$ser verbatim PRINT*,'WARNING, SERIALIZATION_ITERATION_NUMBER unset or <=0, first iteration will be serialized'
