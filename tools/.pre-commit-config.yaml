@@ -85,7 +85,7 @@ repos:
     args: [--config-root, tools/, --resolve-all-configs]
 
 - repo: https://github.com/PyCQA/flake8
-  rev: '4.0.1'
+  rev: '6.1.0'
   hooks:
   - id: flake8
     name: flake8 code style checks
@@ -104,11 +104,9 @@ repos:
   hooks:
   - id: mypy
     name: mypy static type checker
-    entry: bash -c 'echo mypy temporarily disabled'
-    #entry:bash -c 'cd tools; mypy src/' --
+    entry: bash -c 'mypy tools/src/icon4pytools'
     language: system
     types_or: [python, pyi]
-    #always_run: true
     pass_filenames: false
     require_serial: true
     stages: [commit]

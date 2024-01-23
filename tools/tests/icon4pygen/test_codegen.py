@@ -14,12 +14,15 @@
 import os
 import pkgutil
 import re
+from importlib import reload
 
 import icon4py.model.atmosphere.diffusion.stencils as diffusion
 import icon4py.model.atmosphere.dycore as dycore
 import icon4py.model.common.interpolation.stencils as intp
+import icon4py.model.common.type_alias as type_alias
 import pytest
 from click.testing import CliRunner
+from gt4py.next.ffront.fbuiltins import float32, float64
 
 from icon4pytools.icon4pygen.cli import main
 
@@ -109,7 +112,7 @@ def check_header_codegen(fname: str) -> None:
 
 def check_gridtools_codegen(fname: str) -> None:
     stencil_name = fname.replace(".hpp", "")
-    patterns = ["#include <.*>", "using .*;", f"inline auto {stencil_name}"]
+    patterns = ["#include <.*>", "using .*;", f"inline\\s+auto\\s+{stencil_name}"]
     check_for_matches(fname, patterns)
 
 
@@ -132,7 +135,7 @@ def check_code_was_generated(stencil_name: str) -> None:
     ("stencil_module", "stencil_name"),
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
 )
-def test_codegen_dycore(cli, stencil_module, stencil_name) -> None:
+def test_codegen(cli, stencil_module, stencil_name) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
@@ -145,3 +148,13 @@ def test_invalid_module_path(cli) -> None:
     result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
     assert result.exit_code == 1
     assert isinstance(result.exception, ModuleNotFoundError)
+
+
+def test_mixed_precision_option(cli) -> None:
+    module_path = get_stencil_module_path("some_module", "foo")
+    cli.invoke(
+        main, [module_path, "--enable-mixed-precision", BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH]
+    )
+    reload(type_alias)
+    assert os.environ.get("FLOAT_PRECISION") == "mixed"
+    assert (type_alias.vpfloat == float32) and (type_alias.wpfloat == float64)

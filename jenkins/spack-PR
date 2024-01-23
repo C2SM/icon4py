@@ -13,12 +13,25 @@ triggerPhrase.each {
         (spack_fork, spack_branch) = parseTriggerPhrase(it)
     }
 }
+
+def map_srun = [
+    daint: 'srun -t 03:00:00 -C gpu -A g110 -c 12 -n 1'
+    ]
+
 pipeline {
     agent none
+    options{
+        timeout(time: 3, unit: 'HOURS')
+    }
     stages {
         stage('Tests') {
             matrix {
-                agent { label "${NODENAME}" }
+                agent {
+                node {
+                      label "${NODENAME}" 
+                      customWorkspace "workspace/EXCLAIM/icon4py/icon4py-spack-PR_${BUILD_NUMBER}"
+                    }
+                }
                 axes {
                     axis {
                         name 'NODENAME'
@@ -27,6 +40,7 @@ pipeline {
                 }
                 post {
                     always {
+                        archiveArtifacts artifacts: 'local_copy/spack*.txt', allowEmptyArchive: true
                         echo 'Cleaning up workspace'
                         deleteDir()
                     }
@@ -42,12 +56,15 @@ pipeline {
                     }
                     stage('Install with gt4py@main') {
                         steps {
-                            sh """
-                            . ./spack-c2sm/setup-env.sh
-                            cd local_copy
-                            spack env activate spack/gt4py-main
-                            spack install -v --test=root
-                            """
+                            script{
+                                def srun = map_srun["${NODENAME}"]
+                                sh """
+                                . ./spack-c2sm/setup-env.sh
+                                cd local_copy
+                                spack env activate spack/gt4py-main
+                                ${srun} spack install -v --test=root
+                                """
+                            }
                         }
                     }
                 }

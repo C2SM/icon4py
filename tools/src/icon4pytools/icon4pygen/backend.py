@@ -13,8 +13,9 @@
 from pathlib import Path
 from typing import Any, Iterable, List
 
+from gt4py._core.definitions import DeviceType
 from gt4py.next.iterator import ir as itir
-from gt4py.next.program_processors.codegens.gtfn.gtfn_backend import generate
+from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from icon4py.model.common.dimension import Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
@@ -43,8 +44,18 @@ class GTHeader:
         )
         write_string(gtheader, outpath, f"{self.stencil_info.itir.id}.hpp")
 
-    def _generate_cpp_code(self, fencil: itir.FencilDefinition, **kwargs: Any) -> str:
-        return generate(
+    def _generate_cpp_code(
+        self, fencil: itir.FencilDefinition, imperative: bool, **kwargs: Any
+    ) -> str:
+        translation = gtfn_module.GTFNTranslationStep(
+            enable_itir_transforms=True,
+            use_imperative_backend=False,
+            device_type=DeviceType.CPU,
+        )
+        if imperative:
+            translation = translation.replace(use_imperative_backend=True)
+
+        return translation.generate_stencil_source(
             fencil,
             offset_provider=self.stencil_info.offset_provider,
             column_axis=self.stencil_info.column_axis,
@@ -95,7 +106,6 @@ class GTHeader:
     @staticmethod
     def _missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
         """Get domain limit params that are not present in param list."""
-        return map(
-            lambda p: itir.Sym(id=p),
-            filter(lambda s: s not in map(lambda p: p.id, params), _DOMAIN_ARGS),
-        )
+        param_ids = [p.id for p in params]
+        missing_args = [s for s in _DOMAIN_ARGS if s not in param_ids]
+        return (itir.Sym(id=p) for p in missing_args)

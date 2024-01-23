@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import asdict
-from typing import Optional
+from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -35,11 +35,11 @@ class StandardFields(eve.Node):
     fields: list[Field]
 
 
-class DecomposedFields(StandardFields):
+class DecomposedFieldsAllocNode(StandardFields):
     ...
 
 
-class DecomposedFieldDeclarations(DecomposedFields):
+class DecomposedFieldDeclarations(DecomposedFieldsAllocNode):
     ...
 
 
@@ -48,14 +48,14 @@ class SavepointStatement(eve.Node):
     init: Optional[InitData] = eve.datamodels.field(default=None)
     multinode: bool
     standard_fields: StandardFields = eve.datamodels.field(init=False)
-    decomposed_fields: DecomposedFields = eve.datamodels.field(init=False)
+    decomposed_fields: DecomposedFieldsAllocNode = eve.datamodels.field(init=False)
     decomposed_field_declarations: DecomposedFieldDeclarations = eve.datamodels.field(init=False)
 
-    def __post_init__(self):
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.standard_fields = StandardFields(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if not f.decomposed]
         )
-        self.decomposed_fields = DecomposedFields(
+        self.decomposed_fields = DecomposedFieldsAllocNode(
             fields=[Field(**asdict(f)) for f in self.savepoint.fields if f.decomposed]
         )
         self.decomposed_field_declarations = DecomposedFieldDeclarations(
@@ -122,7 +122,25 @@ class SavepointStatementGenerator(TemplatedGenerator):
         """
     )
 
-    DecomposedFields = as_jinja(
+    def visit_DecomposedFieldsAllocNode(
+        self, node: DecomposedFieldsAllocNode
+    ) -> str | Collection[str]:
+        def generate_size_strings(dim_list: list[str], var_name: str) -> list[str]:
+            size_strings = []
+            for i in range(len(dim_list)):
+                size_strings.append(f"size({var_name}, {i + 1})")
+            return size_strings
+
+        for f in node.fields:
+            if f.dimension is None:
+                raise Exception("No dimension found in `DecomposedField` {node}")
+
+            f.variable = f.variable.replace(f"_{f.ptr_var}", "")
+            setattr(f, "alloc_dims", ",".join(generate_size_strings(f.dimension, f.variable)))
+
+        return self.generic_visit(node)
+
+    DecomposedFieldsAllocNode = as_jinja(
         """
     {% for f in _this_node.fields %}
     !$ser verbatim allocate({{ f.variable }}_{{ f.ptr_var}}({{ f.alloc_dims }}))
@@ -132,19 +150,6 @@ class SavepointStatementGenerator(TemplatedGenerator):
     {% endfor %}
     """
     )
-
-    def visit_DecomposedFields(self, node: DecomposedFields):
-        def generate_size_strings(colon_list, var_name):
-            size_strings = []
-            for i in range(len(colon_list)):
-                size_strings.append(f"size({var_name}, {i + 1})")
-            return size_strings
-
-        for f in node.fields:
-            f.variable = f.variable.replace(f"_{f.ptr_var}", "")
-            f.alloc_dims = ",".join(generate_size_strings(f.dimension, f.variable))
-
-        return self.generic_visit(node)
 
 
 class ImportStatement(eve.Node):

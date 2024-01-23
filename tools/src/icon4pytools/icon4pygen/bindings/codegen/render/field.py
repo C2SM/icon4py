@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass
+from typing import cast
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
@@ -19,6 +20,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.icon4pygen.bindings.codegen.types import FieldEntity
 from icon4pytools.icon4pygen.bindings.exceptions import BindingsRenderingException
+from icon4pytools.icon4pygen.bindings.locations import ChainedLocation, CompoundLocation
 
 
 @dataclass(frozen=True)
@@ -85,7 +87,8 @@ class FieldRenderer:
         if self.entity.is_dense():
             return _strides[str(self.entity.location)]
         elif self.entity.is_sparse() or self.entity.is_compound():
-            return _strides[str(self.entity.location[0])]  # type: ignore
+            location = cast(ChainedLocation | CompoundLocation, self.entity.location)
+            return _strides[str(location[0])]
         else:
             raise BindingsRenderingException("stride type called on scalar")
 

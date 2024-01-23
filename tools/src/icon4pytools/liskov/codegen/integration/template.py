@@ -13,7 +13,7 @@
 
 import re
 from dataclasses import asdict
-from typing import Optional
+from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -117,7 +117,7 @@ class EndStencilStatement(EndBasicStencilStatement):
     noprofile: Optional[bool]
     noaccenddata: Optional[bool]
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args, **kwargs) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
@@ -141,6 +141,20 @@ class BaseEndStencilStatementGenerator(TemplatedGenerator):
         """
     )
 
+    def visit_OutputFields(self, out: OutputFields) -> str | Collection[str]:
+        for f in out.fields:
+            if f.dims is None:
+                continue
+
+            idx = render_index(f.dims)
+            split_idx = idx.split(",")
+
+            if len(split_idx) >= 3:
+                split_idx[-1] = "1"
+
+            setattr(f, "rh_index", enclose_in_parentheses(",".join(split_idx)))
+        return self.generic_visit(out)
+
     OutputFields = as_jinja(
         """
         {%- for field in _this_node.fields %}
@@ -149,17 +163,6 @@ class BaseEndStencilStatementGenerator(TemplatedGenerator):
         {%- endfor %}
         """
     )
-
-    def visit_OutputFields(self, out: OutputFields) -> OutputFields:  # type: ignore
-        for f in out.fields:  # type: ignore
-            idx = render_index(f.dims)
-            split_idx = idx.split(",")
-
-            if len(split_idx) >= 3:
-                split_idx[-1] = "1"
-
-            f.rh_index = enclose_in_parentheses(",".join(split_idx))
-        return self.generic_visit(out)
 
     ToleranceFields = as_jinja(
         """
@@ -269,7 +272,7 @@ class DeclareStatement(eve.Node):
     declare_data: DeclareData
     declarations: list[Declaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.declarations = [
             Declaration(variable=k, association=v)
             for k, v in self.declare_data.declarations.items()
@@ -292,7 +295,7 @@ class StartStencilStatement(eve.Node):
     profile: bool
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
@@ -302,7 +305,7 @@ class StartFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
@@ -312,7 +315,7 @@ class EndFusedStencilStatement(EndBasicStencilStatement):
     stencil_data: StartFusedStencilData
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
@@ -393,7 +396,7 @@ class ImportsStatement(eve.Node):
     stencils: list[BaseStartStencilData]
     stencil_names: list[str] = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.stencil_names = sorted(set([stencil.name for stencil in self.stencils]))
 
 

@@ -13,31 +13,36 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _mo_solve_nonhydro_stencil_34(
-    z_vn_avg: Field[[EdgeDim, KDim], float],
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    vn_traj: Field[[EdgeDim, KDim], float],
-    mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: float,
-) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-    vn_traj = vn_traj + r_nsubsteps * z_vn_avg
-    mass_flx_me = mass_flx_me + r_nsubsteps * mass_fl_e
-    return vn_traj, mass_flx_me
+    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
+    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    vn_traj: Field[[EdgeDim, KDim], wpfloat],
+    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+    vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
+    mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
+    return vn_traj_wp, mass_flx_me_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_solve_nonhydro_stencil_34(
-    z_vn_avg: Field[[EdgeDim, KDim], float],
-    mass_fl_e: Field[[EdgeDim, KDim], float],
-    vn_traj: Field[[EdgeDim, KDim], float],
-    mass_flx_me: Field[[EdgeDim, KDim], float],
-    r_nsubsteps: float,
+    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
+    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    vn_traj: Field[[EdgeDim, KDim], wpfloat],
+    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_solve_nonhydro_stencil_34(
         z_vn_avg,
@@ -46,4 +51,8 @@ def mo_solve_nonhydro_stencil_34(
         mass_flx_me,
         r_nsubsteps,
         out=(vn_traj, mass_flx_me),
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

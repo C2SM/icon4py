@@ -16,10 +16,14 @@ jobs:
 
                       Please make sure you run these tests via comment before you merge!
 
-
+                      * `cscs-ci run default`
                       * `launch jenkins spack`
 
                       **Optional Tests**
+
+                      To run benchmarks you can use:
+
+                      * `cscs-ci run benchmark`
 
                       In case your change might affect downstream [icon-exclaim](https://github.com/C2SM/icon-exclaim), please consider running
 

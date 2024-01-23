@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Any
 
-import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.codegen.integration.interface import (
     EndDeleteData,
@@ -24,6 +23,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartStencilData,
     UnusedDirective,
 )
+from icon4pytools.liskov.codegen.shared.types import CodeGenInput
 from icon4pytools.liskov.pipeline.definition import Step
 
 
@@ -35,7 +35,7 @@ class StencilTransformer(Step):
         self.parsed = parsed
         self.fused = fused
 
-    def __call__(self, data: Any = None) -> ts.ParsedDict:
+    def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         """Transform stencils in the parse tree based on the 'fused' flag, transforming or removing as necessary.
 
         This method processes stencils present in the 'parsed' object according to the 'fused'
@@ -46,7 +46,7 @@ class StencilTransformer(Step):
             data (Any): Optional data to be passed. Default is None.
 
         Returns:
-            ts.ParsedDict: The parsed directives along with any modifications applied.
+            IntegrationCodeInterface: The interface object along with any transformations applied.
         """
         if self.fused:
             logger.info("Transforming stencils for deletion.")
@@ -54,6 +54,7 @@ class StencilTransformer(Step):
         else:
             logger.info("Removing fused stencils.")
             self._remove_fused_stencils()
+            self._remove_delete()
 
         return self.parsed
 
@@ -102,7 +103,7 @@ class StencilTransformer(Step):
             directive.append(cls(startln=param.startln))
             setattr(self.parsed, attr, directive)
 
-    def _remove_stencils(self, stencils_to_remove: list[StartStencilData | EndStencilData]) -> None:
+    def _remove_stencils(self, stencils_to_remove: list[CodeGenInput]) -> None:
         attributes_to_modify = ["StartStencil", "EndStencil"]
 
         for attr_name in attributes_to_modify:
@@ -113,3 +114,7 @@ class StencilTransformer(Step):
     def _remove_fused_stencils(self) -> None:
         self.parsed.StartFusedStencil = []
         self.parsed.EndFusedStencil = []
+
+    def _remove_delete(self) -> None:
+        self.parsed.StartDelete = []
+        self.parsed.EndDelete = []

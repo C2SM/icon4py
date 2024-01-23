@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
-from typing import Sequence, Union
+from typing import Any, Sequence, Union
 
 from gt4py import eve
 from gt4py.eve import Node
@@ -214,7 +214,7 @@ class F90RunFun(eve.Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         param_fields = [F90Field(name=field.name) for field in self.all_fields] + [
             F90Field(name=name) for name in _DOMAIN_ARGS
         ]
@@ -242,7 +242,7 @@ class F90RunAndVerifyFun(eve.Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         param_fields = (
             [F90Field(name=field.name) for field in self.all_fields]
             + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
@@ -295,7 +295,7 @@ class F90SetupFun(Node):
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         param_fields = [
             F90Field(name=name)
             for name in [
@@ -346,7 +346,7 @@ class F90WrapRunFun(Node):
     run_ver_params: F90EntityList = eve.datamodels.field(init=False)
     run_params: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         param_fields = (
             [F90Field(name=field.name) for field in self.all_fields]
             + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
@@ -457,7 +457,7 @@ class F90WrapSetupFun(Node):
     vert_conditionals: F90EntityList = eve.datamodels.field(init=False)
     setup_params: F90EntityList = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         param_fields = [
             F90Field(name=name)
             for name in [
@@ -534,7 +534,7 @@ class F90File(Node):
     wrap_run_fun: F90WrapRunFun = eve.datamodels.field(init=False)
     wrap_setup_fun: F90WrapSetupFun = eve.datamodels.field(init=False)
 
-    def __post_init__(self) -> None:  # type: ignore
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = self.fields
         out_fields = [field for field in self.fields if field.intent.out]
         tol_fields = [field for field in out_fields if not field.is_integral()]

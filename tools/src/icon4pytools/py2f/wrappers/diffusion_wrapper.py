@@ -11,6 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # flake8: noqa
+
+# We use gt4py type annotations and thus need to ignore this in MyPy
+# mypy: disable-error-code="valid-type"
+
 """
 Wrapper module for diffusion granule.
 
@@ -18,9 +22,8 @@ Module contains a diffusion_init and diffusion_run function that follow the arch
 Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
-
-
 """
+
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
@@ -32,7 +35,6 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     DiffusionMetricState,
     DiffusionParams,
     DiffusionType,
-    PrognosticState,
 )
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -49,9 +51,11 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.base import GridConfig
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon_grid import GridConfig, IconGrid
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
 
@@ -117,6 +121,7 @@ def diffusion_init(
     cells_edge_idx: Field[[CellDim, C2EDim], int32],
     cells_area: Field[[CellDim], float],
     # dsl specific additional args
+    mean_cell_area: float,
     mask_hdiff: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[
         [CECDim], int32
@@ -178,7 +183,7 @@ def diffusion_init(
         primal_normal_vert_y=edges_primal_normal_vert_2,
         edge_areas=edges_area_edge,
     )
-    cell_params = CellParams(cells_area)
+    cell_params = CellParams(area=cells_area, mean_cell_area=mean_cell_area)
     config: DiffusionConfig = DiffusionConfig(
         diffusion_type=DiffusionType(hdiff_order),
         hdiff_w=lhdiff_w,
@@ -241,12 +246,14 @@ def diffusion_run(
     hdef_ic: Field[[CellDim, KDim], float],
     dwdx: Field[[CellDim, KDim], float],
     dwdy: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], float],
 ):
     diagnostic_state = DiffusionDiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
     prognostic_state = PrognosticState(
+        rho=rho,
         w=w,
         vn=vn,
-        exner_pressure=exner,
+        exner=exner,
         theta_v=theta_v,
     )
     if linit:

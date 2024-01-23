@@ -25,6 +25,9 @@ class ParsedDirective(Protocol):
     pattern: str
     regex: str
 
+    def __init__(self, string: str, startln: int, endln: int) -> None:
+        ...
+
     @property
     def type_name(self) -> str:
         ...

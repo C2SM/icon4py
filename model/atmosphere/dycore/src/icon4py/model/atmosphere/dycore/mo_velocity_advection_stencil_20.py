@@ -11,10 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, abs, broadcast, minimum, neighbor_sum, where
+from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
+    Field,
+    abs,
+    astype,
+    broadcast,
+    int32,
+    minimum,
+    neighbor_sum,
+    where,
+)
 
 from icon4py.model.common.dimension import (
     E2C,
@@ -28,72 +36,85 @@ from icon4py.model.common.dimension import (
     Koff,
     VertexDim,
 )
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_velocity_advection_stencil_20(
     levelmask: Field[[KDim], bool],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
-    z_w_con_c_full: Field[[CellDim, KDim], float],
-    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    zeta: Field[[VertexDim, KDim], float],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
-    cfl_w_limit: float,
-    scalfac_exdiff: float,
-    d_time: float,
-) -> Field[[EdgeDim, KDim], float]:
-    w_con_e = broadcast(0.0, (EdgeDim, KDim))
-    difcoef = broadcast(0.0, (EdgeDim, KDim))
+    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    area_edge: Field[[EdgeDim], wpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    zeta: Field[[VertexDim, KDim], vpfloat],
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
+    cfl_w_limit: vpfloat,
+    scalfac_exdiff: wpfloat,
+    dtime: wpfloat,
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    z_w_con_c_full_wp, ddqz_z_full_e_wp, ddt_vn_apc_wp, cfl_w_limit_wp = astype(
+        (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
+    )
+
+    w_con_e = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
+    difcoef = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
 
     w_con_e = where(
         levelmask | levelmask(Koff[1]),
-        neighbor_sum(c_lin_e * z_w_con_c_full(E2C), axis=E2CDim),
+        neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim),
         w_con_e,
     )
     difcoef = where(
-        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
+        (levelmask | levelmask(Koff[1]))
+        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
         scalfac_exdiff
         * minimum(
-            0.85 - cfl_w_limit * d_time,
-            abs(w_con_e) * d_time / ddqz_z_full_e - cfl_w_limit * d_time,
+            wpfloat("0.85") - cfl_w_limit_wp * dtime,
+            abs(w_con_e) * dtime / ddqz_z_full_e_wp - cfl_w_limit_wp * dtime,
         ),
         difcoef,
     )
-    ddt_vn_adv = where(
-        (levelmask | levelmask(Koff[1])) & (abs(w_con_e) > cfl_w_limit * ddqz_z_full_e),
-        ddt_vn_adv
+    ddt_vn_apc_wp = where(
+        (levelmask | levelmask(Koff[1]))
+        & (abs(w_con_e) > astype(cfl_w_limit * ddqz_z_full_e, wpfloat)),
+        ddt_vn_apc_wp
         + difcoef
         * area_edge
         * (
             neighbor_sum(geofac_grdiv * vn(E2C2EO), axis=E2C2EODim)
-            + tangent_orientation * inv_primal_edge_length * (zeta(E2V[1]) - zeta(E2V[0]))
+            + tangent_orientation
+            * inv_primal_edge_length
+            * astype(zeta(E2V[1]) - zeta(E2V[0]), wpfloat)
         ),
-        ddt_vn_adv,
+        ddt_vn_apc_wp,
     )
-    return ddt_vn_adv
+    return astype(ddt_vn_apc_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_velocity_advection_stencil_20(
     levelmask: Field[[KDim], bool],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
-    z_w_con_c_full: Field[[CellDim, KDim], float],
-    ddqz_z_full_e: Field[[EdgeDim, KDim], float],
-    area_edge: Field[[EdgeDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    zeta: Field[[VertexDim, KDim], float],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], float],
-    vn: Field[[EdgeDim, KDim], float],
-    ddt_vn_adv: Field[[EdgeDim, KDim], float],
-    cfl_w_limit: float,
-    scalfac_exdiff: float,
-    d_time: float,
+    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    area_edge: Field[[EdgeDim], wpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    zeta: Field[[VertexDim, KDim], vpfloat],
+    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    vn: Field[[EdgeDim, KDim], wpfloat],
+    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
+    cfl_w_limit: vpfloat,
+    scalfac_exdiff: wpfloat,
+    dtime: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _mo_velocity_advection_stencil_20(
         levelmask,
@@ -106,9 +127,13 @@ def mo_velocity_advection_stencil_20(
         zeta,
         geofac_grdiv,
         vn,
-        ddt_vn_adv,
+        ddt_vn_apc,
         cfl_w_limit,
         scalfac_exdiff,
-        d_time,
-        out=(ddt_vn_adv),
+        dtime,
+        out=ddt_vn_apc,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
