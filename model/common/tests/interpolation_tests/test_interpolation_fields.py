@@ -29,7 +29,7 @@ import pytest
 from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -133,5 +133,57 @@ def test_compute_geofac_n2s(
         E2C_,
         C2E2C_,
         lateral_boundary,
+#        grid_savepoint, interpolation_savepoint, icon_grid,
     )
     assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
+
+@pytest.mark.datatest
+def test_compute_geofac_grg(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    primal_normal_cell_x = grid_savepoint.primal_normal_cell_x().asnumpy()
+    primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().asnumpy()
+    geofac_div = interpolation_savepoint.geofac_div()
+    c_lin_e = interpolation_savepoint.c_lin_e()
+#    geofac_grg = zero_field(icon_grid, CellDim, C2EDim)
+    geofac_grg_ref = interpolation_savepoint.geofac_grg()
+    owner_mask = grid_savepoint.c_owner_mask()
+    C2E_ = icon_grid.connectivities[C2EDim]
+    E2C_ = icon_grid.connectivities[E2CDim]
+    C2E2C_ = icon_grid.connectivities[C2E2CDim]
+    lateral_boundary = np.arange(2)
+    lateral_boundary[0] = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    )
+    lateral_boundary[1] = icon_grid.get_end_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+    )
+    geofac_grg = np.zeros([lateral_boundary[1], 4, 2])
+    primal_normal_ec = np.zeros([lateral_boundary[1], 3, 2])
+    primal_normal_ec = compute_primal_normal_ec(
+        primal_normal_ec,
+        primal_normal_cell_x,
+        primal_normal_cell_y,
+        owner_mask,
+        C2E_,
+        E2C_,
+        lateral_boundary,
+    )
+    geofac_grg = compute_geofac_grg(
+        geofac_grg,
+        primal_normal_ec,
+        geofac_div.asnumpy(),
+        c_lin_e.asnumpy(),
+        C2E_,
+        E2C_,
+        C2E2C_,
+        lateral_boundary,
+    )
+#    np.set_printoptions(threshold=np.inf)
+#    print(geofac_grg_ref[0].asnumpy())
+#    print("aaaaa")
+#    print(geofac_grg[:, :, 0])
+    assert np.allclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy())
+    assert np.allclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy())
