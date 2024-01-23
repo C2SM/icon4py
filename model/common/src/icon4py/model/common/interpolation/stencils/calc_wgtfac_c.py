@@ -13,38 +13,32 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, exp, int32, where
+from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _calc_wgtfac_c(
-    refin_ctrl: Field[[EdgeDim], int32],
-    grf_nudge_start_e: int32,
-) -> Field[[EdgeDim], wpfloat]:
+    z_ifc: Field[[CellDim,KDim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
 
-    return 0
+    z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / ( z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
+    return  z_wgtfac_c
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calc_wgtfac_c(
-    nudgecoeffs_e: Field[[EdgeDim], wpfloat],
-    refin_ctrl: Field[[EdgeDim], int32],
-    grf_nudge_start_e: int32,
-    nudge_max_coeffs: wpfloat,
-    nudge_efold_width: wpfloat,
-    nudge_zone_width: int32,
+    wgtfac_c: Field[[CellDim, KDim], wpfloat],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _calc_wgtfac_c(
-        refin_ctrl,
-        grf_nudge_start_e,
-        nudge_max_coeffs,
-        nudge_efold_width,
-        nudge_zone_width,
-        out=calc_wgtfac_c,
-        domain={EdgeDim: (horizontal_start, horizontal_end)},
-        KDim: (vertical_start, vertical_end),
+        z_ifc = z_ifc,
+        out=wgtfac_c,
+        domain={CellDim: (horizontal_start, horizontal_end),
+                KDim: (vertical_start, vertical_end),}
     )

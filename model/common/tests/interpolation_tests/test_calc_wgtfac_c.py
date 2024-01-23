@@ -29,7 +29,7 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.stencils.calc_nudgecoeffs import calc_nudgecoeffs
+from icon4py.model.common.interpolation.stencils.calc_wgtfac_c import calc_wgtfac_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -44,6 +44,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 )
 from icon4py.model.common.test_utils.helpers import zero_field
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.dimension import Koff
 
 
 @pytest.mark.datatest
@@ -62,16 +63,14 @@ def test_calc_nudgecoeffs_e(
         HorizontalMarkerIndex.local(CellDim),
     )
 
-    calc_nudgecoeffs(
-        nudgecoeff_e,
-        refin_ctrl,
-        grf_nudge_start_e,
-        nudge_max_coeff,
-        nudge_efold_width,
-        nudge_zone_width,
+    calc_wgtfac_c(
+        wgtfac_c,
+        z_ifc,
         horizontal_start,
         horizontal_end,
-        offset_provider={},
+        vertical_start=int32(0),
+        vertical_end=int32(10),
+        offset_provider={Koff},
     )
 
-    assert np.allclose(nudgecoeff_e.asnumpy(), nudgecoeff_e_ref.asnumpy())
+    assert np.allclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())

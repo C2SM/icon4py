@@ -28,7 +28,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
 from icon4py.model.common.interpolation.stencils.calc_nudgecoeffs import calc_nudgecoeffs
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
@@ -52,7 +52,7 @@ def test_calc_nudgecoeffs_e(
     nudgecoeff_e = zero_field(icon_grid, EdgeDim, dtype=wpfloat)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
     refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
-    grf_nudge_start_e = HorizontalMarkerIndex.nudging_fortran(EdgeDim)
+    grf_nudge_start_e = RefinCtrlLevel.boundary_nudging_start(EdgeDim)
     nudge_max_coeff = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
     nudge_zone_width = int32(10)
