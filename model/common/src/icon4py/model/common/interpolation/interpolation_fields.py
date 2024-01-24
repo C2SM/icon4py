@@ -175,8 +175,8 @@ def compute_primal_normal_ec(
     index = np.transpose(np.vstack((np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]))))
     for i in range(2):
         fac = E2C_[C2E_, i] == index
-        primal_normal_ec[llb:, :, 0] = primal_normal_ec[llb:, :, 0] + fac[llb:, :] * primal_normal_cell_x[C2E_[llb:], i]
-        primal_normal_ec[llb:, :, 1] = primal_normal_ec[llb:, :, 1] + fac[llb:, :] * primal_normal_cell_y[C2E_[llb:], i]
+        primal_normal_ec[llb:, :, 0] = primal_normal_ec[llb:, :, 0] + np.where(owner_mask, fac[llb:, :] * primal_normal_cell_x[C2E_[llb:], i], 0.0)
+        primal_normal_ec[llb:, :, 1] = primal_normal_ec[llb:, :, 1] + np.where(owner_mask, fac[llb:, :] * primal_normal_cell_y[C2E_[llb:], i], 0.0)
     return primal_normal_ec
 
 def compute_geofac_grg(
