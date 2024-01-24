@@ -100,15 +100,14 @@ def generate_gtheader(
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
     fencil_with_adapted_domain = adapt_domain(fencil)
 
+
     translation = gtfn_module.GTFNTranslationStep(
-        enable_itir_transforms=True, use_imperative_backend=False, lift_mode=LiftMode.FORCE_INLINE
+        enable_itir_transforms=True,
+        use_imperative_backend=imperative,
     )
-    if imperative:
-        translation = translation.replace(use_imperative_backend=True)
 
     if temporaries:
         translation = translation.replace(
-            use_imperative_backend=imperative,
             lift_mode=LiftMode.FORCE_TEMPORARIES,
             symbolic_domain_sizes={
                 "Cell": "num_cells",
