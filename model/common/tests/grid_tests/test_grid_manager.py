@@ -59,6 +59,11 @@ from .utils import MCH_GRID_FILE, R02B04_GLOBAL, resolve_file_from_gridfile_name
 
 
 SIMPLE_GRID_NC = "simple_grid.nc"
+R02B04_GLOBLA_NUM_VERTICES = 10242
+
+R02B04_GLOBAL_NUM_EDGES = 30720
+
+R02B04_GLOBAL_NUM_CELLS = 20480
 
 
 @pytest.fixture
@@ -668,42 +673,64 @@ def test_get_end_index_for_local_grid(grid_file, num_levels, grid_savepoint, dim
     assert from_grid_file.get_end_index(dim, marker) == from_savepoint.get_end_index(dim, marker)
 
 
-@pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "dim, marker,start_index,end_index",
     [
         (CellDim, HorizontalMarkerIndex.interior(CellDim), 0, 0),
-        (CellDim, HorizontalMarkerIndex.local(CellDim), 0, 20480),
+        (CellDim, HorizontalMarkerIndex.local(CellDim), 0, R02B04_GLOBAL_NUM_CELLS),
         (CellDim, HorizontalMarkerIndex.nudging(CellDim), 0, 0),
         (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim), 0, 0),
-        (CellDim, HorizontalMarkerIndex.end(CellDim), 20480, 20480),
-        (CellDim, HorizontalMarkerIndex.halo(CellDim), 20480, 20480),
+        (
+            CellDim,
+            HorizontalMarkerIndex.end(CellDim),
+            R02B04_GLOBAL_NUM_CELLS,
+            R02B04_GLOBAL_NUM_CELLS,
+        ),
+        (
+            CellDim,
+            HorizontalMarkerIndex.halo(CellDim),
+            R02B04_GLOBAL_NUM_CELLS,
+            R02B04_GLOBAL_NUM_CELLS,
+        ),
         (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 0, 0),
-        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 0, 30720),
+        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 0, R02B04_GLOBAL_NUM_EDGES),
         (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 0, 0),
         (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim), 0, 0),
-        (EdgeDim, HorizontalMarkerIndex.end(EdgeDim), 30720, 30720),
-        (EdgeDim, HorizontalMarkerIndex.halo(EdgeDim), 30720, 30720),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.end(EdgeDim),
+            R02B04_GLOBAL_NUM_EDGES,
+            R02B04_GLOBAL_NUM_EDGES,
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.halo(EdgeDim),
+            R02B04_GLOBAL_NUM_EDGES,
+            R02B04_GLOBAL_NUM_EDGES,
+        ),
         (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 0, 0),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 0, 10242),
+        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 0, R02B04_GLOBLA_NUM_VERTICES),
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 0, 0),
-        (VertexDim, HorizontalMarkerIndex.end(VertexDim), 10242, 10242),
-        (VertexDim, HorizontalMarkerIndex.halo(VertexDim), 10242, 10242),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.end(VertexDim),
+            R02B04_GLOBLA_NUM_VERTICES,
+            R02B04_GLOBLA_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.halo(VertexDim),
+            R02B04_GLOBLA_NUM_VERTICES,
+            R02B04_GLOBLA_NUM_VERTICES,
+        ),
     ],
 )
-@pytest.mark.parametrize(
-    "grid_file, experiment, num_levels", [(R02B04_GLOBAL, GLOBAL_EXPERIMENT, 80)]
-)
+@pytest.mark.parametrize("grid_file, num_levels", [(R02B04_GLOBAL, 80)])
 def test_get_start_end_index_for_global_grid(
-    grid_file, num_levels, grid_savepoint, dim, marker, start_index, end_index
+    grid_file, num_levels, dim, marker, start_index, end_index
 ):
-    from_savepoint = grid_savepoint.construct_icon_grid()
     file = resolve_file_from_gridfile_name(grid_file)
     from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert from_grid_file.get_start_index(dim, marker) == start_index
-    assert from_grid_file.get_start_index(dim, marker) == from_savepoint.get_start_index(
-        dim, marker
-    )
     assert from_grid_file.get_end_index(dim, marker) == end_index
-    assert from_grid_file.get_end_index(dim, marker) == from_savepoint.get_end_index(dim, marker)
