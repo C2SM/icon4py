@@ -14,7 +14,7 @@
 import pytest
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-from icon4py.model.common.dimension import CellDim, E2VDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 
 from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
 
@@ -136,8 +136,3 @@ def test_get_field_infos_does_not_contain_domain_args(program):
     assert field_info["b"].inp
     assert field_info["result"].out
     assert not field_info["result"].inp
-
-
-def reference(grid, a):
-    amul = a * 2.0
-    return amul[grid.connectivities[E2VDim][:, 0]] + amul[grid.connectivities[E2VDim][:, 1]]

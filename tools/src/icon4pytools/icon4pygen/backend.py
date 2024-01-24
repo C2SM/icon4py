@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Iterable, List, Optional
 
 from gt4py.next import common
-from gt4py.next.common import Connectivity
+from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
@@ -34,8 +34,8 @@ DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
 GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 
 
-def adapt_domain(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
-    """Replace field view size parameters by horizontal and vertical range parameters."""
+def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+    """Transform the domain representation and configure the FencilDefinition parameters."""
     grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
 
     if len(fencil.closures) > 1:
@@ -91,15 +91,14 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
 
 def generate_gtheader(
     fencil: itir.FencilDefinition,
-    offset_provider: dict[str, Connectivity],
+    offset_provider: dict[str, Connectivity | Dimension],
     column_axis: Optional[common.Dimension],
     imperative: bool,
     temporaries: bool,
     **kwargs: Any,
 ) -> str:
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
-    fencil_with_adapted_domain = adapt_domain(fencil)
-
+    transformed_fencil = transform_and_configure_fencil(fencil)
 
     translation = gtfn_module.GTFNTranslationStep(
         enable_itir_transforms=True,
@@ -117,8 +116,8 @@ def generate_gtheader(
         )
 
     return translation.generate_stencil_source(
-        fencil_with_adapted_domain,
-        offset_provider=offset_provider,  # type: ignore
+        transformed_fencil,
+        offset_provider=offset_provider,
         column_axis=column_axis,
         **kwargs,
     )
