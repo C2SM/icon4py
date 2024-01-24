@@ -1,7 +1,7 @@
 # ICON-Liskov integration style-guide
 
 The idea of the style-guide is to have a unique style, to make reading and maintaining as easy as possible.
-The code should look clean and concise as possible. Also it should be similar to the ACC style-guide: https://gitlab.dkrz.de/icon/wiki/-/wikis/GPU-development/ICON-OpenAcc-style-and-implementation-guide.
+The code should look as clean and concise as possible. Also it should be similar to the ACC style-guide: https://gitlab.dkrz.de/icon/wiki/-/wikis/GPU-development/ICON-OpenAcc-style-and-implementation-guide.
 
 ## General:
 
