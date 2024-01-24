@@ -80,6 +80,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
+    on_gpu = False
+
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
@@ -117,6 +119,8 @@ def pytest_generate_tests(metafunc):
                 + available_backends
                 + "] and pass it as an argument to --backend when invoking pytest."
             )
+        elif backend_option in gpu_backends:
+            on_gpu = True
 
         metafunc.parametrize(
             "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
@@ -124,7 +128,6 @@ def pytest_generate_tests(metafunc):
 
     # parametrise grid
     if "grid" in metafunc.fixturenames:
-        on_gpu = backend_option in gpu_backends
         selected_grid_type = metafunc.config.getoption("--grid")
 
         try:
