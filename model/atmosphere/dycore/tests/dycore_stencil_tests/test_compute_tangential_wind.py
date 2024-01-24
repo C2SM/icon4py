@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
-    mo_velocity_advection_stencil_01,
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
+    compute_tangential_wind,
 )
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_01_numpy(
+def compute_tangential_wind_numpy(
     grid, vn: np.array, rbf_vec_coeff_e: np.array
 ) -> np.array:
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
@@ -33,12 +33,12 @@ def mo_velocity_advection_stencil_01_numpy(
 
 
 class TestMoVelocityAdvectionStencil01(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_01
+    PROGRAM = compute_tangential_wind
     OUTPUTS = ("vt",)
 
     @staticmethod
     def reference(grid, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> dict:
-        vt = mo_velocity_advection_stencil_01_numpy(grid, vn, rbf_vec_coeff_e)
+        vt = compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e)
         return dict(vt=vt)
 
     @pytest.fixture

@@ -21,8 +21,8 @@ from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_t
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
-    _mo_velocity_advection_stencil_01,
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
+    _compute_tangential_wind,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
     _mo_velocity_advection_stencil_02,
@@ -65,7 +65,7 @@ def _fused_velocity_advection_stencil_1_to_6(
 ]:
     vt = where(
         k < nlevp1,
-        _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e),
+        _compute_tangential_wind(vn, rbf_vec_coeff_e),
         vt,
     )
 

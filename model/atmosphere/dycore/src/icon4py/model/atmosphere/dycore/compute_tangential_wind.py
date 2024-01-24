@@ -20,16 +20,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_01(
+def _compute_tangential_wind(
     vn: Field[[EdgeDim, KDim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''Formerly knowan as _mo_velocity_advection_stencil_01.'''
     vt_wp = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return astype(vt_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_01(
+def compute_tangential_wind(
     vn: Field[[EdgeDim, KDim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
@@ -38,7 +39,7 @@ def mo_velocity_advection_stencil_01(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_01(
+    _compute_tangential_wind(
         vn,
         rbf_vec_coeff_e,
         out=vt,
