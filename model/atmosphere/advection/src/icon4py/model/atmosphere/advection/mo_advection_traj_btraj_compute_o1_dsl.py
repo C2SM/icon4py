@@ -69,7 +69,13 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
         + z_ntdistv_bary_2 * dual_normal_cell_2(E2EC[1]),
     )
 
-    return p_cell_idx, p_cell_rel_idx_dsl, p_cell_blk, astype(p_distv_bary_1, vpfloat), astype(p_distv_bary_2, vpfloat)
+    return (
+        p_cell_idx,
+        p_cell_rel_idx_dsl,
+        p_cell_blk,
+        astype(p_distv_bary_1, vpfloat),
+        astype(p_distv_bary_2, vpfloat),
+    )
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
