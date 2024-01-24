@@ -68,9 +68,9 @@ def test_calc_nudgecoeffs_e(
         z_ifc,
         horizontal_start,
         horizontal_end,
-        vertical_start=int32(0),
-        vertical_end=int32(10),
-        offset_provider={},
+        vertical_start=int32(1),
+        vertical_end=int32(65),
+        offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
+    assert np.allclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy()[:,0:65])
