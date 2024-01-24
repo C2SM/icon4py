@@ -122,8 +122,6 @@ class DirectiveSemanticsValidator:
                 parse.EndCreate,
                 parse.StartStencil,
                 parse.EndStencil,
-                parse.StartOptionalStencil,
-                parse.EndOptionalStencil,
                 parse.EndIf,
                 parse.EndProfile,
                 parse.StartProfile,
@@ -138,28 +136,17 @@ class DirectiveSemanticsValidator:
 
     def _validate_required_directives(self, directives: Sequence[ts.ParsedDirective]) -> None:
         """Check that all required directives are used at least once."""
-        group_1 = (parse.StartStencil, parse.EndStencil)
-        group_2 = (parse.StartOptionalStencil, parse.EndOptionalStencil)
-
-        if not (
-            (
-                any(isinstance(d, group_1[0]) for d in directives)
-                and any(isinstance(d, group_1[1]) for d in directives)
-            )
-            or (
-                any(isinstance(d, group_2[0]) for d in directives)
-                and any(isinstance(d, group_2[1]) for d in directives)
-            )
-        ) or not (
-            any(isinstance(d, parse.Declare) for d in directives)
-            and any(isinstance(d, parse.Imports) for d in directives)
-        ):
-            raise RequiredDirectivesError(
-                f"Error in {self.filepath}.\n Missing required directive(s) in source. "
-                f"At least one of {group_1[0].pattern}, {group_1[1].pattern} or "
-                f"{group_2[0].pattern}, {group_2[1].pattern} must be present, and "
-                f"{parse.Declare.pattern} and {parse.Imports.pattern} are required."
-            )
+        expected = [
+            parse.Declare,
+            parse.Imports,
+            parse.StartStencil,
+            parse.EndStencil,
+        ]
+        for expected_type in expected:
+            if not any([isinstance(d, expected_type) for d in directives]):
+                raise RequiredDirectivesError(
+                    f"Error in {self.filepath}.\n Missing required directive of type {expected_type.pattern} in source."
+                )
 
     def _validate_stencil_directives(self, directives: Sequence[ts.ParsedDirective]) -> None:
         """Validate that the number of start and end stencil directives match in the input `directives`.

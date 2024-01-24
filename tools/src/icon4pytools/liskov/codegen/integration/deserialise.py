@@ -23,7 +23,6 @@ from icon4pytools.liskov.codegen.integration.interface import (
     EndDeleteData,
     EndFusedStencilData,
     EndIfData,
-    EndOptionalStencilData,
     EndProfileData,
     EndStencilData,
     FieldAssociationData,
@@ -33,7 +32,6 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartCreateData,
     StartDeleteData,
     StartFusedStencilData,
-    StartOptionalStencilData,
     StartProfileData,
     StartStencilData,
     UnusedDirective,
@@ -262,25 +260,6 @@ class EndFusedStencilDataFactory(DataFactoryBase):
         return deserialised
 
 
-class EndOptionalStencilDataFactory(DataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.EndOptionalStencil
-    dtype: Type[EndOptionalStencilData] = EndOptionalStencilData
-
-    def __call__(self, parsed: ts.ParsedDict) -> list[EndOptionalStencilData]:
-        deserialised = []
-        extracted = extract_directive(parsed["directives"], self.directive_cls)
-        for i, directive in enumerate(extracted):
-            named_args = parsed["content"]["EndOptionalStencil"][i]
-            stencil_name = _extract_stencil_name(named_args, directive)
-            deserialised.append(
-                self.dtype(
-                    name=stencil_name,
-                    startln=directive.startln,
-                )
-            )
-        return deserialised
-
-
 class StartStencilDataFactoryBase(DataFactoryBase):
     directive_cls: Type[ts.ParsedDirective]
     dtype: Type[StartStencilData | StartFusedStencilData]
@@ -313,6 +292,8 @@ class StartStencilDataFactoryBase(DataFactoryBase):
             fields = self._make_fields(named_args, field_dimensions)
             fields_w_tolerance = self._update_tolerances(named_args, fields)
 
+            additional_attrs["optional_module"] = named_args.get("optional_module", "")
+
             deserialised.append(
                 dtype(
                     name=stencil_name,
@@ -326,7 +307,9 @@ class StartStencilDataFactoryBase(DataFactoryBase):
         return deserialised
 
     def _pop_additional_attributes(
-        self, dtype: Type[StartStencilData | StartFusedStencilData], named_args: dict[str, Any]
+        self,
+        dtype: Type[StartStencilData | StartFusedStencilData],
+        named_args: dict[str, Any],
     ) -> dict:
         """Pop and return additional attributes specific to StartStencilData."""
         additional_attrs = {}
@@ -428,43 +411,6 @@ class StartFusedStencilDataFactory(StartStencilDataFactoryBase):
     dtype: Type[StartFusedStencilData] = StartFusedStencilData
 
 
-class StartOptionalStencilDataFactory(StartStencilDataFactoryBase):
-    directive_cls: Type[ts.ParsedDirective] = icon4pytools.liskov.parsing.parse.StartOptionalStencil
-    dtype: Type[StartOptionalStencilData] = StartOptionalStencilData
-
-    def create_stencil_data(
-        self,
-        parsed: ts.ParsedDict,
-        field_dimensions: dict[str, Any],
-        directives: Sequence[ts.ParsedDirective],
-        directive_cls: Type[ts.ParsedDirective],
-        dtype: Type[StartOptionalStencilData],
-    ) -> list[StartOptionalStencilData]:
-        """Create and return a list of StartOptionalStencilData objects from parsed directives."""
-        deserialised = []
-        for i, directive in enumerate(directives):
-            named_args = parsed["content"][directive_cls.__name__][i]
-            additional_attrs = self._pop_additional_attributes(dtype, named_args)
-            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", "true"))
-            stencil_name = _extract_stencil_name(named_args, directive)
-            bounds = self._make_bounds(named_args)
-            fields = self._make_fields(named_args, field_dimensions)
-            fields_w_tolerance = self._update_tolerances(named_args, fields)
-
-            # Add optional_module to additional attributes
-            additional_attrs["optional_module"] = named_args.get("optional_module", "")
-
-            deserialised.append(
-                dtype(
-                    name=stencil_name,
-                    fields=fields_w_tolerance,
-                    bounds=bounds,
-                    startln=directive.startln,
-                    acc_present=acc_present,
-                    **additional_attrs,
-                )
-            )
-        return deserialised
 
 
 class StartStencilDataFactory(StartStencilDataFactoryBase):
@@ -495,8 +441,6 @@ class IntegrationCodeDeserialiser(Deserialiser):
         "EndStencil": EndStencilDataFactory(),
         "StartFusedStencil": StartFusedStencilDataFactory(),
         "EndFusedStencil": EndFusedStencilDataFactory(),
-        "StartOptionalStencil": StartOptionalStencilDataFactory(),
-        "EndOptionalStencil": EndOptionalStencilDataFactory(),
         "StartDelete": StartDeleteDataFactory(),
         "EndDelete": EndDeleteDataFactory(),
         "EndIf": EndIfDataFactory(),

@@ -47,7 +47,6 @@ class UpdateFieldsWithGt4PyStencils(Step):
 
         self._set_in_out_field(self.parsed.StartStencil)
         self._set_in_out_field(self.parsed.StartFusedStencil)
-        self._set_in_out_field(self.parsed.StartOptionalStencil)
 
         return self.parsed
 
