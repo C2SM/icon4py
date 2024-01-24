@@ -44,73 +44,62 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
     )
 
     @staticmethod
-    def reference(
-        grid,
-        famask_int: np.array,
-        p_coords_dreg_v_1_x: np.array,
-        p_coords_dreg_v_2_x: np.array,
-        p_coords_dreg_v_3_x: np.array,
-        p_coords_dreg_v_4_x: np.array,
-        p_coords_dreg_v_1_y: np.array,
-        p_coords_dreg_v_2_y: np.array,
-        p_coords_dreg_v_3_y: np.array,
-        p_coords_dreg_v_4_y: np.array,
-        shape_func_1_1: float,
-        shape_func_2_1: float,
-        shape_func_3_1: float,
-        shape_func_4_1: float,
-        shape_func_1_2: float,
-        shape_func_2_2: float,
-        shape_func_3_2: float,
-        shape_func_4_2: float,
-        shape_func_1_3: float,
-        shape_func_2_3: float,
-        shape_func_3_3: float,
-        shape_func_4_3: float,
-        shape_func_1_4: float,
-        shape_func_2_4: float,
-        shape_func_3_4: float,
-        shape_func_4_4: float,
-        zeta_1: float,
-        zeta_2: float,
-        zeta_3: float,
-        zeta_4: float,
-        eta_1: float,
-        eta_2: float,
-        eta_3: float,
-        eta_4: float,
-        wgt_zeta_1: float,
-        wgt_zeta_2: float,
-        wgt_eta_1: float,
-        wgt_eta_2: float,
-        dbl_eps: float,
-        eps: float,
-        p_dreg_area_in: np.array,
-        **kwargs,
+    def _compute_wgt_t_detjac(
+        wgt_zeta_1,
+        wgt_eta_1,
+        wgt_zeta_2,
+        wgt_eta_2,
+        eta_1,
+        eta_2,
+        eta_3,
+        eta_4,
+        zeta_1,
+        zeta_2,
+        zeta_3,
+        zeta_4,
+        famask_int,
+        p_coords_dreg_v_1_x,
+        p_coords_dreg_v_2_x,
+        p_coords_dreg_v_3_x,
+        p_coords_dreg_v_4_x,
+        p_coords_dreg_v_1_y,
+        p_coords_dreg_v_2_y,
+        p_coords_dreg_v_3_y,
+        p_coords_dreg_v_4_y,
+        dbl_eps,
     ):
         z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
         z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
         z_wgt_3 = 0.0625 * wgt_zeta_2 * wgt_eta_1
         z_wgt_4 = 0.0625 * wgt_zeta_2 * wgt_eta_2
 
-        z_eta_1_1 = 1.0 - eta_1
-        z_eta_2_1 = 1.0 - eta_2
-        z_eta_3_1 = 1.0 - eta_3
-        z_eta_4_1 = 1.0 - eta_4
-        z_eta_1_2 = 1.0 + eta_1
-        z_eta_2_2 = 1.0 + eta_2
-        z_eta_3_2 = 1.0 + eta_3
-        z_eta_4_2 = 1.0 + eta_4
-        z_eta_1_3 = 1.0 - zeta_1
-        z_eta_2_3 = 1.0 - zeta_2
-        z_eta_3_3 = 1.0 - zeta_3
-        z_eta_4_3 = 1.0 - zeta_4
-        z_eta_1_4 = 1.0 + zeta_1
-        z_eta_2_4 = 1.0 + zeta_2
-        z_eta_3_4 = 1.0 + zeta_3
-        z_eta_4_4 = 1.0 + zeta_4
+        z_eta_1_1, z_eta_2_1, z_eta_3_1, z_eta_4_1 = (
+            1.0 - eta_1,
+            1.0 - eta_2,
+            1.0 - eta_3,
+            1.0 - eta_4,
+        )
+        z_eta_1_2, z_eta_2_2, z_eta_3_2, z_eta_4_2 = (
+            1.0 + eta_1,
+            1.0 + eta_2,
+            1.0 + eta_3,
+            1.0 + eta_4,
+        )
+        z_eta_1_3, z_eta_2_3, z_eta_3_3, z_eta_4_3 = (
+            1.0 - zeta_1,
+            1.0 - zeta_2,
+            1.0 - zeta_3,
+            1.0 - zeta_4,
+        )
+        z_eta_1_4, z_eta_2_4, z_eta_3_4, z_eta_4_4 = (
+            1.0 + zeta_1,
+            1.0 + zeta_2,
+            1.0 + zeta_3,
+            1.0 + zeta_4,
+        )
 
-        famask_bool = np.where(famask_int == int32(1), True, False)
+        famask_bool = np.where(famask_int == np.int32(1), True, False)
+
         p_coords_dreg_v_1_x = np.where(famask_bool, p_coords_dreg_v_1_x, 0.0)
         p_coords_dreg_v_2_x = np.where(famask_bool, p_coords_dreg_v_2_x, 0.0)
         p_coords_dreg_v_3_x = np.where(famask_bool, p_coords_dreg_v_3_x, 0.0)
@@ -144,6 +133,7 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             ),
             0.0,
         )
+
         wgt_t_detjac_2 = np.where(
             famask_bool,
             dbl_eps
@@ -168,6 +158,7 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             ),
             0.0,
         )
+
         wgt_t_detjac_3 = np.where(
             famask_bool,
             dbl_eps
@@ -217,6 +208,35 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             0.0,
         )
 
+        return wgt_t_detjac_1, wgt_t_detjac_2, wgt_t_detjac_3, wgt_t_detjac_4
+
+    @staticmethod
+    def _compute_z_gauss_points(
+        p_coords_dreg_v_1_x,
+        p_coords_dreg_v_2_x,
+        p_coords_dreg_v_3_x,
+        p_coords_dreg_v_4_x,
+        p_coords_dreg_v_1_y,
+        p_coords_dreg_v_2_y,
+        p_coords_dreg_v_3_y,
+        p_coords_dreg_v_4_y,
+        shape_func_1_1,
+        shape_func_2_1,
+        shape_func_3_1,
+        shape_func_4_1,
+        shape_func_1_2,
+        shape_func_2_2,
+        shape_func_3_2,
+        shape_func_4_2,
+        shape_func_1_3,
+        shape_func_2_3,
+        shape_func_3_3,
+        shape_func_4_3,
+        shape_func_1_4,
+        shape_func_2_4,
+        shape_func_3_4,
+        shape_func_4_4,
+    ):
         z_gauss_pts_1_x = (
             shape_func_1_1 * p_coords_dreg_v_1_x
             + shape_func_2_1 * p_coords_dreg_v_2_x
@@ -265,7 +285,32 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             + shape_func_3_4 * p_coords_dreg_v_3_y
             + shape_func_4_4 * p_coords_dreg_v_4_y
         )
+        return (
+            z_gauss_pts_1_x,
+            z_gauss_pts_1_y,
+            z_gauss_pts_2_x,
+            z_gauss_pts_2_y,
+            z_gauss_pts_3_x,
+            z_gauss_pts_3_y,
+            z_gauss_pts_4_x,
+            z_gauss_pts_4_y,
+        )
 
+    @staticmethod
+    def _compute_vector_sums(
+        wgt_t_detjac_1,
+        wgt_t_detjac_2,
+        wgt_t_detjac_3,
+        wgt_t_detjac_4,
+        z_gauss_pts_1_x,
+        z_gauss_pts_1_y,
+        z_gauss_pts_2_x,
+        z_gauss_pts_2_y,
+        z_gauss_pts_3_x,
+        z_gauss_pts_3_y,
+        z_gauss_pts_4_x,
+        z_gauss_pts_4_y,
+    ):
         p_quad_vector_sum_1 = wgt_t_detjac_1 + wgt_t_detjac_2 + wgt_t_detjac_3 + wgt_t_detjac_4
         p_quad_vector_sum_2 = (
             wgt_t_detjac_1 * z_gauss_pts_1_x
@@ -320,6 +365,151 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             + wgt_t_detjac_2 * z_gauss_pts_2_x * z_gauss_pts_2_y * z_gauss_pts_2_y
             + wgt_t_detjac_3 * z_gauss_pts_3_x * z_gauss_pts_3_y * z_gauss_pts_3_y
             + wgt_t_detjac_4 * z_gauss_pts_4_x * z_gauss_pts_4_y * z_gauss_pts_4_y
+        )
+        return (
+            p_quad_vector_sum_1,
+            p_quad_vector_sum_2,
+            p_quad_vector_sum_3,
+            p_quad_vector_sum_4,
+            p_quad_vector_sum_5,
+            p_quad_vector_sum_6,
+            p_quad_vector_sum_7,
+            p_quad_vector_sum_8,
+            p_quad_vector_sum_9,
+            p_quad_vector_sum_10,
+        )
+
+    @classmethod
+    def reference(
+        cls,
+        grid,
+        famask_int: np.array,
+        p_coords_dreg_v_1_x: np.array,
+        p_coords_dreg_v_2_x: np.array,
+        p_coords_dreg_v_3_x: np.array,
+        p_coords_dreg_v_4_x: np.array,
+        p_coords_dreg_v_1_y: np.array,
+        p_coords_dreg_v_2_y: np.array,
+        p_coords_dreg_v_3_y: np.array,
+        p_coords_dreg_v_4_y: np.array,
+        shape_func_1_1: float,
+        shape_func_2_1: float,
+        shape_func_3_1: float,
+        shape_func_4_1: float,
+        shape_func_1_2: float,
+        shape_func_2_2: float,
+        shape_func_3_2: float,
+        shape_func_4_2: float,
+        shape_func_1_3: float,
+        shape_func_2_3: float,
+        shape_func_3_3: float,
+        shape_func_4_3: float,
+        shape_func_1_4: float,
+        shape_func_2_4: float,
+        shape_func_3_4: float,
+        shape_func_4_4: float,
+        zeta_1: float,
+        zeta_2: float,
+        zeta_3: float,
+        zeta_4: float,
+        eta_1: float,
+        eta_2: float,
+        eta_3: float,
+        eta_4: float,
+        wgt_zeta_1: float,
+        wgt_zeta_2: float,
+        wgt_eta_1: float,
+        wgt_eta_2: float,
+        dbl_eps: float,
+        eps: float,
+        p_dreg_area_in: np.array,
+        **kwargs,
+    ):
+        wgt_t_detjac_1, wgt_t_detjac_2, wgt_t_detjac_3, wgt_t_detjac_4 = cls._compute_wgt_t_detjac(
+            wgt_zeta_1,
+            wgt_eta_1,
+            wgt_zeta_2,
+            wgt_eta_2,
+            eta_1,
+            eta_2,
+            eta_3,
+            eta_4,
+            zeta_1,
+            zeta_2,
+            zeta_3,
+            zeta_4,
+            famask_int,
+            p_coords_dreg_v_1_x,
+            p_coords_dreg_v_2_x,
+            p_coords_dreg_v_3_x,
+            p_coords_dreg_v_4_x,
+            p_coords_dreg_v_1_y,
+            p_coords_dreg_v_2_y,
+            p_coords_dreg_v_3_y,
+            p_coords_dreg_v_4_y,
+            dbl_eps,
+        )
+
+        (
+            z_gauss_pts_1_x,
+            z_gauss_pts_1_y,
+            z_gauss_pts_2_x,
+            z_gauss_pts_2_y,
+            z_gauss_pts_3_x,
+            z_gauss_pts_3_y,
+            z_gauss_pts_4_x,
+            z_gauss_pts_4_y,
+        ) = cls._compute_z_gauss_points(
+            p_coords_dreg_v_1_x,
+            p_coords_dreg_v_2_x,
+            p_coords_dreg_v_3_x,
+            p_coords_dreg_v_4_x,
+            p_coords_dreg_v_1_y,
+            p_coords_dreg_v_2_y,
+            p_coords_dreg_v_3_y,
+            p_coords_dreg_v_4_y,
+            shape_func_1_1,
+            shape_func_2_1,
+            shape_func_3_1,
+            shape_func_4_1,
+            shape_func_1_2,
+            shape_func_2_2,
+            shape_func_3_2,
+            shape_func_4_2,
+            shape_func_1_3,
+            shape_func_2_3,
+            shape_func_3_3,
+            shape_func_4_3,
+            shape_func_1_4,
+            shape_func_2_4,
+            shape_func_3_4,
+            shape_func_4_4,
+        )
+
+        (
+            p_quad_vector_sum_1,
+            p_quad_vector_sum_2,
+            p_quad_vector_sum_3,
+            p_quad_vector_sum_4,
+            p_quad_vector_sum_5,
+            p_quad_vector_sum_6,
+            p_quad_vector_sum_7,
+            p_quad_vector_sum_8,
+            p_quad_vector_sum_9,
+            p_quad_vector_sum_10,
+        ) = cls._compute_vector_sums(
+            wgt_t_detjac_1,
+            wgt_t_detjac_2,
+            wgt_t_detjac_3,
+            wgt_t_detjac_4,
+            z_gauss_pts_1_x,
+            z_gauss_pts_1_y,
+            z_gauss_pts_2_x,
+            z_gauss_pts_2_y,
+            z_gauss_pts_3_x,
+            z_gauss_pts_3_y,
+            z_gauss_pts_4_x,
+            z_gauss_pts_4_y,
         )
 
         p_dreg_area = p_dreg_area_in + p_quad_vector_sum_1
