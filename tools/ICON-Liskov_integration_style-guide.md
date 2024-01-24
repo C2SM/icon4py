@@ -15,6 +15,6 @@ The code should look clean and concise as possible. Also it should be similar to
 - `!$DSL START STENCIL` as close as possible to the original stencil section, one empty line before, no empty line after.
 - `!$DSL END STENCIL` as close as possible to the original stencil section, no empty line before, one empty line after.
 - `!$DSL START FUSED STENCIL` as close as possible to the original stencil sections, one empty line before, one empty line after.
-- `!$DSL END FUSED STENCIL` as close as possible to the original stencil sections, one empty line before, one empty line after.
+- `!$DSL END FUSED STENCIL` as close as possible to the end of the original stencil sections to be fused, one empty line before, one empty line after.
 - `!$DSL INSERT` after `!$DSL START STENCIL`, no empty line before, one empty line after.
 - `!$DSL START CREATE` after the `!$ACC CREATE` block, no empty line before and one empty line after.
