@@ -19,8 +19,6 @@ from icon4py.model.common.grid.simple import SimpleGrid
 from icon4pytools.icon4pygen import backend
 from icon4pytools.icon4pygen.backend import generate_gtheader, get_missing_domain_params
 
-from .helpers import testee_prog
-
 
 @pytest.mark.parametrize(
     "input_params, expected_complement",
@@ -46,7 +44,7 @@ def search_for_grid_sizes(code: str) -> bool:
 @pytest.mark.parametrize(
     "temporaries, imperative", [(True, True), (True, False), (False, True), (False, False)]
 )
-def test_grid_size_param_generation(temporaries, imperative):
+def test_grid_size_param_generation(temporaries, imperative, testee_prog):
     grid = SimpleGrid()
     offset_provider = {"E2V": grid.get_offset_provider("E2V")}
     fencil = testee_prog.itir

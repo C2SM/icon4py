@@ -26,7 +26,7 @@ from gt4py.next.ffront.fbuiltins import float32, float64
 
 from icon4pytools.icon4pygen.cli import main
 
-from .helpers import get_stencil_module_path
+from .conftest import get_stencil_module_path
 
 
 DYCORE_PKG = "atmosphere.dycore"
