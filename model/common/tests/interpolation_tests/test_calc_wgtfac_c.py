@@ -70,7 +70,7 @@ def test_calc_nudgecoeffs_e(
         horizontal_end,
         vertical_start=int32(0),
         vertical_end=int32(10),
-        offset_provider={Koff},
+        offset_provider={},
     )
 
     assert np.allclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
