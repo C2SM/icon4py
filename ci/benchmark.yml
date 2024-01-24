@@ -15,4 +15,4 @@ benchmark_model_icon_grid:
     - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid --disable-warnings
   parallel:
     matrix:
-      - BACKEND: [dace_cpu, gtfn_cpu, gtfn_gpu]
+      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
