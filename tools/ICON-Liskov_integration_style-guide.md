@@ -5,14 +5,14 @@ The code should look clean and concise as possible. Also it should be similar to
 
 ## General:
 * indentation as original surrounding code.
-* no empty line between following !$DSL-statements.
+* no empty line between following `!$DSL`-statements.
 
 ## Specific DSL statements:
-* !$DSL IMPORTS() after last USE statement and before IMPLICITE NONE, one empty line before and after.
-* !$DSL DECLARE after last variable declaration and before code block, one empty line before and after.
-* !$DSL START STENCIL as close as possible to the original stencil section, one empty line before, no empty line after.
-* !$DSL END STENCIL as close as possible to the original stencil section, no empty line before, one empty line after.
-* !$DSL START FUSED STENCIL as close as possible to the original stencil sections, one empty line before, one empty line after.
-* !$DSL END FUSED STENCIL as close as possible to the original stencil sections, one empty line before, one empty line after.
-* !$DSL INSERT after !$DSL START STENCIL , no empty line before, one empty line after.
-* !$DSL START CREATE after the !$ACC CREATE block, no empty line before and one empty line after.
+* `!$DSL IMPORTS()` after last `USE` statement and before `IMPLICITE NONE`, one empty line before and after.
+* `!$DSL DECLARE` after last variable declaration and before code block, one empty line before and after.
+* `!$DSL START STENCIL` as close as possible to the original stencil section, one empty line before, no empty line after.
+* `!$DSL END STENCIL` as close as possible to the original stencil section, no empty line before, one empty line after.
+* `!$DSL START FUSED STENCIL` as close as possible to the original stencil sections, one empty line before, one empty line after.
+* `!$DSL END FUSED STENCIL` as close as possible to the original stencil sections, one empty line before, one empty line after.
+* `!$DSL INSERT` after `!$DSL START STENCIL`, no empty line before, one empty line after.
+* `!$DSL START CREATE` after the `!$ACC CREATE` block, no empty line before and one empty line after.
