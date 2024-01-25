@@ -38,11 +38,11 @@ def _calculate_nabla2_for_theta(
 
 @program
 def calculate_nabla2_for_theta(
-    kh_smag_e: Field[[EdgeDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    geofac_div: Field[[CEDim], float],
-    z_temp: Field[[CellDim, KDim], float],
+    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
+    geofac_div: Field[[CEDim], wpfloat],
+    z_temp: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
