@@ -154,7 +154,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         geofac_grg_y=geofac_grg_y,
     )
 
-    (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01)
+    # (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01)
 
     # (z_rho_e, z_theta_v_e) = where(
     #     (zero_lower_bound <= horz_idx < zero_upper_bound),
@@ -468,7 +468,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     horizontal_lower_4: int32,
     horizontal_upper_4: int32,
     kstart_dd3d: int32,
-    # nlev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
 ) -> tuple[
@@ -672,7 +671,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
     horizontal_lower_4: int32,
     horizontal_upper_4: int32,
     kstart_dd3d: int32,
-    # nlev: int32,
     nflatlev: int32,
     nflat_gradp: int32,
 ):
