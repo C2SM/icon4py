@@ -162,10 +162,25 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+from gt4py.next.program_processors.runners import gtfn
+from gt4py.next.otf.compilation.build_systems import cmake
+from gt4py.next.otf.compilation.cache import Strategy
+
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
+
+compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
+    name="run_gtfn_cached_cmake_release",
+    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
+        compilation=gtfn.compiler.Compiler(
+            cache_strategy=Strategy.PERSISTENT,
+            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
+        )),
+    hash_function=gtfn.compilation_hash),
+)
+
+backend = compiler_cached_release_backend
 # flake8: noqa
 log = logging.getLogger(__name__)
 
@@ -347,6 +362,80 @@ class SolveNonhydro:
         self.ntl1 = 0
         self.ntl2 = 0
 
+        self.stencil_en_smag_fac_for_zero_nshift = en_smag_fac_for_zero_nshift.with_backend(backend)
+        self.stencil_init_test_fields = nhsolve_prog.init_test_fields.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_66 = mo_solve_nonhydro_stencil_66.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_67 = mo_solve_nonhydro_stencil_67.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_68 = mo_solve_nonhydro_stencil_68.with_backend(backend)
+        self.stencil_compute_z_raylfac = compute_z_raylfac.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_01 = mo_solve_nonhydro_stencil_01.with_backend(backend)
+        self.stencil_predictor_stencils_2_3 = nhsolve_prog.predictor_stencils_2_3.with_backend(backend)
+        self.stencil_predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)
+        self.stencil_predictor_stencils_7_8_9 = nhsolve_prog.predictor_stencils_7_8_9.with_backend(backend)
+        self.stencil_predictor_stencils_11_lower_upper = nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_12 = mo_solve_nonhydro_stencil_12.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_13 = mo_solve_nonhydro_stencil_13.with_backend(backend)
+        self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
+        self.stencil_mo_math_gradients_grad_green_gauss_cell_dsl = mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(backend)
+        self.stencil_set_zero_e_k = set_zero_e_k.with_backend(backend)
+        self.stencil_set_zero_c_k = set_zero_c_k.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 = nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_18 = mo_solve_nonhydro_stencil_18.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_19 = mo_solve_nonhydro_stencil_19.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_20 = mo_solve_nonhydro_stencil_20.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_21 = mo_solve_nonhydro_stencil_21.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_22 = mo_solve_nonhydro_stencil_22.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_24 = mo_solve_nonhydro_stencil_24.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_29 = mo_solve_nonhydro_stencil_29.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_30 = mo_solve_nonhydro_stencil_30.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_32 = mo_solve_nonhydro_stencil_32.with_backend(backend)
+        self.stencil_predictor_stencils_35_36 = nhsolve_prog.predictor_stencils_35_36.with_backend(backend)
+        self.stencil_predictor_stencils_37_38 = nhsolve_prog.predictor_stencils_37_38.with_backend(backend)
+        self.stencil_39_40 = nhsolve_prog.stencils_39_40.with_backend(backend)
+        self.stencil_43_44_45_45b = nhsolve_prog.stencils_43_44_45_45b.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_41 = mo_solve_nonhydro_stencil_41.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_46 = mo_solve_nonhydro_stencil_46.with_backend(backend)
+        self.stencil_47_48_49 = nhsolve_prog.stencils_47_48_49.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_50 = mo_solve_nonhydro_stencil_50.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_52 = mo_solve_nonhydro_stencil_52.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_53 = mo_solve_nonhydro_stencil_53.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_54 = mo_solve_nonhydro_stencil_54.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_55 = mo_solve_nonhydro_stencil_55.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_56_63 = mo_solve_nonhydro_stencil_56_63.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_59 = mo_solve_nonhydro_stencil_59.with_backend(backend)
+        self.stencil_61_62 = nhsolve_prog.stencils_61_62.with_backend(backend)
+        self.stencil_42_44_45_45b = nhsolve_prog.stencils_42_44_45_45b.with_backend(backend)
+        self.stencil_calculate_divdamp_fields = _calculate_divdamp_fields.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_10 = mo_solve_nonhydro_stencil_10.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_17 = mo_solve_nonhydro_stencil_17.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_23 = mo_solve_nonhydro_stencil_23.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_25 = mo_solve_nonhydro_stencil_25.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_26 = mo_solve_nonhydro_stencil_26.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_27 = mo_solve_nonhydro_stencil_27.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_4th_order_divdamp = mo_solve_nonhydro_4th_order_divdamp.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_31 = mo_solve_nonhydro_stencil_31.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_32 = mo_solve_nonhydro_stencil_32.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_33 = mo_solve_nonhydro_stencil_33.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_34 = mo_solve_nonhydro_stencil_34.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_41 = mo_solve_nonhydro_stencil_41.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_52 = mo_solve_nonhydro_stencil_52.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_53 = mo_solve_nonhydro_stencil_53.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_54 = mo_solve_nonhydro_stencil_54.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_55 = mo_solve_nonhydro_stencil_55.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_58 = mo_solve_nonhydro_stencil_58.with_backend(backend)
+        self.stencil_mo_solve_nonhydro_stencil_65 = mo_solve_nonhydro_stencil_65.with_backend(backend)
+
+        self.offset_provider_koff = None
+        self.offset_provider_v2c = None
+        self.offset_provider_c2e2co = None
+        self.offset_provider_e2c_e2ec = None
+        self.offset_provider_e2c = None
+        self.offset_provider_e2c_e2ec_koff = None
+        self.offset_provider_e2c2eo_e2c2e = None
+        self.offset_provider_c2e_c2ce_koff = None
+        self.offset_provider_c2e_c2ce = None
+        self.offset_provider_e2c2eo = None
+
     def init(
         self,
         grid: IconGrid,
@@ -390,7 +479,43 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
+        self.offset_provider_koff = {"Koff": KDim}
+        self.offset_provider_v2c = {
+            "V2C": self.grid.get_offset_provider("V2C"),
+        }
+        self.offset_provider_c2e2co = {
+                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+                }
+        self.offset_provider_e2c_e2ec = {
+                        "E2C": self.grid.get_offset_provider("E2C"),
+                        "E2EC": self.grid.get_offset_provider("E2EC"),
+                    }
+        self.offset_provider_e2c = {
+                "E2C": self.grid.get_offset_provider("E2C"),
+            }
+        self.offset_provider_e2c_e2ec_koff = {
+                    "E2C": self.grid.get_offset_provider("E2C"),
+                    "E2EC": self.grid.get_offset_provider("E2EC"),
+                    "Koff": KDim,
+                }
+        self.offset_provider_e2c2eo_e2c2e = {
+                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+                "E2C2E": self.grid.get_offset_provider("E2C2E"),
+            }
+        self.offset_provider_c2e_c2ce_koff = {
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
+                "Koff": KDim,
+            }
+        self.offset_provider_c2e_c2ce = {
+                    "C2E": self.grid.get_offset_provider("C2E"),
+                    "C2CE": self.grid.get_offset_provider("C2CE"),
+                }
+        self.offset_provider_e2c2eo = {
+                    "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+                }
+
+        self.stencil_en_smag_fac_for_zero_nshift(
             self.vertical_params.vct_a,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
@@ -401,8 +526,9 @@ class SolveNonhydro:
             self.config.divdamp_z3,
             self.config.divdamp_z4,
             out=self.enh_divdamp_fac,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
+
 
         self.p_test_run = True
         self._initialized = True
@@ -480,7 +606,7 @@ class SolveNonhydro:
         end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
-            nhsolve_prog.init_test_fields.with_backend(backend)(
+            self.stencil_init_test_fields(
                 z_fields.z_rho_e,
                 z_fields.z_theta_v_e,
                 z_fields.z_dwdz_dd,
@@ -533,7 +659,7 @@ class SolveNonhydro:
         start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_66.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_66(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
@@ -547,7 +673,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            mo_solve_nonhydro_stencil_67.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_67(
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
                 exner=prognostic_state_ls[nnew].exner,
@@ -560,7 +686,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_68.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_68(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
             rho_now=prognostic_state_ls[nnow].rho,
             theta_v_now=prognostic_state_ls[nnow].theta_v,
@@ -671,7 +797,7 @@ class SolveNonhydro:
         end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
 
         #  Precompute Rayleigh damping factor
-        compute_z_raylfac.with_backend(backend)(
+        self.stencil_compute_z_raylfac(
             rayleigh_w=self.metric_state_nonhydro.rayleigh_w,
             dtime=dtime,
             z_raylfac=self.z_raylfac,
@@ -680,7 +806,7 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_01.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_01(
                 z_rth_pr_1=self.z_rth_pr_1,
                 z_rth_pr_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,
@@ -690,7 +816,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        nhsolve_prog.predictor_stencils_2_3.with_backend(backend)(
+        self.stencil_predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
             exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
@@ -706,7 +832,7 @@ class SolveNonhydro:
         )
 
         if self.config.igradp_method == 3:
-            nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)(
+            self.stencil_predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 z_exner_ic=self.z_exner_ic,
@@ -719,14 +845,14 @@ class SolveNonhydro:
                 horizontal_end=end_cell_halo,
                 vertical_start=max(1, self.vertical_params.nflatlev),
                 vertical_end=self.grid.num_levels + 1,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.offset_provider_koff,
             )
 
             if self.vertical_params.nflatlev == 1:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        nhsolve_prog.predictor_stencils_7_8_9.with_backend(backend)(
+        self.stencil_predictor_stencils_7_8_9(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -748,11 +874,11 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         # Perturbation theta at top and surface levels
-        nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)(
+        self.stencil_predictor_stencils_11_lower_upper(
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             z_rth_pr=self.z_rth_pr_2,
             theta_ref_ic=self.metric_state_nonhydro.theta_ref_ic,
@@ -764,12 +890,12 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         if self.config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
-            mo_solve_nonhydro_stencil_12.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_12(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self.metric_state_nonhydro.d2dexdz2_fac1_mc,
                 d2dexdz2_fac2_mc=self.metric_state_nonhydro.d2dexdz2_fac2_mc,
@@ -779,13 +905,13 @@ class SolveNonhydro:
                 horizontal_end=end_cell_halo,
                 vertical_start=self.vertical_params.nflat_gradp,
                 vertical_end=self.grid.num_levels,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.offset_provider_koff,
             )
 
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
 
-        mo_solve_nonhydro_stencil_13.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_13(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -801,7 +927,7 @@ class SolveNonhydro:
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self.config.iadv_rhotheta == 1:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)(
+            self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state[nnow].rho,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_rho_v,
@@ -809,11 +935,9 @@ class SolveNonhydro:
                 horizontal_end=end_vertex_local_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
-                offset_provider={
-                    "V2C": self.grid.get_offset_provider("V2C"),
-                },
+                offset_provider=self.offset_provider_v2c,
             )
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)(
+            self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state[nnow].theta_v,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_theta_v_v,
@@ -821,13 +945,11 @@ class SolveNonhydro:
                 horizontal_end=end_vertex_local_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
-                offset_provider={
-                    "V2C": self.grid.get_offset_provider("V2C"),
-                },
+                offset_provider=self.offset_provider_v2c,
             )
         elif self.config.iadv_rhotheta == 2:
             # Compute Green-Gauss gradients for rho and theta
-            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(backend)(
+            self.stencil_mo_math_gradients_grad_green_gauss_cell_dsl(
                 p_grad_1_u=self.z_grad_rth_1,
                 p_grad_1_v=self.z_grad_rth_2,
                 p_grad_2_u=self.z_grad_rth_3,
@@ -840,9 +962,7 @@ class SolveNonhydro:
                 horizontal_end=end_cell_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # UBOUND(p_ccpr,2)
-                offset_provider={
-                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-                },
+                offset_provider=self.offset_provider_c2e2co,
             )
         if self.config.iadv_rhotheta <= 2:
             tmp_0_0 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
@@ -851,7 +971,7 @@ class SolveNonhydro:
                 EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - offset
             )
 
-            set_zero_e_k.with_backend(backend)(
+            self.stencil_set_zero_e_k(
                 field=z_fields.z_rho_e,
                 horizontal_start=tmp_0_0,
                 horizontal_end=tmp_0_1,
@@ -860,7 +980,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            set_zero_e_k.with_backend(backend)(
+            self.stencil_set_zero_e_k(
                 field=z_fields.z_theta_v_e,
                 horizontal_start=tmp_0_0,
                 horizontal_end=tmp_0_1,
@@ -871,7 +991,7 @@ class SolveNonhydro:
 
             # initialize also nest boundary points with zero
             if self.grid.limited_area:
-                set_zero_e_k.with_backend(backend)(
+                self.stencil_set_zero_e_k(
                     field=z_fields.z_rho_e,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_local_minus1,
@@ -880,7 +1000,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-                set_zero_e_k.with_backend(backend)(
+                self.stencil_set_zero_e_k(
                     field=z_fields.z_theta_v_e,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_local_minus1,
@@ -894,7 +1014,7 @@ class SolveNonhydro:
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
                 # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
 
-                nhsolve_prog.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1.with_backend(backend)(
+                self.stencil_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
                     p_vn=prognostic_state[nnow].vn,
                     p_vt=diagnostic_state_nh.vt,
                     pos_on_tplane_e_1=self.interpolation_state.pos_on_tplane_e_1,
@@ -918,14 +1038,11 @@ class SolveNonhydro:
                     horizontal_end=end_edge_local_minus1,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
-                    offset_provider={
-                        "E2C": self.grid.get_offset_provider("E2C"),
-                        "E2EC": self.grid.get_offset_provider("E2EC"),
-                    },
+                    offset_provider=self.offset_provider_e2c_e2ec,
                 )
 
         # Remaining computations at edge points
-        mo_solve_nonhydro_stencil_18.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_18(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -933,16 +1050,14 @@ class SolveNonhydro:
             horizontal_end=end_edge_local,
             vertical_start=0,
             vertical_end=self.vertical_params.nflatlev,
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-            },
+            offset_provider=self.offset_provider_e2c,
         )
 
         if self.config.igradp_method == 3:
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
 
-            mo_solve_nonhydro_stencil_19.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_19(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
@@ -953,12 +1068,10 @@ class SolveNonhydro:
                 horizontal_end=end_edge_local,
                 vertical_start=self.vertical_params.nflatlev,
                 vertical_end=int32(self.vertical_params.nflat_gradp + 1),
-                offset_provider={
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                },
+                offset_provider=self.offset_provider_e2c,
             )
 
-            mo_solve_nonhydro_stencil_20.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_20(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
@@ -970,15 +1083,11 @@ class SolveNonhydro:
                 horizontal_end=end_edge_local,
                 vertical_start=int32(self.vertical_params.nflat_gradp + 1),
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                    "E2EC": self.grid.get_offset_provider("E2EC"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.offset_provider_e2c_e2ec_koff,
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if self.config.igradp_method == 3:
-            mo_solve_nonhydro_stencil_21.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_21(
                 theta_v=prognostic_state[nnow].theta_v,
                 ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
@@ -991,18 +1100,14 @@ class SolveNonhydro:
                 horizontal_end=end_edge_local,
                 vertical_start=self.grid.num_levels - 1,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                    "E2EC": self.grid.get_offset_provider("E2EC"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.offset_provider_e2c_e2ec_koff,
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
         hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
 
         if self.config.igradp_method == 3:
-            mo_solve_nonhydro_stencil_22.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_22(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
                 z_hydro_corr=hydro_corr_horizontal,
@@ -1014,7 +1119,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_24.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_24(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,
@@ -1043,7 +1148,7 @@ class SolveNonhydro:
             )
 
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_29.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_29(
                 grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
                 vn_now=prognostic_state[nnow].vn,
                 vn_new=prognostic_state[nnew].vn,
@@ -1057,7 +1162,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
-        mo_solve_nonhydro_stencil_30.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_30(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
             geofac_grdiv=self.interpolation_state.geofac_grdiv,
@@ -1069,14 +1174,11 @@ class SolveNonhydro:
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                "E2C2E": self.grid.get_offset_provider("E2C2E"),
-            },
+            offset_provider=self.offset_provider_e2c2eo_e2c2e,
         )
 
         if self.config.idiv_method == 1:
-            mo_solve_nonhydro_stencil_32.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_32(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
                 ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
@@ -1090,7 +1192,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        nhsolve_prog.predictor_stencils_35_36.with_backend(backend)(
+        self.stencil_predictor_stencils_35_36(
             vn=prognostic_state[nnew].vn,
             ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
             ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
@@ -1107,11 +1209,11 @@ class SolveNonhydro:
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         if not self.l_vert_nested:
-            nhsolve_prog.predictor_stencils_37_38.with_backend(backend)(
+            self.stencil_predictor_stencils_37_38(
                 vn=prognostic_state[nnew].vn,
                 vt=diagnostic_state_nh.vt,
                 vn_ie=diagnostic_state_nh.vn_ie,
@@ -1124,10 +1226,10 @@ class SolveNonhydro:
                 horizontal_end=end_edge_local_minus2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels + 1,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.offset_provider_koff,
             )
 
-        nhsolve_prog.stencils_39_40.with_backend(backend)(
+        self.stencil_39_40(
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=self.z_w_concorr_me,
             wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
@@ -1140,15 +1242,11 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_c2e_c2ce_koff,
         )
 
         if self.config.idiv_method == 1:
-            mo_solve_nonhydro_stencil_41.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_41(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
                 z_theta_v_fl_e=self.z_theta_v_fl_e,
@@ -1158,13 +1256,10 @@ class SolveNonhydro:
                 horizontal_end=end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                },
+                offset_provider=self.offset_provider_c2e_c2ce,
             )
 
-        nhsolve_prog.stencils_43_44_45_45b.with_backend(backend)(
+        self.stencil_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_state[nnow].w,
             ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
@@ -1196,7 +1291,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_46(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1205,7 +1300,7 @@ class SolveNonhydro:
                 vertical_end=1,
                 offset_provider={},
             )
-        nhsolve_prog.stencils_47_48_49.with_backend(backend)(
+        self.stencil_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1225,13 +1320,11 @@ class SolveNonhydro:
             cell_endindex_interior=end_cell_local,
             nlev=self.grid.num_levels,
             nlev_k=self.grid.num_levels + 1,
-            offset_provider={
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_koff,
         )
 
         if self.config.is_iau_active:
-            mo_solve_nonhydro_stencil_50.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_50(
                 z_fields.z_rho_expl,
                 z_fields.z_exner_expl,
                 diagnostic_state_nh.rho_incr,
@@ -1244,7 +1337,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_52.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_52(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1260,10 +1353,10 @@ class SolveNonhydro:
             horizontal_end=end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
-        mo_solve_nonhydro_stencil_53.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_53(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=start_cell_nudging,
@@ -1274,7 +1367,7 @@ class SolveNonhydro:
         )
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-            mo_solve_nonhydro_stencil_54.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_54(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1287,7 +1380,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_55.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_55(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1309,12 +1402,12 @@ class SolveNonhydro:
             horizontal_end=end_cell_local,
             vertical_start=int32(self.jk_start),
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         # compute dw/dz for divergence damping term
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
-            mo_solve_nonhydro_stencil_56_63.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_56_63(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1323,11 +1416,11 @@ class SolveNonhydro:
                 horizontal_end=end_cell_local,
                 vertical_start=self.params.kstart_dd3d,
                 vertical_end=self.grid.num_levels,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.offset_provider_koff,
             )
 
         if idyn_timestep == 1:
-            mo_solve_nonhydro_stencil_59.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_59(
                 exner=prognostic_state[nnow].exner,
                 exner_dyn_incr=self.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
@@ -1338,7 +1431,7 @@ class SolveNonhydro:
             )
 
         if self.grid.limited_area:
-            nhsolve_prog.stencils_61_62.with_backend(backend)(
+            self.stencil_61_62(
                 rho_now=prognostic_state[nnow].rho,
                 grf_tend_rho=diagnostic_state_nh.grf_tend_rho,
                 theta_v_now=prognostic_state[nnow].theta_v,
@@ -1359,7 +1452,7 @@ class SolveNonhydro:
             )
 
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
-            mo_solve_nonhydro_stencil_56_63.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_56_63(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1368,7 +1461,7 @@ class SolveNonhydro:
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=self.params.kstart_dd3d,
                 vertical_end=self.grid.num_levels,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.offset_provider_koff,
             )
             log.debug("exchanging prognostic field 'w' and local field 'z_dwdz_dd'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
@@ -1397,7 +1490,7 @@ class SolveNonhydro:
         # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
-        _calculate_divdamp_fields.with_backend(run_gtfn)(
+        self.stencil_calculate_divdamp_fields(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
@@ -1459,14 +1552,14 @@ class SolveNonhydro:
         nvar = nnew
 
         #  Precompute Rayleigh damping factor
-        compute_z_raylfac.with_backend(backend)(
+        self.stencil_compute_z_raylfac(
             self.metric_state_nonhydro.rayleigh_w,
             dtime,
             self.z_raylfac,
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
-        mo_solve_nonhydro_stencil_10.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_10(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1490,11 +1583,11 @@ class SolveNonhydro:
             horizontal_end=end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         log.debug(f"corrector: start stencil 17")
-        mo_solve_nonhydro_stencil_17.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_17(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
@@ -1504,14 +1597,12 @@ class SolveNonhydro:
             horizontal_end=end_edge_local_minus2,
             vertical_start=self.params.kstart_dd3d,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-            },
+            offset_provider=self.offset_provider_e2c,
         )
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector: start stencil 23")
-            mo_solve_nonhydro_stencil_23.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_23(
                 vn_nnow=prognostic_state[nnow].vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
                 ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl2],
@@ -1535,7 +1626,7 @@ class SolveNonhydro:
         ):
             # verified for e-10
             log.debug(f"corrector start stencil 25")
-            mo_solve_nonhydro_stencil_25.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_25(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 z_graddiv2_vn=self.z_graddiv2_vn,
@@ -1543,15 +1634,13 @@ class SolveNonhydro:
                 horizontal_end=end_edge_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                },
+                offset_provider=self.offset_provider_e2c2eo,
             )
 
         if self.config.lhdiff_rcf:
             if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                 log.debug(f"corrector: start stencil 26")
-                mo_solve_nonhydro_stencil_26.with_backend(backend)(
+                self.stencil_mo_solve_nonhydro_stencil_26(
                     z_graddiv_vn=z_fields.z_graddiv_vn,
                     vn=prognostic_state[nnew].vn,
                     scal_divdamp_o2=scal_divdamp_o2,
@@ -1566,7 +1655,7 @@ class SolveNonhydro:
             if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
                 if self.grid.limited_area:
                     log.debug("corrector: start stencil 27")
-                    mo_solve_nonhydro_stencil_27.with_backend(backend)(
+                    self.stencil_mo_solve_nonhydro_stencil_27(
                         scal_divdamp=self.scal_divdamp,
                         bdy_divdamp=self._bdy_divdamp,
                         nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
@@ -1580,7 +1669,7 @@ class SolveNonhydro:
                     )
                 else:
                     log.debug("corrector start stencil 4th order divdamp")
-                    mo_solve_nonhydro_4th_order_divdamp.with_backend(backend)(
+                    self.stencil_mo_solve_nonhydro_4th_order_divdamp(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
                         vn=prognostic_state[nnew].vn,
@@ -1607,7 +1696,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
         log.debug("corrector: start stencil 31")
-        mo_solve_nonhydro_stencil_31.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_31(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
             z_vn_avg=self.z_vn_avg,
@@ -1615,14 +1704,12 @@ class SolveNonhydro:
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-            },
+            offset_provider=self.offset_provider_e2c2eo,
         )
 
         if self.config.idiv_method == 1:
             log.debug("corrector: start stencil 32")
-            mo_solve_nonhydro_stencil_32.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_32(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
                 ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
@@ -1640,7 +1727,7 @@ class SolveNonhydro:
                 log.debug("corrector: doing prep advection")
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
-                    mo_solve_nonhydro_stencil_33.with_backend(backend)(
+                    self.stencil_mo_solve_nonhydro_stencil_33(
                         vn_traj=prep_adv.vn_traj,
                         mass_flx_me=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
@@ -1650,7 +1737,7 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 log.debug(f"corrector: start stencil 34")
-                mo_solve_nonhydro_stencil_34.with_backend(backend)(
+                self.stencil_mo_solve_nonhydro_stencil_34(
                     z_vn_avg=self.z_vn_avg,
                     mass_fl_e=diagnostic_state_nh.mass_fl_e,
                     vn_traj=prep_adv.vn_traj,
@@ -1666,7 +1753,7 @@ class SolveNonhydro:
         if self.config.idiv_method == 1:
             # verified for e-9
             log.debug(f"corrector: start stencile 41")
-            mo_solve_nonhydro_stencil_41.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_41(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
                 z_theta_v_fl_e=self.z_theta_v_fl_e,
@@ -1676,15 +1763,12 @@ class SolveNonhydro:
                 horizontal_end=end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                },
+                offset_provider=self.offset_provider_c2e_c2ce,
             )
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector start stencil 42 44 45 45b")
-            nhsolve_prog.stencils_42_44_45_45b.with_backend(backend)(
+            self.stencil_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
@@ -1719,7 +1803,7 @@ class SolveNonhydro:
             )
         else:
             log.debug(f"corrector start stencil 43 44 45 45b")
-            nhsolve_prog.stencils_43_44_45_45b.with_backend(backend)(
+            self.stencil_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
@@ -1750,7 +1834,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
+            self.stencil_mo_solve_nonhydro_stencil_46(
                 w_nnew=prognostic_state[nnew].w,
                 z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1761,7 +1845,7 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
-        nhsolve_prog.stencils_47_48_49.with_backend(backend)(
+        self.stencil_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1781,9 +1865,7 @@ class SolveNonhydro:
             cell_endindex_interior=end_cell_local,
             nlev=self.grid.num_levels,
             nlev_k=self.grid.num_levels + 1,
-            offset_provider={
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_koff,
         )
 
         # TODO: this is not tested in green line so far
@@ -1802,7 +1884,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 52")
-        mo_solve_nonhydro_stencil_52.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_52(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1818,10 +1900,10 @@ class SolveNonhydro:
             horizontal_end=end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
         log.debug(f"corrector start stencil 53")
-        mo_solve_nonhydro_stencil_53.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_53(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=start_cell_nudging,
@@ -1833,7 +1915,7 @@ class SolveNonhydro:
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
             log.debug(f"corrector start stencil 54")
-            mo_solve_nonhydro_stencil_54.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_54(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1846,7 +1928,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 55")
-        mo_solve_nonhydro_stencil_55.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_55(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1868,13 +1950,13 @@ class SolveNonhydro:
             horizontal_end=end_cell_local,
             vertical_start=int32(self.jk_start),
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                set_zero_c_k.with_backend(backend)(
+                self.stencil_set_zero_c_k(
                     field=prep_adv.mass_flx_ic,
                     horizontal_start=start_cell_nudging,
                     horizontal_end=end_cell_local,
@@ -1883,7 +1965,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
         log.debug(f"corrector start stencil 58")
-        mo_solve_nonhydro_stencil_58.with_backend(backend)(
+        self.stencil_mo_solve_nonhydro_stencil_58(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
@@ -1901,7 +1983,7 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                set_zero_c_k.with_backend(backend)(
+                self.stencil_set_zero_c_k(
                     field=prep_adv.mass_flx_ic,
                     horizontal_start=start_cell_lb,
                     horizontal_end=end_cell_nudging,
@@ -1910,7 +1992,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             log.debug(f" corrector: start stencil 65")
-            mo_solve_nonhydro_stencil_65.with_backend(backend)(
+            self.stencil_mo_solve_nonhydro_stencil_65(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
                 vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,

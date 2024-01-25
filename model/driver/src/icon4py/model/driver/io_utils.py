@@ -48,18 +48,31 @@ from icon4py.model.driver.serialbox_helpers import (
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, CPD_O_RD, P0REF, CVD_O_RD, GRAV_O_RD
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
-from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 
 from gt4py.next import as_field
 from gt4py.next.common import Field
 
 import sys
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
+from gt4py.next.program_processors.runners import gtfn
+from gt4py.next.otf.compilation.build_systems import cmake
+from gt4py.next.otf.compilation.cache import Strategy
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
 compiler_gpu_backend = run_gtfn_gpu
-backend = compiler_cached_backend
+
+
+compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
+    name="run_gtfn_cached_cmake_release",
+    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
+        compilation=gtfn.compiler.Compiler(
+            cache_strategy=Strategy.PERSISTENT,
+            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
+        )),
+    hash_function=gtfn.compilation_hash),
+)
+backend = compiler_cached_release_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -413,7 +426,7 @@ def model_initialization_jabw(
         theta_v_numpy,
         num_levels,
     )
-    log.info(f'Hydrostatis adjustment computation completed.')
+    log.info(f'Hydrostatic adjustment computation completed.')
 
     vn = as_field((EdgeDim, KDim), vn_numpy)
     w = as_field((CellDim, KDim), w_numpy)
@@ -427,25 +440,21 @@ def model_initialization_jabw(
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
-    u = _allocate(CellDim, KDim, grid=icon_grid)
-    v = _allocate(CellDim, KDim, grid=icon_grid)
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
-
-    mo_rbf_vec_interpol_cell.with_backend(backend)(
-        vn,
-        rbv_vec_coeff_c1,
-        rbv_vec_coeff_c2,
-        u,
-        v,
+    u_numpy, v_numpy = mo_rbf_vec_interpol_cell_numpy(
+        vn_numpy,
+        rbv_vec_coeff_c1.asnumpy(),
+        rbv_vec_coeff_c2.asnumpy(),
+        icon_grid.connectivities[C2E2C2EDim],
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
         0,
-        num_levels,
-        offset_provider={
-            "C2E2C2E": icon_grid.get_offset_provider("C2E2C2E"),
-        },
+        icon_grid.num_levels,
     )
+
+    u = as_field((CellDim, KDim), u_numpy)
+    v = as_field((CellDim, KDim), v_numpy)
 
     log.info(f'U, V computation completed.')
 

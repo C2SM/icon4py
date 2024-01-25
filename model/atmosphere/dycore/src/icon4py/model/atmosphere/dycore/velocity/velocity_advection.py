@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import logging
 import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
@@ -67,11 +68,28 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+from gt4py.next.program_processors.runners import gtfn
+from gt4py.next.otf.compilation.build_systems import cmake
+from gt4py.next.otf.compilation.cache import Strategy
+
+log = logging.getLogger(__name__)
+
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn
+
+compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
+    name="run_gtfn_cached_cmake_release",
+    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
+        compilation=gtfn.compiler.Compiler(
+            cache_strategy=Strategy.PERSISTENT,
+            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
+        )),
+    hash_function=gtfn.compilation_hash),
+)
+
+backend = compiler_cached_release_backend
 #
 
 
@@ -96,6 +114,64 @@ class VelocityAdvection:
         self.cfl_w_limit: float = 0.65
         self.scalfac_exdiff: float = 0.05
         self._allocate_local_fields()
+
+        self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
+        self.stencil_mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_01 = mo_velocity_advection_stencil_01.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_02 = mo_velocity_advection_stencil_02.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_03 = mo_velocity_advection_stencil_03.with_backend(backend)
+        self.stencil_4_5 = velocity_prog.fused_stencils_4_5.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_06 = velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_07 = mo_velocity_advection_stencil_07.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_08 = mo_velocity_advection_stencil_08.with_backend(backend)
+        self.stencil_9_10 = velocity_prog.fused_stencils_9_10.with_backend(backend)
+        self.stencil_11_to_13 = velocity_prog.fused_stencils_11_to_13.with_backend(backend)
+        self.stencil_14 = velocity_prog.fused_stencil_14.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_15 = mo_velocity_advection_stencil_15.with_backend(backend)
+        self.stencil_16_to_17 = velocity_prog.fused_stencils_16_to_17.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_18 = mo_velocity_advection_stencil_18.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_19 = mo_velocity_advection_stencil_19.with_backend(backend)
+        self.stencil_mo_velocity_advection_stencil_20 = mo_velocity_advection_stencil_20.with_backend(backend)
+
+        self.offset_provider_v2c = {
+                    "V2C": self.grid.get_offset_provider("V2C"),
+                }
+        self.offset_provider_koff = {"Koff": KDim}
+        self.offset_provider_v2e = {
+                "V2E": self.grid.get_offset_provider("V2E"),
+            }
+        self.offset_provider_e2c2e = {
+                "E2C2E": self.grid.get_offset_provider("E2C2E"),
+            }
+        self.offset_provider_e2c_e2v = {
+                    "E2C": self.grid.get_offset_provider("E2C"),
+                    "E2V": self.grid.get_offset_provider("E2V"),
+                }
+        self.offset_provider_c2e_c2ce = {
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
+            }
+        self.offset_provider_c2e_c2ce_koff = {
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
+                "Koff": KDim,
+            }
+        self.offset_provider_c2e2co = {
+                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+                }
+        self.offset_provider_e2c_e2v_e2ec_koff = {
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "E2V": self.grid.get_offset_provider("E2V"),
+                "E2EC": self.grid.get_offset_provider("E2EC"),
+                "Koff": KDim,
+            }
+        self.offset_provider_e2c_e2v_e2c2eo_koff = {
+                "E2C": self.grid.get_offset_provider("E2C"),
+                "E2V": self.grid.get_offset_provider("E2V"),
+                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+                "Koff": KDim,
+            }
+
         self._initialized = True
 
     @property
@@ -165,8 +241,11 @@ class VelocityAdvection:
             CellDim, HorizontalMarkerIndex.local(CellDim) - 1
         )
 
+        log.info(
+            f"predictor run velocity advection"
+        )
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)(
+            self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -174,12 +253,10 @@ class VelocityAdvection:
                 horizontal_end=end_vertex_local_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "V2C": self.grid.get_offset_provider("V2C"),
-                },
+                offset_provider=self.offset_provider_v2c,
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)(
+        self.stencil_mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
@@ -187,12 +264,10 @@ class VelocityAdvection:
             horizontal_end=end_vertex_local_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "V2E": self.grid.get_offset_provider("V2E"),
-            },
+            offset_provider=self.offset_provider_v2e,
         )
 
-        mo_velocity_advection_stencil_01.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_01(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
             vt=diagnostic_state.vt,
@@ -200,12 +275,10 @@ class VelocityAdvection:
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "E2C2E": self.grid.get_offset_provider("E2C2E"),
-            },
+            offset_provider=self.offset_provider_e2c2e,
         )
 
-        mo_velocity_advection_stencil_02.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_02(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
@@ -215,13 +288,11 @@ class VelocityAdvection:
             horizontal_end=end_edge_local_minus2,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_koff,
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_03.with_backend(backend)(
+            self.stencil_mo_velocity_advection_stencil_03(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
@@ -229,10 +300,10 @@ class VelocityAdvection:
                 horizontal_end=end_edge_local_minus2,
                 vertical_start=1,
                 vertical_end=self.grid.num_levels,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.offset_provider_koff,
             )
 
-        velocity_prog.fused_stencils_4_5.with_backend(backend)(
+        self.stencil_4_5(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
@@ -250,7 +321,7 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_06(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
@@ -258,11 +329,11 @@ class VelocityAdvection:
             horizontal_end=end_edge_local_minus2,
             vertical_start=self.grid.num_levels,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_07.with_backend(backend)(
+            self.stencil_mo_velocity_advection_stencil_07(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -275,13 +346,10 @@ class VelocityAdvection:
                 horizontal_end=end_edge_local_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                    "E2V": self.grid.get_offset_provider("E2V"),
-                },
+                offset_provider=self.offset_provider_e2c_e2v,
             )
 
-        mo_velocity_advection_stencil_08.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_08(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_ekinh=self.z_ekinh,
@@ -289,13 +357,10 @@ class VelocityAdvection:
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            },
+            offset_provider=self.offset_provider_c2e_c2ce,
         )
 
-        velocity_prog.fused_stencils_9_10.with_backend(backend)(
+        self.stencil_9_10(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             local_z_w_concorr_mc=self.z_w_concorr_mc,
@@ -308,14 +373,10 @@ class VelocityAdvection:
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_c2e_c2ce_koff,
         )
 
-        velocity_prog.fused_stencils_11_to_13.with_backend(backend)(
+        self.stencil_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -329,7 +390,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14.with_backend(backend)(
+        self.stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -345,18 +406,18 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        mo_velocity_advection_stencil_15.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_15(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         if not vn_only:
-            velocity_prog.fused_stencils_16_to_17.with_backend(run_gtfn)(
+            self.stencil_16_to_17(
                 w=prognostic_state.w,
                 local_z_v_grad_w=self.z_v_grad_w,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -368,14 +429,10 @@ class VelocityAdvection:
                 horizontal_end=end_cell_local,
                 vertical_start=1,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.offset_provider_c2e_c2ce_koff,
             )
 
-            mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
+            self.stencil_mo_velocity_advection_stencil_18(
                 levmask=self.levmask,
                 cfl_clipping=self.cfl_clipping,
                 owner_mask=self.c_owner_mask,
@@ -392,14 +449,12 @@ class VelocityAdvection:
                 horizontal_end=end_cell_local,
                 vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
                 vertical_end=int32(self.grid.num_levels - 3),
-                offset_provider={
-                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-                },
+                offset_provider=self.offset_provider_c2e2co,
             )
 
         self.levelmask = self.levmask
 
-        mo_velocity_advection_stencil_19.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_19(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -415,15 +470,10 @@ class VelocityAdvection:
             horizontal_end=end_edge_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "E2V": self.grid.get_offset_provider("E2V"),
-                "E2EC": self.grid.get_offset_provider("E2EC"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_e2c_e2v_e2ec_koff,
         )
 
-        mo_velocity_advection_stencil_20.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_20(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -442,12 +492,7 @@ class VelocityAdvection:
             horizontal_end=end_edge_local,
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
             vertical_end=int32(self.grid.num_levels - 4),
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "E2V": self.grid.get_offset_provider("E2V"),
-                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_e2c_e2v_e2c2eo_koff,
         )
 
     def _update_levmask_from_cfl_clipping(self):
@@ -503,7 +548,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)(
+            self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
                 c_intp=self.interpolation_state.c_intp,
                 p_vert_out=self.z_w_v,
@@ -511,12 +556,10 @@ class VelocityAdvection:
                 horizontal_end=end_vertex_local_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "V2C": self.grid.get_offset_provider("V2C"),
-                },
+                offset_provider=self.offset_provider_v2c,
             )
 
-        mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)(
+        self.stencil_mo_math_divrot_rot_vertex_ri_dsl(
             vec_e=prognostic_state.vn,
             geofac_rot=self.interpolation_state.geofac_rot,
             rot_vec=self.zeta,
@@ -524,13 +567,11 @@ class VelocityAdvection:
             horizontal_end=end_vertex_local_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "V2E": self.grid.get_offset_provider("V2E"),
-            },
+            offset_provider=self.offset_provider_v2e,
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_07.with_backend(backend)(
+            self.stencil_mo_velocity_advection_stencil_07(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -543,13 +584,10 @@ class VelocityAdvection:
                 horizontal_end=end_edge_local_minus1,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                    "E2V": self.grid.get_offset_provider("E2V"),
-                },
+                offset_provider=self.offset_provider_e2c_e2v,
             )
 
-        mo_velocity_advection_stencil_08.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_08(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_ekinh=self.z_ekinh,
@@ -557,13 +595,10 @@ class VelocityAdvection:
             horizontal_end=end_cell_lb_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            },
+            offset_provider=self.offset_provider_c2e_c2ce,
         )
 
-        velocity_prog.fused_stencils_11_to_13.with_backend(backend)(
+        self.stencil_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -577,7 +612,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        velocity_prog.fused_stencil_14.with_backend(backend)(
+        self.stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -593,17 +628,17 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        mo_velocity_advection_stencil_15.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_15(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
-        velocity_prog.fused_stencils_16_to_17.with_backend(backend)(
+        self.stencil_16_to_17(
             w=prognostic_state.w,
             local_z_v_grad_w=self.z_v_grad_w,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -615,14 +650,10 @@ class VelocityAdvection:
             horizontal_end=end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_c2e_c2ce_koff,
         )
 
-        mo_velocity_advection_stencil_18.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_18(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
@@ -639,15 +670,13 @@ class VelocityAdvection:
             horizontal_end=end_cell_local,
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.num_levels - 4),
-            offset_provider={
-                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-            },
+            offset_provider=self.offset_provider_c2e2co,
         )
 
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        mo_velocity_advection_stencil_19.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_19(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -663,15 +692,10 @@ class VelocityAdvection:
             horizontal_end=end_edge_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "E2V": self.grid.get_offset_provider("E2V"),
-                "E2EC": self.grid.get_offset_provider("E2EC"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_e2c_e2v_e2ec_koff,
         )
 
-        mo_velocity_advection_stencil_20.with_backend(backend)(
+        self.stencil_mo_velocity_advection_stencil_20(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -690,10 +714,5 @@ class VelocityAdvection:
             horizontal_end=end_edge_local,
             vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
             vertical_end=int32(self.grid.num_levels - 4),
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "E2V": self.grid.get_offset_provider("E2V"),
-                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                "Koff": KDim,
-            },
+            offset_provider=self.offset_provider_e2c_e2v_e2c2eo_koff,
         )

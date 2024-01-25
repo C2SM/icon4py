@@ -63,10 +63,24 @@ from icon4py.model.common.dimension import C2VDim, V2C2VDim, E2C2VDim, CellDim, 
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 from gt4py.next import as_field
+from gt4py.next.program_processors.runners import gtfn
+from gt4py.next.otf.compilation.build_systems import cmake
+from gt4py.next.otf.compilation.cache import Strategy
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
+
+compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
+    name="run_gtfn_cached_cmake_release",
+    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
+        compilation=gtfn.compiler.Compiler(
+            cache_strategy=Strategy.PERSISTENT,
+            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
+        )),
+    hash_function=gtfn.compilation_hash),
+)
+backend = compiler_cached_release_backend
+
 log = logging.getLogger(__name__)
 
 
@@ -87,24 +101,23 @@ class OutputState:
         log.info(f"Number of files: {self._number_of_files}")
 
         # TODO (Chia Rui or others): this is only a tentative output method, use a proper netcdf output infrastructure in the future
-        nf4_basegrp = [nf4.Dataset(str(self.config.output_path.absolute()) + "/data_output_"+str(i)+".nc", "w", format="NETCDF4") for i in range(self._number_of_files)]
+        self._nf4_basegrp = [nf4.Dataset(str(self.config.output_path.absolute()) + "/data_output_"+str(i)+".nc", "w", format="NETCDF4") for i in range(self._number_of_files)]
         for i in range(self._number_of_files):
-            nf4_basegrp[i].createDimension("ncells", grid.num_cells)
-            nf4_basegrp[i].createDimension("ncells_2", grid.num_edges)
-            nf4_basegrp[i].createDimension("ncells_3", grid.num_vertices)
-            nf4_basegrp[i].createDimension("vertices", 3) # neighboring vertices of a cell
-            nf4_basegrp[i].createDimension("vertices_2", 4) # neighboring vertices of an edge
-            nf4_basegrp[i].createDimension("vertices_3", 6) # neighboring vertices of a vertex
-            nf4_basegrp[i].createDimension("height_2", grid.num_levels) # full level height
-            nf4_basegrp[i].createDimension("height", grid.num_levels + 1) # half level height
-            nf4_basegrp[i].createDimension("bnds", 2) # boundary points for full level height
-            nf4_basegrp[i].createDimension("time", None)
+            self._nf4_basegrp[i].createDimension("ncells", grid.num_cells)
+            self._nf4_basegrp[i].createDimension("ncells_2", grid.num_edges)
+            self._nf4_basegrp[i].createDimension("ncells_3", grid.num_vertices)
+            self._nf4_basegrp[i].createDimension("vertices", 3) # neighboring vertices of a cell
+            self._nf4_basegrp[i].createDimension("vertices_2", 4) # neighboring vertices of an edge
+            self._nf4_basegrp[i].createDimension("vertices_3", 6) # neighboring vertices of a vertex
+            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels) # full level height
+            self._nf4_basegrp[i].createDimension("height", grid.num_levels + 1) # half level height
+            self._nf4_basegrp[i].createDimension("bnds", 2) # boundary points for full level height
+            self._nf4_basegrp[i].createDimension("time", None)
 
-        self._nf4_basegrp = nf4_basegrp
         self._current_write_step: int = 0
         self._current_file_number: int = 0
 
-        self._create_variables(grid)
+        self._create_variables()
         self._write_dimension(grid, diagnostic_metric_state)
 
         self._write_to_netcdf(start_date, prognostic_state, diagnostic_state)
@@ -113,7 +126,7 @@ class OutputState:
     def current_time_step(self):
         return self._current_write_step
 
-    def _create_variables(self, grid: IconGrid):
+    def _create_variables(self):
         for i in range(self._number_of_files):
             """
             grid information
@@ -268,6 +281,10 @@ class OutputState:
             theta_v.coordinates = "clat clon"
             exner.coordinates = "clat clon"
 
+            #first_output_date = start_date + i*self.config.output_file_time_interval
+            #log.info(f"First writing date {first_output_date} at file no. {i}")
+            #times[0] = date2num(first_output_date, units=times.units, calendar=times.calendar)
+
     def _write_dimension(self, grid: IconGrid, diagnostic_metric_state: DiagnosticMetricState):
         for i in range(self._number_of_files):
             self._nf4_basegrp[i].variables["clat"][:] = diagnostic_metric_state.cell_center_lat.asnumpy()
@@ -302,6 +319,7 @@ class OutputState:
 
         log.info(f"Writing output at {current_date} at {self._current_write_step} in file no. {self._current_file_number}")
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
+        log.info(f"Times are  {times[:]}")
         times[self._current_write_step] = date2num(current_date, units=times.units, calendar=times.calendar)
         self._nf4_basegrp[self._current_file_number].variables["u"][self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["v"][self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
@@ -379,6 +397,18 @@ class TimeLoop:
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
+        self.stencil_mo_rbf_vec_interpol_cell = mo_rbf_vec_interpol_cell.with_backend(backend)
+        self.stencil_mo_diagnose_temperature = mo_diagnose_temperature.with_backend(backend)
+        self.stencil_mo_diagnose_pressure_sfc = mo_diagnose_pressure_sfc.with_backend(backend)
+        self.stencil_mo_diagnose_pressure = mo_diagnose_pressure.with_backend(backend)
+        self.stencil_mo_init_exner_pr = mo_init_exner_pr.with_backend(backend)
+        self.stencil_mo_init_ddt_cell_zero = mo_init_ddt_cell_zero.with_backend(backend)
+        self.stencil_mo_init_ddt_edge_zero = mo_init_ddt_edge_zero.with_backend(backend)
+
+        self.offset_provider_c2e2c2e = {
+                "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
+            }
+
     def re_init(self):
         self._simulation_date = self.run_config.start_date
         self._do_initial_stabilization = self.run_config.apply_initial_stabilization
@@ -436,6 +466,77 @@ class TimeLoop:
     def _full_name(self, func: Callable):
         return ":".join((self.__class__.__name__, func.__name__))
 
+    def _diagnose_for_output_and_physics(
+        self,
+        prognostic_state: PrognosticState,
+        diagnostic_state: DiagnosticState,
+        diagnostic_metric_state: DiagnosticMetricState
+    ):
+        # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
+        self.stencil_mo_rbf_vec_interpol_cell(
+            prognostic_state.vn,
+            diagnostic_metric_state.rbf_vec_coeff_c1,
+            diagnostic_metric_state.rbf_vec_coeff_c2,
+            diagnostic_state.u,
+            diagnostic_state.v,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            0,
+            self.grid.num_levels,
+            offset_provider=self.offset_provider_c2e2c2e,
+        )
+        log.debug(f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}")
+
+        self.stencil_mo_diagnose_temperature(
+            prognostic_state.theta_v,
+            prognostic_state.exner,
+            diagnostic_state.temperature,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            0,
+            self.grid.num_levels,
+            offset_provider={}
+        )
+
+        exner_nlev_minus2 = prognostic_state.exner[:, self.grid.num_levels - 3]
+        temperature_nlev = diagnostic_state.temperature[:, self.grid.num_levels - 1]
+        temperature_nlev_minus1 = diagnostic_state.temperature[:, self.grid.num_levels - 2]
+        temperature_nlev_minus2 = diagnostic_state.temperature[:, self.grid.num_levels - 3]
+        # TODO (Chia Rui): ddqz_z_full is constant, move slicing to initialization
+        ddqz_z_full_nlev = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 1]
+        ddqz_z_full_nlev_minus1 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 2]
+        ddqz_z_full_nlev_minus2 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 3]
+        self.stencil_mo_diagnose_pressure_sfc(
+            exner_nlev_minus2,
+            temperature_nlev,
+            temperature_nlev_minus1,
+            temperature_nlev_minus2,
+            ddqz_z_full_nlev,
+            ddqz_z_full_nlev_minus1,
+            ddqz_z_full_nlev_minus2,
+            diagnostic_state.pressure_sfc,
+            CPD_O_RD,
+            P0REF,
+            GRAV_O_RD,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            offset_provider={}
+        )
+
+        # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
+        # self.stencil_mo_diagnose_pressure(
+        #    diagnostic_metric_state.ddqz_z_full,
+        #    diagnostic_state.temperature,
+        #    diagnostic_state.pressure_sfc,
+        #    diagnostic_state.pressure,
+        #    diagnostic_state.pressure_ifc,
+        #    self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        #    self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        #    0,
+        #    self.grid.num_levels,
+        #    offset_provider={}
+        # )
+
     def time_integration(
         self,
         diffusion_diagnostic_state: DiffusionDiagnosticState,
@@ -457,75 +558,15 @@ class TimeLoop:
         log.info(
             f"Initialization of diagnostic variables for output."
         )
-        # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
-        mo_rbf_vec_interpol_cell.with_backend(backend)(
-            prognostic_state_list[self._now].vn,
-            diagnostic_metric_state.rbf_vec_coeff_c1,
-            diagnostic_metric_state.rbf_vec_coeff_c2,
-            diagnostic_state.u,
-            diagnostic_state.v,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider={
-                "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
-            },
-        )
-        log.debug(f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}")
 
-        mo_diagnose_temperature.with_backend(backend)(
-            prognostic_state_list[self._now].theta_v,
-            prognostic_state_list[self._now].exner,
-            diagnostic_state.temperature,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider={}
+        self._diagnose_for_output_and_physics(
+            prognostic_state_list[self._now],
+            diagnostic_state,
+            diagnostic_metric_state
         )
-
-        exner_nlev_minus2 = prognostic_state_list[self._now].exner[:, self.grid.num_levels - 3]
-        temperature_nlev = diagnostic_state.temperature[:, self.grid.num_levels - 1]
-        temperature_nlev_minus1 = diagnostic_state.temperature[:, self.grid.num_levels - 2]
-        temperature_nlev_minus2 = diagnostic_state.temperature[:, self.grid.num_levels - 3]
-        # TODO (Chia Rui): ddqz_z_full is constant, move slicing to initialization
-        ddqz_z_full_nlev = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 1]
-        ddqz_z_full_nlev_minus1 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 2]
-        ddqz_z_full_nlev_minus2 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 3]
-        mo_diagnose_pressure_sfc.with_backend(backend)(
-            exner_nlev_minus2,
-            temperature_nlev,
-            temperature_nlev_minus1,
-            temperature_nlev_minus2,
-            ddqz_z_full_nlev,
-            ddqz_z_full_nlev_minus1,
-            ddqz_z_full_nlev_minus2,
-            diagnostic_state.pressure_sfc,
-            CPD_O_RD,
-            P0REF,
-            GRAV_O_RD,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            offset_provider={}
-        )
-
-        # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
-        #mo_diagnose_pressure.with_backend(backend)(
-        #    diagnostic_metric_state.ddqz_z_full,
-        #    diagnostic_state.temperature,
-        #    diagnostic_state.pressure_sfc,
-        #    diagnostic_state.pressure,
-        #    diagnostic_state.pressure_ifc,
-        #    self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-        #    self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-        #    0,
-        #    self.grid.num_levels,
-        #    offset_provider={}
-        #)
 
         if not self.is_run_from_serializedData:
-            mo_init_exner_pr.with_backend(backend)(
+            self.stencil_mo_init_exner_pr(
                 prognostic_state_list[self._now].exner,
                 self.solve_nonhydro.metric_state_nonhydro.exner_ref_mc,
                 solve_nonhydro_diagnostic_state.exner_pr,
@@ -556,7 +597,7 @@ class TimeLoop:
             )
 
             if not self.is_run_from_serializedData:
-                mo_init_ddt_cell_zero.with_backend(backend)(
+                self.stencil_mo_init_ddt_cell_zero(
                     solve_nonhydro_diagnostic_state.ddt_exner_phy,
                     solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
                     solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2,
@@ -566,7 +607,7 @@ class TimeLoop:
                     self.grid.num_levels,
                     offset_provider={}
                 )
-                mo_init_ddt_edge_zero.with_backend(backend)(
+                self.stencil_mo_init_ddt_edge_zero(
                     solve_nonhydro_diagnostic_state.ddt_vn_phy,
                     solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,
                     solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2,
@@ -595,72 +636,11 @@ class TimeLoop:
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
-            mo_rbf_vec_interpol_cell.with_backend(backend)(
-                prognostic_state_list[self._now].vn,
-                diagnostic_metric_state.rbf_vec_coeff_c1,
-                diagnostic_metric_state.rbf_vec_coeff_c2,
-                diagnostic_state.u,
-                diagnostic_state.v,
-                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
-                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-                0,
-                self.grid.num_levels,
-                offset_provider={
-                    "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
-                },
+            self._diagnose_for_output_and_physics(
+                prognostic_state_list[self._now],
+                diagnostic_state,
+                diagnostic_metric_state
             )
-            log.debug(f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}")
-
-            mo_diagnose_temperature.with_backend(backend)(
-                prognostic_state_list[self._now].theta_v,
-                prognostic_state_list[self._now].exner,
-                diagnostic_state.temperature,
-                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-                0,
-                self.grid.num_levels,
-                offset_provider={}
-            )
-
-            exner_nlev_minus2 = prognostic_state_list[self._now].exner[:, self.grid.num_levels - 3]
-            temperature_nlev = diagnostic_state.temperature[:, self.grid.num_levels - 1]
-            temperature_nlev_minus1 = diagnostic_state.temperature[:, self.grid.num_levels - 2]
-            temperature_nlev_minus2 = diagnostic_state.temperature[:, self.grid.num_levels - 3]
-            # TODO (Chia Rui): below are constant, move slicing to initialization
-            ddqz_z_full_nlev = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 1]
-            ddqz_z_full_nlev_minus1 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 2]
-            ddqz_z_full_nlev_minus2 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 3]
-            mo_diagnose_pressure_sfc.with_backend(backend)(
-                exner_nlev_minus2,
-                temperature_nlev,
-                temperature_nlev_minus1,
-                temperature_nlev_minus2,
-                ddqz_z_full_nlev,
-                ddqz_z_full_nlev_minus1,
-                ddqz_z_full_nlev_minus2,
-                diagnostic_state.pressure_sfc,
-                CPD_O_RD,
-                P0REF,
-                GRAV_O_RD,
-                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-                offset_provider={}
-            )
-
-            # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
-            #mo_diagnose_pressure.with_backend(backend)(
-            #    diagnostic_metric_state.ddqz_z_full,
-            #    diagnostic_state.temperature,
-            #    diagnostic_state.pressure_sfc,
-            #    diagnostic_state.pressure,
-            #    diagnostic_state.pressure_ifc,
-            #    self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            #    self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            #    0,
-            #    self.grid.num_levels,
-            #    offset_provider={}
-            #)
 
             # TODO (Chia Rui): simple IO enough for JW test
             log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
@@ -693,10 +673,13 @@ class TimeLoop:
         test_h2 = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         test_v1 = 0
         test_v2 = self.grid.num_levels
-
+        offset_provider = {
+            "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
+        }
         log.info(
             f"starting speed-test time loop for gt4py-version rbf interpolation with n_timesteps={self._n_time_steps}"
         )
+        fo = mo_rbf_vec_interpol_cell.with_backend(backend)
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(
@@ -704,7 +687,7 @@ class TimeLoop:
             )
 
             timer.start()
-            mo_rbf_vec_interpol_cell.with_backend(backend)(
+            fo(
                 test_vn,
                 test_c1,
                 test_c2,
@@ -714,9 +697,7 @@ class TimeLoop:
                 test_h2,
                 test_v1,
                 test_v2,
-                offset_provider={
-                    "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
-                },
+                offset_provider=offset_provider,
             )
             timer.capture()
 
@@ -945,6 +926,7 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         prep_adv,
         inital_divdamp_fac_o2,
     )
+
 
 
 @click.command()
