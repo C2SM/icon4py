@@ -16,8 +16,8 @@ from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
-    _mo_velocity_advection_stencil_10,
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_correct_to_interface_levels import (
+    _interpolate_contravariant_correct_to_interface_levels,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
@@ -80,7 +80,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     w_concorr_c = (
         where(
             nflatlev + 1 < k < nlev,
-            _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c),
+            _interpolate_contravariant_correct_to_interface_levels(z_w_concorr_mc, wgtfac_c),
             w_concorr_c,
         )
         if istep == 1

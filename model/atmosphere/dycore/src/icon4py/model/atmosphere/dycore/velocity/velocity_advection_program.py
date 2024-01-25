@@ -23,8 +23,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
-    _mo_velocity_advection_stencil_10,
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_correct_to_interface_levels import (
+    _interpolate_contravariant_correct_to_interface_levels,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
@@ -156,7 +156,7 @@ def _fused_stencils_9_10(
 
     w_concorr_c = where(
         (k_field >= nflatlev_startindex + int32(1)) & (k_field < nlev),
-        _mo_velocity_advection_stencil_10(local_z_w_concorr_mc, wgtfac_c),
+        _interpolate_contravariant_correct_to_interface_levels(local_z_w_concorr_mc, wgtfac_c),
         w_concorr_c,
     )
 

@@ -20,10 +20,11 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_10(
+def _interpolate_contravariant_correct_to_interface_levels(
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly know as _mo_velocity_advection_stencil_10.'''
     w_concorr_c_vp = wgtfac_c * z_w_concorr_mc + (vpfloat("1.0") - wgtfac_c) * z_w_concorr_mc(
         Koff[-1]
     )
@@ -32,7 +33,7 @@ def _mo_velocity_advection_stencil_10(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_10(
+def interpolate_contravariant_correct_to_interface_levels(
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
@@ -41,7 +42,7 @@ def mo_velocity_advection_stencil_10(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_10(
+    _interpolate_contravariant_correct_to_interface_levels(
         z_w_concorr_mc,
         wgtfac_c,
         out=w_concorr_c,
