@@ -1,0 +1,20 @@
+include:
+  - local: 'ci/base.yml'
+
+build:
+  extends: .build_template
+
+test_model_simple_grid:
+    extends: .test_template
+    stage: test
+    script:
+      - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=$BACKEND
+    parallel:
+      matrix:
+        - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+
+test_tools:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -c tools/ --verbose

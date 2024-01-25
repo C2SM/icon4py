@@ -26,6 +26,7 @@ from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CECDim,
     CEDim,
     CellDim,
@@ -263,12 +264,18 @@ class IconGridSavepoint(IconSavepoint):
 
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
-        return self._read_field_for_dim(field_name, self._read_int32, dim)
+        return as_field(
+            (dim,),
+            np.squeeze(
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+            ),
+        )
 
     def num(self, dim: Dimension):
         return self.sizes[dim]
 
-    def _read_field_for_dim(self, field_name, read_func, dim: Dimension):
+    @staticmethod
+    def _read_field_for_dim(field_name, read_func, dim: Dimension):
         match (dim):
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
@@ -349,6 +356,7 @@ class IconGridSavepoint(IconSavepoint):
                     V2EDim: self.v2e(),
                     V2CDim: self.v2c(),
                     E2C2VDim: self.e2c2v(),
+                    C2VDim: self.c2v(),
                 }
             )
         )

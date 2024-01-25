@@ -22,15 +22,15 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
+from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
+from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
 from .test_mo_velocity_advection_stencil_01 import mo_velocity_advection_stencil_01_numpy
 from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil_02_numpy
 from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
-from .test_mo_velocity_advection_stencil_04 import mo_velocity_advection_stencil_04_numpy
 from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
-from .test_mo_velocity_advection_stencil_06 import mo_velocity_advection_stencil_06_numpy
 from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
 
 
@@ -98,14 +98,14 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition4 = k == nlev
         vn_ie = np.where(
             condition4,
-            mo_velocity_advection_stencil_06_numpy(grid, wgtfacq_e, vn),
+            extrapolate_at_top_numpy(grid, wgtfacq_e, vn),
             vn_ie,
         )
 
         condition5 = (nflatlev <= k_nlev) & (k_nlev < nlev)
         z_w_concorr_me = np.where(
             condition5,
-            mo_velocity_advection_stencil_04_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
+            compute_contravariant_correction_numpy(vn, ddxn_z_full, ddxt_z_full, vt),
             z_w_concorr_me,
         )
 
@@ -201,7 +201,12 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid, uses_icon_grid_with_otf):
+        if uses_icon_grid_with_otf:
+            pytest.skip(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+
         c_intp = random_field(grid, VertexDim, V2CDim)
         vn = random_field(grid, EdgeDim, KDim)
         rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim)
