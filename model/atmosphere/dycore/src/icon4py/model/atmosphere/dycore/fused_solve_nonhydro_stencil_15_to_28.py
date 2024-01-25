@@ -142,17 +142,17 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 ]:
     vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
 
-    (
-        z_grad_rth_1,
-        z_grad_rth_2,
-        z_grad_rth_3,
-        z_grad_rth_4,
-    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
-        p_ccpr1=z_rth_pr_1,
-        p_ccpr2=z_rth_pr_2,
-        geofac_grg_x=geofac_grg_x,
-        geofac_grg_y=geofac_grg_y,
-    )
+    # (
+    #     z_grad_rth_1,
+    #     z_grad_rth_2,
+    #     z_grad_rth_3,
+    #     z_grad_rth_4,
+    # ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
+    #     p_ccpr1=z_rth_pr_1,
+    #     p_ccpr2=z_rth_pr_2,
+    #     geofac_grg_x=geofac_grg_x,
+    #     geofac_grg_y=geofac_grg_y,
+    # )
 
     # (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01)
 
