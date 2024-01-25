@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field
 
@@ -27,7 +28,7 @@ def _step_advection_stencil_04(
     return opt_ddt_tracer_adv
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def step_advection_stencil_04(
     p_tracer_now: Field[[CellDim, KDim], float],
     p_tracer_new: Field[[CellDim, KDim], float],
