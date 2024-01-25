@@ -280,11 +280,7 @@ class EdgeParams:
 
 @dataclass(frozen=True)
 class CellParams:
+    #: Area of a cell, defined int ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
+
     mean_cell_area: float
-
-    """
-    Area of a cell.
-
-    defined int ICON in mo_model_domain.f90:t_grid_cells%area
-    """

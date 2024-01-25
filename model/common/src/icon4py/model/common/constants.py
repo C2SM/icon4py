@@ -37,6 +37,10 @@ GRAV: Final[float] = GRAVITATIONAL_ACCELERATION
 #: reference pressure for Exner function [Pa]
 P0REF: Final[float] = 100000.0
 
+#: sea level pressure [Pa]
+SEAL_LEVEL_PRESSURE: Final[float] = 101325.0
+p0sl_bg = SEAL_LEVEL_PRESSURE
+
 
 # Math constants
 dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
