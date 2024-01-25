@@ -51,8 +51,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_tr
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_37 import (
-    _mo_solve_nonhydro_stencil_37,
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,
@@ -539,7 +539,7 @@ def predictor_stencils_37_38(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_37(
+    _compute_horizontal_kinetic_energy(
         vn,
         vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
