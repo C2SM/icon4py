@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
@@ -24,12 +25,6 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_11 import (
-    _mo_velocity_advection_stencil_11,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_12 import (
-    _mo_velocity_advection_stencil_12,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
@@ -42,6 +37,9 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
+)
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
@@ -208,11 +206,11 @@ def _fused_stencils_11_to_13(
 ):
     local_z_w_con_c = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_velocity_advection_stencil_11(w),
+        _copy_cell_kdim_field_to_vp(w),
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = where(k_field == nlev, _mo_velocity_advection_stencil_12(), local_z_w_con_c)
+    local_z_w_con_c = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), local_z_w_con_c)
 
     local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),

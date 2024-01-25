@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
-    mo_solve_nonhydro_stencil_46,
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
+    set_two_cell_kdim_fields_to_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
@@ -24,23 +24,31 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil46(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_46
-    OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
+    PROGRAM = set_two_cell_kdim_fields_to_zero_wp
+    OUTPUTS = ("cell_kdim_field_to_zero_wp_1", "cell_kdim_field_to_zero_wp_2")
 
     @staticmethod
-    def reference(grid, w_nnew: np.array, z_contr_w_fl_l: np.array, **kwargs) -> dict:
-        w_nnew = np.zeros_like(w_nnew)
-        z_contr_w_fl_l = np.zeros_like(z_contr_w_fl_l)
-        return dict(w_nnew=w_nnew, z_contr_w_fl_l=z_contr_w_fl_l)
+    def reference(
+        grid,
+        cell_kdim_field_to_zero_wp_1: np.array,
+        cell_kdim_field_to_zero_wp_2: np.array,
+        **kwargs,
+    ) -> dict:
+        cell_kdim_field_to_zero_wp_1 = np.zeros_like(cell_kdim_field_to_zero_wp_1)
+        cell_kdim_field_to_zero_wp_2 = np.zeros_like(cell_kdim_field_to_zero_wp_2)
+        return dict(
+            cell_kdim_field_to_zero_wp_1=cell_kdim_field_to_zero_wp_1,
+            cell_kdim_field_to_zero_wp_2=cell_kdim_field_to_zero_wp_2,
+        )
 
     @pytest.fixture
     def input_data(self, grid):
-        z_contr_w_fl_l = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        w_nnew = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        cell_kdim_field_to_zero_wp_1 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        cell_kdim_field_to_zero_wp_2 = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
-            w_nnew=w_nnew,
-            z_contr_w_fl_l=z_contr_w_fl_l,
+            cell_kdim_field_to_zero_wp_1=cell_kdim_field_to_zero_wp_1,
+            cell_kdim_field_to_zero_wp_2=cell_kdim_field_to_zero_wp_2,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
