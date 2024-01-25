@@ -272,119 +272,119 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     return z_rho_e, z_theta_v_e, z_gradh_exner, vn
 
 
-@gtx.field_operator
-def _fused_solve_nonhydro_stencil_15_to_28_corrector(
-    hmask_dd3d: gtx.Field[[EdgeDim], wpfloat],
-    scalfac_dd3d: gtx.Field[[KDim], wpfloat],
-    z_dwdz_dd: gtx.Field[[CellDim, KDim], vpfloat],
-    inv_dual_edge_length: gtx.Field[[EdgeDim], wpfloat],
-    ddt_vn_apc_ntl2: gtx.Field[[EdgeDim, KDim], vpfloat],
-    vn_nnow: gtx.Field[[EdgeDim, KDim], wpfloat],
-    ddt_vn_apc_ntl1: gtx.Field[[EdgeDim, KDim], vpfloat],
-    ddt_vn_phy: gtx.Field[[EdgeDim, KDim], vpfloat],
-    z_graddiv_vn: gtx.Field[[EdgeDim, KDim], vpfloat],
-    vn_incr: gtx.Field[[EdgeDim, KDim], vpfloat],
-    vn: gtx.Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_e: gtx.Field[[EdgeDim, KDim], wpfloat],
-    z_gradh_exner: gtx.Field[[EdgeDim, KDim], vpfloat],
-    z_graddiv2_vn: gtx.Field[[EdgeDim, KDim], vpfloat],
-    geofac_grdiv: gtx.Field[[EdgeDim, E2C2EODim], wpfloat],
-    scal_divdamp: gtx.Field[[KDim], wpfloat],
-    bdy_divdamp: gtx.Field[[KDim], wpfloat],
-    nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
-    horz_idx: gtx.Field[[EdgeDim], int32],
-    vert_idx: gtx.Field[[KDim], int32],
-    wgt_nnow_vel: wpfloat,
-    wgt_nnew_vel: wpfloat,
-    dtime: wpfloat,
-    cpd: wpfloat,
-    iau_wgt_dyn: wpfloat,
-    is_iau_active: bool,
-    lhdiff_rcf: bool,
-    divdamp_fac: wpfloat,
-    divdamp_fac_o2: wpfloat,
-    divdamp_order: int32,
-    scal_divdamp_o2: wpfloat,
-    limited_area: bool,
-    itime_scheme: int32,
-    horizontal_lower_0: int32,
-    horizontal_upper_0: int32,
-    horizontal_lower_2: int32,
-    horizontal_upper_2: int32,
-    kstart_dd3d: int32,
-) -> tuple[gtx.Field[[EdgeDim, KDim], wpfloat], gtx.Field[[EdgeDim, KDim], wpfloat]]:
-    vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
-
-    z_graddiv_vn = where(
-        (horizontal_lower_2 <= horz_idx < horizontal_upper_2) & (kstart_dd3d <= vert_idx),
-        _mo_solve_nonhydro_stencil_17(
-            hmask_dd3d=hmask_dd3d,
-            scalfac_dd3d=scalfac_dd3d,
-            inv_dual_edge_length=inv_dual_edge_length,
-            z_dwdz_dd=z_dwdz_dd,
-            z_graddiv_vn=z_graddiv_vn,
-        ),
-        z_graddiv_vn,
-    )
-
-    vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_stencil_23(
-            vn_nnow=vn_nnow,
-            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
-            ddt_vn_phy=ddt_vn_phy,
-            z_theta_v_e=z_theta_v_e,
-            z_gradh_exner=z_gradh_exner,
-            dtime=dtime,
-            wgt_nnow_vel=wgt_nnow_vel,
-            wgt_nnew_vel=wgt_nnew_vel,
-            cpd=cpd,
-        ),
-        vn,
-    ) if itime_scheme == 4 else vn
-
-    z_graddiv2_vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_stencil_25(geofac_grdiv=geofac_grdiv, z_graddiv_vn=z_graddiv_vn),
-        z_graddiv2_vn,
-    )
-
-    vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_stencil_26(
-            z_graddiv_vn=z_graddiv_vn, vn=vn, scal_divdamp_o2=scal_divdamp_o2
-        ),
-        vn,
-    ) if (lhdiff_rcf & (divdamp_order == int32(24)) & (scal_divdamp_o2 > 1.0e-6)) else vn
-
-    vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_stencil_27(
-            scal_divdamp=scal_divdamp,
-            bdy_divdamp=bdy_divdamp,
-            nudgecoeff_e=nudgecoeff_e,
-            z_graddiv2_vn=z_graddiv2_vn,
-            vn=vn,
-        ),
-        vn,
-    ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac)) & limited_area) else vn
-
-    vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_4th_order_divdamp(
-            scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
-        ),
-        vn,
-    ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac))) else vn
-
-    vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
-        vn,
-    ) if is_iau_active else vn
-
-    return z_graddiv_vn, vn
+# @gtx.field_operator
+# def _fused_solve_nonhydro_stencil_15_to_28_corrector(
+#     hmask_dd3d: gtx.Field[[EdgeDim], wpfloat],
+#     scalfac_dd3d: gtx.Field[[KDim], wpfloat],
+#     z_dwdz_dd: gtx.Field[[CellDim, KDim], vpfloat],
+#     inv_dual_edge_length: gtx.Field[[EdgeDim], wpfloat],
+#     ddt_vn_apc_ntl2: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     vn_nnow: gtx.Field[[EdgeDim, KDim], wpfloat],
+#     ddt_vn_apc_ntl1: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     ddt_vn_phy: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     z_graddiv_vn: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     vn_incr: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     vn: gtx.Field[[EdgeDim, KDim], wpfloat],
+#     z_theta_v_e: gtx.Field[[EdgeDim, KDim], wpfloat],
+#     z_gradh_exner: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     z_graddiv2_vn: gtx.Field[[EdgeDim, KDim], vpfloat],
+#     geofac_grdiv: gtx.Field[[EdgeDim, E2C2EODim], wpfloat],
+#     scal_divdamp: gtx.Field[[KDim], wpfloat],
+#     bdy_divdamp: gtx.Field[[KDim], wpfloat],
+#     nudgecoeff_e: gtx.Field[[EdgeDim], wpfloat],
+#     horz_idx: gtx.Field[[EdgeDim], int32],
+#     vert_idx: gtx.Field[[KDim], int32],
+#     wgt_nnow_vel: wpfloat,
+#     wgt_nnew_vel: wpfloat,
+#     dtime: wpfloat,
+#     cpd: wpfloat,
+#     iau_wgt_dyn: wpfloat,
+#     is_iau_active: bool,
+#     lhdiff_rcf: bool,
+#     divdamp_fac: wpfloat,
+#     divdamp_fac_o2: wpfloat,
+#     divdamp_order: int32,
+#     scal_divdamp_o2: wpfloat,
+#     limited_area: bool,
+#     itime_scheme: int32,
+#     horizontal_lower_0: int32,
+#     horizontal_upper_0: int32,
+#     horizontal_lower_2: int32,
+#     horizontal_upper_2: int32,
+#     kstart_dd3d: int32,
+# ) -> tuple[gtx.Field[[EdgeDim, KDim], wpfloat], gtx.Field[[EdgeDim, KDim], wpfloat]]:
+#     vert_idx = broadcast(vert_idx, (EdgeDim, KDim))
+#
+#     z_graddiv_vn = where(
+#         (horizontal_lower_2 <= horz_idx < horizontal_upper_2) & (kstart_dd3d <= vert_idx),
+#         _mo_solve_nonhydro_stencil_17(
+#             hmask_dd3d=hmask_dd3d,
+#             scalfac_dd3d=scalfac_dd3d,
+#             inv_dual_edge_length=inv_dual_edge_length,
+#             z_dwdz_dd=z_dwdz_dd,
+#             z_graddiv_vn=z_graddiv_vn,
+#         ),
+#         z_graddiv_vn,
+#     )
+#
+#     vn = where(
+#         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+#         _mo_solve_nonhydro_stencil_23(
+#             vn_nnow=vn_nnow,
+#             ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+#             ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+#             ddt_vn_phy=ddt_vn_phy,
+#             z_theta_v_e=z_theta_v_e,
+#             z_gradh_exner=z_gradh_exner,
+#             dtime=dtime,
+#             wgt_nnow_vel=wgt_nnow_vel,
+#             wgt_nnew_vel=wgt_nnew_vel,
+#             cpd=cpd,
+#         ),
+#         vn,
+#     ) if itime_scheme == 4 else vn
+#
+#     z_graddiv2_vn = where(
+#         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+#         _mo_solve_nonhydro_stencil_25(geofac_grdiv=geofac_grdiv, z_graddiv_vn=z_graddiv_vn),
+#         z_graddiv2_vn,
+#     )
+#
+#     vn = where(
+#         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+#         _mo_solve_nonhydro_stencil_26(
+#             z_graddiv_vn=z_graddiv_vn, vn=vn, scal_divdamp_o2=scal_divdamp_o2
+#         ),
+#         vn,
+#     ) if (lhdiff_rcf & (divdamp_order == int32(24)) & (scal_divdamp_o2 > 1.0e-6)) else vn
+#
+#     vn = where(
+#         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+#         _mo_solve_nonhydro_stencil_27(
+#             scal_divdamp=scal_divdamp,
+#             bdy_divdamp=bdy_divdamp,
+#             nudgecoeff_e=nudgecoeff_e,
+#             z_graddiv2_vn=z_graddiv2_vn,
+#             vn=vn,
+#         ),
+#         vn,
+#     ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac)) & limited_area) else vn
+#
+#     vn = where(
+#         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+#         _mo_solve_nonhydro_4th_order_divdamp(
+#             scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
+#         ),
+#         vn,
+#     ) if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac))) else vn
+#
+#     vn = where(
+#         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+#         _mo_solve_nonhydro_stencil_28(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
+#         vn,
+#     ) if is_iau_active else vn
+#
+#     return z_graddiv_vn, vn
 
 
 @gtx.field_operator
