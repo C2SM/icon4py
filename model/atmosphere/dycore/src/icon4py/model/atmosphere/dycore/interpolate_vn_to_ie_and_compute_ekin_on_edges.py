@@ -15,8 +15,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
-    _mo_velocity_advection_stencil_05,
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -32,7 +32,7 @@ def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
 
     vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])
-    _, _, z_kin_hor_e = _mo_velocity_advection_stencil_05(vn=vn, vt=vt)
+    _, _, z_kin_hor_e = _compute_horizontal_kinetic_energy(vn=vn, vt=vt)
 
     return astype(vn_ie_wp, vpfloat), z_kin_hor_e
 

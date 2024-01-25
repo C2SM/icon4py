@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
-    _mo_velocity_advection_stencil_05,
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
@@ -73,7 +73,7 @@ def _fused_stencils_4_5(
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k_field == int32(0),
-        _mo_velocity_advection_stencil_05(vn, vt),
+        _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 

@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
-    mo_velocity_advection_stencil_05,
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_05_numpy(vn: np.array, vt: np.array) -> tuple:
+def compute_horizontal_kinetic_energy_numpy(vn: np.array, vt: np.array) -> tuple:
     vn_ie = vn
     z_vt_ie = vt
     z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
@@ -31,12 +31,12 @@ def mo_velocity_advection_stencil_05_numpy(vn: np.array, vt: np.array) -> tuple:
 
 
 class TestMoVelocityAdvectionStencil05(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_05
+    PROGRAM = compute_horizontal_kinetic_energy
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 
     @staticmethod
     def reference(grid, vn: np.array, vt: np.array, **kwargs) -> dict:
-        vn_ie, z_vt_ie, z_kin_hor_e = mo_velocity_advection_stencil_05_numpy(vn, vt)
+        vn_ie, z_vt_ie, z_kin_hor_e = compute_horizontal_kinetic_energy_numpy(vn, vt)
         return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
 
     @pytest.fixture

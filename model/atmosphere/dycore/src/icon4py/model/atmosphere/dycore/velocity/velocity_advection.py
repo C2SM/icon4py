@@ -35,8 +35,8 @@ from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
-    mo_velocity_advection_stencil_03,
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import (
+    interpolate_vt_to_ie,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
@@ -219,7 +219,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_03.with_backend(backend)(
+            interpolate_vt_to_ie.with_backend(backend)(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
