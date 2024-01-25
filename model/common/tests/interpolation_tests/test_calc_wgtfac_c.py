@@ -25,9 +25,8 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.stencils.calc_wgtfac_c import calc_wgtfac_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
