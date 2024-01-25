@@ -48,29 +48,29 @@ from icon4py.model.common.dimension import Koff
 
 
 @pytest.mark.datatest
-def test_calc_nudgecoeffs_e(
+def test_calc_wgtfac_c(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint  # noqa: F811  # fixture
 ):
     wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
 
-    horizontal_start = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.nudging(CellDim)
-    )
+    horizontal_start = 0
     horizontal_end = icon_grid.get_end_index(
         CellDim,
-        HorizontalMarkerIndex.local(CellDim),
+        HorizontalMarkerIndex.end(CellDim),
     )
+    vertical_start = 1
+    vertical_end = icon_grid.num_levels
 
     calc_wgtfac_c(
         wgtfac_c,
         z_ifc,
         horizontal_start,
         horizontal_end,
-        vertical_start=int32(1),
-        vertical_end=int32(65),
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy()[:,0:65])
+    assert np.allclose(wgtfac_c.asnumpy()[:,1:vertical_end], wgtfac_c_ref.asnumpy()[:,1:vertical_end])
