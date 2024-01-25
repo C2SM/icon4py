@@ -15,35 +15,33 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_11 import (
-    mo_velocity_advection_stencil_11,
-)
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_11_numpy(w: np.array) -> np.array:
-    z_w_con_c = w
-    return z_w_con_c
+def copy_cell_kdim_field_to_vp_numpy(field: np.array) -> np.array:
+    field_copy = field
+    return field_copy
 
 
 class TestMoVelocityAdvectionStencil11(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_11
-    OUTPUTS = ("z_w_con_c",)
+    PROGRAM = copy_cell_kdim_field_to_vp
+    OUTPUTS = ("field_copy",)
 
     @staticmethod
-    def reference(grid, w: np.array, **kwargs) -> dict:
-        z_w_con_c = mo_velocity_advection_stencil_11_numpy(w)
-        return dict(z_w_con_c=z_w_con_c)
+    def reference(grid, field: np.array, **kwargs) -> dict:
+        field_copy = copy_cell_kdim_field_to_vp_numpy(field)
+        return dict(field_copy=field_copy)
 
     @pytest.fixture
     def input_data(self, grid):
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_w_con_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        field = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        field_copy = zero_field(grid, CellDim, KDim, dtype=vpfloat)
         return dict(
-            w=w,
-            z_w_con_c=z_w_con_c,
+            field=field,
+            field_copy=field_copy,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),
