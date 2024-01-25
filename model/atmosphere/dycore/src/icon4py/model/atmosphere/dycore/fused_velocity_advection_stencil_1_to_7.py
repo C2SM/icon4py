@@ -24,8 +24,8 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
     _compute_tangential_wind,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
-    _mo_velocity_advection_stencil_02,
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    _interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
     _mo_velocity_advection_stencil_03,
@@ -71,7 +71,7 @@ def _fused_velocity_advection_stencil_1_to_6(
 
     vn_ie, z_kin_hor_e = where(
         1 < k < nlevp1,
-        _mo_velocity_advection_stencil_02(wgtfac_e, vn, vt),
+        _interpolate_vn_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_kin_hor_e),
     )
 

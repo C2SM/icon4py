@@ -23,11 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_02(
+def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> tuple[Field[[EdgeDim, KDim], vpfloat], Field[[EdgeDim, KDim], vpfloat]]:
+    '''Formerly known as _mo_velocity_advection_stencil_02.'''
     wgtfac_e_wp = astype(wgtfac_e, wpfloat)
 
     vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])
@@ -37,7 +38,7 @@ def _mo_velocity_advection_stencil_02(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_02(
+def interpolate_vn_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
@@ -48,7 +49,7 @@ def mo_velocity_advection_stencil_02(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_02(
+    _interpolate_vn_to_ie_and_compute_ekin_on_edges(
         wgtfac_e,
         vn,
         vt,

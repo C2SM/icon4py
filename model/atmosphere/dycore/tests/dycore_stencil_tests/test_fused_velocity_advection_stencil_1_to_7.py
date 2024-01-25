@@ -28,7 +28,7 @@ from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
 from .test_compute_tangential_wind import compute_tangential_wind_numpy
-from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil_02_numpy
+from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy
 from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
 from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
 from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
@@ -74,7 +74,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition2 = (1 < k) & (k < nlevp1)
         vn_ie, z_kin_hor_e = np.where(
             condition2,
-            mo_velocity_advection_stencil_02_numpy(grid, wgtfac_e, vn, vt),
+            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt),
             (vn_ie, z_kin_hor_e),
         )
 
