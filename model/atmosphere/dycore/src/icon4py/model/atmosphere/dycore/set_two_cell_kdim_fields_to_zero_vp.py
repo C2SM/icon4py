@@ -13,34 +13,36 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
+from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
+)
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_14() -> (
-    tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]
+def _set_two_cell_kdim_fields_to_zero_vp() -> (
+    tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
 ):
-    z_rho_e_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
-    z_theta_v_e_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
-    return z_rho_e_wp, z_theta_v_e_wp
+    """Formerly known as_mo_solve_nonhydro_stencil_01."""
+    return _set_cell_kdim_field_to_zero_vp(), _set_cell_kdim_field_to_zero_vp()
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_14(
-    z_rho_e: Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+def set_two_cell_kdim_fields_to_zero_vp(
+    cell_kdim_field_to_zero_vp_1: Field[[CellDim, KDim], vpfloat],
+    cell_kdim_field_to_zero_vp_2: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_14(
-        out=(z_rho_e, z_theta_v_e),
+    _set_two_cell_kdim_fields_to_zero_vp(
+        out=(cell_kdim_field_to_zero_vp_1, cell_kdim_field_to_zero_vp_2),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
+            CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
