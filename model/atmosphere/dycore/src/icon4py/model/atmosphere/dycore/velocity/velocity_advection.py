@@ -38,8 +38,8 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import (
     interpolate_vt_to_ie,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
-    mo_velocity_advection_stencil_07,
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,
@@ -260,7 +260,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_07.with_backend(backend)(
+            compute_horizontal_advection_term_for_vertical_velocity.with_backend(backend)(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -528,7 +528,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            mo_velocity_advection_stencil_07.with_backend(backend)(
+            compute_horizontal_advection_term_for_vertical_velocity.with_backend(backend)(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,

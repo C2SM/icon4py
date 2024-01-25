@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
-    mo_velocity_advection_stencil_07,
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_07_numpy(
+def compute_horizontal_advection_term_for_vertical_velocity_numpy(
     grid,
     vn_ie: np.array,
     inv_dual_edge_length: np.array,
@@ -51,7 +51,7 @@ def mo_velocity_advection_stencil_07_numpy(
 
 
 class TestMoVelocityAdvectionStencil07(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_07
+    PROGRAM = compute_horizontal_advection_term_for_vertical_velocity
     OUTPUTS = ("z_v_grad_w",)
 
     @staticmethod
@@ -66,7 +66,7 @@ class TestMoVelocityAdvectionStencil07(StencilTest):
         z_w_v: np.array,
         **kwargs,
     ) -> dict:
-        z_v_grad_w = mo_velocity_advection_stencil_07_numpy(
+        z_v_grad_w = compute_horizontal_advection_term_for_vertical_velocity_numpy(
             grid,
             vn_ie,
             inv_dual_edge_length,

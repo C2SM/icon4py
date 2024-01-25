@@ -33,8 +33,8 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import (
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
-    _mo_velocity_advection_stencil_07,
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+    _compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -165,7 +165,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     z_v_grad_w = (
         where(
             (lateral_boundary_7 < edge < halo_1) & (k < nlevp1),
-            _mo_velocity_advection_stencil_07(
+            _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie,
                 inv_dual_edge_length,
                 w,

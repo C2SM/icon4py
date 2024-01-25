@@ -31,7 +31,7 @@ from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy
 from .test_interpolate_vt_to_ie import interpolate_vt_to_ie_numpy
 from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
-from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
+from .test_compute_horizontal_advection_term_for_vertical_velocity import compute_horizontal_advection_term_for_vertical_velocity_numpy
 
 
 class TestFusedVelocityAdvectionStencil1To7(StencilTest):
@@ -168,7 +168,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         if not lvn_only:
             z_v_grad_w = np.where(
                 condition_mask,
-                mo_velocity_advection_stencil_07_numpy(
+                compute_horizontal_advection_term_for_vertical_velocity_numpy(
                     grid,
                     vn_ie,
                     inv_dual_edge_length,
