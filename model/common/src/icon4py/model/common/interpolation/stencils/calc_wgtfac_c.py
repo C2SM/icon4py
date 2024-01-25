@@ -21,11 +21,12 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _calc_wgtfac_c(
-    z_ifc: Field[[CellDim,KDim], wpfloat],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
 
-    z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / ( z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
-    return  z_wgtfac_c
+    z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
+    return z_wgtfac_c
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def calc_wgtfac_c(
@@ -37,8 +38,10 @@ def calc_wgtfac_c(
     vertical_end: int32,
 ):
     _calc_wgtfac_c(
-        z_ifc = z_ifc,
+        z_ifc=z_ifc,
         out=wgtfac_c,
-        domain={CellDim: (horizontal_start, horizontal_end),
-                KDim: (vertical_start, vertical_end),}
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

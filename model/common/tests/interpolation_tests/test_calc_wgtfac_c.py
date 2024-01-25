@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.stencils.calc_wgtfac_c import calc_wgtfac_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
@@ -44,7 +44,6 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 )
 from icon4py.model.common.test_utils.helpers import zero_field
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.dimension import Koff
 
 
 @pytest.mark.datatest
@@ -73,4 +72,6 @@ def test_calc_wgtfac_c(
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(wgtfac_c.asnumpy()[:,1:vertical_end], wgtfac_c_ref.asnumpy()[:,1:vertical_end])
+    assert np.allclose(
+        wgtfac_c.asnumpy()[:, 1:vertical_end], wgtfac_c_ref.asnumpy()[:, 1:vertical_end]
+    )
