@@ -20,8 +20,8 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
 from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     _compute_advective_normal_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
-    _mo_velocity_advection_stencil_20,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
+    _add_extra_diffusion_for_wn_approaching_cfl,
 )
 from icon4py.model.common.dimension import (
     CellDim,
@@ -80,7 +80,7 @@ def _fused_velocity_advection_stencil_19_to_20(
     ddt_vn_apc = (
         where(
             maximum(2, nrdmax - 2) <= k < nlev - 3,
-            _mo_velocity_advection_stencil_20(
+            _add_extra_diffusion_for_wn_approaching_cfl(
                 levelmask,
                 c_lin_e,
                 z_w_con_c_full,

@@ -42,7 +42,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_20(
+def _add_extra_diffusion_for_wn_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
@@ -98,7 +98,7 @@ def _mo_velocity_advection_stencil_20(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_20(
+def add_extra_diffusion_for_wn_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
@@ -118,7 +118,7 @@ def mo_velocity_advection_stencil_20(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_20(
+    _add_extra_diffusion_for_wn_approaching_cfl(
         levelmask,
         c_lin_e,
         z_w_con_c_full,

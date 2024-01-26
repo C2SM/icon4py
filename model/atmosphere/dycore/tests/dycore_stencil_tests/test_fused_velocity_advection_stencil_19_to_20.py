@@ -38,7 +38,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
 from .test_compute_advective_normal_wind_tendency import compute_advective_normal_wind_tendency_numpy
-from .test_mo_velocity_advection_stencil_20 import mo_velocity_advection_stencil_20_numpy
+from .test_add_extra_diffusion_for_wn_approaching_cfl import add_extra_diffusion_for_wn_approaching_cfl_numpy
 
 
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
@@ -93,7 +93,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
         condition = (np.maximum(2, nrdmax - 2) <= k) & (k < nlev - 3)
 
-        ddt_vn_apc_extra_diffu = mo_velocity_advection_stencil_20_numpy(
+        ddt_vn_apc_extra_diffu = add_extra_diffusion_for_wn_approaching_cfl_numpy(
             grid,
             levelmask,
             c_lin_e,
