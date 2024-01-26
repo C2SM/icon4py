@@ -29,8 +29,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
-    _mo_velocity_advection_stencil_14,
+from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
     _mo_velocity_advection_stencil_16,
@@ -255,7 +255,7 @@ def _fused_stencil_14(
     cfl_w_limit: float,
     dtime: float,
 ):
-    (local_cfl_clipping, local_vcfl, local_z_w_con_c,) = _mo_velocity_advection_stencil_14(
+    (local_cfl_clipping, local_vcfl, local_z_w_con_c,) = _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         ddqz_z_half,
         local_z_w_con_c,
         cfl_w_limit,

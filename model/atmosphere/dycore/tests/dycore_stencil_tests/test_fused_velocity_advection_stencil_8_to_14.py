@@ -33,7 +33,7 @@ from .test_interpolate_contravariant_correct_to_interface_levels import (
 )
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_correct_contravariant_vertical_velocity import correct_contravariant_vertical_velocity_numpy
-from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
+from .test_compute_maximum_cfl_and_clip_contravariant_vertical_velocity import compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy
 from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
@@ -108,7 +108,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         )
 
         condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
-        cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
+        cfl_clipping_new, vcfl_new, z_w_con_c_new = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
             grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 
