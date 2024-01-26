@@ -17,8 +17,8 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
 from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
     _interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
-    _mo_velocity_advection_stencil_16,
+from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
+    _compute_advective_vertical_wind_tendency,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
     _mo_velocity_advection_stencil_17,
@@ -60,7 +60,7 @@ def _fused_velocity_advection_stencil_16_to_18(
 
     ddt_w_adv = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (int32(1) <= k),
-        _mo_velocity_advection_stencil_16(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
+        _compute_advective_vertical_wind_tendency(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
         ddt_w_adv,
     )
     ddt_w_adv = where(
