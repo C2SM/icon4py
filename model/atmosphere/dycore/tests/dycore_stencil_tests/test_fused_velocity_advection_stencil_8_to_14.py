@@ -32,7 +32,7 @@ from .test_interpolate_contravariant_correct_to_interface_levels import (
     interpolate_contravariant_correct_to_interface_levels_numpy,
 )
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
-from .test_mo_velocity_advection_stencil_13 import mo_velocity_advection_stencil_13_numpy
+from .test_correct_contravariant_vertical_velocity import correct_contravariant_vertical_velocity_numpy
 from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
 from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
@@ -103,7 +103,7 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         z_w_con_c = np.where(
             (nflatlev + 1 < k) & (k < nlev),
-            mo_velocity_advection_stencil_13_numpy(z_w_con_c, w_concorr_c),
+            correct_contravariant_vertical_velocity_numpy(z_w_con_c, w_concorr_c),
             z_w_con_c,
         )
 

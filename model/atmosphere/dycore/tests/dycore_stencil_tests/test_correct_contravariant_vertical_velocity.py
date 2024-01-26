@@ -15,26 +15,26 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
-    mo_velocity_advection_stencil_13,
+from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
+    correct_contravariant_vertical_velocity,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-def mo_velocity_advection_stencil_13_numpy(w_concorr_c: np.array, z_w_con_c: np.array) -> np.array:
+def correct_contravariant_vertical_velocity_numpy(w_concorr_c: np.array, z_w_con_c: np.array) -> np.array:
     z_w_con_c = z_w_con_c - w_concorr_c
     return z_w_con_c
 
 
 class TestMoVelocityAdvectionStencil13(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_13
+    PROGRAM = correct_contravariant_vertical_velocity
     OUTPUTS = ("z_w_con_c",)
 
     @staticmethod
     def reference(grid, w_concorr_c: np.array, z_w_con_c: np.array, **kwargs) -> dict:
-        z_w_con_c = mo_velocity_advection_stencil_13_numpy(w_concorr_c, z_w_con_c)
+        z_w_con_c = correct_contravariant_vertical_velocity_numpy(w_concorr_c, z_w_con_c)
         return dict(z_w_con_c=z_w_con_c)
 
     @pytest.fixture

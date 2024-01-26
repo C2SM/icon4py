@@ -20,16 +20,17 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_13(
+def _correct_contravariant_vertical_velocity(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly known as _mo_velocity_advection_stencil_13.'''
     z_w_con_c_vp = z_w_con_c - w_concorr_c
     return z_w_con_c_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_13(
+def correct_contravariant_vertical_velocity(
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -37,7 +38,7 @@ def mo_velocity_advection_stencil_13(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_13(
+    _correct_contravariant_vertical_velocity(
         z_w_con_c,
         w_concorr_c,
         out=z_w_con_c,
