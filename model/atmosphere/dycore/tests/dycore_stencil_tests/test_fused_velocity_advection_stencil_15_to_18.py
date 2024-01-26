@@ -27,7 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_mo_velocity_advection_stencil_15 import mo_velocity_advection_stencil_15_numpy
+from .test_interpolate_contravatiant_vertical_verlocity_to_full_levels import interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy
 from .test_mo_velocity_advection_stencil_16 import mo_velocity_advection_stencil_16_numpy
 from .test_mo_velocity_advection_stencil_17 import mo_velocity_advection_stencil_17_numpy
 from .test_mo_velocity_advection_stencil_18 import mo_velocity_advection_stencil_18_numpy
@@ -143,7 +143,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         extra_diffu,
         **kwargs,
     ):
-        z_w_con_c_full = mo_velocity_advection_stencil_15_numpy(grid, z_w_con_c)
+        z_w_con_c_full = interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(grid, z_w_con_c)
 
         if not lvn_only:
             ddt_w_adv = cls._fused_velocity_advection_stencil_16_to_18(

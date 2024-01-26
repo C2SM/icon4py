@@ -14,8 +14,8 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
-    _mo_velocity_advection_stencil_15,
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    _interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
     _mo_velocity_advection_stencil_16,
@@ -122,7 +122,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     lvn_only: bool,
     extra_diffu: bool,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    z_w_con_c_full = _mo_velocity_advection_stencil_15(z_w_con_c)
+    z_w_con_c_full = _interpolate_contravatiant_vertical_verlocity_to_full_levels(z_w_con_c)
     ddt_w_adv = (
         _fused_velocity_advection_stencil_16_to_18(
             z_w_con_c,

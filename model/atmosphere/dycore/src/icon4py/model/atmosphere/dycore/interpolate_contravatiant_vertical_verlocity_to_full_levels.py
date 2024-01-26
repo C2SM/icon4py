@@ -20,15 +20,16 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_15(
+def _interpolate_contravatiant_vertical_verlocity_to_full_levels(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly know as _mo_velocity_advection_stencil_15.'''
     z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c + z_w_con_c(Koff[1]))
     return z_w_con_c_full_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_15(
+def interpolate_contravatiant_vertical_verlocity_to_full_levels(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -36,7 +37,7 @@ def mo_velocity_advection_stencil_15(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_15(
+    _interpolate_contravatiant_vertical_verlocity_to_full_levels(
         z_w_con_c,
         out=z_w_con_c_full,
         domain={

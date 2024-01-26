@@ -37,8 +37,8 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
-    mo_velocity_advection_stencil_15,
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     mo_velocity_advection_stencil_18,
@@ -339,7 +339,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        mo_velocity_advection_stencil_15.with_backend(backend)(
+        interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -587,7 +587,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        mo_velocity_advection_stencil_15.with_backend(backend)(
+        interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
