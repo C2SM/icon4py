@@ -17,8 +17,8 @@ from gt4py.next.ffront.fbuiltins import int32, maximum, where
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
-    _mo_velocity_advection_stencil_19,
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
+    _compute_advective_normal_wind_tendency,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     _mo_velocity_advection_stencil_20,
@@ -64,7 +64,7 @@ def _fused_velocity_advection_stencil_19_to_20(
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     zeta = _mo_math_divrot_rot_vertex_ri_dsl(vn, geofac_rot)
 
-    ddt_vn_apc = _mo_velocity_advection_stencil_19(
+    ddt_vn_apc = _compute_advective_normal_wind_tendency(
         z_kin_hor_e,
         coeff_gradekin,
         z_ekinh,

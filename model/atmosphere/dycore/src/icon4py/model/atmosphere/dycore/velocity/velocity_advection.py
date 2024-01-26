@@ -43,8 +43,8 @@ from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocit
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
-    mo_velocity_advection_stencil_19,
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
     mo_velocity_advection_stencil_20,
@@ -393,7 +393,7 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
-        mo_velocity_advection_stencil_19.with_backend(backend)(
+        compute_advective_normal_wind_tendency.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -641,7 +641,7 @@ class VelocityAdvection:
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        mo_velocity_advection_stencil_19.with_backend(backend)(
+        compute_advective_normal_wind_tendency.with_backend(backend)(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,

@@ -37,7 +37,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
-from .test_mo_velocity_advection_stencil_19 import mo_velocity_advection_stencil_19_numpy
+from .test_compute_advective_normal_wind_tendency import compute_advective_normal_wind_tendency_numpy
 from .test_mo_velocity_advection_stencil_20 import mo_velocity_advection_stencil_20_numpy
 
 
@@ -77,7 +77,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
         coeff_gradekin = np.reshape(coeff_gradekin, (grid.num_edges, 2))
 
-        ddt_vn_apc = mo_velocity_advection_stencil_19_numpy(
+        ddt_vn_apc = compute_advective_normal_wind_tendency_numpy(
             grid,
             z_kin_hor_e,
             coeff_gradekin,
