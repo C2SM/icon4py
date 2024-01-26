@@ -44,6 +44,7 @@ def _mo_velocity_advection_stencil_19(
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''Formerly known as _mo_velocity_advection_stencil_19.'''
     vt_wp, z_w_con_c_full_wp, ddqz_z_full_e_wp = astype(
         (vt, z_w_con_c_full, ddqz_z_full_e), wpfloat
     )

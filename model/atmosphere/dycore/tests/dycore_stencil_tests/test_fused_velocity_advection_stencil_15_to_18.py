@@ -29,7 +29,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 from .test_interpolate_contravatiant_vertical_verlocity_to_full_levels import interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy
 from .test_compute_advective_vertical_wind_tendency import compute_advective_vertical_wind_tendency_numpy
-from .test_mo_velocity_advection_stencil_17 import mo_velocity_advection_stencil_17_numpy
+from .test_add_interpolated_horizontal_advection_of_w import add_interpolated_horizontal_advection_of_w_numpy
 from .test_mo_velocity_advection_stencil_18 import mo_velocity_advection_stencil_18_numpy
 
 
@@ -79,7 +79,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         ddt_w_adv = np.where(
             condition1,
-            mo_velocity_advection_stencil_17_numpy(grid, e_bln_c_s, z_v_grad_w, ddt_w_adv),
+            add_interpolated_horizontal_advection_of_w_numpy(grid, e_bln_c_s, z_v_grad_w, ddt_w_adv),
             ddt_w_adv,
         )
 

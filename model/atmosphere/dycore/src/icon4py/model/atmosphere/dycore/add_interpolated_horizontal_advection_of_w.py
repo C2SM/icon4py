@@ -20,18 +20,19 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_17(
+def _add_interpolated_horizontal_advection_of_w(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly known as _mo_velocity_advection_stencil_17.'''
     z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
     ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
     return astype(ddt_w_adv_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_17(
+def add_interpolated_horizontal_advection_of_w(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
@@ -40,7 +41,7 @@ def mo_velocity_advection_stencil_17(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_17(
+    _add_interpolated_horizontal_advection_of_w(
         e_bln_c_s,
         z_v_grad_w,
         ddt_w_adv,

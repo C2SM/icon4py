@@ -35,8 +35,8 @@ from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_
 from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
     _compute_advective_vertical_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
-    _mo_velocity_advection_stencil_17,
+from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
+    _add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
@@ -302,7 +302,7 @@ def _fused_stencils_16_to_17(
 ) -> Field[[CellDim, KDim], float]:
     ddt_w_adv = _compute_advective_vertical_wind_tendency(local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz)
 
-    ddt_w_adv = _mo_velocity_advection_stencil_17(e_bln_c_s, local_z_v_grad_w, ddt_w_adv)
+    ddt_w_adv = _add_interpolated_horizontal_advection_of_w(e_bln_c_s, local_z_v_grad_w, ddt_w_adv)
     return ddt_w_adv
 
 

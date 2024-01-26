@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
-    mo_velocity_advection_stencil_17,
+from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
+    add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_17_numpy(
+def add_interpolated_horizontal_advection_of_w_numpy(
     grid, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
@@ -35,14 +35,14 @@ def mo_velocity_advection_stencil_17_numpy(
 
 
 class TestMoVelocityAdvectionStencil17(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_17
+    PROGRAM = add_interpolated_horizontal_advection_of_w
     OUTPUTS = ("ddt_w_adv",)
 
     @staticmethod
     def reference(
         grid, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
     ) -> dict:
-        ddt_w_adv = mo_velocity_advection_stencil_17_numpy(grid, e_bln_c_s, z_v_grad_w, ddt_w_adv)
+        ddt_w_adv = add_interpolated_horizontal_advection_of_w_numpy(grid, e_bln_c_s, z_v_grad_w, ddt_w_adv)
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture

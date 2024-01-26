@@ -20,8 +20,8 @@ from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocit
 from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
     _compute_advective_vertical_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
-    _mo_velocity_advection_stencil_17,
+from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
+    _add_interpolated_horizontal_advection_of_w,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
     _mo_velocity_advection_stencil_18,
@@ -65,7 +65,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     )
     ddt_w_adv = where(
         (cell_lower_bound <= cell < cell_upper_bound) & (int32(1) <= k),
-        _mo_velocity_advection_stencil_17(e_bln_c_s, z_v_grad_w, ddt_w_adv),
+        _add_interpolated_horizontal_advection_of_w(e_bln_c_s, z_v_grad_w, ddt_w_adv),
         ddt_w_adv,
     )
     ddt_w_adv = (
