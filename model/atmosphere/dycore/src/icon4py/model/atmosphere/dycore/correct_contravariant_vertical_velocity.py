@@ -24,7 +24,7 @@ def _correct_contravariant_vertical_velocity(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_velocity_advection_stencil_13.'''
+    """Formerly known as _mo_velocity_advection_stencil_13."""
     z_w_con_c_vp = z_w_con_c - w_concorr_c
     return z_w_con_c_vp
 

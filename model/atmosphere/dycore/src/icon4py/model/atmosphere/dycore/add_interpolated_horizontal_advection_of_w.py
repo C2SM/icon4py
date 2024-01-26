@@ -25,7 +25,7 @@ def _add_interpolated_horizontal_advection_of_w(
     z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_velocity_advection_stencil_17.'''
+    """Formerly known as _mo_velocity_advection_stencil_17."""
     z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
     ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
     return astype(ddt_w_adv_wp, vpfloat)

@@ -58,7 +58,7 @@ def _mo_velocity_advection_stencil_20(
     scalfac_exdiff: wpfloat,
     dtime: wpfloat,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    '''Formerly known as _mo_velocity_advection_stencil_20.'''
+    """Formerly known as _mo_velocity_advection_stencil_20."""
     z_w_con_c_full_wp, ddqz_z_full_e_wp, ddt_vn_apc_wp, cfl_w_limit_wp = astype(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
     )

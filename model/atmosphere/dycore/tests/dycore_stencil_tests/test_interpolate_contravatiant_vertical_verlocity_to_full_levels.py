@@ -34,7 +34,9 @@ class TestMoVelocityAdvectionStencil15(StencilTest):
 
     @staticmethod
     def reference(grid, z_w_con_c: np.array, **kwargs) -> dict:
-        z_w_con_c_full = interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(grid, z_w_con_c)
+        z_w_con_c_full = interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(
+            grid, z_w_con_c
+        )
         return dict(z_w_con_c_full=z_w_con_c_full)
 
     @pytest.fixture

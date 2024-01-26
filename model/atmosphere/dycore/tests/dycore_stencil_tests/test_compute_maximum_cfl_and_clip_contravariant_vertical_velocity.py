@@ -59,7 +59,11 @@ class TestMoVelocityAdvectionStencil14(StencilTest):
     def reference(
         grid, ddqz_z_half: np.array, z_w_con_c: np.array, cfl_w_limit, dtime, **kwargs
     ) -> dict:
-        cfl_clipping, vcfl, z_w_con_c = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
+        (
+            cfl_clipping,
+            vcfl,
+            z_w_con_c,
+        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
             grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 

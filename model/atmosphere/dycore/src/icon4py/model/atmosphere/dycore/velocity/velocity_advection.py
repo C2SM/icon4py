@@ -22,10 +22,16 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
+)
 from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    interpolate_contravatiant_vertical_verlocity_to_full_levels,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
@@ -36,12 +42,6 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 )
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    interpolate_contravatiant_vertical_verlocity_to_full_levels,
-)
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,

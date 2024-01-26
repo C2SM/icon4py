@@ -26,7 +26,7 @@ def _compute_advective_vertical_wind_tendency(
     coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
     coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_velocity_advection_stencil_16.'''
+    """Formerly known as _mo_velocity_advection_stencil_16."""
     z_w_con_c_wp = astype(z_w_con_c, wpfloat)
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
 
