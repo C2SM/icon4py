@@ -38,7 +38,9 @@ class TestMoVelocityAdvectionStencil10(StencilTest):
 
     @staticmethod
     def reference(grid, wgtfac_c: np.array, z_w_concorr_mc: np.array, **kwargs) -> dict:
-        w_concorr_c = interpolate_contravariant_correct_to_interface_levels_numpy(grid, wgtfac_c, z_w_concorr_mc)
+        w_concorr_c = interpolate_contravariant_correct_to_interface_levels_numpy(
+            grid, wgtfac_c, z_w_concorr_mc
+        )
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture

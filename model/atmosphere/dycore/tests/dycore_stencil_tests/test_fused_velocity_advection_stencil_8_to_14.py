@@ -28,8 +28,10 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
+from .test_interpolate_contravariant_correct_to_interface_levels import (
+    interpolate_contravariant_correct_to_interface_levels_numpy,
+)
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
-from .test_interpolate_contravariant_correct_to_interface_levels import interpolate_contravariant_correct_to_interface_levels_numpy
 from .test_mo_velocity_advection_stencil_13 import mo_velocity_advection_stencil_13_numpy
 from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
 from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
@@ -87,7 +89,9 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
             w_concorr_c = np.where(
                 (nflatlev + 1 < k) & (k < nlev),
-                interpolate_contravariant_correct_to_interface_levels_numpy(grid, z_w_concorr_mc, wgtfac_c),
+                interpolate_contravariant_correct_to_interface_levels_numpy(
+                    grid, z_w_concorr_mc, wgtfac_c
+                ),
                 w_concorr_c,
             )
 

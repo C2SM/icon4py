@@ -24,7 +24,7 @@ def _interpolate_contravariant_correct_to_interface_levels(
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly know as _mo_velocity_advection_stencil_10.'''
+    """Formerly know as _mo_velocity_advection_stencil_10."""
     w_concorr_c_vp = wgtfac_c * z_w_concorr_mc + (vpfloat("1.0") - wgtfac_c) * z_w_concorr_mc(
         Koff[-1]
     )

@@ -18,9 +18,7 @@ from gt4py.next.ffront.fbuiltins import Field, int32
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import (
-    _interpolate_vt_to_ie,
-)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import _interpolate_vt_to_ie
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -36,7 +34,9 @@ def _mo_solve_nonhydro_stencil_36(
     Field[[EdgeDim, KDim], vpfloat],
 ]:
     z_vt_ie = _interpolate_vt_to_ie(wgtfac_e=wgtfac_e, vt=vt)
-    vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(wgtfac_e=wgtfac_e, vn=vn, vt=vt)
+    vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(
+        wgtfac_e=wgtfac_e, vn=vn, vt=vt
+    )
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 

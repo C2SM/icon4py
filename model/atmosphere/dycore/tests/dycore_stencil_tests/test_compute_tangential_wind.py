@@ -15,17 +15,13 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
-    compute_tangential_wind,
-)
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def compute_tangential_wind_numpy(
-    grid, vn: np.array, rbf_vec_coeff_e: np.array
-) -> np.array:
+def compute_tangential_wind_numpy(grid, vn: np.array, rbf_vec_coeff_e: np.array) -> np.array:
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
     e2c2e = grid.connectivities[E2C2EDim]
     vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)

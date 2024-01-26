@@ -22,24 +22,20 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
+)
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    interpolate_vn_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
-    compute_tangential_wind,
-)
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    interpolate_vn_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import (
-    interpolate_vt_to_ie,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,

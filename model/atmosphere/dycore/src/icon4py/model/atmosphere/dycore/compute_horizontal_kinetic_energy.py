@@ -28,7 +28,7 @@ def _compute_horizontal_kinetic_energy(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_37 or _mo_velocity_advection_stencil_05.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_37 or _mo_velocity_advection_stencil_05."""
     vn_ie_wp = vn
     z_vt_ie_vp = vt
     z_kin_hor_e_wp = wpfloat("0.5") * (vn * vn + astype(vt * vt, wpfloat))

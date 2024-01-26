@@ -24,7 +24,7 @@ def _interpolate_vt_to_ie(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    '''Formerly known as _mo_velocity_advection_stencil_03.'''
+    """Formerly known as _mo_velocity_advection_stencil_03."""
     wgtfac_e_wp, vt_wp = astype((wgtfac_e, vt), wpfloat)
 
     z_vt_ie_wp = astype(wgtfac_e * vt, wpfloat) + (wpfloat("1.0") - wgtfac_e_wp) * vt_wp(Koff[-1])

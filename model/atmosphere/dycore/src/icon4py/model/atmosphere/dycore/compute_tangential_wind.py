@@ -24,7 +24,7 @@ def _compute_tangential_wind(
     vn: Field[[EdgeDim, KDim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    '''Formerly knowan as _mo_velocity_advection_stencil_01.'''
+    """Formerly knowan as _mo_velocity_advection_stencil_01."""
     vt_wp = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return astype(vt_wp, vpfloat)
 

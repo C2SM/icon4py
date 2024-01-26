@@ -17,6 +17,9 @@ from gt4py.next.ffront.fbuiltins import int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
+)
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     _compute_pertubation_of_rho_and_theta,
 )
@@ -47,9 +50,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_tr
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
-    _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,

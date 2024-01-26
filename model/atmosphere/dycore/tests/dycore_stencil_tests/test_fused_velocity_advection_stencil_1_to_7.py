@@ -23,15 +23,19 @@ from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2C
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
+from .test_compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity_numpy,
+)
+from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
+from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
+from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy,
+)
+from .test_interpolate_vt_to_ie import interpolate_vt_to_ie_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
-from .test_compute_tangential_wind import compute_tangential_wind_numpy
-from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy
-from .test_interpolate_vt_to_ie import interpolate_vt_to_ie_numpy
-from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
-from .test_compute_horizontal_advection_term_for_vertical_velocity import compute_horizontal_advection_term_for_vertical_velocity_numpy
 
 
 class TestFusedVelocityAdvectionStencil1To7(StencilTest):
@@ -67,9 +71,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         k = k[np.newaxis, :]
 
         condition1 = k < nlevp1
-        vt = np.where(
-            condition1, compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e), vt
-        )
+        vt = np.where(condition1, compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e), vt)
 
         condition2 = (1 < k) & (k < nlevp1)
         vn_ie, z_kin_hor_e = np.where(
@@ -79,9 +81,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         )
 
         if not lvn_only:
-            z_vt_ie = np.where(
-                condition2, interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt), z_vt_ie
-            )
+            z_vt_ie = np.where(condition2, interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt), z_vt_ie)
 
         condition3 = k == 0
         vn_ie, z_vt_ie, z_kin_hor_e = np.where(

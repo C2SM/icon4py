@@ -15,11 +15,9 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
     _mo_solve_nonhydro_stencil_31,
-)
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import (
-    _compute_tangential_wind,
 )
 from icon4py.model.common.dimension import E2C2EO, E2C2EDim, E2C2EODim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
