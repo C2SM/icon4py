@@ -52,7 +52,9 @@ class TestMoVelocityAdvectionStencil16(StencilTest):
         coeff2_dwdz: np.array,
         **kwargs,
     ) -> dict:
-        ddt_w_adv = compute_advective_vertical_wind_tendency_numpy(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz)
+        ddt_w_adv = compute_advective_vertical_wind_tendency_numpy(
+            z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
+        )
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture

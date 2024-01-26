@@ -22,10 +22,16 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
+)
 from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    interpolate_contravatiant_vertical_verlocity_to_full_levels,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
@@ -46,8 +52,8 @@ from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_c
 from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
-    mo_velocity_advection_stencil_20,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
+    add_extra_diffusion_for_wn_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -417,7 +423,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20.with_backend(backend)(
+        add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -665,7 +671,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_20.with_backend(backend)(
+        add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,

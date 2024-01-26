@@ -14,17 +14,17 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    _interpolate_contravatiant_vertical_verlocity_to_full_levels,
-)
-from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
-    _compute_advective_vertical_wind_tendency,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    _add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
     _add_interpolated_horizontal_advection_of_w,
 )
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
-    _add_extra_diffusion_for_w_con_approaching_cfl,
+from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
+    _compute_advective_vertical_wind_tendency,
+)
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    _interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
 from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat

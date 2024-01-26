@@ -42,7 +42,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_velocity_advection_stencil_18.'''
+    """Formerly known as _mo_velocity_advection_stencil_18."""
     z_w_con_c_wp, ddqz_z_half_wp, ddt_w_adv_wp, cfl_w_limit_wp = astype(
         (z_w_con_c, ddqz_z_half, ddt_w_adv, cfl_w_limit), wpfloat
     )
