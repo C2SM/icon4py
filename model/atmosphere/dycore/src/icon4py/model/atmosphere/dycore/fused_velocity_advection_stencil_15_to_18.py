@@ -23,8 +23,8 @@ from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency im
 from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
     _add_interpolated_horizontal_advection_of_w,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
-    _mo_velocity_advection_stencil_18,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    _add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -72,7 +72,7 @@ def _fused_velocity_advection_stencil_16_to_18(
         where(
             (cell_lower_bound <= cell < cell_upper_bound)
             & (maximum(2, nrdmax - 2) <= k < nlev - 3),
-            _mo_velocity_advection_stencil_18(
+            _add_extra_diffusion_for_w_con_approaching_cfl(
                 levelmask,
                 cfl_clipping,
                 owner_mask,

@@ -40,8 +40,8 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
 from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
     interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
-    mo_velocity_advection_stencil_18,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
     mo_velocity_advection_stencil_19,
@@ -369,7 +369,7 @@ class VelocityAdvection:
                 },
             )
 
-            mo_velocity_advection_stencil_18.with_backend(run_gtfn)(
+            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(run_gtfn)(
                 levmask=self.levmask,
                 cfl_clipping=self.cfl_clipping,
                 owner_mask=self.c_owner_mask,
@@ -616,7 +616,7 @@ class VelocityAdvection:
             },
         )
 
-        mo_velocity_advection_stencil_18.with_backend(backend)(
+        add_extra_diffusion_for_w_con_approaching_cfl.with_backend(backend)(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
