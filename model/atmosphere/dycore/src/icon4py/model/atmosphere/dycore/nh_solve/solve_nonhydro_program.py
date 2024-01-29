@@ -360,7 +360,7 @@ def _predictor_stencils_11_lower_upper(
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_11_upper(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic, z_theta_v_pr_ic),
+        _mo_solve_nonhydro_stencil_11_upper(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
         (z_theta_v_pr_ic, theta_v_ic),
     )
     return z_theta_v_pr_ic, theta_v_ic
