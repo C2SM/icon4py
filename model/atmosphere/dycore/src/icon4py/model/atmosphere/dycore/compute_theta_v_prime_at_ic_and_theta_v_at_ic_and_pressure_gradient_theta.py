@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_09(
+def _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -36,9 +36,8 @@ def _mo_solve_nonhydro_stencil_09(
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    wgtfac_c_wp, z_rth_pr_2_wp, d_exner_dz_ref_ic_wp, ddqz_z_half_wp = astype(
-        (wgtfac_c, z_rth_pr_2, d_exner_dz_ref_ic, ddqz_z_half), wpfloat
-    )
+    '''Formerly known as _mo_solve_nonhydro_stencil_09.'''
+    wgtfac_c_wp, ddqz_z_half_wp = astype( (wgtfac_c, ddqz_z_half), wpfloat )
 
     z_theta_v_pr_ic_vp = _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2)
     theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])
@@ -49,7 +48,7 @@ def _mo_solve_nonhydro_stencil_09(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_09(
+def compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -65,7 +64,7 @@ def mo_solve_nonhydro_stencil_09(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_09(
+    _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
         wgtfac_c,
         z_rth_pr_2,
         theta_v,
