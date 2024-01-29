@@ -37,7 +37,7 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rh
     _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
 )
 from icon4py.model.atmosphere.dycore. import (
-    _,
+    _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     _mo_solve_nonhydro_stencil_11_upper,
@@ -274,7 +274,7 @@ def _predictor_stencils_7_8_9(
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         k_field >= int32(1),
-        _(
+        _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
             wgtfac_c,
             z_rth_pr_2,
             theta_v,
