@@ -30,8 +30,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import (
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
-    _mo_solve_nonhydro_stencil_06,
+from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
+    _compute_first_vertical_derivative,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
     _mo_solve_nonhydro_stencil_08,
@@ -195,7 +195,7 @@ def _predictor_stencils_4_5_6(
     # First vertical derivative of perturbation Exner pressure
     z_dexner_dz_c_1 = where(
         k_field < nlev,
-        _mo_solve_nonhydro_stencil_06(z_exner_ic, inv_ddqz_z_full),
+        _compute_first_vertical_derivative(z_exner_ic, inv_ddqz_z_full),
         z_dexner_dz_c_1,
     )
     return z_exner_ic, z_dexner_dz_c_1

@@ -20,16 +20,17 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_06(
+def _compute_first_vertical_derivative(
     z_exner_ic: Field[[CellDim, KDim], vpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_06.'''
     z_dexner_dz_c_1 = (z_exner_ic - z_exner_ic(Koff[1])) * inv_ddqz_z_full
     return z_dexner_dz_c_1
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_06(
+def compute_first_vertical_derivative(
     z_exner_ic: Field[[CellDim, KDim], vpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     z_dexner_dz_c_1: Field[[CellDim, KDim], vpfloat],
@@ -38,7 +39,7 @@ def mo_solve_nonhydro_stencil_06(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_06(
+    _compute_first_vertical_derivative(
         z_exner_ic,
         inv_ddqz_z_full,
         out=z_dexner_dz_c_1,
