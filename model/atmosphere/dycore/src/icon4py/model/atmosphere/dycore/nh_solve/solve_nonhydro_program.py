@@ -30,13 +30,13 @@ from icon4py.model.atmosphere.dycore.compute_theta_v_prime_at_ic_and_theta_v_at_
     _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     _mo_solve_nonhydro_stencil_11_upper,
 )
