@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_08(
+def _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -45,7 +45,7 @@ def _mo_solve_nonhydro_stencil_08(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_08(
+def compute_pertubation_of_rho_and_theta_and_rho_at_ic(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -59,7 +59,7 @@ def mo_solve_nonhydro_stencil_08(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_08(
+    _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
         wgtfac_c,
         rho,
         rho_ref_mc,

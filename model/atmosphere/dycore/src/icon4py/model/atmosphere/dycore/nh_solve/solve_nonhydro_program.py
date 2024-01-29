@@ -33,8 +33,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
 from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
-    _mo_solve_nonhydro_stencil_08,
+from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_at_ic import (
+    _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
     _mo_solve_nonhydro_stencil_09,
@@ -268,7 +268,7 @@ def _predictor_stencils_7_8_9(
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         k_field >= int32(1),
-        _mo_solve_nonhydro_stencil_08(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_pertubation_of_rho_and_theta_and_rho_at_ic(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
