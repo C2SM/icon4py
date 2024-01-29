@@ -72,5 +72,6 @@ def test_calc_wgtfac_c(
     )
 
     assert np.allclose(
-        wgtfac_c.asnumpy()[:, 1:vertical_end], wgtfac_c_ref.asnumpy()[:, 1:vertical_end]
+        wgtfac_c.asnumpy()[:, vertical_start:vertical_end],
+        wgtfac_c_ref.asnumpy()[:, vertical_start:vertical_end],
     )
