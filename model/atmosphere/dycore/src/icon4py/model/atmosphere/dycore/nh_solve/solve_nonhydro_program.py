@@ -27,8 +27,8 @@ from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure impor
 from icon4py.model.atmosphere.dycore.interpolate_to_surface import (
     _interpolate_to_surface,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
-    _mo_solve_nonhydro_stencil_05,
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
     _mo_solve_nonhydro_stencil_06,
@@ -188,7 +188,7 @@ def _predictor_stencils_4_5_6(
     # possibly GZ will want to consider the cache ramifications of this change for CPU
     z_exner_ic = where(
         k_field < nlev,
-        _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr),
+        _interpolate_to_half_levels_vp(wgtfac_c, z_exner_ex_pr),
         z_exner_ic,
     )
 
