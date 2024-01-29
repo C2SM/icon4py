@@ -14,9 +14,6 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.atmosphere.dycore.compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
-    _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
-)
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -29,7 +26,11 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_at_ic import (
     _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
 )
+from icon4py.model.atmosphere.dycore.compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
+    _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
+)
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
@@ -265,7 +266,9 @@ def _predictor_stencils_7_8_9(
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         k_field >= int32(1),
-        _compute_pertubation_of_rho_and_theta_and_rho_at_ic(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+            wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
+        ),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
