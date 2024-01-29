@@ -17,6 +17,9 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import (
+    _interpolate_to_surface,
+)
 
 
 @field_operator
@@ -26,11 +29,7 @@ def _mo_solve_nonhydro_stencil_11_upper(
     theta_ref_ic: Field[[CellDim, KDim], vpfloat],
     z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
-    z_theta_v_pr_ic_vp = (
-        wgtfacq_c(Koff[-1]) * z_rth_pr(Koff[-1])
-        + wgtfacq_c(Koff[-2]) * z_rth_pr(Koff[-2])
-        + wgtfacq_c(Koff[-3]) * z_rth_pr(Koff[-3])
-    )
+    z_theta_v_pr_ic_vp = _interpolate_to_surface(wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr)
     theta_v_ic_vp = theta_ref_ic + z_theta_v_pr_ic_vp
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
 

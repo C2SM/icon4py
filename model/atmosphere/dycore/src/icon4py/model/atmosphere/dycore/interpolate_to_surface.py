@@ -20,32 +20,33 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_04(
+def _interpolate_to_surface(
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    interpolant: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    z_exner_ic_vp = (
-        wgtfacq_c(Koff[-1]) * z_exner_ex_pr(Koff[-1])
-        + wgtfacq_c(Koff[-2]) * z_exner_ex_pr(Koff[-2])
-        + wgtfacq_c(Koff[-3]) * z_exner_ex_pr(Koff[-3])
+    '''Formerly known as _mo_solve_nonhydro_stencil_04.'''
+    interpolation_to_surface = (
+        wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])
+        + wgtfacq_c(Koff[-2]) * interpolant(Koff[-2])
+        + wgtfacq_c(Koff[-3]) * interpolant(Koff[-3])
     )
-    return z_exner_ic_vp
+    return interpolation_to_surface
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_04(
+def interpolate_to_surface(
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
-    z_exner_ic: Field[[CellDim, KDim], vpfloat],
+    interpolant: Field[[CellDim, KDim], vpfloat],
+    interpolation_to_surface: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_04(
+    _interpolate_to_surface(
         wgtfacq_c,
-        z_exner_ex_pr,
-        out=z_exner_ic,
+        interpolant,
+        out=interpolation_to_surface,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

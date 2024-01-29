@@ -24,8 +24,8 @@ from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_t
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
-    _mo_solve_nonhydro_stencil_04,
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import (
+    _interpolate_to_surface,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
     _mo_solve_nonhydro_stencil_05,
@@ -180,7 +180,7 @@ def _predictor_stencils_4_5_6(
     # Perturbation Exner pressure on bottom half level
     z_exner_ic = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_04(wgtfacq_c_dsl, z_exner_ex_pr),
+        _interpolate_to_surface(wgtfacq_c_dsl, z_exner_ex_pr),
         z_exner_ic,
     )
 
