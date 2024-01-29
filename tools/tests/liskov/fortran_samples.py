@@ -232,12 +232,12 @@ CONSECUTIVE_STENCIL = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; field=nproma,p_patch%nlev; field_to_zero_vp=nproma,p_patch%nlev)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field_to_zero_vp=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45_b; z_q=z_q(:,:); vertical_lower=1; vertical_upper=1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field_to_zero_vp=z_q(:,:); vertical_lower=1; vertical_upper=1; &
     !$DSL               horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -254,8 +254,8 @@ CONSECUTIVE_STENCIL = """\
     !$DSL END PROFILE()
     !$DSL ENDIF()
 
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45; noendif=true; noprofile=true)
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45_b; noendif=true; noprofile=true)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp; noendif=true; noprofile=true)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp; noendif=true; noprofile=true)
 
     !$DSL END CREATE()
 """
@@ -452,11 +452,11 @@ FREE_FORM_STENCIL = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; field_to_zero_vp=nproma,p_patch%nlev)
 
     !$DSL INSERT(some custom fields go here)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field_to_zero_vp=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -473,7 +473,7 @@ FREE_FORM_STENCIL = """\
 
     !$DSL INSERT(some custom code goes here)
 
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp)
 
     !$DSL END CREATE()
 """

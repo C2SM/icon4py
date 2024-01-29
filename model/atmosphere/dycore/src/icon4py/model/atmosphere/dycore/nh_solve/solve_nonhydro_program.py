@@ -39,9 +39,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
     _mo_solve_nonhydro_stencil_09,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_lower import (
-    _mo_solve_nonhydro_stencil_11_lower,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     _mo_solve_nonhydro_stencil_11_upper,
 )
@@ -69,12 +66,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_43 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
     _mo_solve_nonhydro_stencil_44,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import (
-    _mo_solve_nonhydro_stencil_45,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45_b import (
-    _mo_solve_nonhydro_stencil_45_b,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
 )
@@ -86,6 +77,9 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
+)
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
@@ -362,9 +356,7 @@ def _predictor_stencils_11_lower_upper(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(
-        k_field == int32(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
-    )
+    z_theta_v_pr_ic = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic)
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
@@ -686,9 +678,9 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
+    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
 
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -822,8 +814,8 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
