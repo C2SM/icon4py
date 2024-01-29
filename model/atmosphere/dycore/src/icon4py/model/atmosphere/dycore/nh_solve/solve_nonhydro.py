@@ -34,8 +34,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
-    mo_solve_nonhydro_stencil_10,
+from icon4py.model.atmosphere.dycore.compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
+    compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_12 import (
     mo_solve_nonhydro_stencil_12,
@@ -1519,7 +1519,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
-        mo_solve_nonhydro_stencil_10.with_backend(backend)(
+        compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta.with_backend(backend)(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,

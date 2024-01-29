@@ -29,6 +29,7 @@ def _mo_solve_nonhydro_stencil_11_upper(
     theta_ref_ic: Field[[CellDim, KDim], vpfloat],
     z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_11_upper.'''
     z_theta_v_pr_ic_vp = _interpolate_to_surface(wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr)
     theta_v_ic_vp = theta_ref_ic + z_theta_v_pr_ic_vp
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
