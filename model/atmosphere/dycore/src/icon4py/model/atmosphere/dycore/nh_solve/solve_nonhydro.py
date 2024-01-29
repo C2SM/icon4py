@@ -24,6 +24,7 @@ import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -32,9 +33,6 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_01 import (
-    mo_solve_nonhydro_stencil_01,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
@@ -90,17 +88,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_33 import (
-    mo_solve_nonhydro_stencil_33,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
-    mo_solve_nonhydro_stencil_46,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
@@ -123,9 +115,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
-    mo_solve_nonhydro_stencil_59,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
     mo_solve_nonhydro_stencil_60,
 )
@@ -140,6 +129,15 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
+)
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
+    set_two_cell_kdim_fields_to_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
+    set_two_cell_kdim_fields_to_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
+    set_two_edge_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -730,9 +728,9 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_01.with_backend(backend)(
-                z_rth_pr_1=self.z_rth_pr_1,
-                z_rth_pr_2=self.z_rth_pr_2,
+            set_two_cell_kdim_fields_to_zero_vp.with_backend(backend)(
+                cell_kdim_field_to_zero_vp_1=self.z_rth_pr_1,
+                cell_kdim_field_to_zero_vp_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_end,
                 vertical_start=0,
@@ -1243,9 +1241,9 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(backend)(
-                w_nnew=prognostic_state[nnew].w,
-                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
@@ -1375,9 +1373,9 @@ class SolveNonhydro:
             )
 
         if at_first_substep:
-            mo_solve_nonhydro_stencil_59.with_backend(backend)(
-                exner=prognostic_state[nnow].exner,
-                exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
+            copy_cell_kdim_field_to_vp.with_backend(backend)(
+                field=prognostic_state[nnow].exner,
+                field_copy=diagnostic_state_nh.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
@@ -1695,9 +1693,9 @@ class SolveNonhydro:
                 log.debug("corrector: doing prep advection")
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
-                    mo_solve_nonhydro_stencil_33.with_backend(backend)(
-                        vn_traj=prep_adv.vn_traj,
-                        mass_flx_me=prep_adv.mass_flx_me,
+                    set_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
+                        edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
+                        edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
                         horizontal_end=end_edge_end,
                         vertical_start=0,
@@ -1805,9 +1803,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(backend)(
-                w_nnew=prognostic_state[nnew].w,
-                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
