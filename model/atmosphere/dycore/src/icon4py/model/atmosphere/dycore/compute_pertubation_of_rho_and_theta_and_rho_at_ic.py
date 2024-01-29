@@ -34,7 +34,7 @@ def _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_08.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_08."""
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])

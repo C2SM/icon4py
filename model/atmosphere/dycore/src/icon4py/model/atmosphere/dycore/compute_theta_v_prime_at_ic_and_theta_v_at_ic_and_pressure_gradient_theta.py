@@ -36,8 +36,8 @@ def _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_09.'''
-    wgtfac_c_wp, ddqz_z_half_wp = astype( (wgtfac_c, ddqz_z_half), wpfloat )
+    """Formerly known as _mo_solve_nonhydro_stencil_09."""
+    wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
 
     z_theta_v_pr_ic_vp = _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_rth_pr_2)
     theta_v_ic_wp = wgtfac_c_wp * theta_v + (wpfloat("1.0") - wgtfac_c_wp) * theta_v(Koff[-1])

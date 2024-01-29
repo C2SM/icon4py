@@ -24,8 +24,10 @@ def _interpolate_to_half_levels_vp(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     interpolant: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_05.'''
-    interpolation_to_half_levels_vp = wgtfac_c * interpolant + (vpfloat("1.0") - wgtfac_c) * interpolant(Koff[-1])
+    """Formerly known as _mo_solve_nonhydro_stencil_05."""
+    interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
+        vpfloat("1.0") - wgtfac_c
+    ) * interpolant(Koff[-1])
     return interpolation_to_half_levels_vp
 
 

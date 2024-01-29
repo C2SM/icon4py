@@ -42,7 +42,7 @@ def _compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gr
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_10.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_10."""
     w_concorr_c_wp, wgtfac_c_wp, theta_ref_mc_wp, ddqz_z_half_wp = astype(
         (w_concorr_c, wgtfac_c, theta_ref_mc, ddqz_z_half), wpfloat
     )

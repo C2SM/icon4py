@@ -15,9 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.interpolate_to_surface import (
-    interpolate_to_surface,
-)
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import interpolate_to_surface
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
@@ -29,7 +27,11 @@ class TestMoSolveNonhydroStencil04(StencilTest):
 
     @staticmethod
     def reference(
-        grid, interpolant: np.array, wgtfacq_c: np.array, interpolation_to_surface: np.array, **kwargs
+        grid,
+        interpolant: np.array,
+        wgtfacq_c: np.array,
+        interpolation_to_surface: np.array,
+        **kwargs,
     ) -> dict:
         interpolation_to_surface[:, 3:] = (
             np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(interpolant, shift=1, axis=1)

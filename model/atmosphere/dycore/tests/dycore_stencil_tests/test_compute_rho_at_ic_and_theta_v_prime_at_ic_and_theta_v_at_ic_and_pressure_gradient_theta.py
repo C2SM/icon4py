@@ -24,7 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil10(StencilTest):
-    PROGRAM = compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta
+    PROGRAM = (
+        compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta
+    )
     OUTPUTS = ("rho_ic", "z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
     @staticmethod

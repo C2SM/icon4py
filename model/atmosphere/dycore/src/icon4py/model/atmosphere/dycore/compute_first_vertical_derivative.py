@@ -24,7 +24,7 @@ def _compute_first_vertical_derivative(
     z_exner_ic: Field[[CellDim, KDim], vpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_06.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_06."""
     z_dexner_dz_c_1 = (z_exner_ic - z_exner_ic(Koff[1])) * inv_ddqz_z_full
     return z_dexner_dz_c_1
 

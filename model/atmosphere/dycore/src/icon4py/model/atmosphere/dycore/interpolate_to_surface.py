@@ -24,7 +24,7 @@ def _interpolate_to_surface(
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
     interpolant: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_04.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_04."""
     interpolation_to_surface = (
         wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])
         + wgtfacq_c(Koff[-2]) * interpolant(Koff[-2])
