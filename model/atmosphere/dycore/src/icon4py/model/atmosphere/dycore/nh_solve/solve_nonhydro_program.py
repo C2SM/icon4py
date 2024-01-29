@@ -21,8 +21,8 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import
     _compute_pertubation_of_rho_and_theta,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
-    _mo_solve_nonhydro_stencil_02,
+from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
+    _extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
     _mo_solve_nonhydro_stencil_04,
@@ -128,7 +128,7 @@ def _predictor_stencils_2_3(
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     (z_exner_ex_pr, exner_pr) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_02(exner_exfac, exner, exner_ref_mc, exner_pr),
+        _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
     z_exner_ex_pr = where(k_field == nlev, _set_zero_c_k(), z_exner_ex_pr)

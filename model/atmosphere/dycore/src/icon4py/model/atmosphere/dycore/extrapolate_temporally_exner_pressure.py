@@ -19,12 +19,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_02(
+def _extrapolate_temporally_exner_pressure(
     exner_exfac: Field[[CellDim, KDim], vpfloat],
     exner: Field[[CellDim, KDim], wpfloat],
     exner_ref_mc: Field[[CellDim, KDim], vpfloat],
     exner_pr: Field[[CellDim, KDim], wpfloat],
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_02.'''
     exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
 
     z_exner_ex_pr_wp = (wpfloat("1.0") + exner_exfac_wp) * (
@@ -35,7 +36,7 @@ def _mo_solve_nonhydro_stencil_02(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_02(
+def extrapolate_temporally_exner_pressure(
     exner_exfac: Field[[CellDim, KDim], vpfloat],
     exner: Field[[CellDim, KDim], wpfloat],
     exner_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -46,7 +47,7 @@ def mo_solve_nonhydro_stencil_02(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_02(
+    _extrapolate_temporally_exner_pressure(
         exner_exfac,
         exner,
         exner_ref_mc,

@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
-    mo_solve_nonhydro_stencil_02,
+from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
+    extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil02(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_02
+    PROGRAM = extrapolate_temporally_exner_pressure
     OUTPUTS = ("z_exner_ex_pr", "exner_pr")
 
     @staticmethod
