@@ -128,7 +128,10 @@ class StencilTransformer(Step):
         stencils_to_remove = []
 
         for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
-            if start_stencil.optional_module not in self.optional_modules_to_enable and start_stencil.optional_module != "None": 
+            if (
+                start_stencil.optional_module not in self.optional_modules_to_enable
+                and start_stencil.optional_module != "None"
+            ):
                 stencils_to_remove += [start_stencil, end_stencil]
 
         self._remove_stencils(stencils_to_remove)

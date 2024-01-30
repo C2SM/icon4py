@@ -314,7 +314,11 @@ class StartStencilDataFactoryBase(DataFactoryBase):
             mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", "false"))
             copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
             optional_module = pop_item_from_dict(named_args, "optional_module", "None")
-            additional_attrs = {"mergecopy": mergecopy, "copies": copies, "optional_module": optional_module}
+            additional_attrs = {
+                "mergecopy": mergecopy,
+                "copies": copies,
+                "optional_module": optional_module,
+            }
         return additional_attrs
 
     @staticmethod
