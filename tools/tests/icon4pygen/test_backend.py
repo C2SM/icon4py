@@ -16,7 +16,7 @@ import pytest
 from gt4py.next import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.iterator import ir as itir
-from icon4py.model.common.dimension import E2V, EdgeDim, VertexDim
+from icon4py.model.common.dimension import E2V, EdgeDim, VertexDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
 
 from icon4pytools.icon4pygen import backend
@@ -49,19 +49,21 @@ def search_for_grid_sizes(code: str) -> bool:
 )
 def test_grid_size_param_generation(temporaries, imperative):
     @field_operator
-    def testee_op(a: Field[[VertexDim], float]) -> Field[[EdgeDim], float]:
+    def testee_op(a: Field[[VertexDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
         amul = a * 2.0
         return amul(E2V[0]) + amul(E2V[1])
 
     @program
     def testee_prog(
-        a: Field[[VertexDim], float],
-        out: Field[[EdgeDim], float],
-    ) -> Field[[EdgeDim], float]:
+        a: Field[[VertexDim, KDim], float],
+        out: Field[[EdgeDim, KDim], float],
+    ) -> Field[[EdgeDim, KDim], float]:
         testee_op(a, out=out)
 
     grid = SimpleGrid()
     offset_provider = {"E2V": grid.get_offset_provider("E2V")}
     fencil = testee_prog.itir
+
+    # validate the grid sizes appear in the generated code
     gtheader = generate_gtheader(fencil, offset_provider, None, temporaries, imperative)
     assert search_for_grid_sizes(gtheader)
