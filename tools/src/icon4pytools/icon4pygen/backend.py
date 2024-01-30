@@ -46,8 +46,14 @@ def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.Fencil
     for closure in fencil.closures:
         if not len(closure.domain.args) == 2:
             raise TypeError(f"Output domain of '{fencil.id}' must be 2-dimensional.")
-        horizontal_axis, vertical_axis = (closure.domain.args[i].args[0] for i in (0, 1))
-        assert isinstance(horizontal_axis, itir.AxisLiteral) and isinstance(vertical_axis, itir.AxisLiteral)
+        assert isinstance(closure.domain.args[0], itir.FunCall) and isinstance(
+            closure.domain.args[1], itir.FunCall
+        )
+        horizontal_axis = closure.domain.args[0].args[0]
+        vertical_axis = closure.domain.args[1].args[0]
+        assert isinstance(horizontal_axis, itir.AxisLiteral) and isinstance(
+            vertical_axis, itir.AxisLiteral
+        )
         assert horizontal_axis.value in ["Vertex", "Edge", "Cell"]
         assert vertical_axis.value == "K"
 
