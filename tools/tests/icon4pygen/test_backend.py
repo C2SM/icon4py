@@ -16,7 +16,7 @@ import pytest
 from gt4py.next import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.iterator import ir as itir
-from icon4py.model.common.dimension import E2V, EdgeDim, VertexDim, KDim
+from icon4py.model.common.dimension import E2V, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
 
 from icon4pytools.icon4pygen import backend
