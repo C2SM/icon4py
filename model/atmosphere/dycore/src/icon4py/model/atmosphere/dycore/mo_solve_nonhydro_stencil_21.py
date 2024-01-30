@@ -38,8 +38,8 @@ def _mo_solve_nonhydro_stencil_21(
     theta_v_ic_0 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[0])))
     theta_v_ic_1 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[1])))
 
-    theta_v_ic_p1_0 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[0]) + 1))
-    theta_v_ic_p1_1 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[1]) + 1))
+    theta_v_ic_p1_0 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[0]) + int32(1)))
+    theta_v_ic_p1_1 = theta_v_ic(as_offset(Koff, ikoffset(E2EC[1]) + int32(1)))
 
     inv_ddqz_z_full_0_wp = astype(inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[0]))), wpfloat)
     inv_ddqz_z_full_1_wp = astype(inv_ddqz_z_full(as_offset(Koff, ikoffset(E2EC[1]))), wpfloat)
