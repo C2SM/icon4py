@@ -87,6 +87,24 @@ def compute_geofac_rot(
     return geofac_rot_
 
 #@field_operator
+#def compute_geofac_grdiv(
+#    geofac_grdiv_: Field[[EdgeDim], float],
+#    geofac_div_: Field[[CellDim, C2EDim], float],
+#    inv_dual_edge_length: Field[[EdgeDim], float],
+#    owner_mask: Field[[VertexDim], bool],
+#) -> Field[[VertexDim, V2EDim], float]:
+#    """
+#    Args:
+#        geofac_grdiv_:
+#        geofac_div_:
+#        inv_dual_edge_length:
+#        owner_mask:
+#    """
+##    geofac_grdiv_ = geofac_grdiv_ - geofac_div * inv_dual_edge_length
+#    geofac_grdiv_ = where(owner_mask, dual_edge_length(V2E)*edge_orientation/dual_area, 0.0)
+#    return geofac_grdiv_
+
+#@field_operator
 #def compute_geofac_n2s_1(
 #    geofac_n2s: Field[[CellDim], float],
 #    dual_edge_length: Field[[EdgeDim], float],
@@ -191,8 +209,14 @@ def compute_geofac_grg(
 ) -> np.array:
     """
     Args:
-        dual_edge_length:
+        geofac_grg:
+        primal_normal_ec:
         geofac_div:
+        c_lin_e:
+        C2E_:
+        E2C_:
+        C2E2C_:
+        lateral_boundary:
     """
     llb = lateral_boundary[0]
     index = np.transpose(np.vstack((np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]))))
@@ -208,17 +232,37 @@ def compute_geofac_grg(
                 geofac_grg[llb:, 1 + j, i] = geofac_grg[llb:, 1 + j, i] + fac[llb:, j] * (primal_normal_ec[:, :, i]*geofac_div*c_lin_e[C2E_, k])[llb:, j]
     return geofac_grg
 
-#def compute_geofac_qdiv(
-#    primal_edge_length: np.array,
-#    quad_orientation: np.array,
-#    quad_area: np.array,
-#) -> np.array:
-#    geofac_qdiv_ = primal_edge_length * quad_orientation / quad_area
-#    return geofac_qdiv_
-#
-#def compute_geofac_grdiv(
-#    geofac_div: np.array,
-#    inv_dual_edge_length: np.array,
-#) -> np.array:
-#    geofac_grdiv_ = geofac_grdiv_ - geofac_div * inv_dual_edge_length
-#    return geofac_grdiv_
+def compute_geofac_grdiv(
+    geofac_grdiv: np.array,
+    geofac_div: np.array,
+    inv_dual_edge_length: np.array,
+    owner_mask: np.array,
+    C2E_: np.array,
+    E2C_: np.array,
+    C2E2C_: np.array,
+    lateral_boundary: np.array,
+) -> np.array:
+    """
+    Args:
+        geofac_grdiv:
+        geofac_div:
+        inv_dual_edge_length:
+        owner_mask:
+        C2E_:
+        E2C_:
+        C2E2C_:
+        lateral_boundary:
+    """
+    llb = lateral_boundary[0]
+    index = np.transpose(np.vstack((np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]))))
+    for k in range(2):
+        fac = E2C_[C2E_, k] == index
+        for i in range(2):
+            for j in range(3):
+                geofac_grdiv[llb:, 0, i] = geofac_grdiv[llb:, 0, i] + fac[llb:, j] * (geofac_div*inv_dual_edge_length[C2E_, k])[llb:, j]
+    for k in range(2):
+        fac = E2C_[C2E_, k] == C2E2C_
+        for i in range(2):
+            for j in range(3):
+                geofac_grdiv[llb:, 1 + j, i] = geofac_grdiv[llb:, 1 + j, i] + fac[llb:, j] * (geofac_div*inv_dual_edge_length[C2E_, k])[llb:, j]
+    return geofac_grdiv

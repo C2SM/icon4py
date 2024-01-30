@@ -181,9 +181,47 @@ def test_compute_geofac_grg(
         C2E2C_,
         lateral_boundary,
     )
-#    np.set_printoptions(threshold=np.inf)
-#    print(geofac_grg_ref[0].asnumpy())
-#    print("aaaaa")
-#    print(geofac_grg[:, :, 0])
     assert np.allclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy())
     assert np.allclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy())
+
+#@pytest.mark.datatest
+#def test_compute_geofac_grdiv(
+#    grid_savepoint, interpolation_savepoint, icon_grid
+#):
+#    geofac_div = interpolation_savepoint.geofac_div()
+#    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+##    geofac_grg = zero_field(icon_grid, CellDim, C2EDim)
+#    geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
+##    np.set_printoptions(threshold=np.inf)
+##    print(geofac_grdiv_ref.asnumpy())
+##    aaaaa
+#    owner_mask = grid_savepoint.c_owner_mask()
+#    C2E_ = icon_grid.connectivities[C2EDim]
+#    E2C_ = icon_grid.connectivities[E2CDim]
+#    C2E2C_ = icon_grid.connectivities[C2E2CDim]
+#    lateral_boundary = np.arange(2)
+#    lateral_boundary[0] = icon_grid.get_start_index(
+#        CellDim,
+#        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+#    )
+#    lateral_boundary[1] = icon_grid.get_end_index(
+#        CellDim,
+#        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+#    )
+#    geofac_grdiv = np.zeros([lateral_boundary[1], 4, 2])
+#    geofac_grdiv = compute_geofac_grg(
+#        geofac_grdiv,
+#        geofac_div.asnumpy(),
+#        inv_dual_edge_length.asnumpy(),
+#        owner_mask,
+#        C2E_,
+#        E2C_,
+#        C2E2C_,
+#        lateral_boundary,
+#    )
+##    np.set_printoptions(threshold=np.inf)
+##    print(geofac_grg_ref[0].asnumpy())
+##    print("aaaaa")
+##    print(geofac_grg[:, :, 0])
+#    assert np.allclose(geofac_grdiv[:, :, 0], geofac_grdiv_ref[0].asnumpy())
+#    assert np.allclose(geofac_grdiv[:, :, 1], geofac_grdiv_ref[1].asnumpy())
