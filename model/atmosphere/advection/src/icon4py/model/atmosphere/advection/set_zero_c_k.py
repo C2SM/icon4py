@@ -24,5 +24,5 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def set_zero_c_k(field: Field[[CellDim, KDim], float]):
-    _set_zero_c_k(out=field)
+def set_zero_c_k(z_cfl: Field[[CellDim, KDim], float]):
+    _set_zero_c_k(out=z_cfl)
