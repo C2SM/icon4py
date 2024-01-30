@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_37(
+def _compute_horizontal_kinetic_energy(
     vn: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> tuple[
@@ -28,7 +28,7 @@ def _mo_solve_nonhydro_stencil_37(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
-
+    """Formerly known as _mo_solve_nonhydro_stencil_37 or _mo_velocity_advection_stencil_05."""
     vn_ie_wp = vn
     z_vt_ie_vp = vt
     z_kin_hor_e_wp = wpfloat("0.5") * (vn * vn + astype(vt * vt, wpfloat))
@@ -36,7 +36,7 @@ def _mo_solve_nonhydro_stencil_37(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_37(
+def compute_horizontal_kinetic_energy(
     vn: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -47,7 +47,7 @@ def mo_solve_nonhydro_stencil_37(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_37(
+    _compute_horizontal_kinetic_energy(
         vn,
         vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
