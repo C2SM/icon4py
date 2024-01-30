@@ -23,12 +23,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
 import pytest
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.stencils.calc_wgtfac_c import calc_wgtfac_c
+from icon4py.model.common.metrics.stencils.calc_wgtfac_c import calc_wgtfac_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -41,14 +40,12 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.helpers import zero_field
+from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
-def test_calc_wgtfac_c(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint  # noqa: F811  # fixture
-):
+def test_calc_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
     wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
@@ -71,7 +68,7 @@ def test_calc_wgtfac_c(
         offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(
+    assert dallclose(
         wgtfac_c.asnumpy()[:, vertical_start:vertical_end],
         wgtfac_c_ref.asnumpy()[:, vertical_start:vertical_end],
     )
