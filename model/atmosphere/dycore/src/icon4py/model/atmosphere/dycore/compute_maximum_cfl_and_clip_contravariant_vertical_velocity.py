@@ -27,7 +27,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_14(
+def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     cfl_w_limit: vpfloat,
@@ -37,6 +37,7 @@ def _mo_velocity_advection_stencil_14(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
+    """Formerly know as _mo_velocity_advection_stencil_14."""
     z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
 
     cfl_clipping = where(
@@ -64,7 +65,7 @@ def _mo_velocity_advection_stencil_14(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_14(
+def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     cfl_clipping: Field[[CellDim, KDim], bool],
@@ -76,7 +77,7 @@ def mo_velocity_advection_stencil_14(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_14(
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         ddqz_z_half,
         z_w_con_c,
         cfl_w_limit,

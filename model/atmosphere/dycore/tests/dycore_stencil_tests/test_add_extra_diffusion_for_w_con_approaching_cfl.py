@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
-    mo_velocity_advection_stencil_18,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_18_numpy(
+def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     grid,
     levmask: np.array,
     cfl_clipping: np.array,
@@ -72,7 +72,7 @@ def mo_velocity_advection_stencil_18_numpy(
 
 
 class TestMoVelocityAdvectionStencil18(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_18
+    PROGRAM = add_extra_diffusion_for_w_con_approaching_cfl
     OUTPUTS = ("ddt_w_adv",)
 
     @staticmethod
@@ -92,7 +92,7 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
         dtime: wpfloat,
         **kwargs,
     ):
-        ddt_w_adv = mo_velocity_advection_stencil_18_numpy(
+        ddt_w_adv = add_extra_diffusion_for_w_con_approaching_cfl_numpy(
             grid,
             levmask,
             cfl_clipping,
