@@ -25,6 +25,7 @@
 
 import pytest
 
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate_indices
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.metrics.stencils.calc_wgtfac_c import calc_wgtfac_c
@@ -49,18 +50,20 @@ def test_calc_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
     wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
+    k_field = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
 
     horizontal_start = 0
     horizontal_end = icon_grid.get_end_index(
         CellDim,
         HorizontalMarkerIndex.end(CellDim),
     )
-    vertical_start = 1
+    vertical_start = 0
     vertical_end = icon_grid.num_levels
 
     calc_wgtfac_c(
         wgtfac_c,
         z_ifc,
+        k_field,
         horizontal_start,
         horizontal_end,
         vertical_start=vertical_start,
