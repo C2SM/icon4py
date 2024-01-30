@@ -28,7 +28,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_18(
+def _add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
@@ -42,6 +42,7 @@ def _mo_velocity_advection_stencil_18(
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
 ) -> Field[[CellDim, KDim], vpfloat]:
+    """Formerly known as _mo_velocity_advection_stencil_18."""
     z_w_con_c_wp, ddqz_z_half_wp, ddt_w_adv_wp, cfl_w_limit_wp = astype(
         (z_w_con_c, ddqz_z_half, ddt_w_adv, cfl_w_limit), wpfloat
     )
@@ -66,7 +67,7 @@ def _mo_velocity_advection_stencil_18(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_18(
+def add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
@@ -84,7 +85,7 @@ def mo_velocity_advection_stencil_18(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_18(
+    _add_extra_diffusion_for_w_con_approaching_cfl(
         levmask,
         cfl_clipping,
         owner_mask,

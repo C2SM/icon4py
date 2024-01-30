@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
-    mo_velocity_advection_stencil_16,
+from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
+    compute_advective_vertical_wind_tendency,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_16_numpy(
+def compute_advective_vertical_wind_tendency_numpy(
     z_w_con_c: np.array,
     w: np.array,
     coeff1_dwdz: np.array,
@@ -40,7 +40,7 @@ def mo_velocity_advection_stencil_16_numpy(
 
 
 class TestMoVelocityAdvectionStencil16(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_16
+    PROGRAM = compute_advective_vertical_wind_tendency
     OUTPUTS = ("ddt_w_adv",)
 
     @staticmethod
@@ -52,7 +52,9 @@ class TestMoVelocityAdvectionStencil16(StencilTest):
         coeff2_dwdz: np.array,
         **kwargs,
     ) -> dict:
-        ddt_w_adv = mo_velocity_advection_stencil_16_numpy(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz)
+        ddt_w_adv = compute_advective_vertical_wind_tendency_numpy(
+            z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
+        )
         return dict(ddt_w_adv=ddt_w_adv)
 
     @pytest.fixture

@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
-    mo_velocity_advection_stencil_19,
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, ECDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.helpers import (
@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_19_numpy(
+def compute_advective_normal_wind_tendency_numpy(
     grid,
     z_kin_hor_e: np.array,
     coeff_gradekin: np.array,
@@ -60,7 +60,7 @@ def mo_velocity_advection_stencil_19_numpy(
 
 
 class TestMoVelocityAdvectionStencil19(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_19
+    PROGRAM = compute_advective_normal_wind_tendency
     OUTPUTS = ("ddt_vn_apc",)
 
     @staticmethod
@@ -78,7 +78,7 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
         ddqz_z_full_e: np.array,
         **kwargs,
     ) -> dict:
-        ddt_vn_apc = mo_velocity_advection_stencil_19_numpy(
+        ddt_vn_apc = compute_advective_normal_wind_tendency_numpy(
             grid,
             z_kin_hor_e,
             coeff_gradekin,
