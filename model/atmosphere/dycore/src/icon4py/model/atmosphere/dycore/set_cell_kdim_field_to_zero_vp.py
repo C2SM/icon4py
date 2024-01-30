@@ -15,32 +15,28 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
-from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_15() -> (
-    tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]
-):
-    z_rho_e_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
-    z_theta_v_e_wp = broadcast(wpfloat("0.0"), (EdgeDim, KDim))
-    return z_rho_e_wp, z_theta_v_e_wp
+def _set_cell_kdim_field_to_zero_vp() -> Field[[CellDim, KDim], vpfloat]:
+    """Formerly known as _mo_solve_nonhydro_stencil_03, _mo_solve_nonhydro_stencil_11_lower, _mo_solve_nonhydro_stencil_45, _mo_solve_nonhydro_stencil_45_b, or _mo_velocity_advection_stencil_12."""
+    return broadcast(vpfloat("0.0"), (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_15(
-    z_rho_e: Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+def set_cell_kdim_field_to_zero_vp(
+    field_to_zero_vp: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_15(
-        out=(z_rho_e, z_theta_v_e),
+    _set_cell_kdim_field_to_zero_vp(
+        out=field_to_zero_vp,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
+            CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
