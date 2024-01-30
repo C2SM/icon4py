@@ -21,7 +21,7 @@ The code should look as clean and concise as possible. Also it should be similar
 
 ## Example
 
-'''fortran
+```fortran
 
 ...
 
@@ -137,4 +137,4 @@ DO jc = i_startidx, i_endidx
 
     ...
 
-'''
+```
