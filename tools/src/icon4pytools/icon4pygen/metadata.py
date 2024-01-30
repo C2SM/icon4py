@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
 from gt4py import eve
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
@@ -55,16 +55,16 @@ class FieldInfo:
 
 
 @dataclass
-class DummyConnectivity:
+class DummyConnectivity(Connectivity):
     """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
 
     max_neighbors: int
-    has_skip_values: int
+    has_skip_values: bool
     origin_axis: Dimension
     neighbor_axis: Dimension = Dimension("unused")
     index_type: type[int] = int
 
-    def mapped_index(_, __) -> int:
+    def mapped_index(self, cur_index, neigh_index) -> int:
         raise AssertionError("Unreachable")
         return 0
 
@@ -202,6 +202,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
+        neighbor_axis=location_chain[-1],
     )
 
 

@@ -15,29 +15,34 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import (
-    mo_solve_nonhydro_stencil_45,
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoSolveNonhydroStencil45(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_45
-    OUTPUTS = ("z_alpha",)
+def set_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp: np.array) -> np.array:
+    field_to_zero_vp = np.zeros_like(field_to_zero_vp)
+    return field_to_zero_vp
+
+
+class TestMoSolveNonhydroStencil03(StencilTest):
+    PROGRAM = set_cell_kdim_field_to_zero_vp
+    OUTPUTS = ("field_to_zero_vp",)
 
     @staticmethod
-    def reference(grid, z_alpha: np.array, **kwargs) -> dict:
-        z_alpha = np.zeros_like(z_alpha)
-        return dict(z_alpha=z_alpha)
+    def reference(grid, field_to_zero_vp: np.array, **kwargs) -> dict:
+        field_to_zero_vp = set_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp=field_to_zero_vp)
+        return dict(field_to_zero_vp=field_to_zero_vp)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_alpha = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        field_to_zero_vp = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
-            z_alpha=z_alpha,
+            field_to_zero_vp=field_to_zero_vp,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

@@ -120,7 +120,7 @@ def _fused_velocity_advection_stencil_1_to_6(
 
     z_w_concorr_me = where(
         nflatlev <= k < nlev,
-        _mo_velocity_advection_stencil_04(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
 
