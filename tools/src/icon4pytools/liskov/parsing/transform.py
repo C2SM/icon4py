@@ -126,14 +126,9 @@ class StencilTransformer(Step):
 
     def _process_optional_stencils_to_enable(self):
         stencils_to_remove = []
-        modified_stencil_list = []
 
-        for start_single, end_single in zip(
-            self.parsed.StartStencil, self.parsed.EndStencil, strict=True
-        ):
-            optional_module_value = getattr(start_single, 'optional_module', None)
+        for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
+            if start_stencil.optional_module not in self.optional_modules_to_enable and start_stencil.optional_module != "None": 
+                stencils_to_remove += [start_stencil, end_stencil]
 
-            if optional_module_value not in self.optional_modules_to_enable:
-                stencils_to_remove += [start_single, end_single]
-                self._remove_stencils(stencils_to_remove)
-                
+        self._remove_stencils(stencils_to_remove)
