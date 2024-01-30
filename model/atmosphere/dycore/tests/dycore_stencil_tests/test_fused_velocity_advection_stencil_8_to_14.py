@@ -27,11 +27,17 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
+from .test_compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy,
+)
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
+from .test_correct_contravariant_vertical_velocity import (
+    correct_contravariant_vertical_velocity_numpy,
+)
+from .test_interpolate_contravariant_correct_to_interface_levels import (
+    interpolate_contravariant_correct_to_interface_levels_numpy,
+)
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
-from .test_mo_velocity_advection_stencil_10 import mo_velocity_advection_stencil_10_numpy
-from .test_mo_velocity_advection_stencil_13 import mo_velocity_advection_stencil_13_numpy
-from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
 from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
@@ -87,7 +93,9 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
             w_concorr_c = np.where(
                 (nflatlev + 1 < k) & (k < nlev),
-                mo_velocity_advection_stencil_10_numpy(grid, z_w_concorr_mc, wgtfac_c),
+                interpolate_contravariant_correct_to_interface_levels_numpy(
+                    grid, z_w_concorr_mc, wgtfac_c
+                ),
                 w_concorr_c,
             )
 
@@ -99,12 +107,16 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         z_w_con_c = np.where(
             (nflatlev + 1 < k) & (k < nlev),
-            mo_velocity_advection_stencil_13_numpy(z_w_con_c, w_concorr_c),
+            correct_contravariant_vertical_velocity_numpy(z_w_con_c, w_concorr_c),
             z_w_con_c,
         )
 
         condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
-        cfl_clipping_new, vcfl_new, z_w_con_c_new = mo_velocity_advection_stencil_14_numpy(
+        (
+            cfl_clipping_new,
+            vcfl_new,
+            z_w_con_c_new,
+        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
             grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
         )
 

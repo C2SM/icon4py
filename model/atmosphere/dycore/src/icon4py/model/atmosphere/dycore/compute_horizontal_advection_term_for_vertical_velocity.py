@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_07(
+def _compute_horizontal_advection_term_for_vertical_velocity(
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
@@ -29,6 +29,7 @@ def _mo_velocity_advection_stencil_07(
     tangent_orientation: Field[[EdgeDim], wpfloat],
     z_w_v: Field[[VertexDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    """Formerly know as _mo_velocity_advection_stencil_07."""
     z_vt_ie_wp, vn_ie_wp = astype((z_vt_ie, vn_ie), wpfloat)
 
     z_v_grad_w_wp = vn_ie_wp * inv_dual_edge_length * (
@@ -40,7 +41,7 @@ def _mo_velocity_advection_stencil_07(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_07(
+def compute_horizontal_advection_term_for_vertical_velocity(
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
@@ -54,7 +55,7 @@ def mo_velocity_advection_stencil_07(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_07(
+    _compute_horizontal_advection_term_for_vertical_velocity(
         vn_ie,
         inv_dual_edge_length,
         w,

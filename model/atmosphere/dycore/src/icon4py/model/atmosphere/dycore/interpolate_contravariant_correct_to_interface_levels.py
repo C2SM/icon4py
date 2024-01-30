@@ -13,38 +13,39 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_17(
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+def _interpolate_contravariant_correct_to_interface_levels(
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
-    ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
-    return astype(ddt_w_adv_wp, vpfloat)
+    """Formerly know as _mo_velocity_advection_stencil_10."""
+    w_concorr_c_vp = wgtfac_c * z_w_concorr_mc + (vpfloat("1.0") - wgtfac_c) * z_w_concorr_mc(
+        Koff[-1]
+    )
+
+    return w_concorr_c_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_17(
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+def interpolate_contravariant_correct_to_interface_levels(
+    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_17(
-        e_bln_c_s,
-        z_v_grad_w,
-        ddt_w_adv,
-        out=ddt_w_adv,
+    _interpolate_contravariant_correct_to_interface_levels(
+        z_w_concorr_mc,
+        wgtfac_c,
+        out=w_concorr_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
