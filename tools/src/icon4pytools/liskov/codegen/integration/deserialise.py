@@ -291,9 +291,6 @@ class StartStencilDataFactoryBase(DataFactoryBase):
             bounds = self._make_bounds(named_args)
             fields = self._make_fields(named_args, field_dimensions)
             fields_w_tolerance = self._update_tolerances(named_args, fields)
-
-            additional_attrs["optional_module"] = named_args.get("optional_module", "")
-
             deserialised.append(
                 dtype(
                     name=stencil_name,
@@ -316,7 +313,8 @@ class StartStencilDataFactoryBase(DataFactoryBase):
         if dtype == StartStencilData:
             mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", "false"))
             copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
-            additional_attrs = {"mergecopy": mergecopy, "copies": copies}
+            optional_module = pop_item_from_dict(named_args, "optional_module", "no")
+            additional_attrs = {"mergecopy": mergecopy, "copies": copies, "optional_module": optional_module}
         return additional_attrs
 
     @staticmethod

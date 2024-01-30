@@ -59,11 +59,7 @@ class StencilTransformer(Step):
             self._remove_fused_stencils()
             self._remove_delete()
 
-        # Conditionally process optional stencils based on self.optional_modules_to_enable
-        if self.optional_modules_to_enable.lower() != "no":
-            self._process_optional_stencils_to_enable()
-        else:
-            self._remove_optional_stencils()
+        self._process_optional_stencils_to_enable()
 
         return self.parsed
 
@@ -129,18 +125,15 @@ class StencilTransformer(Step):
         self.parsed.EndDelete = []
 
     def _process_optional_stencils_to_enable(self):
-        if self.parsed.StartStencil.optional_module == self.optional_modules_to_enable:
-            del self.parsed.StartStencil.optional_module
+        stencils_to_remove = []
+        modified_stencil_list = []
 
-            self.parsed.StartStencil.__dict__.update(self.parsed.StartStencil.__dict__)
+        for start_single, end_single in zip(
+            self.parsed.StartStencil, self.parsed.EndStencil, strict=True
+        ):
+            optional_module_value = getattr(start_single, 'optional_module', None)
 
-            del self.parsed.StartStencil
-
-    def _remove_optional_stencils(self):
-        pass
-        # Implement the logic to remove optional stencils when not enabled
-        # This method will be called when self.optional_modules_to_enable is "no"
-        self.parsed.StartStencil = []
-        self.parsed.EndStencil = []
-
-    # delete other liskov statements?
+            if optional_module_value not in self.optional_modules_to_enable:
+                stencils_to_remove += [start_single, end_single]
+                self._remove_stencils(stencils_to_remove)
+                
