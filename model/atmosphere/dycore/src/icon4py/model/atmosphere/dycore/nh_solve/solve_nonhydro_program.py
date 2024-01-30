@@ -185,7 +185,7 @@ def _predictor_stencils_4_5_6(
     # possibly GZ will want to consider the cache ramifications of this change for CPU
     z_exner_ic = where(
         k_field < nlev,
-        _interpolate_to_half_levels_vp(wgtfac_c, z_exner_ex_pr),
+        _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr),
         z_exner_ic,
     )
 

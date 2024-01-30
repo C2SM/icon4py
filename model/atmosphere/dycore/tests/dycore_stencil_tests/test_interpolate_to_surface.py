@@ -21,6 +21,19 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat
 
 
+def interpolate_to_surface_numpy(
+        grid,
+        interpolant: np.array,
+        wgtfacq_c: np.array,
+        interpolation_to_surface: np.array) -> np.array:
+        interpolation_to_surface[:, 3:] = (
+            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(interpolant, shift=1, axis=1)
+            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(interpolant, shift=2, axis=1)
+            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(interpolant, shift=3, axis=1)
+        )[:, 3:]
+        return interpolation_to_surface
+    
+
 class TestMoSolveNonhydroStencil04(StencilTest):
     PROGRAM = interpolate_to_surface
     OUTPUTS = ("interpolation_to_surface",)
@@ -33,11 +46,7 @@ class TestMoSolveNonhydroStencil04(StencilTest):
         interpolation_to_surface: np.array,
         **kwargs,
     ) -> dict:
-        interpolation_to_surface[:, 3:] = (
-            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(interpolant, shift=1, axis=1)
-            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(interpolant, shift=2, axis=1)
-            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(interpolant, shift=3, axis=1)
-        )[:, 3:]
+        interpolation_to_surface = interpolate_to_surface_numpy(grid=grid, wgtfacq_c=wgtfacq_c, interpolant=interpolant, interpolation_to_surface=interpolation_to_surface)
         return dict(interpolation_to_surface=interpolation_to_surface)
 
     @pytest.fixture

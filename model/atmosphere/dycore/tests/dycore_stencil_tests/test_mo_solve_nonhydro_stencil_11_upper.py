@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
+from .test_interpolate_to_surface import interpolate_to_surface_numpy
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     mo_solve_nonhydro_stencil_11_upper,
 )
@@ -33,17 +34,13 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
         wgtfacq_c: np.array,
         z_rth_pr: np.array,
         theta_ref_ic: np.array,
+        z_theta_v_pr_ic: np.array,
+        theta_v_ic: np.array,
         **kwargs,
-    ) -> tuple[np.array, np.array]:
-        z_theta_v_pr_ic_ref = np.copy(theta_ref_ic)
-        z_theta_v_pr_ic_ref[:, -1] = (
-            np.roll(wgtfacq_c, shift=1, axis=1) * np.roll(z_rth_pr, shift=1, axis=1)
-            + np.roll(wgtfacq_c, shift=2, axis=1) * np.roll(z_rth_pr, shift=2, axis=1)
-            + np.roll(wgtfacq_c, shift=3, axis=1) * np.roll(z_rth_pr, shift=3, axis=1)
-        )[:, -1]
-        theta_v_ic = np.zeros_like(theta_ref_ic)
-        theta_v_ic[:, -1] = (theta_ref_ic + z_theta_v_pr_ic_ref)[:, -1]
-        return dict(z_theta_v_pr_ic=z_theta_v_pr_ic_ref, theta_v_ic=theta_v_ic)
+    ) -> dict:
+        z_theta_v_pr_ic = interpolate_to_surface_numpy(grid=grid,wgtfacq_c=wgtfacq_c,interpolant=z_rth_pr, interpolation_to_surface=z_theta_v_pr_ic)
+        theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
+        return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic)
 
     @pytest.fixture
     def input_data(self, grid):
@@ -61,6 +58,6 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
             theta_v_ic=theta_v_ic,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(grid.num_levels - 1),
+            vertical_start=int32(3),
             vertical_end=int32(grid.num_levels),
         )
