@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from icon4pytools.common import ICON4PY_MODEL_QUALIFIED_NAME
 
 

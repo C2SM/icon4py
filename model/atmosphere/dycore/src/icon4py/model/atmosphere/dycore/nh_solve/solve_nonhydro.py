@@ -14,7 +14,7 @@ import logging
 from dataclasses import dataclass
 from typing import Final, Optional
 
-from gt4py.next import Field, as_field
+from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
@@ -24,6 +24,7 @@ import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -32,9 +33,6 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_01 import (
-    mo_solve_nonhydro_stencil_01,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_10 import (
     mo_solve_nonhydro_stencil_10,
@@ -90,17 +88,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_33 import (
-    mo_solve_nonhydro_stencil_33,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_46 import (
-    mo_solve_nonhydro_stencil_46,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
@@ -123,8 +115,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
-    mo_solve_nonhydro_stencil_59,
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
+    mo_solve_nonhydro_stencil_60,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
@@ -137,6 +129,15 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
     mo_solve_nonhydro_stencil_68,
+)
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
+    set_two_cell_kdim_fields_to_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import (
+    set_two_cell_kdim_fields_to_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
+    set_two_edge_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -440,7 +441,7 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        en_smag_fac_for_zero_nshift.with_backend(run_gtfn)(
+        en_smag_fac_for_zero_nshift.with_backend(backend)(
             self.vertical_params.vct_a,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
@@ -474,8 +475,6 @@ class SolveNonhydro:
         self.z_grad_rth_3 = _allocate(CellDim, KDim, grid=self.grid)
         self.z_grad_rth_4 = _allocate(CellDim, KDim, grid=self.grid)
         self.z_dexner_dz_c_2 = _allocate(CellDim, KDim, grid=self.grid)
-        # TODO (magdalena) missing stencil_60 in corrector remove! this is a field from the diagnostics!
-        self.exner_dyn_incr = _allocate(CellDim, KDim, grid=self.grid)
         self.z_hydro_corr = _allocate(EdgeDim, KDim, grid=self.grid)
         self.z_vn_avg = _allocate(EdgeDim, KDim, grid=self.grid)
         self.z_theta_v_fl_e = _allocate(EdgeDim, KDim, grid=self.grid)
@@ -509,16 +508,17 @@ class SolveNonhydro:
         prep_adv: PrepAdvection,
         divdamp_fac_o2: float,
         dtime: float,
-        idyn_timestep: float,
         l_recompute: bool,
         l_init: bool,
         nnow: int,
         nnew: int,
         lclean_mflx: bool,
         lprep_adv: bool,
+        at_first_substep: bool,
+        at_last_substep: bool,
     ):
         log.info(
-            f"running timestep: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv} "
+            f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
@@ -550,15 +550,13 @@ class SolveNonhydro:
             prognostic_state=prognostic_state_ls,
             z_fields=self.intermediate_fields,
             dtime=dtime,
-            idyn_timestep=idyn_timestep,
             l_recompute=l_recompute,
             l_init=l_init,
+            at_first_substep=at_first_substep,
             nnow=nnow,
             nnew=nnew,
         )
-        log.info(
-            f"running corrector step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, prep_adv = {lprep_adv},  divdamp_fac_od = {divdamp_fac_o2} "
-        )
+
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls,
@@ -570,10 +568,9 @@ class SolveNonhydro:
             nnow=nnow,
             lclean_mflx=lclean_mflx,
             lprep_adv=lprep_adv,
+            at_last_substep=at_last_substep,
         )
-        log.info(
-            f"running corrector step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, prep_adv = {lprep_adv},  divdamp_fac_od = {divdamp_fac_o2} "
-        )
+
         start_cell_lb = self.grid.get_start_index(
             CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim)
         )
@@ -633,14 +630,14 @@ class SolveNonhydro:
         prognostic_state: list[PrognosticState],
         z_fields: IntermediateFields,
         dtime: float,
-        idyn_timestep: float,
         l_recompute: bool,
         l_init: bool,
+        at_first_substep: bool,
         nnow: int,
         nnew: int,
     ):
         log.info(
-            f"running predictor step: dtime = {dtime}, dyn_timestep = {idyn_timestep}, init = {l_init}, recompute = {l_recompute} "
+            f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
         if l_init or l_recompute:
             if self.config.itime_scheme == 4 and not l_init:
@@ -731,9 +728,9 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_01.with_backend(backend)(
-                z_rth_pr_1=self.z_rth_pr_1,
-                z_rth_pr_2=self.z_rth_pr_2,
+            set_two_cell_kdim_fields_to_zero_vp.with_backend(backend)(
+                cell_kdim_field_to_zero_vp_1=self.z_rth_pr_1,
+                cell_kdim_field_to_zero_vp_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_end,
                 vertical_start=0,
@@ -871,7 +868,7 @@ class SolveNonhydro:
                 horizontal_start=start_vertex_lb_plus1,
                 horizontal_end=end_vertex_local_minus1,
                 vertical_start=0,
-                vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
+                vertical_end=self.grid.num_levels,
                 offset_provider={
                     "V2C": self.grid.get_offset_provider("V2C"),
                 },
@@ -1244,9 +1241,9 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(backend)(
-                w_nnew=prognostic_state[nnew].w,
-                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
@@ -1375,10 +1372,10 @@ class SolveNonhydro:
                 offset_provider={"Koff": KDim},
             )
 
-        if idyn_timestep == 1:
-            mo_solve_nonhydro_stencil_59.with_backend(backend)(
-                exner=prognostic_state[nnow].exner,
-                exner_dyn_incr=self.exner_dyn_incr,
+        if at_first_substep:
+            copy_cell_kdim_field_to_vp.with_backend(backend)(
+                field=prognostic_state[nnow].exner,
+                field_copy=diagnostic_state_nh.exner_dyn_incr,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
@@ -1437,7 +1434,14 @@ class SolveNonhydro:
         nnow: int,
         lclean_mflx: bool,
         lprep_adv: bool,
+        at_last_substep: bool,
     ):
+        log.info(
+            f"running corrector step: dtime = {dtime}, prep_adv = {lprep_adv},  divdamp_fac_o2 = {divdamp_fac_o2} clean_mfxl= {lclean_mflx}  "
+        )
+
+        # TODO (magdalena) is it correct to to use a config parameter here? the actual number of substeps can vary dynmically...
+        #                  should this config parameter exist at all in SolveNonHydro?
         # Inverse value of ndyn_substeps for tracer advection precomputations
         r_nsubsteps = 1.0 / self.config.ndyn_substeps_var
 
@@ -1446,7 +1450,7 @@ class SolveNonhydro:
         # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
-        _calculate_divdamp_fields.with_backend(run_gtfn)(
+        _calculate_divdamp_fields.with_backend(backend)(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
@@ -1689,9 +1693,9 @@ class SolveNonhydro:
                 log.debug("corrector: doing prep advection")
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
-                    mo_solve_nonhydro_stencil_33.with_backend(backend)(
-                        vn_traj=prep_adv.vn_traj,
-                        mass_flx_me=prep_adv.mass_flx_me,
+                    set_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
+                        edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
+                        edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
                         horizontal_end=end_edge_end,
                         vertical_start=0,
@@ -1799,9 +1803,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            mo_solve_nonhydro_stencil_46.with_backend(run_gtfn)(
-                w_nnew=prognostic_state[nnew].w,
-                z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
@@ -1946,7 +1950,19 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        # TODO (magdalena) stencil_60 is missing here?
+        if at_last_substep:
+            mo_solve_nonhydro_stencil_60.with_backend(backend)(
+                exner=prognostic_state[nnew].exner,
+                ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+                exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
+                ndyn_substeps_var=float(self.config.ndyn_substeps_var),
+                dtime=dtime,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=self.vertical_params.kstart_moist,
+                vertical_end=int32(self.grid.num_levels),
+                offset_provider={},
+            )
 
         if lprep_adv:
             if lclean_mflx:
