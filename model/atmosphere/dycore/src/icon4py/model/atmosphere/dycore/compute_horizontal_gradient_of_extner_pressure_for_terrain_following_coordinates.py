@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_19(
+def _compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -37,7 +37,7 @@ def _mo_solve_nonhydro_stencil_19(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_19(
+def compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -49,7 +49,7 @@ def mo_solve_nonhydro_stencil_19(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_19(
+    _compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates(
         inv_dual_edge_length,
         z_exner_ex_pr,
         ddxn_z_full,

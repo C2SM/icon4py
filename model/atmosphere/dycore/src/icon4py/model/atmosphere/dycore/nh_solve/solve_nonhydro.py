@@ -46,8 +46,8 @@ from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_19 import (
-    mo_solve_nonhydro_stencil_19,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates import (
+    compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
@@ -990,7 +990,7 @@ class SolveNonhydro:
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
 
-            mo_solve_nonhydro_stencil_19.with_backend(backend)(
+            compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates.with_backend(backend)(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,

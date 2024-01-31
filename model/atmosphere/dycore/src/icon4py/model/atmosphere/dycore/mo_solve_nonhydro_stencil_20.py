@@ -29,6 +29,7 @@ def _mo_solve_nonhydro_stencil_20(
     z_dexner_dz_c_1: Field[[CellDim, KDim], vpfloat],
     z_dexner_dz_c_2: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_20.'''
 
     z_exner_ex_pr_0 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[0])))
     z_exner_ex_pr_1 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[1])))
