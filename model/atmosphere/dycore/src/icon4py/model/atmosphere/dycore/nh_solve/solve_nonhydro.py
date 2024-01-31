@@ -40,11 +40,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import 
 from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_17 import (
-    mo_solve_nonhydro_stencil_17,
+from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
+    add_vertical_wind_derivative_to_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_18 import (
-    mo_solve_nonhydro_stencil_18,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_19 import (
     mo_solve_nonhydro_stencil_19,
@@ -973,7 +973,7 @@ class SolveNonhydro:
                 )
 
         # Remaining computations at edge points
-        mo_solve_nonhydro_stencil_18.with_backend(backend)(
+        compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates.with_backend(backend)(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -1549,7 +1549,7 @@ class SolveNonhydro:
         )
 
         log.debug(f"corrector: start stencil 17")
-        mo_solve_nonhydro_stencil_17.with_backend(backend)(
+        add_vertical_wind_derivative_to_divergence_damping.with_backend(backend)(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,

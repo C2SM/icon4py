@@ -27,6 +27,7 @@ def _mo_solve_nonhydro_stencil_19(
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_dexner_dz_c_1: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_19.'''
     ddxn_z_full_wp, z_dexner_dz_c_1_wp = astype((ddxn_z_full, z_dexner_dz_c_1), wpfloat)
 
     z_gradh_exner_wp = inv_dual_edge_length * (
