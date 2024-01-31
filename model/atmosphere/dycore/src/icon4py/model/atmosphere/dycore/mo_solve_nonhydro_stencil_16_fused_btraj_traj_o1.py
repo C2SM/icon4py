@@ -145,6 +145,7 @@ def _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1.'''
     (p_distv_bary_1, p_distv_bary_2) = _compute_btraj(
         p_vn,
         p_vt,

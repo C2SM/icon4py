@@ -37,8 +37,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_12 import (
-    mo_solve_nonhydro_stencil_12,
+from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
+    compute_approx_of_2nd_vertical_derivative_of_exner,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_17 import (
     mo_solve_nonhydro_stencil_17,
@@ -817,7 +817,7 @@ class SolveNonhydro:
 
         if self.config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
-            mo_solve_nonhydro_stencil_12.with_backend(backend)(
+            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(backend)(
                 z_theta_v_pr_ic=self.z_theta_v_pr_ic,
                 d2dexdz2_fac1_mc=self.metric_state_nonhydro.d2dexdz2_fac1_mc,
                 d2dexdz2_fac2_mc=self.metric_state_nonhydro.d2dexdz2_fac2_mc,

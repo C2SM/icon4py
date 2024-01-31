@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_12(
+def _compute_approx_of_2nd_vertical_derivative_of_exner(
     z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
     d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
@@ -35,7 +35,7 @@ def _mo_solve_nonhydro_stencil_12(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_12(
+def compute_approx_of_2nd_vertical_derivative_of_exner(
     z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
     d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
@@ -46,7 +46,7 @@ def mo_solve_nonhydro_stencil_12(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_12(
+    _compute_approx_of_2nd_vertical_derivative_of_exner(
         z_theta_v_pr_ic,
         d2dexdz2_fac1_mc,
         d2dexdz2_fac2_mc,
