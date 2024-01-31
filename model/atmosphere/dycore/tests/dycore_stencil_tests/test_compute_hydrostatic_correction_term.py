@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
-    mo_solve_nonhydro_stencil_21,
+from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
@@ -30,7 +30,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 class TestMoSolveNonHydroStencil21(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
-    PROGRAM = mo_solve_nonhydro_stencil_21
+    PROGRAM = compute_hydrostatic_correction_term
 
     @staticmethod
     def reference(

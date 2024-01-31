@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_21(
+def _compute_hydrostatic_correction_term(
     theta_v: Field[[CellDim, KDim], wpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
@@ -63,7 +63,7 @@ def _mo_solve_nonhydro_stencil_21(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_21(
+def compute_hydrostatic_correction_term(
     theta_v: Field[[CellDim, KDim], wpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
@@ -77,7 +77,7 @@ def mo_solve_nonhydro_stencil_21(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_21(
+    _compute_hydrostatic_correction_term(
         theta_v,
         ikoffset,
         zdiff_gradp,

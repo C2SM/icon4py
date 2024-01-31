@@ -52,8 +52,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import 
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
-    mo_solve_nonhydro_stencil_21,
+from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_22 import (
     mo_solve_nonhydro_stencil_22,
@@ -1030,7 +1030,7 @@ class SolveNonhydro:
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if self.config.igradp_method == 3:
-            mo_solve_nonhydro_stencil_21.with_backend(backend)(
+            compute_hydrostatic_correction_term.with_backend(backend)(
                 theta_v=prognostic_state[nnow].theta_v,
                 ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
