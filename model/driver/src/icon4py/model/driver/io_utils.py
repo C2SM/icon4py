@@ -31,7 +31,6 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, V2C2VDim, E2C2VDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
@@ -254,31 +253,11 @@ def read_icon_grid(
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
-def compute_time_discretization_implicit_parameters(
-    time_discretization_veladv_offctr: float,
-    time_discretization_rhotheta_offctr: float
-) -> tuple[float, float, float, float]:
-    # Weighting coefficients for velocity advection if tendency averaging is used
-    # The off - centering specified here turned out to be beneficial to numerical
-    # stability in extreme situations
-    wgt_nnow_vel = 0.5 - time_discretization_veladv_offctr # default value for veladv_offctr is 0.25
-    wgt_nnew_vel = 0.5 + time_discretization_veladv_offctr
-
-    # Weighting coefficients for rho and theta at interface levels in the corrector step
-    # This empirically determined weighting minimizes the vertical wind off - centering
-    # needed for numerical stability of vertical sound wave propagation
-    wgt_nnew_rth = 0.5 + time_discretization_rhotheta_offctr # default value for rhotheta_offctr is -0.1
-    wgt_nnow_rth = 1.0 - wgt_nnew_rth
-
-    return wgt_nnow_vel, wgt_nnew_vel, wgt_nnow_rth, wgt_nnew_rth
-
 # TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
 def model_initialization_jabw(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
-    time_discretization_veladv_offctr: float,
-    time_discretization_rhotheta_offctr: float,
     path: Path,
     rank=0
 ):
@@ -459,8 +438,8 @@ def model_initialization_jabw(
     log.info(f'U, V computation completed.')
 
     # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment
-    #temperature_numpy = mo_diagnose_temperature_numpy(theta_v_numpy,exner_numpy)
-    #pressure_sfc_numpy = mo_diagnose_pressure_sfc_numpy(exner_numpy,temperature_numpy,ddqz_z_full,num_levels)
+    # temperature_numpy = mo_diagnose_temperature_numpy(theta_v_numpy,exner_numpy)
+    # pressure_sfc_numpy = mo_diagnose_pressure_sfc_numpy(exner_numpy,temperature_numpy,ddqz_z_full,num_levels)
 
     diagnostic_state = DiagnosticState(
         pressure=pressure,
@@ -513,24 +492,7 @@ def model_initialization_jabw(
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=None,
-    )
-
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_q=_allocate(CellDim, KDim, grid=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
+        exner_dyn_incr=_allocate(CellDim, KDim, grid=icon_grid),
     )
 
     prep_adv = PrepAdvection(
@@ -543,14 +505,12 @@ def model_initialization_jabw(
     return (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         0.0,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next
     )
-
 
 def model_initialization_serialbox(
     icon_grid: IconGrid, path: Path, rank=0
@@ -566,12 +526,11 @@ def model_initialization_serialbox(
             The data_provider is returned such that further timesteps of diagnostics and prognostics
             can be read from within the dummy timeloop
 
-        """
+    """
 
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
-
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
@@ -607,23 +566,6 @@ def model_initialization_serialbox(
         exner_dyn_incr=None,
     )
 
-    z_fields = ZFields(
-        z_gradh_exner=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_beta=_allocate(CellDim, KDim, grid=icon_grid),
-        z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_exner_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_q=_allocate(CellDim, KDim, grid=icon_grid),
-        z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid),
-        z_rho_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_theta_v_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_graddiv_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_rho_expl=_allocate(CellDim, KDim, grid=icon_grid),
-        z_dwdz_dd=_allocate(CellDim, KDim, grid=icon_grid),
-        z_kin_hor_e=_allocate(EdgeDim, KDim, grid=icon_grid),
-        z_vt_ie=_allocate(EdgeDim, KDim, grid=icon_grid),
-    )
-
     diagnostic_state = DiagnosticState(
         pressure=_allocate(CellDim, KDim, grid=icon_grid),
         pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
@@ -650,7 +592,6 @@ def model_initialization_serialbox(
     return (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         solve_nonhydro_init_savepoint.divdamp_fac_o2(),
         diagnostic_state,
@@ -662,28 +603,23 @@ def read_initial_state(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
-    time_discretization_veladv_offctr: float,
-    time_discretization_rhotheta_offctr: float,
     path: Path,
     rank=0,
-    initialization_type = InitializationType.SB
+    initialization_type=InitializationType.SB
 ) -> tuple[
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
-    ZFields,
     PrepAdvection,
     float,
     DiagnosticState,
     PrognosticState,
     PrognosticState,
 ]:
-
     if initialization_type == InitializationType.SB:
 
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
-            z_fields,
             prep_adv,
             divdamp_fac_o2,
             diagnostic_state,
@@ -696,7 +632,6 @@ def read_initial_state(
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
-            z_fields,
             prep_adv,
             divdamp_fac_o2,
             diagnostic_state,
@@ -706,8 +641,6 @@ def read_initial_state(
             icon_grid,
             cell_param,
             edge_param,
-            time_discretization_veladv_offctr,
-            time_discretization_rhotheta_offctr,
             path,
             rank
         )
@@ -718,14 +651,12 @@ def read_initial_state(
     return (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         divdamp_fac_o2,
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
     )
-
 
 def read_geometry_fields(
     fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB

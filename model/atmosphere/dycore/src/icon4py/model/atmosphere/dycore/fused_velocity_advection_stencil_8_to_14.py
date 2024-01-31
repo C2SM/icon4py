@@ -14,26 +14,19 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    _mo_velocity_advection_stencil_08,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_09 import (
-    _mo_velocity_advection_stencil_09,
-)
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
     _mo_velocity_advection_stencil_10,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_11 import (
-    _mo_velocity_advection_stencil_11,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_12 import (
-    _mo_velocity_advection_stencil_12,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
     _mo_velocity_advection_stencil_13,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
     _mo_velocity_advection_stencil_14,
+)
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -70,14 +63,14 @@ def _fused_velocity_advection_stencil_8_to_14(
 ]:
     z_ekinh = where(
         k < nlev,
-        _mo_velocity_advection_stencil_08(z_kin_hor_e, e_bln_c_s),
+        _interpolate_to_cell_center(z_kin_hor_e, e_bln_c_s),
         z_ekinh,
     )
 
     z_w_concorr_mc = (
         where(
             nflatlev < k < nlev,
-            _mo_velocity_advection_stencil_09(z_w_concorr_me, e_bln_c_s),
+            _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
             z_w_concorr_mc,
         )
         if istep == 1
@@ -96,8 +89,8 @@ def _fused_velocity_advection_stencil_8_to_14(
 
     z_w_con_c = where(
         k < nlevp1,
-        _mo_velocity_advection_stencil_11(w),
-        _mo_velocity_advection_stencil_12(),
+        _copy_cell_kdim_field_to_vp(w),
+        _set_cell_kdim_field_to_zero_vp(),
     )
 
     z_w_con_c = where(

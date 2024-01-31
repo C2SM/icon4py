@@ -27,13 +27,12 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_mo_velocity_advection_stencil_08 import mo_velocity_advection_stencil_08_numpy
-from .test_mo_velocity_advection_stencil_09 import mo_velocity_advection_stencil_09_numpy
+from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
+from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_mo_velocity_advection_stencil_10 import mo_velocity_advection_stencil_10_numpy
-from .test_mo_velocity_advection_stencil_11 import mo_velocity_advection_stencil_11_numpy
-from .test_mo_velocity_advection_stencil_12 import mo_velocity_advection_stencil_12_numpy
 from .test_mo_velocity_advection_stencil_13 import mo_velocity_advection_stencil_13_numpy
 from .test_mo_velocity_advection_stencil_14 import mo_velocity_advection_stencil_14_numpy
+from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
 class TestFusedVelocityAdvectionStencil8To14(StencilTest):
@@ -75,14 +74,14 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         z_ekinh = np.where(
             k < nlev,
-            mo_velocity_advection_stencil_08_numpy(grid, z_kin_hor_e, e_bln_c_s),
+            interpolate_to_cell_center_numpy(grid, z_kin_hor_e, e_bln_c_s),
             z_ekinh,
         )
 
         if istep == 1:
             z_w_concorr_mc = np.where(
                 (nflatlev < k) & (k < nlev),
-                mo_velocity_advection_stencil_09_numpy(grid, z_w_concorr_me, e_bln_c_s),
+                interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s),
                 z_w_concorr_mc,
             )
 
@@ -94,8 +93,8 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
 
         z_w_con_c = np.where(
             k < nlevp1,
-            mo_velocity_advection_stencil_11_numpy(w),
-            mo_velocity_advection_stencil_12_numpy(z_w_con_c),
+            copy_cell_kdim_field_to_vp_numpy(w),
+            set_cell_kdim_field_to_zero_vp_numpy(z_w_con_c),
         )
 
         z_w_con_c = np.where(

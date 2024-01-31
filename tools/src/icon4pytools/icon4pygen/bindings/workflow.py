@@ -45,8 +45,7 @@ class PyBindGen:
         stencil_info: StencilInfo,
     ) -> tuple[list[Field], list[Offset]]:
         chains = stencil_info.connectivity_chains
-        fields = stencil_info.fields
-        binding_fields = [Field(name, info) for name, info in fields.items()]
+        binding_fields = [Field(name, info) for name, info in stencil_info.fields.items()]
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 

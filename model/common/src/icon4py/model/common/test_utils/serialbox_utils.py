@@ -85,6 +85,14 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
 
+    def _get_reciprocal_field(self, name, *dimensions, dtype=float):
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        buffer = np.reciprocal(buffer)
+
+        self.log.debug(f"{name} {buffer.shape}")
+        return as_field(dimensions, buffer)
+
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[Dimension, Dimension]):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
             :, :, ntnd - 1
@@ -145,8 +153,14 @@ class IconGridSavepoint(IconSavepoint):
     def inverse_primal_edge_lengths(self):
         return self._get_field("inv_primal_edge_length", EdgeDim)
 
+    def primal_edge_lengths(self):
+        return self._get_reciprocal_field("inv_primal_edge_length", EdgeDim)
+
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", EdgeDim)
+
+    def vert_vert_length(self):
+        return self._get_reciprocal_field("inv_vert_vert_length", EdgeDim)
 
     def primal_normal_vert_x(self):
         return self._get_field("primal_normal_vert_x", EdgeDim, E2C2VDim)
@@ -207,6 +221,9 @@ class IconGridSavepoint(IconSavepoint):
 
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
+
+    def dual_edge_length(self):
+        return self._get_reciprocal_field("inv_dual_edge_length", EdgeDim)
 
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
@@ -310,12 +327,18 @@ class IconGridSavepoint(IconSavepoint):
 
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
-        return self._read_field_for_dim(field_name, self._read_int32, dim)
+        return as_field(
+            (dim,),
+            np.squeeze(
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+            ),
+        )
 
     def num(self, dim: Dimension):
         return self.sizes[dim]
 
-    def _read_field_for_dim(self, field_name, read_func, dim: Dimension):
+    @staticmethod
+    def _read_field_for_dim(field_name, read_func, dim: Dimension):
         match (dim):
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
@@ -399,6 +422,7 @@ class IconGridSavepoint(IconSavepoint):
                     V2CDim: self.v2c(),
                     V2C2VDim: self.v2c2v(),
                     E2C2VDim: self.e2c2v(),
+                    C2VDim: self.c2v(),
                 }
             )
         )
@@ -437,6 +461,9 @@ class IconGridSavepoint(IconSavepoint):
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
+            primal_edge_lengths=self.primal_edge_lengths(),
+            dual_edge_lengths=self.dual_edge_length(),
+            vertex_vertex_lengths=self.vert_vert_length(),
             primal_normal_vert_x=primal_normal_vert[0],
             primal_normal_vert_y=primal_normal_vert[1],
             dual_normal_vert_x=dual_normal_vert[0],

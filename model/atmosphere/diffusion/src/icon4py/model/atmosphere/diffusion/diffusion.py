@@ -232,6 +232,11 @@ class DiffusionConfig:
 
         #: Number of dynamics substeps per fast-physics step
         #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
+
+        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
+        #       reduce instabilities. Need to figure out whether the parameter is the configured
+        #       (constant!) one or the dynamical one. In the latter case it should be removed from
+        #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
 
         #: If True, compute horizontal diffusion only at the large time step

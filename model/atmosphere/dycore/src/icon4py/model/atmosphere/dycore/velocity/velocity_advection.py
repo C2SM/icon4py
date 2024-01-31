@@ -23,6 +23,7 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -40,9 +41,6 @@ from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
     mo_velocity_advection_stencil_07,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_08 import (
-    mo_velocity_advection_stencil_08,
 )
 from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
     mo_velocity_advection_stencil_15,
@@ -121,9 +119,9 @@ class VelocityAdvection:
         self.stencil_mo_velocity_advection_stencil_02 = mo_velocity_advection_stencil_02.with_backend(backend)
         self.stencil_mo_velocity_advection_stencil_03 = mo_velocity_advection_stencil_03.with_backend(backend)
         self.stencil_4_5 = velocity_prog.fused_stencils_4_5.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_06 = velocity_prog.mo_velocity_advection_stencil_06.with_backend(backend)
+        self.stencil_extrapolate_at_top = velocity_prog.extrapolate_at_top.with_backend(backend)
         self.stencil_mo_velocity_advection_stencil_07 = mo_velocity_advection_stencil_07.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_08 = mo_velocity_advection_stencil_08.with_backend(backend)
+        self.stencil_interpolate_to_cell_center = interpolate_to_cell_center.with_backend(backend)
         self.stencil_9_10 = velocity_prog.fused_stencils_9_10.with_backend(backend)
         self.stencil_11_to_13 = velocity_prog.fused_stencils_11_to_13.with_backend(backend)
         self.stencil_14 = velocity_prog.fused_stencil_14.with_backend(backend)
@@ -321,7 +319,7 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        self.stencil_mo_velocity_advection_stencil_06(
+        self.stencil_extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
@@ -349,10 +347,10 @@ class VelocityAdvection:
                 offset_provider=self.offset_provider_e2c_e2v,
             )
 
-        self.stencil_mo_velocity_advection_stencil_08(
-            z_kin_hor_e=z_kin_hor_e,
+        self.stencil_interpolate_to_cell_center(
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
             vertical_start=0,
@@ -587,10 +585,10 @@ class VelocityAdvection:
                 offset_provider=self.offset_provider_e2c_e2v,
             )
 
-        self.stencil_mo_velocity_advection_stencil_08(
-            z_kin_hor_e=z_kin_hor_e,
+        self.stencil_interpolate_to_cell_center(
+            interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
-            z_ekinh=self.z_ekinh,
+            interpolation=self.z_ekinh,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
             vertical_start=0,

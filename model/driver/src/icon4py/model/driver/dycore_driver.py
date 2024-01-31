@@ -32,7 +32,6 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     create_exchange,
@@ -60,7 +59,7 @@ from icon4py.model.driver.io_utils import (
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.dimension import C2VDim, V2C2VDim, E2C2VDim, CellDim, EdgeDim, C2E2C2EDim, KDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 from gt4py.next import as_field
 from gt4py.next.program_processors.runners import gtfn
@@ -91,6 +90,8 @@ class OutputState:
         start_date: datetime,
         end_date: datetime,
         grid: IconGrid,
+        cell_geometry: CellParams,
+        edge_geometry: EdgeParams,
         diagnostic_metric_state: DiagnosticMetricState,
         prognostic_state: PrognosticState,
         diagnostic_state: DiagnosticState
@@ -121,6 +122,7 @@ class OutputState:
         self._write_dimension(grid, diagnostic_metric_state)
 
         self._write_to_netcdf(start_date, prognostic_state, diagnostic_state)
+        self._grid_to_netcdf(cell_geometry, edge_geometry)
 
     @property
     def current_time_step(self):
@@ -315,6 +317,64 @@ class OutputState:
             self._nf4_basegrp[i].variables["height"][:] = half_height
             self._nf4_basegrp[i].variables["height_2_bnds"][:, :] = full_height_bnds
 
+    def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams):
+        # the grid details are only write to the first netCDF file to save memory
+        cell_areas: nf4.Variable = self._nf4_basegrp[0].createVariable("cell_area", "f8", ("ncells",))
+        edge_areas: nf4.Variable = self._nf4_basegrp[0].createVariable("edge_area", "f8", ("ncells_2",))
+        primal_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable("primal_edge_length", "f8", ("ncells_2",))
+        vert_vert_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable("vert_vert_edge_length", "f8", ("ncells_2",))
+        dual_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable("dual_edge_length", "f8", ("ncells_2",))
+
+        cell_areas.units = "m2"
+        edge_areas.units = "m2"
+        primal_edge_lengths.units = "m"
+        vert_vert_edge_lengths.units = "m"
+        dual_edge_lengths.units = "m"
+
+        # TODO (Chia Rui): check the param for these variables?
+        cell_areas.param = "99.0.1"
+        edge_areas.param = "99.0.2"
+        primal_edge_lengths.param = "99.0.3"
+        vert_vert_edge_lengths.param = "99.0.4"
+        dual_edge_lengths.param = "99.0.5"
+
+        cell_areas.standard_name = "cell area"
+        edge_areas.standard_name = "edge area"
+        primal_edge_lengths.standard_name = "edge length"
+        vert_vert_edge_lengths.standard_name = "vertex-vertex edge length"
+        dual_edge_lengths.standard_name = "dual edge length"
+
+        cell_areas.long_name = "cell area"
+        edge_areas.long_name = "edge area"
+        primal_edge_lengths.long_name = "edge length"
+        vert_vert_edge_lengths.long_name = "vertex-vertex edge length"
+        dual_edge_lengths.long_name = "dual edge length"
+
+        cell_areas.CDI_grid_type = "unstructured"
+        edge_areas.CDI_grid_type = "unstructured"
+        primal_edge_lengths.CDI_grid_type = "unstructured"
+        vert_vert_edge_lengths.CDI_grid_type = "unstructured"
+        dual_edge_lengths.CDI_grid_type = "unstructured"
+
+        cell_areas.number_of_grid_in_reference = 1
+        edge_areas.number_of_grid_in_reference = 1
+        primal_edge_lengths.number_of_grid_in_reference = 1
+        vert_vert_edge_lengths.number_of_grid_in_reference = 1
+        dual_edge_lengths.number_of_grid_in_reference = 1
+
+        cell_areas.coordinates = "clat clon"
+        edge_areas.coordinates = "elat elon"
+        primal_edge_lengths.coordinates = "elat elon"
+        vert_vert_edge_lengths.coordinates = "elat elon"
+        dual_edge_lengths.coordinates = "elat elon"
+
+        cell_areas[:] = cell_geometry.area.asnumpy()
+        edge_areas[:] = edge_geometry.edge_areas.asnumpy()
+        primal_edge_lengths[:] = edge_geometry.primal_edge_lengths.asnumpy()
+        vert_vert_edge_lengths[:] = edge_geometry.vertex_vertex_lengths.asnumpy()
+        dual_edge_lengths[:] = edge_geometry.dual_edge_lengths.asnumpy()
+
+
     def _write_to_netcdf(self, current_date: datetime, prognostic_state: PrognosticState, diagnostic_state: DiagnosticState):
 
         log.info(f"Writing output at {current_date} at {self._current_write_step} in file no. {self._current_file_number}")
@@ -426,6 +486,13 @@ class TimeLoop:
 
     def _not_first_step(self):
         self._do_initial_stabilization = False
+
+    def _is_last_substep(self, step_nr: int):
+        return step_nr == (self.n_substeps_var - 1)
+
+    @staticmethod
+    def _is_first_substep(step_nr: int):
+        return step_nr == 0
 
     def _next_simulation_date(self):
         self._simulation_date += timedelta(seconds=self.run_config.dtime)
@@ -547,7 +614,6 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
-        z_fields: ZFields,  # local constants in solve_nh
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
         output_state: OutputState = None
@@ -628,7 +694,6 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv,
-                z_fields,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
@@ -736,7 +801,6 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -745,7 +809,6 @@ class TimeLoop:
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
             prep_adv,
-            z_fields,
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
@@ -764,7 +827,6 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -774,28 +836,30 @@ class TimeLoop:
         do_clean_mflx = True
         for dyn_substep in range(self._n_substeps_var):
             log.info(
-                f"simulation date : {self._simulation_date} sub timestep : {dyn_substep}, initial_stabilization : {self._do_initial_stabilization}, nnow: {self._now}, nnew : {self._next}"
+                f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
+                f"{self.n_substeps_var} , initial_stabilization : {self._do_initial_stabilization}, "
+                f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv=prep_adv,
-                z_fields=z_fields,
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
-                idyn_timestep=dyn_substep,
                 l_recompute=do_recompute,
                 l_init=self._do_initial_stabilization,
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
                 lprep_adv=do_prep_adv,
+                at_first_substep=self._is_first_substep(dyn_substep),
+                at_last_substep=self._is_last_substep(dyn_substep),
             )
 
             do_recompute = False
             do_clean_mflx = False
 
-            if dyn_substep != self._n_substeps_var - 1:
+            if not self._is_last_substep(dyn_substep):
                 self._swap()
 
             self._not_first_step()
@@ -824,7 +888,9 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
-         other temporary fields: to be removed in the future
+         prep_advection: fields collecting data for advection during the solve nonhydro timestep
+         inital_divdamp_fac_o2: initial divergence damping factor
+
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_name}")
@@ -879,7 +945,6 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
     (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
         diagnostic_state,
@@ -889,8 +954,6 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         icon_grid,
         cell_geometry,
         edge_geometry,
-        config.run_config.time_discretization_veladv_offctr,
-        config.run_config.time_discretization_rhotheta_offctr,
         file_path,
         rank=props.rank,
         initialization_type=init_type
@@ -903,6 +966,8 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         config.run_config.start_date,
         config.run_config.end_date,
         icon_grid,
+        cell_geometry,
+        edge_geometry,
         diagnostic_metric_state,
         prognostic_state_list[0],
         diagnostic_state,
@@ -922,7 +987,6 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         diagnostic_state,
         prognostic_state_list,
         output_state,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
     )
@@ -973,7 +1037,6 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         diagnostic_state,
         prognostic_state_list,
         output_state,
-        z_fields,
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(experiment_name, fname_prefix, ser_type, init_type, Path(input_path), parallel_props)
@@ -1002,7 +1065,6 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
             diagnostic_state,
             prognostic_state_list,
             prep_adv,
-            z_fields,
             inital_divdamp_fac_o2,
             do_prep_adv=False,
             output_state=output_state,
