@@ -134,6 +134,9 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def v_num_edges(self):
+        return self._get_field("v_num_edges", VertexDim)
+
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -487,6 +490,9 @@ class InterpolationSavepoint(IconSavepoint):
 
     def rbf_vec_coeff_v2(self):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
+
+    def rbf_vec_idx_v(self):
+        return self._get_field("rbf_vec_idx_v", VertexDim, V2EDim)
 
 
 class MetricSavepoint(IconSavepoint):

@@ -26,10 +26,10 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim
+from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim, E2VDim, C2VDim, V2CDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_rbf_vec_idx_v
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -225,3 +225,24 @@ def test_compute_geofac_grg(
 ##    print(geofac_grg[:, :, 0])
 #    assert np.allclose(geofac_grdiv[:, :, 0], geofac_grdiv_ref[0].asnumpy())
 #    assert np.allclose(geofac_grdiv[:, :, 1], geofac_grdiv_ref[1].asnumpy())
+
+@pytest.mark.datatest
+def test_compute_rbf_vec_idx_v(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    num_edges = grid_savepoint.v_num_edges().asnumpy()
+    owner_mask = grid_savepoint.v_owner_mask()
+    rbf_vec_idx_v_ref = interpolation_savepoint.rbf_vec_idx_v().asnumpy()
+    V2E_ = icon_grid.connectivities[V2EDim]
+    lateral_boundary = np.arange(2)
+    lateral_boundary[0] = icon_grid.get_start_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+    )
+    lateral_boundary[1] = icon_grid.get_end_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
+    )
+    rbf_vec_idx_v_ref = rbf_vec_idx_v_ref[:, 0:lateral_boundary[1]]
+    rbf_vec_idx_v = compute_rbf_vec_idx_v(V2E_, num_edges, owner_mask, lateral_boundary)
+    assert np.allclose(rbf_vec_idx_v, rbf_vec_idx_v_ref)

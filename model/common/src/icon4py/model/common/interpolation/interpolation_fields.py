@@ -266,3 +266,22 @@ def compute_geofac_grdiv(
             for j in range(3):
                 geofac_grdiv[llb:, 1 + j, i] = geofac_grdiv[llb:, 1 + j, i] + fac[llb:, j] * (geofac_div*inv_dual_edge_length[C2E_, k])[llb:, j]
     return geofac_grdiv
+
+def compute_rbf_vec_idx_v(
+    edge_idx: np.array,
+    num_edges: np.array,
+    owner_mask: np.array,
+    lateral_boundary: np.array,
+) -> np.array:
+    """
+    Args:
+        edge_idx:
+        num_edges:
+        owner_mask:
+        lateral_boundary:
+    """
+    edge_idx = np.transpose(edge_idx) + 1
+    edge_idx[5, :] = np.where(num_edges == 5, edge_idx[0, :], edge_idx[5, :])
+    edge_idx[:, 0:lateral_boundary[0]] = 0
+    rbf_vec_idx_v = np.where(owner_mask, edge_idx, 0);
+    return rbf_vec_idx_v
