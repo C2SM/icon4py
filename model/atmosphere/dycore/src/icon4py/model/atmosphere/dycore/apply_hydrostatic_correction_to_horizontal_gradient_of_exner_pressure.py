@@ -26,7 +26,7 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     z_hydro_corr: Field[[EdgeDim], vpfloat],
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_22.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_22."""
     z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner_vp
 

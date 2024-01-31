@@ -24,14 +24,23 @@ import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping,
 )
+from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
+)
 from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
 )
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
+)
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates import (
     compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates,
+)
+from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
 )
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
@@ -48,15 +57,6 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
-    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
-)
-from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
-    compute_hydrostatic_correction_term,
-)
-from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
-    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
     mo_solve_nonhydro_stencil_23,
@@ -1010,7 +1010,9 @@ class SolveNonhydro:
                 },
             )
 
-            compute_horizontal_gradient_of_extner_pressure_for_multiple_levels.with_backend(backend)(
+            compute_horizontal_gradient_of_extner_pressure_for_multiple_levels.with_backend(
+                backend
+            )(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
@@ -1054,7 +1056,9 @@ class SolveNonhydro:
         hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
 
         if self.config.igradp_method == 3:
-            apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(backend)(
+            apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
+                backend
+            )(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
                 z_hydro_corr=hydro_corr_horizontal,
