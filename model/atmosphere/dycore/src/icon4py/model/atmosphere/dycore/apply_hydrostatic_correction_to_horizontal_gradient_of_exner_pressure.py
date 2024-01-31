@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_22(
+def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
     pg_exdist: Field[[EdgeDim, KDim], vpfloat],
     z_hydro_corr: Field[[EdgeDim], vpfloat],
@@ -32,7 +32,7 @@ def _mo_solve_nonhydro_stencil_22(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_22(
+def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
     pg_exdist: Field[[EdgeDim, KDim], vpfloat],
     z_hydro_corr: Field[[EdgeDim], vpfloat],
@@ -42,7 +42,7 @@ def mo_solve_nonhydro_stencil_22(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_22(
+    _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
         ipeidx_dsl,
         pg_exdist,
         z_hydro_corr,

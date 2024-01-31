@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_22 import (
-    mo_solve_nonhydro_stencil_22,
+from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 class TestMoSolveNonhydroStencil22(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_22
+    PROGRAM = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure
     OUTPUTS = ("z_gradh_exner",)
 
     @staticmethod

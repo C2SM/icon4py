@@ -55,8 +55,8 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_press
 from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_22 import (
-    mo_solve_nonhydro_stencil_22,
+from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
     mo_solve_nonhydro_stencil_23,
@@ -1054,7 +1054,7 @@ class SolveNonhydro:
         hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
 
         if self.config.igradp_method == 3:
-            mo_solve_nonhydro_stencil_22.with_backend(backend)(
+            apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(backend)(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
                 z_hydro_corr=hydro_corr_horizontal,
