@@ -61,8 +61,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import 
 from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_24 import (
-    mo_solve_nonhydro_stencil_24,
+from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
+    add_temporal_tendencies_to_vn,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_25 import (
     mo_solve_nonhydro_stencil_25,
@@ -1070,7 +1070,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_24.with_backend(backend)(
+        add_temporal_tendencies_to_vn.with_backend(backend)(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
             ddt_vn_phy=diagnostic_state_nh.ddt_vn_phy,

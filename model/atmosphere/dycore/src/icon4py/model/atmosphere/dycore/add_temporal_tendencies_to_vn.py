@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_24(
+def _add_temporal_tendencies_to_vn(
     vn_nnow: Field[[EdgeDim, KDim], wpfloat],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
     ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
@@ -41,7 +41,7 @@ def _mo_solve_nonhydro_stencil_24(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_24(
+def add_temporal_tendencies_to_vn(
     vn_nnow: Field[[EdgeDim, KDim], wpfloat],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
     ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
@@ -55,7 +55,7 @@ def mo_solve_nonhydro_stencil_24(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_24(
+    _add_temporal_tendencies_to_vn(
         vn_nnow,
         ddt_vn_apc_ntl1,
         ddt_vn_phy,

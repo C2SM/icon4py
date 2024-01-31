@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_24 import (
-    mo_solve_nonhydro_stencil_24,
+from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
+    add_temporal_tendencies_to_vn,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil24(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_24
+    PROGRAM = add_temporal_tendencies_to_vn
     OUTPUTS = ("vn_nnew",)
 
     @staticmethod
