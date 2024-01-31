@@ -21,10 +21,10 @@ from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cel
 from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )

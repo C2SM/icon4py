@@ -15,13 +15,14 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from .test_interpolate_to_surface import interpolate_to_surface_numpy
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+from .test_interpolate_to_surface import interpolate_to_surface_numpy
 
 
 class TestMoSolveNonhydroStencil11Upper(StencilTest):
@@ -38,7 +39,12 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
         theta_v_ic: np.array,
         **kwargs,
     ) -> dict:
-        z_theta_v_pr_ic = interpolate_to_surface_numpy(grid=grid,wgtfacq_c=wgtfacq_c,interpolant=z_rth_pr, interpolation_to_surface=z_theta_v_pr_ic)
+        z_theta_v_pr_ic = interpolate_to_surface_numpy(
+            grid=grid,
+            wgtfacq_c=wgtfacq_c,
+            interpolant=z_rth_pr,
+            interpolation_to_surface=z_theta_v_pr_ic,
+        )
         theta_v_ic[:, 3:] = (theta_ref_ic + z_theta_v_pr_ic)[:, 3:]
         return dict(z_theta_v_pr_ic=z_theta_v_pr_ic, theta_v_ic=theta_v_ic)
 

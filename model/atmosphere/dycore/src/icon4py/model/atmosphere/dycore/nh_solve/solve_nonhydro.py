@@ -21,6 +21,18 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
+from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
+    add_vertical_wind_derivative_to_divergence_damping,
+)
+from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
+    compute_approx_of_2nd_vertical_derivative_of_exner,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates import (
+    compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates,
+)
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
@@ -36,18 +48,6 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
-)
-from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
-    compute_approx_of_2nd_vertical_derivative_of_exner,
-)
-from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
-    add_vertical_wind_derivative_to_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
-    compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates import (
-    compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
     mo_solve_nonhydro_stencil_20,
@@ -973,7 +973,9 @@ class SolveNonhydro:
                 )
 
         # Remaining computations at edge points
-        compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates.with_backend(backend)(
+        compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates.with_backend(
+            backend
+        )(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -990,7 +992,9 @@ class SolveNonhydro:
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
 
-            compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates.with_backend(backend)(
+            compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates.with_backend(
+                backend
+            )(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,

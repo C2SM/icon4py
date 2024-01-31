@@ -34,10 +34,8 @@ from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
     correct_contravariant_vertical_velocity_numpy,
 )
-from .test_interpolate_to_half_levels_vp import (
-    interpolate_to_half_levels_vp_numpy,
-)
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
+from .test_interpolate_to_half_levels_vp import interpolate_to_half_levels_vp_numpy
 from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
