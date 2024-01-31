@@ -26,6 +26,7 @@ def _mo_solve_nonhydro_stencil_12(
     d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_12.'''
     z_dexner_dz_c_2_vp = -vpfloat("0.5") * (
         (z_theta_v_pr_ic - z_theta_v_pr_ic(Koff[1])) * d2dexdz2_fac1_mc
         + z_rth_pr_2 * d2dexdz2_fac2_mc

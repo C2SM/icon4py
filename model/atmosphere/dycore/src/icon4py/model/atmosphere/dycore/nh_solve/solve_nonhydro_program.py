@@ -39,8 +39,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
-    _mo_solve_nonhydro_stencil_11_upper,
+from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
+    _set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
@@ -359,7 +359,7 @@ def _predictor_stencils_11_lower_upper(
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_11_upper(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
+        _set_theta_v_prime_ic_at_lower_boundary(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
         (z_theta_v_pr_ic, theta_v_ic),
     )
     return z_theta_v_pr_ic, theta_v_ic

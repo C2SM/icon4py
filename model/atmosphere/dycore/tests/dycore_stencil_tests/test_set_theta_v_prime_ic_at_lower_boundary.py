@@ -16,8 +16,8 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
-    mo_solve_nonhydro_stencil_11_upper,
+from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
+    set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil11Upper(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_11_upper
+    PROGRAM = set_theta_v_prime_ic_at_lower_boundary
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 
     @staticmethod
