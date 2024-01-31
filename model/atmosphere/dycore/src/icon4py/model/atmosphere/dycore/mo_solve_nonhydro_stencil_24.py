@@ -29,6 +29,7 @@ def _mo_solve_nonhydro_stencil_24(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_24.'''
     z_gradh_exner_wp = astype(z_gradh_exner, wpfloat)
 
     vn_nnew_wp = vn_nnow + dtime * (

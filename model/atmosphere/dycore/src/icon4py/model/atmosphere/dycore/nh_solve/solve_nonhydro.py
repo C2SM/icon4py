@@ -58,8 +58,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_23 import (
-    mo_solve_nonhydro_stencil_23,
+from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_24 import (
     mo_solve_nonhydro_stencil_24,
@@ -1574,7 +1574,7 @@ class SolveNonhydro:
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector: start stencil 23")
-            mo_solve_nonhydro_stencil_23.with_backend(backend)(
+            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(backend)(
                 vn_nnow=prognostic_state[nnow].vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
                 ddt_vn_apc_ntl2=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl2],
