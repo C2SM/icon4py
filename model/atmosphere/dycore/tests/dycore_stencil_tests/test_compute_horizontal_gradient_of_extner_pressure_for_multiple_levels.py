@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
-    mo_solve_nonhydro_stencil_20,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
@@ -29,7 +29,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonHydroStencil20(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_20
+    PROGRAM = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
 
     @staticmethod

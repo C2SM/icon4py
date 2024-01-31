@@ -30,6 +30,7 @@ def _mo_solve_nonhydro_stencil_21(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     grav_o_cpd: wpfloat,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_21.'''
     zdiff_gradp_wp = astype(zdiff_gradp, wpfloat)
 
     theta_v_0 = theta_v(as_offset(Koff, ikoffset(E2EC[0])))

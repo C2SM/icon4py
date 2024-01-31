@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_20(
+def _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
@@ -59,7 +59,7 @@ def _mo_solve_nonhydro_stencil_20(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_20(
+def compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
@@ -72,7 +72,7 @@ def mo_solve_nonhydro_stencil_20(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_20(
+    _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
         inv_dual_edge_length,
         z_exner_ex_pr,
         zdiff_gradp,

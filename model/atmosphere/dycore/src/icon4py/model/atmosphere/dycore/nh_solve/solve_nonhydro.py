@@ -49,8 +49,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_20 import (
-    mo_solve_nonhydro_stencil_20,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_21 import (
     mo_solve_nonhydro_stencil_21,
@@ -1010,7 +1010,7 @@ class SolveNonhydro:
                 },
             )
 
-            mo_solve_nonhydro_stencil_20.with_backend(backend)(
+            compute_horizontal_gradient_of_extner_pressure_for_multiple_levels.with_backend(backend)(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
