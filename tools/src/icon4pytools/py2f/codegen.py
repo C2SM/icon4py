@@ -11,11 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
-from typing import Sequence
+from typing import Optional, Sequence
 
 from gt4py.eve import Node, codegen
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
+from gt4py.next import Dimension
 from gt4py.next.type_system.type_specifications import ScalarKind
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
@@ -33,7 +34,7 @@ class DimensionType(Node):
 class FuncParameter(Node):
     name: str
     d_type: ScalarKind
-    dimensions: Sequence[DimensionType]
+    dimensions: Sequence[Optional[Dimension]]
 
 
 class Func(Node):

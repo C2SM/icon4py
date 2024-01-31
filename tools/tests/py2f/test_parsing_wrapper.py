@@ -10,21 +10,26 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
 
 from icon4pytools.py2f.cffi_utils import CffiMethod
-from icon4pytools.py2f.parsing import parse_functions_from_module
+from icon4pytools.py2f.codegen import CffiPlugin
+from icon4pytools.py2f.parsing import parse_function
 
 
-@pytest.mark.skip
-def test_parse_functions():
-    path = "icon4pytools.py2f.wrappers.diffusion_wrapper"
-    plugin = parse_functions_from_module(path)
-
+def test_parse_functions_on_wrapper():
+    module_path = "icon4pytools.py2f.wrappers.diffusion_wrapper"
+    function_name = "diffusion_init"
+    plugin = parse_function(module_path, function_name)
+    assert isinstance(plugin, CffiPlugin)
     assert plugin.name == "diffusion_wrapper"
-    assert len(plugin.functions) == 2
-    assert "diffusion_init" in map(lambda f: f.name, plugin.functions)
-    assert "diffusion_run" in map(lambda f: f.name, plugin.functions)
+
+
+def test_parse_functions_on_program():
+    module_path = "icon4py.model.atmosphere.dycore.compute_airmass"
+    function_name = "compute_airmass"
+    plugin = parse_function(module_path, function_name)
+    assert isinstance(plugin, CffiPlugin)
+    assert plugin.name == "compute_airmass"
 
 
 @CffiMethod.register

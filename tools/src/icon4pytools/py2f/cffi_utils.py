@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
+import importlib
 import inspect
 from collections import OrderedDict
-from importlib.resources import files
 from types import MappingProxyType
 from typing import Any, Sequence
 
@@ -21,13 +21,16 @@ import cffi
 import gt4py.next as gtx
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.type_system.type_translation import from_type_hint
 
-from icon4pytools.py2f.typing_utils import parse_annotation
+from icon4pytools.py2f.typing_utils import parse_type_spec
 
 
 FFI_DEF_EXTERN_DECORATOR = "@ffi.def_extern()"
 
 CFFI_GEN_DECORATOR = "@CffiMethod.register"
+
+PROGRAM_DECORATOR = "@program"
 
 
 class CffiMethod:
@@ -67,9 +70,11 @@ def generate_and_compile_cffi_plugin(
         build_path: *optional* path to build directory
 
     """
-    module_split = module_name.split(".")
-    python_src_file = "/".join(module_split[1:]) + ".py"
-    python_package = module_split[0]
+    module = importlib.import_module(module_name)
+    module_path = getattr(module, "__file__", None)
+
+    if module_path is None:
+        raise FileNotFoundError(f"Could not find the file path for the module {module_name}")
 
     c_header_file = plugin_name + ".h"
     with open("/".join([build_path, c_header_file]), "w") as f:
@@ -80,13 +85,19 @@ def generate_and_compile_cffi_plugin(
     builder.embedding_api(c_header)
     builder.set_source(plugin_name, f'#include "{c_header_file}"')
 
-    module = files(python_package).joinpath(python_src_file).read_text()
+    with open(module_path, "r") as f:
+        lines = f.readlines()
 
-    module = f"from {plugin_name} import ffi\n{module}".replace(
-        CFFI_GEN_DECORATOR, FFI_DEF_EXTERN_DECORATOR
-    )
+    new_lines = []
+    for line in lines:
+        if PROGRAM_DECORATOR in line:
+            new_lines.append(FFI_DEF_EXTERN_DECORATOR + "\n")
+        new_lines.append(line)
 
-    builder.embedding_init_code(module)
+    new_source = "".join(new_lines).replace(CFFI_GEN_DECORATOR, FFI_DEF_EXTERN_DECORATOR)
+
+    new_source = f"from {plugin_name} import ffi\n" + new_source
+    builder.embedding_init_code(new_source)
     builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)
 
 
@@ -162,7 +173,8 @@ def to_fields(dim_sizes: dict[Dimension, int]):
             return func(*f_args, **kwargs)
 
         def _transform_arg(argument, name, parameters):
-            dims, dtype = parse_annotation(parameters[name].annotation)
+            type_spec = from_type_hint(parameters[name].annotation)
+            dims, dtype = parse_type_spec(type_spec)
             if dims:
                 (size_h, size_v) = _dim_sizes(dims)
                 ar = _unpack(argument, size_h, size_v, dtype)

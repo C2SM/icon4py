@@ -12,13 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.common import Dimension
-from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType
-from gt4py.next.type_system.type_translation import from_type_hint
+from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
 
-def parse_annotation(annotation) -> tuple[list[Dimension], ScalarKind]:
-    type_spec = from_type_hint(annotation)
-
+def parse_type_spec(type_spec: TypeSpec) -> tuple[list[Dimension], ScalarKind]:
     if isinstance(type_spec, ScalarType):
         return [], type_spec.kind
     elif isinstance(type_spec, FieldType):
