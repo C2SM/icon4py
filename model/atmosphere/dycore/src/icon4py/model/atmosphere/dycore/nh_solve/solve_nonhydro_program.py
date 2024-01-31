@@ -20,11 +20,11 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
 from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import(
-    _compute_horizontal_kinetic_energy,
-)
 from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
     _compute_horizontal_advection_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     _compute_pertubation_of_rho_and_theta,
