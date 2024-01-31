@@ -42,8 +42,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
+    _compute_horizontal_advection_of_rho_and_theta,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
@@ -396,7 +396,7 @@ def predictor_stencils_11_lower_upper(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+def compute_horizontal_advection_of_rho_and_theta(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
     pos_on_tplane_e_1: Field[[ECDim], float],
@@ -421,7 +421,7 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+    _compute_horizontal_advection_of_rho_and_theta(
         p_vn,
         p_vt,
         pos_on_tplane_e_1,

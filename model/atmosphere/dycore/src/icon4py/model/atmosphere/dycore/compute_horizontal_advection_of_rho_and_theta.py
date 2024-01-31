@@ -126,7 +126,7 @@ def _sten_16(
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+def _compute_horizontal_advection_of_rho_and_theta(
     p_vn: Field[[EdgeDim, KDim], wpfloat],
     p_vt: Field[[EdgeDim, KDim], vpfloat],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
@@ -176,7 +176,7 @@ def _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+def compute_horizontal_advection_of_rho_and_theta(
     p_vn: Field[[EdgeDim, KDim], wpfloat],
     p_vt: Field[[EdgeDim, KDim], vpfloat],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
@@ -201,7 +201,7 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+    _compute_horizontal_advection_of_rho_and_theta(
         p_vn,
         p_vt,
         pos_on_tplane_e_1,

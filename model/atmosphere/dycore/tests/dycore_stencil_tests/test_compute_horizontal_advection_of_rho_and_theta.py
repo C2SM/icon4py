@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
+    compute_horizontal_advection_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestComputeBtraj(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
+    PROGRAM = compute_horizontal_advection_of_rho_and_theta
     OUTPUTS = ("z_rho_e", "z_theta_v_e")
 
     @staticmethod

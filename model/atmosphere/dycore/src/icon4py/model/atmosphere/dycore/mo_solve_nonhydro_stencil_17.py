@@ -27,6 +27,7 @@ def _mo_solve_nonhydro_stencil_17(
     z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_17.'''
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
     scalfac_dd3d = broadcast(scalfac_dd3d, (EdgeDim, KDim))
