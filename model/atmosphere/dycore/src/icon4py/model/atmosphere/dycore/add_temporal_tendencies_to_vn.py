@@ -29,7 +29,7 @@ def _add_temporal_tendencies_to_vn(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_24.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_24."""
     z_gradh_exner_wp = astype(z_gradh_exner, wpfloat)
 
     vn_nnew_wp = vn_nnow + dtime * (

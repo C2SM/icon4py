@@ -27,7 +27,7 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formelry known as _mo_solve_nonhydro_stencil_27.'''
+    """Formelry known as _mo_solve_nonhydro_stencil_27."""
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
 
     scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))

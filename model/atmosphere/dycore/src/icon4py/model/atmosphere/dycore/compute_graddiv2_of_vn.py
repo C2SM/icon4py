@@ -24,7 +24,7 @@ def _compute_graddiv2_of_vn(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_25.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_25."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
     z_graddiv2_vn_wp = neighbor_sum(z_graddiv_vn_wp(E2C2EO) * geofac_grdiv, axis=E2C2EODim)

@@ -25,7 +25,7 @@ def _mo_solve_nonhydro_stencil_28(
     vn: Field[[EdgeDim, KDim], wpfloat],
     iau_wgt_dyn: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_28.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_28."""
     vn_incr_wp = astype(vn_incr, wpfloat)
 
     vn_wp = vn + (iau_wgt_dyn * vn_incr_wp)

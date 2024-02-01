@@ -25,7 +25,7 @@ def _apply_2nd_order_divergence_damping(
     vn: Field[[EdgeDim, KDim], wpfloat],
     scal_divdamp_o2: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_26.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_26."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
     vn_wp = vn + (scal_divdamp_o2 * z_graddiv_vn_wp)
