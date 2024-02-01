@@ -23,15 +23,19 @@ from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2C
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
+from .test_compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity_numpy,
+)
+from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
+from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
+from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy,
+)
+from .test_interpolate_vt_to_ie import interpolate_vt_to_ie_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
-from .test_mo_velocity_advection_stencil_01 import mo_velocity_advection_stencil_01_numpy
-from .test_mo_velocity_advection_stencil_02 import mo_velocity_advection_stencil_02_numpy
-from .test_mo_velocity_advection_stencil_03 import mo_velocity_advection_stencil_03_numpy
-from .test_mo_velocity_advection_stencil_05 import mo_velocity_advection_stencil_05_numpy
-from .test_mo_velocity_advection_stencil_07 import mo_velocity_advection_stencil_07_numpy
 
 
 class TestFusedVelocityAdvectionStencil1To7(StencilTest):
@@ -70,28 +74,28 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         condition1 = k_nlev < nlev
         vt = np.where(
             condition1,
-            mo_velocity_advection_stencil_01_numpy(grid, vn, rbf_vec_coeff_e),
+            compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e),
             vt,
         )
 
         condition2 = (1 <= k_nlev) & (k_nlev < nlev)
         vn_ie[:, :-1], z_kin_hor_e = np.where(
             condition2,
-            mo_velocity_advection_stencil_02_numpy(grid, wgtfac_e, vn, vt),
+            interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt),
             (vn_ie[:, :nlev], z_kin_hor_e),
         )
 
         if not lvn_only:
             z_vt_ie = np.where(
                 condition2,
-                mo_velocity_advection_stencil_03_numpy(grid, wgtfac_e, vt),
+                interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt),
                 z_vt_ie,
             )
 
         condition3 = k_nlev == 0
         vn_ie[:, :nlev], z_vt_ie, z_kin_hor_e = np.where(
             condition3,
-            mo_velocity_advection_stencil_05_numpy(vn, vt),
+            compute_horizontal_kinetic_energy_numpy(vn, vt),
             (vn_ie[:, :nlev], z_vt_ie, z_kin_hor_e),
         )
 
@@ -179,7 +183,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         if not lvn_only:
             z_v_grad_w = np.where(
                 condition_mask,
-                mo_velocity_advection_stencil_07_numpy(
+                compute_horizontal_advection_term_for_vertical_velocity_numpy(
                     grid,
                     vn_ie[:, :-1],
                     inv_dual_edge_length,

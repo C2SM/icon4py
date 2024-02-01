@@ -17,24 +17,20 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+    _compute_horizontal_advection_term_for_vertical_velocity,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
+)
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    _interpolate_vn_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import _interpolate_vt_to_ie
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
-    _mo_velocity_advection_stencil_01,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
-    _mo_velocity_advection_stencil_02,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
-    _mo_velocity_advection_stencil_03,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
-    _mo_velocity_advection_stencil_05,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
-    _mo_velocity_advection_stencil_07,
 )
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -59,14 +55,14 @@ def compute_interface_vt_vn_and_kinetic_energy(
 ]:
     vn_ie, z_kin_hor_e = where(
         1 <= k < nlev,
-        _mo_velocity_advection_stencil_02(wgtfac_e, vn, vt),
+        _interpolate_vn_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_kin_hor_e),
     )
 
     z_vt_ie = (
         where(
             1 <= k < nlev,
-            _mo_velocity_advection_stencil_03(wgtfac_e, vt),
+            _interpolate_vt_to_ie(wgtfac_e, vt),
             z_vt_ie,
         )
         if not lvn_only
@@ -75,7 +71,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k == int32(0),
-        _mo_velocity_advection_stencil_05(vn, vt),
+        _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
@@ -110,7 +106,7 @@ def _fused_velocity_advection_stencil_1_to_6(
 ]:
     vt = where(
         k < nlev,
-        _mo_velocity_advection_stencil_01(vn, rbf_vec_coeff_e),
+        _compute_tangential_wind(vn, rbf_vec_coeff_e),
         vt,
     )
 
@@ -185,7 +181,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     z_v_grad_w = (
         where(
             (lateral_boundary_7 <= edge) & (edge < halo_1) & (k < nlev),
-            _mo_velocity_advection_stencil_07(
+            _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie,
                 inv_dual_edge_length,
                 w,
@@ -243,7 +239,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     z_v_grad_w = (
         where(
             (lateral_boundary_7 <= edge < halo_1) & (k < nlev),
-            _mo_velocity_advection_stencil_07(
+            _compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie,
                 inv_dual_edge_length,
                 w,
