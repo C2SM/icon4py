@@ -39,9 +39,9 @@ from icon4py.model.common.decomposition.definitions import (
     get_runtype,
 )
 from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
-from icon4py.model.common.diagnostic_calculations.mo_init_exner_pr import mo_init_exner_pr
-from icon4py.model.common.diagnostic_calculations.mo_init_zero import mo_init_ddt_cell_zero, mo_init_ddt_edge_zero
-from icon4py.model.common.diagnostic_calculations.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
+from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
+from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import mo_init_ddt_cell_zero, mo_init_ddt_edge_zero
+from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
 from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, IconOutputConfig, read_config
@@ -663,6 +663,7 @@ class TimeLoop:
             )
 
             if not self.is_run_from_serializedData:
+                '''
                 self.stencil_mo_init_ddt_cell_zero(
                     solve_nonhydro_diagnostic_state.ddt_exner_phy,
                     solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
@@ -673,6 +674,7 @@ class TimeLoop:
                     self.grid.num_levels,
                     offset_provider={}
                 )
+                '''
                 self.stencil_mo_init_ddt_edge_zero(
                     solve_nonhydro_diagnostic_state.ddt_vn_phy,
                     solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,

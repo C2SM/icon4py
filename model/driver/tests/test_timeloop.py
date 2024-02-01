@@ -20,7 +20,6 @@ import pytest
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
 )
@@ -45,7 +44,8 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.common.diagnostic_calculations.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
+from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
+from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
 from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
@@ -58,15 +58,6 @@ from .utils import (
     construct_nonhydrostatic_config,
     construct_iconrun_config,
 )
-from datetime import datetime
-
-from icon4py.model.atmosphere.diffusion.diffusion import (
-    DiffusionConfig,
-    DiffusionType,
-    TurbulenceShearForcingType,
-)
-from icon4py.model.driver.icon_configuration import IconRunConfig
-
 
 
 compiler_backend = run_gtfn
@@ -169,6 +160,17 @@ def test_jabw_initial_condition(
     )
 
     # verify GT4Py version
+    mo_init_exner_pr.with_backend(backend)(
+        prognostic_state_now.exner,
+        data_provider.from_metrics_savepoint().exner_ref_mc(),
+        solve_nonhydro_diagnostic_state.exner_pr,
+        icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        0,
+        icon_grid.num_levels,
+        offset_provider={}
+    )
+
     mo_diagnose_temperature.with_backend(backend)(
         prognostic_state_now.theta_v,
         prognostic_state_now.exner,
@@ -184,7 +186,7 @@ def test_jabw_initial_condition(
     rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
-    ref_u = _allocate(CellDim,KDim,grid=icon_grid)
+    ref_u = _allocate(CellDim, KDim, grid=icon_grid)
     ref_v = _allocate(CellDim, KDim, grid=icon_grid)
     mo_rbf_vec_interpol_cell.with_backend(backend)(
         prognostic_state_now.vn,
@@ -259,6 +261,7 @@ def test_jabw_initial_condition(
                     return
                 print(title, cell_size, k_size)
                 difference = np.abs(ref - predict)
+                print(np.max(difference), np.min(difference))
                 if k_size > 0:
                     for i in range(cell_size):
                         for k in range(k_size):
@@ -351,6 +354,12 @@ def test_jabw_initial_condition(
             "pressure_sfc1",
         )
 
+        printing(
+            data_provider.from_savepoint_jabw_first_output().exner_pr().asnumpy(),
+            solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
+            "exner_pr",
+        )
+
         #printing(
         #    data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
         #    diagnostic_state.pressure.asnumpy(),
@@ -387,6 +396,49 @@ def test_jabw_initial_condition(
         data_provider.from_savepoint_jabw_first_output().v().asnumpy(),
         ref_v.asnumpy(),
         atol=1.e-13
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().exner_pr().asnumpy(),
+        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
+        atol=3.e-15
+    )
+
+    ddt_exner_phy = _allocate(CellDim, KDim, grid=icon_grid)
+    ddt_vn_phy = _allocate(EdgeDim, KDim, grid=icon_grid)
+    ddt_w_adv_ntl1 = _allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid)
+    ddt_w_adv_ntl2 = _allocate(CellDim, KDim, is_halfdim=True, grid=icon_grid)
+    ddt_vn_apc_ntl1 = _allocate(EdgeDim, KDim, grid=icon_grid)
+    ddt_vn_apc_ntl2 = _allocate(EdgeDim, KDim, grid=icon_grid)
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_vn_phy().asnumpy(),
+        ddt_vn_phy.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_exner_phy().asnumpy(),
+        ddt_exner_phy.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_vn_apc_pc(1).asnumpy(),
+        ddt_vn_apc_ntl1.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_vn_apc_pc(2).asnumpy(),
+        ddt_vn_apc_ntl2.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(1).asnumpy(),
+        ddt_w_adv_ntl1.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(2).asnumpy(),
+        ddt_w_adv_ntl2.asnumpy(),
     )
 
     # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed

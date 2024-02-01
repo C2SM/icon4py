@@ -1295,6 +1295,22 @@ class IconJabwFirstOutputSavepoint(IconSavepoint):
     def pressure_sfc(self):
         return self._get_field("output_diag_pressure_sfc", CellDim)
 
+    def exner_pr(self):
+        return self._get_field("output_diag_exner_pr", CellDim, KDim)
+
+    def ddt_vn_apc_pc(self, ntnd):
+        return self._get_field_component("output_diag_ddt_vn_apc_pc", ntnd, (EdgeDim, KDim))
+
+    def ddt_w_adv_pc(self, ntnd):
+        return self._get_field_component("output_diag_ddt_w_adv_ntl", ntnd, (CellDim, KDim))
+
+    def ddt_exner_phy(self):
+        return self._get_field("output_diag_ddt_exner_phy", CellDim, KDim)
+
+    def ddt_vn_phy(self):
+        return self._get_field("output_diag_ddt_vn_phy", EdgeDim, KDim)
+
+
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
         self.rank = mpi_rank
