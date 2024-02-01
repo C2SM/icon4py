@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_34(
+def _accumulate_prep_adv_fields(
     z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
     mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
     vn_traj: Field[[EdgeDim, KDim], wpfloat],
@@ -34,7 +34,7 @@ def _mo_solve_nonhydro_stencil_34(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_34(
+def accumulate_prep_adv_fields(
     z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
     mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
     vn_traj: Field[[EdgeDim, KDim], wpfloat],
@@ -45,7 +45,7 @@ def mo_solve_nonhydro_stencil_34(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_34(
+    _accumulate_prep_adv_fields(
         z_vn_avg,
         mass_fl_e,
         vn_traj,

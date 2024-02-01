@@ -86,8 +86,8 @@ from icon4py.model.atmosphere.dycore.compute_avg_vn import (
 from icon4py.model.atmosphere.dycore.compute_mass_flux import (
     compute_mass_flux,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
-    mo_solve_nonhydro_stencil_34,
+from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
+    accumulate_prep_adv_fields,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
     mo_solve_nonhydro_stencil_41,
@@ -1713,7 +1713,7 @@ class SolveNonhydro:
                         offset_provider={},
                     )
                 log.debug(f"corrector: start stencil 34")
-                mo_solve_nonhydro_stencil_34.with_backend(backend)(
+                accumulate_prep_adv_fields.with_backend(backend)(
                     z_vn_avg=self.z_vn_avg,
                     mass_fl_e=diagnostic_state_nh.mass_fl_e,
                     vn_traj=prep_adv.vn_traj,
