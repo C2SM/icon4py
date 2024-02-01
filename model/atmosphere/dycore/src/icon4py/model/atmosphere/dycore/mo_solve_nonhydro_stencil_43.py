@@ -30,6 +30,7 @@ def _mo_solve_nonhydro_stencil_43(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_43.'''
     ddt_w_adv_ntl1_wp, z_th_ddz_exner_c_wp, w_concorr_c_wp = astype(
         (ddt_w_adv_ntl1, z_th_ddz_exner_c, w_concorr_c), wpfloat
     )
