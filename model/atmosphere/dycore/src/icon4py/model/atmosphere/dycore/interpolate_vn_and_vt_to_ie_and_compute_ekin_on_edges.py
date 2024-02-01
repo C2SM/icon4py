@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_36(
+def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
@@ -33,6 +33,7 @@ def _mo_solve_nonhydro_stencil_36(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_36.'''
     z_vt_ie = _interpolate_vt_to_ie(wgtfac_e=wgtfac_e, vt=vt)
     vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(
         wgtfac_e=wgtfac_e, vn=vn, vt=vt
@@ -41,7 +42,7 @@ def _mo_solve_nonhydro_stencil_36(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_36(
+def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
@@ -53,7 +54,7 @@ def mo_solve_nonhydro_stencil_36(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_36(
+    _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
         wgtfac_e,
         vn,
         vt,

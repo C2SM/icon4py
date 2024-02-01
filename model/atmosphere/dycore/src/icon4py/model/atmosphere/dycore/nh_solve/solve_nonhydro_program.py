@@ -43,8 +43,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
-    _mo_solve_nonhydro_stencil_36,
+from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
+    _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,
@@ -474,7 +474,7 @@ def _predictor_stencils_35_36(
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k_field >= int32(1),
-        _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
+        _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
