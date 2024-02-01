@@ -26,7 +26,7 @@ from icon4pytools.py2f.typing_utils import parse_type_spec
 def parse_function(module_name: str, function_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
     func = _parse_function(module, function_name)
-    plugin_name = module_name.split(".")[-1]
+    plugin_name = f"{module_name.split('.')[-1]}_plugin"
     # todo(samkellerhals): for now we just support one function at a time.
     #   as it is not yet clear how to do this with gt4py programs
     return CffiPlugin(name=plugin_name, functions=[func])

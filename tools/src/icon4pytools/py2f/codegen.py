@@ -64,6 +64,15 @@ def as_f90_value(param: FuncParameter) -> str:
     return "value, " if len(param.dimensions) == 0 else ""
 
 
+def get_intent(param: FuncParameter) -> str:
+    # todo(samkellerhals): quick hack to set correct intent for domain bounds
+    #   by default all other variables are assumed to be arrays for now
+    #   and passed by reference (pointers) in the C interface and thus
+    #   annotated with inout in the f90 interface. All params need to have
+    #   corresponding in/out/inout types associated with them going forward
+    return "in" if "_start" or "_end" in param.name else "inout"
+
+
 def as_field(param: FuncParameter, language: str) -> str:
     size = len(param.dimensions)
     if size == 0:
@@ -90,6 +99,7 @@ class CHeaderGenerator(TemplatedGenerator):
     FuncParameter = as_jinja("""{{rendered_type}}{{dim}} {{name}}""")
 
 
+# todo(samkellerhals): code needs to be formatted
 class F90InterfaceGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja(
         """
@@ -108,12 +118,12 @@ class F90InterfaceGenerator(TemplatedGenerator):
     )
 
     def visit_Func(self, func: Func):
-        arg_names = ", ".join(map(lambda x: x.name, func.args))
+        arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
         return self.generic_visit(func, param_names=arg_names)
 
     Func = as_jinja(
         """subroutine {{name}}({{param_names}}) bind(c, name='{{name}}')
-        use iso_c_binding
+       import :: c_double, c_int
        {% for arg in args: %}\
        {{arg}}\
        {% endfor %}\
@@ -126,12 +136,13 @@ class F90InterfaceGenerator(TemplatedGenerator):
         return self.generic_visit(
             param,
             value=as_f90_value(param),
+            intent=get_intent(param),
             rendered_type=to_f_type(param.d_type),
             dim=as_field(param, "F"),
         )
 
     FuncParameter = as_jinja(
-        """{{rendered_type}}, {{value}} intent(inout):: {{name}}{{dim}}
+        """{{rendered_type}}, {{value}} intent({{intent}}):: {{name}}{{dim}}
     """
     )
 
