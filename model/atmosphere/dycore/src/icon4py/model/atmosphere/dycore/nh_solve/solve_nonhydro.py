@@ -76,8 +76,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_28 import (
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_29 import (
     mo_solve_nonhydro_stencil_29,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_30 import (
+)compute_vn_on_lateral_boundary
+fromcompute_vn_on_lateral_boundarycore.mo_solve_nonhydro_stencil_30 import (
     mo_solve_nonhydro_stencil_30,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
@@ -1099,7 +1099,7 @@ class SolveNonhydro:
         if self.grid.limited_area:
             mo_solve_nonhydro_stencil_29.with_backend(backend)(
                 grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
-                vn_now=prognostic_state[nnow].vn,
+            compute_vn_on_lateral_boundarynnow].vn,
                 vn_new=prognostic_state[nnew].vn,
                 dtime=dtime,
                 horizontal_start=start_edge_lb,

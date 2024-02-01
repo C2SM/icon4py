@@ -20,17 +20,18 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_29(
+def _compute_vn_on_lateral_boundary(
     grf_tend_vn: Field[[EdgeDim, KDim], wpfloat],
     vn_now: Field[[EdgeDim, KDim], wpfloat],
     dtime: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_29.'''
     vn_new_wp = vn_now + dtime * grf_tend_vn
     return vn_new_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_29(
+def compute_vn_on_lateral_boundary(
     grf_tend_vn: Field[[EdgeDim, KDim], wpfloat],
     vn_now: Field[[EdgeDim, KDim], wpfloat],
     vn_new: Field[[EdgeDim, KDim], wpfloat],
@@ -40,7 +41,7 @@ def mo_solve_nonhydro_stencil_29(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_29(
+    _compute_vn_on_lateral_boundary(
         grf_tend_vn,
         vn_now,
         dtime,
