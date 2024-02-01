@@ -520,8 +520,14 @@ class MetricSavepoint(IconSavepoint):
     def theta_ref_ic(self):
         return self._get_field("theta_ref_ic", CellDim, KDim)
 
+    def z_ifc(self):
+        return self._get_field("z_ifc", CellDim, KDim)
+
     def theta_ref_me(self):
         return self._get_field("theta_ref_me", EdgeDim, KDim)
+
+    def z_mc(self):
+        return self._get_field("z_mc", KDim)
 
     def vwind_expl_wgt(self):
         return self._get_field("vwind_expl_wgt", CellDim)
