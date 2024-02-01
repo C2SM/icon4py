@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
-    mo_solve_nonhydro_stencil_41,
+from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
@@ -29,7 +29,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil41(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_41
+    PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
 
     @staticmethod

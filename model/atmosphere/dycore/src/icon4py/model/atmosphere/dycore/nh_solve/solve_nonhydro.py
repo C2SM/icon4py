@@ -89,8 +89,8 @@ from icon4py.model.atmosphere.dycore.compute_mass_flux import (
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_41 import (
-    mo_solve_nonhydro_stencil_41,
+from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
+    compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
@@ -1199,7 +1199,7 @@ class SolveNonhydro:
         )
 
         if self.config.idiv_method == 1:
-            mo_solve_nonhydro_stencil_41.with_backend(backend)(
+            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(backend)(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
                 z_theta_v_fl_e=self.z_theta_v_fl_e,
@@ -1729,7 +1729,7 @@ class SolveNonhydro:
         if self.config.idiv_method == 1:
             # verified for e-9
             log.debug(f"corrector: start stencile 41")
-            mo_solve_nonhydro_stencil_41.with_backend(backend)(
+            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(backend)(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
                 z_theta_v_fl_e=self.z_theta_v_fl_e,
