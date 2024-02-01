@@ -55,8 +55,8 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_l
 from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density import (
     _compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_43 import (
-    _mo_solve_nonhydro_stencil_43,
+from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density import (
+    _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
     _mo_solve_nonhydro_stencil_44,
@@ -786,7 +786,7 @@ def _stencils_43_44_45_45b(
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= int32(1)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_43(
+        _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
             z_th_ddz_exner_c,
