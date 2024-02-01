@@ -80,8 +80,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_29 import (
 fromcompute_vn_on_lateral_boundarycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_31 import (
-    mo_solve_nonhydro_stencil_31,
+from icon4py.model.atmosphere.dycore.compute_avg_vn import (
+    compute_avg_vn,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
     mo_solve_nonhydro_stencil_32,
@@ -1670,7 +1670,7 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
         log.debug("corrector: start stencil 31")
-        mo_solve_nonhydro_stencil_31.with_backend(backend)(
+        compute_avg_vn.with_backend(backend)(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
             z_vn_avg=self.z_vn_avg,
