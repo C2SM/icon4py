@@ -38,30 +38,46 @@ def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.Fencil
     """Transform the domain representation and configure the FencilDefinition parameters."""
     grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
 
+    # TODO(tehrengruber): This is a left-over from before this function supported multiple closured.
+    #  Since this was never tested the exception is kept in place.
     if len(fencil.closures) > 1:
         raise MultipleFieldOperatorException()
 
-    fencil.closures[0].domain = itir.FunCall(
-        fun=itir.SymRef(id="unstructured_domain"),
-        args=[
-            itir.FunCall(
-                fun=itir.SymRef(id="named_range"),
-                args=[
-                    itir.AxisLiteral(value="horizontal"),
-                    itir.SymRef(id=H_START),
-                    itir.SymRef(id=H_END),
-                ],
-            ),
-            itir.FunCall(
-                fun=itir.SymRef(id="named_range"),
-                args=[
-                    itir.AxisLiteral(value=Koff.source.value),
-                    itir.SymRef(id=V_START),
-                    itir.SymRef(id=V_END),
-                ],
-            ),
-        ],
-    )
+    for closure in fencil.closures:
+        if not len(closure.domain.args) == 2:
+            raise TypeError(f"Output domain of '{fencil.id}' must be 2-dimensional.")
+        assert isinstance(closure.domain.args[0], itir.FunCall) and isinstance(
+            closure.domain.args[1], itir.FunCall
+        )
+        horizontal_axis = closure.domain.args[0].args[0]
+        vertical_axis = closure.domain.args[1].args[0]
+        assert isinstance(horizontal_axis, itir.AxisLiteral) and isinstance(
+            vertical_axis, itir.AxisLiteral
+        )
+        assert horizontal_axis.value in ["Vertex", "Edge", "Cell"]
+        assert vertical_axis.value == "K"
+
+        closure.domain = itir.FunCall(
+            fun=itir.SymRef(id="unstructured_domain"),
+            args=[
+                itir.FunCall(
+                    fun=itir.SymRef(id="named_range"),
+                    args=[
+                        horizontal_axis,
+                        itir.SymRef(id=H_START),
+                        itir.SymRef(id=H_END),
+                    ],
+                ),
+                itir.FunCall(
+                    fun=itir.SymRef(id="named_range"),
+                    args=[
+                        itir.AxisLiteral(value=Koff.source.value),
+                        itir.SymRef(id=V_START),
+                        itir.SymRef(id=V_END),
+                    ],
+                ),
+            ],
+        )
 
     fencil_params = [
         *(p for p in fencil.params if not is_size_param(p) and p not in grid_size_symbols),
