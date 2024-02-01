@@ -15,15 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
-    mo_solve_nonhydro_stencil_40,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
+    compute_contravariant_correction_of_w_for_lower_boundary,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_40_numpy(
+def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
     grid, e_bln_c_s: np.array, z_w_concorr_me: np.array, wgtfacq_c: np.array
 ) -> np.array:
     c2e = grid.connectivities[C2EDim]
@@ -50,7 +50,7 @@ def mo_solve_nonhydro_stencil_40_numpy(
 
 
 class TestMoSolveNonhydroStencil40(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_40
+    PROGRAM = compute_contravariant_correction_of_w_for_lower_boundary
     OUTPUTS = ("w_concorr_c",)
 
     @staticmethod
@@ -61,7 +61,7 @@ class TestMoSolveNonhydroStencil40(StencilTest):
         wgtfacq_c: np.array,
         **kwargs,
     ) -> dict:
-        w_concorr_c = mo_solve_nonhydro_stencil_40_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c)
+        w_concorr_c = compute_contravariant_correction_of_w_for_lower_boundary_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c)
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture

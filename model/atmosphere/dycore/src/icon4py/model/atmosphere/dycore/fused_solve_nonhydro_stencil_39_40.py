@@ -17,8 +17,8 @@ from gt4py.next.ffront.fbuiltins import Field, int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
-    _mo_solve_nonhydro_stencil_40,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
+    _compute_contravariant_correction_of_w_for_lower_boundary,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -37,7 +37,7 @@ def _fused_solve_nonhydro_stencil_39_40(
     w_concorr_c = where(
         nflatlev + 1 <= vert_idx < nlev,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
-        _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c),
+        _compute_contravariant_correction_of_w_for_lower_boundary(e_bln_c_s, z_w_concorr_me, wgtfacq_c),
     )
     return w_concorr_c
 

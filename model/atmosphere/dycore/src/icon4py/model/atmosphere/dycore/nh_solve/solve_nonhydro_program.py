@@ -49,8 +49,8 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_eki
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
-    _mo_solve_nonhydro_stencil_40,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
+    _compute_contravariant_correction_of_w_for_lower_boundary,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_42 import (
     _mo_solve_nonhydro_stencil_42,
@@ -570,7 +570,7 @@ def _stencils_39_40(
 
     w_concorr_c = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl),
+        _compute_contravariant_correction_of_w_for_lower_boundary(e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl),
         w_concorr_c,
     )
 

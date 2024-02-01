@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 from .test_compute_contravariant_correction_of_w import compute_contravariant_correction_of_w_numpy
-from .test_mo_solve_nonhydro_stencil_40 import mo_solve_nonhydro_stencil_40_numpy
+from .test_compute_contravariant_correction_of_w_for_lower_boundary import compute_contravariant_correction_of_w_for_lower_boundary_numpy
 
 
 def _fused_solve_nonhydro_stencil_39_40_numpy(
@@ -32,7 +32,7 @@ def _fused_solve_nonhydro_stencil_39_40_numpy(
     w_concorr_c = np.where(
         (nflatlev < vert_idx) & (vert_idx < nlev),
         compute_contravariant_correction_of_w_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfac_c),
-        mo_solve_nonhydro_stencil_40_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c),
+        compute_contravariant_correction_of_w_for_lower_boundary_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c),
     )
 
     w_concorr_c_res = np.zeros_like(w_concorr_c)
