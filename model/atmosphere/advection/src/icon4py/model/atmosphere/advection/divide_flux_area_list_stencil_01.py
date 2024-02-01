@@ -13,6 +13,7 @@
 
 import sys
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
@@ -665,7 +666,7 @@ def _divide_flux_area_list_stencil_01(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def divide_flux_area_list_stencil_01(
     famask_int: Field[[EdgeDim, KDim], int32],
     p_vn: Field[[EdgeDim, KDim], float],
