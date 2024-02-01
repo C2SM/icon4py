@@ -23,7 +23,8 @@ from icon4py.model.common.type_alias import vpfloat
 def _mo_solve_nonhydro_stencil_22(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
     pg_exdist: Field[[EdgeDim, KDim], vpfloat],
-    z_hydro_corr: Field[[EdgeDim], vpfloat],
+    # z_hydro_corr: Field[[EdgeDim], vpfloat],
+    z_hydro_corr: Field[[EdgeDim, KDim], vpfloat],
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
@@ -34,7 +35,8 @@ def _mo_solve_nonhydro_stencil_22(
 def mo_solve_nonhydro_stencil_22(
     ipeidx_dsl: Field[[EdgeDim, KDim], bool],
     pg_exdist: Field[[EdgeDim, KDim], vpfloat],
-    z_hydro_corr: Field[[EdgeDim], vpfloat],
+    # z_hydro_corr: Field[[EdgeDim], vpfloat],
+    z_hydro_corr: Field[[EdgeDim, KDim], vpfloat],
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
