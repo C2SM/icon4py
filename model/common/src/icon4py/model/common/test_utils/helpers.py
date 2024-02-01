@@ -96,7 +96,7 @@ def zero_field(
 
 
 def constant_field(
-    grid: SimpleGrid, value: float, *dims: gt_common.Dimension, dtype=float
+    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=float
 ) -> gt_common.Field:
     return as_field(
         dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
