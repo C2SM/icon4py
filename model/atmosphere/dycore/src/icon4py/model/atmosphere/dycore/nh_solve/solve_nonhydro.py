@@ -70,8 +70,8 @@ from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
 from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_27 import (
-    mo_solve_nonhydro_stencil_27,
+from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
+    apply_weighted_2nd_and_4th_order_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_28 import (
     mo_solve_nonhydro_stencil_28,
@@ -1629,7 +1629,7 @@ class SolveNonhydro:
             if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
                 if self.grid.limited_area:
                     log.debug("corrector: start stencil 27")
-                    mo_solve_nonhydro_stencil_27.with_backend(backend)(
+                    apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)(
                         scal_divdamp=self.scal_divdamp,
                         bdy_divdamp=self._bdy_divdamp,
                         nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
