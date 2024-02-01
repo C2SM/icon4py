@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_25(
+def _compute_graddiv2_of_vn(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
@@ -32,7 +32,7 @@ def _mo_solve_nonhydro_stencil_25(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_25(
+def compute_graddiv2_of_vn(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
@@ -41,7 +41,7 @@ def mo_solve_nonhydro_stencil_25(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_25(
+    _compute_graddiv2_of_vn(
         geofac_grdiv,
         z_graddiv_vn,
         out=z_graddiv2_vn,

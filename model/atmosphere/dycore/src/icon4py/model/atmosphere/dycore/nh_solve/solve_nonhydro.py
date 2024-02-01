@@ -64,11 +64,11 @@ from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolat
 from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_25 import (
-    mo_solve_nonhydro_stencil_25,
+from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
+    compute_graddiv2_of_vn,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_26 import (
-    mo_solve_nonhydro_stencil_26,
+from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
+    apply_2nd_order_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_27 import (
     mo_solve_nonhydro_stencil_27,
@@ -1598,7 +1598,7 @@ class SolveNonhydro:
         ):
             # verified for e-10
             log.debug(f"corrector start stencil 25")
-            mo_solve_nonhydro_stencil_25.with_backend(backend)(
+            compute_graddiv2_of_vn.with_backend(backend)(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 z_graddiv2_vn=self.z_graddiv2_vn,
@@ -1614,7 +1614,7 @@ class SolveNonhydro:
         if self.config.lhdiff_rcf:
             if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                 log.debug(f"corrector: start stencil 26")
-                mo_solve_nonhydro_stencil_26.with_backend(backend)(
+                apply_2nd_order_divergence_damping.with_backend(backend)(
                     z_graddiv_vn=z_fields.z_graddiv_vn,
                     vn=prognostic_state[nnew].vn,
                     scal_divdamp_o2=scal_divdamp_o2,

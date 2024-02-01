@@ -15,38 +15,33 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_25 import (
-    mo_solve_nonhydro_stencil_25,
+from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
+    apply_2nd_order_divergence_damping,
 )
-from icon4py.model.common.dimension import E2C2EODim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil25(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_25
-    OUTPUTS = ("z_graddiv2_vn",)
+class TestMoSolveNonhydroStencil26(StencilTest):
+    PROGRAM = apply_2nd_order_divergence_damping
+    OUTPUTS = ("vn",)
 
     @staticmethod
-    def reference(grid, geofac_grdiv: np.array, z_graddiv_vn: np.array, **kwargs) -> dict:
-        e2c2eO = grid.connectivities[E2C2EODim]
-        geofac_grdiv = np.expand_dims(geofac_grdiv, axis=-1)
-        z_graddiv2_vn = np.sum(
-            np.where((e2c2eO != -1)[:, :, np.newaxis], z_graddiv_vn[e2c2eO] * geofac_grdiv, 0),
-            axis=1,
-        )
-        return dict(z_graddiv2_vn=z_graddiv2_vn)
+    def reference(grid, z_graddiv_vn: np.array, vn: np.array, scal_divdamp_o2, **kwargs) -> dict:
+        vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
+        return dict(vn=vn)
 
     @pytest.fixture
     def input_data(self, grid):
         z_graddiv_vn = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim, dtype=wpfloat)
-        z_graddiv2_vn = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        scal_divdamp_o2 = wpfloat("5.0")
 
         return dict(
-            geofac_grdiv=geofac_grdiv,
             z_graddiv_vn=z_graddiv_vn,
-            z_graddiv2_vn=z_graddiv2_vn,
+            vn=vn,
+            scal_divdamp_o2=scal_divdamp_o2,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),
