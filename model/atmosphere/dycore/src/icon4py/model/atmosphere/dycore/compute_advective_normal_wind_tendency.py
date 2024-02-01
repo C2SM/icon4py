@@ -32,7 +32,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_velocity_advection_stencil_19(
+def _compute_advective_normal_wind_tendency(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
@@ -44,6 +44,7 @@ def _mo_velocity_advection_stencil_19(
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
+    """Formerly known as _mo_velocity_advection_stencil_19."""
     vt_wp, z_w_con_c_full_wp, ddqz_z_full_e_wp = astype(
         (vt, z_w_con_c_full, ddqz_z_full_e), wpfloat
     )
@@ -65,7 +66,7 @@ def _mo_velocity_advection_stencil_19(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_velocity_advection_stencil_19(
+def compute_advective_normal_wind_tendency(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
@@ -82,7 +83,7 @@ def mo_velocity_advection_stencil_19(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_velocity_advection_stencil_19(
+    _compute_advective_normal_wind_tendency(
         z_kin_hor_e,
         coeff_gradekin,
         z_ekinh,

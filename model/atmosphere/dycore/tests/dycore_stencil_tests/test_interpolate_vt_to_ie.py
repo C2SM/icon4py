@@ -15,17 +15,13 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
-    mo_velocity_advection_stencil_03,
-)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-def mo_velocity_advection_stencil_03_numpy(
-    grid, wgtfac_e: np.array, vt: np.array, **kwargs
-) -> np.array:
+def interpolate_vt_to_ie_numpy(grid, wgtfac_e: np.array, vt: np.array, **kwargs) -> np.array:
     vt_k_minus_1 = np.roll(vt, shift=1, axis=1)
     z_vt_ie = wgtfac_e * vt + (1.0 - wgtfac_e) * vt_k_minus_1
     z_vt_ie[:, 0] = 0
@@ -33,12 +29,12 @@ def mo_velocity_advection_stencil_03_numpy(
 
 
 class TestMoVelocityAdvectionStencil03(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_03
+    PROGRAM = interpolate_vt_to_ie
     OUTPUTS = ("z_vt_ie",)
 
     @staticmethod
     def reference(grid, wgtfac_e: np.array, vt: np.array, **kwargs) -> dict:
-        z_vt_ie = mo_velocity_advection_stencil_03_numpy(grid, wgtfac_e, vt)
+        z_vt_ie = interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt)
         return dict(
             z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)]
         )

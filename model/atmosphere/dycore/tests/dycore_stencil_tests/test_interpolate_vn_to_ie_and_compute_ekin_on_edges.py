@@ -15,32 +15,36 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
-    mo_velocity_advection_stencil_02,
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e: np.array, vn: np.array) -> np.array:
+def interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(
+    wgtfac_e: np.array, vn: np.array
+) -> np.array:
     vn_ie_k_minus_1 = np.roll(vn, shift=1, axis=1)
     vn_ie = wgtfac_e * vn + (1.0 - wgtfac_e) * vn_ie_k_minus_1
     vn_ie[:, 0] = 0
     return vn_ie
 
 
-def mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn: np.array, vt: np.array) -> np.array:
+def interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(
+    vn: np.array, vt: np.array
+) -> np.array:
     z_kin_hor_e = 0.5 * (vn * vn + vt * vt)
     z_kin_hor_e[:, 0] = 0
     return z_kin_hor_e
 
 
-def mo_velocity_advection_stencil_02_numpy(
+def interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
     grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs
 ) -> tuple:
-    vn_ie = mo_velocity_advection_stencil_02_vn_ie_numpy(wgtfac_e, vn)
-    z_kin_hor_e = mo_velocity_advection_stencil_02_z_kin_hor_e_numpy(vn, vt)
+    vn_ie = interpolate_vn_to_ie_and_compute_ekin_on_edges_vn_ie_numpy(wgtfac_e, vn)
+    z_kin_hor_e = interpolate_vn_to_ie_and_compute_ekin_on_edges_z_kin_hor_e_numpy(vn, vt)
     return (
         vn_ie,
         z_kin_hor_e,
@@ -48,12 +52,14 @@ def mo_velocity_advection_stencil_02_numpy(
 
 
 class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_02
+    PROGRAM = interpolate_vn_to_ie_and_compute_ekin_on_edges
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
     @classmethod
     def reference(cls, grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
-        vn_ie, z_kin_hor_e = mo_velocity_advection_stencil_02_numpy(grid, wgtfac_e, vn, vt)
+        vn_ie, z_kin_hor_e = interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
+            grid, wgtfac_e, vn, vt
+        )
         return dict(
             vn_ie=vn_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
             z_kin_hor_e=z_kin_hor_e[
