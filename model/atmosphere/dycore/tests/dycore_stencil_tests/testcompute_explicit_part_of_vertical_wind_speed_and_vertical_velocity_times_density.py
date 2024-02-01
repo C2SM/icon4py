@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_42 import (
-    mo_solve_nonhydro_stencil_42,
+from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density import (
+    compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil42(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_42
+    PROGRAM = compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
 
     @staticmethod

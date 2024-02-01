@@ -71,11 +71,11 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_28 import (
-    mo_solve_nonhydro_stencil_28,
+from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
+    add_analysis_increments_to_vn,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_29 import (
-    mo_solve_nonhydro_stencil_29,
+from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
+    compute_vn_on_lateral_boundary,
 )compute_vn_on_lateral_boundary
 fromcompute_vn_on_lateral_boundarycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
@@ -1085,7 +1085,7 @@ class SolveNonhydro:
         )
 
         if self.config.is_iau_active:
-            mo_solve_nonhydro_stencil_28(
+            add_analysis_increments_to_vn(
                 vn_incr=diagnostic_state_nh.vn_incr,
                 vn=prognostic_state[nnew].vn,
                 iau_wgt_dyn=self.config.iau_wgt_dyn,
@@ -1097,7 +1097,7 @@ class SolveNonhydro:
             )
 
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_29.with_backend(backend)(
+            compute_vn_on_lateral_boundary.with_backend(backend)(
                 grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
             compute_vn_on_lateral_boundarynnow].vn,
                 vn_new=prognostic_state[nnew].vn,
@@ -1657,7 +1657,7 @@ class SolveNonhydro:
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
             log.debug("corrector start stencil 28")
-            mo_solve_nonhydro_stencil_28(
+            add_analysis_increments_to_vn(
                 diagnostic_state_nh.vn_incr,
                 prognostic_state[nnew].vn,
                 self.config.iau_wgt_dyn,
