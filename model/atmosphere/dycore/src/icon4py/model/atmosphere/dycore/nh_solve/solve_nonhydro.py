@@ -83,8 +83,8 @@ fromcompute_vn_on_lateral_boundarycore.compute_avg_vn_and_graddiv_vn_and_vt impo
 from icon4py.model.atmosphere.dycore.compute_avg_vn import (
     compute_avg_vn,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_32 import (
-    mo_solve_nonhydro_stencil_32,
+from icon4py.model.atmosphere.dycore.compute_mass_flux import (
+    compute_mass_flux,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_34 import (
     mo_solve_nonhydro_stencil_34,
@@ -1130,7 +1130,7 @@ class SolveNonhydro:
         )
 
         if self.config.idiv_method == 1:
-            mo_solve_nonhydro_stencil_32.with_backend(backend)(
+            compute_mass_flux.with_backend(backend)(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
                 ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
@@ -1685,7 +1685,7 @@ class SolveNonhydro:
 
         if self.config.idiv_method == 1:
             log.debug("corrector: start stencil 32")
-            mo_solve_nonhydro_stencil_32.with_backend(backend)(
+            compute_mass_flux.with_backend(backend)(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
                 ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
