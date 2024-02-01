@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_30 import (
-    mo_solve_nonhydro_stencil_30,
+from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.common.dimension import E2C2EDim, E2C2EODim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil30(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_30
+    PROGRAM = compute_avg_vn_and_graddiv_vn_and_vt
     OUTPUTS = ("z_vn_avg", "z_graddiv_vn", "vt")
 
     @staticmethod

@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_30(
+def _compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
@@ -42,7 +42,7 @@ def _mo_solve_nonhydro_stencil_30(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_30(
+def compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
@@ -55,7 +55,7 @@ def mo_solve_nonhydro_stencil_30(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_30(
+    _compute_avg_vn_and_graddiv_vn_and_vt(
         e_flx_avg,
         vn,
         geofac_grdiv,
