@@ -58,8 +58,8 @@ from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_spee
 from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density import (
     _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
-    _mo_solve_nonhydro_stencil_44,
+from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
+    _compute_solver_coefficients_matrix,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
@@ -664,7 +664,7 @@ def _stencils_42_44_45_45b(
 
     (z_beta, z_alpha) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_44(
+        _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
             theta_v_nnow,
@@ -800,7 +800,7 @@ def _stencils_43_44_45_45b(
     )
     (z_beta, z_alpha) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_44(
+        _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
             theta_v_nnow,

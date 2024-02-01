@@ -26,6 +26,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _mo_solve_nonhydro_stencil_47(
     w_concorr_c: Field[[CellDim, KDim], vpfloat]
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_47.'''
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
     w_nnew_wp = w_concorr_c_wp
