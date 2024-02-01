@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_47(
+def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_concorr_c: Field[[CellDim, KDim], vpfloat]
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
     '''Formerly known as _mo_solve_nonhydro_stencil_47.'''
@@ -35,7 +35,7 @@ def _mo_solve_nonhydro_stencil_47(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_47(
+def set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_nnew: Field[[CellDim, KDim], wpfloat],
     z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
@@ -44,7 +44,7 @@ def mo_solve_nonhydro_stencil_47(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_47(
+    _set_lower_boundary_condition_for_w_and_contravariant_correction(
         w_concorr_c,
         out=(w_nnew, z_contr_w_fl_l),
         domain={

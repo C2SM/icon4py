@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
-    mo_solve_nonhydro_stencil_47,
+from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+    set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil47(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_47
+    PROGRAM = set_lower_boundary_condition_for_w_and_contravariant_correction
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
     @staticmethod

@@ -61,8 +61,8 @@ from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_spee
 from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
-    _mo_solve_nonhydro_stencil_47,
+from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+    _set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
     _mo_solve_nonhydro_stencil_49,
@@ -908,7 +908,7 @@ def _stencils_47_48_49(
 ]:
     (w_nnew, z_contr_w_fl_l) = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_47(w_concorr_c),
+        _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c),
         (w_nnew, z_contr_w_fl_l),
     )
     # 48 and 49 are identical except for bounds
