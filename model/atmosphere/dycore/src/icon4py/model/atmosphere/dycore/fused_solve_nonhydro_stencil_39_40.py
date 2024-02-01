@@ -14,8 +14,8 @@
 from gt4py.next.ffront.decorator import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
-    _mo_solve_nonhydro_stencil_39,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
+    _compute_contravariant_correction_of_w,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
     _mo_solve_nonhydro_stencil_40,
@@ -36,7 +36,7 @@ def _fused_solve_nonhydro_stencil_39_40(
 ) -> Field[[CellDim, KDim], vpfloat]:
     w_concorr_c = where(
         nflatlev + 1 <= vert_idx < nlev,
-        _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c),
     )
     return w_concorr_c

@@ -46,8 +46,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
-    _mo_solve_nonhydro_stencil_39,
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
+    _compute_contravariant_correction_of_w,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
     _mo_solve_nonhydro_stencil_40,
@@ -564,7 +564,7 @@ def _stencils_39_40(
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
         k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
-        _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
 
