@@ -15,26 +15,28 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
-    mo_velocity_advection_stencil_15,
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-def mo_velocity_advection_stencil_15_numpy(grid, z_w_con_c: np.array):
+def interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(grid, z_w_con_c: np.array):
     z_w_con_c_full = 0.5 * (z_w_con_c[:, :-1] + z_w_con_c[:, 1:])
     return z_w_con_c_full
 
 
 class TestMoVelocityAdvectionStencil15(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_15
+    PROGRAM = interpolate_contravatiant_vertical_verlocity_to_full_levels
     OUTPUTS = ("z_w_con_c_full",)
 
     @staticmethod
     def reference(grid, z_w_con_c: np.array, **kwargs) -> dict:
-        z_w_con_c_full = mo_velocity_advection_stencil_15_numpy(grid, z_w_con_c)
+        z_w_con_c_full = interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(
+            grid, z_w_con_c
+        )
         return dict(z_w_con_c_full=z_w_con_c_full)
 
     @pytest.fixture

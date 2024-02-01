@@ -15,45 +15,38 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
-    mo_velocity_advection_stencil_05,
-)
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_velocity_advection_stencil_05_numpy(vn: np.array, vt: np.array) -> tuple:
-    vn_ie = vn
-    z_vt_ie = vt
-    z_kin_hor_e = 0.5 * ((vn * vn) + (vt * vt))
-    return vn_ie, z_vt_ie, z_kin_hor_e
+def compute_tangential_wind_numpy(grid, vn: np.array, rbf_vec_coeff_e: np.array) -> np.array:
+    rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
+    e2c2e = grid.connectivities[E2C2EDim]
+    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+    return vt
 
 
-class TestMoVelocityAdvectionStencil05(StencilTest):
-    PROGRAM = mo_velocity_advection_stencil_05
-    OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
+class TestMoVelocityAdvectionStencil01(StencilTest):
+    PROGRAM = compute_tangential_wind
+    OUTPUTS = ("vt",)
 
     @staticmethod
-    def reference(grid, vn: np.array, vt: np.array, **kwargs) -> dict:
-        vn_ie, z_vt_ie, z_kin_hor_e = mo_velocity_advection_stencil_05_numpy(vn, vt)
-        return dict(vn_ie=vn_ie, z_vt_ie=z_vt_ie, z_kin_hor_e=z_kin_hor_e)
+    def reference(grid, vn: np.array, rbf_vec_coeff_e: np.array, **kwargs) -> dict:
+        vt = compute_tangential_wind_numpy(grid, vn, rbf_vec_coeff_e)
+        return dict(vt=vt)
 
     @pytest.fixture
     def input_data(self, grid):
         vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-
-        vn_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_vt_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_kin_hor_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim, dtype=wpfloat)
+        vt = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,
+            rbf_vec_coeff_e=rbf_vec_coeff_e,
             vt=vt,
-            vn_ie=vn_ie,
-            z_vt_ie=z_vt_ie,
-            z_kin_hor_e=z_kin_hor_e,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_edges),
             vertical_start=int32(0),

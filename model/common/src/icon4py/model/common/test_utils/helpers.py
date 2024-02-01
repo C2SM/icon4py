@@ -169,7 +169,7 @@ def _test_validation(self, grid, backend, input_data):
 
     self.PROGRAM.with_backend(backend)(
         **input_data_dev,
-        offset_provider=grid.get_all_offset_providers(),
+        offset_provider=grid.offset_providers,
     )
     for out in self.OUTPUTS:
         name, refslice, gtslice = (
@@ -198,7 +198,7 @@ if pytest_benchmark:
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data_dev,
-                offset_provider=grid.get_all_offset_providers(),
+                offset_provider=grid.offset_providers,
             )
 
             input_data_dev = None  # release device memory, in case of gpu execution

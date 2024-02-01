@@ -27,10 +27,18 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_mo_velocity_advection_stencil_15 import mo_velocity_advection_stencil_15_numpy
-from .test_mo_velocity_advection_stencil_16 import mo_velocity_advection_stencil_16_numpy
-from .test_mo_velocity_advection_stencil_17 import mo_velocity_advection_stencil_17_numpy
-from .test_mo_velocity_advection_stencil_18 import mo_velocity_advection_stencil_18_numpy
+from .test_add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl_numpy,
+)
+from .test_add_interpolated_horizontal_advection_of_w import (
+    add_interpolated_horizontal_advection_of_w_numpy,
+)
+from .test_compute_advective_vertical_wind_tendency import (
+    compute_advective_vertical_wind_tendency_numpy,
+)
+from .test_interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy,
+)
 
 
 class TestFusedVelocityAdvectionStencil15To18(StencilTest):
@@ -73,13 +81,17 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
 
         ddt_w_adv = np.where(
             condition1,
-            mo_velocity_advection_stencil_16_numpy(z_w_con_c[:, :-1], w, coeff1_dwdz, coeff2_dwdz),
+            compute_advective_vertical_wind_tendency_numpy(
+                z_w_con_c[:, :-1], w, coeff1_dwdz, coeff2_dwdz
+            ),
             ddt_w_adv,
         )
 
         ddt_w_adv = np.where(
             condition1,
-            mo_velocity_advection_stencil_17_numpy(grid, e_bln_c_s, z_v_grad_w, ddt_w_adv),
+            add_interpolated_horizontal_advection_of_w_numpy(
+                grid, e_bln_c_s, z_v_grad_w, ddt_w_adv
+            ),
             ddt_w_adv,
         )
 
@@ -93,7 +105,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         if extra_diffu:
             ddt_w_adv = np.where(
                 condition2,
-                mo_velocity_advection_stencil_18_numpy(
+                add_extra_diffusion_for_w_con_approaching_cfl_numpy(
                     grid,
                     levelmask,
                     cfl_clipping,
@@ -143,7 +155,9 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         extra_diffu,
         **kwargs,
     ):
-        z_w_con_c_full = mo_velocity_advection_stencil_15_numpy(grid, z_w_con_c)
+        z_w_con_c_full = interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(
+            grid, z_w_con_c
+        )
 
         if not lvn_only:
             ddt_w_adv = cls._fused_velocity_advection_stencil_16_to_18(
