@@ -165,10 +165,10 @@ def _test_validation(self, grid, backend, input_data):
         },
     )
 
-    input_data_dev = allocate_data(backend, input_data)
+    input_data = allocate_data(backend, input_data)
 
     self.PROGRAM.with_backend(backend)(
-        **input_data_dev,
+        **input_data,
         offset_provider=grid.offset_providers,
     )
     for out in self.OUTPUTS:
@@ -182,8 +182,6 @@ def _test_validation(self, grid, backend, input_data):
             input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
         ), f"Validation failed for '{name}'"
 
-    input_data_dev = None  # release device memory, in case of gpu execution
-
 
 if pytest_benchmark:
 
@@ -193,15 +191,12 @@ if pytest_benchmark:
         ):  # skipping as otherwise program calls are duplicated in tests.
             pytest.skip("Test skipped due to 'benchmark-disable' option.")
         else:
-            input_data_dev = allocate_data(backend, input_data)
-
+            input_data = allocate_data(backend, input_data)
             benchmark(
                 self.PROGRAM.with_backend(backend),
-                **input_data_dev,
+                **input_data,
                 offset_provider=grid.offset_providers,
             )
-
-            input_data_dev = None  # release device memory, in case of gpu execution
 
 else:
 
