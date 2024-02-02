@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates import (
-    compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil19(StencilTest):
-    PROGRAM = compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates
+    PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
 
     @staticmethod

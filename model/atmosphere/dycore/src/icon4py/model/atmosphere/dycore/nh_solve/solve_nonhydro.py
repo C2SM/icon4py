@@ -54,14 +54,14 @@ from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_the
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
 from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import compute_graddiv2_of_vn
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
-    compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
 )
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates import (
-    compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
 from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
@@ -965,7 +965,7 @@ class SolveNonhydro:
                 )
 
         # Remaining computations at edge points
-        compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates.with_backend(
+        compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(
             backend
         )(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
@@ -984,7 +984,7 @@ class SolveNonhydro:
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
 
-            compute_horizontal_gradient_of_extner_pressure_for_terrain_following_coordinates.with_backend(
+            compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(
                 backend
             )(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,

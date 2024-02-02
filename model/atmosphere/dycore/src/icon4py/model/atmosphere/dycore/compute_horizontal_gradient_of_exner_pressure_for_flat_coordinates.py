@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates(
+def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
@@ -32,7 +32,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates(
+def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
@@ -41,7 +41,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates(
+    _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
         inv_dual_edge_length,
         z_exner_ex_pr,
         out=z_gradh_exner,
