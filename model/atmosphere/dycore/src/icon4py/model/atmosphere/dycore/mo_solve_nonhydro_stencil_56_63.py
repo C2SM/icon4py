@@ -25,6 +25,7 @@ def _mo_solve_nonhydro_stencil_56_63(
     w: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_56_63.'''
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
