@@ -34,10 +34,10 @@ from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity imp
     _correct_contravariant_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.interpolate_contravariant_correct_to_interface_levels import (
-    _interpolate_contravariant_correct_to_interface_levels,
-)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
+)
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )
@@ -156,7 +156,7 @@ def _fused_stencils_9_10(
 
     w_concorr_c = where(
         (k_field >= nflatlev_startindex + int32(1)) & (k_field < nlev),
-        _interpolate_contravariant_correct_to_interface_levels(local_z_w_concorr_mc, wgtfac_c),
+        _interpolate_to_half_levels_vp(interpolant=local_z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
     )
 
