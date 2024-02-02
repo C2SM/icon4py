@@ -45,6 +45,9 @@ from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence
 from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
+from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn_and_graddiv_vn_and_vt,
+)
 from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import compute_graddiv2_of_vn
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_surface_coordinates,
@@ -66,9 +69,6 @@ from icon4py.model.atmosphere.dycore.compute_rho_at_ic_and_theta_v_prime_at_ic_a
 )
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
-)
-from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
-    compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
