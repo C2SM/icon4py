@@ -240,6 +240,7 @@ def compute_geofac_grdiv(
     C2E_: np.array,
     E2C_: np.array,
     C2E2C_: np.array,
+    E2C2E_: np.array,
     lateral_boundary: np.array,
 ) -> np.array:
     """
@@ -254,34 +255,37 @@ def compute_geofac_grdiv(
         lateral_boundary:
     """
     llb = lateral_boundary[0]
-    index = np.transpose(np.vstack((np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]), np.arange(lateral_boundary[1]))))
-    for k in range(2):
-        fac = E2C_[C2E_, k] == index
-        for i in range(2):
-            for j in range(3):
-                geofac_grdiv[llb:, 0, i] = geofac_grdiv[llb:, 0, i] + fac[llb:, j] * (geofac_div*inv_dual_edge_length[C2E_, k])[llb:, j]
-    for k in range(2):
-        fac = E2C_[C2E_, k] == C2E2C_
-        for i in range(2):
-            for j in range(3):
-                geofac_grdiv[llb:, 1 + j, i] = geofac_grdiv[llb:, 1 + j, i] + fac[llb:, j] * (geofac_div*inv_dual_edge_length[C2E_, k])[llb:, j]
+    index = np.arange(llb, lateral_boundary[1])
+    for j in range(3):
+        mask = C2E_[E2C_[llb:, 1], j] == index
+        geofac_grdiv[llb:, 0] = np.where(mask, geofac_div[E2C_[llb:, 1], j], geofac_grdiv[llb:, 0])
+    for j in range(3):
+        mask = C2E_[E2C_[llb:, 0], j] == index
+        geofac_grdiv[llb:, 0] = np.where(mask, (geofac_grdiv[llb:, 0] - geofac_div[E2C_[llb:, 0], j]) * inv_dual_edge_length[llb:], geofac_grdiv[llb:, 0])
+    for j in range(2):
+        for k in range(3):
+            mask = C2E_[E2C_[llb:, 0], k] == E2C2E_[llb:, 0 + j]
+            geofac_grdiv[llb:, 1 + j] = np.where(mask, -geofac_div[E2C_[llb:, 0], k] * inv_dual_edge_length[llb:], geofac_grdiv[llb:, 1 + j])
+            mask = C2E_[E2C_[llb:, 1], k] == E2C2E_[llb:, 2 + j]
+            geofac_grdiv[llb:, 3 + j] = np.where(mask, geofac_div[E2C_[llb:, 1], k] * inv_dual_edge_length[llb:], geofac_grdiv[llb:, 3 + j])
     return geofac_grdiv
 
-def compute_rbf_vec_idx_v(
-    edge_idx: np.array,
-    num_edges: np.array,
-    owner_mask: np.array,
-    lateral_boundary: np.array,
-) -> np.array:
-    """
-    Args:
-        edge_idx:
-        num_edges:
-        owner_mask:
-        lateral_boundary:
-    """
-    edge_idx = np.transpose(edge_idx) + 1
-    edge_idx[5, :] = np.where(num_edges == 5, edge_idx[0, :], edge_idx[5, :])
-    edge_idx[:, 0:lateral_boundary[0]] = 0
-    rbf_vec_idx_v = np.where(owner_mask, edge_idx, 0);
-    return rbf_vec_idx_v
+# redundant implementation
+#def compute_rbf_vec_idx_v(
+#    edge_idx: np.array,
+#    num_edges: np.array,
+#    owner_mask: np.array,
+#    lateral_boundary: np.array,
+#) -> np.array:
+#    """
+#    Args:
+#        edge_idx:
+#        num_edges:
+#        owner_mask:
+#        lateral_boundary:
+#    """
+#    edge_idx = np.transpose(edge_idx) + 1
+##    edge_idx[5, :] = np.where(num_edges == 5, edge_idx[0, :], edge_idx[5, :])
+#    edge_idx[:, 0:lateral_boundary[0]] = 0
+#    rbf_vec_idx_v = np.where(owner_mask, edge_idx, 0);
+#    return rbf_vec_idx_v
