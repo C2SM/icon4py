@@ -90,7 +90,7 @@ def generate_and_compile_cffi_plugin(
 
     new_lines = []
     for line in lines:
-        if PROGRAM_DECORATOR in line:
+        if "_wrapper" in line:
             new_lines.append(FFI_DEF_EXTERN_DECORATOR + "\n")
         new_lines.append(line)
 
@@ -124,6 +124,7 @@ def to_fields(dim_sizes: dict[Dimension, int]):
         v_size = None
         h_size = None
         for d in dims:
+            print(d)
             if d not in dim_sizes.keys():
                 raise UnknownDimensionException(
                     f"size of dimension '{d}' not defined in '{dim_sizes.keys()}'"

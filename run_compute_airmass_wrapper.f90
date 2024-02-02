@@ -1,7 +1,7 @@
 ! run_python_compute_airmass.f90
 program run_python_compute_airmass
     use, intrinsic :: iso_c_binding
-    use compute_airmass_plugin
+    use compute_airmass_wrapper_plugin
     implicit none
 
     ! Define dimensions and variables
@@ -32,7 +32,7 @@ program run_python_compute_airmass
     deepatmo_t1mc_in = (/ 1.0, 2.0, 3.0 /)
 
     ! Call the subroutine
-    call compute_airmass(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, airmass_out, &
+    call compute_airmass_wrapper(rho_in, ddqz_z_full_in, deepatmo_t1mc_in, airmass_out, &
                          horizontal_start, horizontal_end, vertical_start, vertical_end)
 
     ! Print the results
