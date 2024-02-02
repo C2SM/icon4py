@@ -23,26 +23,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_44_numpy(
-    grid,
-    exner_nnow: np.array,
-    rho_nnow: np.array,
-    theta_v_nnow: np.array,
-    inv_ddqz_z_full: np.array,
-    vwind_impl_wgt: np.array,
-    theta_v_ic: np.array,
-    rho_ic: np.array,
-    dtime: float,
-    rd: float,
-    cvd: float,
-) -> tuple[np.array, np.array]:
-    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
-    return z_beta, z_alpha
-
-
 class TestMoSolveNonhydroStencil44(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_44
     OUTPUTS = ("z_beta", "z_alpha")
@@ -57,24 +37,15 @@ class TestMoSolveNonhydroStencil44(StencilTest):
         vwind_impl_wgt: np.array,
         theta_v_ic: np.array,
         rho_ic: np.array,
-        dtime: float,
-        rd: float,
-        cvd: float,
+        dtime,
+        rd,
+        cvd,
         **kwargs,
     ) -> dict:
-        z_beta, z_alpha = mo_solve_nonhydro_stencil_44_numpy(
-            grid,
-            exner_nnow,
-            rho_nnow,
-            theta_v_nnow,
-            inv_ddqz_z_full,
-            vwind_impl_wgt,
-            theta_v_ic,
-            rho_ic,
-            dtime,
-            rd,
-            cvd,
-        )
+        z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
+
+        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+        z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
     @pytest.fixture

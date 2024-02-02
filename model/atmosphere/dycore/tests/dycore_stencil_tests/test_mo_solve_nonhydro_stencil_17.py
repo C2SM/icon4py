@@ -23,27 +23,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_17_numpy(
-    grid,
-    hmask_dd3d: np.array,
-    scalfac_dd3d: np.array,
-    inv_dual_edge_length: np.array,
-    z_dwdz_dd: np.array,
-    z_graddiv_vn: np.array,
-) -> np.array:
-    scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
-    hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
-    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
-
-    z_dwdz_dd_e2c = z_dwdz_dd[grid.connectivities[E2CDim]]
-    z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
-
-    z_graddiv_vn = z_graddiv_vn + (
-        hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
-    )
-    return z_graddiv_vn
-
-
 class TestMoSolveNonhydroStencil17(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_17
     OUTPUTS = ("z_graddiv_vn",)
@@ -58,13 +37,15 @@ class TestMoSolveNonhydroStencil17(StencilTest):
         z_graddiv_vn: np.array,
         **kwargs,
     ) -> dict:
-        z_graddiv_vn = mo_solve_nonhydro_stencil_17_numpy(
-            grid,
-            hmask_dd3d,
-            scalfac_dd3d,
-            inv_dual_edge_length,
-            z_dwdz_dd,
-            z_graddiv_vn,
+        scalfac_dd3d = np.expand_dims(scalfac_dd3d, axis=0)
+        hmask_dd3d = np.expand_dims(hmask_dd3d, axis=-1)
+        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
+
+        z_dwdz_dd_e2c = z_dwdz_dd[grid.connectivities[E2CDim]]
+        z_dwdz_dd_weighted = z_dwdz_dd_e2c[:, 1] - z_dwdz_dd_e2c[:, 0]
+
+        z_graddiv_vn = z_graddiv_vn + (
+            hmask_dd3d * scalfac_dd3d * inv_dual_edge_length * z_dwdz_dd_weighted
         )
         return dict(z_graddiv_vn=z_graddiv_vn)
 

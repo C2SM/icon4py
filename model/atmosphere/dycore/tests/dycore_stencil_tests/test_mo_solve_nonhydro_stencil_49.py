@@ -23,35 +23,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_49_numpy(
-    grid,
-    rho_nnow: np.array,
-    inv_ddqz_z_full: np.array,
-    z_flxdiv_mass: np.array,
-    z_contr_w_fl_l: np.array,
-    exner_pr: np.array,
-    z_beta: np.array,
-    z_flxdiv_theta: np.array,
-    theta_v_ic: np.array,
-    ddt_exner_phy: np.array,
-    dtime: float,
-) -> tuple[np.array, np.array]:
-    z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
-        z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
-    )
-    z_exner_expl = (
-        exner_pr
-        - z_beta
-        * (
-            z_flxdiv_theta
-            + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
-            - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
-        )
-        + dtime * ddt_exner_phy
-    )
-    return z_rho_expl, z_exner_expl
-
-
 class TestMoSolveNonhydroStencil49(StencilTest):
     PROGRAM = mo_solve_nonhydro_stencil_49
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
@@ -68,21 +39,21 @@ class TestMoSolveNonhydroStencil49(StencilTest):
         z_flxdiv_theta: np.array,
         theta_v_ic: np.array,
         ddt_exner_phy: np.array,
-        dtime: float,
+        dtime,
         **kwargs,
     ) -> dict:
-        z_rho_expl, z_exner_expl = mo_solve_nonhydro_stencil_49_numpy(
-            grid,
-            rho_nnow,
-            inv_ddqz_z_full,
-            z_flxdiv_mass,
-            z_contr_w_fl_l,
-            exner_pr,
-            z_beta,
-            z_flxdiv_theta,
-            theta_v_ic,
-            ddt_exner_phy,
-            dtime,
+        z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
+            z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
+        )
+        z_exner_expl = (
+            exner_pr
+            - z_beta
+            * (
+                z_flxdiv_theta
+                + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
+                - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
+            )
+            + dtime * ddt_exner_phy
         )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 

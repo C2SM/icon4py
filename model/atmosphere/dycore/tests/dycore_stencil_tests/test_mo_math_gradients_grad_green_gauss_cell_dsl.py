@@ -23,31 +23,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-    grid,
-    p_ccpr1: np.array,
-    p_ccpr2: np.array,
-    geofac_grg_x: np.array,
-    geofac_grg_y: np.array,
-) -> tuple[np.array]:
-    c2e2cO = grid.connectivities[C2E2CODim]
-    geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
-    p_grad_1_u = np.sum(
-        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1
-    )
-    geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
-    p_grad_1_v = np.sum(
-        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr1[c2e2cO], 0), axis=1
-    )
-    p_grad_2_u = np.sum(
-        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr2[c2e2cO], 0), axis=1
-    )
-    p_grad_2_v = np.sum(
-        np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr2[c2e2cO], 0), axis=1
-    )
-    return (p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v)
-
-
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     PROGRAM = mo_math_gradients_grad_green_gauss_cell_dsl
     OUTPUTS = ("p_grad_1_u", "p_grad_1_v", "p_grad_2_u", "p_grad_2_v")
@@ -60,16 +35,22 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         geofac_grg_x: np.array,
         geofac_grg_y: np.array,
         **kwargs,
-    ) -> dict:
-        (
-            p_grad_1_u,
-            p_grad_1_v,
-            p_grad_2_u,
-            p_grad_2_v,
-        ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-            grid, p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
+    ) -> tuple[np.array]:
+        c2e2cO = grid.connectivities[C2E2CODim]
+        geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
+        p_grad_1_u = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1
         )
-
+        geofac_grg_y = np.expand_dims(geofac_grg_y, axis=-1)
+        p_grad_1_v = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr1[c2e2cO], 0), axis=1
+        )
+        p_grad_2_u = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr2[c2e2cO], 0), axis=1
+        )
+        p_grad_2_v = np.sum(
+            np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr2[c2e2cO], 0), axis=1
+        )
         return dict(
             p_grad_1_u=p_grad_1_u,
             p_grad_1_v=p_grad_1_v,
