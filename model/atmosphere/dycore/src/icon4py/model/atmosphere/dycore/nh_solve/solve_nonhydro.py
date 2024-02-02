@@ -124,8 +124,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_66 import (
     mo_solve_nonhydro_stencil_66,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
-    mo_solve_nonhydro_stencil_67,
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
+    compute_exner_from_rhotheta,
 )
 from icon4py.model.atmosphere.dycore.update_theta_v import (
     update_theta_v,
@@ -594,7 +594,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            mo_solve_nonhydro_stencil_67.with_backend(backend)(
+            compute_exner_from_rhotheta.with_backend(backend)(
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
                 exner=prognostic_state_ls[nnew].exner,

@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
-    mo_solve_nonhydro_stencil_67,
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
+    compute_exner_from_rhotheta,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil67(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_67
+    PROGRAM = compute_exner_from_rhotheta
     OUTPUTS = ("theta_v", "exner")
 
     @staticmethod
