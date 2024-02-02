@@ -26,11 +26,11 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_l
 from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
     _compute_explicit_part_for_rho_and_exner,
 )
-from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density import (
-    _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density,
+from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
+    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
 )
-from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density import (
-    _compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density,
+from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
+    _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
 )
 from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative,
@@ -648,7 +648,7 @@ def _stencils_42_44_45_45b(
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= int32(1)) & (k_field < nlev),
-        _compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density(
+        _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
             ddt_w_adv_ntl1,
             ddt_w_adv_ntl2,
@@ -788,7 +788,7 @@ def _stencils_43_44_45_45b(
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= int32(1)) & (k_field < nlev),
-        _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density(
+        _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
             z_th_ddz_exner_c,

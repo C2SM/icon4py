@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density(
+def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     w_nnow: Field[[CellDim, KDim], wpfloat],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
@@ -41,7 +41,7 @@ def _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_de
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density(
+def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     z_w_expl: Field[[CellDim, KDim], wpfloat],
     w_nnow: Field[[CellDim, KDim], wpfloat],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
@@ -57,7 +57,7 @@ def compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_den
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density(
+    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
         w_nnow,
         ddt_w_adv_ntl1,
         z_th_ddz_exner_c,
