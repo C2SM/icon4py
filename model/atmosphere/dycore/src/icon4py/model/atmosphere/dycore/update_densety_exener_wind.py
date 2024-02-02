@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_61(
+def _update_densety_exener_wind(
     rho_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_rho: Field[[CellDim, KDim], wpfloat],
     theta_v_now: Field[[CellDim, KDim], wpfloat],
@@ -44,7 +44,7 @@ def _mo_solve_nonhydro_stencil_61(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_61(
+def update_densety_exener_wind(
     rho_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_rho: Field[[CellDim, KDim], wpfloat],
     theta_v_now: Field[[CellDim, KDim], wpfloat],
@@ -60,7 +60,7 @@ def mo_solve_nonhydro_stencil_61(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_61(
+    _update_densety_exener_wind(
         rho_now,
         grf_tend_rho,
         theta_v_now,
