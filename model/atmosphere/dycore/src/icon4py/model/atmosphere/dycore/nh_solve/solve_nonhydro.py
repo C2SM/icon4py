@@ -104,8 +104,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
-    mo_solve_nonhydro_stencil_58,
+from icon4py.model.atmosphere.dycore.update_mass_flux import (
+    update_mass_flux,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
@@ -1937,7 +1937,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
         log.debug(f"corrector start stencil 58")
-        mo_solve_nonhydro_stencil_58.with_backend(backend)(
+        update_mass_flux.with_backend(backend)(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
