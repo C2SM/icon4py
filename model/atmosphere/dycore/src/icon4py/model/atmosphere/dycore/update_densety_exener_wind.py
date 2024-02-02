@@ -15,9 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.atmosphere.dycore.update_wind import (
-    _update_wind,
-)
+from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
@@ -36,7 +34,7 @@ def _update_densety_exener_wind(
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], wpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_61.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_61."""
     rho_new_wp = rho_now + dtime * grf_tend_rho
     exner_new_wp = theta_v_now + dtime * grf_tend_thv
     w_new_wp = _update_wind(w_now=w_now, grf_tend_w=grf_tend_w, dtime=dtime)

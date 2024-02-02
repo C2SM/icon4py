@@ -64,12 +64,6 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.update_densety_exener_wind import (
-    _update_densety_exener_wind,
-)
-from icon4py.model.atmosphere.dycore.update_wind import (
-    _update_wind,
-)
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )
@@ -80,6 +74,8 @@ from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary impo
     _set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
 
 

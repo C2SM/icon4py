@@ -30,7 +30,7 @@ def _update_mass_flux_weighted(
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
 ) -> Field[[CellDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_65.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_65."""
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
     mass_flx_ic_wp = mass_flx_ic + (

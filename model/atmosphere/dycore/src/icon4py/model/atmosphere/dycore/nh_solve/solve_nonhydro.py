@@ -53,6 +53,7 @@ from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import compute_exner_from_rhotheta
 from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import compute_graddiv2_of_vn
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
@@ -73,6 +74,7 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import
 from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
+from icon4py.model.atmosphere.dycore.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
@@ -104,24 +106,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
     mo_solve_nonhydro_stencil_56_63,
 )
-from icon4py.model.atmosphere.dycore.update_mass_flux import (
-    update_mass_flux,
-)
-from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
-    update_dynamical_exner_time_increment,
-)
-from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
-    update_mass_flux_weighted,
-)
-from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
-    compute_theta_and_exner,
-)
-from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
-    compute_exner_from_rhotheta,
-)
-from icon4py.model.atmosphere.dycore.update_theta_v import (
-    update_theta_v,
-)
 from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
     set_two_cell_kdim_fields_to_zero_vp,
 )
@@ -145,6 +129,12 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     set_zero_c_k,
     set_zero_e_k,
 )
+from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
+    update_dynamical_exner_time_increment,
+)
+from icon4py.model.atmosphere.dycore.update_mass_flux import update_mass_flux
+from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import update_mass_flux_weighted
+from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim

@@ -30,7 +30,7 @@ def _update_theta_v(
     theta_v_new: Field[[CellDim, KDim], wpfloat],
     cvd_o_rd: wpfloat,
 ) -> Field[[CellDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_68.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_68."""
     theta_v_new_wp = where(
         mask_prog_halo_c,
         rho_now
