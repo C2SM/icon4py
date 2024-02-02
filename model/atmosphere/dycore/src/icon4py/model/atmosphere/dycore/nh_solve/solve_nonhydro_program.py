@@ -26,11 +26,11 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_l
 from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
     _compute_explicit_part_for_rho_and_exner,
 )
-from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
-    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
-)
 from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
     _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
+    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
 )
 from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative,

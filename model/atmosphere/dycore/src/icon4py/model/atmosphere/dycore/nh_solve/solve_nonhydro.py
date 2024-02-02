@@ -57,11 +57,11 @@ from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import compute_gradd
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
-    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
-)
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
 )
 from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
@@ -965,9 +965,7 @@ class SolveNonhydro:
                 )
 
         # Remaining computations at edge points
-        compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(
-            backend
-        )(
+        compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(backend)(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
             z_exner_ex_pr=self.z_exner_ex_pr,
             z_gradh_exner=z_fields.z_gradh_exner,
@@ -1519,9 +1517,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
-        compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
-            backend
-        )(
+        compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(backend)(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
