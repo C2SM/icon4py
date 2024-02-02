@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_60(
+def _update_dynamical_exner_time_increment(
     exner: Field[[CellDim, KDim], wpfloat],
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
@@ -35,7 +35,7 @@ def _mo_solve_nonhydro_stencil_60(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_60(
+def update_dynamical_exner_time_increment(
     exner: Field[[CellDim, KDim], wpfloat],
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
@@ -46,7 +46,7 @@ def mo_solve_nonhydro_stencil_60(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_60(
+    _update_dynamical_exner_time_increment(
         exner,
         ddt_exner_phy,
         exner_dyn_incr,

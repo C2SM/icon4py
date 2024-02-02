@@ -107,8 +107,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
     mo_solve_nonhydro_stencil_58,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
-    mo_solve_nonhydro_stencil_60,
+from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
+    update_dynamical_exner_time_increment,
 )
 from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
     update_mass_flux_weighted,
@@ -1951,7 +1951,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         if at_last_substep:
-            mo_solve_nonhydro_stencil_60.with_backend(backend)(
+            update_dynamical_exner_time_increment.with_backend(backend)(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
