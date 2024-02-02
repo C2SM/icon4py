@@ -18,7 +18,9 @@ from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics.metric_fields import compute_z_mc
-from icon4py.model.common.metrics.reference_atmosphere import compute_reference_atmosphere
+from icon4py.model.common.metrics.reference_atmosphere import (
+    compute_reference_atmosphere,
+)
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
@@ -49,7 +51,7 @@ def test_compute_reference_atmsophere_fields(grid_savepoint, metrics_savepoint):
     )
 
     compute_reference_atmosphere(
-        z_mc=z_mc,
+        z_height=z_mc,
         p0ref=constants.P0REF,
         p0sl_bg=constants.SEAL_LEVEL_PRESSURE,
         grav=constants.GRAVITATIONAL_ACCELERATION,
@@ -71,3 +73,38 @@ def test_compute_reference_atmsophere_fields(grid_savepoint, metrics_savepoint):
     assert dallclose(rho_ref_mc.asnumpy(), rho_ref_mc_ref.asnumpy())
     assert dallclose(theta_ref_mc.asnumpy(), theta_ref_mc_ref.asnumpy())
     assert dallclose(exner_ref_mc.asnumpy(), exner_ref_mc_ref.asnumpy())
+
+
+def test_compute_reference_atmsophere_on_half_level_mass_points(grid_savepoint, metrics_savepoint):
+    grid: IconGrid = grid_savepoint.construct_icon_grid()
+    theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
+    z_ifc = metrics_savepoint.z_ifc()
+
+    exner_ref_ic = zero_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    rho_ref_ic = zero_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    theta_ref_ic = zero_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    start = int32(0)
+    horizontal_end = grid.num_cells
+    vertical_end = grid.num_levels + 1
+
+    compute_reference_atmosphere(
+        z_height=z_ifc,
+        p0ref=constants.P0REF,
+        p0sl_bg=constants.SEAL_LEVEL_PRESSURE,
+        grav=constants.GRAVITATIONAL_ACCELERATION,
+        cpd=constants.CPD,
+        rd=constants.RD,
+        t0sl_bg=constants.T0SL_BG,
+        h_scal_bg=constants._H_SCAL_BG,
+        del_t_bg=constants.DELTA_TEMPERATURE,
+        exner_ref_mc=exner_ref_ic,
+        rho_ref_mc=rho_ref_ic,
+        theta_ref_mc=theta_ref_ic,
+        horizontal_start=start,
+        horizontal_end=horizontal_end,
+        vertical_start=start,
+        vertical_end=vertical_end,
+        offset_provider={},
+    )
+
+    assert dallclose(theta_ref_ic.asnumpy(), theta_ref_ic_ref.asnumpy())

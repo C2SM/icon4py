@@ -76,12 +76,16 @@ def _compute_reference_atmosphere(
     z_temp = compute_z_temp(z_mc=z_mc, del_t_bg=del_t_bg, t0sl_bg=t0sl_bg, h_scal_bg=h_scal_bg)
     rho_ref_mc = z_aux1 / (rd * z_temp)
     theta_ref_mc = z_temp / exner_ref_mc
-    return exner_ref_mc, rho_ref_mc, theta_ref_mc
+    return (
+        theta_ref_mc,
+        exner_ref_mc,
+        rho_ref_mc,
+    )
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere(
-    z_mc: Field[[CellDim, KDim], wpfloat],
+    z_height: Field[[CellDim, KDim], wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -102,7 +106,7 @@ def compute_reference_atmosphere(
         Calculate reference atmosphere fields on full levels.
 
     Args:
-        z_mc: geometric height of full levels
+        z_height: geometric height
         p0ref: reference pressure for exner function [Pa]
         p0sl_bg: sea level pressuer [Pa]
         grav: gravitational constant [m/s^2]
@@ -121,7 +125,7 @@ def compute_reference_atmosphere(
 
     """
     _compute_reference_atmosphere(
-        z_mc,
+        z_height,
         p0ref,
         p0sl_bg,
         grav,
@@ -130,6 +134,6 @@ def compute_reference_atmosphere(
         h_scal_bg,
         t0sl_bg,
         del_t_bg,
-        out=(exner_ref_mc, rho_ref_mc, theta_ref_mc),
+        out=(theta_ref_mc, exner_ref_mc, rho_ref_mc),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
