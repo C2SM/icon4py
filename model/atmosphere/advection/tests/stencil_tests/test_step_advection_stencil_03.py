@@ -12,43 +12,39 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_03 import step_advection_stencil_03
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
-def step_advection_stencil_03_numpy(
-    p_tracer_now: np.array,
-    p_grf_tend_tracer: np.array,
-    p_dtime,
-) -> np.array:
-    p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
-    p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)
+class TestStepAdvectionStencil03(StencilTest):
+    PROGRAM = step_advection_stencil_03
+    OUTPUTS = ("p_tracer_new",)
 
-    return p_tracer_new
-
-
-def test_step_advection_stencil_03(backend):
-    grid = SimpleGrid()
-
-    p_tracer_now = random_field(grid, CellDim, KDim)
-    p_grf_tend_tracer = random_field(grid, CellDim, KDim)
-    p_tracer_new = random_field(grid, CellDim, KDim)
-
-    p_dtime = np.float64(5.0)
-
-    ref = step_advection_stencil_03_numpy(
-        p_tracer_now.asnumpy(),
-        p_grf_tend_tracer.asnumpy(),
+    @staticmethod
+    def reference(
+        grid,
+        p_tracer_now: np.array,
+        p_grf_tend_tracer: np.array,
         p_dtime,
-    )
-    step_advection_stencil_03.with_backend(backend)(
-        p_tracer_now,
-        p_grf_tend_tracer,
-        p_tracer_new,
-        p_dtime,
-        offset_provider={},
-    )
-    assert np.allclose(p_tracer_new.asnumpy(), ref)
+        **kwargs,
+    ):
+        p_tracer_new = p_tracer_now + p_dtime * p_grf_tend_tracer
+        p_tracer_new = np.where(p_tracer_new < 0.0, 0.0, p_tracer_new)
+
+        return dict(p_tracer_new=p_tracer_new)
+
+    @pytest.fixture
+    def input_data(self, grid):
+        p_tracer_now = random_field(grid, CellDim, KDim)
+        p_grf_tend_tracer = random_field(grid, CellDim, KDim)
+        p_tracer_new = random_field(grid, CellDim, KDim)
+        p_dtime = np.float64(5.0)
+        return dict(
+            p_tracer_now=p_tracer_now,
+            p_grf_tend_tracer=p_grf_tend_tracer,
+            p_dtime=p_dtime,
+            p_tracer_new=p_tracer_new,
+        )
