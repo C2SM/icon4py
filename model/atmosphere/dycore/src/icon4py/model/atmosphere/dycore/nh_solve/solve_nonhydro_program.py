@@ -50,8 +50,8 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rh
 from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
 )
-from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
-    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
+from icon4py.model.atmosphere.dycore.compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
+    _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
@@ -274,7 +274,7 @@ def _predictor_stencils_7_8_9(
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         k_field >= int32(1),
-        _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+        _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
             wgtfac_c,
             z_rth_pr_2,
             theta_v,

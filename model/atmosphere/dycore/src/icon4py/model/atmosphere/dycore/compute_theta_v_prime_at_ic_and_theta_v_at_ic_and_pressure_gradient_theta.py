@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+def _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -48,7 +48,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+def compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -64,7 +64,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+    _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
         wgtfac_c,
         z_rth_pr_2,
         theta_v,
