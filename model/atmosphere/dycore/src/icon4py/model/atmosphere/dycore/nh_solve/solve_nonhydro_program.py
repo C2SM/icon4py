@@ -67,8 +67,8 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_eki
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
     _mo_solve_nonhydro_stencil_61,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
-    _mo_solve_nonhydro_stencil_62,
+from icon4py.model.atmosphere.dycore.update_wind import (
+    _update_wind,
 )
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
@@ -1009,7 +1009,7 @@ def _stencils_61_62(
     )
     w_new = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime),
+        _update_wind(w_now, grf_tend_w, dtime),
         w_new,
     )
     return rho_new, exner_new, w_new

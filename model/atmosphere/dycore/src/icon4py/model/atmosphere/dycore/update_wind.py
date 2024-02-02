@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_62(
+def _update_wind(
     w_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_w: Field[[CellDim, KDim], wpfloat],
     dtime: wpfloat,
@@ -31,7 +31,7 @@ def _mo_solve_nonhydro_stencil_62(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_62(
+def update_wind(
     w_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_w: Field[[CellDim, KDim], wpfloat],
     w_new: Field[[CellDim, KDim], wpfloat],
@@ -41,7 +41,7 @@ def mo_solve_nonhydro_stencil_62(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_62(
+    _update_wind(
         w_now,
         grf_tend_w,
         dtime,
