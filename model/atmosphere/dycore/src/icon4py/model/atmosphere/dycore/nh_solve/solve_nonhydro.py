@@ -66,8 +66,9 @@ from icon4py.model.atmosphere.dycore.compute_rho_at_ic_and_theta_v_prime_at_ic_a
 )
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
-    fromcompute_vn_on_lateral_boundarycore.compute_avg_vn_and_graddiv_vn_and_vt,
-    import,
+)
+from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
@@ -79,6 +80,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
+
+
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import accumulate_prep_adv_fields
