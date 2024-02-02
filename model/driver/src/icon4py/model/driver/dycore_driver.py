@@ -24,10 +24,10 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
     SolveNonhydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.diagnostic_state import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.state_utils.nh_constants import NHConstants
-from icon4py.model.atmosphere.dycore.state_utils.prep_adv_state import PrepAdvection
-from icon4py.model.atmosphere.dycore.state_utils.z_fields import ZFields
+from icon4py.model.atmosphere.dycore.state_utils.states import (
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+)
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     create_exchange,
@@ -99,6 +99,13 @@ class TimeLoop:
     def _not_first_step(self):
         self._do_initial_stabilization = False
 
+    def _is_last_substep(self, step_nr: int):
+        return step_nr == (self.n_substeps_var - 1)
+
+    @staticmethod
+    def _is_first_substep(step_nr: int):
+        return step_nr == 0
+
     def _next_simulation_date(self):
         self._simulation_date += timedelta(seconds=self.run_config.dtime)
 
@@ -146,12 +153,9 @@ class TimeLoop:
         prognostic_state_list: list[PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
         prep_adv: PrepAdvection,
-        z_fields: ZFields,  # local constants in solve_nh
-        nh_constants: NHConstants,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         log.info(
             f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
         )
@@ -191,8 +195,6 @@ class TimeLoop:
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv,
-                z_fields,
-                nh_constants,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
@@ -212,18 +214,13 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
-        nh_constants: NHConstants,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
             prep_adv,
-            z_fields,
-            nh_constants,
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
@@ -242,41 +239,39 @@ class TimeLoop:
         solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state_list: list[PrognosticState],
         prep_adv: PrepAdvection,
-        z_fields: ZFields,
-        nh_constants: NHConstants,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
-
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
         do_recompute = True
         do_clean_mflx = True
         for dyn_substep in range(self._n_substeps_var):
             log.info(
-                f"simulation date : {self._simulation_date} sub timestep : {dyn_substep}, initial_stabilization : {self._do_initial_stabilization}, nnow: {self._now}, nnew : {self._next}"
+                f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
+                f"{self.n_substeps_var} , initial_stabilization : {self._do_initial_stabilization}, "
+                f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
                 solve_nonhydro_diagnostic_state,
                 prognostic_state_list,
                 prep_adv=prep_adv,
-                z_fields=z_fields,
-                nh_constants=nh_constants,
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
-                idyn_timestep=dyn_substep,
                 l_recompute=do_recompute,
                 l_init=self._do_initial_stabilization,
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
                 lprep_adv=do_prep_adv,
+                at_first_substep=self._is_first_substep(dyn_substep),
+                at_last_substep=self._is_last_substep(dyn_substep),
             )
 
             do_recompute = False
             do_clean_mflx = False
 
-            if dyn_substep != self._n_substeps_var - 1:
+            if not self._is_last_substep(dyn_substep):
                 self._swap()
 
             self._not_first_step()
@@ -304,7 +299,9 @@ def initialize(file_path: Path, props: ProcessProperties):
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
-         other temporary fields: to be removed in the future
+         prep_advection: fields collecting data for advection during the solve nonhydro timestep
+         inital_divdamp_fac_o2: initial divergence damping factor
+
     """
     log.info("initialize parallel runtime")
     experiment_name = "mch_ch_r04b09_dsl"
@@ -359,8 +356,6 @@ def initialize(file_path: Path, props: ProcessProperties):
     (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
-        z_fields,
-        nh_constants,
         prep_adv,
         inital_divdamp_fac_o2,
         prognostic_state_now,
@@ -378,8 +373,6 @@ def initialize(file_path: Path, props: ProcessProperties):
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        z_fields,
-        nh_constants,
         prep_adv,
         inital_divdamp_fac_o2,
     )

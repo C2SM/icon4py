@@ -1,31 +1,58 @@
-FROM ubuntu:22.04 as builder
+FROM docker.io/nvidia/cuda:11.2.2-devel-ubuntu20.04
+ENV LANG C.UTF-8
+ENV LC_ALL C.UTF-8
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
+    strace \
+    build-essential \
+    tar \
+    wget \
+    curl \
+    ca-certificates \
+    zlib1g-dev \
+    libssl-dev \
+    libbz2-dev \
+    libsqlite3-dev \
+    llvm \
+    libncurses5-dev \
+    libncursesw5-dev \
+    xz-utils \
+    tk-dev \
+    libffi-dev \
+    liblzma-dev \
+    python-openssl \
+    libreadline-dev \
+    git \
+    rustc \
+    htop && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN wget --quiet -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
+    echo c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f boost_1_72_0.tar.gz > boost_hash.txt && \
+    sha256sum -c boost_hash.txt && \
+    tar xzf boost_1_72_0.tar.gz && \
+    mv boost_1_72_0/boost /usr/local/include/ && \
+    rm boost_1_72_0.tar.gz boost_hash.txt
+
+ENV BOOST_ROOT /usr/local/
+ENV CUDA_HOME /usr/local/cuda
+
+ARG PYVERSION
+
+RUN curl https://pyenv.run | bash
+
+ENV PYENV_ROOT /root/.pyenv
+ENV PATH="/root/.pyenv/bin:${PATH}"
+
+RUN pyenv update && \
+    pyenv install ${PYVERSION} && \
+    echo 'eval "$(pyenv init -)"' >> /root/.bashrc && \
+    eval "$(pyenv init -)" && \
+    pyenv global ${PYVERSION}
+
+ENV PATH="/root/.pyenv/shims:${PATH}"
 
 COPY . /icon4py
 
-# Update and install necessary utilities and libraries
-RUN apt-get update && \
-    apt-get install -y \
-    software-properties-common \
-    build-essential \
-    cmake \
-    git \
-    libboost-all-dev \
-    pkg-config \
-    curl \
-    gdb
-
-# Install Python 3.10
-RUN add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt-get update && \
-    apt-get install -y python3.10 python3.10-distutils python3.10-venv && \
-    update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
-
-# Install pip
-RUN apt-get install -y curl && \
-    curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
-    python3.10 get-pip.py
-
-# Cleanup
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    rm get-pip.py
+RUN pip install --upgrade pip setuptools wheel tox cupy-cuda11x clang-format

@@ -14,6 +14,16 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+    _compute_contravariant_correction,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
+)
+from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
+    _compute_pertubation_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
     _mo_solve_nonhydro_stencil_02,
 )
@@ -26,17 +36,11 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
     _mo_solve_nonhydro_stencil_06,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_07 import (
-    _mo_solve_nonhydro_stencil_07,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
     _mo_solve_nonhydro_stencil_08,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
     _mo_solve_nonhydro_stencil_09,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_lower import (
-    _mo_solve_nonhydro_stencil_11_lower,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
     _mo_solve_nonhydro_stencil_11_upper,
@@ -44,17 +48,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
     _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_35 import (
-    _mo_solve_nonhydro_stencil_35,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
     _mo_solve_nonhydro_stencil_36,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_37 import (
-    _mo_solve_nonhydro_stencil_37,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_38 import (
-    _mo_solve_nonhydro_stencil_38,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
     _mo_solve_nonhydro_stencil_39,
@@ -71,29 +66,20 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_43 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
     _mo_solve_nonhydro_stencil_44,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import (
-    _mo_solve_nonhydro_stencil_45,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45_b import (
-    _mo_solve_nonhydro_stencil_45_b,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
     _mo_solve_nonhydro_stencil_47,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
     _mo_solve_nonhydro_stencil_49,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_59 import (
-    _mo_solve_nonhydro_stencil_59,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
-    _mo_solve_nonhydro_stencil_60,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
     _mo_solve_nonhydro_stencil_61,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
     _mo_solve_nonhydro_stencil_62,
+)
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
@@ -276,7 +262,7 @@ def _predictor_stencils_7_8_9(
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
         k_field == int32(0),
-        _mo_solve_nonhydro_stencil_07(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_pertubation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
@@ -370,9 +356,7 @@ def _predictor_stencils_11_lower_upper(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(
-        k_field == int32(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
-    )
+    z_theta_v_pr_ic = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic)
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
@@ -477,7 +461,6 @@ def _predictor_stencils_35_36(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int32],
     nflatlev_startindex: int32,
-    nlev: int32,
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
@@ -486,7 +469,7 @@ def _predictor_stencils_35_36(
 ]:
     z_w_concorr_me = where(
         k_field >= nflatlev_startindex,
-        _mo_solve_nonhydro_stencil_35(vn, ddxn_z_full, ddxt_z_full, vt),
+        _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
@@ -510,7 +493,6 @@ def predictor_stencils_35_36(
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     k_field: Field[[KDim], int32],
     nflatlev_startindex: int32,
-    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -528,37 +510,12 @@ def predictor_stencils_35_36(
         z_kin_hor_e,
         k_field,
         nflatlev_startindex,
-        nlev,
         out=(z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
-
-
-@field_operator
-def _predictor_stencils_37_38(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-]:
-    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field == int32(0),
-        _mo_solve_nonhydro_stencil_37(vn, vt),
-        (vn_ie, z_vt_ie, z_kin_hor_e),
-    )
-    vn_ie = where(k_field == nlev, _mo_solve_nonhydro_stencil_38(vn, wgtfacq_e_dsl), vn_ie)
-    return vn_ie, z_vt_ie, z_kin_hor_e
 
 
 @program
@@ -569,26 +526,27 @@ def predictor_stencils_37_38(
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
     wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _predictor_stencils_37_38(
+    _compute_horizontal_kinetic_energy(
         vn,
         vt,
-        vn_ie,
-        z_vt_ie,
-        z_kin_hor_e,
-        wgtfacq_e_dsl,
-        k_field,
-        nlev,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_start + 1),
+        },
+    )
+    _extrapolate_at_top(
+        vn,
+        wgtfacq_e_dsl,
+        out=vn_ie,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
         },
     )
 
@@ -720,9 +678,9 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
+    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
 
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -856,8 +814,8 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -990,10 +948,11 @@ def stencils_47_48_49(
     ddt_exner_phy: Field[[CellDim, KDim], float],
     k_field: Field[[KDim], int32],
     dtime: float,
-    cell_startindex_nudging_plus1: int32,
-    cell_endindex_interior: int32,
     nlev: int32,
-    nlev_k: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_end: int32,
+    vertical_start: int32,
 ):
     _stencils_47_48_49(
         w_nnew,
@@ -1014,54 +973,8 @@ def stencils_47_48_49(
         nlev,
         out=(w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl),
         domain={
-            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-            KDim: (0, nlev_k),
-        },
-    )
-
-
-@field_operator
-def _predictor_stencils_59_60(
-    exner_nnow: Field[[CellDim, KDim], float],
-    exner_nnew: Field[[CellDim, KDim], float],
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-    ndyn_substeps_var: float,
-    dtime: float,
-) -> Field[[CellDim, KDim], float]:
-    exner_dyn_incr = _mo_solve_nonhydro_stencil_59(exner_nnow)
-    exner_dyn_incr = _mo_solve_nonhydro_stencil_60(
-        exner_nnew, ddt_exner_phy, exner_dyn_incr, ndyn_substeps_var, dtime
-    )
-    return exner_dyn_incr
-
-
-@program
-def predictor_stencils_59_60(
-    exner_nnow: Field[[CellDim, KDim], float],
-    exner_nnew: Field[[CellDim, KDim], float],
-    exner_dyn_incr: Field[[CellDim, KDim], float],
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-    ndyn_substeps_var: float,
-    dtime: float,
-    cell_startindex_nudging_plus1: int32,
-    cell_endindex_interior: int32,
-    kstart_moist: int32,
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _predictor_stencils_59_60(
-        exner_nnow,
-        exner_nnew,
-        ddt_exner_phy,
-        ndyn_substeps_var,
-        dtime,
-        out=exner_dyn_incr,
-        domain={
-            CellDim: (cell_startindex_nudging_plus1, cell_endindex_interior),
-            KDim: (kstart_moist, nlev),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 

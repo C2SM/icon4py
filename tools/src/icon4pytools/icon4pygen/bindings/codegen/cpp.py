@@ -302,6 +302,11 @@ class CppDefGenerator(TemplatedGenerator):
       {%- for connection in _this_node.all_connections -%}
         {{connection.renderer.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
       {% endfor -%});
+
+      int numCells = mesh_.NumCells;
+      int numEdges = mesh_.NumEdges;
+      int numVertices = mesh_.NumVertices;
+
       generated::{{stencil_name}}(connectivities)(cuda_backend,
       {%- for field in _this_node.all_fields -%}
         {%- if field.is_sparse() -%}
@@ -312,7 +317,7 @@ class CppDefGenerator(TemplatedGenerator):
           {{field.name}}_sid,
         {%- endif -%}
       {%- endfor -%}
-      horizontalStart, horizontalEnd, verticalStart, verticalEnd);
+      horizontalStart, horizontalEnd, verticalStart, verticalEnd, numCells, numEdges, numVertices);
       #ifndef NDEBUG
         gpuErrchk(cudaPeekAtLastError());
         gpuErrchk(cudaDeviceSynchronize());

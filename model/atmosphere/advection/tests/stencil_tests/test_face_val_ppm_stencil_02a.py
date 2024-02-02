@@ -10,44 +10,34 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import numpy as np
+import pytest
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02a import face_val_ppm_stencil_02a
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field
 
 
-def face_val_ppm_stencil_02a_numpy(
-    p_cc: np.array,
-    p_cellhgt_mc_now: np.array,
-):
-    p_face = p_cc.copy()
-
-    p_face[:, 1:] = p_cc[:, 1:] * (1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])) + (
-        p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])
-    ) * ((p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1])
-
-    return p_face
+outslice = (slice(None), slice(1, None))
 
 
-def test_face_val_ppm_stencil_02a(backend):
-    grid = SimpleGrid()
-    p_cc = random_field(grid, CellDim, KDim)
-    p_cellhgt_mc_now = random_field(grid, CellDim, KDim)
-    p_face = random_field(grid, CellDim, KDim)
+class TestFaceValPpmStencil02a(StencilTest):
+    PROGRAM = face_val_ppm_stencil_02a
+    OUTPUTS = (Output("p_face", refslice=outslice, gtslice=outslice),)
 
-    ref = face_val_ppm_stencil_02a_numpy(
-        p_cc.asnumpy(),
-        p_cellhgt_mc_now.asnumpy(),
-    )
+    @staticmethod
+    def reference(grid, p_cc: np.array, p_cellhgt_mc_now: np.array, **kwargs):
+        p_face = p_cc.copy()
+        p_face[:, 1:] = p_cc[:, 1:] * (
+            1.0 - (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1])
+        ) + (p_cellhgt_mc_now[:, 1:] / (p_cellhgt_mc_now[:, :-1] + p_cellhgt_mc_now[:, 1:])) * (
+            (p_cellhgt_mc_now[:, 1:] / p_cellhgt_mc_now[:, :-1]) * p_cc[:, 1:] + p_cc[:, :-1]
+        )
+        return dict(p_face=p_face)
 
-    face_val_ppm_stencil_02a.with_backend(backend)(
-        p_cc,
-        p_cellhgt_mc_now,
-        p_face,
-        offset_provider={"Koff": KDim},
-    )
-
-    assert np.allclose(ref[:, 1:], p_face.asnumpy()[:, 1:])
+    @pytest.fixture
+    def input_data(self, grid):
+        p_face = random_field(grid, CellDim, KDim)
+        p_cc = random_field(grid, CellDim, KDim)
+        p_cellhgt_mc_now = random_field(grid, CellDim, KDim)
+        return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, p_face=p_face)

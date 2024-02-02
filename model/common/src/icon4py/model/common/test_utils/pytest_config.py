@@ -14,13 +14,16 @@
 import os
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu, run_gtfn_with_temporaries
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
-from gt4py.next.program_processors.runners.roundtrip import executor
 
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
+    config.addinivalue_line("markers", "slow_tests: this test takes a very long time")
+    config.addinivalue_line(
+        "markers", "with_netcdf: test uses netcdf which is an optional dependency"
+    )
 
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
@@ -40,11 +43,12 @@ def pytest_addoption(parser):
         pass
 
     try:
+        # TODO (samkellerhals): set embedded to default as soon as all tests run in embedded mode
         parser.addoption(
             "--backend",
             action="store",
-            default="embedded",
-            help="GT4Py backend to use when executing stencils. Defaults to embedded, other options include gtfn_cpu",
+            default="roundtrip",
+            help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
         pass
@@ -79,15 +83,12 @@ def pytest_runtest_setup(item):
 def pytest_generate_tests(metafunc):
     # parametrise backend
     if "backend" in metafunc.fixturenames:
-        # backend_option = metafunc.config.getoption
-        backend_option = "roundtrip"
-        # backend_option = "gtfn_cpu_with_temporaries"
+        backend_option = metafunc.config.getoption("backend")
 
         backends = {
             "embedded": None,
             "roundtrip": run_roundtrip,
             "gtfn_cpu": run_gtfn,
-            "gtfn_cpu_with_temporaries": run_gtfn_with_temporaries,
             "gtfn_gpu": run_gtfn_gpu,
         }
 

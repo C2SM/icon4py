@@ -13,9 +13,13 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.common.dimension import EdgeDim, KDim, Koff
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    _interpolate_vn_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import _interpolate_vt_to_ie
+from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -29,12 +33,11 @@ def _mo_solve_nonhydro_stencil_36(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
-    wgtfac_e_wp, vt_wp = astype((wgtfac_e, vt), wpfloat)
-
-    vn_ie_wp = wgtfac_e_wp * vn + (wpfloat("1.0") - wgtfac_e_wp) * vn(Koff[-1])
-    z_vt_ie_wp = astype(wgtfac_e * vt, wpfloat) + (wpfloat("1.0") - wgtfac_e_wp) * vt_wp(Koff[-1])
-    z_kin_hor_e_wp = wpfloat("0.5") * (vn * vn + astype(vt * vt, wpfloat))
-    return astype((vn_ie_wp, z_vt_ie_wp, z_kin_hor_e_wp), vpfloat)
+    z_vt_ie = _interpolate_vt_to_ie(wgtfac_e=wgtfac_e, vt=vt)
+    vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(
+        wgtfac_e=wgtfac_e, vn=vn, vt=vt
+    )
+    return vn_ie, z_vt_ie, z_kin_hor_e
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

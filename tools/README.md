@@ -278,6 +278,10 @@ The `END DELETE` indicates the ending line from which on code is deleted.
 
 This directive generates an `#endif` statement.
 
+### ICON-Liskov integration style-guide
+
+Check out `tools/docs/ICON_Liskov_integration_style_guide.md` for having a unique look and feel in the fortran integration.
+
 ### `f2ser`
 
 This tool is designed to parse a well-defined Fortran granule interface and generate ppser statements for each variable in the interface. It uses the `f2py` library to perform the parsing and `liskov` for the generation tasks.
