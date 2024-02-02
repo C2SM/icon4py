@@ -82,8 +82,6 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import 
 )
 
 
-    compute_avg_vn_and_graddiv_vn_and_vt,
-)
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import accumulate_prep_adv_fields
 from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
