@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_48 import (
-    mo_solve_nonhydro_stencil_48,
+from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
+    compute_explicit_part_for_rho_and_exner,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil48(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_48
+    PROGRAM = compute_explicit_part_for_rho_and_exner
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
     @staticmethod

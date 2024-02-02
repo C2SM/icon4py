@@ -64,8 +64,8 @@ from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
 from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
     _set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
-    _mo_solve_nonhydro_stencil_49,
+from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
+    _compute_explicit_part_for_rho_and_exner,
 )
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
     _mo_solve_nonhydro_stencil_61,
@@ -914,7 +914,7 @@ def _stencils_47_48_49(
     # 48 and 49 are identical except for bounds
     (z_rho_expl, z_exner_expl) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_49(
+        _compute_explicit_part_for_rho_and_exner(
             rho_nnow,
             inv_ddqz_z_full,
             z_flxdiv_mass,

@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_48(
+def _compute_explicit_part_for_rho_and_exner(
     rho_nnow: Field[[CellDim, KDim], wpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
@@ -32,7 +32,7 @@ def _mo_solve_nonhydro_stencil_48(
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     dtime: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_48.'''
+    '''Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49.'''
     inv_ddqz_z_full_wp, z_flxdiv_mass_wp, z_beta_wp, z_flxdiv_theta_wp, ddt_exner_phy_wp = astype(
         (inv_ddqz_z_full, z_flxdiv_mass, z_beta, z_flxdiv_theta, ddt_exner_phy), wpfloat
     )
@@ -55,7 +55,7 @@ def _mo_solve_nonhydro_stencil_48(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_48(
+def compute_explicit_part_for_rho_and_exner(
     z_rho_expl: Field[[CellDim, KDim], wpfloat],
     z_exner_expl: Field[[CellDim, KDim], wpfloat],
     rho_nnow: Field[[CellDim, KDim], wpfloat],
@@ -73,7 +73,7 @@ def mo_solve_nonhydro_stencil_48(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_48(
+    _compute_explicit_part_for_rho_and_exner(
         rho_nnow,
         inv_ddqz_z_full,
         z_flxdiv_mass,
