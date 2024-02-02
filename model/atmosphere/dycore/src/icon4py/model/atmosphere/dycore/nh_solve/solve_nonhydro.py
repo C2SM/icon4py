@@ -121,8 +121,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
     mo_solve_nonhydro_stencil_65,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_66 import (
-    mo_solve_nonhydro_stencil_66,
+from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
+    compute_theta_and_exner,
 )
 from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
@@ -580,7 +580,7 @@ class SolveNonhydro:
         start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_66.with_backend(backend)(
+            compute_theta_and_exner.with_backend(backend)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,

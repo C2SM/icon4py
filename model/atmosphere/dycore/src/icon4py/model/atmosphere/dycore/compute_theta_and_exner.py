@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_66(
+def _compute_theta_and_exner(
     bdy_halo_c: Field[[CellDim], bool],
     rho: Field[[CellDim, KDim], wpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -35,7 +35,7 @@ def _mo_solve_nonhydro_stencil_66(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_66(
+def compute_theta_and_exner(
     bdy_halo_c: Field[[CellDim], bool],
     rho: Field[[CellDim, KDim], wpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -47,7 +47,7 @@ def mo_solve_nonhydro_stencil_66(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_66(
+    _compute_theta_and_exner(
         bdy_halo_c,
         rho,
         theta_v,
