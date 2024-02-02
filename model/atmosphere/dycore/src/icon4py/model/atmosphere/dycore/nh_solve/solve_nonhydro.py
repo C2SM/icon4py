@@ -110,8 +110,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
     mo_solve_nonhydro_stencil_60,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
-    mo_solve_nonhydro_stencil_65,
+from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
+    update_mass_flux_weighted,
 )
 from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
     compute_theta_and_exner,
@@ -1976,7 +1976,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             log.debug(f" corrector: start stencil 65")
-            mo_solve_nonhydro_stencil_65.with_backend(backend)(
+            update_mass_flux_weighted.with_backend(backend)(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
                 vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,

@@ -27,6 +27,7 @@ def _mo_solve_nonhydro_stencil_60(
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
 ) -> Field[[CellDim, KDim], vpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_60.'''
     exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
 
     exner_dyn_incr_wp = exner - (exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp)

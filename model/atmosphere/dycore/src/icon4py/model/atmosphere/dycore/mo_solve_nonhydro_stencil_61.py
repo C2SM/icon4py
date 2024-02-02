@@ -36,6 +36,7 @@ def _mo_solve_nonhydro_stencil_61(
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], wpfloat],
 ]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_61.'''
     rho_new_wp = rho_now + dtime * grf_tend_rho
     exner_new_wp = theta_v_now + dtime * grf_tend_thv
     w_new_wp = _mo_solve_nonhydro_stencil_62(w_now=w_now, grf_tend_w=grf_tend_w, dtime=dtime)

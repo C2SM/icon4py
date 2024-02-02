@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
-    mo_solve_nonhydro_stencil_65,
+from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
+    update_mass_flux_weighted,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil65(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_65
+    PROGRAM = update_mass_flux_weighted
     OUTPUTS = ("mass_flx_ic",)
 
     @staticmethod
