@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
-    compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
+from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil09(StencilTest):
-    PROGRAM = compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta
+    PROGRAM = compute_maximum_cfl_and_clip_contravariant_vertical_velocity
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 
     @staticmethod
