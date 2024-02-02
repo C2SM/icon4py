@@ -37,6 +37,8 @@ GRAV: Final[float] = GRAVITATIONAL_ACCELERATION
 #: reference pressure for Exner function [Pa]
 P0REF: Final[float] = 100000.0
 
+# average earth radius in [m]
+EARTH_RADIUS: Final[float] = 6.371229e6
 
 # Math constants
 dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
