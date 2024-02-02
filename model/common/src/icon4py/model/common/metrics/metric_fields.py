@@ -27,7 +27,8 @@ def compute_z_mc(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    """Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
+    """
+    Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
 
     This assumes that the input field z_ifc is defined on half levels (KHalfDim) and the
     returned fields is defined on full levels (KDim)
@@ -40,7 +41,6 @@ def compute_z_mc(
         vertical_start:int32 start index of vertical domain
         vertical_end:int32 end index of vertical domain
 
-    Returns:
     """
     interpolate_height_levels_for_cell_k(
         z_ifc,

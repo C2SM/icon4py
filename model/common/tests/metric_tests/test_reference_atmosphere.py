@@ -18,9 +18,7 @@ from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics.metric_fields import compute_z_mc
-from icon4py.model.common.metrics.reference_atmosphere import (
-    compute_reference_atmosphere,
-)
+from icon4py.model.common.metrics.reference_atmosphere import compute_reference_atmosphere
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
