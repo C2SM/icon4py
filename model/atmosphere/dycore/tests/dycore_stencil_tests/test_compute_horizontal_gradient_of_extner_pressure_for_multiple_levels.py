@@ -28,6 +28,47 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
+    grid,
+    inv_dual_edge_length: np.array,
+    z_exner_ex_pr: np.array,
+    zdiff_gradp: np.array,
+    ikoffset: np.array,
+    z_dexner_dz_c_1: np.array,
+    z_dexner_dz_c_2: np.array,
+) -> np.array:
+    def _apply_index_field(shape, to_index, neighbor_table, offset_field):
+        indexed = np.zeros(shape)
+        for iprimary in range(shape[0]):
+            for isparse in range(shape[1]):
+                for ik in range(shape[2]):
+                    indexed[iprimary, isparse, ik] = to_index[
+                        neighbor_table[iprimary, isparse],
+                        ik + offset_field[iprimary, isparse, ik],
+                    ]
+        return indexed
+
+    e2c = grid.connectivities[E2CDim]
+    full_shape = e2c.shape + zdiff_gradp.shape[1:]
+    zdiff_gradp = zdiff_gradp.reshape(full_shape)
+    ikoffset = ikoffset.reshape(full_shape)
+    inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
+
+    z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
+    z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_1, e2c, ikoffset)
+    z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_2, e2c, ikoffset)
+
+    def at_neighbor(i):
+        return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
+            z_dexner_dz_c_1_at_kidx[:, i, :]
+            + zdiff_gradp[:, i, :] * z_dexner_dz_c_2_at_kidx[:, i, :]
+        )
+
+    sum_expr = at_neighbor(1) - at_neighbor(0)
+
+    z_gradh_exner = inv_dual_edge_length * sum_expr
+    return z_gradh_exner
+
 class TestMoSolveNonHydroStencil20(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
@@ -43,36 +84,15 @@ class TestMoSolveNonHydroStencil20(StencilTest):
         z_dexner_dz_c_2: np.array,
         **kwargs,
     ) -> dict:
-        def _apply_index_field(shape, to_index, neighbor_table, offset_field):
-            indexed = np.zeros(shape)
-            for iprimary in range(shape[0]):
-                for isparse in range(shape[1]):
-                    for ik in range(shape[2]):
-                        indexed[iprimary, isparse, ik] = to_index[
-                            neighbor_table[iprimary, isparse],
-                            ik + offset_field[iprimary, isparse, ik],
-                        ]
-            return indexed
-
-        e2c = grid.connectivities[E2CDim]
-        full_shape = e2c.shape + zdiff_gradp.shape[1:]
-        zdiff_gradp = zdiff_gradp.reshape(full_shape)
-        ikoffset = ikoffset.reshape(full_shape)
-        inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, -1)
-
-        z_exner_ex_pr_at_kidx = _apply_index_field(full_shape, z_exner_ex_pr, e2c, ikoffset)
-        z_dexner_dz_c_1_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_1, e2c, ikoffset)
-        z_dexner_dz_c_2_at_kidx = _apply_index_field(full_shape, z_dexner_dz_c_2, e2c, ikoffset)
-
-        def at_neighbor(i):
-            return z_exner_ex_pr_at_kidx[:, i, :] + zdiff_gradp[:, i, :] * (
-                z_dexner_dz_c_1_at_kidx[:, i, :]
-                + zdiff_gradp[:, i, :] * z_dexner_dz_c_2_at_kidx[:, i, :]
-            )
-
-        sum_expr = at_neighbor(1) - at_neighbor(0)
-
-        z_gradh_exner = inv_dual_edge_length * sum_expr
+        z_gradh_exner = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
+            grid,
+            inv_dual_edge_length,
+            z_exner_ex_pr,
+            zdiff_gradp,
+            ikoffset,
+            z_dexner_dz_c_1,
+            z_dexner_dz_c_2,
+        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

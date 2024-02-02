@@ -34,50 +34,51 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
+    compute_horizontal_advection_of_rho_and_theta_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_17 import (
-    mo_solve_nonhydro_stencil_17_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_vertical_wind_derivative_to_divergence_damping import (
+    add_vertical_wind_derivative_to_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_18 import (
-    mo_solve_nonhydro_stencil_18_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_19 import (
-    mo_solve_nonhydro_stencil_19_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+    compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_20 import (
-    mo_solve_nonhydro_stencil_20_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_21 import (
-    mo_solve_nonhydro_stencil_21_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_22 import (
-    mo_solve_nonhydro_stencil_22_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_23 import (
-    mo_solve_nonhydro_stencil_23_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_24 import (
-    mo_solve_nonhydro_stencil_24_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn import (
+    add_temporal_tendencies_to_vn_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_25 import (
-    mo_solve_nonhydro_stencil_25_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_graddiv2_of_vn import (
+    compute_graddiv2_of_vn_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_26 import (
-    mo_solve_nonhydro_stencil_26_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_2nd_order_divergence_damping import (
+    apply_2nd_order_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_27 import (
-    mo_solve_nonhydro_stencil_27_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_weighted_2nd_and_4th_order_divergence_damping import (
+    apply_weighted_2nd_and_4th_order_divergence_damping_numpy,
 )
-from model.atmosphere.dycore.tests.stencil_tests.test_mo_solve_nonhydro_stencil_28 import (
-    mo_solve_nonhydro_stencil_28_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_to_vn import (
+    add_analysis_increments_to_vn_numpy,
 )
 
 
@@ -235,7 +236,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
                     (z_rho_e, z_theta_v_e) = np.where(
                         (horizontal_lower_1 <= horz_idx) & (horz_idx < horizontal_upper_1),
-                        mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
+                        compute_horizontal_advection_of_rho_and_theta_numpy(
                             grid=grid,
                             p_vn=p_vn,
                             p_vt=p_vt,
@@ -263,7 +264,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 (horizontal_lower <= horz_idx)
                 & (horz_idx < horizontal_upper)
                 & (vert_idx < nflatlev),
-                mo_solve_nonhydro_stencil_18_numpy(
+                compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
                     grid=grid,
                     inv_dual_edge_length=inv_dual_edge_length,
                     z_exner_ex_pr=z_exner_ex_pr,
@@ -279,7 +280,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 & (horz_idx < horizontal_upper)
                 & (vert_idx >= nflatlev)
                 & (vert_idx < (nflat_gradp + int32(1))),
-                mo_solve_nonhydro_stencil_19_numpy(
+                compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
                     grid=grid,
                     inv_dual_edge_length=inv_dual_edge_length,
                     z_exner_ex_pr=z_exner_ex_pr,
@@ -297,7 +298,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 (horizontal_lower <= horz_idx)
                 & (horz_idx < horizontal_upper)
                 & (vert_idx >= (nflat_gradp + int32(1))),
-                mo_solve_nonhydro_stencil_20_numpy(
+                compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
                     grid=grid,
                     inv_dual_edge_length=inv_dual_edge_length,
                     z_exner_ex_pr=z_exner_ex_pr,
@@ -310,7 +311,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
             #if igradp_method == 3:
-            z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+            z_hydro_corr = compute_hydrostatic_correction_term_numpy(
                 grid=grid,
                 theta_v=theta_v,
                 ikoffset=ikoffset.reshape(new_shape),
@@ -324,7 +325,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             #if igradp_method == 3:
             z_gradh_exner = np.where(
                 (horizontal_lower_3 <= horz_idx) & (horz_idx < horizontal_upper_3),
-                mo_solve_nonhydro_stencil_22_numpy(
+                apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
                     grid=grid,
                     ipeidx_dsl=ipeidx_dsl,
                     pg_exdist=pg_exdist,
@@ -336,7 +337,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             vn = np.where(
                 (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                mo_solve_nonhydro_stencil_24_numpy(
+                add_temporal_tendencies_to_vn_numpy(
                     grid=grid,
                     vn_nnow=vn_nnow,
                     ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
@@ -352,7 +353,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             if is_iau_active:
                 vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                    mo_solve_nonhydro_stencil_28_numpy(
+                    add_analysis_increments_to_vn_numpy(
                         grid=grid,
                         vn_incr=vn_incr,
                         vn=vn,
@@ -367,7 +368,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 (horizontal_lower_2 <= horz_idx)
                 & (horz_idx < horizontal_upper_2)
                 & (vert_idx >= kstart_dd3d),
-                mo_solve_nonhydro_stencil_17_numpy(
+                add_vertical_wind_derivative_to_divergence_damping_numpy(
                     grid=grid,
                     hmask_dd3d=hmask_dd3d,
                     scalfac_dd3d=scalfac_dd3d,
@@ -381,7 +382,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             if itime_scheme == 4:
                 vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                    mo_solve_nonhydro_stencil_23_numpy(
+                    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+                        grid=grid,
                         vn_nnow=vn,
                         ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
                         ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
@@ -400,7 +402,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 # verified for e-10
                 z_graddiv2_vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                    mo_solve_nonhydro_stencil_25_numpy(
+                    compute_graddiv2_of_vn_numpy(
                         grid=grid,
                         geofac_grdiv=geofac_grdiv,
                         z_graddiv_vn=z_graddiv_vn,
@@ -412,7 +414,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 if divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                     vn = np.where(
                         (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                        mo_solve_nonhydro_stencil_26_numpy(
+                        apply_2nd_order_divergence_damping_numpy(
                             grid=grid,
                             z_graddiv_vn=z_graddiv_vn,
                             vn=vn,
@@ -425,7 +427,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     if limited_area:
                         vn = np.where(
                             (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                            mo_solve_nonhydro_stencil_27_numpy(
+                            apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
                                 grid=grid,
                                 scal_divdamp=scal_divdamp,
                                 bdy_divdamp=bdy_divdamp,
@@ -450,7 +452,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             if is_iau_active:
                 vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                    mo_solve_nonhydro_stencil_28_numpy(
+                    add_analysis_increments_to_vn_numpy(
                         grid=grid,
                         vn_incr=vn_incr,
                         vn=vn,
