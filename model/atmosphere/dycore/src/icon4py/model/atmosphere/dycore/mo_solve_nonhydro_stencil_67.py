@@ -27,6 +27,7 @@ def _mo_solve_nonhydro_stencil_67(
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_67.'''
     theta_v_wp = exner
     exner_wp = exp(rd_o_cvd * log(rd_o_p0ref * rho * theta_v_wp))
     return theta_v_wp, exner_wp

@@ -127,8 +127,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_66 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
     mo_solve_nonhydro_stencil_67,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
-    mo_solve_nonhydro_stencil_68,
+from icon4py.model.atmosphere.dycore.update_theta_v import (
+    update_theta_v,
 )
 from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
     set_two_cell_kdim_fields_to_zero_vp,
@@ -607,7 +607,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_68.with_backend(backend)(
+        update_theta_v.with_backend(backend)(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
             rho_now=prognostic_state_ls[nnow].rho,
             theta_v_now=prognostic_state_ls[nnow].theta_v,

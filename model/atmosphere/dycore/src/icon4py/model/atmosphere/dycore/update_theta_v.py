@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_68(
+def _update_theta_v(
     mask_prog_halo_c: Field[[CellDim], bool],
     rho_now: Field[[CellDim, KDim], wpfloat],
     theta_v_now: Field[[CellDim, KDim], wpfloat],
@@ -30,6 +30,7 @@ def _mo_solve_nonhydro_stencil_68(
     theta_v_new: Field[[CellDim, KDim], wpfloat],
     cvd_o_rd: wpfloat,
 ) -> Field[[CellDim, KDim], wpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_68.'''
     theta_v_new_wp = where(
         mask_prog_halo_c,
         rho_now
@@ -42,7 +43,7 @@ def _mo_solve_nonhydro_stencil_68(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_68(
+def update_theta_v(
     mask_prog_halo_c: Field[[CellDim], bool],
     rho_now: Field[[CellDim, KDim], wpfloat],
     theta_v_now: Field[[CellDim, KDim], wpfloat],
@@ -56,7 +57,7 @@ def mo_solve_nonhydro_stencil_68(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_68(
+    _update_theta_v(
         mask_prog_halo_c,
         rho_now,
         theta_v_now,
