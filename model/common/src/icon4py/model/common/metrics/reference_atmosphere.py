@@ -1,10 +1,14 @@
-from gt4py.next import field_operator, program, GridType
+from typing import Final
+
+from gt4py.next import field_operator, program, GridType, Field
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.ffront.fbuiltins import exp, log
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
-from icon4pytools.icon4pygen.bindings.entities import Field
+
+
+#: Constants used for the computation of the background reference atmosphere of the nh-model
 
 
 @field_operator
@@ -29,9 +33,9 @@ def compute_z_aux1(
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
 ) -> Field[[CellDim, KDim], wpfloat]:
-    logarg = exp(z_mc / h_scal_bg)
     denom = t0sl_bg - del_t_bg
-    return p0sl_bg * exp(-grav / rd * h_scal_bg / denom * log(logarg) * denom + del_t_bg)
+    logval = log((exp(z_mc / h_scal_bg) * denom + del_t_bg) / t0sl_bg)
+    return p0sl_bg * exp(-grav / rd * h_scal_bg / denom * logval)
 
 
 @field_operator
@@ -68,7 +72,7 @@ def _compute_reference_atmosphere(
     return exner_ref_mc, rho_ref_mc, theta_ref_mc
 
 
-@program(GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere(
     z_mc: Field[[CellDim, KDim], wpfloat],
     p0ref: wpfloat,

@@ -6,16 +6,6 @@ from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
-#: Constants used for the computation of the background reference atmosphere of the nh-model
-#: defined  in mo_vertical_grid
-h_scal_bg = 10000.0
-#: scale height [m]
-t0sl_bg = 288.15
-#: sea level temperature [K]
-
-del_t_bg = 75.0
-
-
 # TODO (magdalena) move this stencil to some math module
 @field_operator
 def interpolate_height_levels_for_cell_k(
