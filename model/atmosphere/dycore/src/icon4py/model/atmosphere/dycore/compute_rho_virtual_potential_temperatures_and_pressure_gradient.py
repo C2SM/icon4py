@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
+def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     w: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
@@ -84,7 +84,7 @@ def _compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gr
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
+def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     w: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
@@ -109,7 +109,7 @@ def compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gra
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta(
+    _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
         w,
         w_concorr_c,
         ddqz_z_half,

@@ -70,8 +70,8 @@ from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
-    compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
+from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
+    compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
@@ -1519,7 +1519,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
-        compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta.with_backend(
+        compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(
             backend
         )(
             w=prognostic_state[nnew].w,

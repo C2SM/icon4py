@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_theta_v_prime_at_ic_and_theta_v_at_ic(
+def _compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -48,7 +48,7 @@ def _compute_theta_v_prime_at_ic_and_theta_v_at_ic(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_theta_v_prime_at_ic_and_theta_v_at_ic(
+def compute_virtual_potential_temperatures_and_pressure_gradient(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -64,7 +64,7 @@ def compute_theta_v_prime_at_ic_and_theta_v_at_ic(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_theta_v_prime_at_ic_and_theta_v_at_ic(
+    _compute_virtual_potential_temperatures_and_pressure_gradient(
         wgtfac_c,
         z_rth_pr_2,
         theta_v,
