@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
@@ -20,39 +19,40 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_pertubation_of_rho_and_theta(
-    rho: Field[[CellDim, KDim], wpfloat],
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    """Formerly known as _mo_solve_nonhydro_stencil_07 or _mo_solve_nonhydro_stencil_13."""
-    rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
+def _extrapolate_temporally_exner_pressure(
+    exner_exfac: Field[[CellDim, KDim], vpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
+    """Formerly known as _mo_solve_nonhydro_stencil_02."""
+    exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
 
-    z_rth_pr_1_wp = rho - rho_ref_mc_wp
-    z_rth_pr_2_wp = theta_v - theta_ref_mc_wp
-    return astype((z_rth_pr_1_wp, z_rth_pr_2_wp), vpfloat)
+    z_exner_ex_pr_wp = (wpfloat("1.0") + exner_exfac_wp) * (
+        exner - exner_ref_mc_wp
+    ) - exner_exfac_wp * exner_pr
+    exner_pr_wp = exner - exner_ref_mc_wp
+    return astype(z_exner_ex_pr_wp, vpfloat), exner_pr_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_pertubation_of_rho_and_theta(
-    rho: Field[[CellDim, KDim], wpfloat],
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+def extrapolate_temporally_exner_pressure(
+    exner_exfac: Field[[CellDim, KDim], vpfloat],
+    exner: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    exner_pr: Field[[CellDim, KDim], wpfloat],
+    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_pertubation_of_rho_and_theta(
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-        out=(z_rth_pr_1, z_rth_pr_2),
+    _extrapolate_temporally_exner_pressure(
+        exner_exfac,
+        exner,
+        exner_ref_mc,
+        exner_pr,
+        out=(z_exner_ex_pr, exner_pr),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
