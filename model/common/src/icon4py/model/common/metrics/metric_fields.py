@@ -1,4 +1,17 @@
-from gt4py.next import Field, int32, program, GridType
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
+from gt4py.next import Field, GridType, int32, program
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.math.helpers import interpolate_height_levels_for_cell_k
@@ -14,8 +27,7 @@ def compute_z_mc(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    """
-    Compute the geometric height of full levels from the geometric height of half levels (z_ifc)
+    """Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
 
     This assumes that the input field z_ifc is defined on half levels (KHalfDim) and the
     returned fields is defined on full levels (KDim)
@@ -29,7 +41,6 @@ def compute_z_mc(
         vertical_end:int32 end index of vertical domain
 
     Returns:
-
     """
     interpolate_height_levels_for_cell_k(
         z_ifc,

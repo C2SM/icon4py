@@ -25,15 +25,14 @@
 
 import numpy as np
 import pytest
+
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
 
 
 @pytest.mark.datatest
-def test_compute_c_lin_e(
-    grid_savepoint, interpolation_savepoint, icon_grid  # noqa: F811  # fixture
-):
+def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  # fixture
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     owner_mask = grid_savepoint.e_owner_mask()

@@ -1,14 +1,21 @@
-from typing import Final
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import field_operator, program, GridType, Field
-from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.ffront.fbuiltins import exp, log
+from gt4py.next import Field, GridType, field_operator, program
+from gt4py.next.ffront.fbuiltins import exp, int32, log
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
-
-
-#: Constants used for the computation of the background reference atmosphere of the nh-model
 
 
 @field_operator
@@ -92,11 +99,26 @@ def compute_reference_atmosphere(
     vertical_end: int32,
 ):
     """
-    Calculate rererence atmosphere fields on full levels.
+        Calculate reference atmosphere fields on full levels.
 
-    exner_ref_mc: reference exner pressure on full level mass points
-    rho_ref_mc: reference density on full level mass points
-    theta_ref_mc: reference potential temperature on full level mass points
+    Args:
+        z_mc: geometric height of full levels
+        p0ref: reference pressure for exner function [Pa]
+        p0sl_bg: sea level pressuer [Pa]
+        grav: gravitational constant [m/s^2]
+        cpd: specific heat at constant pressure [J/K/kg]
+        rd: gas constant for dry air [J/K/kg]
+        h_scal_bg: height scale [m]
+        t0sl_bg: sea level temperature [K]
+        del_t_bg: temperature difference between sea level and asymptotic stratospheric temperature
+        exner_ref_mc: (output) reference exner pressure on full level mass points
+        rho_ref_mc: (output) reference density on full level mass points
+        theta_ref_mc: (output) reference potential temperature on full level mass points
+        horizontal_start:int32 start index of horizontal domain
+        horizontal_end:int32 end index of horizontal domain
+        vertical_start:int32 start index of vertical domain
+        vertical_end:int32 end index of vertical domain
+
     """
     _compute_reference_atmosphere(
         z_mc,

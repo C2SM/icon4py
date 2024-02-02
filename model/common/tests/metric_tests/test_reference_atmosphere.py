@@ -1,14 +1,25 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants
-from icon4py.model.common.dimension import KDim, CellDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics.metric_fields import compute_z_mc
-from icon4py.model.common.metrics.reference_atmosphere import (
-    compute_reference_atmosphere,
-)
-from icon4py.model.common.test_utils.helpers import zero_field, dallclose
+from icon4py.model.common.metrics.reference_atmosphere import compute_reference_atmosphere
+from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
