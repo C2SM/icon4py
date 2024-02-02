@@ -26,7 +26,7 @@ def _compute_mass_flux(
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
     z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
 ) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_32.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_32."""
     mass_fl_e_wp = z_rho_e * z_vn_avg * astype(ddqz_z_full_e, wpfloat)
     z_theta_v_fl_e_wp = mass_fl_e_wp * z_theta_v_e
     return mass_fl_e_wp, z_theta_v_fl_e_wp

@@ -37,7 +37,9 @@ def _fused_solve_nonhydro_stencil_39_40(
     w_concorr_c = where(
         nflatlev + 1 <= vert_idx < nlev,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
-        _compute_contravariant_correction_of_w_for_lower_boundary(e_bln_c_s, z_w_concorr_me, wgtfacq_c),
+        _compute_contravariant_correction_of_w_for_lower_boundary(
+            e_bln_c_s, z_w_concorr_me, wgtfacq_c
+        ),
     )
     return w_concorr_c
 

@@ -32,7 +32,7 @@ def _compute_solver_coefficients_matrix(
     rd: wpfloat,
     cvd: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_44'''
+    """Formerly known as _mo_solve_nonhydro_stencil_44."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
     z_beta_wp = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full_wp

@@ -32,7 +32,7 @@ def _compute_explicit_part_for_rho_and_exner(
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     dtime: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49."""
     inv_ddqz_z_full_wp, z_flxdiv_mass_wp, z_beta_wp, z_flxdiv_theta_wp, ddt_exner_phy_wp = astype(
         (inv_ddqz_z_full, z_flxdiv_mass, z_beta, z_flxdiv_theta, ddt_exner_phy), wpfloat
     )

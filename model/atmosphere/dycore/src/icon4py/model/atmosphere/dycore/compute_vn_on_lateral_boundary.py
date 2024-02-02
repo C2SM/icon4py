@@ -25,7 +25,7 @@ def _compute_vn_on_lateral_boundary(
     vn_now: Field[[EdgeDim, KDim], wpfloat],
     dtime: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_29.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_29."""
     vn_new_wp = vn_now + dtime * grf_tend_vn
     return vn_new_wp
 

@@ -61,7 +61,9 @@ class TestMoSolveNonhydroStencil40(StencilTest):
         wgtfacq_c: np.array,
         **kwargs,
     ) -> dict:
-        w_concorr_c = compute_contravariant_correction_of_w_for_lower_boundary_numpy(grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c)
+        w_concorr_c = compute_contravariant_correction_of_w_for_lower_boundary_numpy(
+            grid, e_bln_c_s, z_w_concorr_me, wgtfacq_c
+        )
         return dict(w_concorr_c=w_concorr_c)
 
     @pytest.fixture

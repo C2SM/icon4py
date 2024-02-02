@@ -25,7 +25,7 @@ def _compute_contravariant_correction_of_w_for_lower_boundary(
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_40.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_40."""
     z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
 
     z_w_concorr_me_offset_1 = z_w_concorr_me_wp(Koff[-1])

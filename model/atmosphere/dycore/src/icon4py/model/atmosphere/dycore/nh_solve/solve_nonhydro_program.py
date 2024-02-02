@@ -17,6 +17,21 @@ from gt4py.next.ffront.fbuiltins import int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
+    _compute_contravariant_correction_of_w,
+)
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
+    _compute_contravariant_correction_of_w_for_lower_boundary,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
+    _compute_explicit_part_for_rho_and_exner,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density import (
+    _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density import (
+    _compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density,
+)
 from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
     _compute_first_vertical_derivative,
 )
@@ -32,6 +47,9 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_at_ic import (
     _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
 )
+from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
+    _compute_solver_coefficients_matrix,
+)
 from icon4py.model.atmosphere.dycore.compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
     _compute_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
 )
@@ -46,27 +64,6 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
-    _compute_contravariant_correction_of_w,
-)
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
-    _compute_contravariant_correction_of_w_for_lower_boundary,
-)
-from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density import (
-    _compute_explicit_part_of_vertical_wind_speed_from_temporally_averaged_advection_and_vertical_velocity_times_density,
-)
-from icon4py.model.atmosphere.dycore.compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density import (
-    _compute_explicit_part_of_vertical_wind_speed_and_vertical_velocity_times_density,
-)
-from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
-    _compute_solver_coefficients_matrix,
-)
-from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
-    _set_lower_boundary_condition_for_w_and_contravariant_correction,
-)
-from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
-    _compute_explicit_part_for_rho_and_exner,
-)
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
     _mo_solve_nonhydro_stencil_61,
 )
@@ -75,6 +72,9 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
 )
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+    _set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
@@ -570,7 +570,9 @@ def _stencils_39_40(
 
     w_concorr_c = where(
         k_field == nlev,
-        _compute_contravariant_correction_of_w_for_lower_boundary(e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl),
+        _compute_contravariant_correction_of_w_for_lower_boundary(
+            e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl
+        ),
         w_concorr_c,
     )
 

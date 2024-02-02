@@ -27,7 +27,7 @@ def _accumulate_prep_adv_fields(
     mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
 ) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
-    '''Formerly kown as _mo_solve_nonhydro_stencil_34.'''
+    """Formerly kown as _mo_solve_nonhydro_stencil_34."""
     vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
     return vn_traj_wp, mass_flx_me_wp

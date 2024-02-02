@@ -33,7 +33,7 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_36.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_36."""
     z_vt_ie = _interpolate_vt_to_ie(wgtfac_e=wgtfac_e, vt=vt)
     vn_ie, z_kin_hor_e = _interpolate_vn_to_ie_and_compute_ekin_on_edges(
         wgtfac_e=wgtfac_e, vn=vn, vt=vt

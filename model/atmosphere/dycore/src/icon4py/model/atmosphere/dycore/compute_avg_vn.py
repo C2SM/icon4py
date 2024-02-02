@@ -24,7 +24,7 @@ def _compute_avg_vn(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_31.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_31."""
     z_vn_avg_wp = neighbor_sum(e_flx_avg * vn(E2C2EO), axis=E2C2EODim)
     return z_vn_avg_wp
 

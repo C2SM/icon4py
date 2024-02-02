@@ -21,6 +21,9 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
+from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
+    add_analysis_increments_to_vn,
+)
 from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
 )
@@ -61,6 +64,11 @@ from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import
 from icon4py.model.atmosphere.dycore.compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta import (
     compute_rho_at_ic_and_theta_v_prime_at_ic_and_theta_v_at_ic_and_pressure_gradient_theta,
 )
+from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
+    compute_vn_on_lateral_boundary,
+    fromcompute_vn_on_lateral_boundarycore.compute_avg_vn_and_graddiv_vn_and_vt,
+    import,
+)
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
@@ -71,27 +79,14 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
-    add_analysis_increments_to_vn,
-)
-from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
-    compute_vn_on_lateral_boundary,
-)compute_vn_on_lateral_boundary
-fromcompute_vn_on_lateral_boundarycore.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
-from icon4py.model.atmosphere.dycore.compute_avg_vn import (
-    compute_avg_vn,
-)
-from icon4py.model.atmosphere.dycore.compute_mass_flux import (
-    compute_mass_flux,
-)
-from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
-    accumulate_prep_adv_fields,
-)
+from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import accumulate_prep_adv_fields
+from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
 )
