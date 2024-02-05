@@ -24,4 +24,7 @@ test_datatests:
     extends: .test_template
     stage: test
     script:
-      - tox -r -e run_datatests -c model/ --verbose
+        - tox -r -e run_datatests -c model/ --verbose -- $COMPONENT
+    parallel:
+        matrix:
+            - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, driver]
