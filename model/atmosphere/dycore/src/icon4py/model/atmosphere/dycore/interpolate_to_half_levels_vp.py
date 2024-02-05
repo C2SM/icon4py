@@ -15,32 +15,36 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _set_two_cell_kdim_fields_to_zero_vp() -> (
-    tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
-):
-    """Formerly known as _mo_solve_nonhydro_stencil_01."""
-    return _set_cell_kdim_field_to_zero_vp(), _set_cell_kdim_field_to_zero_vp()
+def _interpolate_to_half_levels_vp(
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    interpolant: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    """Formerly known mo_velocity_advection_stencil_10 and as _mo_solve_nonhydro_stencil_05."""
+    interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
+        vpfloat("1.0") - wgtfac_c
+    ) * interpolant(Koff[-1])
+    return interpolation_to_half_levels_vp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def set_two_cell_kdim_fields_to_zero_vp(
-    cell_kdim_field_to_zero_vp_1: Field[[CellDim, KDim], vpfloat],
-    cell_kdim_field_to_zero_vp_2: Field[[CellDim, KDim], vpfloat],
+def interpolate_to_half_levels_vp(
+    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    interpolant: Field[[CellDim, KDim], vpfloat],
+    interpolation_to_half_levels_vp: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _set_two_cell_kdim_fields_to_zero_vp(
-        out=(cell_kdim_field_to_zero_vp_1, cell_kdim_field_to_zero_vp_2),
+    _interpolate_to_half_levels_vp(
+        wgtfac_c,
+        interpolant,
+        out=interpolation_to_half_levels_vp,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

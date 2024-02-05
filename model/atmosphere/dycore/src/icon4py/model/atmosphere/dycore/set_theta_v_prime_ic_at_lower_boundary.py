@@ -15,44 +15,40 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_pertubation_of_rho_and_theta(
-    rho: Field[[CellDim, KDim], wpfloat],
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    """Formerly known as _mo_solve_nonhydro_stencil_07 or _mo_solve_nonhydro_stencil_13."""
-    rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
-
-    z_rth_pr_1_wp = rho - rho_ref_mc_wp
-    z_rth_pr_2_wp = theta_v - theta_ref_mc_wp
-    return astype((z_rth_pr_1_wp, z_rth_pr_2_wp), vpfloat)
+def _set_theta_v_prime_ic_at_lower_boundary(
+    wgtfacq_c: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr: Field[[CellDim, KDim], vpfloat],
+    theta_ref_ic: Field[[CellDim, KDim], vpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
+    """Formerly known as _mo_solve_nonhydro_stencil_11_upper."""
+    z_theta_v_pr_ic_vp = _interpolate_to_surface(wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr)
+    theta_v_ic_vp = theta_ref_ic + z_theta_v_pr_ic_vp
+    return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_pertubation_of_rho_and_theta(
-    rho: Field[[CellDim, KDim], wpfloat],
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+def set_theta_v_prime_ic_at_lower_boundary(
+    wgtfacq_c: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr: Field[[CellDim, KDim], vpfloat],
+    theta_ref_ic: Field[[CellDim, KDim], vpfloat],
+    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    theta_v_ic: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_pertubation_of_rho_and_theta(
-        rho,
-        rho_ref_mc,
-        theta_v,
-        theta_ref_mc,
-        out=(z_rth_pr_1, z_rth_pr_2),
+    _set_theta_v_prime_ic_at_lower_boundary(
+        wgtfacq_c,
+        z_rth_pr,
+        theta_ref_ic,
+        out=(z_theta_v_pr_ic, theta_v_ic),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

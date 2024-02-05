@@ -13,7 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
-from icon4py.model.atmosphere.dycore.interpolate_contravariant_correct_to_interface_levels import _interpolate_contravariant_correct_to_interface_levels
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import _interpolate_to_half_levels_vp
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
@@ -54,7 +54,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
 
     w_concorr_c = where(
         nflatlev + 1 <= k < nlev,
-        _interpolate_contravariant_correct_to_interface_levels(z_w_concorr_mc, wgtfac_c),
+        _interpolate_to_half_levels_vp(interpolant=z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
     )
 
