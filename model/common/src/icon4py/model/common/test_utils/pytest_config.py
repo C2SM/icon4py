@@ -80,6 +80,8 @@ def pytest_runtest_setup(item):
 
 
 def pytest_generate_tests(metafunc):
+    on_gpu = False
+
     # parametrise backend
     if "backend" in metafunc.fixturenames:
         backend_option = metafunc.config.getoption("backend")
@@ -90,6 +92,7 @@ def pytest_generate_tests(metafunc):
             "gtfn_cpu": gtfn_cpu,
             "gtfn_gpu": gtfn_gpu,
         }
+        gpu_backends = ["gtfn_gpu"]
 
         try:
             from gt4py.next.program_processors.runners.dace_iterator import (
@@ -103,6 +106,8 @@ def pytest_generate_tests(metafunc):
                     "dace_gpu": run_dace_gpu,
                 }
             )
+            gpu_backends.append("dace_gpu")
+
         except ImportError:
             # dace module not installed, ignore dace backends
             pass
@@ -114,6 +119,8 @@ def pytest_generate_tests(metafunc):
                 + available_backends
                 + "] and pass it as an argument to --backend when invoking pytest."
             )
+        elif backend_option in gpu_backends:
+            on_gpu = True
 
         metafunc.parametrize(
             "backend", [backends[backend_option]], ids=[f"backend={backend_option}"]
@@ -131,7 +138,7 @@ def pytest_generate_tests(metafunc):
             elif selected_grid_type == "icon_grid":
                 from icon4py.model.common.test_utils.grid_utils import get_icon_grid
 
-                grid_instance = get_icon_grid()
+                grid_instance = get_icon_grid(on_gpu)
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
