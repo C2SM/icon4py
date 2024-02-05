@@ -39,7 +39,7 @@ def _w(
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_52(
+def _solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     theta_v_ic: Field[[CellDim, KDim], wpfloat],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
@@ -68,7 +68,7 @@ def _mo_solve_nonhydro_stencil_52(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_52(
+def solve_tridiagonal_matrix_for_w_forward_sweep(
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     theta_v_ic: Field[[CellDim, KDim], wpfloat],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
@@ -85,7 +85,7 @@ def mo_solve_nonhydro_stencil_52(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_52(
+    _solve_tridiagonal_matrix_for_w_forward_sweep(
         vwind_impl_wgt,
         theta_v_ic,
         ddqz_z_half,

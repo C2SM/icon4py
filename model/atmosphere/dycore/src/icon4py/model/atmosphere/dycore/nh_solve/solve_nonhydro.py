@@ -91,8 +91,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import 
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
     mo_solve_nonhydro_stencil_50,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
-    mo_solve_nonhydro_stencil_52,
+from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+    solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
@@ -1278,7 +1278,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_52.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1846,7 +1846,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 52")
-        mo_solve_nonhydro_stencil_52.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
