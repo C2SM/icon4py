@@ -14,21 +14,19 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
+from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
+)
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
+from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
+    _correct_contravariant_vertical_velocity,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
-    _mo_velocity_advection_stencil_10,
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_11 import (
-    _mo_velocity_advection_stencil_11,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_12 import (
-    _mo_velocity_advection_stencil_12,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
-    _mo_velocity_advection_stencil_13,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
-    _mo_velocity_advection_stencil_14,
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -82,7 +80,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     w_concorr_c = (
         where(
             nflatlev + 1 < k < nlev,
-            _mo_velocity_advection_stencil_10(z_w_concorr_mc, wgtfac_c),
+            _interpolate_to_half_levels_vp(interpolant=z_w_concorr_mc, wgtfac_c=wgtfac_c),
             w_concorr_c,
         )
         if istep == 1
@@ -91,18 +89,20 @@ def _fused_velocity_advection_stencil_8_to_14(
 
     z_w_con_c = where(
         k < nlevp1,
-        _mo_velocity_advection_stencil_11(w),
-        _mo_velocity_advection_stencil_12(),
+        _copy_cell_kdim_field_to_vp(w),
+        _set_cell_kdim_field_to_zero_vp(),
     )
 
     z_w_con_c = where(
         nflatlev + 1 < k < nlev,
-        _mo_velocity_advection_stencil_13(z_w_con_c, w_concorr_c),
+        _correct_contravariant_vertical_velocity(z_w_con_c, w_concorr_c),
         z_w_con_c,
     )
     cfl_clipping, vcfl, z_w_con_c = where(
         maximum(3, nrdmax - 2) < k < nlev - 3,
-        _mo_velocity_advection_stencil_14(ddqz_z_half, z_w_con_c, cfl_w_limit, dtime),
+        _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
+            ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
+        ),
         (cfl_clipping, vcfl, z_w_con_c),
     )
 

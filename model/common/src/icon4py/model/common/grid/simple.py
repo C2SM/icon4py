@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import (
     C2EDim,
     C2VDim,
     CECDim,
+    CECECDim,
     CEDim,
     CellDim,
     E2C2EDim,
@@ -425,6 +426,12 @@ class SimpleGrid(BaseGrid):
             "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
             "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
             "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+            "C2CECEC": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2C2E2CDim,
+                CellDim,
+                CECECDim,
+            ),
         }
 
     @property
