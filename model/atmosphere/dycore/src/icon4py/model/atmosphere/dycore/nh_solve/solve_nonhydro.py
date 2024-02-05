@@ -100,8 +100,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_53 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
     mo_solve_nonhydro_stencil_54,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
-    mo_solve_nonhydro_stencil_55,
+from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
+    compute_results_for_thermodynamic_variables,
 )
 from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
@@ -1321,7 +1321,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_55.with_backend(backend)(
+        compute_results_for_thermodynamic_variables.with_backend(backend)(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1890,7 +1890,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 55")
-        mo_solve_nonhydro_stencil_55.with_backend(backend)(
+        compute_results_for_thermodynamic_variables.with_backend(backend)(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
