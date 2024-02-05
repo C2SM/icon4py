@@ -97,8 +97,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_53 import (
     mo_solve_nonhydro_stencil_53,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
-    mo_solve_nonhydro_stencil_54,
+from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
+    apply_rayleigh_damping_mechanism,
 )
 from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables,
@@ -1308,7 +1308,7 @@ class SolveNonhydro:
         )
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-            mo_solve_nonhydro_stencil_54.with_backend(backend)(
+            apply_rayleigh_damping_mechanism.with_backend(backend)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1877,7 +1877,7 @@ class SolveNonhydro:
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
             log.debug(f"corrector start stencil 54")
-            mo_solve_nonhydro_stencil_54.with_backend(backend)(
+            apply_rayleigh_damping_mechanism.with_backend(backend)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,

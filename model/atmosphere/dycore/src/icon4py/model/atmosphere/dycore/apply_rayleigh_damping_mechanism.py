@@ -20,18 +20,19 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_54(
+def _apply_rayleigh_damping_mechanism(
     z_raylfac: Field[[KDim], wpfloat],
     w_1: Field[[CellDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_54.'''
     z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
     w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
     return w_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_54(
+def apply_rayleigh_damping_mechanism(
     z_raylfac: Field[[KDim], wpfloat],
     w_1: Field[[CellDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
@@ -40,7 +41,7 @@ def mo_solve_nonhydro_stencil_54(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_54(
+    _apply_rayleigh_damping_mechanism(
         z_raylfac,
         w_1,
         w,
