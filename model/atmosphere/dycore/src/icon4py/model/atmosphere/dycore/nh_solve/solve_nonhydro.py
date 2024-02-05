@@ -85,8 +85,8 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp,
+from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+    apply_4th_order_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
@@ -1623,7 +1623,7 @@ class SolveNonhydro:
                     )
                 else:
                     log.debug("corrector start stencil 4th order divdamp")
-                    mo_solve_nonhydro_4th_order_divdamp.with_backend(backend)(
+                    apply_4th_order_divergence_damping.with_backend(backend)(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
                         vn=prognostic_state[nnew].vn,

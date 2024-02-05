@@ -20,11 +20,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_4th_order_divdamp(
+def _apply_4th_order_divergence_damping(
     scal_divdamp: Field[[KDim], wpfloat],
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
+    '''Formelry known as _mo_solve_nonhydro_4th_order_divdamp.'''
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
     scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))
     vn_wp = vn + (scal_divdamp * z_graddiv2_vn_wp)
@@ -32,7 +33,7 @@ def _mo_solve_nonhydro_4th_order_divdamp(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_4th_order_divdamp(
+def apply_4th_order_divergence_damping(
     scal_divdamp: Field[[KDim], wpfloat],
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
@@ -41,7 +42,7 @@ def mo_solve_nonhydro_4th_order_divdamp(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_4th_order_divdamp(
+    _apply_4th_order_divergence_damping(
         scal_divdamp,
         z_graddiv2_vn,
         vn,
