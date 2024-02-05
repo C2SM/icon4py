@@ -59,7 +59,7 @@ chain_true_skipvalues = [
 )
 def test_provide_neighbor_table_local(chain):
     expected = False
-    actual = provide_neighbor_table(chain, is_global=False)
+    actual = provide_neighbor_table(chain, is_global=False, force_skip_values=False)
     assert actual.has_skip_values == expected
 
 
