@@ -18,3 +18,10 @@ test_tools:
   stage: test
   script:
     - tox -r -c tools/ --verbose
+
+
+test_datatests:
+    extends: .test_template
+    stage: test
+    script:
+      - tox -r -e run_datatests -c model/ --verbose
