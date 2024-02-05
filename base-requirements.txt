@@ -1,3 +1,2 @@
 # VCS
-gt4py @ git+https://github.com/GridTools/gt4py.git@unconditionally_collapse_tuples
-
+gt4py @ git+https://github.com/tehrengruber/gt4py.git@icon4py_compilation_time_improvements
