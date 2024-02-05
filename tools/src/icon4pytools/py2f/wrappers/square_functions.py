@@ -1,9 +1,23 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 # flake8: noqa D100, D103
 
 import numpy as np
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Dimension, Field, float64
 from gt4py.next.iterator.embedded import np_as_located_field
+
 
 CellDim = Dimension("Cell")
 KDim = Dimension("K")
@@ -28,9 +42,7 @@ def multiply_fields(
 
 
 @program
-def square_fields(
-    a: Field[[CellDim, KDim], float64], result: Field[[CellDim, KDim], float64]
-):
+def square_fields(a: Field[[CellDim, KDim], float64], result: Field[[CellDim, KDim], float64]):
     _multiply_fields(a, a, out=result)
 
 
