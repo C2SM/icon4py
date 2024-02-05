@@ -22,24 +22,6 @@ import pytest
 
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 
-MCH_CH_R04B09_CELL_2ND_BOUNDARY = 850
-
-MCH_CH_RO4B09_CELL_INTERIOR = 4104
-
-MCH_CH_R04B09_LOCAL_NUM_EDGES = 31558
-
-MCH_CH_RO4B09_LOCAL_NUM_CELLS = 20896
-
-MCH_CH_R04B09_CELL_DOMAINS = {
-    "2ND_BOUNDARY_LINE": 428,
-    "3D_BOUNDARY_LINE": 850,
-    "4TH_BOUNDARY_LINE": 1266,
-    "INTERIOR": 2071,
-    "HALO": 10663,
-    "2ND_HALO_LINE": 10663,
-    "LOCAL": 0,
-}
-
 if typing.TYPE_CHECKING:
     import netCDF4
 
@@ -76,11 +58,51 @@ from .utils import MCH_GRID_FILE, R02B04_GLOBAL, resolve_file_from_gridfile_name
 
 
 SIMPLE_GRID_NC = "simple_grid.nc"
+
 R02B04_GLOBAL_NUM_VERTICES = 10242
-
 R02B04_GLOBAL_NUM_EDGES = 30720
-
 R02B04_GLOBAL_NUM_CELLS = 20480
+
+MCH_CH_04B09_NUM_VERTICES = 10663
+MCH_CH_R04B09_LOCAL_NUM_EDGES = 31558
+MCH_CH_RO4B09_LOCAL_NUM_CELLS = 20896
+
+
+MCH_CH_R04B09_CELL_DOMAINS = {
+    "2ND_BOUNDARY_LINE": 850,
+    "3D_BOUNDARY_LINE": 1688,
+    "4TH_BOUNDARY_LINE": 2511,
+    "NUDGING": 3316,
+    "INTERIOR": 4104,
+    "HALO": 20896,
+    "LOCAL": 0,
+}
+
+MCH_CH_R04B09_VERTEX_DOMAINS = {
+    "2ND_BOUNDARY_LINE": 428,
+    "3D_BOUNDARY_LINE": 850,
+    "4TH_BOUNDARY_LINE": 1266,
+    "5TH_BOUNDARY_LINE": 1673,
+    "INTERIOR": 2071,
+    "HALO": 10663,
+    "LOCAL": 0,
+}
+
+MCH_CH_R04B09_EDGE_DOMAINS = {
+    "2ND_BOUNDARY_LINE": 428,
+    "3D_BOUNDARY_LINE": 1278,
+    "4TH_BOUNDARY_LINE": 1700,
+    "5TH_BOUNDARY_LINE": 2538,
+    "6TH_BOUNDARY_LINE": 2954,
+    "7TH_BOUNDARY_LINE": 3777,
+    "8TH_BOUNDARY_LINE": 4184,
+    "NUDGING": 4989,
+    "2ND_NUDGING": 5387,
+    "INTERIOR": 6176,
+    "HALO": 31558,
+    "LOCAL": 0,
+    "END": 31558,
+}
 
 
 @pytest.fixture
@@ -594,10 +616,15 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
         (
             CellDim,
             HorizontalMarkerIndex.interior(CellDim),
-            MCH_CH_RO4B09_CELL_INTERIOR,
+            MCH_CH_R04B09_CELL_DOMAINS["INTERIOR"],
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
         ),
-        (CellDim, HorizontalMarkerIndex.interior(CellDim) + 1, 0, MCH_CH_R04B09_CELL_2ND_BOUNDARY),
+        (
+            CellDim,
+            HorizontalMarkerIndex.interior(CellDim) + 1,
+            0,
+            MCH_CH_R04B09_CELL_DOMAINS["2ND_BOUNDARY_LINE"],
+        ),
         (
             CellDim,
             HorizontalMarkerIndex.local(CellDim) - 2,
@@ -616,12 +643,42 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
         ),
-        (CellDim, HorizontalMarkerIndex.nudging(CellDim), 3316, MCH_CH_RO4B09_CELL_INTERIOR),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3, 2511, 3316),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 2, 1688, 2511),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1, 850, 1688),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 0, 0, 850),
-        (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 6176, MCH_CH_R04B09_LOCAL_NUM_EDGES),
+        (
+            CellDim,
+            HorizontalMarkerIndex.nudging(CellDim),
+            MCH_CH_R04B09_CELL_DOMAINS["NUDGING"],
+            MCH_CH_R04B09_CELL_DOMAINS["INTERIOR"],
+        ),
+        (
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
+            MCH_CH_R04B09_CELL_DOMAINS["4TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_CELL_DOMAINS["NUDGING"],
+        ),
+        (
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
+            MCH_CH_R04B09_CELL_DOMAINS["3D_BOUNDARY_LINE"],
+            MCH_CH_R04B09_CELL_DOMAINS["4TH_BOUNDARY_LINE"],
+        ),
+        (
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+            MCH_CH_R04B09_CELL_DOMAINS["2ND_BOUNDARY_LINE"],
+            MCH_CH_R04B09_CELL_DOMAINS["3D_BOUNDARY_LINE"],
+        ),
+        (
+            CellDim,
+            HorizontalMarkerIndex.lateral_boundary(CellDim) + 0,
+            0,
+            MCH_CH_R04B09_CELL_DOMAINS["2ND_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.interior(EdgeDim),
+            MCH_CH_R04B09_EDGE_DOMAINS["INTERIOR"],
+            MCH_CH_R04B09_LOCAL_NUM_EDGES,
+        ),
         (
             EdgeDim,
             HorizontalMarkerIndex.local(EdgeDim) - 2,
@@ -640,28 +697,138 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
         ),
-        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 4989, 5387),
-        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1, 5387, 6176),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7, 4184, 4989),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6, 3777, 4184),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5, 2954, 3777),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4, 2538, 2954),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3, 1700, 2538),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2, 1278, 1700),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1, 428, 1278),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 0, 0, 428),
-        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 2071, 10663),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim) - 2, 10663, 10663),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1, 10663, 10663),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 10663, 10663),
-        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim) + 1, 10663, 10663),
-        (VertexDim, HorizontalMarkerIndex.nudging(VertexDim), 10663, 10663),
-        (VertexDim, HorizontalMarkerIndex.end(VertexDim), 10663, 10663),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4, 1673, 2071),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3, 1266, 1673),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2, 850, 1266),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1, 428, 850),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0, 0, 428),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim),
+            MCH_CH_R04B09_EDGE_DOMAINS["NUDGING"],
+            MCH_CH_R04B09_EDGE_DOMAINS["2ND_NUDGING"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            MCH_CH_R04B09_EDGE_DOMAINS["2ND_NUDGING"],
+            MCH_CH_R04B09_EDGE_DOMAINS["INTERIOR"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7,
+            MCH_CH_R04B09_EDGE_DOMAINS["8TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["NUDGING"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
+            MCH_CH_R04B09_EDGE_DOMAINS["7TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["8TH_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5,
+            MCH_CH_R04B09_EDGE_DOMAINS["6TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["7TH_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+            MCH_CH_R04B09_EDGE_DOMAINS["5TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["6TH_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
+            MCH_CH_R04B09_EDGE_DOMAINS["4TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["5TH_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+            MCH_CH_R04B09_EDGE_DOMAINS["3D_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["4TH_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+            MCH_CH_R04B09_EDGE_DOMAINS["2ND_BOUNDARY_LINE"],
+            MCH_CH_R04B09_EDGE_DOMAINS["3D_BOUNDARY_LINE"],
+        ),
+        (
+            EdgeDim,
+            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 0,
+            0,
+            MCH_CH_R04B09_EDGE_DOMAINS["2ND_BOUNDARY_LINE"],
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.interior(VertexDim),
+            MCH_CH_R04B09_VERTEX_DOMAINS["INTERIOR"],
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.local(VertexDim) - 2,
+            MCH_CH_04B09_NUM_VERTICES,
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.local(VertexDim) - 1,
+            MCH_CH_04B09_NUM_VERTICES,
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.local(VertexDim),
+            MCH_CH_04B09_NUM_VERTICES,
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.nudging(VertexDim) + 1,
+            MCH_CH_04B09_NUM_VERTICES,
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.nudging(VertexDim),
+            MCH_CH_04B09_NUM_VERTICES,
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.end(VertexDim),
+            MCH_CH_04B09_NUM_VERTICES,
+            MCH_CH_04B09_NUM_VERTICES,
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4,
+            MCH_CH_R04B09_VERTEX_DOMAINS["5TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_VERTEX_DOMAINS["INTERIOR"],
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
+            MCH_CH_R04B09_VERTEX_DOMAINS["4TH_BOUNDARY_LINE"],
+            MCH_CH_R04B09_VERTEX_DOMAINS["5TH_BOUNDARY_LINE"],
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2,
+            MCH_CH_R04B09_VERTEX_DOMAINS["3D_BOUNDARY_LINE"],
+            MCH_CH_R04B09_VERTEX_DOMAINS["4TH_BOUNDARY_LINE"],
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+            MCH_CH_R04B09_VERTEX_DOMAINS["2ND_BOUNDARY_LINE"],
+            MCH_CH_R04B09_VERTEX_DOMAINS["3D_BOUNDARY_LINE"],
+        ),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0,
+            0,
+            MCH_CH_R04B09_VERTEX_DOMAINS["2ND_BOUNDARY_LINE"],
+        ),
     ],
 )
 @pytest.mark.parametrize("grid_file, num_levels", [(MCH_GRID_FILE, 65)])
