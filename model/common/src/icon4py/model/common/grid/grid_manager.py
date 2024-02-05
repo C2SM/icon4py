@@ -448,8 +448,8 @@ class GridManager:
         flat = expanded.reshape(sh[0], sh[1] * sh[2])
         far_indices = np.zeros_like(e2v)
         # TODO (magdalena) vectorize speed this up?
-        for x in range(sh[0]):
-            far_indices[x, :] = flat[x, ~np.in1d(flat[x, :], e2v[x, :])][:2]
+        for i in range(sh[0]):
+            far_indices[i, :] = flat[i, ~np.in1d(flat[i, :], e2v[i, :])][:2]
         return np.hstack((e2v, far_indices))
 
     @staticmethod
@@ -486,9 +486,9 @@ class GridManager:
 
         diamond_sides = 4
         e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=np.int32)
-        for x in range(sh[0]):
-            var = flattened[x, (~np.in1d(flattened[x, :], np.asarray([x, GridFile.INVALID_INDEX])))]
-            e2c2e[x, : var.shape[0]] = var
+        for i in range(sh[0]):
+            var = flattened[i, (~np.in1d(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
+            e2c2e[i, : var.shape[0]] = var
         return e2c2e
 
 
