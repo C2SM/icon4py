@@ -137,3 +137,19 @@ def compute_reference_atmosphere(
         out=(theta_ref_mc, exner_ref_mc, rho_ref_mc),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
+
+
+@field_operator
+def compute_d_exner_dz_ref_ic(
+    theta_ref_ic: Field[[CellDim, KDim], wpfloat], grav: wpfloat, cpd: wpfloat
+) -> Field[[CellDim, KDim], wpfloat]:
+    """
+    Calculate first vertical derivative of reference Exner pressure, half level mass points
+    Args:
+        theta_ref_ic: reference potential temperature
+        grav: gravitational constant [m/s^2]
+        cpd: specific heat at constant pressure [J/K/kg]
+
+    Returns: first vertical derivative of reference exner pressure
+    """
+    return -grav / cpd / theta_ref_ic
