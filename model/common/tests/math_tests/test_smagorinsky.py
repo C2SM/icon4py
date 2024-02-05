@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners.roundtrip import backend as roundtrip
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -28,7 +29,8 @@ def test_init_enh_smag_fac():
     z = (0.1, 0.2, 0.3, 0.4)
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
-    en_smag_fac_for_zero_nshift(
+    # TODO (magdalena) fails with embedded backend, because broadcast(0,0, (KDim,)) returns a scalar
+    en_smag_fac_for_zero_nshift.with_backend(roundtrip)(
         a_vec,
         *fac,
         *z,
