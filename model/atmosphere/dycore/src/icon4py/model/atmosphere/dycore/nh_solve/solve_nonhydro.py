@@ -103,8 +103,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
     mo_solve_nonhydro_stencil_55,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
-    mo_solve_nonhydro_stencil_56_63,
+from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
+    compute_dwdz_for_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
     set_two_cell_kdim_fields_to_zero_vp,
@@ -1348,7 +1348,7 @@ class SolveNonhydro:
 
         # compute dw/dz for divergence damping term
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
-            mo_solve_nonhydro_stencil_56_63.with_backend(backend)(
+            compute_dwdz_for_divergence_damping.with_backend(backend)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1393,7 +1393,7 @@ class SolveNonhydro:
             )
 
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
-            mo_solve_nonhydro_stencil_56_63.with_backend(backend)(
+            compute_dwdz_for_divergence_damping.with_backend(backend)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,

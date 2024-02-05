@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_56_63(
+def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
@@ -35,7 +35,7 @@ def _mo_solve_nonhydro_stencil_56_63(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_56_63(
+def compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
@@ -45,7 +45,7 @@ def mo_solve_nonhydro_stencil_56_63(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_56_63(
+    _compute_dwdz_for_divergence_damping(
         inv_ddqz_z_full,
         w,
         w_concorr_c,
