@@ -257,10 +257,10 @@ def compute_geofac_grdiv(
     llb = lateral_boundary[0]
     index = np.arange(llb, lateral_boundary[1])
     for j in range(3):
-        mask = C2E_[E2C_[llb:, 1], j] == index
+        mask = np.where(C2E_[E2C_[llb:, 1], j] == index, owner_mask[llb:], False)
         geofac_grdiv[llb:, 0] = np.where(mask, geofac_div[E2C_[llb:, 1], j], geofac_grdiv[llb:, 0])
     for j in range(3):
-        mask = C2E_[E2C_[llb:, 0], j] == index
+        mask = np.where(C2E_[E2C_[llb:, 0], j] == index, owner_mask[llb:], False)
         geofac_grdiv[llb:, 0] = np.where(mask, (geofac_grdiv[llb:, 0] - geofac_div[E2C_[llb:, 0], j]) * inv_dual_edge_length[llb:], geofac_grdiv[llb:, 0])
     for j in range(2):
         for k in range(3):
