@@ -22,6 +22,7 @@ import pytest
 
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 
+
 if typing.TYPE_CHECKING:
     import netCDF4
 
