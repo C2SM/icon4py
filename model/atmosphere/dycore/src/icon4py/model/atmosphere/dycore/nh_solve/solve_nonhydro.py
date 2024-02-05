@@ -88,8 +88,8 @@ from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
     mo_solve_nonhydro_4th_order_divdamp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
-    mo_solve_nonhydro_stencil_50,
+from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
+    add_analysis_increments_from_data_assimilation,
 )
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
@@ -1265,7 +1265,7 @@ class SolveNonhydro:
         )
 
         if self.config.is_iau_active:
-            mo_solve_nonhydro_stencil_50.with_backend(backend)(
+            add_analysis_increments_from_data_assimilation.with_backend(backend)(
                 z_fields.z_rho_expl,
                 z_fields.z_exner_expl,
                 diagnostic_state_nh.rho_incr,
@@ -1833,7 +1833,7 @@ class SolveNonhydro:
         # TODO: this is not tested in green line so far
         if self.config.is_iau_active:
             log.debug(f"corrector start stencil 50")
-            mo_solve_nonhydro_stencil_50(
+            add_analysis_increments_from_data_assimilation(
                 z_rho_expl=z_fields.z_rho_expl,
                 z_exner_expl=z_fields.z_exner_expl,
                 rho_incr=diagnostic_state_nh.rho_incr,

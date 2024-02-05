@@ -20,13 +20,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_50(
+def _add_analysis_increments_from_data_assimilation(
     z_rho_expl: Field[[CellDim, KDim], wpfloat],
     z_exner_expl: Field[[CellDim, KDim], wpfloat],
     rho_incr: Field[[CellDim, KDim], vpfloat],
     exner_incr: Field[[CellDim, KDim], vpfloat],
     iau_wgt_dyn: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    '''Formerly known as _mo_solve_nonhydro_stencil_50.'''
     rho_incr_wp, exner_incr_wp = astype((rho_incr, exner_incr), wpfloat)
 
     z_rho_expl_wp = z_rho_expl + iau_wgt_dyn * rho_incr_wp
@@ -35,7 +36,7 @@ def _mo_solve_nonhydro_stencil_50(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_50(
+def add_analysis_increments_from_data_assimilation(
     z_rho_expl: Field[[CellDim, KDim], wpfloat],
     z_exner_expl: Field[[CellDim, KDim], wpfloat],
     rho_incr: Field[[CellDim, KDim], vpfloat],
@@ -46,7 +47,7 @@ def mo_solve_nonhydro_stencil_50(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_50(
+    _add_analysis_increments_from_data_assimilation(
         z_rho_expl,
         z_exner_expl,
         rho_incr,
