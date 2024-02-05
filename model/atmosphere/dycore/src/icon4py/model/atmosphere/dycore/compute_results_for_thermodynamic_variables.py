@@ -40,7 +40,7 @@ def _compute_results_for_thermodynamic_variables(
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], wpfloat],
 ]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_55.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_55."""
     inv_ddqz_z_full_wp, exner_ref_mc_wp, z_alpha_wp, z_beta_wp = astype(
         (inv_ddqz_z_full, exner_ref_mc, z_alpha, z_beta), wpfloat
     )

@@ -25,7 +25,7 @@ def _apply_rayleigh_damping_mechanism(
     w_1: Field[[CellDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_54.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_54."""
     z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
     w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
     return w_wp

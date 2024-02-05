@@ -52,7 +52,7 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_52.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
     z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)

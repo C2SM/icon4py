@@ -20,8 +20,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @scan_operator(axis=KDim, forward=False, init=wpfloat("0.0"))
-def _solve_tridiagonal_matrix_for_w_back_substitution_scan(w_state: wpfloat, z_q: vpfloat, w: wpfloat) -> wpfloat:
-    '''Formerly known as _mo_solve_nonhydro_stencil_53_scan.'''
+def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
+    w_state: wpfloat, z_q: vpfloat, w: wpfloat
+) -> wpfloat:
+    """Formerly known as _mo_solve_nonhydro_stencil_53_scan."""
     return w + w_state * astype(z_q, wpfloat)
 
 

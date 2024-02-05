@@ -25,7 +25,7 @@ def _apply_4th_order_divergence_damping(
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    '''Formelry known as _mo_solve_nonhydro_4th_order_divdamp.'''
+    """Formelry known as _mo_solve_nonhydro_4th_order_divdamp."""
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
     scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))
     vn_wp = vn + (scal_divdamp * z_graddiv2_vn_wp)

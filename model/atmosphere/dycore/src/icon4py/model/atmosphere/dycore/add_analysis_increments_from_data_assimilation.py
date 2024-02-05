@@ -27,7 +27,7 @@ def _add_analysis_increments_from_data_assimilation(
     exner_incr: Field[[CellDim, KDim], vpfloat],
     iau_wgt_dyn: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
-    '''Formerly known as _mo_solve_nonhydro_stencil_50.'''
+    """Formerly known as _mo_solve_nonhydro_stencil_50."""
     rho_incr_wp, exner_incr_wp = astype((rho_incr, exner_incr), wpfloat)
 
     z_rho_expl_wp = z_rho_expl + iau_wgt_dyn * rho_incr_wp
