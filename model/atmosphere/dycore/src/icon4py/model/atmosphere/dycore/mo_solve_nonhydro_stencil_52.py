@@ -52,9 +52,8 @@ def _mo_solve_nonhydro_stencil_52(
     dtime: wpfloat,
     cpd: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
-    ddqz_z_half_wp, z_alpha_wp, z_beta_wp, z_q_wp = astype(
-        (ddqz_z_half, z_alpha, z_beta, z_q), wpfloat
-    )
+    '''Formerly known as _mo_solve_nonhydro_stencil_52.'''
+    ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
     z_gamma_vp = astype(dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half_wp, vpfloat)
     z_a = (vpfloat("0.0") - z_gamma_vp) * z_beta(Koff[-1]) * z_alpha(Koff[-1])

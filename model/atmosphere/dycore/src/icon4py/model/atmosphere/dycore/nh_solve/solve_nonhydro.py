@@ -94,8 +94,8 @@ from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
     mo_solve_nonhydro_stencil_52,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_53 import (
-    mo_solve_nonhydro_stencil_53,
+from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
+    solve_tridiagonal_matrix_for_w_back_substitution,
 )
 from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism,
@@ -1297,7 +1297,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
-        mo_solve_nonhydro_stencil_53.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=start_cell_nudging,
@@ -1865,7 +1865,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
         log.debug(f"corrector start stencil 53")
-        mo_solve_nonhydro_stencil_53.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=start_cell_nudging,
