@@ -71,7 +71,7 @@ def read_icon_grid(
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
-            .construct_icon_grid()
+            .construct_icon_grid(on_gpu=False)
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -251,7 +251,7 @@ def read_static_fields(
         icon_grid = (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
-            .construct_icon_grid()
+            .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             dataprovider.from_interpolation_savepoint()
