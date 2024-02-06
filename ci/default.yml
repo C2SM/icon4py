@@ -27,4 +27,4 @@ test_datatests:
         - tox -r -e run_datatests -c model/ --verbose -- $COMPONENT
     parallel:
         matrix:
-            - COMPONENT: [atmosphere/diffusion, atmosphere/dycore, common, driver]
+            - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, common/tests, driver/tests]
