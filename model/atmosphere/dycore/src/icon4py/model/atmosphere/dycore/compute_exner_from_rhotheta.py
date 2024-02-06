@@ -20,20 +20,21 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_67(
+def _compute_exner_from_rhotheta(
     rho: Field[[CellDim, KDim], wpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
     exner: Field[[CellDim, KDim], wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    """Formerly known as _mo_solve_nonhydro_stencil_67."""
     theta_v_wp = exner
     exner_wp = exp(rd_o_cvd * log(rd_o_p0ref * rho * theta_v_wp))
     return theta_v_wp, exner_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_67(
+def compute_exner_from_rhotheta(
     rho: Field[[CellDim, KDim], wpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
     exner: Field[[CellDim, KDim], wpfloat],
@@ -44,7 +45,7 @@ def mo_solve_nonhydro_stencil_67(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_67(
+    _compute_exner_from_rhotheta(
         rho,
         theta_v,
         exner,

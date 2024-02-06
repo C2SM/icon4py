@@ -15,24 +15,42 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
+from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_62(
+def _update_densety_exener_wind(
+    rho_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_rho: Field[[CellDim, KDim], wpfloat],
+    theta_v_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_thv: Field[[CellDim, KDim], wpfloat],
     w_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_w: Field[[CellDim, KDim], wpfloat],
     dtime: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
-    w_new_wp = w_now + dtime * grf_tend_w
-    return w_new_wp
+) -> tuple[
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
+    Field[[CellDim, KDim], wpfloat],
+]:
+    """Formerly known as _mo_solve_nonhydro_stencil_61."""
+    rho_new_wp = rho_now + dtime * grf_tend_rho
+    exner_new_wp = theta_v_now + dtime * grf_tend_thv
+    w_new_wp = _update_wind(w_now=w_now, grf_tend_w=grf_tend_w, dtime=dtime)
+    return rho_new_wp, exner_new_wp, w_new_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_62(
+def update_densety_exener_wind(
+    rho_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_rho: Field[[CellDim, KDim], wpfloat],
+    theta_v_now: Field[[CellDim, KDim], wpfloat],
+    grf_tend_thv: Field[[CellDim, KDim], wpfloat],
     w_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_w: Field[[CellDim, KDim], wpfloat],
+    rho_new: Field[[CellDim, KDim], wpfloat],
+    exner_new: Field[[CellDim, KDim], wpfloat],
     w_new: Field[[CellDim, KDim], wpfloat],
     dtime: wpfloat,
     horizontal_start: int32,
@@ -40,11 +58,15 @@ def mo_solve_nonhydro_stencil_62(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_62(
+    _update_densety_exener_wind(
+        rho_now,
+        grf_tend_rho,
+        theta_v_now,
+        grf_tend_thv,
         w_now,
         grf_tend_w,
         dtime,
-        out=w_new,
+        out=(rho_new, exner_new, w_new),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
