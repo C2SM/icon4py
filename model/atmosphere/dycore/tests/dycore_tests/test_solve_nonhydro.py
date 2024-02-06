@@ -271,7 +271,7 @@ def test_nonhydro_predictor_step(
         atol=1e-21,
     )
 
-    # mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1
+    # compute_horizontal_advection_of_rho_and_theta
     assert dallclose(
         solve_nonhydro.intermediate_fields.z_rho_e.asnumpy()[edge_start_lb_plus6:, :],
         sp_exit.z_rho_e().asnumpy()[edge_start_lb_plus6:, :],

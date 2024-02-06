@@ -41,6 +41,7 @@ class GridConfig:
     limited_area: bool = True
     n_shift_total: int = 0
     lvertnest: bool = False
+    on_gpu: bool = False
 
     @property
     def num_levels(self):
@@ -117,15 +118,21 @@ class BaseGrid(ABC):
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
+
+        if self.config.on_gpu:
+            import cupy as xp
+        else:
+            xp = np
+
         return NeighborTableOffsetProvider(
-            self.connectivities[dim], from_dim, to_dim, self.size[dim]
+            xp.asarray(self.connectivities[dim]), from_dim, to_dim, self.size[dim]
         )
 
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
         return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[dim].shape, from_dim, to_dim
+            self.connectivities[dim].shape, from_dim, to_dim, self.config.on_gpu
         )
 
     def get_offset_provider(self, name):
