@@ -72,7 +72,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         config.divdamp_z2,
         config.divdamp_z3,
         config.divdamp_z4,
-        out=enh_divdamp_fac,
+        enh_divdamp_fac,
         offset_provider={"Koff": KDim},
     )
     _calculate_scal_divdamp.with_backend(backend)(
