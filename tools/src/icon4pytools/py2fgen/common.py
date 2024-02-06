@@ -14,6 +14,8 @@
 from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
+ARRAY_SIZE_ARGS = {"Cell": "n_cell", "Edge": "n_edge", "Vertex": "n_vertex", "K": "n_k"}
+
 
 def parse_type_spec(type_spec: TypeSpec) -> tuple[list[Dimension], ScalarKind]:
     if isinstance(type_spec, ScalarType):

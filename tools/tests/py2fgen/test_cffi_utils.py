@@ -18,7 +18,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float32, float64, int32, int64
 from icon4py.model.common.dimension import E2CDim, EdgeDim, KDim, VertexDim
 
-from icon4pytools.py2f.cffi_utils import UnknownDimensionException, to_fields
+from icon4pytools.py2fgen.cffi_utils import UnknownDimensionException, to_fields
 
 
 n_vertices = 9

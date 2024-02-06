@@ -23,7 +23,7 @@ import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.type_system.type_translation import from_type_hint
 
-from icon4pytools.py2f.typing_utils import parse_type_spec
+from icon4pytools.py2fgen.common import parse_type_spec
 
 
 FFI_DEF_EXTERN_DECORATOR = "@ffi.def_extern()"

@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4pytools.py2f.cffi_utils import CffiMethod
-from icon4pytools.py2f.codegen import CffiPlugin
-from icon4pytools.py2f.parsing import parse_function
+from icon4pytools.py2fgen.cffi_utils import CffiMethod
+from icon4pytools.py2fgen.codegen import CffiPlugin
+from icon4pytools.py2fgen.parsing import parse_function
 
 
 def test_parse_functions_on_wrapper():

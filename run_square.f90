@@ -12,6 +12,6 @@ program call_python
     res = 0
     cdim = 6
     kdim = 3
-    call square_wrapper(a, cdim, kdim, res)
+    call square_wrapper(a, res, cdim, kdim)
     print *, "fortran output: res =", res
     end program call_python

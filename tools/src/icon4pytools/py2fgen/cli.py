@@ -15,9 +15,9 @@ import pathlib
 
 import click
 
-from icon4pytools.py2f.cffi_utils import generate_and_compile_cffi_plugin
-from icon4pytools.py2f.codegen import generate_and_write_f90_interface, generate_c_header
-from icon4pytools.py2f.parsing import parse_function
+from icon4pytools.py2fgen.cffi_utils import generate_and_compile_cffi_plugin
+from icon4pytools.py2fgen.codegen import generate_and_write_f90_interface, generate_c_header
+from icon4pytools.py2fgen.parsing import parse_function
 
 
 @click.command(
@@ -30,7 +30,7 @@ from icon4pytools.py2f.parsing import parse_function
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
     default=".",
 )
-def main(module_import_path: str, build_path: pathlib.Path, function_name: str) -> None:
+def main(module_import_path: str, function_name: str, build_path: pathlib.Path,) -> None:
     """
     Generate C and F90 wrappers and C library for embedding the python MODULE in C and Fortran.
 
