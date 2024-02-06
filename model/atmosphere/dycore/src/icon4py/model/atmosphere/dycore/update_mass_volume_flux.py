@@ -20,40 +20,45 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _update_mass_flux(
+def _update_mass_volume_flux(
     z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     rho_ic: Field[[CellDim, KDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    vol_flx_ic: Field[[CellDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_58."""
-    mass_flx_ic_wp = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
-    return mass_flx_ic_wp
+    z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
+    mass_flx_ic_wp = mass_flx_ic + z_a
+    vol_flx_ic_wp = vol_flx_ic + z_a / rho_ic
+    return mass_flx_ic_wp, vol_flx_ic_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def update_mass_flux(
+def update_mass_volume_flux(
     z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     rho_ic: Field[[CellDim, KDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
+    vol_flx_ic: Field[[CellDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _update_mass_flux(
+    _update_mass_volume_flux(
         z_contr_w_fl_l,
         rho_ic,
         vwind_impl_wgt,
         w,
         mass_flx_ic,
+        vol_flx_ic,
         r_nsubsteps,
-        out=mass_flx_ic,
+        out=(mass_flx_ic,vol_flx_ic),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
