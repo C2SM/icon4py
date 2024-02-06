@@ -57,7 +57,7 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
+from icon4pytools.py2fgen.cffi_utils import CffiMethod, to_fields
 
 
 # TODO (magdalena) Revise interface architecture with Fortran granules:

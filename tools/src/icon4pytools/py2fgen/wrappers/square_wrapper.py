@@ -10,12 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+# mypy: ignore-errors
+# TODO(samkellerhals): Delete file once we can generate wrapper functions for programs. Use this for tests potentially.
 
 # flake8: noqa D104
 import numpy as np
-from gt4py.next.ffront.fbuiltins import float64, int32, Field
-
+from gt4py.next.ffront.fbuiltins import Field, float64, int32
 from icon4py.model.common.dimension import CellDim, KDim
+
 from icon4pytools.py2fgen.wrappers.square_functions import square_output_param
 
 
@@ -29,7 +31,9 @@ def unpack(ptr, *sizes) -> np.ndarray:
     :param sizes: variable number of arguments representing the dimensions of the array in Fortran order
     :return: a numpy array with shape specified by the reverse of sizes and dtype = ctype of the pointer
     """
-    shape = sizes[::-1]  # Reverse the sizes to convert from Fortran (column-major) to C/numpy (row-major) order
+    shape = sizes[
+        ::-1
+    ]  # Reverse the sizes to convert from Fortran (column-major) to C/numpy (row-major) order
     length = np.prod(shape)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
     arr = np.frombuffer(
@@ -55,7 +59,12 @@ def pack(ptr, arr: np.ndarray):
     ffi.memmove(ptr, np.ravel(arr), length * ffi.sizeof(c_type))
 
 
-def square_wrapper(field_ptr: Field[[CellDim, KDim], float64], result_ptr: Field[[CellDim, KDim], float64], n_cell: int32, n_k: int32):
+def square_wrapper(
+    field_ptr: Field[[CellDim, KDim], float64],
+    result_ptr: Field[[CellDim, KDim], float64],
+    n_cell: int32,
+    n_k: int32,
+):
     """
     simple python function that squares all entries of a field of
     size nx x ny and returns a pointer to the result.

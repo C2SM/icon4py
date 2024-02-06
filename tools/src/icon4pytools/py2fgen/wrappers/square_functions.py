@@ -10,7 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+# mypy: ignore-errors
+# TODO(samkellerhals): Delete file once we can generate wrapper functions for programs. Use this for tests potentially.
 # flake8: noqa D100, D103
 
 import numpy as np

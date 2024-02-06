@@ -14,11 +14,11 @@ import string
 
 import pytest
 from gt4py.next.type_system.type_specifications import ScalarKind
+from icon4py.model.common.dimension import CellDim, KDim
 
 from icon4pytools.py2fgen.codegen import (
     CffiPlugin,
     CHeaderGenerator,
-    DimensionType,
     F90InterfaceGenerator,
     Func,
     FuncParameter,
@@ -30,30 +30,30 @@ from icon4pytools.py2fgen.codegen import (
 field_2d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
-    dimensions=[DimensionType(name="K", length=13), DimensionType(name="J", length=13)],
+    dimensions=[CellDim, KDim],
 )
 field_1d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
-    dimensions=[DimensionType(name="K", length=13)],
+    dimensions=[KDim],
 )
 
 simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[])
 
 
 @pytest.mark.parametrize(
-    ("param", "expected"), ((simple_type, "value, "), (field_2d, ""), (field_1d, ""))
+    ("param", "expected"), ((simple_type, "value,"), (field_2d, ""), (field_1d, ""))
 )
 def test_as_target(param, expected):
     assert expected == as_f90_value(param)
 
 
-@pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "(:,:)")))
+@pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "dimension(:,:),")))
 def test_field_extension_2d(lang, expected):
     assert as_field(field_2d, lang) == expected
 
 
-@pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "(:)")))
+@pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "dimension(:),")))
 def test_field_extension_1d(lang, expected):
     assert as_field(field_1d, lang) == expected
 
@@ -67,7 +67,7 @@ foo = Func(
     name="foo",
     args=[
         FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[]),
-        FuncParameter(name="two", d_type=ScalarKind.FLOAT64, dimensions=[]),
+        FuncParameter(name="two", d_type=ScalarKind.FLOAT64, dimensions=[CellDim, KDim]),
     ],
 )
 
@@ -78,8 +78,8 @@ bar = Func(
             name="one",
             d_type=ScalarKind.FLOAT32,
             dimensions=[
-                DimensionType(name="KDim", length=10),
-                DimensionType(name="VDim", length=50000),
+                CellDim,
+                KDim,
             ],
         ),
         FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[]),
@@ -92,7 +92,7 @@ def test_cheader_generation_for_single_function():
     plugin = CffiPlugin(name="libtest", functions=functions)
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern void foo(int one, double two);\n"
+    assert header == "extern void foo(int one, double* two);\n"
 
 
 def test_cheader_for_pointer_args():
@@ -114,7 +114,7 @@ def test_c_header_with_several_functions():
     header = CHeaderGenerator.apply(plugin)
     assert (
         header
-        == """extern void bar(float* one, int two);\nextern void foo(int one, double two);\n"""
+        == """extern void bar(float* one, int two);\nextern void foo(int one, double* two);\n"""
     )
 
 
@@ -129,10 +129,11 @@ def test_fortran_interface():
 
     public
     interface
-        subroutine foo(one, two) bind(c, name='foo')
-        use iso_c_binding
-        integer(c_int), value, intent(inout):: one
-        real(c_double), value, intent(inout):: two
+        subroutine foo(one, &
+                       two) bind(c, name='foo')
+            use, intrinsic :: iso_c_binding
+            integer(c_int), value, target :: one
+            real(c_double), dimension(:, :), target :: two(n_cell, n_k)
         end subroutine foo
     end interface
     end module

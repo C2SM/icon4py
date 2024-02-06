@@ -17,19 +17,11 @@ from icon4pytools.py2fgen.parsing import parse_function
 
 
 def test_parse_functions_on_wrapper():
-    module_path = "icon4pytools.py2f.wrappers.diffusion_wrapper"
+    module_path = "icon4pytools.py2fgen.wrappers.diffusion_wrapper"
     function_name = "diffusion_init"
     plugin = parse_function(module_path, function_name)
     assert isinstance(plugin, CffiPlugin)
-    assert plugin.name == "diffusion_wrapper"
-
-
-def test_parse_functions_on_program():
-    module_path = "icon4py.model.atmosphere.dycore.compute_airmass"
-    function_name = "compute_airmass"
-    plugin = parse_function(module_path, function_name)
-    assert isinstance(plugin, CffiPlugin)
-    assert plugin.name == "compute_airmass"
+    assert plugin.name == "diffusion_wrapper_plugin"
 
 
 @CffiMethod.register

@@ -10,3 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
+from pathlib import Path
+
+import pytest
+
+
+@pytest.fixture
+def samples_path():
+    return Path(__file__).parent / "fortran_samples"

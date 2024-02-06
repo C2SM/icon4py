@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
-from typing import Optional, Sequence
+from typing import Sequence
 
 from gt4py.eve import Node, codegen
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
@@ -23,7 +23,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.icon4pygen.bindings.utils import write_string, format_fortran_code
+from icon4pytools.icon4pygen.bindings.utils import format_fortran_code, write_string
 from icon4pytools.py2fgen.common import ARRAY_SIZE_ARGS
 
 
@@ -35,7 +35,7 @@ class DimensionType(Node):
 class FuncParameter(Node):
     name: str
     d_type: ScalarKind
-    dimensions: Sequence[Optional[Dimension]]
+    dimensions: Sequence[Dimension]
 
 
 class Func(Node):
@@ -71,10 +71,10 @@ def get_intent(param: FuncParameter) -> str:
     #   and passed by reference (pointers) in the C interface and thus
     #   annotated with inout in the f90 interface. All params need to have
     #   corresponding in/out/inout types associated with them going forward
-        if "_start" in param.name or "_end" in param.name:
-            return "in"
-        else:
-            return "inout"
+    if "_start" in param.name or "_end" in param.name:
+        return "in"
+    else:
+        return "inout"
 
 
 def as_field(param: FuncParameter, language: str) -> str:
@@ -87,6 +87,7 @@ def as_field(param: FuncParameter, language: str) -> str:
     else:
         dims = ",".join(map(lambda x: ":", range(size)))
         return f"dimension({dims}),"
+
 
 def get_array_size_params(param: FuncParameter) -> str:
     size = len(param.dimensions)
@@ -151,11 +152,6 @@ class F90InterfaceGenerator(TemplatedGenerator):
     """
     )
 
-    FuncParameter = as_jinja(
-        """{{rendered_type}}, {{dim}} {{value}} target :: {{name}}{{ explicit_size }}
-    """
-    )
-
     def visit_FuncParameter(self, param: FuncParameter, param_names=""):
         # kw-arg param_names needs to be present because it is present up the tree
         return self.generic_visit(
@@ -164,8 +160,13 @@ class F90InterfaceGenerator(TemplatedGenerator):
             intent=get_intent(param),
             rendered_type=to_f_type(param.d_type),
             dim=as_field(param, "F"),
-            explicit_size=get_array_size_params(param)
+            explicit_size=get_array_size_params(param),
         )
+
+    FuncParameter = as_jinja(
+        """{{rendered_type}}, {{dim}} {{value}} target :: {{name}}{{ explicit_size }}
+    """
+    )
 
 
 def generate_c_header(plugin: CffiPlugin) -> str:

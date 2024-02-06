@@ -17,11 +17,11 @@ from typing import Callable
 
 from gt4py.next import Dimension
 from gt4py.next.ffront.decorator import Program
+from gt4py.next.type_system.type_specifications import ScalarKind
 from gt4py.next.type_system.type_translation import from_type_hint
 
-from gt4py.next.type_system.type_specifications import ScalarKind
 from icon4pytools.py2fgen.codegen import CffiPlugin, Func, FuncParameter
-from icon4pytools.py2fgen.common import parse_type_spec, ARRAY_SIZE_ARGS
+from icon4pytools.py2fgen.common import ARRAY_SIZE_ARGS, parse_type_spec
 
 
 def parse_function(module_name: str, function_name: str) -> CffiPlugin:
@@ -36,14 +36,16 @@ def _parse_function(module, function_name):
     func = unwrap(getattr(module, function_name))
     if isinstance(func, Program):
         params = _get_gt4py_func_params(func)
-        # params_with_sizes = _add_array_size_params(params)
-        raise Exception("Creating a CffiPlugin for Gt4Py programs without a wrapper is not yet supported.")
+        # TODO(samkellerhals): params_with_sizes = _add_array_size_params(params)
+        raise Exception(
+            "Creating a CffiPlugin for Gt4Py programs without a wrapper is not yet supported."
+        )
         # TODO(samkellerhals): Set flag to instruct codegen to generate a wrapper function as we cannot
         #  embed Gt4Py programs directly.
     else:
         # assumes that the simple func implements unpacking of any arrays.
         params = _get_simple_func_params(func)
-        # params_with_sizes = _add_array_size_params(params)
+        # TODO(samkellerhals): params_with_sizes = _add_array_size_params(params)
         return Func(name=function_name, args=params)
 
 
@@ -56,12 +58,10 @@ def _add_array_size_params(func_params):
     }
 
     size_params = [
-        FuncParameter(name=s, d_type=ScalarKind.INT32, dimensions=[])
-        for s in size_param_names
+        FuncParameter(name=s, d_type=ScalarKind.INT32, dimensions=[]) for s in size_param_names
     ]
 
     return func_params + size_params
-
 
 
 def _get_gt4py_func_params(func: Program) -> list[FuncParameter]:
