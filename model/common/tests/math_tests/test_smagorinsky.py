@@ -21,7 +21,8 @@ from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 
 
-# TODO (magdalena) FIX does not run on embedded, there is an issue with broadcast(0.0, (KDim,))
+# TODO (magdalena) stencil does not run on embedded backend, broadcast(0.0, (KDim,)) return scalar?
+# TODO (magdalena) run as to StencilTest
 def test_init_enh_smag_fac():
     grid = SimpleGrid()
     enh_smag_fac = zero_field(grid, KDim)
@@ -34,7 +35,7 @@ def test_init_enh_smag_fac():
         a_vec,
         *fac,
         *z,
-        out=enh_smag_fac,
+        enh_smag_fac,
         offset_provider={"Koff": KDim},
     )
     assert np.allclose(enhanced_smag_fac_np, enh_smag_fac.asnumpy())

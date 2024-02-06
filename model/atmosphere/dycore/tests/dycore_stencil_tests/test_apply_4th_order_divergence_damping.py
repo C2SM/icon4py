@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp,
+from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+    apply_4th_order_divergence_damping,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
-    PROGRAM = mo_solve_nonhydro_4th_order_divdamp
+    PROGRAM = apply_4th_order_divergence_damping
     OUTPUTS = ("vn",)
 
     @staticmethod

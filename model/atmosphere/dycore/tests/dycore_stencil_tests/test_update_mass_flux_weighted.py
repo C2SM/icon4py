@@ -15,47 +15,54 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
-    mo_solve_nonhydro_stencil_58,
-)
+from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import update_mass_flux_weighted
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil58(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_58
+class TestMoSolveNonhydroStencil65(StencilTest):
+    PROGRAM = update_mass_flux_weighted
     OUTPUTS = ("mass_flx_ic",)
 
     @staticmethod
     def reference(
         grid,
-        z_contr_w_fl_l: np.array,
         rho_ic: np.array,
+        vwind_expl_wgt: np.array,
         vwind_impl_wgt: np.array,
-        w: np.array,
+        w_now: np.array,
+        w_new: np.array,
+        w_concorr_c: np.array,
         mass_flx_ic: np.array,
-        r_nsubsteps,
+        r_nsubsteps: float,
         **kwargs,
     ) -> dict:
+        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
         vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-        mass_flx_ic = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
+        mass_flx_ic = mass_flx_ic + (
+            r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c)
+        )
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_contr_w_fl_l = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        r_nsubsteps = wpfloat("10.0")
         rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
         vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_now = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_new = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
         mass_flx_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        r_nsubsteps = 7.0
 
         return dict(
-            z_contr_w_fl_l=z_contr_w_fl_l,
             rho_ic=rho_ic,
+            vwind_expl_wgt=vwind_expl_wgt,
             vwind_impl_wgt=vwind_impl_wgt,
-            w=w,
+            w_now=w_now,
+            w_new=w_new,
+            w_concorr_c=w_concorr_c,
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=int32(0),
