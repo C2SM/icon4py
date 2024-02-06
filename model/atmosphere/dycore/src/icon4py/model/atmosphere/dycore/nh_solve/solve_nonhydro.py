@@ -22,6 +22,9 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import accumulate_prep_adv_fields
+from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
+    add_analysis_increments_from_data_assimilation,
+)
 from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn,
 )
@@ -37,8 +40,14 @@ from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_
 from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
 )
+from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+    apply_4th_order_divergence_damping,
+)
 from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
+)
+from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
+    apply_rayleigh_damping_mechanism,
 )
 from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping,
@@ -53,6 +62,10 @@ from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
+    compute_dwdz_for_divergence_damping,
+)
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import compute_exner_from_rhotheta
 from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import compute_graddiv2_of_vn
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
@@ -70,9 +83,13 @@ from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     compute_pertubation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
+    compute_results_for_thermodynamic_variables,
+)
 from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
+from icon4py.model.atmosphere.dycore.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
@@ -83,45 +100,6 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_50 import (
-    mo_solve_nonhydro_stencil_50,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
-    mo_solve_nonhydro_stencil_52,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_53 import (
-    mo_solve_nonhydro_stencil_53,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
-    mo_solve_nonhydro_stencil_54,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_55 import (
-    mo_solve_nonhydro_stencil_55,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
-    mo_solve_nonhydro_stencil_56_63,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_58 import (
-    mo_solve_nonhydro_stencil_58,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_60 import (
-    mo_solve_nonhydro_stencil_60,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_65 import (
-    mo_solve_nonhydro_stencil_65,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_66 import (
-    mo_solve_nonhydro_stencil_66,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
-    mo_solve_nonhydro_stencil_67,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
-    mo_solve_nonhydro_stencil_68,
-)
 from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (
     set_two_cell_kdim_fields_to_zero_vp,
 )
@@ -130,6 +108,12 @@ from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_wp import 
 )
 from icon4py.model.atmosphere.dycore.set_two_edge_kdim_fields_to_zero_wp import (
     set_two_edge_kdim_fields_to_zero_wp,
+)
+from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
+    solve_tridiagonal_matrix_for_w_back_substitution,
+)
+from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+    solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -145,6 +129,12 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     set_zero_c_k,
     set_zero_e_k,
 )
+from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
+    update_dynamical_exner_time_increment,
+)
+from icon4py.model.atmosphere.dycore.update_mass_flux import update_mass_flux
+from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import update_mass_flux_weighted
+from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -572,7 +562,7 @@ class SolveNonhydro:
         start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area:
-            mo_solve_nonhydro_stencil_66.with_backend(backend)(
+            compute_theta_and_exner.with_backend(backend)(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
@@ -586,7 +576,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            mo_solve_nonhydro_stencil_67.with_backend(backend)(
+            compute_exner_from_rhotheta.with_backend(backend)(
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
                 exner=prognostic_state_ls[nnew].exner,
@@ -599,7 +589,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_68.with_backend(backend)(
+        update_theta_v.with_backend(backend)(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
             rho_now=prognostic_state_ls[nnow].rho,
             theta_v_now=prognostic_state_ls[nnow].theta_v,
@@ -1275,7 +1265,7 @@ class SolveNonhydro:
         )
 
         if self.config.is_iau_active:
-            mo_solve_nonhydro_stencil_50.with_backend(backend)(
+            add_analysis_increments_from_data_assimilation.with_backend(backend)(
                 z_fields.z_rho_expl,
                 z_fields.z_exner_expl,
                 diagnostic_state_nh.rho_incr,
@@ -1288,7 +1278,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_52.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1307,7 +1297,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
-        mo_solve_nonhydro_stencil_53.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=start_cell_nudging,
@@ -1318,7 +1308,7 @@ class SolveNonhydro:
         )
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
-            mo_solve_nonhydro_stencil_54.with_backend(backend)(
+            apply_rayleigh_damping_mechanism.with_backend(backend)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1331,7 +1321,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        mo_solve_nonhydro_stencil_55.with_backend(backend)(
+        compute_results_for_thermodynamic_variables.with_backend(backend)(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1358,7 +1348,7 @@ class SolveNonhydro:
 
         # compute dw/dz for divergence damping term
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
-            mo_solve_nonhydro_stencil_56_63.with_backend(backend)(
+            compute_dwdz_for_divergence_damping.with_backend(backend)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1403,7 +1393,7 @@ class SolveNonhydro:
             )
 
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
-            mo_solve_nonhydro_stencil_56_63.with_backend(backend)(
+            compute_dwdz_for_divergence_damping.with_backend(backend)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
                 w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1633,7 +1623,7 @@ class SolveNonhydro:
                     )
                 else:
                     log.debug("corrector start stencil 4th order divdamp")
-                    mo_solve_nonhydro_4th_order_divdamp.with_backend(backend)(
+                    apply_4th_order_divergence_damping.with_backend(backend)(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
                         vn=prognostic_state[nnew].vn,
@@ -1843,7 +1833,7 @@ class SolveNonhydro:
         # TODO: this is not tested in green line so far
         if self.config.is_iau_active:
             log.debug(f"corrector start stencil 50")
-            mo_solve_nonhydro_stencil_50(
+            add_analysis_increments_from_data_assimilation(
                 z_rho_expl=z_fields.z_rho_expl,
                 z_exner_expl=z_fields.z_exner_expl,
                 rho_incr=diagnostic_state_nh.rho_incr,
@@ -1856,7 +1846,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 52")
-        mo_solve_nonhydro_stencil_52.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
             ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
@@ -1875,7 +1865,7 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
         log.debug(f"corrector start stencil 53")
-        mo_solve_nonhydro_stencil_53.with_backend(backend)(
+        solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
             horizontal_start=start_cell_nudging,
@@ -1887,7 +1877,7 @@ class SolveNonhydro:
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
             log.debug(f"corrector start stencil 54")
-            mo_solve_nonhydro_stencil_54.with_backend(backend)(
+            apply_rayleigh_damping_mechanism.with_backend(backend)(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
                 w=prognostic_state[nnew].w,
@@ -1900,7 +1890,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 55")
-        mo_solve_nonhydro_stencil_55.with_backend(backend)(
+        compute_results_for_thermodynamic_variables.with_backend(backend)(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
@@ -1937,7 +1927,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
         log.debug(f"corrector start stencil 58")
-        mo_solve_nonhydro_stencil_58.with_backend(backend)(
+        update_mass_flux.with_backend(backend)(
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             rho_ic=diagnostic_state_nh.rho_ic,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
@@ -1951,7 +1941,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         if at_last_substep:
-            mo_solve_nonhydro_stencil_60.with_backend(backend)(
+            update_dynamical_exner_time_increment.with_backend(backend)(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,
@@ -1976,7 +1966,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
             log.debug(f" corrector: start stencil 65")
-            mo_solve_nonhydro_stencil_65.with_backend(backend)(
+            update_mass_flux_weighted.with_backend(backend)(
                 rho_ic=diagnostic_state_nh.rho_ic,
                 vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
                 vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
