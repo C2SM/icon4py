@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, field_operator, program
+from gt4py.next import Field, field_operator, program, GridType
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
 
 from icon4py.model.common.dimension import KDim, Koff
@@ -47,7 +47,7 @@ def _en_smag_fac_for_zero_nshift(
     return enh_smag_fac
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def en_smag_fac_for_zero_nshift(
     vect_a: Field[[KDim], float],
     hdiff_smag_fac: float,
