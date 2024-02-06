@@ -15,8 +15,8 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_56_63 import (
-    mo_solve_nonhydro_stencil_56_63,
+from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
+    compute_dwdz_for_divergence_damping,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestMoSolveNonhydroStencil5663(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_56_63
+    PROGRAM = compute_dwdz_for_divergence_damping
     OUTPUTS = ("z_dwdz_dd",)
 
     @staticmethod

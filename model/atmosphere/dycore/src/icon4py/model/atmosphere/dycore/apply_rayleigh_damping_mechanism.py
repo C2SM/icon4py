@@ -12,29 +12,38 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.common import GridType
-from gt4py.next.ffront.decorator import program, scan_operator
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
-@scan_operator(axis=KDim, forward=False, init=wpfloat("0.0"))
-def _mo_solve_nonhydro_stencil_53_scan(w_state: wpfloat, z_q: vpfloat, w: wpfloat) -> wpfloat:
-    return w + w_state * astype(z_q, wpfloat)
+@field_operator
+def _apply_rayleigh_damping_mechanism(
+    z_raylfac: Field[[KDim], wpfloat],
+    w_1: Field[[CellDim], wpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
+    """Formerly known as _mo_solve_nonhydro_stencil_54."""
+    z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
+    w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
+    return w_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_53(
-    z_q: Field[[CellDim, KDim], vpfloat],
+def apply_rayleigh_damping_mechanism(
+    z_raylfac: Field[[KDim], wpfloat],
+    w_1: Field[[CellDim], wpfloat],
     w: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_53_scan(
-        z_q,
+    _apply_rayleigh_damping_mechanism(
+        z_raylfac,
+        w_1,
         w,
         out=w,
         domain={
