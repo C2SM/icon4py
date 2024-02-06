@@ -433,7 +433,7 @@ class SolveNonhydro:
             self.config.divdamp_z2,
             self.config.divdamp_z3,
             self.config.divdamp_z4,
-            out=self.enh_divdamp_fac,
+            self.enh_divdamp_fac,
             offset_provider={"Koff": KDim},
         )
 
