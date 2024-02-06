@@ -128,7 +128,7 @@ MULTIPLE_STENCILS = """\
     !$DSL         z_rth_pr_1=nproma,p_patch%nlev,p_patch%nblks_c; z_rth_pr_2=nproma,p_patch%nlev,p_patch%nblks_c; &
     !$DSL         rho_ic=nproma,p_patch%nlev,p_patch%nblks_c)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_08; wgtfac_c=p_nh%metrics%wgtfac_c(:,:,1); rho=p_nh%prog(nnow)%rho(:,:,1); rho_ref_mc=p_nh%metrics%rho_ref_mc(:,:,1); &
+    !$DSL START STENCIL(name=compute_pertubation_of_rho_and_theta_and_rho_at_ic; wgtfac_c=p_nh%metrics%wgtfac_c(:,:,1); rho=p_nh%prog(nnow)%rho(:,:,1); rho_ref_mc=p_nh%metrics%rho_ref_mc(:,:,1); &
     !$DSL               theta_v=p_nh%prog(nnow)%theta_v(:,:,1); theta_ref_mc=p_nh%metrics%theta_ref_mc(:,:,1); rho_ic=p_nh%diag%rho_ic(:,:,1); z_rth_pr_1=z_rth_pr(:,:,1,1); &
     !$DSL               z_rth_pr_2=z_rth_pr(:,:,1,2); vertical_lower=2; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
               !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -155,7 +155,7 @@ MULTIPLE_STENCILS = """\
               !$ACC END PARALLEL
     #endif
 
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_08)
+    !$DSL END STENCIL(name=compute_pertubation_of_rho_and_theta_and_rho_at_ic)
 
 
     !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
@@ -232,12 +232,12 @@ CONSECUTIVE_STENCIL = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; field=nproma,p_patch%nlev; field_to_zero_vp=nproma,p_patch%nlev)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field_to_zero_vp=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45_b; z_q=z_q(:,:); vertical_lower=1; vertical_upper=1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field_to_zero_vp=z_q(:,:); vertical_lower=1; vertical_upper=1; &
     !$DSL               horizontal_lower=i_startidx; horizontal_upper=i_endidx; mergecopy=true)
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -254,8 +254,8 @@ CONSECUTIVE_STENCIL = """\
     !$DSL END PROFILE()
     !$DSL ENDIF()
 
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45; noendif=true; noprofile=true)
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45_b; noendif=true; noprofile=true)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp; noendif=true; noprofile=true)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp; noendif=true; noprofile=true)
 
     !$DSL END CREATE()
 """
@@ -351,7 +351,7 @@ MULTIPLE_FUSED = """\
         !$DSL     diff_multfac_vn=diff_multfac_vn(:); &
         !$DSL     nudgecoeff_e=p_int%nudgecoeff_e(:,1); &
         !$DSL     vn=p_nh_prog%vn(:,:,1); &
-        !$DSL     horz_idx=horz_idx(:); &
+        !$DSL     edge=horizontal_idx(:); &
         !$DSL     nudgezone_diff=nudgezone_diff; &
         !$DSL     fac_bdydiff_v=fac_bdydiff_v; &
         !$DSL     start_2nd_nudge_line_idx_e=start_2nd_nudge_line_idx_e-1; &
@@ -403,12 +403,12 @@ MULTIPLE_FUSED = """\
         !$DSL INSERT(w_old(:,:,:) = p_nh_prog%w(:,:,:))
         !$DSL INSERT(!$ACC END PARALLEL)
 
-        !$DSL START FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance; &
+        !$DSL START FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence; &
         !$DSL       area=p_patch%cells%area(:,1); geofac_grg_x=p_int%geofac_grg(:,:,1,1); &
         !$DSL       geofac_grg_y=p_int%geofac_grg(:,:,1,2); geofac_n2s=p_int%geofac_n2s(:,:,1); &
         !$DSL       w_old=w_old(:,:,1); w=p_nh_prog%w(:,:,1); diff_multfac_w=diff_multfac_w; &
-        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); vert_idx=vert_idx(:); &
-        !$DSL       horz_idx=horz_idx(:); nrdmax=nrdmax(jg); interior_idx=start_interior_idx_c-1; &
+        !$DSL       diff_multfac_n2w=diff_multfac_n2w(:); k=vertical_idx(:); &
+        !$DSL       cell=horizontal_idx(:); nrdmax=nrdmax(jg); interior_idx=start_interior_idx_c-1; &
         !$DSL       halo_idx=end_interior_idx_c; dwdx=p_nh_diag%dwdx(:,:,1); &
         !$DSL       dwdy=p_nh_diag%dwdy(:,:,1); &
         !$DSL       w_rel_tol=1e-09_wp; dwdx_rel_tol=1e-09_wp; dwdy_abs_tol=1e-09_wp; &
@@ -443,7 +443,7 @@ MULTIPLE_FUSED = """\
 
           !$DSL END STENCIL(name=apply_nabla2_to_w_in_upper_damping_layer)
 
-        !$DSL END FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulance)
+        !$DSL END FUSED STENCIL(name=apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence)
     """
 
 
@@ -452,11 +452,11 @@ FREE_FORM_STENCIL = """\
 
     !$DSL START CREATE()
 
-    !$DSL DECLARE(z_q=nproma,p_patch%nlev; z_alpha=nproma,p_patch%nlev)
+    !$DSL DECLARE(z_q=nproma,p_patch%nlev; field_to_zero_vp=nproma,p_patch%nlev)
 
     !$DSL INSERT(some custom fields go here)
 
-    !$DSL START STENCIL(name=mo_solve_nonhydro_stencil_45; z_alpha=z_alpha(:,:); vertical_lower=nlevp1; &
+    !$DSL START STENCIL(name=set_cell_kdim_field_to_zero_vp; field_to_zero_vp=z_alpha(:,:); vertical_lower=nlevp1; &
     !$DSL               vertical_upper=nlevp1; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
 
         !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -473,7 +473,7 @@ FREE_FORM_STENCIL = """\
 
     !$DSL INSERT(some custom code goes here)
 
-    !$DSL END STENCIL(name=mo_solve_nonhydro_stencil_45)
+    !$DSL END STENCIL(name=set_cell_kdim_field_to_zero_vp)
 
     !$DSL END CREATE()
 """

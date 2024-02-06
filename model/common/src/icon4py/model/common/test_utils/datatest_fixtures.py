@@ -17,15 +17,20 @@ from ..decomposition.definitions import SingleNodeRun
 from .data_handling import download_and_extract
 from .datatest_utils import (
     DATA_URIS,
-    SER_DATA_BASEPATH,
+    DATA_URIS_APE,
+    GLOBAL_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+    SERIALIZED_DATA_PATH,
     create_icon_serial_data_provider,
-    get_datapath_for_ranked_data,
+    get_datapath_for_experiment,
     get_processor_properties_for_run,
     get_ranked_data_path,
 )
 
 
-# TODO: a run that contains all the fields needed for dycore, diffusion, interpolation fields needs to be consolidated
+@pytest.fixture
+def experiment():
+    return REGIONAL_EXPERIMENT
 
 
 @pytest.fixture(params=[False], scope="session")
@@ -35,36 +40,40 @@ def processor_props(request):
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return get_ranked_data_path(SER_DATA_BASEPATH, processor_props)
+    return get_ranked_data_path(SERIALIZED_DATA_PATH, processor_props)
 
 
-@pytest.fixture(scope="session")
-def datapath(ranked_data_path):
-    return get_datapath_for_ranked_data(ranked_data_path)
+@pytest.fixture
+def datapath(ranked_data_path, experiment):
+    return get_datapath_for_experiment(ranked_data_path, experiment)
 
 
-@pytest.fixture(scope="session")
-def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
+@pytest.fixture
+def download_ser_data(request, processor_props, ranked_data_path, experiment, pytestconfig):
     """
     Get the binary ICON data from a remote server.
 
     Session scoped fixture which is a prerequisite of all the other fixtures in this file.
     """
     try:
-        has_data_marker = any(map(lambda i: i.iter_markers(name="datatest"), request.node.items))
-        if not has_data_marker or not request.config.getoption("datatest"):
-            pytest.skip("not running datatest marked tests")
+        if not request.config.getoption("datatest"):
+            pytest.skip("not running datatest marked test")
     except ValueError:
         pass
 
     try:
-        uri = DATA_URIS[processor_props.comm_size]
+        destination_path = get_datapath_for_experiment(ranked_data_path, experiment)
+        uri = (
+            DATA_URIS_APE[processor_props.comm_size]
+            if experiment == GLOBAL_EXPERIMENT
+            else DATA_URIS[processor_props.comm_size]
+        )
 
         data_file = ranked_data_path.joinpath(
-            f"mch_ch_r04b09_dsl_mpitask{processor_props.comm_size}.tar.gz"
+            f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
-            download_and_extract(uri, ranked_data_path, data_file)
+            download_and_extract(uri, ranked_data_path, destination_path, data_file)
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError:
@@ -73,7 +82,7 @@ def download_ser_data(request, processor_props, ranked_data_path, pytestconfig):
         )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def data_provider(download_ser_data, datapath, processor_props):
     return create_icon_serial_data_provider(datapath, processor_props)
 
@@ -83,14 +92,18 @@ def grid_savepoint(data_provider):
     return data_provider.from_savepoint_grid()
 
 
+def is_regional(experiment_name):
+    return experiment_name == REGIONAL_EXPERIMENT
+
+
 @pytest.fixture
-def icon_grid(grid_savepoint):
+def icon_grid(grid_savepoint, experiment):
     """
     Load the icon grid from an ICON savepoint.
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid()
+    return grid_savepoint.construct_icon_grid(on_gpu=False)
 
 
 @pytest.fixture

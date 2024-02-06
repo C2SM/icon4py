@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
+from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim, CellDim, KDim
@@ -50,7 +50,6 @@ def _recon_lsq_cell_c_svd_stencil(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-
     p_coeff_10_dsl = (
         lsq_pseudoinv_9(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
         + lsq_pseudoinv_9(C2CECEC[1]) * (p_cc(C2E2C2E2C[1]) - p_cc)
@@ -177,7 +176,7 @@ def _recon_lsq_cell_c_svd_stencil(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def recon_lsq_cell_c_svd_stencil(
     p_cc: Field[[CellDim, KDim], float],
     lsq_pseudoinv_1: Field[[CECECDim], float],

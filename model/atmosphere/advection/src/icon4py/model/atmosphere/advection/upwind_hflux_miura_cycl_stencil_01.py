@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
+from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
@@ -28,7 +28,6 @@ def _upwind_hflux_miura_cycl_stencil_01(
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
     cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
 ) -> Field[[EdgeDim, KDim], float]:
-
     z_tracer_mflx_dsl = (
         where(
             cell_rel_idx_dsl == int32(1),
@@ -52,7 +51,7 @@ def _upwind_hflux_miura_cycl_stencil_01(
     return z_tracer_mflx_dsl
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_cycl_stencil_01(
     z_lsq_coeff_1_dsl: Field[[CellDim, KDim], float],
     z_lsq_coeff_2_dsl: Field[[CellDim, KDim], float],

@@ -16,11 +16,13 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
+    C2E2C2E2CDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
     C2VDim,
     CECDim,
+    CECECDim,
     CEDim,
     CellDim,
     E2C2EDim,
@@ -63,6 +65,12 @@ class IconGrid(BaseGrid):
             "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
             "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
+            "C2CECEC ": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2C2E2CDim,
+                CellDim,
+                CECECDim,
+            ),
         }
 
     @builder
@@ -86,7 +94,7 @@ class IconGrid(BaseGrid):
 
     @property
     def num_edges(self):
-        return self.config.num_edges
+        return self.config.num_edges if self.config else 0
 
     @property
     def limited_area(self):
@@ -96,12 +104,6 @@ class IconGrid(BaseGrid):
     @property
     def n_shift(self):
         return self.config.n_shift_total if self.config else 0
-
-    @property
-    def nflat_gradp(self):
-        return (
-            self.config.num_levels if self.config else 0
-        )  # according to line 1168 in mo_vertical_grid.f90
 
     @property
     def lvert_nest(self):

@@ -13,6 +13,7 @@
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -26,19 +27,22 @@ from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
-from .utils import diff_multfac_vn_numpy, smag_limit_numpy
+from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
+
+
+backend = run_gtfn
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):
     return k4 * hdiff_efdt_ratio / 3.0 * np.ones(shape)
 
 
-def test_scale_k(backend):
+def test_scale_k():
     grid = SimpleGrid()
     field = random_field(grid, KDim)
     scaled_field = zero_field(grid, KDim)
     factor = 2.0
-    scale_k.with_backend(backend)(field, factor, scaled_field, offset_provider={})
+    scale_k(field, factor, scaled_field, offset_provider={})
     assert np.allclose(factor * field.asnumpy(), scaled_field.asnumpy())
 
 
@@ -113,10 +117,10 @@ def test_set_zero_vertex_k(backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("linit", [True])
 def test_verify_special_diffusion_inital_step_values_against_initial_savepoint(
-    diffusion_savepoint_init, r04b09_diffusion_config, icon_grid, linit, backend
+    diffusion_savepoint_init, experiment, icon_grid, linit, ndyn_substeps
 ):
     savepoint = diffusion_savepoint_init
-    config = r04b09_diffusion_config
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
 
     params = DiffusionParams(config)
     expected_diff_multfac_vn = savepoint.diff_multfac_vn()

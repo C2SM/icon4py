@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
@@ -33,7 +34,6 @@ def _upwind_hflux_miura_cycl_stencil_02(
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
 ]:
-
     z_rhofluxdiv_c_out = (
         neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim)
         if nsub == int32(1)
@@ -49,7 +49,7 @@ def _upwind_hflux_miura_cycl_stencil_02(
     return (z_rhofluxdiv_c_out, z_fluxdiv_c_dsl, z_rho_new_dsl, z_tracer_new_dsl)
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_cycl_stencil_02(
     nsub: int32,
     p_mass_flx_e: Field[[EdgeDim, KDim], float],

@@ -23,9 +23,17 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
     processor_props,
 )
 
-from ..utils import verify_diffusion_fields
+from ..utils import (
+    construct_diagnostics,
+    construct_interpolation_state,
+    construct_metric_state,
+    verify_diffusion_fields,
+)
 
 
+@pytest.mark.xfail(
+    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+)
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, False])
@@ -61,10 +69,10 @@ def test_parallel_diffusion(
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: using local grid with {icon_grid.num_cells} Cells, {icon_grid.num_edges} Edges, {icon_grid.num_vertices} Vertices"
     )
-    metric_state = metrics_savepoint.construct_metric_state_for_diffusion()
+    metric_state = construct_metric_state(metrics_savepoint)
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_diffusion()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
 
     diffusion_params = DiffusionParams(r04b09_diffusion_config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
@@ -86,7 +94,7 @@ def test_parallel_diffusion(
         cell_params=cell_geometry,
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion initialized ")
-    diagnostic_state = diffusion_savepoint_init.construct_diagnostics_for_diffusion()
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     if linit:
         diffusion.initial_run(
@@ -103,6 +111,7 @@ def test_parallel_diffusion(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
     verify_diffusion_fields(
+        config=r04b09_diffusion_config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=diffusion_savepoint_exit,

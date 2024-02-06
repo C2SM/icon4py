@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, sqrt, where
 
@@ -24,7 +24,6 @@ def _btraj_dreg_stencil_02(
     edge_cell_length: Field[[ECDim], float],
     p_dt: float,
 ) -> Field[[EdgeDim, KDim], int32]:
-
     lvn_pos = where(p_vn >= 0.0, True, False)
     traj_length = sqrt(p_vn * p_vn + p_vt * p_vt) * p_dt
     e2c_length = where(lvn_pos, edge_cell_length(E2EC[0]), edge_cell_length(E2EC[1]))
@@ -35,7 +34,7 @@ def _btraj_dreg_stencil_02(
     return opt_famask_dsl
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def btraj_dreg_stencil_02(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
