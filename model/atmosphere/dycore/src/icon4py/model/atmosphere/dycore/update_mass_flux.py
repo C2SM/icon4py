@@ -13,39 +13,32 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_65(
+def _update_mass_flux(
+    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     rho_ic: Field[[CellDim, KDim], wpfloat],
-    vwind_expl_wgt: Field[[CellDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
-    w_now: Field[[CellDim, KDim], wpfloat],
-    w_new: Field[[CellDim, KDim], wpfloat],
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
 ) -> Field[[CellDim, KDim], wpfloat]:
-    w_concorr_c_wp = astype(w_concorr_c, wpfloat)
-
-    mass_flx_ic_wp = mass_flx_ic + (
-        r_nsubsteps * rho_ic * (vwind_expl_wgt * w_now + vwind_impl_wgt * w_new - w_concorr_c_wp)
-    )
+    """Formerly known as _mo_solve_nonhydro_stencil_58."""
+    mass_flx_ic_wp = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
     return mass_flx_ic_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_65(
+def update_mass_flux(
+    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     rho_ic: Field[[CellDim, KDim], wpfloat],
-    vwind_expl_wgt: Field[[CellDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
-    w_now: Field[[CellDim, KDim], wpfloat],
-    w_new: Field[[CellDim, KDim], wpfloat],
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w: Field[[CellDim, KDim], wpfloat],
     mass_flx_ic: Field[[CellDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
@@ -53,13 +46,11 @@ def mo_solve_nonhydro_stencil_65(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_65(
+    _update_mass_flux(
+        z_contr_w_fl_l,
         rho_ic,
-        vwind_expl_wgt,
         vwind_impl_wgt,
-        w_now,
-        w_new,
-        w_concorr_c,
+        w,
         mass_flx_ic,
         r_nsubsteps,
         out=mass_flx_ic,

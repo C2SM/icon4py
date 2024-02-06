@@ -15,8 +15,8 @@ import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_52 import (
-    mo_solve_nonhydro_stencil_52,
+from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+    solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -24,7 +24,7 @@ from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_52_numpy(
+def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     vwind_impl_wgt: np.array,
     theta_v_ic: np.array,
     ddqz_z_half: np.array,
@@ -60,7 +60,7 @@ def mo_solve_nonhydro_stencil_52_numpy(
     return z_q, w
 
 
-def test_mo_solve_nonhydro_stencil_52():
+def test_solve_tridiagonal_matrix_for_w_forward_sweep():
     grid = SimpleGrid()
     vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
     theta_v_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
@@ -75,7 +75,7 @@ def test_mo_solve_nonhydro_stencil_52():
     z_q = random_field(grid, CellDim, KDim, dtype=vpfloat)
     w = random_field(grid, CellDim, KDim, dtype=wpfloat)
 
-    z_q_ref, w_ref = mo_solve_nonhydro_stencil_52_numpy(
+    z_q_ref, w_ref = solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
         vwind_impl_wgt.asnumpy(),
         theta_v_ic.asnumpy(),
         ddqz_z_half.asnumpy(),
@@ -93,7 +93,7 @@ def test_mo_solve_nonhydro_stencil_52():
     v_start = int32(1)
     v_end = int32(grid.num_levels)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
-    mo_solve_nonhydro_stencil_52.with_backend(run_gtfn)(
+    solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(run_gtfn)(
         vwind_impl_wgt=vwind_impl_wgt,
         theta_v_ic=theta_v_ic,
         ddqz_z_half=ddqz_z_half,
