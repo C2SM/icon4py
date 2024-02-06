@@ -22,7 +22,6 @@ from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-
 def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     grid,
     p_ccpr1: np.array,
@@ -45,8 +44,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
     p_grad_2_v = np.sum(
         np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_y * p_ccpr2[c2e2cO], 0), axis=1
     )
-    return (p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v)
-
+    return p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v
 
 class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
     PROGRAM = mo_math_gradients_grad_green_gauss_cell_dsl
@@ -61,15 +59,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         geofac_grg_y: np.array,
         **kwargs,
     ) -> dict:
-        (
-            p_grad_1_u,
-            p_grad_1_v,
-            p_grad_2_u,
-            p_grad_2_v,
-        ) = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(
-            grid, p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y
-        )
-
+        p_grad_1_u, p_grad_1_v, p_grad_2_u, p_grad_2_v = mo_math_gradients_grad_green_gauss_cell_dsl_numpy(grid, p_ccpr1, p_ccpr2, geofac_grg_x, geofac_grg_y)
         return dict(
             p_grad_1_u=p_grad_1_u,
             p_grad_1_v=p_grad_1_v,

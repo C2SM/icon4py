@@ -36,7 +36,7 @@ def solve_tridiagonal_matrix_for_w_forward_sweep_numpy(
     w_ref: np.array,
     dtime,
     cpd,
-) -> tuple[np.array, np.array]:
+) -> tuple[np.array]:
     z_q = np.copy(z_q_ref)
     w = np.copy(w_ref)
     vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)

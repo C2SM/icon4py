@@ -23,19 +23,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_50_numpy(
-    grid,
-    z_rho_expl: np.array,
-    rho_incr: np.array,
-    z_exner_expl: np.array,
-    exner_incr: np.array,
-    iau_wgt_dyn: float,
-) -> tuple[np.array, np.array]:
-    z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
-    z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
-    return z_rho_expl, z_exner_expl
-
-
 class TestMoSolveNonhydroStencil50(StencilTest):
     PROGRAM = add_analysis_increments_from_data_assimilation
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
@@ -47,17 +34,11 @@ class TestMoSolveNonhydroStencil50(StencilTest):
         rho_incr: np.array,
         z_exner_expl: np.array,
         exner_incr: np.array,
-        iau_wgt_dyn: float,
+        iau_wgt_dyn,
         **kwargs,
     ) -> dict:
-        z_rho_expl, z_exner_expl = mo_solve_nonhydro_stencil_50_numpy(
-            grid,
-            z_rho_expl,
-            rho_incr,
-            z_exner_expl,
-            exner_incr,
-            iau_wgt_dyn,
-        )
+        z_rho_expl = z_rho_expl + iau_wgt_dyn * rho_incr
+        z_exner_expl = z_exner_expl + iau_wgt_dyn * exner_incr
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
     @pytest.fixture

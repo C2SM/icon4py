@@ -23,23 +23,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_43_numpy(
-    grid,
-    w_nnow: np.array,
-    ddt_w_adv_ntl1: np.array,
-    z_th_ddz_exner_c: np.array,
-    rho_ic: np.array,
-    w_concorr_c: np.array,
-    vwind_expl_wgt: np.array,
-    dtime: float,
-    cpd: float,
-) -> tuple[np.array, np.array]:
-    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-    z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
-    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
-    return z_w_expl, z_contr_w_fl_l
-
-
 class TestMoSolveNonhydroStencil43(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
@@ -57,17 +40,9 @@ class TestMoSolveNonhydroStencil43(StencilTest):
         cpd: float,
         **kwargs,
     ) -> dict:
-        z_w_expl, z_contr_w_fl_l = mo_solve_nonhydro_stencil_43_numpy(
-            grid,
-            w_nnow,
-            ddt_w_adv_ntl1,
-            z_th_ddz_exner_c,
-            rho_ic,
-            w_concorr_c,
-            vwind_expl_wgt,
-            dtime,
-            cpd,
-        )
+        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, -1)
+        z_w_expl = w_nnow + dtime * (ddt_w_adv_ntl1 - cpd * z_th_ddz_exner_c)
+        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture

@@ -21,20 +21,6 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-def mo_solve_nonhydro_stencil_58_numpy(
-    grid,
-    z_contr_w_fl_l: np.array,
-    rho_ic: np.array,
-    vwind_impl_wgt: np.array,
-    w: np.array,
-    mass_flx_ic: np.array,
-    r_nsubsteps: float,
-) -> np.array:
-    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-    mass_flx_ic = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
-    return mass_flx_ic
-
-
 class TestMoSolveNonhydroStencil58(StencilTest):
     PROGRAM = update_mass_flux
     OUTPUTS = ("mass_flx_ic",)
@@ -47,12 +33,11 @@ class TestMoSolveNonhydroStencil58(StencilTest):
         vwind_impl_wgt: np.array,
         w: np.array,
         mass_flx_ic: np.array,
-        r_nsubsteps: float,
+        r_nsubsteps,
         **kwargs,
     ) -> dict:
-        mass_flx_ic = mo_solve_nonhydro_stencil_58_numpy(
-            grid, z_contr_w_fl_l, rho_ic, vwind_impl_wgt, w, mass_flx_ic, r_nsubsteps
-        )
+        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+        mass_flx_ic = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
         return dict(mass_flx_ic=mass_flx_ic)
 
     @pytest.fixture

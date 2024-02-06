@@ -22,8 +22,7 @@ from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-
-def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
+def compute_horizontal_advection_of_rho_and_theta_numpy(
     grid,
     p_vn: np.array,
     p_vt: np.array,
@@ -42,7 +41,7 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
     z_grad_rth_4: np.array,
     z_rth_pr_1: np.array,
     z_rth_pr_2: np.array,
-):
+) -> tuple[np.array, np.array]:
     e2c = grid.connectivities[E2CDim]
     pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
     pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
@@ -80,7 +79,6 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
     )
 
     return z_rho_e, z_theta_v_e
-
 
 class TestComputeBtraj(StencilTest):
     PROGRAM = compute_horizontal_advection_of_rho_and_theta
@@ -206,15 +204,7 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[E2CDim]
-        pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
-        pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
-        primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
-        dual_normal_cell_1 = dual_normal_cell_1.reshape(e2c.shape)
-        primal_normal_cell_2 = primal_normal_cell_2.reshape(e2c.shape)
-        dual_normal_cell_2 = dual_normal_cell_2.reshape(e2c.shape)
-
-        (z_rho_e, z_theta_v_e) = mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1_numpy(
+        z_rho_e, z_theta_v_e = compute_horizontal_advection_of_rho_and_theta_numpy(
             grid,
             p_vn,
             p_vt,
@@ -232,7 +222,7 @@ class TestComputeBtraj(StencilTest):
             z_grad_rth_3,
             z_grad_rth_4,
             z_rth_pr_1,
-            z_rth_pr_2,
+            z_rth_pr_2
         )
 
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)

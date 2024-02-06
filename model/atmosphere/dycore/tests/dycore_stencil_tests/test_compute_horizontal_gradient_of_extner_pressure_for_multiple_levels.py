@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_20_numpy(
+def compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
     grid,
     inv_dual_edge_length: np.array,
     z_exner_ex_pr: np.array,
@@ -69,7 +69,6 @@ def mo_solve_nonhydro_stencil_20_numpy(
     z_gradh_exner = inv_dual_edge_length * sum_expr
     return z_gradh_exner
 
-
 class TestMoSolveNonHydroStencil20(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
@@ -85,8 +84,7 @@ class TestMoSolveNonHydroStencil20(StencilTest):
         z_dexner_dz_c_2: np.array,
         **kwargs,
     ) -> dict:
-
-        z_gradh_exner = mo_solve_nonhydro_stencil_20_numpy(
+        z_gradh_exner = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
             grid,
             inv_dual_edge_length,
             z_exner_ex_pr,

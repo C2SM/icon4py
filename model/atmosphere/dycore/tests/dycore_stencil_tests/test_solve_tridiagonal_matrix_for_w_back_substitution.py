@@ -23,24 +23,19 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_53_numpy(grid, z_q: np.array, w: np.array) -> np.array:
-    w_new = np.zeros_like(w)
-    last_k_level = w.shape[1] - 1
-
-    w_new[:, last_k_level] = w[:, last_k_level]
-    for k in reversed(range(1, last_k_level)):
-        w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
-    w_new[:, 0] = w[:, 0]
-    return w_new
-
-
 class TestMoSolveNonhydroStencil53(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_back_substitution
     OUTPUTS = ("w",)
 
     @staticmethod
     def reference(grid, z_q: np.array, w: np.array, **kwargs) -> dict:
-        w_new = mo_solve_nonhydro_stencil_53_numpy(grid, z_q, w)
+        w_new = np.zeros_like(w)
+        last_k_level = w.shape[1] - 1
+
+        w_new[:, last_k_level] = w[:, last_k_level]
+        for k in reversed(range(1, last_k_level)):
+            w_new[:, k] = w[:, k] + w_new[:, k + 1] * z_q[:, k]
+        w_new[:, 0] = w[:, 0]
         return dict(w=w_new)
 
     @pytest.fixture

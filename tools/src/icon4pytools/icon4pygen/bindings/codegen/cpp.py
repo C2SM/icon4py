@@ -229,13 +229,13 @@ class CppDefGenerator(TemplatedGenerator):
         static void setup(
         const GlobalGpuTriMesh *mesh, int kSize, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ k_size_suffix }}
+        const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
         {%- endfor %}) {
         mesh_ = GpuTriMesh(mesh);
-        {{ k_size_suffix }}_ = {{ k_size_suffix }};
+        {{ suffix }}_ = {{ suffix }};
         is_setup_ = true;
         stream_ = stream;
         jsonRecord_ = jsonRecord;
@@ -243,7 +243,7 @@ class CppDefGenerator(TemplatedGenerator):
         verify_ = verify;
 
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ k_size_suffix }}_ = {{ field.name }}_{{ k_size_suffix }};
+        {{ field.name }}_{{ suffix }}_ = {{ field.name }}_{{ suffix }};
         {%- endfor -%}
         }
         """
@@ -379,11 +379,8 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         bool verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ before_suffix }},
+        const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_{{ suffix }},
         const {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }},
-        {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ k_size_suffix }},
         {%- endfor -%}
         {%- for field in _this_node.tol_fields -%}
         const double {{ field.name }}_rel_tol,
@@ -412,7 +409,8 @@ class CppDefGenerator(TemplatedGenerator):
     MetricsSerialisation = as_jinja(
         """\
         {%- for field in _this_node.out_fields %}
-        int {{ field.name }}_kSize = {{ field.name }}_k_size;
+        int {{ field.name }}_kSize = cuda_ico::{{ funcname }}::
+        get_{{ field.name }}_KSize();
         {% if field.is_integral() %}
         stencilMetrics = ::verify_field(
             stream, (mesh.{{ field.renderer.render_stride_type() }}) * {{ field.name }}_kSize, {{ field.name }}_dsl, {{ field.name }},
@@ -470,9 +468,6 @@ class CppDefGenerator(TemplatedGenerator):
         {{ field.name }},
         {%- endif -%}
         {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ k_size_suffix }},
-        {%- endfor -%}
         verticalStart, verticalEnd, horizontalStart, horizontalEnd) ;
         """
     )
@@ -481,11 +476,8 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         verify_{{funcname}}(
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ before_suffix }},
+        {{ field.name }}_{{ suffix }},
         {{ field.name }},
-        {%- endfor -%}
-        {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ k_size_suffix }},
         {%- endfor -%}
         {%- for field in _this_node.tol_fields -%}
         {{ field.name }}_rel_tol,
@@ -519,7 +511,7 @@ class CppDefGenerator(TemplatedGenerator):
         void setup_{{funcname}}(
         GlobalGpuTriMesh *mesh, int k_size, cudaStream_t stream, json *json_record, MeshInfoVtk *mesh_info_vtk, verify *verify,
         {%- for field in _this_node.out_fields -%}
-        const int {{ field.name }}_{{ k_size_suffix }}
+        const int {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -532,7 +524,7 @@ class CppDefGenerator(TemplatedGenerator):
         {{ func_declaration }} {
         cuda_ico::{{ funcname }}::setup(mesh, k_size, stream, json_record, mesh_info_vtk, verify,
         {%- for field in _this_node.out_fields -%}
-        {{ field.name }}_{{ k_size_suffix }}
+        {{ field.name }}_{{ suffix }}
         {%- if not loop.last -%}
         ,
         {%- endif -%}
@@ -727,8 +719,7 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 out_fields=fields["output"],
                 tol_fields=fields["tolerance"],
-                before_suffix="before",
-                k_size_suffix="kSize",
+                suffix="kSize",
             ),
         )
 
@@ -736,10 +727,7 @@ class CppDefTemplate(Node):
             funcname=self.stencil_name,
             params=Params(fields=self.fields),
             run_func_declaration=CppRunFuncDeclaration(
-                funcname=self.stencil_name,
-                fields=self.fields,
-                out_fields=fields["output"],
-                k_size_suffix="k_size",
+                funcname=self.stencil_name, fields=self.fields
             ),
         )
 
@@ -749,8 +737,7 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 out_fields=fields["output"],
                 tol_fields=fields["tolerance"],
-                before_suffix="dsl",
-                k_size_suffix="k_size",
+                suffix="dsl",
             ),
             metrics_serialisation=MetricsSerialisation(
                 funcname=self.stencil_name, out_fields=fields["output"]
@@ -764,21 +751,14 @@ class CppDefTemplate(Node):
                 fields=self.fields,
                 out_fields=fields["output"],
                 tol_fields=fields["tolerance"],
-                before_suffix="before",
-                k_size_suffix="k_size",
+                suffix="before",
             ),
-            run_func_call=RunFuncCall(
-                funcname=self.stencil_name,
-                fields=self.fields,
-                out_fields=fields["output"],
-                k_size_suffix="k_size",
-            ),
+            run_func_call=RunFuncCall(funcname=self.stencil_name, fields=self.fields),
             verify_func_call=VerifyFuncCall(
                 funcname=self.stencil_name,
                 out_fields=fields["output"],
                 tol_fields=fields["tolerance"],
-                before_suffix="before",
-                k_size_suffix="k_size",
+                suffix="before",
             ),
         )
 
@@ -790,11 +770,9 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 out_fields=fields["output"],
                 tol_fields=fields["tolerance"],
-                before_suffix="before",
-                k_size_suffix="k_size",
+                suffix="k_size",
             ),
-            k_size_suffix="k_size",
-            before_suffix="before",
+            suffix="k_size",
         )
 
         self.free_func = FreeFunc(funcname=self.stencil_name)

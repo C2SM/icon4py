@@ -22,18 +22,18 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat
 
-
-def mo_solve_nonhydro_stencil_22_numpy(
+def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(
     grid,
     ipeidx_dsl: np.array,
     pg_exdist: np.array,
     z_hydro_corr: np.array,
     z_gradh_exner: np.array,
 ) -> np.array:
-    z_hydro_corr = np.expand_dims(z_hydro_corr, axis=-1)
-    z_gradh_exner = np.where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
+    #z_hydro_corr = np.expand_dims(z_hydro_corr, axis=-1)
+    z_gradh_exner = np.where(
+        ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner
+    )
     return z_gradh_exner
-
 
 class TestMoSolveNonhydroStencil22(StencilTest):
     PROGRAM = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure
@@ -48,20 +48,14 @@ class TestMoSolveNonhydroStencil22(StencilTest):
         z_gradh_exner: np.array,
         **kwargs,
     ) -> dict:
-        z_gradh_exner = mo_solve_nonhydro_stencil_22_numpy(
-            grid,
-            ipeidx_dsl,
-            pg_exdist,
-            z_hydro_corr,
-            z_gradh_exner,
-        )
+        z_gradh_exner = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(grid, ipeidx_dsl, pg_exdist, z_hydro_corr, z_gradh_exner,)
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture
     def input_data(self, grid):
         ipeidx_dsl = random_mask(grid, EdgeDim, KDim)
         pg_exdist = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_hydro_corr = random_field(grid, EdgeDim, dtype=vpfloat)
+        z_hydro_corr = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         z_gradh_exner = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(

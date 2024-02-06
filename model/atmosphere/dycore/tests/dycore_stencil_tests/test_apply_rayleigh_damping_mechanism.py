@@ -23,22 +23,15 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-def mo_solve_nonhydro_stencil_54_numpy(
-    grid, z_raylfac: np.array, w_1: np.array, w: np.array
-) -> np.array:
-    z_raylfac = np.expand_dims(z_raylfac, axis=0)
-    # w_1 = np.expand_dims(w_1, axis=-1)
-    w = z_raylfac * w + (1.0 - z_raylfac) * w_1
-    return w
-
-
 class TestMoSolveNonhydroStencil54(StencilTest):
     PROGRAM = apply_rayleigh_damping_mechanism
     OUTPUTS = ("w",)
 
     @staticmethod
     def reference(grid, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> dict:
-        w = mo_solve_nonhydro_stencil_54_numpy(grid, z_raylfac, w_1, w)
+        z_raylfac = np.expand_dims(z_raylfac, axis=0)
+        w_1 = np.expand_dims(w_1, axis=-1)
+        w = z_raylfac * w + (1.0 - z_raylfac) * w_1
         return dict(w=w)
 
     @pytest.fixture

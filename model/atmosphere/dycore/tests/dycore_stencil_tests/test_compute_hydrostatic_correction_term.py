@@ -27,8 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-
-def mo_solve_nonhydro_stencil_21_numpy(
+def compute_hydrostatic_correction_term_numpy(
     grid,
     theta_v: np.array,
     ikoffset: np.array,
@@ -37,7 +36,7 @@ def mo_solve_nonhydro_stencil_21_numpy(
     inv_ddqz_z_full: np.array,
     inv_dual_edge_length: np.array,
     grav_o_cpd: float,
-) -> tuple[np.array]:
+) -> np.array:
     def _apply_index_field(shape, to_index, neighbor_table, offset_field):
         indexed, indexed_p1 = np.zeros(shape), np.zeros(shape)
         for iprimary in range(shape[0]):
@@ -109,8 +108,7 @@ class TestMoSolveNonHydroStencil21(StencilTest):
         grav_o_cpd: float,
         **kwargs,
     ) -> dict:
-
-        z_hydro_corr = mo_solve_nonhydro_stencil_21_numpy(
+        z_hydro_corr = compute_hydrostatic_correction_term_numpy(
             grid,
             theta_v,
             ikoffset,
@@ -120,7 +118,6 @@ class TestMoSolveNonHydroStencil21(StencilTest):
             inv_dual_edge_length,
             grav_o_cpd,
         )
-
         return dict(z_hydro_corr=z_hydro_corr)
 
     @pytest.fixture

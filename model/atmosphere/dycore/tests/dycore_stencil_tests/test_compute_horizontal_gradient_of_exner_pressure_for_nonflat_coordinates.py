@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-def mo_solve_nonhydro_stencil_19_numpy(
+def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
     grid,
     inv_dual_edge_length: np.array,
     z_exner_ex_pr: np.array,
@@ -41,8 +41,8 @@ def mo_solve_nonhydro_stencil_19_numpy(
     z_gradh_exner = inv_dual_edge_length * z_exner_ex_weighted - ddxn_z_full * np.sum(
         c_lin_e * z_dexner_dz_c_1[e2c], axis=1
     )
-    return z_gradh_exner
 
+    return z_gradh_exner
 
 class TestMoSolveNonhydroStencil19(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
@@ -58,9 +58,14 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         z_dexner_dz_c_1: np.array,
         **kwargs,
     ) -> dict:
-        z_gradh_exner = mo_solve_nonhydro_stencil_19_numpy(
-            grid, inv_dual_edge_length, z_exner_ex_pr, ddxn_z_full, c_lin_e, z_dexner_dz_c_1
-        )
+        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
+                            grid,
+                            inv_dual_edge_length,
+                            z_exner_ex_pr,
+                            ddxn_z_full,
+                            c_lin_e,
+                            z_dexner_dz_c_1,
+                        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

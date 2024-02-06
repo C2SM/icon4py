@@ -22,18 +22,18 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-
-def mo_solve_nonhydro_stencil_23_numpy(
+def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy(
+    grid,
     vn_nnow: np.array,
     ddt_vn_apc_ntl1: np.array,
     ddt_vn_apc_ntl2: np.array,
     ddt_vn_phy: np.array,
     z_theta_v_e: np.array,
     z_gradh_exner: np.array,
-    dtime: float,
-    wgt_nnow_vel: float,
-    wgt_nnew_vel: float,
-    cpd: float,
+    dtime,
+    wgt_nnow_vel,
+    wgt_nnew_vel,
+    cpd,
 ) -> np.array:
     vn_nnew = vn_nnow + dtime * (
         wgt_nnow_vel * ddt_vn_apc_ntl1
@@ -42,7 +42,6 @@ def mo_solve_nonhydro_stencil_23_numpy(
         - cpd * z_theta_v_e * z_gradh_exner
     )
     return vn_nnew
-
 
 class TestMoSolveNonhydroStencil23(StencilTest):
     PROGRAM = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels
@@ -57,24 +56,13 @@ class TestMoSolveNonhydroStencil23(StencilTest):
         ddt_vn_phy: np.array,
         z_theta_v_e: np.array,
         z_gradh_exner: np.array,
-        dtime: float,
-        wgt_nnow_vel: float,
-        wgt_nnew_vel: float,
-        cpd: float,
+        dtime,
+        wgt_nnow_vel,
+        wgt_nnew_vel,
+        cpd,
         **kwargs,
     ) -> dict:
-        vn_nnew = mo_solve_nonhydro_stencil_23_numpy(
-            vn_nnow,
-            ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2,
-            ddt_vn_phy,
-            z_theta_v_e,
-            z_gradh_exner,
-            dtime,
-            wgt_nnow_vel,
-            wgt_nnew_vel,
-            cpd,
-        )
+        vn_nnew = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy( grid, vn_nnow, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_vn_phy, z_theta_v_e, z_gradh_exner, dtime, wgt_nnow_vel, wgt_nnew_vel, cpd,)
         return dict(vn_nnew=vn_nnew)
 
     @pytest.fixture
