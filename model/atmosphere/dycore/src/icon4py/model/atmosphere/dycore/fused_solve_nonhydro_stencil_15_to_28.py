@@ -18,8 +18,8 @@ from gt4py.next.common import GridType
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     _mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_4th_order_divdamp import (
-    _mo_solve_nonhydro_4th_order_divdamp,
+from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+    _apply_4th_order_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
     _compute_horizontal_advection_of_rho_and_theta,
@@ -371,7 +371,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
 
     vn = where(
         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _mo_solve_nonhydro_4th_order_divdamp(
+        _apply_4th_order_divergence_damping(
             scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
         ),
         vn,

@@ -38,8 +38,8 @@ from icon4py.model.common.test_utils.helpers import (
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_4th_order_divergence_damping import (
+    apply_4th_order_divergence_damping_numpy,
 )
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
     compute_horizontal_advection_of_rho_and_theta_numpy,
@@ -440,7 +440,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     else:
                         vn = np.where(
                             (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
-                            mo_solve_nonhydro_4th_order_divdamp_numpy(
+                            apply_4th_order_divergence_damping_numpy(
                                 grid=grid,
                                 scal_divdamp=scal_divdamp,
                                 z_graddiv2_vn=z_graddiv2_vn,
