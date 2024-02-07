@@ -27,9 +27,6 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
-    compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy,
-)
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
     correct_contravariant_vertical_velocity_numpy,

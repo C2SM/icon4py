@@ -101,16 +101,19 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
 
 
 def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
-    """Checks that fencil params contain domain boundaries if not emit a warning."""
-    param_ids = {param.id for param in fencil.itir.params}
-    all_domain_params_present = all(param in param_ids for param in [H_START, H_END, V_START, V_END])
+    """Check that fencil params contain domain boundaries, emit warning otherwise."""
+    param_ids = {param.id for param in fencil.params}
+    all_domain_params_present = all(
+        param in param_ids for param in [H_START, H_END, V_START, V_END]
+    )
     if not all_domain_params_present:
         warnings.warn(
-            f"Domain boundaries are missing or have non-standard names for '{fencil.itir.id}'. "
+            f"Domain boundaries are missing or have non-standard names for '{fencil.id}'. "
             "Adapting domain to use the standard names. This feature will be removed in the future.",
             DeprecationWarning,
             stacklevel=2,
         )
+
 
 def generate_gtheader(
     fencil: itir.FencilDefinition,
