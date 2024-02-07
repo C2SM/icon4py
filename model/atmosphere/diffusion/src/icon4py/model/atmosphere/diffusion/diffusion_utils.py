@@ -19,7 +19,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
+from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
@@ -115,7 +115,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
 ) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
-    enh_smag_fac = en_smag_fac_for_zero_nshift(
+    enh_smag_fac = _en_smag_fac_for_zero_nshift(
         vect_a,
         hdiff_smag_fac,
         hdiff_smag_fac2,
