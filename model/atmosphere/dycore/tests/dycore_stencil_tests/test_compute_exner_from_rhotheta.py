@@ -15,35 +15,43 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_54 import (
-    mo_solve_nonhydro_stencil_54,
-)
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import compute_exner_from_rhotheta
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil54(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_54
-    OUTPUTS = ("w",)
+class TestMoSolveNonhydroStencil67(StencilTest):
+    PROGRAM = compute_exner_from_rhotheta
+    OUTPUTS = ("theta_v", "exner")
 
     @staticmethod
-    def reference(grid, z_raylfac: np.array, w_1: np.array, w: np.array, **kwargs) -> dict:
-        z_raylfac = np.expand_dims(z_raylfac, axis=0)
-        w_1 = np.expand_dims(w_1, axis=-1)
-        w = z_raylfac * w + (1.0 - z_raylfac) * w_1
-        return dict(w=w)
+    def reference(
+        grid,
+        rho: np.array,
+        exner: np.array,
+        rd_o_cvd: float,
+        rd_o_p0ref: float,
+        **kwargs,
+    ) -> dict:
+        theta_v = np.copy(exner)
+        exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
+        return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
     def input_data(self, grid):
-        z_raylfac = random_field(grid, KDim, dtype=wpfloat)
-        w_1 = random_field(grid, CellDim, dtype=wpfloat)
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rd_o_cvd = wpfloat("10.0")
+        rd_o_p0ref = wpfloat("20.0")
+        rho = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        exner = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
 
         return dict(
-            z_raylfac=z_raylfac,
-            w_1=w_1,
-            w=w,
+            rho=rho,
+            theta_v=theta_v,
+            exner=exner,
+            rd_o_cvd=rd_o_cvd,
+            rd_o_p0ref=rd_o_p0ref,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

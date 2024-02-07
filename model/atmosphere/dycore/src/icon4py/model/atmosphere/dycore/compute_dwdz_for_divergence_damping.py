@@ -13,46 +13,43 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_58(
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
+def _compute_dwdz_for_divergence_damping(
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
-    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
-    r_nsubsteps: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
-    mass_flx_ic_wp = mass_flx_ic + (r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w))
-    return mass_flx_ic_wp
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
+    """Formerly known as _mo_solve_nonhydro_stencil_56_63."""
+    inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
+
+    z_dwdz_dd_wp = inv_ddqz_z_full_wp * (
+        (w - w(Koff[1])) - astype(w_concorr_c - w_concorr_c(Koff[1]), wpfloat)
+    )
+    return astype(z_dwdz_dd_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_58(
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
+def compute_dwdz_for_divergence_damping(
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
-    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
-    r_nsubsteps: wpfloat,
+    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_58(
-        z_contr_w_fl_l,
-        rho_ic,
-        vwind_impl_wgt,
+    _compute_dwdz_for_divergence_damping(
+        inv_ddqz_z_full,
         w,
-        mass_flx_ic,
-        r_nsubsteps,
-        out=mass_flx_ic,
+        w_concorr_c,
+        out=z_dwdz_dd,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
