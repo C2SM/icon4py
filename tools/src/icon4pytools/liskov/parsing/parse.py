@@ -25,8 +25,6 @@ from icon4pytools.liskov.parsing.validation import VALIDATORS
 from icon4pytools.liskov.pipeline.definition import Step
 
 
-REPLACE_CHARS = [ts.DIRECTIVE_IDENT, "&", "\n"]
-
 logger = setup_logger(__name__)
 
 
@@ -83,7 +81,13 @@ class DirectivesParser(Step):
 
     def _preprocess(self, directives: Sequence[ts.ParsedDirective]) -> Sequence[ts.ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
-        return [d.__class__(self._clean_string(d.string), d.startln, d.endln) for d in directives]
+        preprocessed = []
+        for d in directives:
+            new_directive = d.__class__(
+                self._clean_string(d.string, d.type_name), d.startln, d.endln
+            )
+            preprocessed.append(new_directive)
+        return preprocessed
 
     def _run_validation_passes(self, preprocessed: Sequence[ts.ParsedDirective]) -> None:
         """Run validation passes on the directives."""
@@ -91,9 +95,16 @@ class DirectivesParser(Step):
             validator(self.input_filepath).validate(preprocessed)
 
     @staticmethod
-    def _clean_string(string: str) -> str:
+    def _clean_string(string: str, type_name: str) -> str:
         """Remove leading or trailing whitespaces, and words from the REPLACE_CHARS list."""
-        return " ".join([c for c in string.strip().split() if c not in REPLACE_CHARS])
+        replace_chars = [ts.DIRECTIVE_IDENT]
+
+        # DSL INSERT Statements should be inserted verbatim meaning no string cleaning
+        # other than the directive identifier.
+        if type_name != "Insert":
+            replace_chars += ["&", "\n"]
+
+        return " ".join([c for c in string.strip().split() if c not in replace_chars])
 
     @staticmethod
     def _parse(directives: Sequence[ts.ParsedDirective]) -> ts.ParsedContent:
