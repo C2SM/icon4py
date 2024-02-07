@@ -64,12 +64,6 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
-    _mo_solve_nonhydro_stencil_61,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
-    _mo_solve_nonhydro_stencil_62,
-)
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )
@@ -80,6 +74,8 @@ from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary impo
     _set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
 
 
@@ -1002,14 +998,14 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_61(
+        _update_densety_exener_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),
     )
     w_new = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime),
+        _update_wind(w_now, grf_tend_w, dtime),
         w_new,
     )
     return rho_new, exner_new, w_new
