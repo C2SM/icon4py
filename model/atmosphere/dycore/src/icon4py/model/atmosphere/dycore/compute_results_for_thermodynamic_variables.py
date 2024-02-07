@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_55(
+def _compute_results_for_thermodynamic_variables(
     z_rho_expl: Field[[CellDim, KDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
@@ -40,6 +40,7 @@ def _mo_solve_nonhydro_stencil_55(
     Field[[CellDim, KDim], wpfloat],
     Field[[CellDim, KDim], wpfloat],
 ]:
+    """Formerly known as _mo_solve_nonhydro_stencil_55."""
     inv_ddqz_z_full_wp, exner_ref_mc_wp, z_alpha_wp, z_beta_wp = astype(
         (inv_ddqz_z_full, exner_ref_mc, z_alpha, z_beta), wpfloat
     )
@@ -62,7 +63,7 @@ def _mo_solve_nonhydro_stencil_55(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_55(
+def compute_results_for_thermodynamic_variables(
     z_rho_expl: Field[[CellDim, KDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
@@ -85,7 +86,7 @@ def mo_solve_nonhydro_stencil_55(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_55(
+    _compute_results_for_thermodynamic_variables(
         z_rho_expl,
         vwind_impl_wgt,
         inv_ddqz_z_full,

@@ -15,40 +15,47 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_67 import (
-    mo_solve_nonhydro_stencil_67,
-)
+from icon4py.model.atmosphere.dycore.compute_theta_and_exner import compute_theta_and_exner
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil67(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_67
+class TestMoSolveNonhydroStencil66(StencilTest):
+    PROGRAM = compute_theta_and_exner
     OUTPUTS = ("theta_v", "exner")
 
     @staticmethod
     def reference(
         grid,
+        bdy_halo_c: np.array,
         rho: np.array,
+        theta_v: np.array,
         exner: np.array,
         rd_o_cvd: float,
         rd_o_p0ref: float,
         **kwargs,
     ) -> dict:
-        theta_v = np.copy(exner)
-        exner = np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * theta_v))
+        bdy_halo_c = np.expand_dims(bdy_halo_c, axis=-1)
+
+        theta_v = np.where(bdy_halo_c == 1, exner, theta_v)
+        exner = np.where(
+            bdy_halo_c == 1, np.exp(rd_o_cvd * np.log(rd_o_p0ref * rho * exner)), exner
+        )
+
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
     def input_data(self, grid):
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
+        bdy_halo_c = random_mask(grid, CellDim)
+        exner = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
         rho = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
         theta_v = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
-        exner = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
 
         return dict(
+            bdy_halo_c=bdy_halo_c,
             rho=rho,
             theta_v=theta_v,
             exner=exner,
