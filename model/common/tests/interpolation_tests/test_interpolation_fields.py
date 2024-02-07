@@ -29,7 +29,7 @@ import pytest
 from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim, E2VDim, C2VDim, V2CDim, E2C2EODim, E2C2EDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_geofac_grdiv
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_geofac_grdiv, compute_c_bln_avg
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -253,6 +253,8 @@ def test_compute_c_bln_avg(
     geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg()
+    owner_mask = grid_savepoint.c_owner_mask()
+    C2E2C = icon_grid.connectivities[C2E2CDim]
     lateral_boundary = np.arange(2)
     lateral_boundary[0] = icon_grid.get_start_index(
         CellDim,
@@ -262,11 +264,17 @@ def test_compute_c_bln_avg(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
-    c_bln_avg = np.zeros([lateral_boundary[1], 5])
+    lat = grid_savepoint.cells_center_lat()
+    lon = grid_savepoint.cells_center_lon()
+    c_bln_avg = np.zeros([lateral_boundary[1], 4])
     c_bln_avg = compute_c_bln_avg(
         c_bln_avg,
         5.0,
+        owner_mask,
+        C2E2C,
         lateral_boundary,
+        lat,
+        lon,
     )
 #    np.set_printoptions(threshold=np.inf)
 #    print(geofac_grdiv_ref.asnumpy())

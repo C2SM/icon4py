@@ -305,9 +305,12 @@ def rotate_latlon(
 
     return (lat, lon)
 
-def compute_c_bln_avg(
+def compute_c_bln_avg_(
     c_bln_avg: np.array,
     divavg_cntrwgt,
+    owner_mask: np.array,
+    C2E2C_: np.array,
+    lateral_boundary: np.array,
 ) -> np.array:
     """
     calculate_uniform_bilinear_cellavg_wgt
@@ -321,9 +324,12 @@ def compute_c_bln_avg(
     c_bln_avg[:, 1:3] = neigbor_weight
     return c_bln_avg
 
-def compute_c_bln_avg_(
+def compute_c_bln_avg(
     c_bln_avg: np.array,
     divavg_cntrwgt,
+    owner_mask: np.array,
+    C2E2C_: np.array,
+    lateral_boundary: np.array,
     lat: np.array,
     lon: np.array,
 ) -> np.array:
