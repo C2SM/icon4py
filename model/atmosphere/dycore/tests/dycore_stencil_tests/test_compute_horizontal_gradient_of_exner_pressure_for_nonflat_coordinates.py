@@ -44,6 +44,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
 
     return z_gradh_exner
 
+
 class TestMoSolveNonhydroStencil19(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates
     OUTPUTS = ("z_gradh_exner",)
@@ -59,13 +60,13 @@ class TestMoSolveNonhydroStencil19(StencilTest):
         **kwargs,
     ) -> dict:
         z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_numpy(
-                            grid,
-                            inv_dual_edge_length,
-                            z_exner_ex_pr,
-                            ddxn_z_full,
-                            c_lin_e,
-                            z_dexner_dz_c_1,
-                        )
+            grid,
+            inv_dual_edge_length,
+            z_exner_ex_pr,
+            ddxn_z_full,
+            c_lin_e,
+            z_dexner_dz_c_1,
+        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

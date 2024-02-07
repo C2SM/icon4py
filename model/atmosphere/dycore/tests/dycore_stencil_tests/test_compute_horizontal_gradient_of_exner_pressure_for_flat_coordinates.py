@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
     grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array
 ) -> np.array:
@@ -34,13 +35,16 @@ def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
 
     return z_gradh_exner
 
+
 class TestMoSolveNonhydroStencil18(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates
     OUTPUTS = ("z_gradh_exner",)
 
     @staticmethod
     def reference(grid, inv_dual_edge_length: np.array, z_exner_ex_pr: np.array, **kwargs) -> dict:
-        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(grid, inv_dual_edge_length, z_exner_ex_pr)
+        z_gradh_exner = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy(
+            grid, inv_dual_edge_length, z_exner_ex_pr
+        )
         return dict(z_gradh_exner=z_gradh_exner)
 
     @pytest.fixture

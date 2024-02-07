@@ -36,7 +36,7 @@ from .test_correct_contravariant_vertical_velocity import (
 )
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_interpolate_to_half_levels_vp import interpolate_to_half_levels_vp_numpy
-from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
+from .test_set_two_cell_kdim_fields_index_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
 class TestFusedVelocityAdvectionStencil8To14(StencilTest):

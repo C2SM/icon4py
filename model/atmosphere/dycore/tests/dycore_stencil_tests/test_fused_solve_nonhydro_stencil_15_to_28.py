@@ -34,18 +34,32 @@ from icon4py.model.common.test_utils.helpers import (
     random_mask,
     zero_field,
 )
-
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
-    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_to_vn import (
+    add_analysis_increments_to_vn_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
-    mo_solve_nonhydro_4th_order_divdamp_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn import (
+    add_temporal_tendencies_to_vn_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
-    compute_horizontal_advection_of_rho_and_theta_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy,
 )
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_2nd_order_divergence_damping import (
+    apply_2nd_order_divergence_damping_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_weighted_2nd_and_4th_order_divergence_damping import (
+    apply_weighted_2nd_and_4th_order_divergence_damping_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_graddiv2_of_vn import (
+    compute_graddiv2_of_vn_numpy,
+)
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_advection_of_rho_and_theta import (
+    compute_horizontal_advection_of_rho_and_theta_numpy,
 )
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_numpy,
@@ -59,26 +73,11 @@ from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_horizontal_
 from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
-    apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_math_gradients_grad_green_gauss_cell_dsl import (
+    mo_math_gradients_grad_green_gauss_cell_dsl_numpy,
 )
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
-    add_temporal_tendencies_to_vn_by_interpolating_between_time_levels_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_temporal_tendencies_to_vn import (
-    add_temporal_tendencies_to_vn_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_compute_graddiv2_of_vn import (
-    compute_graddiv2_of_vn_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_2nd_order_divergence_damping import (
-    apply_2nd_order_divergence_damping_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_apply_weighted_2nd_and_4th_order_divergence_damping import (
-    apply_weighted_2nd_and_4th_order_divergence_damping_numpy,
-)
-from model.atmosphere.dycore.tests.dycore_stencil_tests.test_add_analysis_increments_to_vn import (
-    add_analysis_increments_to_vn_numpy,
+from model.atmosphere.dycore.tests.dycore_stencil_tests.test_mo_solve_nonhydro_4th_order_divdamp import (
+    mo_solve_nonhydro_4th_order_divdamp_numpy,
 )
 
 
@@ -201,7 +200,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
 
             if iadv_rhotheta <= 2:
                 (tmp_0_0, tmp_0_1) = (horizontal_lower_00, horizontal_upper_00)
-                #if idiv_method == 1:
+                # if idiv_method == 1:
                 (tmp_0_0, tmp_0_1) = (horizontal_lower_01, horizontal_upper_01)
 
                 z_rho_e = np.where(
@@ -272,7 +271,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 z_gradh_exner,
             )
 
-            #if igradp_method == 3:
+            # if igradp_method == 3:
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
             z_gradh_exner = np.where(
@@ -309,8 +308,8 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 ),
                 z_gradh_exner,
             )
-        # compute hydrostatically approximated correction term that replaces downward extrapolation
-            #if igradp_method == 3:
+            # compute hydrostatically approximated correction term that replaces downward extrapolation
+            # if igradp_method == 3:
             z_hydro_corr = compute_hydrostatic_correction_term_numpy(
                 grid=grid,
                 theta_v=theta_v,
@@ -322,7 +321,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                 grav_o_cpd=grav_o_cpd,
             )
 
-            #if igradp_method == 3:
+            # if igradp_method == 3:
             z_gradh_exner = np.where(
                 (horizontal_lower_3 <= horz_idx) & (horz_idx < horizontal_upper_3),
                 apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_numpy(

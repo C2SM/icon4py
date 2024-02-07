@@ -28,6 +28,25 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_divergence_of_fluxes_of_rho_and_theta_numpy(
+    grid,
+    geofac_div: np.array,
+    mass_fl_e: np.array,
+    z_theta_v_fl_e: np.array,
+) -> tuple[np.array, np.array]:
+    c2e = grid.connectivities[C2EDim]
+    geofac_div = np.expand_dims(geofac_div, axis=-1)
+    z_flxdiv_mass = np.sum(
+        geofac_div[grid.get_offset_provider("C2CE").table] * mass_fl_e[c2e],
+        axis=1,
+    )
+    z_flxdiv_theta = np.sum(
+        geofac_div[grid.get_offset_provider("C2CE").table] * z_theta_v_fl_e[c2e],
+        axis=1,
+    )
+    return z_flxdiv_mass, z_flxdiv_theta
+
+
 class TestMoSolveNonhydroStencil41(StencilTest):
     PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
@@ -39,16 +58,12 @@ class TestMoSolveNonhydroStencil41(StencilTest):
         mass_fl_e: np.array,
         z_theta_v_fl_e: np.array,
         **kwargs,
-    ) -> tuple[np.array]:
-        c2e = grid.connectivities[C2EDim]
-        geofac_div = np.expand_dims(geofac_div, axis=-1)
-        z_flxdiv_mass = np.sum(
-            geofac_div[grid.get_offset_provider("C2CE").table] * mass_fl_e[c2e],
-            axis=1,
-        )
-        z_flxdiv_theta = np.sum(
-            geofac_div[grid.get_offset_provider("C2CE").table] * z_theta_v_fl_e[c2e],
-            axis=1,
+    ) -> dict:
+        z_flxdiv_mass, z_flxdiv_theta = compute_divergence_of_fluxes_of_rho_and_theta_numpy(
+            grid,
+            geofac_div,
+            mass_fl_e,
+            z_theta_v_fl_e,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
 

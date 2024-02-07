@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def add_vertical_wind_derivative_to_divergence_damping_numpy(
     grid,
     hmask_dd3d: np.array,
@@ -43,6 +44,7 @@ def add_vertical_wind_derivative_to_divergence_damping_numpy(
 
     return z_graddiv_vn
 
+
 class TestMoSolveNonhydroStencil17(StencilTest):
     PROGRAM = add_vertical_wind_derivative_to_divergence_damping
     OUTPUTS = ("z_graddiv_vn",)
@@ -58,13 +60,8 @@ class TestMoSolveNonhydroStencil17(StencilTest):
         **kwargs,
     ) -> dict:
         z_graddiv_vn = add_vertical_wind_derivative_to_divergence_damping_numpy(
-                            grid,
-                            hmask_dd3d,
-                            scalfac_dd3d,
-                            inv_dual_edge_length,
-                            z_dwdz_dd,
-                            z_graddiv_vn
-                        )
+            grid, hmask_dd3d, scalfac_dd3d, inv_dual_edge_length, z_dwdz_dd, z_graddiv_vn
+        )
         return dict(z_graddiv_vn=z_graddiv_vn)
 
     @pytest.fixture

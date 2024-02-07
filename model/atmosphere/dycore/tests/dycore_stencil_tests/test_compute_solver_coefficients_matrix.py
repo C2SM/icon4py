@@ -23,6 +23,25 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_solver_coefficients_matrix_numpy(
+    grid,
+    exner_nnow: np.array,
+    rho_nnow: np.array,
+    theta_v_nnow: np.array,
+    inv_ddqz_z_full: np.array,
+    vwind_impl_wgt: np.array,
+    theta_v_ic: np.array,
+    rho_ic: np.array,
+    dtime,
+    rd,
+    cvd,
+) -> tuple[np.array, np.array]:
+    z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
+    vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
+    z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+    return z_beta, z_alpha
+
+
 class TestMoSolveNonhydroStencil44(StencilTest):
     PROGRAM = compute_solver_coefficients_matrix
     OUTPUTS = ("z_beta", "z_alpha")
@@ -42,10 +61,19 @@ class TestMoSolveNonhydroStencil44(StencilTest):
         cvd,
         **kwargs,
     ) -> dict:
-        z_beta = dtime * rd * exner_nnow / (cvd * rho_nnow * theta_v_nnow) * inv_ddqz_z_full
-
-        vwind_impl_wgt = np.expand_dims(vwind_impl_wgt, axis=-1)
-        z_alpha = vwind_impl_wgt * theta_v_ic * rho_ic
+        z_beta, z_alpha = compute_solver_coefficients_matrix_numpy(
+            grid,
+            exner_nnow,
+            rho_nnow,
+            theta_v_nnow,
+            inv_ddqz_z_full,
+            vwind_impl_wgt,
+            theta_v_ic,
+            rho_ic,
+            dtime,
+            rd,
+            cvd,
+        )
         return dict(z_beta=z_beta, z_alpha=z_alpha)
 
     @pytest.fixture

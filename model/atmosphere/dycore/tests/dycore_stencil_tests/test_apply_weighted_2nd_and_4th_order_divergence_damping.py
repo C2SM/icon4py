@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
     grid,
     scal_divdamp: np.array,
@@ -33,6 +34,7 @@ def apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
     nudgecoeff_e = np.expand_dims(nudgecoeff_e, axis=-1)
     vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn
     return vn
+
 
 class TestMoSolveNonhydroStencil27(StencilTest):
     PROGRAM = apply_weighted_2nd_and_4th_order_divergence_damping
@@ -48,7 +50,14 @@ class TestMoSolveNonhydroStencil27(StencilTest):
         vn: np.array,
         **kwargs,
     ) -> dict:
-        vn = apply_weighted_2nd_and_4th_order_divergence_damping_numpy(grid, scal_divdamp, bdy_divdamp, nudgecoeff_e, z_graddiv2_vn, vn,)
+        vn = apply_weighted_2nd_and_4th_order_divergence_damping_numpy(
+            grid,
+            scal_divdamp,
+            bdy_divdamp,
+            nudgecoeff_e,
+            z_graddiv2_vn,
+            vn,
+        )
         return dict(vn=vn)
 
     @pytest.fixture

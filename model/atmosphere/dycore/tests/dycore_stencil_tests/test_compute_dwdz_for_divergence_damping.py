@@ -23,6 +23,18 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_dwdz_for_divergence_damping_numpy(
+    grid,
+    inv_ddqz_z_full: np.array,
+    w: np.array,
+    w_concorr_c: np.array,
+) -> np.array:
+    z_dwdz_dd = inv_ddqz_z_full * (
+        (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+    )
+    return z_dwdz_dd
+
+
 class TestMoSolveNonhydroStencil5663(StencilTest):
     PROGRAM = compute_dwdz_for_divergence_damping
     OUTPUTS = ("z_dwdz_dd",)
@@ -31,8 +43,11 @@ class TestMoSolveNonhydroStencil5663(StencilTest):
     def reference(
         grid, inv_ddqz_z_full: np.array, w: np.array, w_concorr_c: np.array, **kwargs
     ) -> dict:
-        z_dwdz_dd = inv_ddqz_z_full * (
-            (w[:, :-1] - w[:, 1:]) - (w_concorr_c[:, :-1] - w_concorr_c[:, 1:])
+        z_dwdz_dd = compute_dwdz_for_divergence_damping_numpy(
+            grid,
+            inv_ddqz_z_full,
+            w,
+            w_concorr_c,
         )
         return dict(z_dwdz_dd=z_dwdz_dd)
 

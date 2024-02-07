@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def compute_horizontal_advection_of_rho_and_theta_numpy(
     grid,
     p_vn: np.array,
@@ -79,6 +80,7 @@ def compute_horizontal_advection_of_rho_and_theta_numpy(
     )
 
     return z_rho_e, z_theta_v_e
+
 
 class TestComputeBtraj(StencilTest):
     PROGRAM = compute_horizontal_advection_of_rho_and_theta
@@ -222,7 +224,7 @@ class TestComputeBtraj(StencilTest):
             z_grad_rth_3,
             z_grad_rth_4,
             z_rth_pr_1,
-            z_rth_pr_2
+            z_rth_pr_2,
         )
 
         return dict(z_rho_e=z_rho_e, z_theta_v_e=z_theta_v_e)

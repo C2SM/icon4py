@@ -69,6 +69,7 @@ def compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_numpy(
     z_gradh_exner = inv_dual_edge_length * sum_expr
     return z_gradh_exner
 
+
 class TestMoSolveNonHydroStencil20(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)

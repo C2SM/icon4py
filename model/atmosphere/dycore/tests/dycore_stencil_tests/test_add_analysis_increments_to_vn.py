@@ -22,11 +22,13 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def add_analysis_increments_to_vn_numpy(
     grid, vn_incr: np.array, vn: np.array, iau_wgt_dyn
 ) -> np.array:
     vn = vn + (iau_wgt_dyn * vn_incr)
     return vn
+
 
 class TestMoSolveNonhydroStencil28(StencilTest):
     PROGRAM = add_analysis_increments_to_vn

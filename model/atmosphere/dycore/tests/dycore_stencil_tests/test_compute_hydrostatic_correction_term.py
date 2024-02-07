@@ -27,6 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
+
 def compute_hydrostatic_correction_term_numpy(
     grid,
     theta_v: np.array,

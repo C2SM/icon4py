@@ -29,6 +29,7 @@ def apply_2nd_order_divergence_damping_numpy(
     vn = vn + (scal_divdamp_o2 * z_graddiv_vn)
     return vn
 
+
 class TestMoSolveNonhydroStencil26(StencilTest):
     PROGRAM = apply_2nd_order_divergence_damping
     OUTPUTS = ("vn",)

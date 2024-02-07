@@ -13,18 +13,27 @@
 
 import numpy as np
 import pytest
-
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_13 import (fused_velocity_advection_stencil_8_to_13)
-from icon4py.model.common.dimension import CellDim, EdgeDim, C2EDim, KDim
-
-from icon4py.model.common.test_utils.helpers import random_field, random_mask, zero_field, StencilTest
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_13 import (
+    fused_velocity_advection_stencil_8_to_13,
+)
+from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    random_field,
+    random_mask,
+    zero_field,
+)
 
 
 class TestFusedVelocityAdvectionStencil8To13(StencilTest):
     PROGRAM = fused_velocity_advection_stencil_8_to_13
-    OUTPUTS = ("z_ekinh", "w_concorr_c", "z_w_con_c",)
+    OUTPUTS = (
+        "z_ekinh",
+        "w_concorr_c",
+        "z_w_con_c",
+    )
 
     @staticmethod
     def reference(
@@ -32,9 +41,9 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         **kwargs,
     ) -> tuple[np.array]:
 
-        z_ekinh = 0.
-        w_concorr_c = 0.
-        z_w_con_c = 0.
+        z_ekinh = 0.0
+        w_concorr_c = 0.0
+        z_w_con_c = 0.0
 
         return dict(z_ekinh=z_ekinh, w_concorr_c=w_concorr_c, z_w_con_c=z_w_con_c)
 

@@ -23,6 +23,36 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_explicit_part_for_rho_and_exner_numpy(
+    grid,
+    rho_nnow: np.array,
+    inv_ddqz_z_full: np.array,
+    z_flxdiv_mass: np.array,
+    z_contr_w_fl_l: np.array,
+    exner_pr: np.array,
+    z_beta: np.array,
+    z_flxdiv_theta: np.array,
+    theta_v_ic: np.array,
+    ddt_exner_phy: np.array,
+    dtime: wpfloat,
+) -> tuple[np.array, np.array]:
+    z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
+        z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
+    )
+
+    z_exner_expl = (
+        exner_pr
+        - z_beta
+        * (
+            z_flxdiv_theta
+            + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
+            - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
+        )
+        + dtime * ddt_exner_phy
+    )
+    return z_rho_expl, z_exner_expl
+
+
 class TestMoSolveNonhydroStencil48(StencilTest):
     PROGRAM = compute_explicit_part_for_rho_and_exner
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
@@ -39,22 +69,21 @@ class TestMoSolveNonhydroStencil48(StencilTest):
         z_flxdiv_theta: np.array,
         theta_v_ic: np.array,
         ddt_exner_phy: np.array,
-        dtime,
+        dtime: wpfloat,
         **kwargs,
     ) -> dict:
-        z_rho_expl = rho_nnow - dtime * inv_ddqz_z_full * (
-            z_flxdiv_mass + z_contr_w_fl_l[:, :-1] - z_contr_w_fl_l[:, 1:]
-        )
-
-        z_exner_expl = (
-            exner_pr
-            - z_beta
-            * (
-                z_flxdiv_theta
-                + (theta_v_ic * z_contr_w_fl_l)[:, :-1]
-                - (theta_v_ic * z_contr_w_fl_l)[:, 1:]
-            )
-            + dtime * ddt_exner_phy
+        z_rho_expl, z_exner_expl = compute_explicit_part_for_rho_and_exner_numpy(
+            grid,
+            rho_nnow,
+            inv_ddqz_z_full,
+            z_flxdiv_mass,
+            z_contr_w_fl_l,
+            exner_pr,
+            z_beta,
+            z_flxdiv_theta,
+            theta_v_ic,
+            ddt_exner_phy,
+            dtime,
         )
         return dict(z_rho_expl=z_rho_expl, z_exner_expl=z_exner_expl)
 
