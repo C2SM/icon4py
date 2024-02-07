@@ -289,3 +289,98 @@ def compute_geofac_grdiv(
 #    edge_idx[:, 0:lateral_boundary[0]] = 0
 #    rbf_vec_idx_v = np.where(owner_mask, edge_idx, 0);
 #    return rbf_vec_idx_v
+
+def rotate_latlon(
+    lat: np.array,
+    lon: np.array,
+    pollat: np.array,
+    pollon: np.array,
+) -> (np.array, np.array):
+
+    rotlat = np.arcsin(np.sin(lat)*np.sin(pollat) + np.cos(lat)*np.cos(pollat)*np.cos(lon-pollon))
+    rotlon = np.arctan2(np.cos(lat)*np.sin(lon-pollon), (np.cos(lat)*np.sin(pollat)*np.cos(lon-pollon) - np.sin(lat)*np.cos(pollat)))
+
+    lat = rotlat
+    lon = rotlon
+
+    return (lat, lon)
+
+def compute_c_bln_avg(
+    c_bln_avg: np.array,
+    divavg_cntrwgt,
+) -> np.array:
+    """
+    calculate_uniform_bilinear_cellavg_wgt
+    Args:
+        c_bln_avg:
+        divavg_cntrwgt:
+    """
+    local_weight = divavg_cntrwgt
+    neigbor_weight = (1.0 - local_weight) / 3.0
+    c_bln_avg[:, 0] = local_weight
+    c_bln_avg[:, 1:3] = neigbor_weight
+    return c_bln_avg
+
+def compute_c_bln_avg_(
+    c_bln_avg: np.array,
+    divavg_cntrwgt,
+    lat: np.array,
+    lon: np.array,
+) -> np.array:
+    """
+    calculate_bilinear_cellavg_wgt
+    Args:
+        c_bln_avg:
+        divavg_cntrwgt:
+    """
+    wgt_loc = divavg_cntrwgt
+    yloc = lat
+    xloc = lon
+    pollat = np.where(yloc > 0.0, yloc - np.pi*0.5, yloc + np*pi*0.5)
+    mfac = np.where(yloc > 0.0, -1.0, 1.0)
+    pollon = xloc
+    (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
+    ytemp = lat(C2E2C[:, 0])
+    xtemp = lon(C2E2C[:, 0])
+    (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
+    y[0]  = ytemp-yloc
+    x[0]  = xtemp-xloc
+    # This is needed when the date line is crossed
+    x[0] = np.where(x[0] > 3.5, x[0] - np.pi*2, x[0])
+    x[0] = np.where(x[0] < -3.5, x[0] + np.pi*2, x[0])
+    xtemp = lon(C2E2C[:, 1])
+    ytemp = lat(C2E2C[:, 1])
+    (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
+
+    y[1]  = ytemp-yloc
+    x[1]  = xtemp-xloc
+    # This is needed when the date line is crossed
+    x[1] = np.where(x[1] > 3.5, x[1] - np.pi*2, x[1])
+    x[1] = np.where(x[1] < -3.5, x[1] + np.pi*2, x[1])
+
+    xtemp = lon(C2E2C[:, 2])
+    ytemp = lat(C2E2C[:, 2])
+    (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
+
+    y[2]  = ytemp-yloc
+    x[2]  = xtemp-xloc
+    # This is needed when the date line is crossed
+    x[2] = np.where(x[2] > 3.5, x[2] - np.pi*2, x[2])
+    x[2] = np.where(x[2] < -3.5, x[2] + np.pi*2, x[2])
+    # The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+    # and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
+    # are not aliased into a checkerboard pattern between upward- and downward
+    # directed cells. The third condition is sum(w(i)) = 1., and the weight
+    # of the local point is 0.5 (see above). Analytical elimination yields...
+
+    mask = abs(x[1]-x[0]) > 1.e-11 and abs(y[2]-y[0]) > 1.e-11;
+    wgt[2] = np.where(mask, 1.0/((y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0])/(x[1]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[1]-y[0])/(x[1]-x[0])), 1.0/((y[1]-y[0]) - (x[1]-x[0])*(y[2]-y[0])/(x[2]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[2]-y[0])/(x[2]-x[0])))
+    wgt[1] = np.where(mask, (-(1.0-wgt_loc)*x[0] - wgt[2]*(x[2]-x[0]))/(x[1]-x[0]), (-(1.0-wgt_loc)*x[0] - wgt[1]*(x[1]-x[0]))/(x[2]-x[0]))
+    wgt[0] = 1.0 - wgt_loc - wgt(2) - wgt(3)
+
+    # Store results in ptr_patch%cells%avg_wgt
+    c_bln_avg[:, 0] = wgt_loc
+    c_bln_avg[:, 1] = wgt[0]
+    c_bln_avg[:, 2] = wgt[1]
+    c_bln_avg[:, 3] = wgt[2]
+    return c_bln_avg

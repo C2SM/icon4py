@@ -245,3 +245,31 @@ def test_compute_geofac_grdiv(
 #    rbf_vec_idx_v_ref = rbf_vec_idx_v_ref[:, 0:lateral_boundary[1]]
 #    rbf_vec_idx_v = compute_rbf_vec_idx_v(V2E_, num_edges, owner_mask, lateral_boundary)
 #    assert np.allclose(rbf_vec_idx_v, rbf_vec_idx_v_ref)
+
+@pytest.mark.datatest
+def test_compute_c_bln_avg(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    geofac_div = interpolation_savepoint.geofac_div()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    c_bln_avg_ref = interpolation_savepoint.c_bln_avg()
+    lateral_boundary = np.arange(2)
+    lateral_boundary[0] = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    )
+    lateral_boundary[1] = icon_grid.get_end_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+    )
+    c_bln_avg = np.zeros([lateral_boundary[1], 5])
+    c_bln_avg = compute_c_bln_avg(
+        c_bln_avg,
+        5.0,
+        lateral_boundary,
+    )
+#    np.set_printoptions(threshold=np.inf)
+#    print(geofac_grdiv_ref.asnumpy())
+#    print("aaaaa")
+#    print(geofac_grdiv)
+    assert np.allclose(c_bln_avg, c_bln_avg_ref.asnumpy())
