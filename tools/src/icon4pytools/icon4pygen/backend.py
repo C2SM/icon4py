@@ -22,7 +22,6 @@ from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from icon4py.model.common.dimension import Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
-from icon4pytools.icon4pygen.exceptions import MultipleFieldOperatorException
 from icon4pytools.icon4pygen.metadata import StencilInfo
 
 
@@ -101,6 +100,18 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
     return (itir.Sym(id=p) for p in missing_args)
 
 
+def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
+    """Checks that fencil params contain domain boundaries if not emit a warning."""
+    param_ids = {param.id for param in fencil.itir.params}
+    all_domain_params_present = all(param in param_ids for param in [H_START, H_END, V_START, V_END])
+    if not all_domain_params_present:
+        warnings.warn(
+            f"Domain boundaries are missing or have non-standard names for '{fencil.itir.id}'. "
+            "Adapting domain to use the standard names. This feature will be removed in the future.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
 def generate_gtheader(
     fencil: itir.FencilDefinition,
     offset_provider: dict[str, Connectivity | Dimension],
@@ -110,6 +121,8 @@ def generate_gtheader(
     **kwargs: Any,
 ) -> str:
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
+    check_for_domain_bounds(fencil)
+
     transformed_fencil = transform_and_configure_fencil(fencil)
 
     translation = gtfn_module.GTFNTranslationStep(
