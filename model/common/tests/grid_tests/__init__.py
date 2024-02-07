@@ -10,25 +10,3 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
-
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    damping_height,
-    data_provider,
-    datapath,
-    decomposition_info,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
-)
-
-from .utils import MCH_GRID_FILE
-
-
-@pytest.fixture
-def grid_file():
-    return MCH_GRID_FILE

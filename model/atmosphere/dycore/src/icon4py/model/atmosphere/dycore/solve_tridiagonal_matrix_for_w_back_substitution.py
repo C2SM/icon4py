@@ -20,12 +20,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @scan_operator(axis=KDim, forward=False, init=wpfloat("0.0"))
-def _mo_solve_nonhydro_stencil_53_scan(w_state: wpfloat, z_q: vpfloat, w: wpfloat) -> wpfloat:
+def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
+    w_state: wpfloat, z_q: vpfloat, w: wpfloat
+) -> wpfloat:
+    """Formerly known as _mo_solve_nonhydro_stencil_53_scan."""
     return w + w_state * astype(z_q, wpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_53(
+def solve_tridiagonal_matrix_for_w_back_substitution(
     z_q: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
@@ -33,7 +36,7 @@ def mo_solve_nonhydro_stencil_53(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_53_scan(
+    _solve_tridiagonal_matrix_for_w_back_substitution_scan(
         z_q,
         w,
         out=w,

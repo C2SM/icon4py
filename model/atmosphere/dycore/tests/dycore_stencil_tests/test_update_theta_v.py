@@ -15,16 +15,14 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_68 import (
-    mo_solve_nonhydro_stencil_68,
-)
+from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoSolveNonhydroStencil68(StencilTest):
-    PROGRAM = mo_solve_nonhydro_stencil_68
+    PROGRAM = update_theta_v
     OUTPUTS = ("theta_v_new",)
 
     @staticmethod

@@ -103,7 +103,7 @@ def icon_grid(grid_savepoint, experiment):
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid()
+    return grid_savepoint.construct_icon_grid(on_gpu=False)
 
 
 @pytest.fixture

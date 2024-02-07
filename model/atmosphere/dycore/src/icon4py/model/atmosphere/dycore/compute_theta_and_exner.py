@@ -13,45 +13,48 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, where
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_solve_nonhydro_stencil_60(
+def _compute_theta_and_exner(
+    bdy_halo_c: Field[[CellDim], bool],
+    rho: Field[[CellDim, KDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
     exner: Field[[CellDim, KDim], wpfloat],
-    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
-    exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
-    ndyn_substeps_var: wpfloat,
-    dtime: wpfloat,
-) -> Field[[CellDim, KDim], vpfloat]:
-    exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
-
-    exner_dyn_incr_wp = exner - (exner_dyn_incr_wp + ndyn_substeps_var * dtime * ddt_exner_phy_wp)
-    return astype(exner_dyn_incr_wp, vpfloat)
+    rd_o_cvd: wpfloat,
+    rd_o_p0ref: wpfloat,
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    """Formelry known as _mo_solve_nonhydro_stencil_66."""
+    theta_v_wp = where(bdy_halo_c, exner, theta_v)
+    exner_wp = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
+    return theta_v_wp, exner_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_60(
+def compute_theta_and_exner(
+    bdy_halo_c: Field[[CellDim], bool],
+    rho: Field[[CellDim, KDim], wpfloat],
+    theta_v: Field[[CellDim, KDim], wpfloat],
     exner: Field[[CellDim, KDim], wpfloat],
-    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
-    exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
-    ndyn_substeps_var: wpfloat,
-    dtime: wpfloat,
+    rd_o_cvd: wpfloat,
+    rd_o_p0ref: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_60(
+    _compute_theta_and_exner(
+        bdy_halo_c,
+        rho,
+        theta_v,
         exner,
-        ddt_exner_phy,
-        exner_dyn_incr,
-        ndyn_substeps_var,
-        dtime,
-        out=exner_dyn_incr,
+        rd_o_cvd,
+        rd_o_p0ref,
+        out=(theta_v, exner),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
