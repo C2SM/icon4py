@@ -154,17 +154,41 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         geofac_grg_y=geofac_grg_y,
     )
 
-    (z_rho_e, z_theta_v_e) = where(
+    # (z_rho_e, z_theta_v_e) = where(
+    #     (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
+    #     (_set_zero_e_k(), _set_zero_e_k()),
+    #     (z_rho_e, z_theta_v_e),
+    # )
+
+    z_rho_e = where(
         (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
-        (_set_zero_e_k(), _set_zero_e_k()),
+        _set_zero_e_k(),
         (z_rho_e, z_theta_v_e),
     )
 
-    (z_rho_e, z_theta_v_e) = where(
+    z_theta_v_e = where(
+        (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
+        _set_zero_e_k(),
+        z_theta_v_e,
+    )
+
+    # (z_rho_e, z_theta_v_e) = where(
+    #     (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+    #     (_set_zero_e_k(), _set_zero_e_k()),
+    #     (z_rho_e, z_theta_v_e),
+    # ) if limited_area else (z_rho_e, z_theta_v_e)
+
+    z_rho_e = where(
         (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
-        (_set_zero_e_k(), _set_zero_e_k()),
-        (z_rho_e, z_theta_v_e),
+        _set_zero_e_k(),
+        z_rho_e,
     ) if limited_area else (z_rho_e, z_theta_v_e)
+
+    z_theta_v_e = where(
+        (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+        _set_zero_e_k(),
+        z_theta_v_e,
+    ) if limited_area else z_theta_v_e
 
     (z_rho_e, z_theta_v_e) = where(
         (horizontal_lower_1 <= horz_idx < horizontal_upper_1),
