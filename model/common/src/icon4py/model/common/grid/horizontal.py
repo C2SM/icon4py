@@ -102,6 +102,7 @@ class HorizontalMarkerIndex:
     _nudging = {
         dimension.CellDim: _NUDGING_CELLS,
         dimension.EdgeDim: _NUDGING_EDGES,
+        # TODO [magdalena] there is no nudging for vertices?
         dimension.VertexDim: _NUDGING_VERTICES,
     }
     _end = {
