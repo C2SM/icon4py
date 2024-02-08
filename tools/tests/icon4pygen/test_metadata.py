@@ -95,16 +95,16 @@ def with_domain(
     a: Field[[CellDim, KDim], float],
     b: Field[[CellDim, KDim], float],
     result: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
-    k_start: int,
-    k_end: int,
 ):
     _add(
         a,
         b,
         out=result,
-        domain={CellDim: (k_start, k_end), KDim: (vertical_start, vertical_end)},
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -126,7 +126,6 @@ def with_constant_domain(
     _add(a, b, out=result, domain={CellDim: (0, 3), KDim: (1, 8)})
 
 
-@pytest.mark.skip(reason="currently broken, only domain arguments with special names get ignored")
 @pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])
 def test_get_field_infos_does_not_contain_domain_args(program):
     field_info = _get_field_infos(program)
