@@ -28,7 +28,7 @@ NO_DIRECTIVES_STENCIL = """\
 
 SINGLE_STENCIL = """\
     !$DSL IMPORTS()
-
+    !$DSL INSERT( & p_cell_rel_idx_dsl, & )
     !$DSL START CREATE()
 
     !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; suffix=dsl)
