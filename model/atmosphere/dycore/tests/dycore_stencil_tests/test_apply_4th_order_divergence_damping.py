@@ -22,8 +22,7 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
-
-def mo_solve_nonhydro_4th_order_divdamp_numpy(
+def apply_4th_order_divergence_damping_numpy(
     grid,
     scal_divdamp: np.array,
     z_graddiv2_vn: np.array,
@@ -32,7 +31,6 @@ def mo_solve_nonhydro_4th_order_divdamp_numpy(
     scal_divdamp = np.expand_dims(scal_divdamp, axis=0)
     vn = vn + (scal_divdamp * z_graddiv2_vn)
     return dict(vn=vn)
-
 
 class TestMoSolveNonhydro4thOrderDivdamp(StencilTest):
     PROGRAM = apply_4th_order_divergence_damping
