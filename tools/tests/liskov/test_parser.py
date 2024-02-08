@@ -83,7 +83,7 @@ def test_parse_single_directive(directive, string, startln, endln, expected_cont
 @mark.parametrize(
     "stencil, num_directives, num_content",
     [
-        (SINGLE_STENCIL, 9, 8),
+        (SINGLE_STENCIL, 10, 9),
         (SINGLE_STENCIL_WITH_COMMENTS, 9, 8),
         (MULTIPLE_STENCILS, 11, 7),
         (SINGLE_FUSED, 9, 7),
