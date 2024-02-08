@@ -250,10 +250,11 @@ def test_compute_geofac_grdiv(
 def test_compute_c_bln_avg(
     grid_savepoint, interpolation_savepoint, icon_grid
 ):
-    geofac_div = interpolation_savepoint.geofac_div()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    c_bln_avg_ref = interpolation_savepoint.c_bln_avg()
-    owner_mask = grid_savepoint.c_owner_mask()
+    geofac_div = interpolation_savepoint.geofac_div().asnumpy()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
+    divavg_cntrwgt = interpolation_savepoint.divavg_cntrwgt().asnumpy()
+    c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
+    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     C2E2C = icon_grid.connectivities[C2E2CDim]
     lateral_boundary = np.arange(2)
     lateral_boundary[0] = icon_grid.get_start_index(
@@ -264,12 +265,12 @@ def test_compute_c_bln_avg(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
-    lat = grid_savepoint.cells_center_lat()
-    lon = grid_savepoint.cells_center_lon()
+    lat = grid_savepoint.cell_center_lat().asnumpy()
+    lon = grid_savepoint.cell_center_lon().asnumpy()
     c_bln_avg = np.zeros([lateral_boundary[1], 4])
     c_bln_avg = compute_c_bln_avg(
         c_bln_avg,
-        5.0,
+        divavg_cntrwgt,
         owner_mask,
         C2E2C,
         lateral_boundary,
@@ -277,7 +278,7 @@ def test_compute_c_bln_avg(
         lon,
     )
 #    np.set_printoptions(threshold=np.inf)
-#    print(geofac_grdiv_ref.asnumpy())
-#    print("aaaaa")
-#    print(geofac_grdiv)
-    assert np.allclose(c_bln_avg, c_bln_avg_ref.asnumpy())
+    print(c_bln_avg_ref)
+    print("aaaaa")
+    print(c_bln_avg)
+    assert np.allclose(c_bln_avg, c_bln_avg_ref)

@@ -307,10 +307,12 @@ def rotate_latlon(
 
 def compute_c_bln_avg_(
     c_bln_avg: np.array,
-    divavg_cntrwgt,
+    divavg_cntrwgt: np.array,
     owner_mask: np.array,
-    C2E2C_: np.array,
+    C2E2C: np.array,
     lateral_boundary: np.array,
+    lat: np.array,
+    lon: np.array,
 ) -> np.array:
     """
     calculate_uniform_bilinear_cellavg_wgt
@@ -326,9 +328,9 @@ def compute_c_bln_avg_(
 
 def compute_c_bln_avg(
     c_bln_avg: np.array,
-    divavg_cntrwgt,
+    divavg_cntrwgt: np.array,
     owner_mask: np.array,
-    C2E2C_: np.array,
+    C2E2C: np.array,
     lateral_boundary: np.array,
     lat: np.array,
     lon: np.array,
@@ -339,23 +341,27 @@ def compute_c_bln_avg(
         c_bln_avg:
         divavg_cntrwgt:
     """
+    llb = lateral_boundary[0]
     wgt_loc = divavg_cntrwgt
-    yloc = lat
-    xloc = lon
-    pollat = np.where(yloc > 0.0, yloc - np.pi*0.5, yloc + np*pi*0.5)
+    yloc = lat[llb:]
+    xloc = lon[llb:]
+    pollat = np.where(yloc > 0.0, yloc - np.pi*0.5, yloc + np.pi*0.5)
     mfac = np.where(yloc > 0.0, -1.0, 1.0)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    ytemp = lat(C2E2C[:, 0])
-    xtemp = lon(C2E2C[:, 0])
+    ytemp = lat[C2E2C[llb:, 0]]
+    xtemp = lon[C2E2C[llb:, 0]]
     (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
+    x = np.zeros([3, lateral_boundary[1] - lateral_boundary[0]])
+    y = np.zeros([3, lateral_boundary[1] - lateral_boundary[0]])
+    wgt = np.zeros([3, lateral_boundary[1] - lateral_boundary[0]])
     y[0]  = ytemp-yloc
     x[0]  = xtemp-xloc
     # This is needed when the date line is crossed
     x[0] = np.where(x[0] > 3.5, x[0] - np.pi*2, x[0])
     x[0] = np.where(x[0] < -3.5, x[0] + np.pi*2, x[0])
-    xtemp = lon(C2E2C[:, 1])
-    ytemp = lat(C2E2C[:, 1])
+    xtemp = lon[C2E2C[llb:, 1]]
+    ytemp = lat[C2E2C[llb:, 1]]
     (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
 
     y[1]  = ytemp-yloc
@@ -364,8 +370,8 @@ def compute_c_bln_avg(
     x[1] = np.where(x[1] > 3.5, x[1] - np.pi*2, x[1])
     x[1] = np.where(x[1] < -3.5, x[1] + np.pi*2, x[1])
 
-    xtemp = lon(C2E2C[:, 2])
-    ytemp = lat(C2E2C[:, 2])
+    xtemp = lon[C2E2C[llb:, 2]]
+    ytemp = lat[C2E2C[llb:, 2]]
     (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
 
     y[2]  = ytemp-yloc
@@ -379,14 +385,16 @@ def compute_c_bln_avg(
     # directed cells. The third condition is sum(w(i)) = 1., and the weight
     # of the local point is 0.5 (see above). Analytical elimination yields...
 
-    mask = abs(x[1]-x[0]) > 1.e-11 and abs(y[2]-y[0]) > 1.e-11;
+#    mask = abs(x[1]-x[0]) > 1.e-11 and abs(y[2]-y[0]) > 1.e-11;
+    mask = np.where(abs(x[1]-x[0]) > 1.e-11, True, False)
+    mask = np.where(abs(y[2]-y[0]) > 1.e-11, mask, False)
     wgt[2] = np.where(mask, 1.0/((y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0])/(x[1]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[1]-y[0])/(x[1]-x[0])), 1.0/((y[1]-y[0]) - (x[1]-x[0])*(y[2]-y[0])/(x[2]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[2]-y[0])/(x[2]-x[0])))
     wgt[1] = np.where(mask, (-(1.0-wgt_loc)*x[0] - wgt[2]*(x[2]-x[0]))/(x[1]-x[0]), (-(1.0-wgt_loc)*x[0] - wgt[1]*(x[1]-x[0]))/(x[2]-x[0]))
-    wgt[0] = 1.0 - wgt_loc - wgt(2) - wgt(3)
+    wgt[0] = 1.0 - wgt_loc - wgt[1] - wgt[2]
 
     # Store results in ptr_patch%cells%avg_wgt
-    c_bln_avg[:, 0] = wgt_loc
-    c_bln_avg[:, 1] = wgt[0]
-    c_bln_avg[:, 2] = wgt[1]
-    c_bln_avg[:, 3] = wgt[2]
+    c_bln_avg[llb:, 0] = wgt_loc
+    c_bln_avg[llb:, 1] = wgt[0]
+    c_bln_avg[llb:, 2] = wgt[1]
+    c_bln_avg[llb:, 3] = wgt[2]
     return c_bln_avg

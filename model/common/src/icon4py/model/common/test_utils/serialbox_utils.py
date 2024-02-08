@@ -134,6 +134,12 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def cell_center_lat(self):
+        return self._get_field("cell_center_lat", CellDim)
+
+    def cell_center_lon(self):
+        return self._get_field("cell_center_lon", CellDim)
+
     def v_num_edges(self):
         return self._get_field("v_num_edges", VertexDim)
 
@@ -433,6 +439,12 @@ class IconGridSavepoint(IconSavepoint):
 
 
 class InterpolationSavepoint(IconSavepoint):
+    def divavg_cntrwgt (self):
+        return self._get_field("divavg_cntrwgt", dtype=float)
+
+    def c_bln_avg(self):
+        return self._get_field("c_bln_avg", CellDim, C2EDim)
+
     def c_intp(self):
         return self._get_field("c_intp", VertexDim, V2CDim)
 
