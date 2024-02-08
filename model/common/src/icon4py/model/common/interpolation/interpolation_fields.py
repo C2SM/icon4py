@@ -403,15 +403,26 @@ def compute_c_bln_avg(
     inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)*50000
     for i in range(3):
         for j in range(3):
-            inv_neighbor_id[:, j] = np.where(C2E2C[C2E2C[llb:, j], i] == index, i, inv_neighbor_id[:, j])
+            inv_neighbor_id[:, j] = np.where((C2E2C[C2E2C[llb:, j], i] == index) * (C2E2C[llb:, j] >= 0), i, inv_neighbor_id[:, j])
 
     relax_coeff = 0.46
-    wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:, :], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:, :]], axis = 1)
-    resid = wgt_loc_sum / cell_areas[llb:] - 1.0
-    c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - relax_coeff * resid
-    for i in range(3):
-        c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - relax_coeff * resid[C2E2C[llb:, i] - llb]
-    wgt_loc_sum = np.sum(c_bln_avg[llb: , 0:3], axis=1) - 1.0
-    for i in range(4):
-        c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - 0.25*wgt_loc_sum
+    maxwgt_loc = divavg_cntrwgt + 0.003
+    minwgt_loc = divavg_cntrwgt - 0.003
+    niter = 10
+#    np.set_printoptions(threshold=np.inf)
+    for iter in range(niter):
+        wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:, :], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:, :]], axis = 1)
+        resid = wgt_loc_sum / cell_areas[llb:] - 1.0
+        print(resid)
+        if iter < niter - 1:
+            c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - relax_coeff * resid
+            for i in range(3):
+                c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - relax_coeff * resid[C2E2C[llb:, i] - llb]
+            wgt_loc_sum = np.sum(c_bln_avg[llb:, 0:3], axis=1) - 1.0
+            for i in range(4):
+                c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - 0.25 * wgt_loc_sum
+            c_bln_avg[llb:, 0] = np.where(c_bln_avg[llb:, 0] > minwgt_loc, c_bln_avg[llb:, 0], minwgt_loc)
+            c_bln_avg[llb:, 0] = np.where(c_bln_avg[llb:, 0] < minwgt_loc, c_bln_avg[llb:, 0], maxwgt_loc)
+        else:
+            c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - resid
     return c_bln_avg
