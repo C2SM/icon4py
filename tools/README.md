@@ -257,7 +257,7 @@ call wrap_run_calculate_diagnostic_quantities_for_turbulence( &
 This directive allows the user to generate any text that is placed between the parentheses.
 This is useful for situations where custom code generation is necessary.
 Note that, the `INSERT`` statement is verbatim, such that there is no filtering or fortran formatting.
-Also, that line continatuion with `&` is not provided for `INSERT` statements.
+Also, that line continuation with `&` is not provided for`INSERT` statements.
 
 #### `!$DSL START PROFILE()`
 

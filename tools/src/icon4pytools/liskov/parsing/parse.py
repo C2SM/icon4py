@@ -81,13 +81,10 @@ class DirectivesParser(Step):
 
     def _preprocess(self, directives: Sequence[ts.ParsedDirective]) -> Sequence[ts.ParsedDirective]:
         """Preprocess the directives by removing unnecessary characters and formatting the directive strings."""
-        preprocessed = []
-        for d in directives:
-            new_directive = d.__class__(
-                self._clean_string(d.string, d.type_name), d.startln, d.endln
-            )
-            preprocessed.append(new_directive)
-        return preprocessed
+        return [
+            d.__class__(self._clean_string(d.string, d.type_name), d.startln, d.endln)
+            for d in directives
+        ]
 
     def _run_validation_passes(self, preprocessed: Sequence[ts.ParsedDirective]) -> None:
         """Run validation passes on the directives."""
