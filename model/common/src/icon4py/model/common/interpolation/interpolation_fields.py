@@ -334,6 +334,7 @@ def compute_c_bln_avg(
     lateral_boundary: np.array,
     lat: np.array,
     lon: np.array,
+    cell_areas: np.array,
 ) -> np.array:
     """
     calculate_bilinear_cellavg_wgt
@@ -342,6 +343,7 @@ def compute_c_bln_avg(
         divavg_cntrwgt:
     """
     llb = lateral_boundary[0]
+    index = np.arange(llb, lateral_boundary[1])
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
     xloc = lon[llb:]
@@ -397,4 +399,19 @@ def compute_c_bln_avg(
     c_bln_avg[llb:, 1] = wgt[0]
     c_bln_avg[llb:, 2] = wgt[1]
     c_bln_avg[llb:, 3] = wgt[2]
+
+    inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)*50000
+    for i in range(3):
+        for j in range(3):
+            inv_neighbor_id[:, j] = np.where(C2E2C[C2E2C[llb:, j], i] == index, i, inv_neighbor_id[:, j])
+
+    relax_coeff = 0.46
+    wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:, :], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:, :]], axis = 1)
+    resid = wgt_loc_sum / cell_areas[llb:] - 1.0
+    c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - relax_coeff * resid
+    for i in range(3):
+        c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - relax_coeff * resid[C2E2C[llb:, i] - llb]
+    wgt_loc_sum = np.sum(c_bln_avg[llb: , 0:3], axis=1) - 1.0
+    for i in range(4):
+        c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - 0.25*wgt_loc_sum
     return c_bln_avg

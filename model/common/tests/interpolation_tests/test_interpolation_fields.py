@@ -252,6 +252,7 @@ def test_compute_c_bln_avg(
 ):
     geofac_div = interpolation_savepoint.geofac_div().asnumpy()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
+    cell_areas = grid_savepoint.cell_areas().asnumpy()
     divavg_cntrwgt = interpolation_savepoint.divavg_cntrwgt().asnumpy()
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
@@ -276,6 +277,7 @@ def test_compute_c_bln_avg(
         lateral_boundary,
         lat,
         lon,
+        cell_areas,
     )
 #    np.set_printoptions(threshold=np.inf)
     print(c_bln_avg_ref)
