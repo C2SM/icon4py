@@ -154,10 +154,8 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         geofac_grg_y=geofac_grg_y,
     )
 
-    (zero_lower_bound, zero_upper_bound) = (horizontal_lower_01, horizontal_upper_01)
-
     (z_rho_e, z_theta_v_e) = where(
-        (zero_lower_bound <= horz_idx < zero_upper_bound),
+        (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
         (_set_zero_e_k(), _set_zero_e_k()),
         (z_rho_e, z_theta_v_e),
     )
