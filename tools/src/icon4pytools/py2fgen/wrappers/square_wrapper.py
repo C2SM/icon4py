@@ -77,6 +77,4 @@ def square_wrapper(
     """
     a = unpack(field_ptr, n_cell, n_k)
     res = unpack(result_ptr, n_cell, n_k)
-    print(res)
-    print(a)
     square_output_param(a, res)

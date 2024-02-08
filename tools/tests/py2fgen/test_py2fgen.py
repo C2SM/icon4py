@@ -10,6 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import subprocess
+
+import pytest
 from click.testing import CliRunner
 
 from icon4pytools.py2fgen.cli import main
@@ -22,3 +25,44 @@ def test_py2fgen():
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module, function])
         assert result.exit_code == 0
+
+
+def test_py2fgen_compilation_and_execution(samples_path):
+    cli = CliRunner()
+    module = "icon4pytools.py2fgen.wrappers.square_wrapper"
+    function = "square_wrapper"
+
+    with cli.isolated_filesystem():
+        # Generate the header file, f90 interface and dynamic library
+        result = cli.invoke(main, [module, function])
+        assert result.exit_code == 0, "CLI execution failed"
+
+        # Compile generated f90 interface, driver code, and dynamic library
+        try:
+            subprocess.run(["gfortran", "-c", "square_wrapper_plugin.f90", "."], check=True)
+            subprocess.run(
+                [
+                    "gfortran",
+                    "-I.",
+                    "-Wl,-rpath=.",
+                    "-L.",
+                    "square_wrapper_plugin.f90",
+                    str(samples_path / "square.f90"),
+                    "-lsquare_wrapper_plugin",
+                    "-o",
+                    "squarer",
+                ],
+                check=True,
+            )
+        except subprocess.CalledProcessError as e:
+            pytest.fail(f"Compilation failed: {e}")
+
+        # Run the compiled executable and check if it ran successfully
+        try:
+            fortran_result = subprocess.run(
+                ["./squarer"], capture_output=True, text=True, check=True
+            )
+        except subprocess.CalledProcessError as e:
+            pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
+
+        assert "All elements squared correctly." in fortran_result.stdout
