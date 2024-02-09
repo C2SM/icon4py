@@ -8,8 +8,7 @@ benchmark_model_icon_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - if [ "$BACKEND" = "dace_cpu" ] || [ "$BACKEND" = "dace_gpu" ]; then pip install dace==$DACE_VERSION; fi
     - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid --verbose
   parallel:
     matrix:
-      - BACKEND: [dace_cpu, dace_gpu, gtfn_cpu, gtfn_gpu]
+      - BACKEND: [gtfn_cpu, gtfn_gpu]
