@@ -16,7 +16,11 @@ import pathlib
 import click
 
 from icon4pytools.py2fgen.cffi_utils import generate_and_compile_cffi_plugin
-from icon4pytools.py2fgen.codegen import generate_and_write_f90_interface, generate_c_header
+from icon4pytools.py2fgen.codegen import (
+    generate_and_write_f90_interface,
+    generate_c_header,
+    generate_python_wrapper,
+)
 from icon4pytools.py2fgen.parsing import parse_function
 
 
@@ -46,8 +50,11 @@ def main(
     """
     build_path.mkdir(exist_ok=True, parents=True)
     plugin = parse_function(module_import_path, function_name)
+
     c_header = generate_c_header(plugin)
-    generate_and_compile_cffi_plugin(plugin.name, c_header, module_import_path, str(build_path))
+    python_wrapper = generate_python_wrapper(plugin)
+
+    generate_and_compile_cffi_plugin(plugin.name, c_header, python_wrapper, build_path)
     generate_and_write_f90_interface(build_path, plugin)
 
 

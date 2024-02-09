@@ -11,7 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+
+import ast
 import importlib
+import inspect
 from inspect import signature, unwrap
 from typing import Callable
 
@@ -29,7 +32,7 @@ def parse_function(module_name: str, function_name: str) -> CffiPlugin:
     func = _parse_function(module, function_name)
     plugin_name = f"{module_name.split('.')[-1]}_plugin"
     # todo(samkellerhals): for now we just support one function at a time.
-    return CffiPlugin(name=plugin_name, functions=[func])
+    return CffiPlugin(name=plugin_name, function=func)
 
 
 def _parse_function(module, function_name):
@@ -76,6 +79,7 @@ def _get_gt4py_func_params(func: Program) -> list[FuncParameter]:
 def _get_simple_func_params(func: Callable) -> list[FuncParameter]:
     """Parse a non-gt4py function and return its parameters."""
     sig_params = signature(func, follow_wrapped=False).parameters
+    type_hints = extract_type_hint_strings(func)
 
     params = []
     for s in sig_params:
@@ -84,6 +88,30 @@ def _get_simple_func_params(func: Callable) -> list[FuncParameter]:
         type_spec = from_type_hint(annotation)
         dims, dtype = parse_type_spec(type_spec)
         dim_types = [Dimension(value=d.value) for d in dims]
-        params.append(FuncParameter(name=s, d_type=dtype, dimensions=dim_types))
+        py_type_hint = type_hints.get(s, None)
+        params.append(
+            FuncParameter(name=s, d_type=dtype, dimensions=dim_types, py_type_hint=py_type_hint)
+        )
 
     return params
+
+
+def extract_type_hint_strings(func):
+    # Get the source code of the function
+    src = inspect.getsource(func)
+    tree = ast.parse(src)
+
+    type_hints = {}
+
+    # Define a visitor class to visit function definitions and get type hints
+    class FuncDefVisitor(ast.NodeVisitor):
+        def visit_FunctionDef(self, node):
+            for arg in node.args.args:
+                if arg.annotation:
+                    annotation = ast.unparse(arg.annotation)
+                    type_hints[arg.arg] = annotation
+
+    visitor = FuncDefVisitor()
+    visitor.visit(tree)
+
+    return type_hints

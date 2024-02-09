@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
-import importlib
 import inspect
 from collections import OrderedDict
+from pathlib import Path
 from types import MappingProxyType
 from typing import Any, Sequence
 
@@ -25,10 +25,6 @@ from gt4py.next.type_system.type_translation import from_type_hint
 
 from icon4pytools.py2fgen.common import parse_type_spec
 
-
-FFI_DEF_EXTERN_DECORATOR = "@ffi.def_extern()"
-
-CFFI_GEN_DECORATOR = "@CffiMethod.register"
 
 PROGRAM_DECORATOR = "@program"
 
@@ -52,7 +48,7 @@ class CffiMethod:
 
 
 def generate_and_compile_cffi_plugin(
-    plugin_name: str, c_header: str, module_name: str, build_path="."
+    plugin_name: str, c_header: str, python_wrapper: str, build_path: Path = Path(".")
 ):
     """
     Create C shared library.
@@ -64,41 +60,22 @@ def generate_and_compile_cffi_plugin(
         plugin_name: name of the plugin, a linkable C library with the name
             'lib{plugin_name}.so' will be created in the {build_path} folder'
         c_header: C type header signature for the python functions.
-        module_name:  python module name that contains python functions corresponding
-            to the signature in the '{c_header}' string, these functions must be decorated
-            with @CffiMethod.register and the file must contain the import
+        python_wrapper: Python code wrapping the original function to be exposed.
         build_path: *optional* path to build directory
 
     """
-    module = importlib.import_module(module_name)
-    module_path = getattr(module, "__file__", None)
-
-    if module_path is None:
-        raise FileNotFoundError(f"Could not find the file path for the module {module_name}")
-
     c_header_file = plugin_name + ".h"
-    with open("/".join([build_path, c_header_file]), "w") as f:
+    header_file_path = build_path / c_header_file
+
+    with open(header_file_path, "w") as f:
         f.write(c_header)
 
     builder = cffi.FFI()
 
     builder.embedding_api(c_header)
     builder.set_source(plugin_name, f'#include "{c_header_file}"')
-
-    with open(module_path, "r") as f:
-        lines = f.readlines()
-
-    new_lines = []
-    for line in lines:
-        if "_wrapper" in line:
-            new_lines.append(FFI_DEF_EXTERN_DECORATOR + "\n")
-        new_lines.append(line)
-
-    new_source = "".join(new_lines).replace(CFFI_GEN_DECORATOR, FFI_DEF_EXTERN_DECORATOR)
-
-    new_source = f"from {plugin_name} import ffi\n" + new_source
-    builder.embedding_init_code(new_source)
-    builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)
+    builder.embedding_init_code(python_wrapper)
+    builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)  # type: ignore
 
 
 class UnknownDimensionException(Exception):
