@@ -163,7 +163,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     z_rho_e = where(
         (horizontal_lower_01 <= horz_idx < horizontal_upper_01),
         _set_zero_e_k(),
-        (z_rho_e, z_theta_v_e),
+        z_rho_e,
     )
 
     z_theta_v_e = where(
