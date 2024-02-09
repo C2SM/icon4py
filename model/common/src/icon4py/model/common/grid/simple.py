@@ -38,7 +38,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import BaseGrid, GridConfig
+from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
 
 # periodic
 #
@@ -58,7 +58,6 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig
 # |20e  \   |23e  \   |26e  \
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 

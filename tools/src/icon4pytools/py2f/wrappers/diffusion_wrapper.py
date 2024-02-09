@@ -51,8 +51,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState

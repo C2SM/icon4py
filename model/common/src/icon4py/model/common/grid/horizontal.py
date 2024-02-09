@@ -10,13 +10,15 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass
+import math
+from dataclasses import dataclass, field, InitVar
 from typing import Final
 
 from gt4py.next.common import Dimension, Field
 
-from icon4py.model.common import dimension, math
+from icon4py.model.common import dimension, constants
 from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
+from icon4py.model.common.grid.icon import IconGrid
 
 
 class HorizontalMarkerIndex:
@@ -142,13 +144,6 @@ class HorizontalMarkerIndex:
     @classmethod
     def end(cls, dim: Dimension) -> int:
         return cls._end[dim]
-
-
-@dataclass(frozen=True)
-class HorizontalGridSize:
-    num_vertices: int
-    num_edges: int
-    num_cells: int
 
 
 class EdgeParams:
@@ -287,26 +282,31 @@ class CellParams:
 
     defined int ICON in mo_model_domain.f90:t_grid_cells%area
     """
+    grid: InitVar[IconGrid]
+    characteristic_length: field(init=False)
+    mean_cell_area: field(init=False)
 
-    mean_cell_area: float
+    def __post_init__(self, grid):
+        object.__setattr__(
+            self,
+            "mean_cell_area",
+            CellParams.mean_cell_area(
+                grid.length_rescale_factor * constants.EARTH_RADIUS,
+                grid.global_num_cells,
+            ),
+        )
+        object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
 
-    def _mean_cell_area(self, radius, grid_root: int, grid_level: int):
+    @staticmethod
+    def mean_cell_area(radius, num_cells):
         """
-        Compute the mean cell area from grid file attributes.
-
+        Compute the mean cell area by dividing the sphere by the number of cells in the
+        global grid
 
         Args:
             radius: average earth radius, might be rescaled by a scaling parameter
-            grid_root: the R parameter in the RxxByy grid specification, so xx, this parameter is encoded in the global attributes of the ICON grid file as `grid_root`
-            grid_level: the B parameter in the RxxByy grid specification, so yy. This parameter is encoded in the global attributes of the ICON grid file as `grid_level`
-
-        Returns:
+            num_cells: number of cells on the global grid
+        Returns: mean area of one cell [m^2]
 
         """
-        return 4.0 * math.pi * radius**2 / (20.0 * grid_root**2) * 4.0 * grid_level
-
-
-@dataclass(frozen=True)
-class GridConfig:
-    grid_rescale_factor = 1.0
-    grid_length_rescale_factor = 1.0
+        return 4.0 * math.pi * radius**2 / num_cells

@@ -43,9 +43,9 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.base import GridConfig, VerticalGridSize, HorizontalGridSize
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon import IconGrid, IconGridConfig
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
@@ -321,6 +321,7 @@ class IconGridSavepoint(IconSavepoint):
         vertex_ends = self.vertex_end_index()
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
+        global_grid_params = GlobalGridParams()
         config = GridConfig(
             horizontal_config=HorizontalGridSize(
                 num_vertices=self.num(VertexDim),
@@ -338,6 +339,7 @@ class IconGridSavepoint(IconSavepoint):
         grid = (
             IconGrid()
             .with_config(config)
+            .with_global_params(global_grid_params)
             .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
             .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
