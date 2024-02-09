@@ -95,16 +95,16 @@ def with_domain(
     a: Field[[CellDim, KDim], float],
     b: Field[[CellDim, KDim], float],
     result: Field[[CellDim, KDim], float],
+    horizontal_start: int,
+    horizontal_end: int,
     vertical_start: int,
     vertical_end: int,
-    k_start: int,
-    k_end: int,
 ):
     _add(
         a,
         b,
         out=result,
-        domain={CellDim: (k_start, k_end), KDim: (vertical_start, vertical_end)},
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
 
 

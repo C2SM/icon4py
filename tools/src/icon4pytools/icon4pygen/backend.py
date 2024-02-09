@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import warnings
 from pathlib import Path
 from typing import Any, Iterable, List, Optional
 
@@ -21,7 +22,6 @@ from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from icon4py.model.common.dimension import Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
-from icon4pytools.icon4pygen.exceptions import MultipleFieldOperatorException
 from icon4pytools.icon4pygen.metadata import StencilInfo
 
 
@@ -37,11 +37,6 @@ GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
     """Transform the domain representation and configure the FencilDefinition parameters."""
     grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
-
-    # TODO(tehrengruber): This is a left-over from before this function supported multiple closured.
-    #  Since this was never tested the exception is kept in place.
-    if len(fencil.closures) > 1:
-        raise MultipleFieldOperatorException()
 
     for closure in fencil.closures:
         if not len(closure.domain.args) == 2:
@@ -105,6 +100,21 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
     return (itir.Sym(id=p) for p in missing_args)
 
 
+def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
+    """Check that fencil params contain domain boundaries, emit warning otherwise."""
+    param_ids = {param.id for param in fencil.params}
+    all_domain_params_present = all(
+        param in param_ids for param in [H_START, H_END, V_START, V_END]
+    )
+    if not all_domain_params_present:
+        warnings.warn(
+            f"Domain boundaries are missing or have non-standard names for '{fencil.id}'. "
+            "Adapting domain to use the standard names. This feature will be removed in the future.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+
+
 def generate_gtheader(
     fencil: itir.FencilDefinition,
     offset_provider: dict[str, Connectivity | Dimension],
@@ -114,6 +124,8 @@ def generate_gtheader(
     **kwargs: Any,
 ) -> str:
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
+    check_for_domain_bounds(fencil)
+
     transformed_fencil = transform_and_configure_fencil(fencil)
 
     translation = gtfn_module.GTFNTranslationStep(
