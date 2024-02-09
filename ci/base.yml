@@ -13,6 +13,7 @@ stages:
 variables:
   PYTHON_VERSION: "3.10"
   PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
+  DACE_VERSION: "0.15.1"
 
 .build_template:
   stage: build
