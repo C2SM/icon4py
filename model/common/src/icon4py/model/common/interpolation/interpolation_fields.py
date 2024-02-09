@@ -354,9 +354,9 @@ def compute_c_bln_avg(
     ytemp = lat[C2E2C[llb:, 0]]
     xtemp = lon[C2E2C[llb:, 0]]
     (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
-    x = np.zeros([3, lateral_boundary[1] - lateral_boundary[0]])
-    y = np.zeros([3, lateral_boundary[1] - lateral_boundary[0]])
-    wgt = np.zeros([3, lateral_boundary[1] - lateral_boundary[0]])
+    x = np.zeros([3, lateral_boundary[1] - llb])
+    y = np.zeros([3, lateral_boundary[1] - llb])
+    wgt = np.zeros([3, lateral_boundary[1] - llb])
     y[0]  = ytemp-yloc
     x[0]  = xtemp-xloc
     # This is needed when the date line is crossed
@@ -387,9 +387,7 @@ def compute_c_bln_avg(
     # directed cells. The third condition is sum(w(i)) = 1., and the weight
     # of the local point is 0.5 (see above). Analytical elimination yields...
 
-#    mask = abs(x[1]-x[0]) > 1.e-11 and abs(y[2]-y[0]) > 1.e-11;
-    mask = np.where(abs(x[1]-x[0]) > 1.e-11, True, False)
-    mask = np.where(abs(y[2]-y[0]) > 1.e-11, mask, False)
+    mask = np.logical_and(abs(x[1]-x[0]) > 1.e-11, abs(y[2]-y[0]) > 1.e-11)
     wgt[2] = np.where(mask, 1.0/((y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0])/(x[1]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[1]-y[0])/(x[1]-x[0])), 1.0/((y[1]-y[0]) - (x[1]-x[0])*(y[2]-y[0])/(x[2]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[2]-y[0])/(x[2]-x[0])))
     wgt[1] = np.where(mask, (-(1.0-wgt_loc)*x[0] - wgt[2]*(x[2]-x[0]))/(x[1]-x[0]), (-(1.0-wgt_loc)*x[0] - wgt[1]*(x[1]-x[0]))/(x[2]-x[0]))
     wgt[0] = 1.0 - wgt_loc - wgt[1] - wgt[2]
@@ -400,15 +398,15 @@ def compute_c_bln_avg(
     c_bln_avg[llb:, 2] = wgt[1]
     c_bln_avg[llb:, 3] = wgt[2]
 
-    inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)*50000
+    inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)
     for i in range(3):
         for j in range(3):
-            inv_neighbor_id[:, j] = np.where((C2E2C[C2E2C[llb:, j], i] == index) * (C2E2C[llb:, j] >= 0), i, inv_neighbor_id[:, j])
+            inv_neighbor_id[:, j] = np.where(np.logical_and(C2E2C[C2E2C[llb:, j], i] == index, C2E2C[llb:, j] >= 0), i, inv_neighbor_id[:, j])
 
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
-    niter = 10
+    niter = 1
 #    np.set_printoptions(threshold=np.inf)
     for iter in range(niter):
         wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:, :], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:, :]], axis = 1)
@@ -417,7 +415,7 @@ def compute_c_bln_avg(
         if iter < niter - 1:
             c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - relax_coeff * resid
             for i in range(3):
-                c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - relax_coeff * resid[C2E2C[llb:, i] - llb]
+                c_bln_avg[llb:, i + 1] = c_bln_avg[llb:, i + 1] - relax_coeff * resid[C2E2C[llb:, i] - llb]
             wgt_loc_sum = np.sum(c_bln_avg[llb:, 0:3], axis=1) - 1.0
             for i in range(4):
                 c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - 0.25 * wgt_loc_sum
