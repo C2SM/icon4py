@@ -16,7 +16,7 @@ import pytest
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-from icon4py.model.common.test_utils.helpers import random_field, zero_field, StencilTest
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 
 
