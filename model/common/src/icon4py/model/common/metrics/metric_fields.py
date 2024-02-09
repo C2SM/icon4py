@@ -11,10 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, GridType, int32, program
+from gt4py.next import Field, GridType, int32, program, field_operator, where
 
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.math.helpers import interpolate_height_levels_for_cell_k
+from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.math.helpers import (
+    average_k_level_up,
+    difference_k_level_down,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -42,12 +45,45 @@ def compute_z_mc(
         vertical_end:int32 end index of vertical domain
 
     """
-    interpolate_height_levels_for_cell_k(
+    average_k_level_up(
         z_ifc,
         out=z_mc,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
 
-    """
 
-    """
+@field_operator
+def _compute_ddqz_z_half(
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    z_mc: Field[[CellDim, KDim], wpfloat],
+    k: Field[[KDim], int32],
+    num_lev: int32,
+) -> Field[[CellDim, KDim], wpfloat]:
+    ddqz_z_half = where(
+        0 < k < num_lev,
+        difference_k_level_down(z_mc),
+        where(k == 0, 2.0 * (z_ifc - z_mc), 2.0 * (z_mc(Koff[-1]) - z_ifc)),
+    )
+    return ddqz_z_half
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_ddqz_z_half(
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    z_mc: Field[[CellDim, KDim], wpfloat],
+    k: Field[[KDim], int32],
+    num_lev: int32,
+    ddqz_z_half: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_ddqz_z_half(
+        z_ifc,
+        z_mc,
+        k,
+        num_lev,
+        out=ddqz_z_half,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )

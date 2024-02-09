@@ -13,11 +13,15 @@
 
 import numpy as np
 import pytest
+from gt4py.next import Dimension, as_field
+
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.program_processors.runners import roundtrip, gtfn
+
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.metric_fields import compute_z_mc
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.metrics.metric_fields import compute_z_mc, compute_ddqz_z_half
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field, dallclose
 
 
 class TestComputeZMc(StencilTest):
@@ -51,3 +55,41 @@ class TestComputeZMc(StencilTest):
             horizontal_start=horizontal_start,
             horizontal_end=horizontal_end,
         )
+
+
+# TODO (magdalena) Koff[-1] / Koff[+1] does not work on embedded
+backend = gtfn.run_gtfn
+
+
+def test_compute_ddq_z_half(grid_savepoint, metrics_savepoint):
+    icon_grid = grid_savepoint.construct_icon_grid()
+    ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
+    z_ifc = metrics_savepoint.z_ifc()
+    z_mc = zero_field(icon_grid, CellDim, KDim)
+    nlevp1 = icon_grid.num_levels + 1
+    k_index = as_field((KDim,), np.arange(nlevp1, dtype=int32))
+    compute_z_mc(
+        z_ifc,
+        z_mc,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=int32(icon_grid.num_levels),
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+    ddq_z_half = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+
+    compute_ddqz_z_half.with_backend(backend=backend)(
+        z_ifc=z_ifc,
+        z_mc=z_mc,
+        k=k_index,
+        num_lev=icon_grid.num_levels,
+        ddqz_z_half=ddq_z_half,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=nlevp1,
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
