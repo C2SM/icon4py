@@ -14,14 +14,6 @@
 from typing import List
 
 
-class MultipleFieldOperatorException(Exception):
-    def __init___(self, stencil_name: str) -> None:
-        Exception.__init__(
-            self,
-            f"{stencil_name} is currently not supported as it contains multiple field operators.",
-        )
-
-
 class InvalidConnectivityException(Exception):
     def __init___(self, location_chain: List[str]) -> None:
         Exception.__init__(

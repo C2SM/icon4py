@@ -16,7 +16,7 @@ The code should look as clean and concise as possible. Also it should be similar
 - `!$DSL END STENCIL` as close as possible to the end of the original stencil section, no empty line before, one empty line after.
 - `!$DSL START FUSED STENCIL` should be placed before the `!$DSL START STENCIL` of the first stencil in the fused batch, one empty line before, one empty line after.
 - `!$DSL END FUSED STENCIL` should be placed after the `!$DSL END STENCIL` of the last stencil in the fused batch, one empty line before, one empty line after.
-- `!$DSL INSERT` one empty line before and after, unless the inserted code is part of an `ACC` data region.
+- `!$DSL INSERT` one empty line before and after, unless the inserted code is part of an `ACC` data region, or a function call.
 - `!$DSL START CREATE` after the `!$ACC CREATE` block, no empty line before and one empty line after.
 
 ## Example
