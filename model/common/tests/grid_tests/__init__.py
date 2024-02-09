@@ -10,13 +10,3 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from typing import List
-
-
-class InvalidConnectivityException(Exception):
-    def __init___(self, location_chain: List[str]) -> None:
-        Exception.__init__(
-            self,
-            f"Connectivity identifier must be one of [C, E, V, O], provided: {location_chain}",
-        )
