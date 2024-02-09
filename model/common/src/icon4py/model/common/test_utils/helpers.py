@@ -244,6 +244,12 @@ def uses_icon_grid_with_otf(backend, grid):
     if hasattr(backend, "executor") and isinstance(grid, IconGrid):
         if isinstance(backend.executor, OTFCompileExecutor):
             return True
+        try:
+            from gt4py.next.program_processors.runners import dace_iterator
+            if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
+                return True
+        except ImportError:
+            pass
     return False
 
 
