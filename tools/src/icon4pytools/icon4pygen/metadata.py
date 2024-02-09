@@ -154,16 +154,22 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | Dimension:
+def provide_offset(
+    offset: str, is_global: bool = False, force_skip_values: bool = False
+) -> DummyConnectivity | Dimension:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
         return Koff.source
     else:
-        return provide_neighbor_table(offset, is_global)
+        return provide_neighbor_table(
+            offset, is_global=is_global, force_skip_values=force_skip_values
+        )
 
 
-def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
+def provide_neighbor_table(
+    chain: str, is_global: bool, force_skip_values: bool
+) -> DummyConnectivity:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -183,6 +189,8 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     if is_global and "V" in chain:
         if chain.count("V") > 1 or not chain.endswith("V"):
             skip_values = True
+    if force_skip_values:
+        skip_values = True
     location_chain = []
     include_center = False
     for letter in chain:
@@ -230,6 +238,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 def get_stencil_info(
     fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher,
     is_global: bool = False,
+    force_skip_values: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
@@ -240,6 +249,8 @@ def get_stencil_info(
 
     offset_provider = {}
     for offset in offsets:
-        offset_provider[offset] = provide_offset(offset, is_global)
+        offset_provider[offset] = provide_offset(
+            offset, is_global=is_global, force_skip_values=force_skip_values
+        )
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(itir, fields, connectivity_chains, offset_provider, column_axis)
