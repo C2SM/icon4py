@@ -67,7 +67,7 @@ def _compute_reference_atmosphere_edge_fields(
     exp_z_me = exp(z_me / h_scal_bg)
     logval = log((exp_z_me * denom + del_t_bg) / t0sl_bg)
     z_aux_1 = p0sl_bg * exp(-grav / rd * h_scal_bg / denom * logval)
-    z_temp = denom + del_t_bg * exp_z_me
+    z_temp = denom + del_t_bg * exp(-z_me / h_scal_bg)
     rho_ref_me = z_aux_1 / (rd * z_temp)
     rd_o_cpd = rd / cpd
     theta_ref_me = z_temp / (z_aux_1 / p0ref) ** rd_o_cpd
