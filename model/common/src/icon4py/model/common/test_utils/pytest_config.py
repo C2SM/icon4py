@@ -14,7 +14,12 @@
 import os
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.gtfn import (
+    run_gtfn,
+    run_gtfn_cached,
+    run_gtfn_gpu,
+    run_gtfn_gpu_cached,
+)
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 
 
@@ -91,9 +96,11 @@ def pytest_generate_tests(metafunc):
             "embedded": None,
             "roundtrip": run_roundtrip,
             "gtfn_cpu": run_gtfn,
+            "gtfn_cpu_cached": run_gtfn_cached,
             "gtfn_gpu": run_gtfn_gpu,
+            "gtfn_gpu_cached": run_gtfn_gpu_cached,
         }
-        gpu_backends = ["gtfn_gpu"]
+        gpu_backends = ["gtfn_gpu", "gtfn_gpu_cached"]
 
         try:
             from gt4py.next.program_processors.runners.dace_iterator import (
