@@ -314,7 +314,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self) -> IconGrid:
+    def construct_icon_grid(self, on_gpu: bool) -> IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -329,6 +329,7 @@ class IconGridSavepoint(IconSavepoint):
             ),
             vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
+            on_gpu=on_gpu,
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
@@ -692,6 +693,18 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
 
 class IconNonHydroInitSavepoint(IconSavepoint):
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", EdgeDim, KDim)
+
+    def vn_ie(self):
+        return self._get_field("vn_ie", EdgeDim, KDim)
+
+    def vt(self):
+        return self._get_field("vt", EdgeDim, KDim)
+
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", KDim)
 
@@ -734,21 +747,20 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def grf_tend_vn(self):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
+    def w_concorr_c(self):
+        return self._get_field("w_concorr_c", CellDim, KDim)
+
+    def ddt_vn_apc_pc(self, ntnd):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (EdgeDim, KDim))
+
+    def ddt_w_adv_pc(self, ntnd):
+        return self._get_field_component("ddt_w_adv_ntl", ntnd, (CellDim, KDim))
+
     def ddt_vn_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float))[
-            :, :, ntl - 1
-        ]
-        dims = (EdgeDim, KDim)
-        buffer = self._reduce_to_dim_size(buffer, dims)
-        return as_field(dims, buffer)
+        return self._get_field_component("ddt_vn_apc_pc", ntl, (EdgeDim, KDim))
 
     def ddt_w_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float))[
-            :, :, ntl - 1
-        ]
-        dims = (CellDim, KDim)
-        buffer = self._reduce_to_dim_size(buffer, dims)
-        return as_field(dims, buffer)
+        return self._get_field_component("ddt_w_adv_ntl", ntl, (CellDim, KDim))
 
     def grf_tend_w(self):
         return self._get_field("grf_tend_w", CellDim, KDim)

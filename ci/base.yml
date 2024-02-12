@@ -16,7 +16,7 @@ variables:
 
 .build_template:
   stage: build
-  extends: .container-builder
+  extends: .container-builder-cscs-zen2
   variables:
     DOCKERFILE: ci/docker/Dockerfile.build
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
