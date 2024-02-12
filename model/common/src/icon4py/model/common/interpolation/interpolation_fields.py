@@ -300,10 +300,7 @@ def rotate_latlon(
     rotlat = np.arcsin(np.sin(lat)*np.sin(pollat) + np.cos(lat)*np.cos(pollat)*np.cos(lon-pollon))
     rotlon = np.arctan2(np.cos(lat)*np.sin(lon-pollon), (np.cos(lat)*np.sin(pollat)*np.cos(lon-pollon) - np.sin(lat)*np.cos(pollat)))
 
-    lat = rotlat
-    lon = rotlon
-
-    return (lat, lon)
+    return (rotlat, rotlon)
 
 def compute_c_bln_avg_(
     c_bln_avg: np.array,
@@ -343,44 +340,29 @@ def compute_c_bln_avg(
         divavg_cntrwgt:
     """
     llb = lateral_boundary[0]
+    llb2 = lateral_boundary[2]
     index = np.arange(llb, lateral_boundary[1])
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
     xloc = lon[llb:]
-    pollat = np.where(yloc > 0.0, yloc - np.pi*0.5, yloc + np.pi*0.5)
-    mfac = np.where(yloc > 0.0, -1.0, 1.0)
+    pollat = np.where(yloc >= 0.0, yloc - np.pi*0.5, yloc + np.pi*0.5)
+    mfac = np.where(yloc >= 0.0, -1.0, 1.0)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    ytemp = lat[C2E2C[llb:, 0]]
-    xtemp = lon[C2E2C[llb:, 0]]
-    (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
     x = np.zeros([3, lateral_boundary[1] - llb])
     y = np.zeros([3, lateral_boundary[1] - llb])
     wgt = np.zeros([3, lateral_boundary[1] - llb])
-    y[0]  = ytemp-yloc
-    x[0]  = xtemp-xloc
-    # This is needed when the date line is crossed
-    x[0] = np.where(x[0] > 3.5, x[0] - np.pi*2, x[0])
-    x[0] = np.where(x[0] < -3.5, x[0] + np.pi*2, x[0])
-    xtemp = lon[C2E2C[llb:, 1]]
-    ytemp = lat[C2E2C[llb:, 1]]
-    (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
 
-    y[1]  = ytemp-yloc
-    x[1]  = xtemp-xloc
-    # This is needed when the date line is crossed
-    x[1] = np.where(x[1] > 3.5, x[1] - np.pi*2, x[1])
-    x[1] = np.where(x[1] < -3.5, x[1] + np.pi*2, x[1])
+    for i in range(3):
+        ytemp = lat[C2E2C[llb:, i]]
+        xtemp = lon[C2E2C[llb:, i]]
+        (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
+        y[i]  = ytemp-yloc
+        x[i]  = xtemp-xloc
+        # This is needed when the date line is crossed
+        x[i] = np.where(x[i] > 3.5, x[i] - np.pi*2, x[i])
+        x[i] = np.where(x[i] < -3.5, x[i] + np.pi*2, x[i])
 
-    xtemp = lon[C2E2C[llb:, 2]]
-    ytemp = lat[C2E2C[llb:, 2]]
-    (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
-
-    y[2]  = ytemp-yloc
-    x[2]  = xtemp-xloc
-    # This is needed when the date line is crossed
-    x[2] = np.where(x[2] > 3.5, x[2] - np.pi*2, x[2])
-    x[2] = np.where(x[2] < -3.5, x[2] + np.pi*2, x[2])
     # The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
     # and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
     # are not aliased into a checkerboard pattern between upward- and downward
@@ -390,13 +372,19 @@ def compute_c_bln_avg(
     mask = np.logical_and(abs(x[1]-x[0]) > 1.e-11, abs(y[2]-y[0]) > 1.e-11)
     wgt[2] = np.where(mask, 1.0/((y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0])/(x[1]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[1]-y[0])/(x[1]-x[0])), 1.0/((y[1]-y[0]) - (x[1]-x[0])*(y[2]-y[0])/(x[2]-x[0])) * (1.0-wgt_loc)*(-y[0] + x[0]*(y[2]-y[0])/(x[2]-x[0])))
     wgt[1] = np.where(mask, (-(1.0-wgt_loc)*x[0] - wgt[2]*(x[2]-x[0]))/(x[1]-x[0]), (-(1.0-wgt_loc)*x[0] - wgt[1]*(x[1]-x[0]))/(x[2]-x[0]))
+    wgt[1], wgt[2] = np.where(mask, (wgt[1], wgt[2]), (wgt[2], wgt[1]))
     wgt[0] = 1.0 - wgt_loc - wgt[1] - wgt[2]
 
     # Store results in ptr_patch%cells%avg_wgt
     c_bln_avg[llb:, 0] = wgt_loc
-    c_bln_avg[llb:, 1] = wgt[0]
-    c_bln_avg[llb:, 2] = wgt[1]
-    c_bln_avg[llb:, 3] = wgt[2]
+    for i in range(3):
+        c_bln_avg[llb:, i + 1] = wgt[i]
+#    np.set_printoptions(threshold=np.inf)
+#    print(np.sum(abs(np.sum(wgt*x, axis = 0))))
+#    print(np.sum(abs(np.sum(wgt*y, axis = 0))))
+#    print(np.sum(wgt*y, axis = 0))
+#    print(np.sum(wgt, axis = 0))
+#    print(c_bln_avg)
 
     inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)
     for i in range(3):
@@ -406,21 +394,25 @@ def compute_c_bln_avg(
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
-    niter = 1
-#    np.set_printoptions(threshold=np.inf)
+    niter = 2
+    print(lateral_boundary[0])
+    print(lateral_boundary[1])
+    print(lateral_boundary[2])
+    print(lateral_boundary[3])
+    llb2 = 1688
     for iter in range(niter):
         wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:, :], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:, :]], axis = 1)
-        resid = wgt_loc_sum / cell_areas[llb:] - 1.0
+        resid = wgt_loc_sum[llb2-llb:] / cell_areas[llb2:] - 1.0
         print(resid)
         if iter < niter - 1:
-            c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - relax_coeff * resid
+            c_bln_avg[llb2:, 0] = c_bln_avg[llb2:, 0] - relax_coeff * resid
             for i in range(3):
-                c_bln_avg[llb:, i + 1] = c_bln_avg[llb:, i + 1] - relax_coeff * resid[C2E2C[llb:, i] - llb]
-            wgt_loc_sum = np.sum(c_bln_avg[llb:, 0:3], axis=1) - 1.0
+                c_bln_avg[llb2:, i + 1] = c_bln_avg[llb2:, i + 1] - relax_coeff * resid[C2E2C[llb2:, i] - llb2]
+            wgt_loc_sum = np.sum(c_bln_avg[llb2:, 0:3], axis=1) - 1.0
             for i in range(4):
-                c_bln_avg[llb:, i] = c_bln_avg[llb:, i] - 0.25 * wgt_loc_sum
-            c_bln_avg[llb:, 0] = np.where(c_bln_avg[llb:, 0] > minwgt_loc, c_bln_avg[llb:, 0], minwgt_loc)
-            c_bln_avg[llb:, 0] = np.where(c_bln_avg[llb:, 0] < minwgt_loc, c_bln_avg[llb:, 0], maxwgt_loc)
+                c_bln_avg[llb2:, i] = c_bln_avg[llb2:, i] - 0.25 * wgt_loc_sum
+            c_bln_avg[llb2:, 0] = np.where(c_bln_avg[llb2:, 0] > minwgt_loc, c_bln_avg[llb2:, 0], minwgt_loc)
+            c_bln_avg[llb2:, 0] = np.where(c_bln_avg[llb2:, 0] < minwgt_loc, c_bln_avg[llb2:, 0], maxwgt_loc)
         else:
-            c_bln_avg[llb:, 0] = c_bln_avg[llb:, 0] - resid
+            c_bln_avg[llb2:, 0] = c_bln_avg[llb2:, 0] - resid
     return c_bln_avg
