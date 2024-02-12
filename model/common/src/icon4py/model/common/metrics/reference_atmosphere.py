@@ -12,43 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next import Field, GridType, field_operator, program
-from gt4py.next.ffront.fbuiltins import exp, int32, log, neighbor_sum
+from gt4py.next.ffront.fbuiltins import exp, int32, log
 
-from icon4py.model.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
-
-
-@field_operator
-def _cell_2_edge_interpolation(
-    in_field: Field[[CellDim, KDim], wpfloat], coeff: Field[[EdgeDim, E2CDim], wpfloat]
-) -> Field[[EdgeDim, KDim], wpfloat]:
-    """
-    Interpolate a Cell Field to Edges.
-
-    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
-    where the value is set to the one valid in_field value without multiplication by coeff.
-    That essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
-    be 1 for this Edge index.
-    """
-    return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
-
-
-@program(grid_type=GridType.UNSTRUCTURED)
-def cell_2_edge_interpolation(
-    in_field: Field[[CellDim, KDim], wpfloat],
-    coeff: Field[[EdgeDim, E2CDim], wpfloat],
-    out_field: Field[[EdgeDim, KDim], wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _cell_2_edge_interpolation(
-        in_field,
-        coeff,
-        out=out_field,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
-    )
 
 
 @field_operator

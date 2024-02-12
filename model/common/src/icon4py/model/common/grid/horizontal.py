@@ -13,10 +13,12 @@
 from dataclasses import dataclass
 from typing import Final
 
-from gt4py.next.common import Dimension, Field
+from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
+from numpy import int32
 
 from icon4py.model.common import dimension
-from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
+from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 class HorizontalMarkerIndex:
@@ -28,7 +30,8 @@ class HorizontalMarkerIndex:
      are the indices that are used to index into the start_idx and end_idx arrays
      provided by the grid file where for each dimension the start index of the horizontal
      "zones" are defined:
-     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the lateral boundary zone would be
+     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the
+     lateral boundary zone would be
 
      F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
 
@@ -285,3 +288,36 @@ class CellParams:
     area: Field[[CellDim], float]
 
     mean_cell_area: float
+
+
+@field_operator
+def _cell_2_edge_interpolation(
+    in_field: Field[[CellDim, KDim], wpfloat], coeff: Field[[EdgeDim, E2CDim], wpfloat]
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    """
+    Interpolate a Cell Field to Edges.
+
+    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
+    where the value is set to the one valid in_field value without multiplication by coeff.
+    That essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
+    be 1 for this Edge index.
+    """
+    return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def cell_2_edge_interpolation(
+    in_field: Field[[CellDim, KDim], wpfloat],
+    coeff: Field[[EdgeDim, E2CDim], wpfloat],
+    out_field: Field[[EdgeDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _cell_2_edge_interpolation(
+        in_field,
+        coeff,
+        out=out_field,
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )

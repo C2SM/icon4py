@@ -15,10 +15,14 @@ import numpy as np
 import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import gtfn, roundtrip
+from gt4py.next.program_processors.runners import gtfn
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half, compute_z_mc
+from icon4py.model.common.metrics.metric_fields import (
+    compute_ddqz_z_full,
+    compute_ddqz_z_half,
+    compute_z_mc,
+)
 from icon4py.model.common.test_utils.helpers import StencilTest, dallclose, random_field, zero_field
 
 
@@ -55,18 +59,18 @@ class TestComputeZMc(StencilTest):
         )
 
 
-# TODO (magdalena) Koff[-1] / Koff[+1] does not work on embedded
-backend = gtfn.run_gtfn
+# TODO (magdalena) run against gtfn backend: Koff[-1] does not work on embedded,
+#  roundtrip is too slow on large grid
+backend = gtfn.run_gtfn_cached
 
 
-def test_compute_ddq_z_half(grid_savepoint, metrics_savepoint):
-    icon_grid = grid_savepoint.construct_icon_grid()
+def test_compute_ddq_z_half(icon_grid, metrics_savepoint):
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
     z_mc = zero_field(icon_grid, CellDim, KDim)
     nlevp1 = icon_grid.num_levels + 1
     k_index = as_field((KDim,), np.arange(nlevp1, dtype=int32))
-    compute_z_mc(
+    compute_z_mc.with_backend(backend)(
         z_ifc,
         z_mc,
         horizontal_start=0,
@@ -91,3 +95,23 @@ def test_compute_ddq_z_half(grid_savepoint, metrics_savepoint):
     )
 
     assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
+
+
+def test_compute_ddqz_z_full(icon_grid, metrics_savepoint):
+    z_ifc = metrics_savepoint.z_ifc()
+    inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
+    ddqz_z_full = zero_field(icon_grid, CellDim, KDim)
+    inv_ddqz_z_full = zero_field(icon_grid, CellDim, KDim)
+
+    compute_ddqz_z_full.with_backend(backend)(
+        z_ifc=z_ifc,
+        ddqz_z_full=ddqz_z_full,
+        inv_ddqz_z_full=inv_ddqz_z_full,
+        horizontal_start=0,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=int32(0),
+        vertical_end=icon_grid.num_levels,
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())

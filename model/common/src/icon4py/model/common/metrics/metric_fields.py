@@ -14,8 +14,17 @@
 from gt4py.next import Field, GridType, field_operator, int32, program, where
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
-from icon4py.model.common.math.helpers import average_k_level_up, difference_k_level_down
+from icon4py.model.common.math.helpers import (
+    average_k_level_up,
+    difference_k_level_down,
+    difference_k_level_up,
+)
 from icon4py.model.common.type_alias import wpfloat
+
+
+"""
+Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
+"""
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -76,11 +85,69 @@ def compute_ddqz_z_half(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute functional determinant of the metrics (is positive) on half levels.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        z_ifc: geometric height on half levels
+        z_mc: geometric height on full levels
+        k: k index
+        num_lev: total number of levels
+        ddqz_z_half: (output)
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
     _compute_ddqz_z_half(
         z_ifc,
         z_mc,
         k,
         num_lev,
         out=ddqz_z_half,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_ddqz_z_full(
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    ddqz_z_full = difference_k_level_up(z_ifc)
+    inverse_ddqz_z_full = 1.0 / ddqz_z_full
+    return ddqz_z_full, inverse_ddqz_z_full
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_ddqz_z_full(
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute ddqz_z_full and its inverse inv_ddqz_z_full.
+
+    Functional determinant of the metrics (is positive) on full levels and inverse inverse layer thickness(for runtime optimization).
+    See mo_vertical_grid.f90
+
+    Args:
+        z_ifc: geometric height on half levels
+        ddqz_z_full: (output)
+        inv_ddqz_z_full: (output)
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+
+    """
+    _compute_ddqz_z_full(
+        z_ifc,
+        out=(ddqz_z_full, inv_ddqz_z_full),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

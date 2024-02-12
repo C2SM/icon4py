@@ -51,3 +51,21 @@ def difference_k_level_down(
 
     """
     return half_level_field(Koff[-1]) - half_level_field
+
+
+@field_operator
+def difference_k_level_up(
+    half_level_field: Field[[CellDim, KDim], wpfloat]
+) -> Field[[CellDim, KDim], wpfloat]:
+    """
+    Calculate the difference value of adjacent interface levels.
+
+    Computes the difference of two adjacent interface levels upwards over a cell field for storage
+    in the corresponding full levels.
+    Args:
+        half_level_field: Field[[CellDim, KDim], wpfloat]
+
+    Returns: Field[[CellDim, KDim], wpfloat] full level field
+
+    """
+    return half_level_field - half_level_field(Koff[+1])
