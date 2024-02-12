@@ -331,7 +331,6 @@ def compute_c_bln_avg(
     lateral_boundary: np.array,
     lat: np.array,
     lon: np.array,
-    cell_areas: np.array,
 ) -> np.array:
     """
     calculate_bilinear_cellavg_wgt
@@ -341,7 +340,6 @@ def compute_c_bln_avg(
     """
     llb = lateral_boundary[0]
     llb2 = lateral_boundary[2]
-    index = np.arange(llb, lateral_boundary[1])
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
     xloc = lon[llb:]
@@ -376,9 +374,32 @@ def compute_c_bln_avg(
     wgt[0] = 1.0 - wgt_loc - wgt[1] - wgt[2]
 
     # Store results in ptr_patch%cells%avg_wgt
-    c_bln_avg[llb:, 0] = wgt_loc
+    c_bln_avg[llb:, 0] = np.where(owner_mask[llb:], wgt_loc, c_bln_avg[llb:, 0])
     for i in range(3):
-        c_bln_avg[llb:, i + 1] = wgt[i]
+        c_bln_avg[llb:, i + 1] = np.where(owner_mask[llb:], wgt[i], c_bln_avg[llb:, i + 1])
+
+    return c_bln_avg
+
+def compute_mass_conservation_c_bln_avg(
+    c_bln_avg: np.array,
+    divavg_cntrwgt: np.array,
+    owner_mask: np.array,
+    C2E2C: np.array,
+    lateral_boundary: np.array,
+    lat: np.array,
+    lon: np.array,
+    cell_areas: np.array,
+    niter: np.array,
+) -> np.array:
+    """
+    calculate_bilinear_cellavg_wgt
+    Args:
+        c_bln_avg:
+        divavg_cntrwgt:
+    """
+    llb = lateral_boundary[0]
+    llb2 = lateral_boundary[2]
+    index = np.arange(llb, lateral_boundary[1])
 
     inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)
     for i in range(3):
@@ -388,19 +409,18 @@ def compute_c_bln_avg(
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
-    niter = 1000
     for iter in range(niter):
         wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:]], axis = 1)
         resid = wgt_loc_sum[llb2-llb:] / cell_areas[llb2:] - 1.0
         if iter < niter - 1:
-            c_bln_avg[llb2:, 0] = c_bln_avg[llb2:, 0] - relax_coeff * resid
+            c_bln_avg[llb2:, 0] = np.where(owner_mask[llb2:], c_bln_avg[llb2:, 0] - relax_coeff * resid, c_bln_avg[llb2:, 0])
             for i in range(3):
-                c_bln_avg[llb2:, i + 1] = c_bln_avg[llb2:, i + 1] - relax_coeff * resid[C2E2C[llb2:, i] - llb2]
+                c_bln_avg[llb2:, i + 1] = np.where(owner_mask[llb2:], c_bln_avg[llb2:, i + 1] - relax_coeff * resid[C2E2C[llb2:, i] - llb2], c_bln_avg[llb2:, i + 1])
             wgt_loc_sum = np.sum(c_bln_avg[llb2:], axis=1) - 1.0
             for i in range(4):
                 c_bln_avg[llb2:, i] = c_bln_avg[llb2:, i] - 0.25 * wgt_loc_sum
-            c_bln_avg[llb2:, 0] = np.where(c_bln_avg[llb2:, 0] > minwgt_loc, c_bln_avg[llb2:, 0], minwgt_loc)
-            c_bln_avg[llb2:, 0] = np.where(c_bln_avg[llb2:, 0] < maxwgt_loc, c_bln_avg[llb2:, 0], maxwgt_loc)
+            c_bln_avg[llb2:, 0] = np.where(owner_mask[llb2:], np.where(c_bln_avg[llb2:, 0] > minwgt_loc, c_bln_avg[llb2:, 0], minwgt_loc), c_bln_avg[llb2:, 0])
+            c_bln_avg[llb2:, 0] = np.where(owner_mask[llb2:], np.where(c_bln_avg[llb2:, 0] < maxwgt_loc, c_bln_avg[llb2:, 0], maxwgt_loc), c_bln_avg[llb2:, 0])
         else:
-            c_bln_avg[llb2:, 0] = c_bln_avg[llb2:, 0] - resid
+            c_bln_avg[llb2:, 0] = np.where(owner_mask[llb2:], c_bln_avg[llb2:, 0] - resid, c_bln_avg[llb2:, 0])
     return c_bln_avg
