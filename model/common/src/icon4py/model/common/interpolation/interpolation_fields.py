@@ -341,6 +341,8 @@ def compute_c_bln_avg(
     """
     llb = lateral_boundary[0]
     llb2 = lateral_boundary[2]
+#    llb = 0
+#    llb2 = 0
     index = np.arange(llb, lateral_boundary[1])
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
@@ -394,21 +396,21 @@ def compute_c_bln_avg(
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
-    niter = 2
+    niter = 1000
     print(lateral_boundary[0])
     print(lateral_boundary[1])
     print(lateral_boundary[2])
     print(lateral_boundary[3])
     llb2 = 1688
     for iter in range(niter):
-        wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:, :], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:, :]], axis = 1)
+        wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:]], axis = 1)
         resid = wgt_loc_sum[llb2-llb:] / cell_areas[llb2:] - 1.0
         print(resid)
         if iter < niter - 1:
             c_bln_avg[llb2:, 0] = c_bln_avg[llb2:, 0] - relax_coeff * resid
             for i in range(3):
                 c_bln_avg[llb2:, i + 1] = c_bln_avg[llb2:, i + 1] - relax_coeff * resid[C2E2C[llb2:, i] - llb2]
-            wgt_loc_sum = np.sum(c_bln_avg[llb2:, 0:3], axis=1) - 1.0
+            wgt_loc_sum = np.sum(c_bln_avg[llb2:, :], axis=1) - 1.0
             for i in range(4):
                 c_bln_avg[llb2:, i] = c_bln_avg[llb2:, i] - 0.25 * wgt_loc_sum
             c_bln_avg[llb2:, 0] = np.where(c_bln_avg[llb2:, 0] > minwgt_loc, c_bln_avg[llb2:, 0], minwgt_loc)
