@@ -73,6 +73,10 @@ class TestFaceValPpmStencil01(StencilTest):
         p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
         p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
-        elev = k[-2].as_scalar()
+        elev = k[-2]
+        if hasattr(
+            elev, "as_scalar"
+        ):  # for backwards compatibility, use `as_scalar` unconditionally once minimum gt4py is >= 1.0.4
+            elev = elev.as_scalar()
 
         return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, k=k, elev=elev, z_slope=z_slope)
