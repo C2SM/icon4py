@@ -389,8 +389,6 @@ def compute_c_bln_avg(
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
     niter = 1000
-    # FIXME
-    llb2 = 1688
     for iter in range(niter):
         wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(c_bln_avg[C2E2C[llb:], inv_neighbor_id + 1] * cell_areas[C2E2C[llb:]], axis = 1)
         resid = wgt_loc_sum[llb2-llb:] / cell_areas[llb2:] - 1.0

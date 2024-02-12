@@ -255,7 +255,7 @@ def test_compute_c_bln_avg(
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     C2E2C = icon_grid.connectivities[C2E2CDim]
-    lateral_boundary = np.arange(4)
+    lateral_boundary = np.arange(3)
     lateral_boundary[0] = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
@@ -264,13 +264,9 @@ def test_compute_c_bln_avg(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
-    lateral_boundary[2] = icon_grid.get_end_index(
+    lateral_boundary[2] = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
-    )
-    lateral_boundary[3] = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
     )
     lat = grid_savepoint.cell_center_lat().asnumpy()
     lon = grid_savepoint.cell_center_lon().asnumpy()
