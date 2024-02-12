@@ -11,13 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, GridType, int32, program, field_operator, where
+from gt4py.next import Field, GridType, field_operator, int32, program, where
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
-from icon4py.model.common.math.helpers import (
-    average_k_level_up,
-    difference_k_level_down,
-)
+from icon4py.model.common.math.helpers import average_k_level_up, difference_k_level_down
 from icon4py.model.common.type_alias import wpfloat
 
 

@@ -13,15 +13,13 @@
 
 import numpy as np
 import pytest
-from gt4py.next import Dimension, as_field
-
+from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import roundtrip, gtfn
-
+from gt4py.next.program_processors.runners import gtfn, roundtrip
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.metric_fields import compute_z_mc, compute_ddqz_z_half
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field, dallclose
+from icon4py.model.common.metrics.metric_fields import compute_ddqz_z_half, compute_z_mc
+from icon4py.model.common.test_utils.helpers import StencilTest, dallclose, random_field, zero_field
 
 
 class TestComputeZMc(StencilTest):

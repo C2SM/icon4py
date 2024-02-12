@@ -13,21 +13,22 @@
 
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import roundtrip, gtfn
+from gt4py.next.program_processors.runners import gtfn
 
 from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, KDim, EdgeDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.metrics.metric_fields import compute_z_mc
 from icon4py.model.common.metrics.reference_atmosphere import (
-    compute_reference_atmosphere_cell_fields,
-    compute_d_exner_dz_ref_ic,
     cell_2_edge_interpolation,
+    compute_d_exner_dz_ref_ic,
+    compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
 )
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
+
 
 gtfn_backend = gtfn.run_gtfn_cached
 
@@ -163,7 +164,6 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
         vertical_end=vertical_end,
         offset_provider={"Koff": grid.get_offset_provider("Koff")},
     )
-    table = grid.get_offset_provider("E2C").table
     cell_2_edge_interpolation.with_backend(gtfn_backend)(
         z_mc,
         c_lin_e,

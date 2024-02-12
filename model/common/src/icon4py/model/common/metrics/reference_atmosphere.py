@@ -14,7 +14,7 @@
 from gt4py.next import Field, GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, int32, log, neighbor_sum
 
-from icon4py.model.common.dimension import CellDim, KDim, E2CDim, EdgeDim, E2C
+from icon4py.model.common.dimension import E2C, CellDim, E2CDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -233,7 +233,8 @@ def compute_d_exner_dz_ref_ic(
     theta_ref_ic: Field[[CellDim, KDim], wpfloat], grav: wpfloat, cpd: wpfloat
 ) -> Field[[CellDim, KDim], wpfloat]:
     """
-    Calculate first vertical derivative of reference Exner pressure, half level mass points
+    Calculate first vertical derivative of reference Exner pressure, half level mass points.
+
     Args:
         theta_ref_ic: reference potential temperature
         grav: gravitational constant [m/s^2]
