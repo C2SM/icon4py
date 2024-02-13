@@ -60,17 +60,14 @@ def _calc_wgtfac_c_inner(
 def _calc_wgtfac_c(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     k_field: Field[[KDim], int32],
-    vertical_start: int32,
-    vertical_end: int32,
+    nlevp1: int32,
 ) -> Field[[CellDim, KDim], wpfloat]:
 
     wgt_fac_c = where(
-        (k_field > vertical_start) & (k_field < vertical_end), _calc_wgtfac_c_inner(z_ifc), z_ifc
+        (k_field > int32(0)) & (k_field < nlevp1-1), _calc_wgtfac_c_inner(z_ifc), z_ifc
     )
-
-    wgt_fac_c = where(k_field == vertical_start, _calc_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
-
-    wgt_fac_c = where(k_field == vertical_end, _calc_wgtfac_c_nlevp1(z_ifc=z_ifc), wgt_fac_c)
+    wgt_fac_c = where(k_field == int32(0), _calc_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
+    wgt_fac_c = where(k_field == nlevp1, _calc_wgtfac_c_nlevp1(z_ifc=z_ifc), wgt_fac_c)
 
     return wgt_fac_c
 
@@ -80,16 +77,11 @@ def calc_wgtfac_c(
     wgtfac_c: Field[[CellDim, KDim], wpfloat],
     z_ifc: Field[[CellDim, KDim], wpfloat],
     k_field: Field[[KDim], int32],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    nlevp1: int32,
 ):
     _calc_wgtfac_c(
         z_ifc,
         k_field,
-        vertical_start,
-        vertical_end,
+        nlevp1,
         out=wgtfac_c,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

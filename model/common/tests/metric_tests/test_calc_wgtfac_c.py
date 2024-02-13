@@ -47,7 +47,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @pytest.mark.datatest
 def test_calc_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
-    wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
+    wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
     k_field = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
@@ -58,16 +58,13 @@ def test_calc_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
         HorizontalMarkerIndex.end(CellDim),
     )
     vertical_start = 0
-    vertical_end = icon_grid.num_levels
+    vertical_end = icon_grid.num_levels + 1
 
     calc_wgtfac_c(
         wgtfac_c,
         z_ifc,
         k_field,
-        horizontal_start,
-        horizontal_end,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
+        nlevp1= vertical_end,
         offset_provider={"Koff": KDim},
     )
 
