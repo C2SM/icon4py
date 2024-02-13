@@ -15,7 +15,6 @@ import numpy as np
 import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners import gtfn
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
@@ -26,6 +25,8 @@ from icon4py.model.common.metrics.metric_fields import (
 from icon4py.model.common.test_utils.helpers import StencilTest, dallclose, random_field, zero_field
 
 
+# TODO (magdalena) tests need to run on a compiled backend: embedded does not work with the
+#  Koff[-1] and roundtrip is too slow on the large grid
 class TestComputeZMc(StencilTest):
     PROGRAM = compute_z_mc
     OUTPUTS = ("z_mc",)
@@ -59,12 +60,9 @@ class TestComputeZMc(StencilTest):
         )
 
 
-# TODO (magdalena) run against gtfn backend: Koff[-1] does not work on embedded,
-#  roundtrip is too slow on large grid
-backend = gtfn.run_gtfn_cached
-
-
-def test_compute_ddq_z_half(icon_grid, metrics_savepoint):
+def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend, is_otf):
+    if not is_otf:
+        pytest.skip("skipping: incompatible backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
     z_mc = zero_field(icon_grid, CellDim, KDim)
@@ -97,7 +95,9 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint):
     assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
-def test_compute_ddqz_z_full(icon_grid, metrics_savepoint):
+def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend, is_otf):
+    if not is_otf:
+        pytest.skip("skipping: incompatible backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
     ddqz_z_full = zero_field(icon_grid, CellDim, KDim)
