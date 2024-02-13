@@ -14,7 +14,8 @@ import os
 from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
-
+from icon4py.model.common.grid.icon import GlobalGridParams
+import re
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 
@@ -43,6 +44,16 @@ DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/uK3jtrWK90Z4kHC/downloa
 
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
+
+
+def get_global_grid_params(experiment: str) -> tuple[int, int]:
+    try:
+        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
+        return root, level
+    except AttributeError:
+        raise ValueError(
+            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
+        )
 
 
 def get_processor_properties_for_run(run_instance):

@@ -12,13 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import math
 from dataclasses import dataclass, field, InitVar
+from functools import cached_property
 from typing import Final
 
 from gt4py.next.common import Dimension, Field
 
 from icon4py.model.common import dimension, constants
 from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
-from icon4py.model.common.grid.icon import IconGrid
 
 
 class HorizontalMarkerIndex:
@@ -282,20 +282,23 @@ class CellParams:
 
     defined int ICON in mo_model_domain.f90:t_grid_cells%area
     """
-    grid: InitVar[IconGrid]
-    characteristic_length: field(init=False)
+    global_num_cells: InitVar[int]
+    length_rescale_factor: InitVar[float]
     mean_cell_area: field(init=False)
 
-    def __post_init__(self, grid):
+    def __post_init__(self, global_num_cells, length_rescale_factor):
         object.__setattr__(
             self,
             "mean_cell_area",
             CellParams.mean_cell_area(
-                grid.length_rescale_factor * constants.EARTH_RADIUS,
-                grid.global_num_cells,
+                length_rescale_factor * constants.EARTH_RADIUS,
+                global_num_cells,
             ),
         )
-        object.__setattr__(self, "characteristic_length", math.sqrt(self.mean_cell_area))
+
+    @cached_property
+    def characteristic_length(self):
+        return math.sqrt(self.mean_cell_area)
 
     @staticmethod
     def mean_cell_area(radius, num_cells):
