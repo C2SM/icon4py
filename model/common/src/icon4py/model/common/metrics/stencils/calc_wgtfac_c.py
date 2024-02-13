@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, int32, where
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import wpfloat
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 
 #          p_nh(jg)%metrics%wgtfac_c(1:nlen,nlevp1,jb) = &
@@ -64,7 +65,7 @@ def _calc_wgtfac_c(
 ) -> Field[[CellDim, KDim], wpfloat]:
 
     wgt_fac_c = where(
-        (k_field > int32(0)) & (k_field < nlevp1-1), _calc_wgtfac_c_inner(z_ifc), z_ifc
+        (k_field > int32(0)) & (k_field < nlevp1), _calc_wgtfac_c_inner(z_ifc), z_ifc
     )
     wgt_fac_c = where(k_field == int32(0), _calc_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
     wgt_fac_c = where(k_field == nlevp1, _calc_wgtfac_c_nlevp1(z_ifc=z_ifc), wgt_fac_c)
@@ -72,7 +73,7 @@ def _calc_wgtfac_c(
     return wgt_fac_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED,backend=run_gtfn)
 def calc_wgtfac_c(
     wgtfac_c: Field[[CellDim, KDim], wpfloat],
     z_ifc: Field[[CellDim, KDim], wpfloat],
