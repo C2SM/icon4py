@@ -124,7 +124,6 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend, is_otf
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
     d_exner_dz_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
-    # TODO (magdalena) divison operator "/" does not work for embedded
     compute_d_exner_dz_ref_ic.with_backend(backend)(
         theta_ref_ic=theta_ref_ic,
         grav=constants.GRAVITATIONAL_ACCELERATION,
