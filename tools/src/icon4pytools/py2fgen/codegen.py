@@ -46,6 +46,12 @@ class FuncParameter(Node):
 class Func(Node):
     name: str
     args: Sequence[FuncParameter]
+    size_args: Sequence[str] = datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        self.size_args = flatten_and_get_unique_elts(
+            [dims_to_size_strings(arg.dimensions) for arg in self.args]
+        )
 
 
 class CffiPlugin(Node):
@@ -128,8 +134,10 @@ def render_c_pointer(param: FuncParameter) -> str:
 
 def render_fortran_array_dimensions(param: FuncParameter) -> str:
     size = len(param.dimensions)
-    dims = ",".join(map(lambda x: ":", range(size)))
-    return f"dimension({dims}),"
+    if size > 0:
+        dims = ",".join(map(lambda x: ":", range(size)))
+        return f"dimension({dims}),"
+    return ""
 
 
 def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
@@ -139,7 +147,7 @@ def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
         if dim.value in ARRAY_SIZE_ARGS:
             fortran_dim = ARRAY_SIZE_ARGS[dim.value]
             access_strings.append(fortran_dim)
-    return access_strings
+    return sorted(access_strings)
 
 
 def render_fortran_array_sizes(param: FuncParameter) -> str:
@@ -153,7 +161,7 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 
 def flatten_and_get_unique_elts(list_of_lists: list[list[str]]):
     flattened = [item for sublist in list_of_lists for item in sublist]
-    return list(set(flattened))
+    return sorted(list(set(flattened)))
 
 
 # TODO(samkellerhals): Actually generate the imports (look at original module imports)
@@ -163,7 +171,7 @@ from {plugin_name} import ffi
 import numpy as np
 from gt4py.next.ffront.fbuiltins import Field, float64, int32
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.wrappers.square import square
+from icon4pytools.py2fgen.wrappers.square import square
     """
 
 
@@ -172,6 +180,7 @@ class PythonWrapper(Node):
     function: Func
     imports: str = datamodels.field(init=False)
     func_args: Sequence[FuncParameter] = datamodels.field(init=False)
+    size_args: Sequence[str] = datamodels.field(init=False)
     ffi_decorator: str = FFI_EXTERN_DECORATOR
     cffi_funcs: str = CFFI_FUNCS
 
@@ -211,11 +220,10 @@ def {{ _this_node.function.name }}_wrapper(
     )
 
 
-# TODO(samkellerhals): Add size arguments to func declaration
 class CHeaderGenerator(TemplatedGenerator):
-    CffiPlugin = as_jinja("""{{ function }}""")
+    CffiPlugin = as_jinja("""extern void {{_this_node.function.name}}_wrapper({{function}});""")
 
-    Func = as_jinja("""extern void {{name}}({{", ".join(args)}});""")
+    Func = as_jinja("{%- for arg in args -%}{{ arg }}{% if not loop.last or size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%}")
 
     def visit_FuncParameter(self, param: FuncParameter):
         return self.generic_visit(
@@ -225,7 +233,6 @@ class CHeaderGenerator(TemplatedGenerator):
     FuncParameter = as_jinja("""{{rendered_type}}{{pointer}} {{name}}""")
 
 
-# TODO(samkellerhals): Add size arguments to subroutine declaration
 class F90InterfaceGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja(
         """\
@@ -243,15 +250,21 @@ class F90InterfaceGenerator(TemplatedGenerator):
 
     def visit_Func(self, func: Func, **kwargs):
         arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
+        if func.size_args:
+            arg_names += ",&\n" + ", &\n".join(func.size_args)
+
         return self.generic_visit(func, param_names=arg_names)
 
     Func = as_jinja(
-        """subroutine {{name}}({{param_names}}) bind(c, name='{{name}}')
+        """subroutine {{name}}_wrapper({{param_names}}) bind(c, name='{{name}}_wrapper')
        use, intrinsic :: iso_c_binding
+       {% for size_arg in size_args -%}
+       integer(c_int), value, target :: {{ size_arg }}
+       {% endfor %}
        {% for arg in args: %}\
        {{arg}}\
        {% endfor %}\
-    end subroutine {{name}}
+    end subroutine {{name}}_wrapper
     """
     )
 

@@ -20,8 +20,8 @@ from icon4pytools.py2fgen.cli import main
 
 def test_py2fgen():
     cli = CliRunner()
-    module = "icon4pytools.py2fgen.wrappers.square_wrapper"
-    function = "square_wrapper"
+    module = "icon4pytools.py2fgen.wrappers.square"
+    function = "square"
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module, function])
         assert result.exit_code == 0
@@ -29,8 +29,8 @@ def test_py2fgen():
 
 def test_py2fgen_compilation_and_execution(samples_path):
     cli = CliRunner()
-    module = "icon4pytools.py2fgen.wrappers.square_wrapper"
-    function = "square_wrapper"
+    module = "icon4pytools.py2fgen.wrappers.square"
+    function = "square"
 
     with cli.isolated_filesystem():
         # Generate the header file, f90 interface and dynamic library
@@ -39,16 +39,16 @@ def test_py2fgen_compilation_and_execution(samples_path):
 
         # Compile generated f90 interface, driver code, and dynamic library
         try:
-            subprocess.run(["gfortran", "-c", "square_wrapper_plugin.f90", "."], check=True)
+            subprocess.run(["gfortran", "-c", "square_plugin.f90", "."], check=True)
             subprocess.run(
                 [
                     "gfortran",
                     "-I.",
                     "-Wl,-rpath=.",
                     "-L.",
-                    "square_wrapper_plugin.f90",
-                    str(samples_path / "square.f90"),
-                    "-lsquare_wrapper_plugin",
+                    "square_plugin.f90",
+                    str(samples_path / "test_square.f90"),
+                    "-lsquare_plugin",
                     "-o",
                     "squarer",
                 ],

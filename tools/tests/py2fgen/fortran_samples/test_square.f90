@@ -1,6 +1,6 @@
 program call_square_wrapper_cffi_plugin
     use, intrinsic :: iso_c_binding
-    use square_wrapper_plugin
+    use square_plugin
     implicit none
 
     integer(c_int) :: cdim, kdim, i, j
