@@ -51,17 +51,14 @@ def test_calc_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
     z_ifc = metrics_savepoint.z_ifc()
     k_field = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
 
-    vertical_end = icon_grid.num_levels 
+    vertical_end = icon_grid.num_levels
 
     calc_wgtfac_c(
         wgtfac_c,
         z_ifc,
         k_field,
-        nlevp1= vertical_end,
+        nlevp1=vertical_end,
         offset_provider={"Koff": KDim},
     )
 
-    assert dallclose(
-        wgtfac_c.asnumpy(),
-        wgtfac_c_ref.asnumpy()
-    )
+    assert dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
