@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, field_operator
+from gt4py.next import Field, field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
 
 from icon4py.model.common.dimension import KDim, Koff
 
 
 @field_operator
-def en_smag_fac_for_zero_nshift(
+def _en_smag_fac_for_zero_nshift(
     vect_a: Field[[KDim], float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
@@ -45,3 +45,30 @@ def en_smag_fac_for_zero_nshift(
     dzqdr = minimum(broadcast(dz42, (KDim,)), maximum(zero, zf - hdiff_smag_z2))
     enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
     return enh_smag_fac
+
+
+@program
+def en_smag_fac_for_zero_nshift(
+    vect_a: Field[[KDim], float],
+    hdiff_smag_fac: float,
+    hdiff_smag_fac2: float,
+    hdiff_smag_fac3: float,
+    hdiff_smag_fac4: float,
+    hdiff_smag_z: float,
+    hdiff_smag_z2: float,
+    hdiff_smag_z3: float,
+    hdiff_smag_z4: float,
+    enh_smag_fac: Field[[KDim], float],
+):
+    _en_smag_fac_for_zero_nshift(
+        vect_a,
+        hdiff_smag_fac,
+        hdiff_smag_fac2,
+        hdiff_smag_fac3,
+        hdiff_smag_fac4,
+        hdiff_smag_z,
+        hdiff_smag_z2,
+        hdiff_smag_z3,
+        hdiff_smag_z4,
+        out=enh_smag_fac,
+    )

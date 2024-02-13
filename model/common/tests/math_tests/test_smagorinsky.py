@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next.program_processors.runners.roundtrip import backend as roundtrip
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -20,6 +21,8 @@ from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 
 
+# TODO (magdalena) stencil does not run on embedded backend, broadcast(0.0, (KDim,)) return scalar?
+# TODO (magdalena) run as to StencilTest
 def test_init_enh_smag_fac():
     grid = SimpleGrid()
     enh_smag_fac = zero_field(grid, KDim)
@@ -28,11 +31,11 @@ def test_init_enh_smag_fac():
     z = (0.1, 0.2, 0.3, 0.4)
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
-    en_smag_fac_for_zero_nshift(
+    en_smag_fac_for_zero_nshift.with_backend(roundtrip)(
         a_vec,
         *fac,
         *z,
-        out=enh_smag_fac,
+        enh_smag_fac,
         offset_provider={"Koff": KDim},
     )
     assert np.allclose(enhanced_smag_fac_np, enh_smag_fac.asnumpy())

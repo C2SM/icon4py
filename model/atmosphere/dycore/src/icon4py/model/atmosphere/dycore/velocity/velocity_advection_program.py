@@ -14,29 +14,29 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
+from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
+    _add_interpolated_horizontal_advection_of_w,
+)
+from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
+    _compute_advective_vertical_wind_tendency,
+)
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
+)
+from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
+    _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
+)
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
+from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
+    _correct_contravariant_vertical_velocity,
+)
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_05 import (
-    _mo_velocity_advection_stencil_05,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_10 import (
-    _mo_velocity_advection_stencil_10,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_13 import (
-    _mo_velocity_advection_stencil_13,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_14 import (
-    _mo_velocity_advection_stencil_14,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_16 import (
-    _mo_velocity_advection_stencil_16,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_17 import (
-    _mo_velocity_advection_stencil_17,
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
@@ -71,7 +71,7 @@ def _fused_stencils_4_5(
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k_field == int32(0),
-        _mo_velocity_advection_stencil_05(vn, vt),
+        _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
 
@@ -156,7 +156,7 @@ def _fused_stencils_9_10(
 
     w_concorr_c = where(
         (k_field >= nflatlev_startindex + int32(1)) & (k_field < nlev),
-        _mo_velocity_advection_stencil_10(local_z_w_concorr_mc, wgtfac_c),
+        _interpolate_to_half_levels_vp(interpolant=local_z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
     )
 
@@ -214,7 +214,7 @@ def _fused_stencils_11_to_13(
 
     local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),
-        _mo_velocity_advection_stencil_13(local_z_w_con_c, w_concorr_c),
+        _correct_contravariant_vertical_velocity(local_z_w_con_c, w_concorr_c),
         local_z_w_con_c,
     )
     return local_z_w_con_c
@@ -255,7 +255,11 @@ def _fused_stencil_14(
     cfl_w_limit: float,
     dtime: float,
 ):
-    (local_cfl_clipping, local_vcfl, local_z_w_con_c,) = _mo_velocity_advection_stencil_14(
+    (
+        local_cfl_clipping,
+        local_vcfl,
+        local_z_w_con_c,
+    ) = _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         ddqz_z_half,
         local_z_w_con_c,
         cfl_w_limit,
@@ -300,9 +304,11 @@ def _fused_stencils_16_to_17(
     coeff1_dwdz: Field[[CellDim, KDim], float],
     coeff2_dwdz: Field[[CellDim, KDim], float],
 ) -> Field[[CellDim, KDim], float]:
-    ddt_w_adv = _mo_velocity_advection_stencil_16(local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz)
+    ddt_w_adv = _compute_advective_vertical_wind_tendency(
+        local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
+    )
 
-    ddt_w_adv = _mo_velocity_advection_stencil_17(e_bln_c_s, local_z_v_grad_w, ddt_w_adv)
+    ddt_w_adv = _add_interpolated_horizontal_advection_of_w(e_bln_c_s, local_z_v_grad_w, ddt_w_adv)
     return ddt_w_adv
 
 

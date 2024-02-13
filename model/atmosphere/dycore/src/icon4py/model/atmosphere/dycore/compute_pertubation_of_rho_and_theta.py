@@ -26,7 +26,7 @@ def _compute_pertubation_of_rho_and_theta(
     theta_v: Field[[CellDim, KDim], wpfloat],
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    """Formerly known as mo_solve_nonhydro_stencil_07 or mo_solve_nonhydro_stencil_13."""
+    """Formerly known as _mo_solve_nonhydro_stencil_07 or _mo_solve_nonhydro_stencil_13."""
     rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
 
     z_rth_pr_1_wp = rho - rho_ref_mc_wp
