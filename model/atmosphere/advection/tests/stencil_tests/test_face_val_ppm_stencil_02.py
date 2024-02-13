@@ -64,7 +64,7 @@ class TestFaceValPpmStencil02(StencilTest):
         if hasattr(
             elev, "as_scalar"
         ):  # for backwards compatibility, use `as_scalar` unconditionally once minimum gt4py is >= 1.0.4
-            elev = elev.as_scalar()
+            elev = int32(elev.as_scalar())
         elevp1 = elev + int32(1)
 
         return dict(
