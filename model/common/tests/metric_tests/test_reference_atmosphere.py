@@ -120,7 +120,7 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
 
 def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend, is_otf):
     if not is_otf:
-        pytest.skip("skipping: incompatible backend")
+        pytest.skip("skipping: unsupported backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
     d_exner_dz_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
@@ -139,7 +139,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     icon_grid, interpolation_savepoint, metrics_savepoint, backend, is_otf
 ):
     if not is_otf:
-        pytest.skip("skipping: incompatible backend")
+        pytest.skip("skipping: unsupported backend")
     rho_ref_me_ref = metrics_savepoint.rho_ref_me()
     theta_ref_me_ref = metrics_savepoint.theta_ref_me()
     rho_ref_me = metrics_savepoint.rho_ref_me()

@@ -63,22 +63,22 @@ def _compute_ddqz_z_half(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     z_mc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
-    num_lev: int32,
+    nlev: int32,
 ) -> Field[[CellDim, KDim], wpfloat]:
     ddqz_z_half = where(
-        0 < k < num_lev,
+        (k > int32(0)) & (k < nlev),
         difference_k_level_down(z_mc),
         where(k == 0, 2.0 * (z_ifc - z_mc), 2.0 * (z_mc(Koff[-1]) - z_ifc)),
     )
     return ddqz_z_half
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=None)
 def compute_ddqz_z_half(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     z_mc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
-    num_lev: int32,
+    nlev: int32,
     ddqz_z_half: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
@@ -94,7 +94,7 @@ def compute_ddqz_z_half(
         z_ifc: geometric height on half levels
         z_mc: geometric height on full levels
         k: k index
-        num_lev: total number of levels
+        nlev: total number of levels
         ddqz_z_half: (output)
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
@@ -105,7 +105,7 @@ def compute_ddqz_z_half(
         z_ifc,
         z_mc,
         k,
-        num_lev,
+        nlev,
         out=ddqz_z_half,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

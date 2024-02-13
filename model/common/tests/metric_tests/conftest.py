@@ -33,6 +33,9 @@ from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures
 @pytest.fixture
 def is_otf(backend):  # noqa : F811 # fixture is used in the test
     # not reusing the `uses_icon_grid_with_otf` fixture because it also checks for the grid
+    # want to exclude python backends:
+    #   - cannot run on embedded: because of slicing
+    #   - roundtrip is very slow on large grid
     if hasattr(backend, "executor"):
         if isinstance(backend.executor, OTFCompileExecutor):
             return True
