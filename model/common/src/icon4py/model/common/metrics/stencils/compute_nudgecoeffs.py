@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _calc_nudgecoeffs(
+def _compute_nudgecoeffs(
     refin_ctrl: Field[[EdgeDim], int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
@@ -37,7 +37,7 @@ def _calc_nudgecoeffs(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def calc_nudgecoeffs(
+def compute_nudgecoeffs(
     nudgecoeffs_e: Field[[EdgeDim], wpfloat],
     refin_ctrl: Field[[EdgeDim], int32],
     grf_nudge_start_e: int32,
@@ -47,8 +47,8 @@ def calc_nudgecoeffs(
     horizontal_start: int32,
     horizontal_end: int32,
 ):
-    """Calculate nudging coefficient for edges based the grid refinement level of an edge."""
-    _calc_nudgecoeffs(
+    """computeulate nudging coefficient for edges based the grid refinement level of an edge."""
+    _compute_nudgecoeffs(
         refin_ctrl,
         grf_nudge_start_e,
         nudge_max_coeffs,

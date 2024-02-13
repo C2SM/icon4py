@@ -29,7 +29,7 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
-from icon4py.model.common.metrics.stencils.calc_nudgecoeffs import calc_nudgecoeffs
+from icon4py.model.common.metrics.stencils.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -46,7 +46,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
-def test_calc_nudgecoeffs_e(
+def test_compute_nudgecoeffs_e(
     grid_savepoint, interpolation_savepoint, icon_grid  # noqa: F811  # fixture
 ):
     nudgecoeff_e = zero_field(icon_grid, EdgeDim, dtype=wpfloat)
@@ -65,7 +65,7 @@ def test_calc_nudgecoeffs_e(
         HorizontalMarkerIndex.local(EdgeDim),
     )
 
-    calc_nudgecoeffs(
+    compute_nudgecoeffs(
         nudgecoeff_e,
         refin_ctrl,
         grf_nudge_start_e,

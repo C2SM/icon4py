@@ -27,7 +27,7 @@ import pytest
 
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate_indices
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.stencils.calc_wgtfac_c import calc_wgtfac_c
+from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -45,19 +45,19 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
-def test_calc_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
+def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
     wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()
-    k_field = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
+    k = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
 
     vertical_end = icon_grid.num_levels
 
-    calc_wgtfac_c(
+    compute_wgtfac_c(
         wgtfac_c,
         z_ifc,
-        k_field,
-        nlevp1=vertical_end,
+        k,
+        nlev=vertical_end,
         offset_provider={"Koff": KDim},
     )
 
