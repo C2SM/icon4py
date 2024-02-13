@@ -47,7 +47,7 @@ def compute_nudgecoeffs(
     horizontal_start: int32,
     horizontal_end: int32,
 ):
-    """computeulate nudging coefficient for edges based the grid refinement level of an edge."""
+    """Compute nudging coefficient for edges based the grid refinement level of an edge."""
     _compute_nudgecoeffs(
         refin_ctrl,
         grf_nudge_start_e,
