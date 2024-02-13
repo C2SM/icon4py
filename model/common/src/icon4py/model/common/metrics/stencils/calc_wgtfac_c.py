@@ -19,12 +19,6 @@ from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import wpfloat
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
-
-#          p_nh(jg)%metrics%wgtfac_c(1:nlen,nlevp1,jb) = &
-#           (p_nh(jg)%metrics%z_ifc(1:nlen,nlev,jb) -    &
-#            p_nh(jg)%metrics%z_ifc(1:nlen,nlevp1,jb)) / &
-#           (p_nh(jg)%metrics%z_ifc(1:nlen,nlev-1,jb) -  &
-#            p_nh(jg)%metrics%z_ifc(1:nlen,nlevp1,jb))
 @field_operator
 def _calc_wgtfac_c_nlevp1(
     z_ifc: Field[[CellDim, KDim], wpfloat],
@@ -34,11 +28,6 @@ def _calc_wgtfac_c_nlevp1(
     return z_wgtfac_c
 
 
-#          p_nh(jg)%metrics%wgtfac_c(1:nlen,1,jb) = &
-#           (p_nh(jg)%metrics%z_ifc(1:nlen,2,jb) -  &
-#            p_nh(jg)%metrics%z_ifc(1:nlen,1,jb)) / &
-#           (p_nh(jg)%metrics%z_ifc(1:nlen,3,jb) -  &
-#            p_nh(jg)%metrics%z_ifc(1:nlen,1,jb))
 @field_operator
 def _calc_wgtfac_c_0(
     z_ifc: Field[[CellDim, KDim], wpfloat],
