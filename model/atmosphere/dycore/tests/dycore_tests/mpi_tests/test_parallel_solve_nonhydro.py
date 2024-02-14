@@ -35,12 +35,13 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fi
     check_comm_size,
     processor_props,
 )
+
+from ..test_solve_nonhydro import create_prognostic_states
 from ..utils import (
     construct_config,
     construct_interpolation_state_for_nonhydro,
     construct_nh_metric_state,
 )
-from ..test_solve_nonhydro import create_prognostic_states
 
 
 @pytest.mark.datatest

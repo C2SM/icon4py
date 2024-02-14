@@ -222,8 +222,12 @@ def test_create_single_node_runtime_without_mpi(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dimension", (CellDim, VertexDim, EdgeDim))
-def test_exchange_on_dummy_data(  # fixture
-    processor_props, decomposition_info, grid_savepoint, metrics_savepoint, dimension
+def test_exchange_on_dummy_data(
+    processor_props,
+    decomposition_info,
+    grid_savepoint,
+    metrics_savepoint,
+    dimension,
 ):
     exchange = create_exchange(processor_props, decomposition_info)
     grid = grid_savepoint.construct_icon_grid()

@@ -23,9 +23,9 @@ from .datatest_utils import (
     SERIALIZED_DATA_PATH,
     create_icon_serial_data_provider,
     get_datapath_for_experiment,
+    get_global_grid_params,
     get_processor_properties_for_run,
     get_ranked_data_path,
-    get_global_grid_params,
 )
 
 

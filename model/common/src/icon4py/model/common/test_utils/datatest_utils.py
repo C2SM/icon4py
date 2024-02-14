@@ -11,11 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import re
 from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
-from icon4py.model.common.grid.icon import GlobalGridParams
-import re
+
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 

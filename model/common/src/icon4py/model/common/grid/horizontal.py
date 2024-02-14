@@ -11,13 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import math
-from dataclasses import dataclass, field, InitVar
+from dataclasses import InitVar, dataclass, field
 from functools import cached_property
 from typing import Final
 
 from gt4py.next.common import Dimension, Field
 
-from icon4py.model.common import dimension, constants
+from icon4py.model.common import constants, dimension
 from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
 
 
@@ -304,13 +304,14 @@ class CellParams:
     @staticmethod
     def mean_cell_area(radius, num_cells):
         """
-        Compute the mean cell area by dividing the sphere by the number of cells in the
-        global grid
+        Compute the mean cell area.
+
+        Computes the mean cell area by dividing the sphere by the number of cells in the
+        global grid.
 
         Args:
             radius: average earth radius, might be rescaled by a scaling parameter
             num_cells: number of cells on the global grid
         Returns: mean area of one cell [m^2]
-
         """
         return 4.0 * math.pi * radius**2 / num_cells
