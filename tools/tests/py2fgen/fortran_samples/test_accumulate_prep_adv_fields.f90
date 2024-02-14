@@ -45,10 +45,6 @@ program call_accumulate_prep_adv_fields_cffi_plugin
                                             horizontal_start, horizontal_end, vertical_start, vertical_end, &
                                             n_edge, n_k)
 
-    ! Compute expected results
-    vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
-    mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
-
     ! print arrays for verification
     print *, "Arrays after"
     print *, "z_vn_avg = ", z_vn_avg
