@@ -44,7 +44,7 @@ def _parse_function(module, function_name):
     else:
         params = _get_simple_func_params(module, func, type_hints)
 
-    return Func(name=function_name, args=params)
+    return Func(name=function_name, args=params, is_gt4py_program=is_gt4py_program)
 
 
 def _add_array_size_params(func_params):

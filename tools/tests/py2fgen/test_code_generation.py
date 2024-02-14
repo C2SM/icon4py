@@ -80,6 +80,7 @@ foo = Func(
             py_type_hint="Field[CellDim, KDim], float64]",
         ),
     ],
+    is_gt4py_program=False,
 )
 
 bar = Func(
@@ -96,6 +97,7 @@ bar = Func(
         ),
         FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
     ],
+    is_gt4py_program=False,
 )
 
 

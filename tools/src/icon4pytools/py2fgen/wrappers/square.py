@@ -11,27 +11,29 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # mypy: ignore-errors
-# TODO(samkellerhals): Delete file once we can generate wrapper functions for programs. Use this for tests potentially.
-
-# flake8: noqa D104
+from gt4py.next.common import GridType
+from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, float64
 from icon4py.model.common.dimension import CellDim, KDim
 
-from icon4pytools.py2fgen.wrappers.square_functions import square_output_param
+
+@field_operator
+def _square(
+    a: Field[[CellDim, KDim], float64], b: Field[[CellDim, KDim], float64]
+) -> Field[[CellDim, KDim], float64]:
+    return a * b
 
 
+@program(grid_type=GridType.UNSTRUCTURED)
 def square(
-    field_ptr: Field[[CellDim, KDim], float64],
-    result_ptr: Field[[CellDim, KDim], float64],
+    a: Field[[CellDim, KDim], float64],
+    result: Field[[CellDim, KDim], float64],
 ):
-    """
-    simple python function that squares all entries of a field of
-    size nx x ny and returns a pointer to the result.
+    _square(a, a, out=result)
 
-    :param field_ptr:
-    :param nx:
-    :param ny:
-    :param result_ptr:
-    :return:
-    """
-    square_output_param(field_ptr, result_ptr)
+
+def square_from_function(
+    a: Field[[CellDim, KDim], float64],
+    result: Field[[CellDim, KDim], float64],
+):
+    square(a, result, offset_provider={})

@@ -39,15 +39,18 @@ class FuncParameter(Node):
     py_type_hint: str
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
+    gtdims: list[str] = datamodels.field(init=False)
 
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.is_array = True if len(self.dimensions) >= 1 else False
+        self.gtdims = [dimension.value + "Dim" for dimension in self.dimensions]
 
 
 class Func(Node):
     name: str
     args: Sequence[FuncParameter]
+    is_gt4py_program: bool
     size_args: Sequence[str] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -172,20 +175,20 @@ def flatten_and_get_unique_elts(list_of_lists: list[list[str]]):
 
 
 class PythonWrapper(CffiPlugin):
-    func_args: Sequence[FuncParameter] = datamodels.field(init=False)
     size_args: Sequence[str] = datamodels.field(init=False)
     ffi_decorator: str = FFI_EXTERN_DECORATOR
     cffi_funcs: str = CFFI_FUNCS
     plugin_name: str = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.func_args = [arg for arg in self.function.args]
         self.size_args = flatten_and_get_unique_elts(
-            [dims_to_size_strings(arg.dimensions) for arg in self.func_args]
+            [dims_to_size_strings(arg.dimensions) for arg in self.function.args]
         )
         self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"
 
 
+# TODO(samkellerhals): printing of field information should just happen in debug mode.
+#   Currently we also hardcode the backend to be gtfn_cpu, this could also be user selectable.
 class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
@@ -193,11 +196,17 @@ class PythonWrapperGenerator(TemplatedGenerator):
 from {{ plugin_name }} import ffi
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from icon4py.model.common.grid.simple import SimpleGrid
 
 # all other imports from the module from which the function is being wrapped
 {% for stmt in imports -%}
 {{ stmt }}
 {% endfor %}
+
+# We need a grid to pass offset providers
+grid = SimpleGrid()
 
 from {{ module_name }} import {{ _this_node.function.name }}
 
@@ -205,22 +214,39 @@ from {{ module_name }} import {{ _this_node.function.name }}
 
 {{ ffi_decorator }}
 def {{ _this_node.function.name }}_wrapper(
-{%- for arg in _this_node.func_args -%}
+{%- for arg in _this_node.function.args -%}
 {{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or _this_node.size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in _this_node.size_args -%}
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
-    {% for arg in _this_node.func_args %}
-    {% if arg.is_array %}
+
+    # Unpack pointers into Ndarrays
+    {% for arg in _this_node.function.args -%}
+    {% if arg.is_array -%}
     {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
-    {% endif %}
+    print({{ arg.name }})
+    print({{ arg.name }}.shape)
+    {% endif -%}
     {% endfor %}
-    {{ _this_node.function.name }}(
-    {%- for arg in _this_node.func_args -%}
-    {{ arg.name }}{{ ", " if not loop.last else "" }}
+
+    # Allocate GT4Py Fields
+    {% for arg in _this_node.function.args -%}
+    {% if arg.is_array -%}
+    {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
+    print({{ arg.name }})
+    print({{ arg.name }}.shape)
+    {% endif -%}
+    {% endfor %}
+
+    {{ _this_node.function.name }}{{ ".with_backend(run_gtfn)" if _this_node.function.is_gt4py_program else "" }}(
+    {%- for arg in _this_node.function.args -%}
+    {{ arg.name }}{{ ", " if not loop.last or _this_node.function.is_gt4py_program else "" }}
     {%- endfor -%}
+    {%- if _this_node.function.is_gt4py_program -%}
+    offset_provider=grid.offset_providers
+    {%- endif -%}
 )
 """
     )
