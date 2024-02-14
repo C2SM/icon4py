@@ -29,7 +29,7 @@ import pytest
 from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim, E2VDim, C2VDim, V2CDim, E2C2EODim, E2C2EDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_geofac_grdiv, compute_c_bln_avg, compute_mass_conservation_c_bln_avg
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_geofac_grdiv, compute_c_bln_avg, compute_mass_conservation_c_bln_avg, compute_e_flx_avg
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -296,3 +296,48 @@ def test_compute_c_bln_avg(
     print("aaaaa")
     print(c_bln_avg)
     assert np.allclose(c_bln_avg, c_bln_avg_ref)
+
+@pytest.mark.datatest
+def test_compute_e_flx_avg(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
+    c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
+    geofac_div = interpolation_savepoint.geofac_div().asnumpy()
+    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
+    E2C = icon_grid.connectivities[E2CDim]
+    C2E = icon_grid.connectivities[C2EDim]
+    C2E2C = icon_grid.connectivities[C2E2CDim]
+    E2C2E = icon_grid.connectivities[E2C2EDim]
+    lateral_boundary = np.arange(3)
+    lateral_boundary[0] = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    )
+    lateral_boundary[1] = icon_grid.get_end_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+    )
+    lateral_boundary[2] = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
+    )
+    lat = grid_savepoint.cell_center_lat().asnumpy()
+    lon = grid_savepoint.cell_center_lon().asnumpy()
+    e_flx_avg = np.zeros([lateral_boundary[1], 4])
+    e_flx_avg = compute_e_flx_avg(
+        e_flx_avg,
+        c_bln_avg,
+        geofac_div,
+        owner_mask,
+        E2C,
+        C2E,
+        C2E2C,
+        E2C2E,
+        lateral_boundary,
+    )
+#    np.set_printoptions(threshold=np.inf)
+    print(e_flx_avg_ref)
+    print("aaaaa")
+    print(e_flx_avg)
+    assert np.allclose(e_flx_avg, e_flx_avg_ref)
