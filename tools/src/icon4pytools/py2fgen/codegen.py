@@ -38,9 +38,11 @@ class FuncParameter(Node):
     dimensions: Sequence[Dimension]
     py_type_hint: str
     size_args: list[str] = datamodels.field(init=False)
+    is_array: bool = datamodels.field(init=False)
 
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
+        self.is_array = True if len(self.dimensions) >= 1 else False
 
 
 class Func(Node):
@@ -55,8 +57,13 @@ class Func(Node):
 
 
 class CffiPlugin(Node):
-    name: str
+    module_name: str
     function: Func
+    imports: list[str]
+    plugin_name: str = datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"
 
 
 FFI_EXTERN_DECORATOR = "@ffi.def_extern()"
@@ -164,38 +171,35 @@ def flatten_and_get_unique_elts(list_of_lists: list[list[str]]):
     return sorted(list(set(flattened)))
 
 
-# TODO(samkellerhals): Actually generate the imports (look at original module imports)
-def render_py_imports(plugin_name: str) -> str:
-    return f"""\
-from {plugin_name} import ffi
-import numpy as np
-from gt4py.next.ffront.fbuiltins import Field, float64, int32
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4pytools.py2fgen.wrappers.square import square
-    """
-
-
-class PythonWrapper(Node):
-    plugin_name: str
-    function: Func
-    imports: str = datamodels.field(init=False)
+class PythonWrapper(CffiPlugin):
     func_args: Sequence[FuncParameter] = datamodels.field(init=False)
     size_args: Sequence[str] = datamodels.field(init=False)
     ffi_decorator: str = FFI_EXTERN_DECORATOR
     cffi_funcs: str = CFFI_FUNCS
+    plugin_name: str = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.func_args = [arg for arg in self.function.args]
         self.size_args = flatten_and_get_unique_elts(
             [dims_to_size_strings(arg.dimensions) for arg in self.func_args]
         )
-        self.imports = render_py_imports(self.plugin_name)
+        self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
-{{ imports }}
+# necessary imports for generated code to work
+from {{ plugin_name }} import ffi
+import numpy as np
+from gt4py.next.ffront.fbuiltins import int32
+
+# all other imports from the module from which the function is being wrapped
+{% for stmt in imports -%}
+{{ stmt }}
+{% endfor %}
+
+from {{ module_name }} import {{ _this_node.function.name }}
 
 {{ cffi_funcs }}
 
@@ -209,7 +213,9 @@ def {{ _this_node.function.name }}_wrapper(
 {%- endfor -%}
 ):
     {% for arg in _this_node.func_args %}
+    {% if arg.is_array %}
     {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+    {% endif %}
     {% endfor %}
     {{ _this_node.function.name }}(
     {%- for arg in _this_node.func_args -%}
@@ -223,7 +229,9 @@ def {{ _this_node.function.name }}_wrapper(
 class CHeaderGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja("""extern void {{_this_node.function.name}}_wrapper({{function}});""")
 
-    Func = as_jinja("{%- for arg in args -%}{{ arg }}{% if not loop.last or size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%}")
+    Func = as_jinja(
+        "{%- for arg in args -%}{{ arg }}{% if not loop.last or size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%}"
+    )
 
     def visit_FuncParameter(self, param: FuncParameter):
         return self.generic_visit(
@@ -236,7 +244,7 @@ class CHeaderGenerator(TemplatedGenerator):
 class F90InterfaceGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja(
         """\
-    module {{name}}
+    module {{ plugin_name }}
     use, intrinsic:: iso_c_binding
     implicit none
 
@@ -290,7 +298,9 @@ def generate_c_header(plugin: CffiPlugin) -> str:
 
 
 def generate_python_wrapper(plugin: CffiPlugin) -> str:
-    node = PythonWrapper(plugin_name=plugin.name, function=plugin.function)
+    node = PythonWrapper(
+        module_name=plugin.module_name, function=plugin.function, imports=plugin.imports
+    )
     generated_code = PythonWrapperGenerator.apply(node)
     return codegen.format_source("python", generated_code)
 
@@ -298,4 +308,4 @@ def generate_python_wrapper(plugin: CffiPlugin) -> str:
 def generate_and_write_f90_interface(build_path: Path, plugin: CffiPlugin):
     generated_code = F90InterfaceGenerator.apply(plugin)
     formatted_source = format_fortran_code(generated_code)
-    write_string(formatted_source, build_path, f"{plugin.name}.f90")
+    write_string(formatted_source, build_path, f"{plugin.plugin_name}.f90")

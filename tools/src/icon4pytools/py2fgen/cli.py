@@ -54,7 +54,7 @@ def main(
     c_header = generate_c_header(plugin)
     python_wrapper = generate_python_wrapper(plugin)
 
-    generate_and_compile_cffi_plugin(plugin.name, c_header, python_wrapper, build_path)
+    generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, build_path)
     generate_and_write_f90_interface(build_path, plugin)
 
 

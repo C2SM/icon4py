@@ -30,16 +30,15 @@ field_2d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
     dimensions=[CellDim, KDim],
-    py_type_hint="Field[CellDim, KDim], float64]"
+    py_type_hint="Field[CellDim, KDim], float64]",
 )
 field_1d = FuncParameter(
-    name="name",
-    d_type=ScalarKind.FLOAT32,
-    dimensions=[KDim],
-    py_type_hint="Field[KDim], float64]"
+    name="name", d_type=ScalarKind.FLOAT32, dimensions=[KDim], py_type_hint="Field[KDim], float64]"
 )
 
-simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="int32")
+simple_type = FuncParameter(
+    name="name", d_type=ScalarKind.FLOAT32, dimensions=[], py_type_hint="int32"
+)
 
 
 @pytest.mark.parametrize(
@@ -48,30 +47,38 @@ simple_type = FuncParameter(name="name", d_type=ScalarKind.FLOAT32, dimensions=[
 def test_as_target(param, expected):
     assert expected == as_f90_value(param)
 
+
 # TODO: adapt test to new functions
 @pytest.mark.skip
 @pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "dimension(:,:),")))
 def test_field_extension_2d(lang, expected):
-    assert as_field(field_2d, lang) == expected
+    pass
+
 
 # TODO: adapt test to new functions
 @pytest.mark.skip
 @pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "dimension(:),")))
 def test_field_extension_1d(lang, expected):
-    assert as_field(field_1d, lang) == expected
+    pass
+
 
 # TODO: adapt test to new functions
 @pytest.mark.skip
 @pytest.mark.parametrize("lang", ("C", "F"))
 def test_is_field_simple_type(lang):
-    assert as_field(simple_type, lang) == ""
+    pass
 
 
 foo = Func(
     name="foo",
     args=[
         FuncParameter(name="one", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
-        FuncParameter(name="two", d_type=ScalarKind.FLOAT64, dimensions=[CellDim, KDim], py_type_hint="Field[CellDim, KDim], float64]"),
+        FuncParameter(
+            name="two",
+            d_type=ScalarKind.FLOAT64,
+            dimensions=[CellDim, KDim],
+            py_type_hint="Field[CellDim, KDim], float64]",
+        ),
     ],
 )
 
@@ -86,7 +93,6 @@ bar = Func(
                 KDim,
             ],
             py_type_hint="Field[CellDim, KDim], float64]",
-
         ),
         FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
     ],
@@ -94,14 +100,14 @@ bar = Func(
 
 
 def test_cheader_generation_for_single_function():
-    plugin = CffiPlugin(name="libtest", function=foo)
+    plugin = CffiPlugin(module_name="libtest", function=foo, imports=["import foo"])
 
     header = CHeaderGenerator.apply(plugin)
     assert header == "extern void foo_wrapper(int one, double* two, int n_cell, int n_k);"
 
 
 def test_cheader_for_pointer_args():
-    plugin = CffiPlugin(name="libtest", function=bar)
+    plugin = CffiPlugin(module_name="libtest", function=bar, imports=["import bar"])
 
     header = CHeaderGenerator.apply(plugin)
     assert header == "extern void bar_wrapper(float* one, int two, int n_cell, int n_k);"
@@ -113,10 +119,10 @@ def compare_ignore_whitespace(s1: str, s2: str):
 
 
 def test_fortran_interface():
-    plugin = CffiPlugin(name="libtest", function=foo)
+    plugin = CffiPlugin(module_name="libtest", function=foo, imports=["import foo"])
     interface = F90InterfaceGenerator.apply(plugin)
     expected = """
-    module libtest
+    module libtest_plugin
     use, intrinsic:: iso_c_binding
     implicit none
 

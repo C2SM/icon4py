@@ -11,10 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-
 import ast
 import importlib
 import inspect
+import re
 from inspect import signature, unwrap
 from typing import Callable
 
@@ -29,27 +29,22 @@ from icon4pytools.py2fgen.common import ARRAY_SIZE_ARGS, parse_type_spec
 
 def parse_function(module_name: str, function_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
-    func = _parse_function(module, function_name)
-    plugin_name = f"{module_name.split('.')[-1]}_plugin"
-    # todo(samkellerhals): for now we just support one function at a time.
-    return CffiPlugin(name=plugin_name, function=func)
+    parsed_function = _parse_function(module, function_name)
+    parsed_imports = _extract_import_statements(module)
+    return CffiPlugin(module_name=module_name, function=parsed_function, imports=parsed_imports)
 
 
 def _parse_function(module, function_name):
     func = unwrap(getattr(module, function_name))
-    if isinstance(func, Program):
-        params = _get_gt4py_func_params(func)
-        # TODO(samkellerhals): params_with_sizes = _add_array_size_params(params)
-        raise Exception(
-            "Creating a CffiPlugin for Gt4Py programs without a wrapper is not yet supported."
-        )
-        # TODO(samkellerhals): Set flag to instruct codegen to generate a wrapper function as we cannot
-        #  embed Gt4Py programs directly.
+    is_gt4py_program = isinstance(func, Program)
+    type_hints = extract_type_hint_strings(module, func, is_gt4py_program, function_name)
+
+    if is_gt4py_program:
+        params = _get_gt4py_func_params(func, type_hints)
     else:
-        # assumes that the simple func implements unpacking of any arrays.
-        params = _get_simple_func_params(func)
-        # TODO(samkellerhals): params_with_sizes = _add_array_size_params(params)
-        return Func(name=function_name, args=params)
+        params = _get_simple_func_params(module, func, type_hints)
+
+    return Func(name=function_name, args=params)
 
 
 def _add_array_size_params(func_params):
@@ -67,19 +62,20 @@ def _add_array_size_params(func_params):
     return func_params + size_params
 
 
-def _get_gt4py_func_params(func: Program) -> list[FuncParameter]:
+def _get_gt4py_func_params(func: Program, type_hints) -> list[FuncParameter]:
     """Parse a gt4py program and return its parameters."""
     params = []
     for p in func.past_node.params:
         dims, dtype = parse_type_spec(p.type)
-        params.append(FuncParameter(name=p.id, d_type=dtype, dimensions=dims))
+        params.append(
+            FuncParameter(name=p.id, d_type=dtype, dimensions=dims, py_type_hint=type_hints[p.id])
+        )
     return params
 
 
-def _get_simple_func_params(func: Callable) -> list[FuncParameter]:
+def _get_simple_func_params(module, func: Callable, type_hints) -> list[FuncParameter]:
     """Parse a non-gt4py function and return its parameters."""
     sig_params = signature(func, follow_wrapped=False).parameters
-    type_hints = extract_type_hint_strings(func)
 
     params = []
     for s in sig_params:
@@ -96,9 +92,13 @@ def _get_simple_func_params(func: Callable) -> list[FuncParameter]:
     return params
 
 
-def extract_type_hint_strings(func):
-    # Get the source code of the function
-    src = inspect.getsource(func)
+def extract_type_hint_strings(module, func, is_gt4py_program: bool, function_name):
+    if is_gt4py_program:
+        tmp_src = inspect.getsource(module)
+        src = extract_function_signature(tmp_src, function_name)
+    else:
+        src = inspect.getsource(func)
+
     tree = ast.parse(src)
 
     type_hints = {}
@@ -115,3 +115,49 @@ def extract_type_hint_strings(func):
     visitor.visit(tree)
 
     return type_hints
+
+
+def extract_function_signature(code, function_name):
+    # Regular expression pattern for a Python function signature
+    # This pattern attempts to match function definitions with various parameter types and return annotations
+    pattern = (
+        rf"\bdef\s+{re.escape(function_name)}\s*\(([\s\S]*?)\)\s*(->\s*[\s\S]*?)?:(?=\s*\n\s*\S)"
+    )
+
+    match = re.search(pattern, code)
+
+    if match:
+        # Constructing the full signature with return type if it exists
+        signature = f"def {function_name}({match.group(1)})"
+        if match.group(2):
+            signature += f" {match.group(2)}"
+        return signature.strip() + ":\n  return None"
+    else:
+        return "Function signature not found."
+
+
+def _extract_import_statements(module):
+    src = inspect.getsource(module)
+    tree = ast.parse(src)
+
+    import_statements = []
+
+    # Define a visitor class to visit import nodes
+    class ImportVisitor(ast.NodeVisitor):
+        def visit_Import(self, node):
+            for alias in node.names:
+                import_statements.append(
+                    f"import {alias.name}" + (f" as {alias.asname}" if alias.asname else "")
+                )
+
+        def visit_ImportFrom(self, node):
+            for alias in node.names:
+                import_statements.append(
+                    f"from {node.module} import {alias.name}"
+                    + (f" as {alias.asname}" if alias.asname else "")
+                )
+
+    visitor = ImportVisitor()
+    visitor.visit(tree)
+
+    return import_statements
