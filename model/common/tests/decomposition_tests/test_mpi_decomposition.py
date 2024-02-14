@@ -32,7 +32,6 @@ from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeEx
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
-    datapath,
     decomposition_info,
     download_ser_data,
     experiment,

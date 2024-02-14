@@ -105,8 +105,11 @@ def icon_grid(grid_savepoint):
 
 
 @pytest.fixture
-def decomposition_info(data_provider):
-    return data_provider.from_savepoint_grid().construct_decomposition_info()
+def decomposition_info(data_provider, experiment):
+    root, level = get_global_grid_params(experiment)
+    return data_provider.from_savepoint_grid(
+        grid_root=root, grid_level=level
+    ).construct_decomposition_info()
 
 
 @pytest.fixture

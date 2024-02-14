@@ -282,16 +282,17 @@ class CellParams:
 
     defined int ICON in mo_model_domain.f90:t_grid_cells%area
     """
+    length_rescale_factor: float
+
     global_num_cells: InitVar[int]
-    length_rescale_factor: InitVar[float]
     mean_cell_area: field(init=False)
 
-    def __post_init__(self, global_num_cells, length_rescale_factor):
+    def __post_init__(self, global_num_cells):
         object.__setattr__(
             self,
             "mean_cell_area",
             CellParams.mean_cell_area(
-                length_rescale_factor * constants.EARTH_RADIUS,
+                self.length_rescale_factor * constants.EARTH_RADIUS,
                 global_num_cells,
             ),
         )
