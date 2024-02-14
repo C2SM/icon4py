@@ -418,3 +418,46 @@ def compute_mass_conservation_c_bln_avg(
         else:
             c_bln_avg[llb2:, 0] = np.where(owner_mask[llb2:], c_bln_avg[llb2:, 0] - resid, c_bln_avg[llb2:, 0])
     return c_bln_avg
+
+def compute_mass_conservation_e_flx_avg(
+    e_flx_avg: np.array,
+    c_bln_avg: np.array,
+    geofac_div: np.array,
+    divavg_cntrwgt: np.array,
+    owner_mask: np.array,
+    E2C: np.array,
+    C2E: np.array,
+    C2E2C: np.array,
+    E2C2E: np.array,
+    lateral_boundary: np.array,
+    lat: np.array,
+    lon: np.array,
+    cell_areas: np.array,
+    niter: np.array,
+) -> np.array:
+    llb = lateral_boundary[0]
+    llb2 = lateral_boundary[2]
+    index = np.arange(llb, lateral_boundary[1])
+
+    inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)
+    for i in range(3):
+        for j in range(3):
+            inv_neighbor_id[:, j] = np.where(np.logical_and(C2E2C[C2E2C[llb:, j], i] == index, C2E2C[llb:, j] >= 0), i, inv_neighbor_id[:, j])
+
+    for j in range(3):
+        for i in range(2):
+            e_flx_avg[:, i + 1] = np.where(C2E[E2C[:, 0], j] == index, c_bln_avg[E2C[: 1], inv_neigbor_id[E2C[:, 0], j] + 1] * geofac_div[E2C[:, 0], mod(i + j + 1, 3) + 1] / geofac_div[E2C[: 1], inv_neigbor_id[E2C[:, 0], j]], e_flx_avg[:, i + 1])
+            e_flx_avg[:, i + 3] = np.where(C2E[E2C[:, 0], j] == index, c_bln_avg[E2C[: 0], 1 + j] * geofac_div[E2C[: 1], np.mod(inv_neigbor_id[E2C[:, 0], j] + i, 3) + 1] / geofac_div[E2C[: 0], j], e_flx_avg[:, i + 3])
+
+    iie1[:, 0] = np.where(E2C[E2C2E[:, 0], 0] == E2C[:, 0], 2, -1)
+    iie1[:, 0] = np.where(np.locical_and(E2C[E2C2E[:, 0], 1] == E2C[:, 1], iie1[:, 0] != 2), 4, iie1[:, 0])
+    iie1[:, 1] = np.where(E2C[E2C2E[:, 1], 1] == E2C[:, 0], 1, -1)
+    iie1[:, 1] = np.where(np.locical_and(E2C[E2C2E[:, 1], 1] == E2C[:, 1], iie1[:, 1] != 1), 3, iie1[:, 1])
+    iie1[:, 2] = np.where(E2C[E2C2E[:, 2], 0] == E2C[:, 1], 2, -1)
+    iie1[:, 2] = np.where(np.locical_and(E2C[E2C2E[:, 2], 1] == E2C[:, 1], iie1[:, 2] != 2), 4, iie1[:, 2])
+    iie1[:, 3] = np.where(E2C[E2C2E[:, 3], 1] == E2C[:, 1], 1, -1)
+    iie1[:, 3] = np.where(np.locical_and(E2C[E2C2E[:, 3], 1] == E2C[:, 1], iie1[:, 3] != 1), 3, iie1[:, 3])
+
+    e_flx_avg[:, 0] = np.where(C2E[E2C[:, 0], 0] == index, 0.5 * ((geofac_div[E2C[:, 0], 0] * c_bln_avg[E2C[:, 0], 0] + geofac_div[E2C[:, 1], inv_neigbor_id[E2C[:, 0], 0]] * c_bln_avg[E2C[:, 0], 1] - e_flx_avg[E2C2E[:, 0], iie1[:, 0]] * geofac_div[E2C[:, 0], 1] - e_flx_avg[E2C2E[:, 1], iie1[:, 1]] * geofac_div[E2C[:, 0], 2]) / geofac_div[E2C[:, 0], 0] + (geofac_div[E2C[:, 1], inv_neigbor_id[E2C[:, 0], 0]] * c_bln_avg[E2C[:, 1], 0] + geofac_div[E2C[:, 0], 0] * c_bln_avg[E2C[:, 1], inv_neigbor_id[E2C[:, 0], 0] + 1] - e_flx_avg[E2C2E[:, 2], iie1[:, 2]] * geofac_div[E2C[:, 1], inv_neigbor_id[E2C[:, 0], 0], np.mod(inv_neigbor_id[E2C[:, 0], 0], 3) + 1] - e_flx_avg[E2C2E[:, 3], iie1[:, 3]] * geofac_div[E2C[:, 1], inv_neigbor_id[E2C[:, 0], 0], np.mod(inv_neigbor_id[E2C[:, 0], 0] + 1, 3) + 1]) / geofac_div[E2C[:, 1], inv_neigbor_id[E2C[:, 0], 0]]), e_flx_avg[:, 0])
+
+    return e_flx_avg
