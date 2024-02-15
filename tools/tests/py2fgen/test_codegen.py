@@ -84,14 +84,14 @@ def test_cheader_generation_for_single_function():
     plugin = CffiPlugin(module_name="libtest", function=foo, imports=["import foo"])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern void foo_wrapper(int one, double* two, int n_cell, int n_k);"
+    assert header == "extern void foo_wrapper(int one, double* two, int n_Cell, int n_K);"
 
 
 def test_cheader_for_pointer_args():
     plugin = CffiPlugin(module_name="libtest", function=bar, imports=["import bar"])
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern void bar_wrapper(float* one, int two, int n_cell, int n_k);"
+    assert header == "extern void bar_wrapper(float* one, int two, int n_Cell, int n_K);"
 
 
 def compare_ignore_whitespace(s1: str, s2: str):
@@ -111,13 +111,13 @@ def test_fortran_interface():
     interface
         subroutine foo_wrapper(one, &
                        two, &
-                       n_cell, &
-                       n_k) bind(c, name='foo_wrapper')
+                       n_Cell, &
+                       n_K) bind(c, name='foo_wrapper')
             use, intrinsic :: iso_c_binding
-            integer(c_int), value, target :: n_cell
-            integer(c_int), value, target :: n_k
+            integer(c_int), value, target :: n_Cell
+            integer(c_int), value, target :: n_K
             integer(c_int), value, target :: one
-            real(c_double), dimension(:, :), target :: two(n_cell, n_k)
+            real(c_double), dimension(:, :), target :: two(n_Cell, n_K)
         end subroutine foo_wrapper
     end interface
     end module

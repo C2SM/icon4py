@@ -73,6 +73,9 @@ def main(
     generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, build_path)
     write_string(f90_interface, build_path, f"{plugin.plugin_name}.f90")
 
+    if debug_mode:
+        write_string(python_wrapper, build_path, f"{plugin.plugin_name}.py")
+
 
 if __name__ == "__main__":
     main()

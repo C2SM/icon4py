@@ -23,9 +23,9 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_ISO_C_TYPE,
 )
 from icon4pytools.py2fgen.utils import (
-    ARRAY_SIZE_ARGS,
     CFFI_DECORATOR,
     CFFI_UNPACK,
+    build_array_size_args,
     flatten_and_get_unique_elts,
 )
 
@@ -127,7 +127,8 @@ def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
     Returns:
         A list of Fortran array size strings.
     """
-    return sorted(ARRAY_SIZE_ARGS[dim.value] for dim in dimensions if dim.value in ARRAY_SIZE_ARGS)
+    array_size_args = build_array_size_args()
+    return sorted(array_size_args[dim.value] for dim in dimensions if dim.value in array_size_args)
 
 
 def render_fortran_array_sizes(param: FuncParameter) -> str:

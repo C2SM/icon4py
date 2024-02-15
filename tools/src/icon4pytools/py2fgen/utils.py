@@ -17,11 +17,21 @@ from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
 
-ARRAY_SIZE_ARGS = {"Cell": "n_cell", "Edge": "n_edge", "Vertex": "n_vertex", "K": "n_k"}
-
 CFFI_DECORATOR = "@ffi.def_extern()"
-
 PROGRAM_DECORATOR = "@program"
+
+
+def build_array_size_args():
+    array_size_args = {}
+    from icon4py.model.common import dimension
+
+    for var_name, var in vars(dimension).items():
+        if isinstance(var, Dimension):
+            dim_name = var_name.replace("Dim", "")
+            size_name = f"n_{dim_name}"
+            array_size_args[dim_name] = size_name
+    return array_size_args
+
 
 # TODO(samkellerhals): This should be defined as an actual function in the code so we can test it.
 CFFI_UNPACK = """\
