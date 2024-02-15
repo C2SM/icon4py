@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _mo_math_gradients_grad_green_gauss_cell_dsl(
+def _grad_green_gauss_cell(
     p_ccpr1: Field[[CellDim, KDim], vpfloat],
     p_ccpr2: Field[[CellDim, KDim], vpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
@@ -41,7 +41,7 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_math_gradients_grad_green_gauss_cell_dsl(
+def grad_green_gauss_cell(
     p_grad_1_u: Field[[CellDim, KDim], vpfloat],
     p_grad_1_v: Field[[CellDim, KDim], vpfloat],
     p_grad_2_u: Field[[CellDim, KDim], vpfloat],
@@ -55,7 +55,7 @@ def mo_math_gradients_grad_green_gauss_cell_dsl(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_math_gradients_grad_green_gauss_cell_dsl(
+    _grad_green_gauss_cell(
         p_ccpr1,
         p_ccpr2,
         geofac_grg_x,

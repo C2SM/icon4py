@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
+from icon4py.model.atmosphere.dycore.grad_green_gauss_cell import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim

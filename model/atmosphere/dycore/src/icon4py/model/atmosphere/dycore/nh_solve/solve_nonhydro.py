@@ -97,7 +97,7 @@ from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
+from icon4py.model.atmosphere.dycore.grad_green_gauss_cell import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
 from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_to_zero_vp import (

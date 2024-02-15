@@ -15,8 +15,8 @@ import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 from gt4py.next.common import GridType
 
-from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
-    _mo_math_gradients_grad_green_gauss_cell_dsl,
+from icon4py.model.atmosphere.dycore.grad_green_gauss_cell import (
+    _grad_green_gauss_cell,
 )
 from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
     _apply_4th_order_divergence_damping,
@@ -147,7 +147,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         z_grad_rth_2,
         z_grad_rth_3,
         z_grad_rth_4,
-    ) = _mo_math_gradients_grad_green_gauss_cell_dsl(
+    ) = _grad_green_gauss_cell(
         p_ccpr1=z_rth_pr_1,
         p_ccpr2=z_rth_pr_2,
         geofac_grg_x=geofac_grg_x,
