@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
+-e git+https://github.com/tehrengruber/gt4py.git@disable_collapse_tuple_if_prop#egg=gt4py
 git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
