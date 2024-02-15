@@ -28,12 +28,10 @@ def _vert_adv_stencil_01a(
     rhodz_new: Field[[CellDim, KDim], float],
     p_dtime: float,
 ) -> Field[[CellDim, KDim], float]:
-    # tracer_new = (
-    #     tracer_now * rhodz_now
-    #     + p_dtime * (p_mflx_tracer_v(Koff[1]) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
-    # ) / rhodz_new
-    # tracer_new = tracer_now * rhodz_now / rhodz_now
-    tracer_new = tracer_now 
+    tracer_new = (
+        tracer_now * rhodz_now
+        + p_dtime * (p_mflx_tracer_v(Koff[1]) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
+    ) / rhodz_new
 
     return tracer_new
 
@@ -53,8 +51,7 @@ def _vert_adv_stencil_01(
 ) -> Field[[CellDim, KDim], float]:
     k = broadcast(k, (CellDim, KDim))
   
-    # tracer_new = (where((iadv_slev_jt<=k), _vert_adv_stencil_01a(tracer_now, rhodz_now, p_mflx_tracer_v, deepatmo_divzl, deepatmo_divzu, rhodz_new, p_dtime, ), tracer_now*2.) if (ivadv_tracer!=int32(0)) else tracer_now )
-    tracer_new = (where((iadv_slev_jt<=k), tracer_now*1.4, tracer_now) if (ivadv_tracer!=int32(0)) else tracer_now )
+    tracer_new = (where((iadv_slev_jt<=k), _vert_adv_stencil_01a(tracer_now, rhodz_now, p_mflx_tracer_v, deepatmo_divzl, deepatmo_divzu, rhodz_new, p_dtime, ), tracer_now*2.) if (ivadv_tracer!=int32(0)) else tracer_now )
 
     return tracer_new
 
