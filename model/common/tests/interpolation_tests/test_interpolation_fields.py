@@ -32,7 +32,7 @@ from icon4py.model.common.interpolation.interpolation_fields import compute_c_li
 
 
 @pytest.mark.datatest
-def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  # fixture
+def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     owner_mask = grid_savepoint.e_owner_mask()
