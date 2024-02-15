@@ -305,36 +305,52 @@ def test_compute_e_flx_avg(
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
     geofac_div = interpolation_savepoint.geofac_div().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
+    primal_cart_normal = grid_savepoint.primal_cart_normal().asnumpy()
     E2C = icon_grid.connectivities[E2CDim]
     C2E = icon_grid.connectivities[C2EDim]
     C2E2C = icon_grid.connectivities[C2E2CDim]
     E2C2E = icon_grid.connectivities[E2C2EDim]
-    lateral_boundary = np.arange(3)
-    lateral_boundary[0] = icon_grid.get_start_index(
+    lateral_boundary_edges = np.arange(3)
+    lateral_boundary_edges[0] = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    )
+    lateral_boundary_edges[1] = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+    )
+    lateral_boundary_edges[2] = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+    )
+    lateral_boundary_cells = np.arange(3)
+    lateral_boundary_cells[0] = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
     )
-    lateral_boundary[1] = icon_grid.get_end_index(
+    lateral_boundary_cells[1] = icon_grid.get_end_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
-    lateral_boundary[2] = icon_grid.get_start_index(
+    lateral_boundary_cells[2] = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
     )
     lat = grid_savepoint.cell_center_lat().asnumpy()
     lon = grid_savepoint.cell_center_lon().asnumpy()
-    e_flx_avg = np.zeros([lateral_boundary[1], 4])
+    e_flx_avg = np.zeros([lateral_boundary_edges[1], 5])
     e_flx_avg = compute_e_flx_avg(
         e_flx_avg,
         c_bln_avg,
         geofac_div,
         owner_mask,
+        primal_cart_normal,
         E2C,
         C2E,
         C2E2C,
         E2C2E,
-        lateral_boundary,
+        lateral_boundary_cells,
+        lateral_boundary_edges,
     )
 #    np.set_printoptions(threshold=np.inf)
     print(e_flx_avg_ref)
