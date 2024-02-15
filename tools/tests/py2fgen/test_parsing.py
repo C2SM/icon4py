@@ -11,29 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4pytools.py2fgen.cffi_utils import CffiMethod
-from icon4pytools.py2fgen.codegen import CffiPlugin
-from icon4pytools.py2fgen.parsing import parse_function
+from icon4pytools.py2fgen.parsing import parse
+from icon4pytools.py2fgen.template import CffiPlugin
 
 
 def test_parse_functions_on_wrapper():
-    module_path = "icon4pytools.py2fgen.wrappers.diffusion_wrapper"
+    module_path = "icon4pytools.py2fgen.wrappers.diffusion"
     function_name = "diffusion_init"
-    plugin = parse_function(module_path, function_name)
+    plugin = parse(module_path, function_name)
     assert isinstance(plugin, CffiPlugin)
-    assert plugin.plugin_name == "diffusion_wrapper_plugin"
-
-
-@CffiMethod.register
-def do_foo(foo: str):
-    return foo
-
-
-@CffiMethod.register
-def do_bar():
-    return "bar"
-
-
-def test_register_with_cffi():
-    assert "do_foo" in CffiMethod.get(__name__)
-    assert "do_bar" in CffiMethod.get(__name__)
+    assert plugin.plugin_name == "diffusion_plugin"

@@ -16,110 +16,115 @@ import importlib
 import inspect
 import re
 from inspect import signature, unwrap
-from typing import Callable
+from types import ModuleType
+from typing import Callable, List
 
 from gt4py.next import Dimension
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.type_system.type_specifications import ScalarKind
 from gt4py.next.type_system.type_translation import from_type_hint
 
-from icon4pytools.py2fgen.codegen import CffiPlugin, Func, FuncParameter
-from icon4pytools.py2fgen.common import ARRAY_SIZE_ARGS, parse_type_spec
+from icon4pytools.py2fgen.template import CffiPlugin, Func, FuncParameter
+from icon4pytools.py2fgen.utils import parse_type_spec
 
 
-def parse_function(module_name: str, function_name: str) -> CffiPlugin:
+class ImportExtractor(ast.NodeVisitor):
+    """AST Visitor to extract import statements."""
+
+    def __init__(self):
+        self.import_statements: list[str] = []
+
+    def visit_Import(self, node):
+        for alias in node.names:
+            import_statement = f"import {alias.name}" + (
+                f" as {alias.asname}" if alias.asname else ""
+            )
+            self.import_statements.append(import_statement)
+
+    def visit_ImportFrom(self, node):
+        for alias in node.names:
+            import_statement = f"from {node.module} import {alias.name}" + (
+                f" as {alias.asname}" if alias.asname else ""
+            )
+            self.import_statements.append(import_statement)
+
+
+class FuncDefVisitor(ast.NodeVisitor):
+    """AST Visitor to extract function definitions and type hints."""
+
+    def __init__(self):
+        self.type_hints: dict[str, str] = {}
+
+    def visit_FunctionDef(self, node):
+        for arg in node.args.args:
+            if arg.annotation:
+                annotation = ast.unparse(arg.annotation)
+                self.type_hints[arg.arg] = annotation
+
+
+def parse(module_name: str, function_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
     parsed_function = _parse_function(module, function_name)
     parsed_imports = _extract_import_statements(module)
     return CffiPlugin(module_name=module_name, function=parsed_function, imports=parsed_imports)
 
 
-def _parse_function(module, function_name):
+def _parse_function(module: ModuleType, function_name: str) -> Func:
     func = unwrap(getattr(module, function_name))
     is_gt4py_program = isinstance(func, Program)
-    type_hints = extract_type_hint_strings(module, func, is_gt4py_program, function_name)
+    type_hints = _extract_type_hint_strings(module, func, is_gt4py_program, function_name)
 
-    if is_gt4py_program:
-        params = _get_gt4py_func_params(func, type_hints)
-    else:
-        params = _get_simple_func_params(module, func, type_hints)
+    params = (
+        _get_gt4py_func_params(func, type_hints)
+        if is_gt4py_program
+        else _get_simple_func_params(func, type_hints)
+    )
 
     return Func(name=function_name, args=params, is_gt4py_program=is_gt4py_program)
 
 
-def _add_array_size_params(func_params):
-    size_param_names = {
-        ARRAY_SIZE_ARGS[dim.value]
-        for param in func_params
-        for dim in param.dimensions
-        if dim.value in ARRAY_SIZE_ARGS
-    }
-
-    size_params = [
-        FuncParameter(name=s, d_type=ScalarKind.INT32, dimensions=[]) for s in size_param_names
+def _get_gt4py_func_params(func: Program, type_hints: dict[str, str]) -> List[FuncParameter]:
+    return [
+        FuncParameter(
+            name=p.id,
+            d_type=parse_type_spec(p.type)[1],
+            dimensions=parse_type_spec(p.type)[0],
+            py_type_hint=type_hints[p.id],
+        )
+        for p in func.past_node.params
     ]
 
-    return func_params + size_params
 
-
-def _get_gt4py_func_params(func: Program, type_hints) -> list[FuncParameter]:
-    """Parse a gt4py program and return its parameters."""
-    params = []
-    for p in func.past_node.params:
-        dims, dtype = parse_type_spec(p.type)
-        params.append(
-            FuncParameter(name=p.id, d_type=dtype, dimensions=dims, py_type_hint=type_hints[p.id])
-        )
-    return params
-
-
-def _get_simple_func_params(module, func: Callable, type_hints) -> list[FuncParameter]:
-    """Parse a non-gt4py function and return its parameters."""
+def _get_simple_func_params(func: Callable, type_hints: dict[str, str]) -> List[FuncParameter]:
     sig_params = signature(func, follow_wrapped=False).parameters
-
-    params = []
-    for s in sig_params:
-        param = sig_params[s]
-        annotation = param.annotation
-        type_spec = from_type_hint(annotation)
-        dims, dtype = parse_type_spec(type_spec)
-        dim_types = [Dimension(value=d.value) for d in dims]
-        py_type_hint = type_hints.get(s, None)
-        params.append(
-            FuncParameter(name=s, d_type=dtype, dimensions=dim_types, py_type_hint=py_type_hint)
+    return [
+        FuncParameter(
+            name=s,
+            d_type=parse_type_spec(from_type_hint(param.annotation))[1],
+            dimensions=[
+                Dimension(value=d.value)
+                for d in parse_type_spec(from_type_hint(param.annotation))[0]
+            ],
+            py_type_hint=type_hints.get(s, None),
         )
+        for s, param in sig_params.items()
+    ]
 
-    return params
 
-
-def extract_type_hint_strings(module, func, is_gt4py_program: bool, function_name):
-    if is_gt4py_program:
-        tmp_src = inspect.getsource(module)
-        src = extract_function_signature(tmp_src, function_name)
-    else:
-        src = inspect.getsource(func)
-
+def _extract_type_hint_strings(
+    module: ModuleType, func: Callable, is_gt4py_program: bool, function_name: str
+):
+    src = extract_function_signature(
+        inspect.getsource(module) if is_gt4py_program else inspect.getsource(func), function_name
+    )
     tree = ast.parse(src)
-
-    type_hints = {}
-
-    # Define a visitor class to visit function definitions and get type hints
-    class FuncDefVisitor(ast.NodeVisitor):
-        def visit_FunctionDef(self, node):
-            for arg in node.args.args:
-                if arg.annotation:
-                    annotation = ast.unparse(arg.annotation)
-                    type_hints[arg.arg] = annotation
-
     visitor = FuncDefVisitor()
     visitor.visit(tree)
+    return visitor.type_hints
 
-    return type_hints
 
-
-def extract_function_signature(code, function_name):
+def extract_function_signature(code: str, function_name: str) -> str:
     # Regular expression pattern for a Python function signature
-    # This pattern attempts to match function definitions with various parameter types and return annotations
+    # This pattern attempts to match function definitions
     pattern = (
         rf"\bdef\s+{re.escape(function_name)}\s*\(([\s\S]*?)\)\s*(->\s*[\s\S]*?)?:(?=\s*\n\s*\S)"
     )
@@ -127,37 +132,18 @@ def extract_function_signature(code, function_name):
     match = re.search(pattern, code)
 
     if match:
-        # Constructing the full signature with return type if it exists
+        # Constructing the full signature with empty return for ease of parsing by AST visitor
         signature = f"def {function_name}({match.group(1)})"
         if match.group(2):
             signature += f" {match.group(2)}"
         return signature.strip() + ":\n  return None"
     else:
-        return "Function signature not found."
+        raise Exception(f"Could not parse function signature from the following code:\n {code}")
 
 
-def _extract_import_statements(module):
+def _extract_import_statements(module: ModuleType) -> list[str]:
     src = inspect.getsource(module)
     tree = ast.parse(src)
-
-    import_statements = []
-
-    # Define a visitor class to visit import nodes
-    class ImportVisitor(ast.NodeVisitor):
-        def visit_Import(self, node):
-            for alias in node.names:
-                import_statements.append(
-                    f"import {alias.name}" + (f" as {alias.asname}" if alias.asname else "")
-                )
-
-        def visit_ImportFrom(self, node):
-            for alias in node.names:
-                import_statements.append(
-                    f"from {node.module} import {alias.name}"
-                    + (f" as {alias.asname}" if alias.asname else "")
-                )
-
-    visitor = ImportVisitor()
+    visitor = ImportExtractor()
     visitor.visit(tree)
-
-    return import_statements
+    return visitor.import_statements

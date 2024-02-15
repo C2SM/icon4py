@@ -16,7 +16,7 @@ import pytest
 from gt4py.next.type_system.type_specifications import ScalarKind
 from icon4py.model.common.dimension import CellDim, KDim
 
-from icon4pytools.py2fgen.codegen import (
+from icon4pytools.py2fgen.template import (
     CffiPlugin,
     CHeaderGenerator,
     F90InterfaceGenerator,
@@ -46,27 +46,6 @@ simple_type = FuncParameter(
 )
 def test_as_target(param, expected):
     assert expected == as_f90_value(param)
-
-
-# TODO: adapt test to new functions
-@pytest.mark.skip
-@pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "dimension(:,:),")))
-def test_field_extension_2d(lang, expected):
-    pass
-
-
-# TODO: adapt test to new functions
-@pytest.mark.skip
-@pytest.mark.parametrize(("lang", "expected"), (("C", "*"), ("F", "dimension(:),")))
-def test_field_extension_1d(lang, expected):
-    pass
-
-
-# TODO: adapt test to new functions
-@pytest.mark.skip
-@pytest.mark.parametrize("lang", ("C", "F"))
-def test_is_field_simple_type(lang):
-    pass
 
 
 foo = Func(

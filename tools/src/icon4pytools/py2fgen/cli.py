@@ -15,47 +15,63 @@ import pathlib
 
 import click
 
-from icon4pytools.py2fgen.cffi_utils import generate_and_compile_cffi_plugin
-from icon4pytools.py2fgen.codegen import (
-    generate_and_write_f90_interface,
+from icon4pytools.icon4pygen.bindings.utils import write_string
+from icon4pytools.py2fgen.cffi import generate_and_compile_cffi_plugin
+from icon4pytools.py2fgen.generate import (
     generate_c_header,
+    generate_f90_interface,
     generate_python_wrapper,
 )
-from icon4pytools.py2fgen.parsing import parse_function
+from icon4pytools.py2fgen.parsing import parse
+from icon4pytools.py2fgen.utils import Backend
 
 
-@click.command(
-    "py2fgen",
-)
+@click.command("py2fgen")
 @click.argument("module_import_path", type=str)
 @click.argument("function_name", type=str)
-@click.argument(
-    "build_path",
+@click.option(
+    "--build-path",
+    "-b",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
     default=".",
+    help="Directory for generated code and compiled libraries.",
+)
+@click.option("--debug-mode", "-d", is_flag=True, help="Enable debug mode.")
+@click.option(
+    "--gt4py-backend",
+    "-g",
+    type=click.Choice([e.name for e in Backend], case_sensitive=False),
+    default="ROUNDTRIP",
+    help="gt4py backend to use.",
 )
 def main(
     module_import_path: str,
     function_name: str,
     build_path: pathlib.Path,
+    debug_mode: bool,
+    gt4py_backend: str,
 ) -> None:
     """
-    Generate C and F90 wrappers and C library for embedding the python MODULE in C and Fortran.
+    Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran.
 
-      Args:
-          - module: name of the python module containing the methods to be embedded. Those
-          methods have to be decorated with CffiMethod.register
-
-          - build_path: directory where the generated code and compiled libraries are to be found.
+    Args:
+        module_import_path: Python module with the function to embed.
+        function_name: Function to embed.
+        build_path: Directory for code and libraries.
+        debug_mode: Debug mode flag.
+        gt4py_backend: gt4py backend.
     """
+    backend = Backend[gt4py_backend]
     build_path.mkdir(exist_ok=True, parents=True)
-    plugin = parse_function(module_import_path, function_name)
+
+    plugin = parse(module_import_path, function_name)
 
     c_header = generate_c_header(plugin)
-    python_wrapper = generate_python_wrapper(plugin)
+    python_wrapper = generate_python_wrapper(plugin, backend.value, debug_mode)
+    f90_interface = generate_f90_interface(plugin)
 
     generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, build_path)
-    generate_and_write_f90_interface(build_path, plugin)
+    write_string(f90_interface, build_path, f"{plugin.plugin_name}.f90")
 
 
 if __name__ == "__main__":

@@ -10,10 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Optional, Sequence
 
-from gt4py.eve import Node, codegen, datamodels
+from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja
 from gt4py.eve.codegen import TemplatedGenerator
 from gt4py.next import Dimension
@@ -23,8 +22,12 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.icon4pygen.bindings.utils import format_fortran_code, write_string
-from icon4pytools.py2fgen.common import ARRAY_SIZE_ARGS
+from icon4pytools.py2fgen.utils import (
+    ARRAY_SIZE_ARGS,
+    CFFI_DECORATOR,
+    CFFI_UNPACK,
+    flatten_and_get_unique_elts,
+)
 
 
 class DimensionType(Node):
@@ -69,126 +72,95 @@ class CffiPlugin(Node):
         self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"
 
 
-FFI_EXTERN_DECORATOR = "@ffi.def_extern()"
-
-CFFI_FUNCS = """\
-def unpack(ptr, *sizes) -> np.ndarray:
-    '''
-    Unpacks an n-dimensional Fortran (column-major) array into a numpy array (row-major).
-
-    :param ptr: c_pointer to the field
-    :param sizes: variable number of arguments representing the dimensions of the array in Fortran order
-    :return: a numpy array with shape specified by the reverse of sizes and dtype = ctype of the pointer
-    '''
-    shape = sizes[
-        ::-1
-    ]  # Reverse the sizes to convert from Fortran (column-major) to C/numpy (row-major) order
-    length = np.prod(shape)
-    c_type = ffi.getctype(ffi.typeof(ptr).item)
-    arr = np.frombuffer(
-        ffi.buffer(ptr, length * ffi.sizeof(c_type)),
-        dtype=np.dtype(c_type),
-        count=-1,
-        offset=0,
-    ).reshape(shape)
-    return arr
-
-
-def pack(ptr, arr: np.ndarray):
-    '''
-    memcopies a numpy array into a pointer.
-
-    :param ptr: c pointer
-    :param arr: numpy array
-    :return:
-    '''
-    # for now only 2d
-    length = np.prod(arr.shape)
-    c_type = ffi.getctype(ffi.typeof(ptr).item)
-    ffi.memmove(ptr, np.ravel(arr), length * ffi.sizeof(c_type))
-"""
-
-
 def to_c_type(scalar_type: ScalarKind) -> str:
+    """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
 def to_f_type(scalar_type: ScalarKind) -> str:
+    """Convert a scalar type to its corresponding ISO C type."""
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
 
 def as_f90_value(param: FuncParameter) -> str:
     """
-    If param is a scalar type (dimension=0) then return the F90 'value' keyword.
+    Return the Fortran 90 'value' keyword for scalar types.
 
-    Used for F90 generation only.
+    Args:
+        param: The function parameter to check.
+
+    Returns:
+        A string containing 'value,' for scalar types, otherwise an empty string.
     """
     return "value," if len(param.dimensions) == 0 else ""
 
 
-def get_intent(param: FuncParameter) -> str:
-    # todo(samkellerhals): quick hack to set correct intent for domain bounds
-    #   by default all other variables are assumed to be arrays for now
-    #   and passed by reference (pointers) in the C interface and thus
-    #   annotated with inout in the f90 interface. All params need to have
-    #   corresponding in/out/inout types associated with them going forward
-    if "_start" in param.name or "_end" in param.name:
-        return "in"
-    else:
-        return "inout"
-
-
 def render_c_pointer(param: FuncParameter) -> str:
-    return "" if len(param.dimensions) == 0 else "*"
+    """Render a C pointer symbol for array types."""
+    return "*" if len(param.dimensions) > 0 else ""
 
 
 def render_fortran_array_dimensions(param: FuncParameter) -> str:
-    size = len(param.dimensions)
-    if size > 0:
-        dims = ",".join(map(lambda x: ":", range(size)))
+    """
+    Render Fortran array dimensions for array types.
+
+    Args:
+        param: The function parameter to check.
+
+    Returns:
+        A string representing Fortran array dimensions.
+    """
+    if len(param.dimensions) > 0:
+        dims = ",".join(":" for _ in param.dimensions)
         return f"dimension({dims}),"
     return ""
 
 
+# TODO(samkellerhals): We should throw an exception if the dimension is not found in our ARRAY_SIZE_ARGS list
 def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
-    # Map the dimension values to their corresponding Fortran array access strings
-    access_strings = []
-    for dim in dimensions:
-        if dim.value in ARRAY_SIZE_ARGS:
-            fortran_dim = ARRAY_SIZE_ARGS[dim.value]
-            access_strings.append(fortran_dim)
-    return sorted(access_strings)
+    """
+    Convert dimension values to Fortran array access strings.
+
+    Args:
+        dimensions: A sequence of dimensions to convert.
+
+    Returns:
+        A list of Fortran array size strings.
+    """
+    return sorted(ARRAY_SIZE_ARGS[dim.value] for dim in dimensions if dim.value in ARRAY_SIZE_ARGS)
 
 
 def render_fortran_array_sizes(param: FuncParameter) -> str:
-    size = len(param.dimensions)
-    if size == 0:
-        return ""
+    """
+    Render Fortran array size strings for array parameters.
 
-    size_strings = dims_to_size_strings(param.dimensions)
-    return "(" + ", ".join(size_strings) + ")"
+    Args:
+        param: The function parameter to check.
 
-
-def flatten_and_get_unique_elts(list_of_lists: list[list[str]]):
-    flattened = [item for sublist in list_of_lists for item in sublist]
-    return sorted(list(set(flattened)))
+    Returns:
+        A string representing Fortran array sizes.
+    """
+    if len(param.dimensions) > 0:
+        size_strings = dims_to_size_strings(param.dimensions)
+        return "(" + ", ".join(size_strings) + ")"
+    return ""
 
 
 class PythonWrapper(CffiPlugin):
+    gt4py_backend: Optional[str]
+    debug_mode: bool
     size_args: Sequence[str] = datamodels.field(init=False)
-    ffi_decorator: str = FFI_EXTERN_DECORATOR
-    cffi_funcs: str = CFFI_FUNCS
     plugin_name: str = datamodels.field(init=False)
+    cffi_decorator: str = CFFI_DECORATOR
+    cffi_unpack: str = CFFI_UNPACK
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.size_args = flatten_and_get_unique_elts(
             [dims_to_size_strings(arg.dimensions) for arg in self.function.args]
         )
-        self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"
+        self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"  # TODO(samkellerhals): Consider setting this in the CLI.
 
 
-# TODO(samkellerhals): printing of field information should just happen in debug mode.
-#   Currently we also hardcode the backend to be gtfn_cpu, this could also be user selectable.
 class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
@@ -197,7 +169,8 @@ from {{ plugin_name }} import ffi
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
 # all other imports from the module from which the function is being wrapped
@@ -210,9 +183,9 @@ grid = SimpleGrid()
 
 from {{ module_name }} import {{ _this_node.function.name }}
 
-{{ cffi_funcs }}
+{{ cffi_unpack }}
 
-{{ ffi_decorator }}
+{{ cffi_decorator }}
 def {{ _this_node.function.name }}_wrapper(
 {%- for arg in _this_node.function.args -%}
 {{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or _this_node.size_args %}, {% endif %}
@@ -223,24 +196,29 @@ def {{ _this_node.function.name }}_wrapper(
 ):
 
     # Unpack pointers into Ndarrays
-    {% for arg in _this_node.function.args -%}
-    {% if arg.is_array -%}
+    {% for arg in _this_node.function.args %}
+    {% if arg.is_array %}
     {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+    {%- if _this_node.debug_mode %}
     print({{ arg.name }})
     print({{ arg.name }}.shape)
-    {% endif -%}
+    {% endif %}
+    {% endif %}
     {% endfor %}
 
     # Allocate GT4Py Fields
-    {% for arg in _this_node.function.args -%}
-    {% if arg.is_array -%}
+    {% for arg in _this_node.function.args %}
+    {% if arg.is_array %}
     {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
+    {%- if _this_node.debug_mode %}
     print({{ arg.name }})
     print({{ arg.name }}.shape)
-    {% endif -%}
+    {% endif %}
+    {% endif %}
     {% endfor %}
 
-    {{ _this_node.function.name }}{{ ".with_backend(run_gtfn)" if _this_node.function.is_gt4py_program else "" }}(
+    {{ _this_node.function.name }}
+    {%- if _this_node.function.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
     {%- for arg in _this_node.function.args -%}
     {{ arg.name }}{{ ", " if not loop.last or _this_node.function.is_gt4py_program else "" }}
     {%- endfor -%}
@@ -306,7 +284,6 @@ class F90InterfaceGenerator(TemplatedGenerator):
         return self.generic_visit(
             param,
             value=as_f90_value(param),
-            intent=get_intent(param),
             rendered_type=to_f_type(param.d_type),
             dim=render_fortran_array_dimensions(param),
             explicit_size=render_fortran_array_sizes(param),
@@ -316,22 +293,3 @@ class F90InterfaceGenerator(TemplatedGenerator):
         """{{rendered_type}}, {{dim}} {{value}} target :: {{name}}{{ explicit_size }}
     """
     )
-
-
-def generate_c_header(plugin: CffiPlugin) -> str:
-    generated_code = CHeaderGenerator.apply(plugin)
-    return codegen.format_source("cpp", generated_code, style="LLVM")
-
-
-def generate_python_wrapper(plugin: CffiPlugin) -> str:
-    node = PythonWrapper(
-        module_name=plugin.module_name, function=plugin.function, imports=plugin.imports
-    )
-    generated_code = PythonWrapperGenerator.apply(node)
-    return codegen.format_source("python", generated_code)
-
-
-def generate_and_write_f90_interface(build_path: Path, plugin: CffiPlugin):
-    generated_code = F90InterfaceGenerator.apply(plugin)
-    formatted_source = format_fortran_code(generated_code)
-    write_string(formatted_source, build_path, f"{plugin.plugin_name}.f90")
