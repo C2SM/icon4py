@@ -93,7 +93,7 @@ def compute_ddqz_z_half(
     Args:
         z_ifc: geometric height on half levels
         z_mc: geometric height on full levels
-        k: k index
+        k: vertical dimension index
         nlev: total number of levels
         ddqz_z_half: (output)
         horizontal_start: horizontal start index
