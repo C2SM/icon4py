@@ -26,14 +26,13 @@ from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecuto
 
 from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
+from ..type_alias import wpfloat
 
 
 try:
     import pytest_benchmark
 except ModuleNotFoundError:
     pytest_benchmark = None
-
-from ..grid.simple import SimpleGrid
 
 
 @pytest.fixture
@@ -55,7 +54,7 @@ def _shape(
 
 
 def random_mask(
-    grid: SimpleGrid,
+    grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
@@ -89,14 +88,14 @@ def random_field(
 def zero_field(
     grid: BaseGrid,
     *dims: gt_common.Dimension,
-    dtype=float,
+    dtype=wpfloat,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
     return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
 
 
 def constant_field(
-    grid: SimpleGrid, value: float, *dims: gt_common.Dimension, dtype=float
+    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
 ) -> gt_common.Field:
     return as_field(
         dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
