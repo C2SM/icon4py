@@ -305,7 +305,10 @@ def test_compute_e_flx_avg(
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
     geofac_div = interpolation_savepoint.geofac_div().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    primal_cart_normal = grid_savepoint.primal_cart_normal().asnumpy()
+    primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
+    primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()
+    primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().asnumpy()
+    primal_cart_normal = np.transpose(np.stack((primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z)))
     E2C = icon_grid.connectivities[E2CDim]
     C2E = icon_grid.connectivities[C2EDim]
     C2E2C = icon_grid.connectivities[C2E2CDim]

@@ -475,9 +475,11 @@ def compute_e_flx_avg(
                                                                      - e_flx_avg[E2C2E[llb:, 3], iie[llb:, 3]] * geofac_div[E2C[llb:, 1], np.mod(inv_neighbor_id[E2C[llb:, 0], i] + 2, 3)])
                                                                     / geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i]]), e_flx_avg[llb:, 0])
 
-    checksum = e_flx_avg[:, 0] + np.sum(np.sum(primal_cart_normal * primal_cart_normal[E2C2E[:, :], :], axis = 1) * e_flx_avg[:, 1:], axis = 1)
+    checksum = e_flx_avg[:, 0]
+    for i in range(4):
+        checksum = checksum + np.sum(primal_cart_normal * primal_cart_normal[E2C2E[:, i], :], axis = 1) * e_flx_avg[:, 1 + i]
 
     for i in range(5):
-        e_flx_avg[:, i] = e_flx_avg[:, i] / checksum
+        e_flx_avg[llb:, i] = e_flx_avg[llb:, i] / checksum[llb:]
 
     return e_flx_avg
