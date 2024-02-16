@@ -44,6 +44,8 @@ def _compute_reference_atmosphere_edge_fields(
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_edge_fields(
     z_me: Field[[EdgeDim, KDim], wpfloat],
+    rho_ref_me: Field[[EdgeDim, KDim], wpfloat],
+    theta_ref_me: Field[[EdgeDim, KDim], wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -52,8 +54,6 @@ def compute_reference_atmosphere_edge_fields(
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-    rho_ref_me: Field[[EdgeDim, KDim], wpfloat],
-    theta_ref_me: Field[[EdgeDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -142,6 +142,9 @@ def _compute_reference_atmosphere_cell_fields(
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_cell_fields(
     z_height: Field[[CellDim, KDim], wpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], wpfloat],
+    rho_ref_mc: Field[[CellDim, KDim], wpfloat],
+    theta_ref_mc: Field[[CellDim, KDim], wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -150,9 +153,6 @@ def compute_reference_atmosphere_cell_fields(
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-    exner_ref_mc: Field[[CellDim, KDim], wpfloat],
-    rho_ref_mc: Field[[CellDim, KDim], wpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -163,6 +163,9 @@ def compute_reference_atmosphere_cell_fields(
 
     Args:
         z_height: geometric height
+        exner_ref_mc: (output) reference exner pressure on full level mass points
+        rho_ref_mc: (output) reference density on full level mass points
+        theta_ref_mc: (output) reference potential temperature on full level mass points
         p0ref: reference pressure for exner function [Pa]
         p0sl_bg: sea level pressuer [Pa]
         grav: gravitational constant [m/s^2]
@@ -171,14 +174,10 @@ def compute_reference_atmosphere_cell_fields(
         h_scal_bg: height scale [m]
         t0sl_bg: sea level temperature [K]
         del_t_bg: temperature difference between sea level and asymptotic stratospheric temperature
-        exner_ref_mc: (output) reference exner pressure on full level mass points
-        rho_ref_mc: (output) reference density on full level mass points
-        theta_ref_mc: (output) reference potential temperature on full level mass points
         horizontal_start:int32 start index of horizontal domain
         horizontal_end:int32 end index of horizontal domain
         vertical_start:int32 start index of vertical domain
         vertical_end:int32 end index of vertical domain
-
     """
     _compute_reference_atmosphere_cell_fields(
         z_height,

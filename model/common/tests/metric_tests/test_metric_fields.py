@@ -34,13 +34,13 @@ class TestComputeZMc(StencilTest):
         grid,
         z_ifc: np.array,
         **kwargs,
-    ):
+    ) -> dict:
         shp = z_ifc.shape
         z_mc = 0.5 * (z_ifc + np.roll(z_ifc, shift=-1, axis=1))[:, : shp[1] - 1]
         return dict(z_mc=z_mc)
 
     @pytest.fixture
-    def input_data(self, grid):
+    def input_data(self, grid) -> dict:
         z_mc = zero_field(grid, CellDim, KDim)
         z_if = random_field(grid, CellDim, KDim, extend={KDim: 1})
         horizontal_start = int32(0)
@@ -69,9 +69,9 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend, is_otf):
     compute_z_mc.with_backend(backend)(
         z_ifc,
         z_mc,
-        horizontal_start=0,
+        horizontal_start=int32(0),
         horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
+        vertical_start=int32(0),
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -105,7 +105,7 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend, is_otf):
         z_ifc=z_ifc,
         ddqz_z_full=ddqz_z_full,
         inv_ddqz_z_full=inv_ddqz_z_full,
-        horizontal_start=0,
+        horizontal_start=int32(0),
         horizontal_end=icon_grid.num_cells,
         vertical_start=int32(0),
         vertical_end=icon_grid.num_levels,

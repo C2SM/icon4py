@@ -27,7 +27,7 @@ from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO (magdalena) some tests need to run on a compiled backend: embedded does not work with the
+# TODO (@halungge) some tests need to run on a compiled backend: embedded does not work with the
 #  Koff[-1] and roundtrip is too slow on the large grid
 
 

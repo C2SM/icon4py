@@ -284,7 +284,7 @@ class EdgeParams:
 
 @dataclass(frozen=True)
 class CellParams:
-    #: Area of a cell, defined int ICON in mo_model_domain.f90:t_grid_cells%area
+    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
 
     mean_cell_area: float
@@ -299,7 +299,7 @@ def _cell_2_edge_interpolation(
 
     There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
     where the value is set to the one valid in_field value without multiplication by coeff.
-    That essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
+    This essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
     be 1 for this Edge index.
     """
     return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
