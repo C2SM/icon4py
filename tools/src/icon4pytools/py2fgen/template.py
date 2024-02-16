@@ -64,12 +64,9 @@ class Func(Node):
 
 class CffiPlugin(Node):
     module_name: str
-    function: Func
+    plugin_name: str
     imports: list[str]
-    plugin_name: str = datamodels.field(init=False)
-
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"
+    function: Func
 
 
 def to_c_type(scalar_type: ScalarKind) -> str:
@@ -151,7 +148,6 @@ class PythonWrapper(CffiPlugin):
     gt4py_backend: Optional[str]
     debug_mode: bool
     size_args: Sequence[str] = datamodels.field(init=False)
-    plugin_name: str = datamodels.field(init=False)
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = CFFI_UNPACK
 
@@ -159,7 +155,6 @@ class PythonWrapper(CffiPlugin):
         self.size_args = flatten_and_get_unique_elts(
             [dims_to_size_strings(arg.dimensions) for arg in self.function.args]
         )
-        self.plugin_name = f"{self.module_name.split('.')[-1]}_plugin"  # TODO(samkellerhals): Consider setting this in the CLI.
 
 
 class PythonWrapperGenerator(TemplatedGenerator):

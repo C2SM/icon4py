@@ -14,7 +14,8 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, float64
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
@@ -37,3 +38,35 @@ def square_from_function(
     result: Field[[CellDim, KDim], float64],
 ):
     square(a, result, offset_provider={})
+
+
+@field_operator
+def _multi_return(
+    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
+    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    vn_traj: Field[[EdgeDim, KDim], wpfloat],
+    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+    """accumulate_prep_adv_fields stencil formerly known as _mo_solve_nonhydro_stencil_34."""
+    vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
+    mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
+    return vn_traj_wp, mass_flx_me_wp
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def multi_return(
+    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
+    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    vn_traj: Field[[EdgeDim, KDim], wpfloat],
+    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    r_nsubsteps: wpfloat,
+):
+    _multi_return(
+        z_vn_avg,
+        mass_fl_e,
+        vn_traj,
+        mass_flx_me,
+        r_nsubsteps,
+        out=(vn_traj, mass_flx_me),
+    )

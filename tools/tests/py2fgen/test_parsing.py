@@ -20,4 +20,4 @@ def test_parse_functions_on_wrapper():
     function_name = "diffusion_init"
     plugin = parse(module_path, function_name)
     assert isinstance(plugin, CffiPlugin)
-    assert plugin.plugin_name == "diffusion_plugin"
+    assert plugin.plugin_name == "diffusion_init_plugin"

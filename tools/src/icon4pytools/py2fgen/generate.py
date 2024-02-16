@@ -55,6 +55,7 @@ def generate_python_wrapper(
     """
     python_wrapper = PythonWrapper(
         module_name=plugin.module_name,
+        plugin_name=plugin.plugin_name,
         function=plugin.function,
         imports=plugin.imports,
         gt4py_backend=gt4py_backend,

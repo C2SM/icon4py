@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import subprocess
+from pathlib import Path
 
 import pytest
 from click.testing import CliRunner
@@ -18,129 +19,105 @@ from click.testing import CliRunner
 from icon4pytools.py2fgen.cli import main
 
 
-def test_py2fgen():
-    cli = CliRunner()
-    module = "icon4pytools.py2fgen.wrappers.square"
-    function = "square"
+@pytest.fixture
+def cli_runner():
+    return CliRunner()
+
+
+@pytest.fixture
+def wrapper_module():
+    return "icon4pytools.py2fgen.wrappers.simple"
+
+
+def run_test_case(
+    cli,
+    module: str,
+    function: str,
+    backend: str,
+    samples_path: Path,
+    fortran_driver: str,
+    extra_compiler_flags: tuple[str, ...] = (),
+):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function])
-        assert result.exit_code == 0
-
-
-def test_py2fgen_compilation_and_execution_square(samples_path):
-    cli = CliRunner()
-    module = "icon4pytools.py2fgen.wrappers.square"
-    function = "square"
-
-    with cli.isolated_filesystem():
-        # Generate the header file, f90 interface and dynamic library
-        result = cli.invoke(main, [module, function])
+        result = cli.invoke(main, [module, function, "--gt4py-backend", backend])
         assert result.exit_code == 0, "CLI execution failed"
 
-        # Compile generated f90 interface, driver code, and dynamic library
         try:
-            subprocess.run(["gfortran", "-c", "square_plugin.f90", "."], check=True)
-            subprocess.run(
-                [
-                    "gfortran",
-                    "-I.",
-                    "-Wl,-rpath=.",
-                    "-L.",
-                    "square_plugin.f90",
-                    str(samples_path / f"test_{function}.f90"),
-                    "-lsquare_plugin",
-                    "-o",
-                    f"{function}",
-                ],
-                check=True,
-            )
+            compile_fortran_code(function, samples_path, fortran_driver, extra_compiler_flags)
         except subprocess.CalledProcessError as e:
             pytest.fail(f"Compilation failed: {e}")
 
-        # Run the compiled executable and check if it ran successfully
         try:
-            fortran_result = subprocess.run(
-                [f"./{function}"], capture_output=True, text=True, check=True
-            )
+            fortran_result = run_fortran_executable(function)
+            assert "passed" in fortran_result.stdout
         except subprocess.CalledProcessError as e:
             pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
 
-        assert "All elements squared correctly." in fortran_result.stdout
+
+def compile_fortran_code(
+    function: str, samples_path: Path, fortran_driver: str, extra_compiler_flags: tuple[str, ...]
+):
+    subprocess.run(["gfortran", "-c", f"{function}_plugin.f90", "."], check=True)
+    subprocess.run(
+        [
+            "gfortran",
+            "-cpp",
+            "-I.",
+            "-Wl,-rpath=.",
+            "-L.",
+            f"{function}_plugin.f90",
+            str(samples_path / f"{fortran_driver}.f90"),
+            f"-l{function}_plugin",
+            "-o",
+            function,
+        ]
+        + [f for f in extra_compiler_flags],
+        check=True,
+    )
 
 
-def test_py2fgen_compilation_and_execution_square_from_function(samples_path):
-    cli = CliRunner()
-    module = "icon4pytools.py2fgen.wrappers.square"
-    function = "square_from_function"
-
-    with cli.isolated_filesystem():
-        # Generate the header file, f90 interface and dynamic library
-        result = cli.invoke(main, [module, function])
-        assert result.exit_code == 0, "CLI execution failed"
-
-        # Compile generated f90 interface, driver code, and dynamic library
-        try:
-            subprocess.run(["gfortran", "-c", "square_plugin.f90", "."], check=True)
-            subprocess.run(
-                [
-                    "gfortran",
-                    "-I.",
-                    "-Wl,-rpath=.",
-                    "-L.",
-                    "square_plugin.f90",
-                    str(samples_path / f"test_{function}.f90"),
-                    "-lsquare_plugin",
-                    "-o",
-                    f"{function}",
-                ],
-                check=True,
-            )
-        except subprocess.CalledProcessError as e:
-            pytest.fail(f"Compilation failed: {e}")
-
-        # Run the compiled executable and check if it ran successfully
-        try:
-            fortran_result = subprocess.run(
-                [f"./{function}"], capture_output=True, text=True, check=True
-            )
-        except subprocess.CalledProcessError as e:
-            pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
-
-        assert "All elements squared correctly." in fortran_result.stdout
+def run_fortran_executable(function: str):
+    return subprocess.run([f"./{function}"], capture_output=True, text=True, check=True)
 
 
-def test_py2fgen_compilation_and_execution_gt4py_program(samples_path):
-    cli = CliRunner()
-    module = "icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields"
-    function = "accumulate_prep_adv_fields"
+@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
+def test_py2fgen_compilation_and_execution_square(
+    cli_runner, backend, samples_path, wrapper_module
+):
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "square",
+        backend,
+        samples_path,
+        "test_square",
+    )
 
-    with cli.isolated_filesystem():
-        # Generate the header file, f90 interface and dynamic library
-        result = cli.invoke(main, [module, function])
-        assert result.exit_code == 0, "CLI execution failed"
 
-        # Compile generated f90 interface, driver code, and dynamic library
-        try:
-            subprocess.run(["gfortran", "-c", f"{function}_plugin.f90", "."], check=True)
-            subprocess.run(
-                [
-                    "gfortran",
-                    "-I.",
-                    "-Wl,-rpath=.",
-                    "-L.",
-                    f"{function}_plugin.f90",
-                    str(samples_path / f"test_{function}.f90"),
-                    f"-l{function}_plugin",
-                    "-o",
-                    f"{function}",
-                ],
-                check=True,
-            )
-        except subprocess.CalledProcessError as e:
-            pytest.fail(f"Compilation failed: {e}")
+@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
+def test_py2fgen_compilation_and_execution_square_from_function(
+    cli_runner, backend, samples_path, wrapper_module
+):
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "square_from_function",
+        backend,
+        samples_path,
+        "test_square",
+        ("-DUSE_SQUARE_FROM_FUNCTION",),
+    )
 
-        # Run the compiled executable and check if it ran successfully
-        try:
-            subprocess.run([f"./{function}"], capture_output=True, text=True, check=True)
-        except subprocess.CalledProcessError as e:
-            pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
+
+@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
+def test_py2fgen_compilation_and_execution_multi_return(
+    cli_runner, backend, samples_path, wrapper_module
+):
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "multi_return",
+        backend,
+        samples_path,
+        "test_multi_return",
+    )

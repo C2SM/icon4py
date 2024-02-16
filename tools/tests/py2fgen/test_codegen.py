@@ -81,14 +81,18 @@ bar = Func(
 
 
 def test_cheader_generation_for_single_function():
-    plugin = CffiPlugin(module_name="libtest", function=foo, imports=["import foo"])
+    plugin = CffiPlugin(
+        module_name="libtest", plugin_name="libtest_plugin", function=foo, imports=["import foo"]
+    )
 
     header = CHeaderGenerator.apply(plugin)
     assert header == "extern void foo_wrapper(int one, double* two, int n_Cell, int n_K);"
 
 
 def test_cheader_for_pointer_args():
-    plugin = CffiPlugin(module_name="libtest", function=bar, imports=["import bar"])
+    plugin = CffiPlugin(
+        module_name="libtest", plugin_name="libtest_plugin", function=bar, imports=["import bar"]
+    )
 
     header = CHeaderGenerator.apply(plugin)
     assert header == "extern void bar_wrapper(float* one, int two, int n_Cell, int n_K);"
@@ -100,7 +104,9 @@ def compare_ignore_whitespace(s1: str, s2: str):
 
 
 def test_fortran_interface():
-    plugin = CffiPlugin(module_name="libtest", function=foo, imports=["import foo"])
+    plugin = CffiPlugin(
+        module_name="libtest", plugin_name="libtest_plugin", function=foo, imports=["import foo"]
+    )
     interface = F90InterfaceGenerator.apply(plugin)
     expected = """
     module libtest_plugin

@@ -65,7 +65,12 @@ def parse(module_name: str, function_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
     parsed_function = _parse_function(module, function_name)
     parsed_imports = _extract_import_statements(module)
-    return CffiPlugin(module_name=module_name, function=parsed_function, imports=parsed_imports)
+    return CffiPlugin(
+        module_name=module_name,
+        plugin_name=f"{function_name}_plugin",
+        function=parsed_function,
+        imports=parsed_imports,
+    )
 
 
 def _parse_function(module: ModuleType, function_name: str) -> Func:

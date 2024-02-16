@@ -59,7 +59,7 @@ def unpack(ptr, *sizes) -> np.ndarray:
 
 
 class Backend(Enum):
-    CPU = "run_gtfn_cpu"
+    CPU = "run_gtfn"
     GPU = "run_gtfn_gpu"
     ROUNDTRIP = "run_roundtrip"
 
