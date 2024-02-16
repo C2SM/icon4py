@@ -22,7 +22,10 @@ from gt4py.next import as_field
 from gt4py.next import common as gt_common
 from gt4py.next import constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
+from gt4py.next.program_processors.otf_compile_executor import (
+    CachedOTFCompileExecutor,
+    OTFCompileExecutor,
+)
 
 from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
@@ -241,8 +244,15 @@ def uses_icon_grid_with_otf(backend, grid):
     Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
     """
     if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if isinstance(backend.executor, OTFCompileExecutor):
+        if isinstance(backend.executor, (OTFCompileExecutor, CachedOTFCompileExecutor)):
             return True
+        try:
+            from gt4py.next.program_processors.runners import dace_iterator
+
+            if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
+                return True
+        except ImportError:
+            pass
     return False
 
 
