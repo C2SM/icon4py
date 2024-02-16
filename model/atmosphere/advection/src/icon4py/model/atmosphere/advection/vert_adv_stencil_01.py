@@ -14,7 +14,6 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 
@@ -50,8 +49,24 @@ def _vert_adv_stencil_01(
     iadv_slev_jt: int32,
 ) -> Field[[CellDim, KDim], float]:
     k = broadcast(k, (CellDim, KDim))
-  
-    tracer_new = (where((iadv_slev_jt<=k), _vert_adv_stencil_01a(tracer_now, rhodz_now, p_mflx_tracer_v, deepatmo_divzl, deepatmo_divzu, rhodz_new, p_dtime, ), tracer_now) if (ivadv_tracer!=int32(0)) else tracer_now )
+
+    tracer_new = (
+        where(
+            (iadv_slev_jt <= k),
+            _vert_adv_stencil_01a(
+                tracer_now,
+                rhodz_now,
+                p_mflx_tracer_v,
+                deepatmo_divzl,
+                deepatmo_divzu,
+                rhodz_new,
+                p_dtime,
+            ),
+            tracer_now,
+        )
+        if (ivadv_tracer != int32(0))
+        else tracer_now
+    )
 
     return tracer_new
 
