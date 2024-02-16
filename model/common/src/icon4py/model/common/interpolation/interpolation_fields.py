@@ -424,7 +424,7 @@ def compute_e_flx_avg(
     c_bln_avg: np.array,
     geofac_div: np.array,
     owner_mask: np.array,
-#    primal_cart_normal: np.array,
+    primal_cart_normal: np.array,
     E2C: np.array,
     C2E: np.array,
     C2E2C: np.array,
@@ -461,6 +461,8 @@ def compute_e_flx_avg(
     iie[:, 3] = np.where(E2C[E2C2E[:, 3], 0] == E2C[:, 1], 1, -1)
     iie[:, 3] = np.where(np.logical_and(E2C[E2C2E[:, 3], 1] == E2C[:, 1], iie[:, 3] != 1), 3, iie[:, 3])
 
+    llb = lateral_boundary_edges[3]
+    index = np.arange(llb, lateral_boundary_edges[1])
     for i in range(3):
         e_flx_avg[llb:, 0] = np.where(C2E[E2C[llb:, 0], i] == index, 0.5 * ((geofac_div[E2C[llb:, 0], i] * c_bln_avg[E2C[llb:, 0], 0]
                                                                      + geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i]] * c_bln_avg[E2C[llb:, 0], i + 1]
@@ -473,9 +475,9 @@ def compute_e_flx_avg(
                                                                      - e_flx_avg[E2C2E[llb:, 3], iie[llb:, 3]] * geofac_div[E2C[llb:, 1], np.mod(inv_neighbor_id[E2C[llb:, 0], i] + 2, 3)])
                                                                     / geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i]]), e_flx_avg[llb:, 0])
 
-#    checksum = e_flx_avg[:, 0] + np.sum(np.sum(primal_cart_normal * primal_cart_normal[E2C2E[:, :], :], axis = 1) * e_flx_avg[:, 1:], axis = 1)
-#
-#    for i in range(5):
-#        e_flx_avg[:, i] = e_flx_avg[:, i] / checksum
+    checksum = e_flx_avg[:, 0] + np.sum(np.sum(primal_cart_normal * primal_cart_normal[E2C2E[:, :], :], axis = 1) * e_flx_avg[:, 1:], axis = 1)
+
+    for i in range(5):
+        e_flx_avg[:, i] = e_flx_avg[:, i] / checksum
 
     return e_flx_avg
