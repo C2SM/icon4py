@@ -40,14 +40,22 @@ class TestVertAdvStencil01(StencilTest):
         p_dtime: np.float64,
         **kwargs,
     ) -> np.array:
-        if (ivadv_tracer!=int32(0)):
-          tracer_new = np.where( (iadv_slev_jt<=k), (
-              tracer_now * rhodz_now
-              + p_dtime
-              * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
-          ) / rhodz_new, tracer_now)
+        if ivadv_tracer != int32(0):
+            tracer_new = np.where(
+                (iadv_slev_jt <= k),
+                (
+                    tracer_now * rhodz_now
+                    + p_dtime
+                    * (
+                        p_mflx_tracer_v[:, 1:] * deepatmo_divzl
+                        - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
+                    )
+                )
+                / rhodz_new,
+                tracer_now,
+            )
         else:
-          tracer_new = tracer_now
+            tracer_new = tracer_now
 
         return dict(tracer_new=tracer_new)
 
@@ -61,8 +69,8 @@ class TestVertAdvStencil01(StencilTest):
         rhodz_new = random_field(grid, CellDim, KDim)
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim)[0], dtype=int32))
         p_dtime = np.float64(5.0)
-        ivadv_tracer= int32(1)
-        iadv_slev_jt= int32(4)
+        ivadv_tracer = int32(1)
+        iadv_slev_jt = int32(4)
         tracer_new = zero_field(grid, CellDim, KDim)
         return dict(
             tracer_now=tracer_now,
@@ -73,7 +81,7 @@ class TestVertAdvStencil01(StencilTest):
             rhodz_new=rhodz_new,
             k=k,
             p_dtime=p_dtime,
-            ivadv_tracer= ivadv_tracer,
-            iadv_slev_jt= iadv_slev_jt,
+            ivadv_tracer=ivadv_tracer,
+            iadv_slev_jt=iadv_slev_jt,
             tracer_new=tracer_new,
         )
