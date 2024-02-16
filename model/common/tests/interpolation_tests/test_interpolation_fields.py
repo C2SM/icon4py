@@ -305,7 +305,7 @@ def test_compute_e_flx_avg(
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
     geofac_div = interpolation_savepoint.geofac_div().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    primal_cart_normal = grid_savepoint.primal_cart_normal().asnumpy()
+#    primal_cart_normal = grid_savepoint.primal_cart_normal().asnumpy()
     E2C = icon_grid.connectivities[E2CDim]
     C2E = icon_grid.connectivities[C2EDim]
     C2E2C = icon_grid.connectivities[C2E2CDim]
@@ -321,7 +321,7 @@ def test_compute_e_flx_avg(
     )
     lateral_boundary_edges[2] = icon_grid.get_start_index(
         EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
     )
     lateral_boundary_cells = np.arange(3)
     lateral_boundary_cells[0] = icon_grid.get_start_index(
@@ -344,7 +344,7 @@ def test_compute_e_flx_avg(
         c_bln_avg,
         geofac_div,
         owner_mask,
-        primal_cart_normal,
+#        primal_cart_normal,
         E2C,
         C2E,
         C2E2C,
@@ -354,6 +354,6 @@ def test_compute_e_flx_avg(
     )
 #    np.set_printoptions(threshold=np.inf)
     print(e_flx_avg_ref)
-    print("aaaaa")
+    print("bbbbb")
     print(e_flx_avg)
     assert np.allclose(e_flx_avg, e_flx_avg_ref)
