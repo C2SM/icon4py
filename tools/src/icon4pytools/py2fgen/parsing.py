@@ -128,20 +128,15 @@ def _extract_type_hint_strings(
 
 
 def extract_function_signature(code: str, function_name: str) -> str:
-    # Regular expression pattern for a Python function signature
     # This pattern attempts to match function definitions
-    pattern = (
-        rf"\bdef\s+{re.escape(function_name)}\s*\(([\s\S]*?)\)\s*(->\s*[\s\S]*?)?:(?=\s*\n\s*\S)"
-    )
+    pattern = rf"\bdef\s+{re.escape(function_name)}\s*\(([\s\S]*?)\)\s*:"
 
     match = re.search(pattern, code)
 
     if match:
         # Constructing the full signature with empty return for ease of parsing by AST visitor
-        signature = f"def {function_name}({match.group(1)})"
-        if match.group(2):
-            signature += f" {match.group(2)}"
-        return signature.strip() + ":\n  return None"
+        signature = match.group()
+        return signature.strip() + "\n  return None"
     else:
         raise Exception(f"Could not parse function signature from the following code:\n {code}")
 

@@ -13,31 +13,31 @@
 # mypy: ignore-errors
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, float64
+from gt4py.next.ffront.fbuiltins import Field, float64, int32
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _square(
-    a: Field[[CellDim, KDim], float64], b: Field[[CellDim, KDim], float64]
+    inp: Field[[CellDim, KDim], float64],
 ) -> Field[[CellDim, KDim], float64]:
-    return a * b
+    return inp**2
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def square(
-    a: Field[[CellDim, KDim], float64],
+    inp: Field[[CellDim, KDim], float64],
     result: Field[[CellDim, KDim], float64],
 ):
-    _square(a, a, out=result)
+    _square(inp, out=result)
 
 
 def square_from_function(
-    a: Field[[CellDim, KDim], float64],
+    inp: Field[[CellDim, KDim], float64],
     result: Field[[CellDim, KDim], float64],
 ):
-    square(a, result, offset_provider={})
+    square(inp, result, offset_provider={})
 
 
 @field_operator
@@ -61,6 +61,10 @@ def multi_return(
     vn_traj: Field[[EdgeDim, KDim], wpfloat],
     mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _multi_return(
         z_vn_avg,
@@ -69,4 +73,8 @@ def multi_return(
         mass_flx_me,
         r_nsubsteps,
         out=(vn_traj, mass_flx_me),
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )

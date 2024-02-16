@@ -17,45 +17,18 @@ from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
 
-CFFI_DECORATOR = "@ffi.def_extern()"
-PROGRAM_DECORATOR = "@program"
-
-
-def build_array_size_args():
+def build_array_size_args() -> dict[str, str]:
     array_size_args = {}
     from icon4py.model.common import dimension
 
     for var_name, var in vars(dimension).items():
         if isinstance(var, Dimension):
-            dim_name = var_name.replace("Dim", "")
+            dim_name = var_name.replace(
+                "Dim", ""
+            )  # Assumes we keep suffixing each Dimension with Dim
             size_name = f"n_{dim_name}"
             array_size_args[dim_name] = size_name
     return array_size_args
-
-
-# TODO(samkellerhals): This should be defined as an actual function in the code so we can test it.
-CFFI_UNPACK = """\
-def unpack(ptr, *sizes) -> np.ndarray:
-    '''
-    Unpacks an n-dimensional Fortran (column-major) array into a numpy array (row-major).
-
-    :param ptr: c_pointer to the field
-    :param sizes: variable number of arguments representing the dimensions of the array in Fortran order
-    :return: a numpy array with shape specified by the reverse of sizes and dtype = ctype of the pointer
-    '''
-    shape = sizes[
-        ::-1
-    ]  # Reverse the sizes to convert from Fortran (column-major) to C/numpy (row-major) order
-    length = np.prod(shape)
-    c_type = ffi.getctype(ffi.typeof(ptr).item)
-    arr = np.frombuffer(
-        ffi.buffer(ptr, length * ffi.sizeof(c_type)),
-        dtype=np.dtype(c_type),
-        count=-1,
-        offset=0,
-    ).reshape(shape)
-    return arr
-"""
 
 
 class Backend(Enum):

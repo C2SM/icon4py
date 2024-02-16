@@ -3,20 +3,21 @@ program call_multi_return_cffi_plugin
     use multi_return_plugin
     implicit none
 
-    integer(c_int) :: edim, kdim, i, j
+    integer(c_int) :: edim, kdim, i, j,  horizontal_start, horizontal_end, vertical_start, vertical_end
     logical :: computation_correct
+    character(len=100) :: str_buffer
     real(c_double) :: r_nsubsteps
     real(c_double), dimension(:,:), allocatable :: z_vn_avg, mass_fl_e, vn_traj, mass_flx_me
 
     ! array dimensions
-    edim = 3
-    kdim = 4
+    edim = 27
+    kdim = 10
 
-    ! allocate arrays
-    allocate(z_vn_avg(edim, kdim))
-    allocate(mass_fl_e(edim, kdim))
-    allocate(vn_traj(edim, kdim))
-    allocate(mass_flx_me(edim, kdim))
+    ! allocate arrays (allocate in column-major order)
+    allocate(z_vn_avg(kdim, edim))
+    allocate(mass_fl_e(kdim, edim))
+    allocate(vn_traj(kdim, edim))
+    allocate(mass_flx_me(kdim, edim))
 
     ! initialize arrays and variables
     z_vn_avg = 1.0d0
@@ -24,23 +25,38 @@ program call_multi_return_cffi_plugin
     vn_traj = 3.0d0
     mass_flx_me = 4.0d0
     r_nsubsteps = 9.0d0
+    horizontal_start = 0
+    horizontal_end = edim
+    vertical_start = 0
+    vertical_end = kdim
 
-    ! debug info
-    print *, "Arrays before:"
-    print *, "z_vn_avg = ", z_vn_avg
-    print *, "mass_fl_e = ", mass_fl_e
-    print *, "vn_traj = ", vn_traj
-    print *, "mass_flx_me = ", mass_flx_me
+    ! print array shapes and values before computation
+    print *, "Arrays before computation:"
+    write(str_buffer, '("Shape of z_vn_avg = ", I2, ",", I2)') size(z_vn_avg, 1), size(z_vn_avg, 2)
+    print *, trim(str_buffer)
+    write(str_buffer, '("Shape of mass_fl_e = ", I2, ",", I2)') size(mass_fl_e, 1), size(mass_fl_e, 2)
+    print *, trim(str_buffer)
+    write(str_buffer, '("Shape of vn_traj = ", I2, ",", I2)') size(vn_traj, 1), size(vn_traj, 2)
+    print *, trim(str_buffer)
+    write(str_buffer, '("Shape of mass_flx_me = ", I2, ",", I2)') size(mass_flx_me, 1), size(mass_flx_me, 2)
+    print *, trim(str_buffer)
+    print *
 
     ! call the cffi plugin
-    call multi_return_wrapper(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, edim, kdim)
+    call multi_return_wrapper(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
+            horizontal_start, horizontal_end, vertical_start, vertical_end, edim, kdim)
 
-    ! debug info
-    print *, "Arrays after:"
-    print *, "z_vn_avg = ", z_vn_avg
-    print *, "mass_fl_e = ", mass_fl_e
-    print *, "vn_traj = ", vn_traj
-    print *, "mass_flx_me = ", mass_flx_me
+    ! print array shapes and values before computation
+    print *, "Arrays after computation:"
+    write(str_buffer, '("Shape of z_vn_avg = ", I2, ",", I2)') size(z_vn_avg, 1), size(z_vn_avg, 2)
+    print *, trim(str_buffer)
+    write(str_buffer, '("Shape of mass_fl_e = ", I2, ",", I2)') size(mass_fl_e, 1), size(mass_fl_e, 2)
+    print *, trim(str_buffer)
+    write(str_buffer, '("Shape of vn_traj = ", I2, ",", I2)') size(vn_traj, 1), size(vn_traj, 2)
+    print *, trim(str_buffer)
+    write(str_buffer, '("Shape of mass_flx_me = ", I2, ",", I2)') size(mass_flx_me, 1), size(mass_flx_me, 2)
+    print *, trim(str_buffer)
+    print *
 
     ! Assert vn_traj == 12 and mass_flx_me == 22
     computation_correct = .true.

@@ -14,6 +14,51 @@ import logging
 from pathlib import Path
 
 import cffi
+import numpy as np
+from cffi import FFI
+
+from icon4pytools.common.logger import setup_logger
+
+
+ffi = FFI()
+
+logger = setup_logger(__name__)
+
+
+def unpack(ptr, *sizes: int) -> np.ndarray:
+    """
+    Unpacks an n-dimensional Fortran (column-major) array into a NumPy array (row-major).
+
+    This function is particularly useful when interfacing with C code that returns arrays
+    in column-major order (Fortran order), but you want to work with the array in row-major
+    order (NumPy's default order).
+
+    Args:
+        ptr: A C pointer to the field.
+        *sizes: Size arguments representing the length of each dimension of the array in
+            row-major order. The length of this argument must match the number of dimensions
+            of the array.
+
+    Returns:
+        A NumPy array with shape specified by the sizes and dtype determined by the ctype
+        (C data type) of the pointer.
+    """
+    length = np.prod(sizes)
+    c_type = ffi.getctype(ffi.typeof(ptr).item)
+
+    # special casing different types
+    if c_type == "int":
+        dtype = np.int32
+    else:
+        dtype = np.dtype(c_type)  # type: ignore
+
+    arr = np.frombuffer(  # type: ignore
+        ffi.buffer(ptr, length * ffi.sizeof(c_type)),
+        dtype=dtype,
+        count=-1,
+        offset=0,
+    ).reshape(sizes)
+    return arr
 
 
 def generate_and_compile_cffi_plugin(
@@ -66,5 +111,6 @@ def compile_cffi_plugin(
     builder: cffi.FFI, python_wrapper: str, build_path: str, plugin_name: str
 ) -> None:
     """Compile the CFFI plugin with the given configuration."""
+    logger.info("Compiling CFFI dynamic library...")
     builder.embedding_init_code(python_wrapper)
     builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)

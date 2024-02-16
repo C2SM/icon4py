@@ -310,9 +310,12 @@ OUTPUT_FILEPATH   A path to the output Fortran source file to be generated.
 
 **Note:** The output of f2ser still has to be preprocessed using `pp_ser.py`, which then yields a compilable unit. The serialised files will have `f2ser` as their prefix in the default folder location of the experiment.
 
-## `py2f`
+## `py2fgen`
 
-Python utility for generating a C library and Fortran interface to call Python icon4py modules. The library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.)
+Python utility for generating C and F90 wrappers as well as a C dynamic library for embedding a Python function in C and Fortran. The tool generates a Python wrapper
+function which calls
+
+library [embeds python via CFFI ](https://cffi.readthedocs.io/en/latest/embedding.)
 
 This is **highly experimental** and has not been tested from within Fortran code!
 

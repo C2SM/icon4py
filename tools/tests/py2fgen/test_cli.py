@@ -39,7 +39,7 @@ def run_test_case(
     extra_compiler_flags: tuple[str, ...] = (),
 ):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function, "--gt4py-backend", backend])
+        result = cli.invoke(main, [module, function, "--gt4py-backend", backend, "-d"])
         assert result.exit_code == 0, "CLI execution failed"
 
         try:

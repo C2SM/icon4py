@@ -58,7 +58,7 @@ def main(
         module_import_path: Python module with the function to embed.
         function_name: Function to embed.
         build_path: Directory for code and libraries.
-        debug_mode: Debug mode flag.
+        debug_mode: Debug mode flag (prints extra information at runtime).
         gt4py_backend: gt4py backend.
     """
     backend = Backend[gt4py_backend]

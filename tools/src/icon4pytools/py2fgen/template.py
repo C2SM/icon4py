@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import inspect
 from typing import Any, Optional, Sequence
 
 from gt4py.eve import Node, datamodels
@@ -22,12 +23,12 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.py2fgen.utils import (
-    CFFI_DECORATOR,
-    CFFI_UNPACK,
-    build_array_size_args,
-    flatten_and_get_unique_elts,
-)
+from icon4pytools.py2fgen.cffi import unpack
+from icon4pytools.py2fgen.utils import build_array_size_args, flatten_and_get_unique_elts
+
+
+CFFI_DECORATOR = "@ffi.def_extern()"
+PROGRAM_DECORATOR = "@program"
 
 
 class DimensionType(Node):
@@ -54,10 +55,10 @@ class Func(Node):
     name: str
     args: Sequence[FuncParameter]
     is_gt4py_program: bool
-    size_args: Sequence[str] = datamodels.field(init=False)
+    global_size_args: Sequence[str] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.size_args = flatten_and_get_unique_elts(
+        self.global_size_args = flatten_and_get_unique_elts(
             [dims_to_size_strings(arg.dimensions) for arg in self.args]
         )
 
@@ -67,6 +68,13 @@ class CffiPlugin(Node):
     plugin_name: str
     imports: list[str]
     function: Func
+
+
+class PythonWrapper(CffiPlugin):
+    gt4py_backend: Optional[str]
+    debug_mode: bool
+    cffi_decorator: str = CFFI_DECORATOR
+    cffi_unpack: str = inspect.getsource(unpack)
 
 
 def to_c_type(scalar_type: ScalarKind) -> str:
@@ -113,10 +121,12 @@ def render_fortran_array_dimensions(param: FuncParameter) -> str:
     return ""
 
 
-# TODO(samkellerhals): We should throw an exception if the dimension is not found in our ARRAY_SIZE_ARGS list
 def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
-    """
-    Convert dimension values to Fortran array access strings.
+    """Convert Python array dimension values to Fortran array access strings.
+
+    These already should be in Row-major order as defined in the Python function
+    definition type hints for each array. These will be used to reshape the
+    Column-major ordered arrays from Fortran in the unpack function.
 
     Args:
         dimensions: A sequence of dimensions to convert.
@@ -125,7 +135,13 @@ def dims_to_size_strings(dimensions: Sequence[Dimension]) -> list[str]:
         A list of Fortran array size strings.
     """
     array_size_args = build_array_size_args()
-    return sorted(array_size_args[dim.value] for dim in dimensions if dim.value in array_size_args)
+    size_strings = []
+    for dim in dimensions:
+        if dim.value in array_size_args:
+            size_strings.append(array_size_args[dim.value])
+        else:
+            raise ValueError(f"Dimension '{dim.value}' not found in ARRAY_SIZE_ARGS")
+    return size_strings
 
 
 def render_fortran_array_sizes(param: FuncParameter) -> str:
@@ -142,19 +158,6 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
         size_strings = dims_to_size_strings(param.dimensions)
         return "(" + ", ".join(size_strings) + ")"
     return ""
-
-
-class PythonWrapper(CffiPlugin):
-    gt4py_backend: Optional[str]
-    debug_mode: bool
-    size_args: Sequence[str] = datamodels.field(init=False)
-    cffi_decorator: str = CFFI_DECORATOR
-    cffi_unpack: str = CFFI_UNPACK
-
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.size_args = flatten_and_get_unique_elts(
-            [dims_to_size_strings(arg.dimensions) for arg in self.function.args]
-        )
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
@@ -184,9 +187,9 @@ from {{ module_name }} import {{ _this_node.function.name }}
 {{ cffi_decorator }}
 def {{ _this_node.function.name }}_wrapper(
 {%- for arg in _this_node.function.args -%}
-{{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or _this_node.size_args %}, {% endif %}
+{{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or _this_node.function.global_size_args %}, {% endif %}
 {%- endfor %}
-{%- for arg in _this_node.size_args -%}
+{%- for arg in _this_node.function.global_size_args -%}
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
@@ -196,8 +199,8 @@ def {{ _this_node.function.name }}_wrapper(
     {% if arg.is_array %}
     {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
     {%- if _this_node.debug_mode %}
-    print({{ arg.name }})
-    print({{ arg.name }}.shape)
+    msg = 'shape of {{ arg.name }} = %s' % str({{ arg.name}}.shape)
+    print(msg)
     {% endif %}
     {% endif %}
     {% endfor %}
@@ -230,7 +233,7 @@ class CHeaderGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja("""extern void {{_this_node.function.name}}_wrapper({{function}});""")
 
     Func = as_jinja(
-        "{%- for arg in args -%}{{ arg }}{% if not loop.last or size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%}"
+        "{%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%}"
     )
 
     def visit_FuncParameter(self, param: FuncParameter):
@@ -258,15 +261,15 @@ class F90InterfaceGenerator(TemplatedGenerator):
 
     def visit_Func(self, func: Func, **kwargs):
         arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
-        if func.size_args:
-            arg_names += ",&\n" + ", &\n".join(func.size_args)
+        if func.global_size_args:
+            arg_names += ",&\n" + ", &\n".join(func.global_size_args)
 
         return self.generic_visit(func, param_names=arg_names)
 
     Func = as_jinja(
         """subroutine {{name}}_wrapper({{param_names}}) bind(c, name='{{name}}_wrapper')
        use, intrinsic :: iso_c_binding
-       {% for size_arg in size_args -%}
+       {% for size_arg in global_size_args -%}
        integer(c_int), value, target :: {{ size_arg }}
        {% endfor %}
        {% for arg in args: %}\
