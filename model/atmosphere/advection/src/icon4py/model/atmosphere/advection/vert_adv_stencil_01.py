@@ -51,7 +51,7 @@ def _vert_adv_stencil_01(
 ) -> Field[[CellDim, KDim], float]:
     k = broadcast(k, (CellDim, KDim))
   
-    tracer_new = (where((iadv_slev_jt<=k), _vert_adv_stencil_01a(tracer_now, rhodz_now, p_mflx_tracer_v, deepatmo_divzl, deepatmo_divzu, rhodz_new, p_dtime, ), tracer_now*2.) if (ivadv_tracer!=int32(0)) else tracer_now )
+    tracer_new = (where((iadv_slev_jt<=k), _vert_adv_stencil_01a(tracer_now, rhodz_now, p_mflx_tracer_v, deepatmo_divzl, deepatmo_divzu, rhodz_new, p_dtime, ), tracer_now) if (ivadv_tracer!=int32(0)) else tracer_now )
 
     return tracer_new
 
