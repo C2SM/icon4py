@@ -22,7 +22,10 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
-from icon4pytools.liskov.parsing.transform import FusedStencilTransformer, OptionalModulesTransformer
+from icon4pytools.liskov.parsing.transform import (
+    FusedStencilTransformer,
+    OptionalModulesTransformer,
+)
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
 
 

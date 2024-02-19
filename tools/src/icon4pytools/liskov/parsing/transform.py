@@ -29,7 +29,10 @@ from icon4pytools.liskov.pipeline.definition import Step
 
 logger = setup_logger(__name__)
 
-def _remove_stencils(parsed: IntegrationCodeInterface, stencils_to_remove: list[CodeGenInput]) -> None:
+
+def _remove_stencils(
+    parsed: IntegrationCodeInterface, stencils_to_remove: list[CodeGenInput]
+) -> None:
     attributes_to_modify = ["StartStencil", "EndStencil"]
 
     for attr_name in attributes_to_modify:
@@ -37,10 +40,9 @@ def _remove_stencils(parsed: IntegrationCodeInterface, stencils_to_remove: list[
         modified_stencil_list = [_ for _ in current_stencil_list if _ not in stencils_to_remove]
         setattr(parsed, attr_name, modified_stencil_list)
 
+
 class FusedStencilTransformer(Step):
-    def __init__(
-        self, parsed: IntegrationCodeInterface, fused: bool 
-    ) -> None:
+    def __init__(self, parsed: IntegrationCodeInterface, fused: bool) -> None:
         self.parsed = parsed
         self.fused = fused
 
@@ -122,9 +124,7 @@ class FusedStencilTransformer(Step):
 
 
 class OptionalModulesTransformer(Step):
-    def __init__(
-        self, parsed: IntegrationCodeInterface, optional_modules_to_enable: str
-    ) -> None:
+    def __init__(self, parsed: IntegrationCodeInterface, optional_modules_to_enable: str) -> None:
         self.parsed = parsed
         self.optional_modules_to_enable = optional_modules_to_enable
 

@@ -33,7 +33,10 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartProfileData,
     StartStencilData,
 )
-from icon4pytools.liskov.parsing.transform import FusedStencilTransformer, OptionalModulesTransformer
+from icon4pytools.liskov.parsing.transform import (
+    FusedStencilTransformer,
+    OptionalModulesTransformer,
+)
 
 
 @pytest.fixture
@@ -127,7 +130,7 @@ def integration_code_interface():
         acc_present=False,
         mergecopy=False,
         copies=True,
-        optional_module='advection',
+        optional_module="advection",
     )
     end_stencil_data2 = EndStencilData(
         name="stencil2", startln=6, noendif=False, noprofile=False, noaccenddata=False
@@ -170,17 +173,22 @@ def integration_code_interface():
 def fused_stencil_transform_fused(integration_code_interface):
     return FusedStencilTransformer(integration_code_interface, fused=True)
 
+
 @pytest.fixture
 def fused_stencil_transform_unfused(integration_code_interface):
     return FusedStencilTransformer(integration_code_interface, fused=False)
 
+
 @pytest.fixture
 def optional_modules_transform_enabled(integration_code_interface):
-    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable='advection')
+    return OptionalModulesTransformer(
+        integration_code_interface, optional_modules_to_enable="advection"
+    )
+
 
 @pytest.fixture
 def optional_modules_transform_disabled(integration_code_interface):
-    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable='no')
+    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable="no")
 
 
 def test_transform_fused(
@@ -208,6 +216,7 @@ def test_transform_unfused(
     assert len(transformed.EndStencil) == 2
     assert not transformed.StartDelete
     assert not transformed.EndDelete
+
 
 def test_transform_optional_enabled(
     optional_modules_transform_enabled,
