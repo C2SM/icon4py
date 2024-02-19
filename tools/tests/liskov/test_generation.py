@@ -76,7 +76,7 @@ def integration_code_interface():
         acc_present=False,
         mergecopy=False,
         copies=True,
-        optional_module="None"
+        optional_module="None",
     )
     end_stencil_data = EndStencilData(
         name="stencil1", startln=3, noendif=False, noprofile=False, noaccenddata=False
