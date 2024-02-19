@@ -648,7 +648,7 @@ class Diffusion:
 
         N = dace.symbol('N')
         @dace.program
-        def fuse(enh_smag_fac:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1]), dtime: dace.float64, diff_multfac_smag:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1])): # type: ignore
+        def fuse(enh_smag_fac:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1], offset=(0,)), dtime: dace.float64, diff_multfac_smag:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1], offset=(0,))): # type: ignore
             # dtime dependent: enh_smag_factor,
             scale_k.with_backend(backend)(
                 enh_smag_fac, dtime, diff_multfac_smag, offset_provider={},
