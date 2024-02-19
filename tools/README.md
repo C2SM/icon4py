@@ -148,6 +148,8 @@ In addition, other optional keyword arguments are the following:
 
 - `copies`: Takes a boolean string input, and controls whether before field copies should be made or not. If set to False only the `#ifdef __DSL_VERIFY` directive is generated. Defaults to true.<br><br>
 
+- `optional_module`: Takes a boolean string input, and controls whether stencils is part of an optional module. Defaults to "None".<br><br>
+
 #### `!$DSL END STENCIL()`
 
 This directive denotes the end of a stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
