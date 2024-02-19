@@ -77,6 +77,7 @@ mock_deserialised_directives = IntegrationCodeInterface(
             acc_present=False,
             mergecopy=False,
             copies=True,
+            optional_module="None"
         )
     ],
     Imports=None,
