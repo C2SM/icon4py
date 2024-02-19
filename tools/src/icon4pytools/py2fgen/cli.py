@@ -28,9 +28,10 @@ from icon4pytools.py2fgen.utils import Backend
 
 @click.command("py2fgen")
 @click.argument(
-    "module_import_path", type=str, help="The Python module containing the function to embed."
+    "module_import_path",
+    type=str,
 )
-@click.argument("function_name", type=str, help="The function within the module to embed.")
+@click.argument("function_name", type=str)
 @click.option(
     "--build-path",
     "-b",

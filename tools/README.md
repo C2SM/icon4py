@@ -383,3 +383,5 @@ gfortran -I. -Wl,-rpath=. -L. <function_name>_plugin.f90 <fortran_driver>.f90 -l
 ```
 
 Replace `<function_name>`, `<fortran_driver>`, and `<executable_name>` with the appropriate names for your project.
+
+**Note:** When executing the compiled binary make sure that you have sourced a Python virtual environment where all required dependencies to run the embedded Python code are present.
