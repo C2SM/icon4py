@@ -22,7 +22,7 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
-from icon4pytools.liskov.parsing.transform import StencilTransformer
+from icon4pytools.liskov.parsing.transform import FusedStencilTransformer, OptionalModulesTransformer
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
 
 
@@ -87,7 +87,8 @@ def process_stencils(
         The updated and transformed object with fields containing information from GT4Py stencils.
     """
     return [
-        StencilTransformer(parsed, fused, optional_modules_to_enable),
+        FusedStencilTransformer(parsed, fused),
+        OptionalModulesTransformer(parsed, optional_modules_to_enable),
         UpdateFieldsWithGt4PyStencils(parsed),
     ]
 

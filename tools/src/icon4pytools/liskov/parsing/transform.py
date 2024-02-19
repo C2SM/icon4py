@@ -29,14 +29,20 @@ from icon4pytools.liskov.pipeline.definition import Step
 
 logger = setup_logger(__name__)
 
+def _remove_stencils(parsed: IntegrationCodeInterface, stencils_to_remove: list[CodeGenInput]) -> None:
+    attributes_to_modify = ["StartStencil", "EndStencil"]
 
-class StencilTransformer(Step):
+    for attr_name in attributes_to_modify:
+        current_stencil_list = getattr(parsed, attr_name)
+        modified_stencil_list = [_ for _ in current_stencil_list if _ not in stencils_to_remove]
+        setattr(parsed, attr_name, modified_stencil_list)
+
+class FusedStencilTransformer(Step):
     def __init__(
-        self, parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: str
+        self, parsed: IntegrationCodeInterface, fused: bool 
     ) -> None:
         self.parsed = parsed
         self.fused = fused
-        self.optional_modules_to_enable = optional_modules_to_enable
 
     def __call__(self, data: Any = None) -> IntegrationCodeInterface:
         """Transform stencils in the parse tree based on the 'fused' flag, transforming or removing as necessary.
@@ -59,8 +65,6 @@ class StencilTransformer(Step):
             self._remove_fused_stencils()
             self._remove_delete()
 
-        self._process_optional_stencils_to_enable()
-
         return self.parsed
 
     def _process_stencils_for_deletion(self) -> None:
@@ -76,7 +80,7 @@ class StencilTransformer(Step):
                     self._create_delete_directives(start_single, end_single)
                     stencils_to_remove += [start_single, end_single]
 
-        self._remove_stencils(stencils_to_remove)
+        _remove_stencils(self.parsed, stencils_to_remove)
 
     def _stencil_is_removable(
         self,
@@ -108,14 +112,6 @@ class StencilTransformer(Step):
             directive.append(cls(startln=param.startln))
             setattr(self.parsed, attr, directive)
 
-    def _remove_stencils(self, stencils_to_remove: list[CodeGenInput]) -> None:
-        attributes_to_modify = ["StartStencil", "EndStencil"]
-
-        for attr_name in attributes_to_modify:
-            current_stencil_list = getattr(self.parsed, attr_name)
-            modified_stencil_list = [_ for _ in current_stencil_list if _ not in stencils_to_remove]
-            setattr(self.parsed, attr_name, modified_stencil_list)
-
     def _remove_fused_stencils(self) -> None:
         self.parsed.StartFusedStencil = []
         self.parsed.EndFusedStencil = []
@@ -123,6 +119,31 @@ class StencilTransformer(Step):
     def _remove_delete(self) -> None:
         self.parsed.StartDelete = []
         self.parsed.EndDelete = []
+
+
+class OptionalModulesTransformer(Step):
+    def __init__(
+        self, parsed: IntegrationCodeInterface, optional_modules_to_enable: str
+    ) -> None:
+        self.parsed = parsed
+        self.optional_modules_to_enable = optional_modules_to_enable
+
+    def __call__(self, data: Any = None) -> IntegrationCodeInterface:
+        """Transform stencils in the parse tree based on the 'optional_modules_to_enable' flag, transforming or removing as necessary.
+
+        This method processes stencils present in the 'parsed' object according to the 'optional_modules_to_enable'
+        flag. If 'optional_modules_to_enable' is a str, it identifies and processes stencils that are eligible for
+        deletion. If stencil is enabled with.
+
+        Args:
+            data (Any): Optional data to be passed. Default is None.
+
+        Returns:
+            IntegrationCodeInterface: The interface object along with any transformations applied.
+        """
+        self._process_optional_stencils_to_enable()
+
+        return self.parsed
 
     def _process_optional_stencils_to_enable(self):
         stencils_to_remove = []
@@ -134,4 +155,4 @@ class StencilTransformer(Step):
             ):
                 stencils_to_remove += [start_stencil, end_stencil]
 
-        self._remove_stencils(stencils_to_remove)
+        _remove_stencils(self.parsed, stencils_to_remove)

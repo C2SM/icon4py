@@ -33,7 +33,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
     StartProfileData,
     StartStencilData,
 )
-from icon4pytools.liskov.parsing.transform import StencilTransformer
+from icon4pytools.liskov.parsing.transform import FusedStencilTransformer, OptionalModulesTransformer
 
 
 @pytest.fixture
@@ -94,6 +94,7 @@ def integration_code_interface():
         acc_present=False,
         mergecopy=False,
         copies=True,
+        optional_module="None",
     )
     end_stencil_data1 = EndStencilData(
         name="stencil1", startln=3, noendif=False, noprofile=False, noaccenddata=False
@@ -126,6 +127,7 @@ def integration_code_interface():
         acc_present=False,
         mergecopy=False,
         copies=True,
+        optional_module='advection',
     )
     end_stencil_data2 = EndStencilData(
         name="stencil2", startln=6, noendif=False, noprofile=False, noaccenddata=False
@@ -165,20 +167,27 @@ def integration_code_interface():
 
 
 @pytest.fixture
-def stencil_transform_fused(integration_code_interface):
-    return StencilTransformer(integration_code_interface, fused=True)
-
+def fused_stencil_transform_fused(integration_code_interface):
+    return FusedStencilTransformer(integration_code_interface, fused=True)
 
 @pytest.fixture
-def stencil_transform_unfused(integration_code_interface):
-    return StencilTransformer(integration_code_interface, fused=False)
+def fused_stencil_transform_unfused(integration_code_interface):
+    return FusedStencilTransformer(integration_code_interface, fused=False)
+
+@pytest.fixture
+def optional_modules_transform_enabled(integration_code_interface):
+    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable='advection')
+
+@pytest.fixture
+def optional_modules_transform_disabled(integration_code_interface):
+    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable='no')
 
 
 def test_transform_fused(
-    stencil_transform_fused,
+    fused_stencil_transform_fused,
 ):
     # Check that the transformed interface is as expected
-    transformed = stencil_transform_fused()
+    transformed = fused_stencil_transform_fused()
     assert len(transformed.StartFusedStencil) == 1
     assert len(transformed.EndFusedStencil) == 1
     assert len(transformed.StartStencil) == 1
@@ -188,10 +197,10 @@ def test_transform_fused(
 
 
 def test_transform_unfused(
-    stencil_transform_unfused,
+    fused_stencil_transform_unfused,
 ):
     # Check that the transformed interface is as expected
-    transformed = stencil_transform_unfused()
+    transformed = fused_stencil_transform_unfused()
 
     assert not transformed.StartFusedStencil
     assert not transformed.EndFusedStencil
@@ -199,3 +208,29 @@ def test_transform_unfused(
     assert len(transformed.EndStencil) == 2
     assert not transformed.StartDelete
     assert not transformed.EndDelete
+
+def test_transform_optional_enabled(
+    optional_modules_transform_enabled,
+):
+    # Check that the transformed interface is as expected
+    transformed = optional_modules_transform_enabled()
+    assert len(transformed.StartFusedStencil) == 1
+    assert len(transformed.EndFusedStencil) == 1
+    assert len(transformed.StartStencil) == 2
+    assert len(transformed.EndStencil) == 2
+    assert len(transformed.StartDelete) == 1
+    assert len(transformed.EndDelete) == 1
+
+
+def test_transform_optional_disabled(
+    optional_modules_transform_disabled,
+):
+    # Check that the transformed interface is as expected
+    transformed = optional_modules_transform_disabled()
+
+    assert len(transformed.StartFusedStencil) == 1
+    assert len(transformed.EndFusedStencil) == 1
+    assert len(transformed.StartStencil) == 1
+    assert len(transformed.EndStencil) == 1
+    assert len(transformed.StartDelete) == 1
+    assert len(transformed.EndDelete) == 1
