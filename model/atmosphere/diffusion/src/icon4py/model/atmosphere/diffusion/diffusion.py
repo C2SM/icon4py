@@ -79,6 +79,10 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+import dace
+from dace.transformation.auto import auto_optimize as autoopt
+from gt4py.next.program_processors.runners.dace_iterator import run_dace_cpu
+
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -92,7 +96,7 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_cached  #
+backend = run_dace_cpu  #
 
 
 class DiffusionType(int, Enum):
@@ -642,10 +646,18 @@ class Diffusion:
             VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
 
-        # dtime dependent: enh_smag_factor,
-        scale_k.with_backend(backend)(
-            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
-        )
+        N = dace.symbol('N')
+        @dace.program
+        def fuse(enh_smag_fac:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1]), dtime: dace.float64, diff_multfac_smag:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1])): # type: ignore
+            # dtime dependent: enh_smag_factor,
+            scale_k.with_backend(backend)(
+                enh_smag_fac, dtime, diff_multfac_smag, offset_provider={},
+            )
+        
+        with dace.config.temporary_config():
+            dace.config.Config.set("compiler", "allow_view_arguments", value=True)
+            dace.config.Config.set("frontend", "check_args", value=True)
+            fuse(self.enh_smag_fac.ndarray, dtime, self.diff_multfac_smag.ndarray, N=65)
 
         log.debug("rbf interpolation 1: start")
         mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
