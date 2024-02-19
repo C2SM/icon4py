@@ -27,22 +27,29 @@ from icon4pytools.py2fgen.utils import Backend
 
 
 @click.command("py2fgen")
-@click.argument("module_import_path", type=str)
-@click.argument("function_name", type=str)
+@click.argument(
+    "module_import_path", type=str, help="The Python module containing the function to embed."
+)
+@click.argument("function_name", type=str, help="The function within the module to embed.")
 @click.option(
     "--build-path",
     "-b",
     type=click.Path(dir_okay=True, resolve_path=True, path_type=pathlib.Path),
     default=".",
-    help="Directory for generated code and compiled libraries.",
+    help="Specify the directory for generated code and compiled libraries.",
 )
-@click.option("--debug-mode", "-d", is_flag=True, help="Enable debug mode.")
+@click.option(
+    "--debug-mode",
+    "-d",
+    is_flag=True,
+    help="Enable debug mode to print additional runtime information.",
+)
 @click.option(
     "--gt4py-backend",
     "-g",
     type=click.Choice([e.name for e in Backend], case_sensitive=False),
     default="ROUNDTRIP",
-    help="gt4py backend to use.",
+    help="Set the gt4py backend to use.",
 )
 def main(
     module_import_path: str,
@@ -51,16 +58,7 @@ def main(
     debug_mode: bool,
     gt4py_backend: str,
 ) -> None:
-    """
-    Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran.
-
-    Args:
-        module_import_path: Python module with the function to embed.
-        function_name: Function to embed.
-        build_path: Directory for code and libraries.
-        debug_mode: Debug mode flag (prints extra information at runtime).
-        gt4py_backend: gt4py backend.
-    """
+    """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     backend = Backend[gt4py_backend]
     build_path.mkdir(exist_ok=True, parents=True)
 
