@@ -182,13 +182,13 @@ def fused_stencil_transform_unfused(integration_code_interface):
 @pytest.fixture
 def optional_modules_transform_enabled(integration_code_interface):
     return OptionalModulesTransformer(
-        integration_code_interface, optional_modules_to_enable="advection"
+        integration_code_interface, optional_modules_to_enable=["advection"]
     )
 
 
 @pytest.fixture
 def optional_modules_transform_disabled(integration_code_interface):
-    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable="no")
+    return OptionalModulesTransformer(integration_code_interface, optional_modules_to_enable=None)
 
 
 def test_transform_fused(

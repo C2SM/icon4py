@@ -132,32 +132,40 @@ class OptionalModulesTransformer(Step):
         self.optional_modules_to_enable = optional_modules_to_enable
 
     def __call__(self, data: Any = None) -> IntegrationCodeInterface:
-        """Transform stencils in the parse tree based on the 'optional_modules_to_enable' flag, transforming or removing as necessary.
-
-        This method processes stencils present in the 'parsed' object according to the 'optional_modules_to_enable'
-        flag. If 'optional_modules_to_enable' is a str, it identifies and processes stencils that are eligible for
-        deletion. If stencil is enabled with.
+        """Transform stencils in the parse tree based on 'optional_modules_to_enable', either enabling specific modules or removing them.
 
         Args:
-            data (Any): Optional data to be passed. Default is None.
+            data (Any): Optional data to be passed. Defaults to None.
 
         Returns:
-            IntegrationCodeInterface: The interface object along with any transformations applied.
+            IntegrationCodeInterface: The modified interface object.
         """
         if self.optional_modules_to_enable is not None:
-            logger.info(
-                f"Transforming stencils to enable optional modules: {', '.join(self.optional_modules_to_enable)}"
-            )
-            self._enable_optional_stencils()
+            action = "enabling"
+        else:
+            action = "removing"
+        logger.info(f"Transforming stencils by {action} optional modules.")
+        self._transform_stencils()
+
         return self.parsed
 
-    def _enable_optional_stencils(self) -> None:
-        """Identify and remove stencils from the parse tree based on their optional module status."""
+    def _transform_stencils(self) -> None:
+        """Identify stencils to transform based on 'optional_modules_to_enable' and applies necessary changes."""
         stencils_to_remove = []
         for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
-            if start_stencil.optional_module == DEFAULT_STARTSTENCIL_OPTIONAL_MODULE:
-                pass
-            elif start_stencil.optional_module not in self.optional_modules_to_enable:  # type: ignore
-                stencils_to_remove += [start_stencil, end_stencil]
+            if self._should_remove_stencil(start_stencil):
+                stencils_to_remove.extend([start_stencil, end_stencil])
 
         _remove_stencils(self.parsed, stencils_to_remove)
+
+    def _should_remove_stencil(self, stencil: StartStencilData) -> bool:
+        """Determine if a stencil should be removed based on 'optional_modules_to_enable'.
+
+        Returns:
+            bool: True if the stencil should be removed, False otherwise.
+        """
+        if stencil.optional_module == DEFAULT_STARTSTENCIL_OPTIONAL_MODULE:
+            return False
+        if self.optional_modules_to_enable is None:
+            return True
+        return stencil.optional_module not in self.optional_modules_to_enable
