@@ -21,7 +21,6 @@ import icon4py.model.atmosphere.dycore as dycore
 import icon4py.model.common.interpolation.stencils as intp
 import icon4py.model.common.type_alias as type_alias
 import pytest
-from click.testing import CliRunner
 from gt4py.next.ffront.fbuiltins import float32, float64
 
 from icon4pytools.icon4pygen.cli import main
@@ -36,13 +35,6 @@ DIFFUSION_PKG = "atmosphere.diffusion.stencils"
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
 OUTPATH = "."
-
-
-@pytest.fixture
-def cli():
-    yield CliRunner()
-    os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
-    reload(type_alias)
 
 
 def dycore_fencils() -> list[tuple[str, str]]:
