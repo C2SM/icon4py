@@ -153,6 +153,12 @@ def test_invalid_module_path(cli) -> None:
     assert isinstance(result.exception, ModuleNotFoundError)
 
 
+def reset_double_presicion() -> None:
+    os.environ["FLOAT_PRECISION"] = "double"
+    reload(type_alias)
+    assert (type_alias.vpfloat == float64) and (type_alias.wpfloat == float64)
+
+
 def test_mixed_precision_option(cli) -> None:
     module_path = get_stencil_module_path("some_module", "foo")
     cli.invoke(
@@ -161,3 +167,4 @@ def test_mixed_precision_option(cli) -> None:
     reload(type_alias)
     assert os.environ.get("FLOAT_PRECISION") == "mixed"
     assert (type_alias.vpfloat == float32) and (type_alias.wpfloat == float64)
+    reset_double_presicion()
