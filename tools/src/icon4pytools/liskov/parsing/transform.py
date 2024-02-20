@@ -124,7 +124,9 @@ class FusedStencilTransformer(Step):
 
 
 class OptionalModulesTransformer(Step):
-    def __init__(self, parsed: IntegrationCodeInterface, optional_modules_to_enable: list[str]) -> None:
+    def __init__(
+        self, parsed: IntegrationCodeInterface, optional_modules_to_enable: list[str]
+    ) -> None:
         self.parsed = parsed
         self.optional_modules_to_enable = optional_modules_to_enable
 
