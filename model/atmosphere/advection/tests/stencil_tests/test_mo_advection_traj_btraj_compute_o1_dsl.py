@@ -72,7 +72,6 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         p_cell_rel_idx_dsl = np.where(lvn_pos, int32(0), int32(1))
         p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
 
-
         z_ntdistv_bary_1 = -(
             p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
         )
