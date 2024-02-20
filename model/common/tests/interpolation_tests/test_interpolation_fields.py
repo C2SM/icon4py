@@ -304,7 +304,7 @@ def test_compute_e_flx_avg(
     e_flx_avg_ref = interpolation_savepoint.e_flx_avg().asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg().asnumpy()
     geofac_div = interpolation_savepoint.geofac_div().asnumpy()
-    owner_mask = grid_savepoint.c_owner_mask().asnumpy()
+    owner_mask = grid_savepoint.e_owner_mask().asnumpy()
     primal_cart_normal_x = grid_savepoint.primal_cart_normal_x().asnumpy()
     primal_cart_normal_y = grid_savepoint.primal_cart_normal_y().asnumpy()
     primal_cart_normal_z = grid_savepoint.primal_cart_normal_z().asnumpy()

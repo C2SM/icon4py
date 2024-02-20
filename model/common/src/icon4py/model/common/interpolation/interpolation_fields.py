@@ -390,6 +390,8 @@ def compute_mass_conservation_c_bln_avg(
     Args:
         c_bln_avg:
         divavg_cntrwgt:
+
+    in this routine halo cell exchanges (sync) are missing
     """
     llb = lateral_boundary[0]
     llb2 = lateral_boundary[2]
@@ -445,8 +447,8 @@ def compute_e_flx_avg(
     index = np.arange(llb, lateral_boundary_edges[1])
     for j in range(3):
         for i in range(2):
-            e_flx_avg[llb:, i + 1] = np.where(C2E[E2C[llb:, 0], j] == index, c_bln_avg[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], j] + 1] * geofac_div[E2C[llb:, 0], np.mod(i + j + 1, 3)] / geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], j]], e_flx_avg[llb:, i + 1])
-            e_flx_avg[llb:, i + 3] = np.where(C2E[E2C[llb:, 0], j] == index, c_bln_avg[E2C[llb:, 0], 1 + j] * geofac_div[E2C[llb:, 1], np.mod(inv_neighbor_id[E2C[llb:, 0], j] + i + 1, 3)] / geofac_div[E2C[llb:, 0], j], e_flx_avg[llb:, i + 3])
+            e_flx_avg[llb:, i + 1] = np.where(owner_mask[llb:], np.where(C2E[E2C[llb:, 0], j] == index, c_bln_avg[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], j] + 1] * geofac_div[E2C[llb:, 0], np.mod(i + j + 1, 3)] / geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], j]], e_flx_avg[llb:, i + 1]), e_flx_avg[llb:, i + 1])
+            e_flx_avg[llb:, i + 3] = np.where(owner_mask[llb:], np.where(C2E[E2C[llb:, 0], j] == index, c_bln_avg[E2C[llb:, 0], 1 + j] * geofac_div[E2C[llb:, 1], np.mod(inv_neighbor_id[E2C[llb:, 0], j] + i + 1, 3)] / geofac_div[E2C[llb:, 0], j], e_flx_avg[llb:, i + 3]), e_flx_avg[llb:, i + 3])
 
     iie = -np.ones([lateral_boundary_edges[1], 4], dtype=int)
     iie[:, 0] = np.where(E2C[E2C2E[:, 0], 0] == E2C[:, 0], 2, -1)
@@ -464,7 +466,7 @@ def compute_e_flx_avg(
     llb = lateral_boundary_edges[3]
     index = np.arange(llb, lateral_boundary_edges[1])
     for i in range(3):
-        e_flx_avg[llb:, 0] = np.where(C2E[E2C[llb:, 0], i] == index, 0.5 * ((geofac_div[E2C[llb:, 0], i] * c_bln_avg[E2C[llb:, 0], 0]
+        e_flx_avg[llb:, 0] = np.where(owner_mask[llb:], np.where(C2E[E2C[llb:, 0], i] == index, 0.5 * ((geofac_div[E2C[llb:, 0], i] * c_bln_avg[E2C[llb:, 0], 0]
                                                                      + geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i]] * c_bln_avg[E2C[llb:, 0], i + 1]
                                                                      - e_flx_avg[E2C2E[llb:, 0], iie[llb:, 0]] * geofac_div[E2C[llb:, 0], np.mod(i + 1, 3)]
                                                                      - e_flx_avg[E2C2E[llb:, 1], iie[llb:, 1]] * geofac_div[E2C[llb:, 0], np.mod(i + 2, 3)])
@@ -473,13 +475,13 @@ def compute_e_flx_avg(
                                                                      + geofac_div[E2C[llb:, 0], i] * c_bln_avg[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i] + 1]
                                                                      - e_flx_avg[E2C2E[llb:, 2], iie[llb:, 2]] * geofac_div[E2C[llb:, 1], np.mod(inv_neighbor_id[E2C[llb:, 0], i] + 1, 3)]
                                                                      - e_flx_avg[E2C2E[llb:, 3], iie[llb:, 3]] * geofac_div[E2C[llb:, 1], np.mod(inv_neighbor_id[E2C[llb:, 0], i] + 2, 3)])
-                                                                    / geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i]]), e_flx_avg[llb:, 0])
+                                                                    / geofac_div[E2C[llb:, 1], inv_neighbor_id[E2C[llb:, 0], i]]), e_flx_avg[llb:, 0]), e_flx_avg[llb:, 0])
 
     checksum = e_flx_avg[:, 0]
     for i in range(4):
         checksum = checksum + np.sum(primal_cart_normal * primal_cart_normal[E2C2E[:, i], :], axis = 1) * e_flx_avg[:, 1 + i]
 
     for i in range(5):
-        e_flx_avg[llb:, i] = e_flx_avg[llb:, i] / checksum[llb:]
+        e_flx_avg[llb:, i] = np.where(owner_mask[llb:], e_flx_avg[llb:, i] / checksum[llb:], e_flx_avg[llb:, i])
 
     return e_flx_avg
