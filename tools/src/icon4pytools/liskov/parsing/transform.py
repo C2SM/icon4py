@@ -10,9 +10,10 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Any
+from typing import Any, Optional
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.liskov.codegen.integration.deserialise import DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
 from icon4pytools.liskov.codegen.integration.interface import (
     EndDeleteData,
     EndFusedStencilData,
@@ -124,7 +125,9 @@ class FusedStencilTransformer(Step):
 
 
 class OptionalModulesTransformer(Step):
-    def __init__(self, parsed: IntegrationCodeInterface, optional_modules_to_enable: list) -> None:
+    def __init__(
+        self, parsed: IntegrationCodeInterface, optional_modules_to_enable: Optional[tuple[str]]
+    ) -> None:
         self.parsed = parsed
         self.optional_modules_to_enable = optional_modules_to_enable
 
@@ -141,15 +144,19 @@ class OptionalModulesTransformer(Step):
         Returns:
             IntegrationCodeInterface: The interface object along with any transformations applied.
         """
-        self._enable_optional_stencils()
-
+        if self.optional_modules_to_enable is not None:
+            logger.info(
+                f"Transforming stencils to enable optional modules: {', '.join(self.optional_modules_to_enable)}"
+            )
+            self._enable_optional_stencils()
         return self.parsed
 
-    def _enable_optional_stencils(self):
+    def _enable_optional_stencils(self) -> None:
+        """Identify and remove stencils from the parse tree based on their optional module status."""
         stencils_to_remove = []
-
+        assert self.optional_modules_to_enable is not None
         for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
-            if start_stencil.optional_module == "None":
+            if start_stencil.optional_module == DEFAULT_STARTSTENCIL_OPTIONAL_MODULE:
                 pass
             elif start_stencil.optional_module not in self.optional_modules_to_enable:
                 stencils_to_remove += [start_stencil, end_stencil]
