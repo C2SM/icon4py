@@ -69,7 +69,9 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         dual_normal_cell_2 = np.expand_dims(dual_normal_cell_2, axis=-1)
 
         p_cell_idx = np.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
+        p_cell_rel_idx_dsl = np.where(lvn_pos, int32(0), int32(1))
         p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
+
 
         z_ntdistv_bary_1 = -(
             p_vn * p_dthalf + np.where(lvn_pos, pos_on_tplane_e_1[:, 0], pos_on_tplane_e_1[:, 1])
@@ -96,6 +98,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
 
         return dict(
             p_cell_idx=p_cell_idx,
+            p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
             p_cell_blk=p_cell_blk,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
@@ -122,6 +125,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         dual_normal_cell_2 = random_field(grid, EdgeDim, E2CDim)
         dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, ECDim)
         p_cell_idx = constant_field(grid, 0, EdgeDim, KDim, dtype=int32)
+        p_cell_rel_idx_dsl = constant_field(grid, 0, EdgeDim, KDim, dtype=int32)
         p_cell_blk = constant_field(grid, 0, EdgeDim, KDim, dtype=int32)
         p_distv_bary_1 = random_field(grid, EdgeDim, KDim)
         p_distv_bary_2 = random_field(grid, EdgeDim, KDim)
@@ -139,6 +143,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
             primal_normal_cell_2=primal_normal_cell_2_new,
             dual_normal_cell_2=dual_normal_cell_2_new,
             p_cell_idx=p_cell_idx,
+            p_cell_rel_idx_dsl=p_cell_rel_idx_dsl,
             p_cell_blk=p_cell_blk,
             p_distv_bary_1=p_distv_bary_1,
             p_distv_bary_2=p_distv_bary_2,
