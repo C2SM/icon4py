@@ -89,7 +89,7 @@ def process_stencils(
     Returns:
         The updated and transformed object with fields containing information from GT4Py stencils.
     """
-    if optional_modules_to_enable == [False]:
+    if optional_modules_to_enable == ["None"]:
         return [
             FusedStencilTransformer(parsed, fused),
             UpdateFieldsWithGt4PyStencils(parsed),

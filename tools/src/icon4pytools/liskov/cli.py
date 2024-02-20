@@ -58,8 +58,8 @@ def main(ctx: click.Context) -> None:
 )
 @click.option(
     "--enable-dsl-optional",
-    type=click.Choice(["advection", "graupel", False]),
-    default=[False],
+    type=click.Choice(["advection", "graupel", "None"]),
+    default=[None],
     multiple=True,
     help="Specify the DSL optional module to enable.",
 )
