@@ -40,7 +40,9 @@ OUTPATH = "."
 
 @pytest.fixture
 def cli():
-    return CliRunner()
+    yield CliRunner()
+    os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
+    reload(type_alias)
 
 
 def dycore_fencils() -> list[tuple[str, str]]:
