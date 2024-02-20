@@ -32,7 +32,7 @@ def average_k_level_up(
     Returns: Field[[CellDim, KDim], wpfloat] full level field
 
     """
-    return 0.5 * (half_level_field + half_level_field(Koff[+1]))
+    return 0.5 * (half_level_field + half_level_field(Koff[1]))
 
 
 @field_operator
@@ -68,4 +68,4 @@ def difference_k_level_up(
     Returns: Field[[CellDim, KDim], wpfloat] full level field
 
     """
-    return half_level_field - half_level_field(Koff[+1])
+    return half_level_field - half_level_field(Koff[1])

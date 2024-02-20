@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from typing import Final
 
 from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
-from numpy import int32
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import dimension
 from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, EdgeDim, KDim
