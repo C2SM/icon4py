@@ -49,38 +49,66 @@ class HorizontalMarkerIndex:
     _MIN_RL_CELL_INT: Final[int] = -4
     _MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
     _MAX_RL_CELL: Final[int] = 5
+NUM_GHOST_ROWS: Final[int] = 2
+# values from mo_impl_constants.f90
+_ICON_INDEX_OFFSET_CELLS: Final[int] = 8
+_GRF_BOUNDARY_WIDTH_CELL: Final[int] = 4
+_MIN_RL_CELL_INT: Final[int] = -4
+_MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
+_MAX_RL_CELL: Final[int] = 5
 
-    _ICON_INDEX_OFFSET_VERTEX: Final[int] = 7
-    _MIN_RL_VERTEX_INT: Final[int] = _MIN_RL_CELL_INT
-    _MIN_RL_VERTEX: Final[int] = _MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
-    _MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
+_ICON_INDEX_OFFSET_VERTEX: Final[int] = 7
+_MIN_RL_VERTEX_INT: Final[int] = _MIN_RL_CELL_INT
+_MIN_RL_VERTEX: Final[int] = _MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
+_MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
 
-    _ICON_INDEX_OFFSET_EDGES: Final[int] = 13
-    _GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
-    _MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
-    _MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
-    _MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
+_ICON_INDEX_OFFSET_EDGES: Final[int] = 13
+_GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
+_MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
+_MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
+_MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
 
-    _LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
-    _INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
-    _NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
-    _HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
-    _LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
-    _END_EDGES: Final[int] = 0
+_LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
+_INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
+_NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
+_HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
+_LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
+_END_EDGES: Final[int] = 0
 
-    _LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS
-    _INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS
-    _NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS
-    _HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS
-    _LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
-    _END_CELLS: Final[int] = 0
+_LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS
+_INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS
+_NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS
+_HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS
+_LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
+_END_CELLS: Final[int] = 0
 
-    _LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX
-    _INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX
-    _NUDGING_VERTICES: Final[int] = 0
-    _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
-    _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
-    _END_VERTICES: Final[int] = 0
+_LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX
+_INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX
+_NUDGING_VERTICES: Final[int] = 0
+_HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
+_LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
+_END_VERTICES: Final[int] = 0
+
+
+class HorizontalMarkerIndex:
+    """
+    Handles constants indexing into the start_index and end_index fields.
+
+     ICON uses a double indexing scheme for field indices marking the start and end of special
+     grid zone: The constants defined here (from mo_impl_constants.f90 and mo_impl_constants_grf.f90)
+     are the indices that are used to index into the start_idx and end_idx arrays
+     provided by the grid file where for each dimension the start index of the horizontal
+     "zones" are defined:
+     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the lateral boundary zone would be
+
+     F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
+
+
+     ICON uses a custom index range from [ICON_INDEX_OFFSET... ] such that the index 0 marks the
+     internal entities for _all_ dimensions (Cell, Edge, Vertex) that is why we define these
+     additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
+
+    """
 
     _lateral_boundary = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
@@ -136,6 +164,11 @@ class HorizontalMarkerIndex:
     def nudging(cls, dim: Dimension) -> int:
         """Indicate the nudging zone."""
         return cls._nudging[dim]
+
+    @classmethod
+    def nudging_2nd_level(cls, dim: Dimension) -> int:
+        """Indicate the nudging zone for 2nd level."""
+        return cls.nudging(dim) + 1
 
     @classmethod
     def interior(cls, dim: Dimension) -> int:
@@ -321,3 +354,18 @@ def cell_2_edge_interpolation(
         out=out_field,
         domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
+
+
+class RefinCtrlLevel:
+    _boundary_nudging_start = {
+        EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
+        CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
+    }
+
+    @classmethod
+    def boundary_nudging_start(cls, dim: Dimension) -> int:
+        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
+        try:
+            return cls._boundary_nudging_start[dim]
+        except KeyError:
+            raise ValueError(f"nudging start level only exists for {CellDim} and {EdgeDim}")

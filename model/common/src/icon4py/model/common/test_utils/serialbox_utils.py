@@ -566,6 +566,9 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", EdgeDim, KDim)
 
+    def z_ifc(self):
+        return self._get_field("z_ifc", CellDim, KDim)
+
     @optionally_registered
     def mask_hdiff(self):
         return self._get_field("mask_hdiff", CellDim, KDim, dtype=bool)
