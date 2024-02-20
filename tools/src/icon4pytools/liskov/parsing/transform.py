@@ -154,11 +154,10 @@ class OptionalModulesTransformer(Step):
     def _enable_optional_stencils(self) -> None:
         """Identify and remove stencils from the parse tree based on their optional module status."""
         stencils_to_remove = []
-        assert self.optional_modules_to_enable is not None
         for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
             if start_stencil.optional_module == DEFAULT_STARTSTENCIL_OPTIONAL_MODULE:
                 pass
-            elif start_stencil.optional_module not in self.optional_modules_to_enable:
+            elif start_stencil.optional_module not in self.optional_modules_to_enable:  # type: ignore
                 stencils_to_remove += [start_stencil, end_stencil]
 
         _remove_stencils(self.parsed, stencils_to_remove)
