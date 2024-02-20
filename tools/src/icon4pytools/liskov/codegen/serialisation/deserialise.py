@@ -39,6 +39,7 @@ KEYS_TO_REMOVE = [
     "accpresent",
     "mergecopy",
     "copies",
+    "optional_module",
     "horizontal_lower",
     "horizontal_upper",
     "vertical_lower",

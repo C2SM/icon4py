@@ -124,7 +124,7 @@ class FusedStencilTransformer(Step):
 
 
 class OptionalModulesTransformer(Step):
-    def __init__(self, parsed: IntegrationCodeInterface, optional_modules_to_enable: str) -> None:
+    def __init__(self, parsed: IntegrationCodeInterface, optional_modules_to_enable: list) -> None:
         self.parsed = parsed
         self.optional_modules_to_enable = optional_modules_to_enable
 
@@ -141,18 +141,17 @@ class OptionalModulesTransformer(Step):
         Returns:
             IntegrationCodeInterface: The interface object along with any transformations applied.
         """
-        self._process_optional_stencils_to_enable()
+        self._enable_optional_stencils()
 
         return self.parsed
 
-    def _process_optional_stencils_to_enable(self):
+    def _enable_optional_stencils(self):
         stencils_to_remove = []
 
         for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
-            if (
-                start_stencil.optional_module not in self.optional_modules_to_enable
-                and start_stencil.optional_module != "None"
-            ):
-                stencils_to_remove += [start_stencil, end_stencil]
+          if  start_stencil.optional_module == "None":
+              pass
+          elif start_stencil.optional_module not in self.optional_modules_to_enable:
+              stencils_to_remove += [start_stencil, end_stencil]
 
         _remove_stencils(self.parsed, stencils_to_remove)

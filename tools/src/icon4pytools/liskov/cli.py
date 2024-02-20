@@ -58,8 +58,9 @@ def main(ctx: click.Context) -> None:
 )
 @click.option(
     "--enable-dsl-optional",
-    type=click.Choice(["advection", "graupel", "no"]),
-    default="no",
+    type=click.Choice(["advection", "graupel", False]),
+    default=[False],
+    multiple=True,
     help="Specify the DSL optional module to enable.",
 )
 @click.argument(
@@ -76,7 +77,7 @@ def integrate(
     fused: bool,
     profile: bool,
     metadatagen: bool,
-    enable_dsl_optional: str,
+    enable_dsl_optional: list,
 ) -> None:
     mode = "integration"
     iface = parse_fortran_file(input_path, output_path, mode)
