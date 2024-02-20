@@ -10,20 +10,17 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import os
-from typing import TypeAlias
+from importlib import reload
 
-from gt4py.next.ffront.fbuiltins import float32, float64
+import icon4py.model.common.type_alias as type_alias
+import pytest
+from click.testing import CliRunner
 
 
-DEFAULT_PRECISION = "double"
-
-wpfloat: TypeAlias = float64
-
-precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
-if precision == "double":
-    vpfloat = wpfloat
-elif precision == "mixed":
-    vpfloat: TypeAlias = float32
-else:
-    raise ValueError("Only 'double' and 'mixed' precision are supported.")
+@pytest.fixture
+def cli():
+    yield CliRunner()
+    os.environ["FLOAT_PRECISION"] = type_alias.DEFAULT_PRECISION
+    reload(type_alias)
