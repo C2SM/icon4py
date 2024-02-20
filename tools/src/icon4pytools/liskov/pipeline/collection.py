@@ -74,7 +74,7 @@ def parse_fortran_file(
 
 @linear_pipeline
 def process_stencils(
-    parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: list
+    parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: list[str]
 ) -> list[Step]:
     """Execute a linear pipeline to transform stencils and produce either fused or unfused execution.
 
