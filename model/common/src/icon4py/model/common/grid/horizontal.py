@@ -21,34 +21,6 @@ from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, 
 from icon4py.model.common.type_alias import wpfloat
 
 
-class HorizontalMarkerIndex:
-    """
-    Handles constants indexing into the start_index and end_index fields.
-
-     ICON uses a double indexing scheme for field indices marking the start and end of special
-     grid zone: The constants defined here (from mo_impl_constants.f90 and mo_impl_constants_grf.f90)
-     are the indices that are used to index into the start_idx and end_idx arrays
-     provided by the grid file where for each dimension the start index of the horizontal
-     "zones" are defined:
-     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the
-     lateral boundary zone would be
-
-     F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
-
-
-     ICON uses a custom index range from [ICON_INDEX_OFFSET... ] such that the index 0 marks the
-     internal entities for _all_ dimensions (Cell, Edge, Vertex) that is why we define these
-     additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
-
-    """
-
-    NUM_GHOST_ROWS: Final[int] = 2
-    # values from mo_impl_constants.f90
-    _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
-    _GRF_BOUNDARY_WIDTH_CELL: Final[int] = 4
-    _MIN_RL_CELL_INT: Final[int] = -4
-    _MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
-    _MAX_RL_CELL: Final[int] = 5
 NUM_GHOST_ROWS: Final[int] = 2
 # values from mo_impl_constants.f90
 _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
