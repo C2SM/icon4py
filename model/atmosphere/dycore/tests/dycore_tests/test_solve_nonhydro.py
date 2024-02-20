@@ -776,6 +776,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
+@pytest.mark.slow_tests
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
