@@ -82,66 +82,8 @@ def compute_geofac_rot(
         dual_area:
         owner_mask:
     """
-#    geofac_rot_ = dual_edge_length(V2E)*edge_orientation/dual_area
     geofac_rot_ = where(owner_mask, dual_edge_length(V2E)*edge_orientation/dual_area, 0.0)
     return geofac_rot_
-
-#@field_operator
-#def compute_geofac_grdiv(
-#    geofac_grdiv_: Field[[EdgeDim], float],
-#    geofac_div_: Field[[CellDim, C2EDim], float],
-#    inv_dual_edge_length: Field[[EdgeDim], float],
-#    owner_mask: Field[[VertexDim], bool],
-#) -> Field[[VertexDim, V2EDim], float]:
-#    """
-#    Args:
-#        geofac_grdiv_:
-#        geofac_div_:
-#        inv_dual_edge_length:
-#        owner_mask:
-#    """
-##    geofac_grdiv_ = geofac_grdiv_ - geofac_div * inv_dual_edge_length
-#    geofac_grdiv_ = where(owner_mask, dual_edge_length(V2E)*edge_orientation/dual_area, 0.0)
-#    return geofac_grdiv_
-
-#@field_operator
-#def compute_geofac_n2s_1(
-#    geofac_n2s: Field[[CellDim], float],
-#    dual_edge_length: Field[[EdgeDim], float],
-#    geofac_div: Field[[CellDim, C2EDim], float],
-#) -> Field[[CellDim], float]:
-#    """
-#    Args:
-#        dual_edge_length:
-#        edge_orientation:
-#        dual_area:
-#        owner_mask:
-#    """
-##    fac = 
-##    geofac_n2s_ = where(fac, geofac_n2s - geofac_div/dual_edge_length(C2E), geofac_n2s)
-#    geofac_n2s_ = geofac_n2s - neighbor_sum(geofac_div/dual_edge_length(C2E), axis=C2EDim)
-#    return geofac_n2s_
-#
-#def compute_geofac_n2s(
-#    geofac_n2s: np.array,
-#    dual_edge_length: np.array,
-#    geofac_div: np.array,
-#    C2E_: np.array,
-#    E2C_: np.array,
-#    C2E2C_: np.array,
-#    lateral_boundary: np.array,
-#    grid_savepoint, interpolation_savepoint, icon_grid,
-#) -> np.array:
-#    """
-#    """
-#    compute_geofac_n2s_1(
-#	geofac_n2s[:, 0],
-#	dual_edge_length,
-#	geofac_div,
-#        out=geofac_n2s[lateral_boundary[0]:, :],
-#        offset_provider={"C2E": icon_grid.get_offset_provider("C2E"), "C2EDim": icon_grid.get_offset_provider("C2EDim")}
-#    )
-#    return geofac_n2s
 
 def compute_geofac_n2s(
     geofac_n2s: np.array,
@@ -264,26 +206,6 @@ def compute_geofac_grdiv(
             geofac_grdiv[llb:, 3 + j] = np.where(mask, geofac_div[E2C[llb:, 1], k] * inv_dual_edge_length[llb:], geofac_grdiv[llb:, 3 + j])
     return geofac_grdiv
 
-# redundant implementation
-#def compute_rbf_vec_idx_v(
-#    edge_idx: np.array,
-#    num_edges: np.array,
-#    owner_mask: np.array,
-#    lateral_boundary: np.array,
-#) -> np.array:
-#    """
-#    Args:
-#        edge_idx:
-#        num_edges:
-#        owner_mask:
-#        lateral_boundary:
-#    """
-#    edge_idx = np.transpose(edge_idx) + 1
-##    edge_idx[5, :] = np.where(num_edges == 5, edge_idx[0, :], edge_idx[5, :])
-#    edge_idx[:, 0:lateral_boundary[0]] = 0
-#    rbf_vec_idx_v = np.where(owner_mask, edge_idx, 0);
-#    return rbf_vec_idx_v
-
 def rotate_latlon(
     lat: np.array,
     lon: np.array,
@@ -296,7 +218,7 @@ def rotate_latlon(
 
     return (rotlat, rotlon)
 
-def compute_c_bln_avg_(
+def compute_c_bln_avg_torus(
     c_bln_avg: np.array,
     divavg_cntrwgt: np.array,
     owner_mask: np.array,

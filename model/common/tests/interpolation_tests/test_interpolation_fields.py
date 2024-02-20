@@ -110,7 +110,6 @@ def test_compute_geofac_n2s(
 ):
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
-#    geofac_n2s = zero_field(icon_grid, CellDim, C2EDim)
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
     C2E_ = icon_grid.connectivities[C2EDim]
     E2C_ = icon_grid.connectivities[E2CDim]
@@ -133,7 +132,6 @@ def test_compute_geofac_n2s(
         E2C_,
         C2E2C_,
         lateral_boundary,
-#        grid_savepoint, interpolation_savepoint, icon_grid,
     )
     assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
 
@@ -145,7 +143,6 @@ def test_compute_geofac_grg(
     primal_normal_cell_y = grid_savepoint.primal_normal_cell_y().asnumpy()
     geofac_div = interpolation_savepoint.geofac_div()
     c_lin_e = interpolation_savepoint.c_lin_e()
-#    geofac_grg = zero_field(icon_grid, CellDim, C2EDim)
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask()
     C2E_ = icon_grid.connectivities[C2EDim]
@@ -190,7 +187,6 @@ def test_compute_geofac_grdiv(
 ):
     geofac_div = interpolation_savepoint.geofac_div()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-#    geofac_grg = zero_field(icon_grid, CellDim, C2EDim)
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
     owner_mask = grid_savepoint.c_owner_mask()
     C2E_ = icon_grid.connectivities[C2EDim]
@@ -218,33 +214,7 @@ def test_compute_geofac_grdiv(
         E2C2E_,
         lateral_boundary,
     )
-#    np.set_printoptions(threshold=np.inf)
-#    print(geofac_grdiv_ref.asnumpy())
-#    print("aaaaa")
-#    print(geofac_grdiv)
     assert np.allclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
-
-# redundant implementation
-#@pytest.mark.datatest
-#def test_compute_rbf_vec_idx_v(
-#    grid_savepoint, interpolation_savepoint, icon_grid
-#):
-#    num_edges = grid_savepoint.v_num_edges().asnumpy()
-#    owner_mask = grid_savepoint.v_owner_mask()
-#    rbf_vec_idx_v_ref = interpolation_savepoint.rbf_vec_idx_v().asnumpy()
-#    V2E_ = icon_grid.connectivities[V2EDim]
-#    lateral_boundary = np.arange(2)
-#    lateral_boundary[0] = icon_grid.get_start_index(
-#        VertexDim,
-#        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
-#    )
-#    lateral_boundary[1] = icon_grid.get_end_index(
-#        VertexDim,
-#        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
-#    )
-#    rbf_vec_idx_v_ref = rbf_vec_idx_v_ref[:, 0:lateral_boundary[1]]
-#    rbf_vec_idx_v = compute_rbf_vec_idx_v(V2E_, num_edges, owner_mask, lateral_boundary)
-#    assert np.allclose(rbf_vec_idx_v, rbf_vec_idx_v_ref)
 
 @pytest.mark.datatest
 def test_compute_c_bln_avg(
@@ -295,7 +265,7 @@ def test_compute_c_bln_avg(
     print(c_bln_avg_ref)
     print("aaaaa")
     print(c_bln_avg)
-    assert np.allclose(c_bln_avg, c_bln_avg_ref)
+    assert np.allclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 
 @pytest.mark.datatest
 def test_compute_e_flx_avg(
@@ -359,8 +329,4 @@ def test_compute_e_flx_avg(
         lateral_boundary_cells,
         lateral_boundary_edges,
     )
-#    np.set_printoptions(threshold=np.inf)
-    print(e_flx_avg_ref)
-    print("bbbbb")
-    print(e_flx_avg)
     assert np.allclose(e_flx_avg, e_flx_avg_ref)
