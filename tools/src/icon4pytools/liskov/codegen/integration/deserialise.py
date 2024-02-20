@@ -290,7 +290,9 @@ class StartStencilDataFactoryBase(DataFactoryBase):
         for i, directive in enumerate(directives):
             named_args = parsed["content"][directive_cls.__name__][i]
             additional_attrs = self._pop_additional_attributes(dtype, named_args)
-            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", DEFAULT_STARTSTENCIL_ACC_PRESENT))
+            acc_present = string_to_bool(
+                pop_item_from_dict(named_args, "accpresent", DEFAULT_STARTSTENCIL_ACC_PRESENT)
+            )
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)
             fields = self._make_fields(named_args, field_dimensions)
@@ -315,9 +317,15 @@ class StartStencilDataFactoryBase(DataFactoryBase):
         """Pop and return additional attributes specific to StartStencilData."""
         additional_attrs = {}
         if dtype == StartStencilData:
-            mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", DEFAULT_STARTSTENCIL_MERGECOPY))
-            copies = string_to_bool(pop_item_from_dict(named_args, "copies", DEFAULT_STARTSTENCIL_COPIES))
-            optional_module = pop_item_from_dict(named_args, "optional_module", DEFAULT_STARTSTENCIL_OPTIONAL_MODULE)
+            mergecopy = string_to_bool(
+                pop_item_from_dict(named_args, "mergecopy", DEFAULT_STARTSTENCIL_MERGECOPY)
+            )
+            copies = string_to_bool(
+                pop_item_from_dict(named_args, "copies", DEFAULT_STARTSTENCIL_COPIES)
+            )
+            optional_module = pop_item_from_dict(
+                named_args, "optional_module", DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
+            )
             additional_attrs = {
                 "mergecopy": mergecopy,
                 "copies": copies,

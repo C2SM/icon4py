@@ -89,17 +89,17 @@ def process_stencils(
     Returns:
         The updated and transformed object with fields containing information from GT4Py stencils.
     """
-    if optional_modules_to_enable==[False]:
-      return [
-          FusedStencilTransformer(parsed, fused),
-          UpdateFieldsWithGt4PyStencils(parsed),
-      ]
+    if optional_modules_to_enable == [False]:
+        return [
+            FusedStencilTransformer(parsed, fused),
+            UpdateFieldsWithGt4PyStencils(parsed),
+        ]
     else:
-      return [
-          FusedStencilTransformer(parsed, fused),
-          OptionalModulesTransformer(parsed, optional_modules_to_enable),
-          UpdateFieldsWithGt4PyStencils(parsed),
-      ]
+        return [
+            FusedStencilTransformer(parsed, fused),
+            OptionalModulesTransformer(parsed, optional_modules_to_enable),
+            UpdateFieldsWithGt4PyStencils(parsed),
+        ]
 
 
 @linear_pipeline
