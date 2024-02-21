@@ -24,15 +24,13 @@ from icon4py.model.common.type_alias import wpfloat
 def _compute_wgtfacq_c(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
-    nlev: int32,
-    nlevp1: int32,
 ) -> Field[[CellDim, KDim], wpfloat]:
 
     z1 = 0.5 * z_ifc(Koff[-1]) - z_ifc
     z2 = 0.5 * z_ifc(Koff[-1]) + z_ifc(Koff[-2]) - z_ifc
     z3 = 0.5 * z_ifc(Koff[-2]) + z_ifc(Koff[-3]) - z_ifc
 
-    wgt_facq_c = where(k == int32(2), z1*z2/(z2-z3)/(z1-z3), z_ifc)
+    wgt_facq_c = where(k == int32(2), z1*z2/(z2-z3)/(z1-z3), wpfloat(0.0))
     wgt_facq_c = where(k == int32(1),z1-wgt_facq_c(Koff[1]) * (z1-z3)/(z1-z2), wgt_facq_c)
     wgt_facq_c = where(k == int32(0), 1.0 - wgt_facq_c(Koff[1]) + wgt_facq_c(Koff[2]), wgt_facq_c)
 
@@ -45,14 +43,10 @@ def compute_wgtfacq_c(
     wgtfacq_c: Field[[CellDim, KDim], wpfloat],
     z_ifc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
-    nlev: int32,
-    nlevp1: int32,
 ):
     _compute_wgtfacq_c(
         z_ifc,
         k,
-        nlev,
-        nlevp1,
         out=wgtfacq_c,
     )
 
