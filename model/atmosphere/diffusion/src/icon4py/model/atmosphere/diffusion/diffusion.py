@@ -646,33 +646,76 @@ class Diffusion:
             VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
 
+        def dtype_icon4py_to_dace(*args, **kwargs):
+            from gt4py.next.embedded.nd_array_field import NdArrayField
+            def stringify(e):
+                if getattr(e, "dtype", False):
+                    e = e.ndarray if isinstance(e, NdArrayField) else e
+                    if len(e.shape) == 1:
+                        stride = int(e.strides[0]/e.itemsize)
+                        stringify = f'dace.data.Array(dtype=dace.{e.dtype},shape=[{e.shape[0]}],strides=[{stride}], offset=(0,))'
+                    elif len(e.shape) == 2:
+                        strides = (int(e.strides[0]/e.itemsize), int(e.strides[1]/e.itemsize))
+                        stringify = f'dace.data.Array(dtype=dace.{e.dtype},shape=[{e.shape[0]},{e.shape[1]}],strides=[{strides[0]},{strides[1]}], offset=(0,0))'
+                    elif len(e.shape) == 0:
+                        stringify = f'dace.{e.dtype}'
+                else:
+                    stringify =  f'dace.{type(e).__name__}{64 if type(e).__name__ != "bool" else ""}'
+                return stringify
+            
+            for i, arg in enumerate(args):
+                print(f'pos_arg_{i}: {stringify(arg)}', ',', sep='', end=' ')
+            for k,v in kwargs.items():
+                print(f'{k}: {stringify(v)}', ',', sep='', end=' ')
+
         N = dace.symbol('N')
         @dace.program
-        def fuse(enh_smag_fac:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1], offset=(0,)), dtime: dace.float64, diff_multfac_smag:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1], offset=(0,))): # type: ignore
-            # dtime dependent: enh_smag_factor,
-            scale_k.with_backend(backend)(
-                enh_smag_fac, dtime, diff_multfac_smag, offset_provider={},
+        def fuse(enh_smag_fac:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1], offset=(0,)), dtime: dace.float64, diff_multfac_smag:dace.data.Array(dtype=dace.float64,shape=[N],strides=[1], offset=(0,)), # type: ignore
+                 p_e_in: dace.data.Array(dtype=dace.float64,shape=[31558,65],strides=[1,31560], offset=(0,0)), ptr_coeff_1: dace.data.Array(dtype=dace.float64,shape=[6,10663],strides=[10664,1], offset=(0,0)), ptr_coeff_2: dace.data.Array(dtype=dace.float64,shape=[6,10663],strides=[10664,1], offset=(0,0)), p_u_out: dace.data.Array(dtype=dace.float64,shape=[65,10663],strides=[10664,1], offset=(0,0)), p_v_out: dace.data.Array(dtype=dace.float64,shape=[65,10663],strides=[10664,1], offset=(0,0)), horizontal_start: dace.int32, horizontal_end: dace.int32, vertical_end: dace.int64, # type: ignore
+                 connectivity_V2E: dace.data.Array(dtype=dace.int64,shape=[10663,6],strides=[6,1], offset=(0,0))): # type: ignore
+            scale_k.with_backend(backend, offset_provider={})(
+                enh_smag_fac, dtime, diff_multfac_smag
             )
-        
+            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend, offset_provider={"V2E": self.grid.get_offset_provider("V2E")})(
+                p_e_in=p_e_in,
+                ptr_coeff_1=ptr_coeff_1,
+                ptr_coeff_2=ptr_coeff_2,
+                p_u_out=p_u_out,
+                p_v_out=p_v_out,
+                horizontal_start=horizontal_start,
+                horizontal_end=horizontal_end,
+                vertical_start=0,
+                vertical_end=vertical_end,
+                __connectivity_V2E=connectivity_V2E,
+            )
+
         with dace.config.temporary_config():
+            dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
             dace.config.Config.set("compiler", "allow_view_arguments", value=True)
             dace.config.Config.set("frontend", "check_args", value=True)
-            fuse(self.enh_smag_fac.ndarray, dtime, self.diff_multfac_smag.ndarray, N=65)
+            compiler_args ="-std=c++14 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
+            on_gpu = False
+            dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
 
-        log.debug("rbf interpolation 1: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
-            p_e_in=prognostic_state.vn,
-            ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
-            p_u_out=self.u_vert,
-            p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
-            horizontal_end=vertex_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
-        )
-        log.debug("rbf interpolation 1: end")
+            fuse(self.enh_smag_fac.ndarray, dtime, self.diff_multfac_smag.ndarray, 
+            prognostic_state.vn.ndarray, self.interpolation_state.rbf_coeff_1.ndarray, self.interpolation_state.rbf_coeff_2.ndarray, self.u_vert.ndarray, self.v_vert.ndarray, vertex_start_lb_plus1, vertex_end_local, klevels,
+            self.grid.get_offset_provider("V2E").table,
+            N=65)
+
+        # log.debug("rbf interpolation 1: start")
+        # mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
+        #     p_e_in=prognostic_state.vn,
+        #     ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
+        #     ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
+        #     p_u_out=self.u_vert,
+        #     p_v_out=self.v_vert,
+        #     horizontal_start=vertex_start_lb_plus1,
+        #     horizontal_end=vertex_end_local,
+        #     vertical_start=0,
+        #     vertical_end=klevels,
+        #     offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
+        # )
+        # log.debug("rbf interpolation 1: end")
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
