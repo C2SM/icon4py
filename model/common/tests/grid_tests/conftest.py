@@ -15,7 +15,6 @@ import pytest
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
-    datapath,
     decomposition_info,
     download_ser_data,
     experiment,

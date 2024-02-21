@@ -25,10 +25,11 @@
 
 import numpy as np
 import pytest
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
+from icon4py.model.common.metrics.stencils.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
@@ -39,25 +40,40 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.common.test_utils.helpers import zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
-def test_compute_c_lin_e(
+def test_compute_nudgecoeffs_e(
     grid_savepoint, interpolation_savepoint, icon_grid  # noqa: F811  # fixture
 ):
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    edge_cell_length = grid_savepoint.edge_cell_length()
-    owner_mask = grid_savepoint.e_owner_mask()
-    c_lin_e_ref = interpolation_savepoint.c_lin_e()
-    lateral_boundary = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    nudgecoeff_e = zero_field(icon_grid, EdgeDim, dtype=wpfloat)
+    nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
+    refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
+    grf_nudge_start_e = RefinCtrlLevel.boundary_nudging_start(EdgeDim)
+    nudge_max_coeff = wpfloat(0.375)
+    nudge_efold_width = wpfloat(2.0)
+    nudge_zone_width = int32(10)
+
+    horizontal_start = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.nudging_2nd_level(EdgeDim)
     )
-    c_lin_e = compute_c_lin_e(
-        edge_cell_length.asnumpy(),
-        inv_dual_edge_length.asnumpy(),
-        owner_mask.asnumpy(),
-        lateral_boundary,
+    horizontal_end = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.local(EdgeDim),
     )
 
-    assert np.allclose(c_lin_e, c_lin_e_ref.asnumpy())
+    compute_nudgecoeffs(
+        nudgecoeff_e,
+        refin_ctrl,
+        grf_nudge_start_e,
+        nudge_max_coeff,
+        nudge_efold_width,
+        nudge_zone_width,
+        horizontal_start,
+        horizontal_end,
+        offset_provider={},
+    )
+
+    assert np.allclose(nudgecoeff_e.asnumpy(), nudgecoeff_e_ref.asnumpy())

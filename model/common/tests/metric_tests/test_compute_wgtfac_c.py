@@ -23,12 +23,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import EdgeDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate_indices
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
@@ -36,28 +35,29 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     grid_savepoint,
     icon_grid,
     interpolation_savepoint,
+    metrics_savepoint,
     processor_props,
     ranked_data_path,
 )
+from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
-def test_compute_c_lin_e(
-    grid_savepoint, interpolation_savepoint, icon_grid  # noqa: F811  # fixture
-):
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    edge_cell_length = grid_savepoint.edge_cell_length()
-    owner_mask = grid_savepoint.e_owner_mask()
-    c_lin_e_ref = interpolation_savepoint.c_lin_e()
-    lateral_boundary = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
-    c_lin_e = compute_c_lin_e(
-        edge_cell_length.asnumpy(),
-        inv_dual_edge_length.asnumpy(),
-        owner_mask.asnumpy(),
-        lateral_boundary,
+def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
+    wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
+    wgtfac_c_ref = metrics_savepoint.wgtfac_c()
+    z_ifc = metrics_savepoint.z_ifc()
+    k = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
+
+    vertical_end = icon_grid.num_levels
+
+    compute_wgtfac_c(
+        wgtfac_c,
+        z_ifc,
+        k,
+        nlev=vertical_end,
+        offset_provider={"Koff": KDim},
     )
 
-    assert np.allclose(c_lin_e, c_lin_e_ref.asnumpy())
+    assert dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
