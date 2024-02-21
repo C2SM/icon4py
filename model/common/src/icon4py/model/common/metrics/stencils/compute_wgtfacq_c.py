@@ -28,13 +28,14 @@ def _compute_wgtfacq_c(
     nlevp1: int32,
 ) -> Field[[CellDim, KDim], wpfloat]:
 
-    z1 = 0.5 * z_ifc[:,nlevp1] - z_ifc[:,nlevp1]
-    z2 = 0.5 * z_ifc[:,nlev] + z_ifc[:,nlev-1] - z_ifc[:,nlevp1]
-    z3 = 0.5 * z_ifc[:,nlev-1] + z_ifc[nlev-2] - z_ifc[:,nlevp1]
+    z1 = 0.5 * z_ifc(Koff[-1]) - z_ifc
+    z2 = 0.5 * z_ifc(Koff[-1]) + z_ifc(Koff[-2]) - z_ifc
+    z3 = 0.5 * z_ifc(Koff[-2]) + z_ifc(Koff[-3]) - z_ifc
 
-    wgt_facq_c[:,2] = z1*z2/(z2-z3)/(z1-z3)
-    wgt_facq_c[:,1] = z1-wgt_facq_c[:,2] * (z1-z3)/(z1-z2)
-    wgt_facq_c[:,0] = 1.0 - (wgt_facq_c[:,1] + wgt_facq_c[:,2])
+    wgt_facq_c = where(k == int32(2), z1*z2/(z2-z3)/(z1-z3), z_ifc)
+    wgt_facq_c = where(k == int32(1),z1-wgt_facq_c(Koff[1]) * (z1-z3)/(z1-z2), wgt_facq_c)
+    wgt_facq_c = where(k == int32(0), 1.0 - wgt_facq_c(Koff[1]) + wgt_facq_c(Koff[2]), wgt_facq_c)
+
 
     return wgt_facq_c
 

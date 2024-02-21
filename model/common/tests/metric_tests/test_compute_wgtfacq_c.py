@@ -46,10 +46,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 @pytest.mark.datatest
 def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
-    wgtfacq_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
-    wgtfacq_c_ref = metrics_savepoint.wgtfacq_c()
+    wgtfacq_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
+    wgtfacq_c_ref = metrics_savepoint.wgtfacq_c_dsl()
     z_ifc = metrics_savepoint.z_ifc()
-    k = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
+    k = _allocate_indices(KDim, grid=icon_grid)
 
     vertical_end = icon_grid.num_levels
 
@@ -59,6 +59,7 @@ def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixtu
         k,
         nlev=vertical_end,
         nlevp1=vertical_end + 1,
+        offset_provider={"Koff": KDim},
     )
 
     assert dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())
