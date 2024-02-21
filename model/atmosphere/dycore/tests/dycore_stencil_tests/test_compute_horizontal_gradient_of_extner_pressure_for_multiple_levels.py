@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonHydroStencil20(StencilTest):
+class TestComputeHorizontalGradientOfExtnerPressureForMultipleLevels(StencilTest):
     PROGRAM = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels
     OUTPUTS = ("z_gradh_exner",)
 

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil64(StencilTest):
+class TestSetCellKdimFieldToZeroWp(StencilTest):
     PROGRAM = set_cell_kdim_field_to_zero_wp
     OUTPUTS = ("field_to_zero_wp",)
 

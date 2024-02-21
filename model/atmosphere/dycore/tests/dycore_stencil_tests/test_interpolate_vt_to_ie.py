@@ -28,7 +28,7 @@ def interpolate_vt_to_ie_numpy(grid, wgtfac_e: np.array, vt: np.array, **kwargs)
     return z_vt_ie
 
 
-class TestMoVelocityAdvectionStencil03(StencilTest):
+class TestInterpolateVtToIe(StencilTest):
     PROGRAM = interpolate_vt_to_ie
     OUTPUTS = ("z_vt_ie",)
 

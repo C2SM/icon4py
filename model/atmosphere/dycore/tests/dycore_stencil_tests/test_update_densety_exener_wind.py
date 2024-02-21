@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil61(StencilTest):
+class TestUpdateDensetyExenerWind(StencilTest):
     PROGRAM = update_densety_exener_wind
     OUTPUTS = ("rho_new", "exner_new", "w_new")
 

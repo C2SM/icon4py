@@ -30,7 +30,7 @@ def compute_horizontal_kinetic_energy_numpy(vn: np.array, vt: np.array) -> tuple
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
-class TestMoVelocityAdvectionStencil05(StencilTest):
+class TestComputeHorizontalKineticEnergy(StencilTest):
     PROGRAM = compute_horizontal_kinetic_energy
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 

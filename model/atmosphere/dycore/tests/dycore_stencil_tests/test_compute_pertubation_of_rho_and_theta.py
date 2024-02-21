@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil07(StencilTest):
+class TestComputePertubationOfRhoAndTheta(StencilTest):
     PROGRAM = compute_pertubation_of_rho_and_theta
     OUTPUTS = ("z_rth_pr_1", "z_rth_pr_2")
 

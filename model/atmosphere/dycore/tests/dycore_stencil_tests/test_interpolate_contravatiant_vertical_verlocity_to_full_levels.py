@@ -28,7 +28,7 @@ def interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(grid, z_w_
     return z_w_con_c_full
 
 
-class TestMoVelocityAdvectionStencil15(StencilTest):
+class TestInterpolateContravatiantVerticalVerlocityToFullLevels(StencilTest):
     PROGRAM = interpolate_contravatiant_vertical_verlocity_to_full_levels
     OUTPUTS = ("z_w_con_c_full",)
 

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoSolveNonhydroStencil01(StencilTest):
+class TestSetTwoCellKdimFieldsToZeroVp(StencilTest):
     PROGRAM = set_two_cell_kdim_fields_to_zero_vp
     OUTPUTS = ("cell_kdim_field_to_zero_vp_1", "cell_kdim_field_to_zero_vp_2")
 

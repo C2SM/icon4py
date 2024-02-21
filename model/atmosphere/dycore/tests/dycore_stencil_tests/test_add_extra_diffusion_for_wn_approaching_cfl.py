@@ -106,7 +106,7 @@ def add_extra_diffusion_for_wn_approaching_cfl_numpy(
     return ddt_vn_apc
 
 
-class TestMoVelocityAdvectionStencil20(StencilTest):
+class TestAddExtraDiffusionForWnApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_wn_approaching_cfl
     OUTPUTS = ("ddt_vn_apc",)
 

@@ -51,7 +51,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
     )
 
 
-class TestMoVelocityAdvectionStencil02VnIe(StencilTest):
+class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
     PROGRAM = interpolate_vn_to_ie_and_compute_ekin_on_edges
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 

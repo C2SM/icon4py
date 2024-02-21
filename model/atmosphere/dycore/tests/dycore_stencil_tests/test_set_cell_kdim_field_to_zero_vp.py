@@ -28,7 +28,7 @@ def set_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp: np.array) -> np.array
     return field_to_zero_vp
 
 
-class TestMoSolveNonhydroStencil03(StencilTest):
+class TestSetCellKdimFieldToZeroVp(StencilTest):
     PROGRAM = set_cell_kdim_field_to_zero_vp
     OUTPUTS = ("field_to_zero_vp",)
 
