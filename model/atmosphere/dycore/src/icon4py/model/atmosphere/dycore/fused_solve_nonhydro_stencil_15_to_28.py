@@ -167,84 +167,84 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     #     (z_rho_e, z_theta_v_e),
     # ) if limited_area else (z_rho_e, z_theta_v_e)
 
-    z_rho_e = (
-        where(
-            (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
-            _set_zero_e_k(),
-            z_rho_e,
-        )
-        if limited_area
-        else z_rho_e
-    )
-
-    z_theta_v_e = (
-        where(
-            (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
-            _set_zero_e_k(),
-            z_theta_v_e,
-        )
-        if limited_area
-        else z_theta_v_e
-    )
-
-    (z_rho_e, z_theta_v_e) = where(
-        (horizontal_lower_1 <= horz_idx < horizontal_upper_1),
-        _compute_horizontal_advection_of_rho_and_theta(
-            p_vn=p_vn,
-            p_vt=p_vt,
-            pos_on_tplane_e_1=pos_on_tplane_e_1,
-            pos_on_tplane_e_2=pos_on_tplane_e_2,
-            primal_normal_cell_1=primal_normal_cell_1,
-            dual_normal_cell_1=dual_normal_cell_1,
-            primal_normal_cell_2=primal_normal_cell_2,
-            dual_normal_cell_2=dual_normal_cell_2,
-            p_dthalf=p_dthalf,
-            rho_ref_me=rho_ref_me,
-            theta_ref_me=theta_ref_me,
-            z_grad_rth_1=z_grad_rth_1,
-            z_grad_rth_2=z_grad_rth_2,
-            z_grad_rth_3=z_grad_rth_3,
-            z_grad_rth_4=z_grad_rth_4,
-            z_rth_pr_1=z_rth_pr_1,
-            z_rth_pr_2=z_rth_pr_2,
-        ),
-        (z_rho_e, z_theta_v_e),
-    )
-
-    z_gradh_exner = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0) & (vert_idx < nflatlev),
-        _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-            inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
-        ),
-        z_gradh_exner,
-    )
-
-    z_gradh_exner = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
-        & (nflatlev < vert_idx < nflat_gradp + int32(1)),
-        _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-            inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=z_exner_ex_pr,
-            ddxn_z_full=ddxn_z_full,
-            c_lin_e=c_lin_e,
-            z_dexner_dz_c_1=z_dexner_dz_c_1,
-        ),
-        z_gradh_exner,
-    )
-
-    z_gradh_exner = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
-        & (nflat_gradp + int32(1) <= vert_idx),
-        _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
-            inv_dual_edge_length=inv_dual_edge_length,
-            z_exner_ex_pr=z_exner_ex_pr,
-            zdiff_gradp=zdiff_gradp,
-            ikoffset=ikoffset,
-            z_dexner_dz_c_1=z_dexner_dz_c_1,
-            z_dexner_dz_c_2=z_dexner_dz_c_2,
-        ),
-        z_gradh_exner,
-    )
+    # z_rho_e = (
+    #     where(
+    #         (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+    #         _set_zero_e_k(),
+    #         z_rho_e,
+    #     )
+    #     if limited_area
+    #     else z_rho_e
+    # )
+    #
+    # z_theta_v_e = (
+    #     where(
+    #         (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+    #         _set_zero_e_k(),
+    #         z_theta_v_e,
+    #     )
+    #     if limited_area
+    #     else z_theta_v_e
+    # )
+    #
+    # (z_rho_e, z_theta_v_e) = where(
+    #     (horizontal_lower_1 <= horz_idx < horizontal_upper_1),
+    #     _compute_horizontal_advection_of_rho_and_theta(
+    #         p_vn=p_vn,
+    #         p_vt=p_vt,
+    #         pos_on_tplane_e_1=pos_on_tplane_e_1,
+    #         pos_on_tplane_e_2=pos_on_tplane_e_2,
+    #         primal_normal_cell_1=primal_normal_cell_1,
+    #         dual_normal_cell_1=dual_normal_cell_1,
+    #         primal_normal_cell_2=primal_normal_cell_2,
+    #         dual_normal_cell_2=dual_normal_cell_2,
+    #         p_dthalf=p_dthalf,
+    #         rho_ref_me=rho_ref_me,
+    #         theta_ref_me=theta_ref_me,
+    #         z_grad_rth_1=z_grad_rth_1,
+    #         z_grad_rth_2=z_grad_rth_2,
+    #         z_grad_rth_3=z_grad_rth_3,
+    #         z_grad_rth_4=z_grad_rth_4,
+    #         z_rth_pr_1=z_rth_pr_1,
+    #         z_rth_pr_2=z_rth_pr_2,
+    #     ),
+    #     (z_rho_e, z_theta_v_e),
+    # )
+    #
+    # z_gradh_exner = where(
+    #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0) & (vert_idx < nflatlev),
+    #     _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
+    #         inv_dual_edge_length=inv_dual_edge_length, z_exner_ex_pr=z_exner_ex_pr
+    #     ),
+    #     z_gradh_exner,
+    # )
+    #
+    # z_gradh_exner = where(
+    #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
+    #     & (nflatlev < vert_idx < nflat_gradp + int32(1)),
+    #     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+    #         inv_dual_edge_length=inv_dual_edge_length,
+    #         z_exner_ex_pr=z_exner_ex_pr,
+    #         ddxn_z_full=ddxn_z_full,
+    #         c_lin_e=c_lin_e,
+    #         z_dexner_dz_c_1=z_dexner_dz_c_1,
+    #     ),
+    #     z_gradh_exner,
+    # )
+    #
+    # z_gradh_exner = where(
+    #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
+    #     & (nflat_gradp + int32(1) <= vert_idx),
+    #     _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
+    #         inv_dual_edge_length=inv_dual_edge_length,
+    #         z_exner_ex_pr=z_exner_ex_pr,
+    #         zdiff_gradp=zdiff_gradp,
+    #         ikoffset=ikoffset,
+    #         z_dexner_dz_c_1=z_dexner_dz_c_1,
+    #         z_dexner_dz_c_2=z_dexner_dz_c_2,
+    #     ),
+    #     z_gradh_exner,
+    # )
 
     z_hydro_corr = _compute_hydrostatic_correction_term(
         theta_v=theta_v,
@@ -256,40 +256,40 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
         grav_o_cpd=grav_o_cpd,
     )
 
-    z_gradh_exner = where(
-        (horizontal_lower_3 <= horz_idx < horizontal_upper_3),
-        _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-            ipeidx_dsl=ipeidx_dsl,
-            pg_exdist=pg_exdist,
-            z_hydro_corr=z_hydro_corr,
-            z_gradh_exner=z_gradh_exner,
-        ),
-        z_gradh_exner,
-    )
-
-    vn = where(
-        (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-        _add_temporal_tendencies_to_vn(
-            vn_nnow=vn_nnow,
-            ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
-            ddt_vn_phy=ddt_vn_phy,
-            z_theta_v_e=z_theta_v_e,
-            z_gradh_exner=z_gradh_exner,
-            dtime=dtime,
-            cpd=cpd,
-        ),
-        vn,
-    )
-
-    vn = (
-        where(
-            (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-            _add_analysis_increments_to_vn(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
-            vn,
-        )
-        if is_iau_active
-        else vn
-    )
+    # z_gradh_exner = where(
+    #     (horizontal_lower_3 <= horz_idx < horizontal_upper_3),
+    #     _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
+    #         ipeidx_dsl=ipeidx_dsl,
+    #         pg_exdist=pg_exdist,
+    #         z_hydro_corr=z_hydro_corr,
+    #         z_gradh_exner=z_gradh_exner,
+    #     ),
+    #     z_gradh_exner,
+    # )
+    #
+    # vn = where(
+    #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+    #     _add_temporal_tendencies_to_vn(
+    #         vn_nnow=vn_nnow,
+    #         ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+    #         ddt_vn_phy=ddt_vn_phy,
+    #         z_theta_v_e=z_theta_v_e,
+    #         z_gradh_exner=z_gradh_exner,
+    #         dtime=dtime,
+    #         cpd=cpd,
+    #     ),
+    #     vn,
+    # )
+    #
+    # vn = (
+    #     where(
+    #         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+    #         _add_analysis_increments_to_vn(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
+    #         vn,
+    #     )
+    #     if is_iau_active
+    #     else vn
+    # )
 
     return z_rho_e, z_theta_v_e, z_gradh_exner, vn
 
@@ -404,27 +404,27 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
         else vn
     )
 
-    vn = (
-        where(
-            (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-            _apply_4th_order_divergence_damping(
-                scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
-            ),
-            vn,
-        )
-        if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac)))
-        else vn
-    )
-
-    vn = (
-        where(
-            (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
-            _add_analysis_increments_to_vn(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
-            vn,
-        )
-        if is_iau_active
-        else vn
-    )
+    # vn = (
+    #     where(
+    #         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+    #         _apply_4th_order_divergence_damping(
+    #             scal_divdamp=scal_divdamp, z_graddiv2_vn=z_graddiv2_vn, vn=vn
+    #         ),
+    #         vn,
+    #     )
+    #     if ((divdamp_order == int32(24)) & (divdamp_fac_o2 <= (4.0 * divdamp_fac)))
+    #     else vn
+    # )
+    #
+    # vn = (
+    #     where(
+    #         (horizontal_lower_0 <= horz_idx < horizontal_upper_0),
+    #         _add_analysis_increments_to_vn(vn_incr=vn_incr, vn=vn, iau_wgt_dyn=iau_wgt_dyn),
+    #         vn,
+    #     )
+    #     if is_iau_active
+    #     else vn
+    # )
 
     return z_graddiv_vn, vn
 
