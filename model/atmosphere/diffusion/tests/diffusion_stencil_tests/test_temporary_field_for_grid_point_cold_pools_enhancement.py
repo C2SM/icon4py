@@ -29,7 +29,12 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
 
     @staticmethod
     def reference(
-        grid, theta_v: np.array, theta_ref_mc: np.array, thresh_tdiff, smallest_vpfloat, **kwargs
+        grid,
+        theta_v: np.array,
+        theta_ref_mc: np.array,
+        thresh_tdiff,
+        smallest_vpfloat,
+        **kwargs,
     ) -> dict:
         c2e2c = grid.connectivities[C2E2CDim]
         tdiff = (
@@ -38,7 +43,11 @@ class TestTemporaryFieldForGridPointColdPoolsEnhancement(StencilTest):
         )
         trefdiff = (
             theta_ref_mc
-            - np.sum(np.where((c2e2c != -1)[:, :, np.newaxis], theta_ref_mc[c2e2c], 0), axis=1) / 3
+            - np.sum(
+                np.where((c2e2c != -1)[:, :, np.newaxis], theta_ref_mc[c2e2c], 0),
+                axis=1,
+            )
+            / 3
         )
 
         enh_diffu_3d = np.where(

@@ -27,7 +27,11 @@ class TestComputeAirmass(StencilTest):
 
     @staticmethod
     def reference(
-        grid, rho_in: np.array, ddqz_z_full_in: np.array, deepatmo_t1mc_in: np.array, **kwargs
+        grid,
+        rho_in: np.array,
+        ddqz_z_full_in: np.array,
+        deepatmo_t1mc_in: np.array,
+        **kwargs,
     ) -> dict:
         airmass_out = rho_in * ddqz_z_full_in * deepatmo_t1mc_in
         return dict(airmass_out=airmass_out)

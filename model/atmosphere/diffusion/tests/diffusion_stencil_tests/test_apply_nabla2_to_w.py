@@ -33,7 +33,8 @@ def apply_nabla2_to_w_numpy(
     geofac_n2s = np.expand_dims(geofac_n2s, axis=-1)
     area = np.expand_dims(area, axis=-1)
     w = w - diff_multfac_w * area * area * np.sum(
-        np.where((c2e2cO != -1)[:, :, np.newaxis], z_nabla2_c[c2e2cO] * geofac_n2s, 0.0), axis=1
+        np.where((c2e2cO != -1)[:, :, np.newaxis], z_nabla2_c[c2e2cO] * geofac_n2s, 0.0),
+        axis=1,
     )
     return w
 

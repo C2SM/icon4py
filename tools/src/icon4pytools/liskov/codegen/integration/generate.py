@@ -55,7 +55,6 @@ from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 from icon4pytools.liskov.external.metadata import CodeMetadata
 
-
 logger = setup_logger(__name__)
 
 

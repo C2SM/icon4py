@@ -113,7 +113,8 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep():
     )
 
     assert np.allclose(
-        z_q_ref[h_start:h_end, v_start:v_end], z_q.asnumpy()[h_start:h_end, v_start:v_end]
+        z_q_ref[h_start:h_end, v_start:v_end],
+        z_q.asnumpy()[h_start:h_end, v_start:v_end],
     )
     assert np.allclose(
         w_ref[h_start:h_end, v_start:v_end], w.asnumpy()[h_start:h_end, v_start:v_end]

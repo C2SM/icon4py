@@ -19,7 +19,6 @@ from uuid import UUID
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
 
-
 try:
     from netCDF4 import Dataset
 except ImportError:
@@ -188,10 +187,10 @@ class GridFile:
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
-        except KeyError:
+        except KeyError as err:
             msg = f"{name} does not exist in dataset"
             self._log.warning(msg)
-            raise IconGridError(msg)
+            raise IconGridError(msg) from err
 
 
 class IconGridError(RuntimeError):
@@ -318,10 +317,10 @@ class GridManager:
             raise IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
-        except KeyError:
+        except KeyError as err:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
-            raise IconGridError(msg)
+            raise IconGridError(msg) from err
 
     def _constuct_grid(self, dataset: Dataset) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))

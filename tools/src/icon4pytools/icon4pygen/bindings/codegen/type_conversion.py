@@ -13,7 +13,6 @@
 
 from gt4py.next.type_system import type_specifications as ts
 
-
 BUILTIN_TO_ISO_C_TYPE: dict[ts.ScalarKind, str] = {
     ts.ScalarKind.FLOAT64: "real(c_double)",
     ts.ScalarKind.FLOAT32: "real(c_float)",

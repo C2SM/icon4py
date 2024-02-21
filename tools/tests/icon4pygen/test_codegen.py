@@ -27,7 +27,6 @@ from icon4pytools.icon4pygen.cli import main
 
 from .conftest import get_stencil_module_path
 
-
 DYCORE_PKG = "atmosphere.dycore"
 INTERPOLATION_PKG = "common.interpolation.stencils"
 DIFFUSION_PKG = "atmosphere.diffusion.stencils"
@@ -134,7 +133,7 @@ def check_code_was_generated(stencil_name: str) -> None:
 def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
-        cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH] + list(flags)
+        cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
         result = cli.invoke(main, cli_args)
         assert result.exit_code == 0
         check_code_was_generated(stencil_name)

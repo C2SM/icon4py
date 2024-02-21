@@ -41,7 +41,9 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
+    apply_diffusion_to_vn,
+)
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
@@ -69,9 +71,16 @@ from icon4py.model.common.constants import (
     GAS_CONSTANT_DRY_AIR,
     dbl_eps,
 )
-from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
+from icon4py.model.common.decomposition.definitions import (
+    ExchangeRuntime,
+    SingleNodeExchange,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMarkerIndex,
+)
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
@@ -382,9 +391,7 @@ class Diffusion:
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.thresh_tdiff: float = (
-            -5.0
-        )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self.thresh_tdiff: float = -5.0  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
@@ -510,7 +517,8 @@ class Diffusion:
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = as_field(
-            (CellDim, KDim), np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+            (CellDim, KDim),
+            np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
         )
 
     def initial_run(

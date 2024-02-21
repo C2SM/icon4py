@@ -44,7 +44,9 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 
 @pytest.mark.datatest
 def test_compute_c_lin_e(
-    grid_savepoint, interpolation_savepoint, icon_grid  # noqa: F811  # fixture
+    grid_savepoint,  # noqa: F811  # fixture
+    interpolation_savepoint,  # noqa: F811  # fixture
+    icon_grid,  # noqa: F811  # fixture
 ):
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()

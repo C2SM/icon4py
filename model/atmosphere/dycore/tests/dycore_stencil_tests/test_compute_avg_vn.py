@@ -30,7 +30,8 @@ class TestMoSolveNonhydroStencil31(StencilTest):
         e2c2eO = grid.connectivities[E2C2EODim]
         geofac_grdiv = np.expand_dims(e_flx_avg, axis=-1)
         z_vn_avg = np.sum(
-            np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0), axis=1
+            np.where((e2c2eO != -1)[:, :, np.newaxis], vn[e2c2eO] * geofac_grdiv, 0),
+            axis=1,
         )
         return dict(z_vn_avg=z_vn_avg)
 

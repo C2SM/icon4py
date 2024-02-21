@@ -20,7 +20,6 @@ from icon4py.model.common.dimension import E2CDim, EdgeDim, KDim, VertexDim
 
 from icon4pytools.py2f.cffi_utils import UnknownDimensionException, to_fields
 
-
 n_vertices = 9
 n_edges = 27
 levels = 12

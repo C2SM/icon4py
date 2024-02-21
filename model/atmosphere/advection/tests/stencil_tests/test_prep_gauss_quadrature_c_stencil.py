@@ -380,8 +380,12 @@ class TestPrepGaussQuadratureCStencil(StencilTest):
         eps: float,
         **kwargs,
     ):
-
-        wgt_t_detjac_1, wgt_t_detjac_2, wgt_t_detjac_3, wgt_t_detjac_4 = cls._compute_wgt_t_detjac(
+        (
+            wgt_t_detjac_1,
+            wgt_t_detjac_2,
+            wgt_t_detjac_3,
+            wgt_t_detjac_4,
+        ) = cls._compute_wgt_t_detjac(
             wgt_zeta_1,
             wgt_zeta_2,
             wgt_eta_1,

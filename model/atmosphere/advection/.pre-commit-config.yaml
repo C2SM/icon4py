@@ -63,52 +63,13 @@ repos:
   rev: v1.3.0
   hooks:
   - id: yesqa
-    additional_dependencies:
-    - flake8==4.0.1
-    - darglint
-    - flake8-bugbear
-    - flake8-builtins==2.2.0
-    - flake8-debugger
-    - flake8-docstrings
-    - flake8-eradicate
-    - flake8-mutable
-    - pygments
 
-- repo: https://github.com/psf/black
-  rev: '22.3.0'
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.2.2
   hooks:
-  - id: black
-    name: black Python formatter
-    args: [--config, model/atmosphere/advection/pyproject.toml]
-
-- repo: https://github.com/asottile/blacken-docs
-  rev: v1.12.1
-  hooks:
-  - id: blacken-docs
-    name: black Python formatter for docstrings
-    additional_dependencies: [black==22.3.0]
-
-- repo: https://github.com/PyCQA/isort
-  rev: '5.12.0'
-  hooks:
-  - id: isort
-    args: [--config-root, model/atmosphere/advection/, --resolve-all-configs]
-
-- repo: https://github.com/PyCQA/flake8
-  rev: '6.1.0'
-  hooks:
-  - id: flake8
-    name: flake8 code style checks
-    additional_dependencies:
-    - darglint
-    - flake8-bugbear
-    - flake8-builtins
-    - flake8-debugger
-    - flake8-docstrings
-    - flake8-eradicate
-    - flake8-mutable
-    - pygments
-    args: [--config=model/atmosphere/advection/.flake8, model/atmosphere/advection/src/icon4py/]
+  - id: ruff
+    args: [--fix]
+  - id: ruff-format
 
 - repo: local
   hooks:

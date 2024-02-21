@@ -24,7 +24,6 @@ from icon4py.model.common.dimension import Koff
 from icon4pytools.icon4pygen.bindings.utils import write_string
 from icon4pytools.icon4pygen.metadata import StencilInfo
 
-
 H_START = "horizontal_start"
 H_END = "horizontal_end"
 V_START = "vertical_start"

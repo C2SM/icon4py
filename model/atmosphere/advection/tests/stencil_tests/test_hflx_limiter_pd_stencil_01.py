@@ -42,13 +42,16 @@ class TestHflxLimiterPdStencil01(StencilTest):
         geofac_div = reshape(geofac_div, grid.connectivities[C2EDim].shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         p_m_0 = np.maximum(
-            0.0, p_mflx_tracer_h[grid.connectivities[C2EDim][:, 0]] * geofac_div[:, 0] * p_dtime
+            0.0,
+            p_mflx_tracer_h[grid.connectivities[C2EDim][:, 0]] * geofac_div[:, 0] * p_dtime,
         )
         p_m_1 = np.maximum(
-            0.0, p_mflx_tracer_h[grid.connectivities[C2EDim][:, 1]] * geofac_div[:, 1] * p_dtime
+            0.0,
+            p_mflx_tracer_h[grid.connectivities[C2EDim][:, 1]] * geofac_div[:, 1] * p_dtime,
         )
         p_m_2 = np.maximum(
-            0.0, p_mflx_tracer_h[grid.connectivities[C2EDim][:, 2]] * geofac_div[:, 2] * p_dtime
+            0.0,
+            p_mflx_tracer_h[grid.connectivities[C2EDim][:, 2]] * geofac_div[:, 2] * p_dtime,
         )
 
         p_m = p_m_0 + p_m_1 + p_m_2

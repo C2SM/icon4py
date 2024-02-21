@@ -24,7 +24,11 @@ class TestBtrajDregStencil01(StencilTest):
 
     @staticmethod
     def reference(
-        grid, lcounterclock: bool, p_vn: np.array, tangent_orientation: np.array, **kwargs
+        grid,
+        lcounterclock: bool,
+        p_vn: np.array,
+        tangent_orientation: np.array,
+        **kwargs,
     ):
         tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 

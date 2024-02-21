@@ -108,7 +108,7 @@ We encode the grid as follows.
 """
 
 from dataclasses import dataclass
-from typing import List, TypeAlias
+from typing import ClassVar, List, TypeAlias
 
 from gt4py.next.common import Dimension
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
@@ -195,7 +195,7 @@ def cell_to_edge(cell: Position) -> tuple[Position, Position, Position]:
 class IcoChainSize:
     """A class to compute the number of neighbors for a given neighbor chain."""
 
-    _CHAIN_DISPATCHER = {
+    _CHAIN_DISPATCHER: ClassVar = {
         "vertex_to_edge": [VertexDim, EdgeDim],
         "vertex_to_cell": [VertexDim, CellDim],
         "edge_to_vertex": [EdgeDim, VertexDim],

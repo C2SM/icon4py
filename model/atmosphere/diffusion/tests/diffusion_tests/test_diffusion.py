@@ -34,7 +34,6 @@ from .utils import (
     verify_diffusion_fields,
 )
 
-
 backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 
 
@@ -253,8 +252,18 @@ def test_verify_diffusion_init_against_savepoint(
 @pytest.mark.parametrize(
     "experiment, step_date_init, step_date_exit, damping_height",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (
+            REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            12500.0,
+        ),
+        (
+            GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+            50000.0,
+        ),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))

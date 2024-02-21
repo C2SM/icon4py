@@ -43,7 +43,6 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_metric_state_for_diffusion,
 )
 
-
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
@@ -229,7 +228,10 @@ def read_decomp_info(
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[
-    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
+    DiffusionMetricState,
+    DiffusionInterpolationState,
+    MetricStateNonHydro,
+    InterpolationState,
 ]:
     """
     Read fields for metric and interpolation state.

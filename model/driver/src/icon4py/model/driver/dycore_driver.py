@@ -45,7 +45,6 @@ from icon4py.model.driver.io_utils import (
     read_static_fields,
 )
 
-
 log = logging.getLogger(__name__)
 
 
@@ -227,7 +226,9 @@ class TimeLoop:
 
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
-                diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
+                diffusion_diagnostic_state,
+                prognostic_state_list[self._next],
+                self.run_config.dtime,
             )
 
         self._swap()
@@ -313,9 +314,12 @@ def initialize(file_path: Path, props: ProcessProperties):
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = read_icon_grid(file_path, rank=props.rank)
     log.info(f"reading input fields from '{file_path}'")
-    (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        file_path, rank=props.rank
-    )
+    (
+        edge_geometry,
+        cell_geometry,
+        vertical_geometry,
+        c_owner_mask,
+    ) = read_geometry_fields(file_path, rank=props.rank)
     (
         diffusion_metric_state,
         diffusion_interpolation_state,

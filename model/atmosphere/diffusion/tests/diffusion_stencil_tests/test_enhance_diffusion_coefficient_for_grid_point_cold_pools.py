@@ -33,7 +33,10 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         e2c = grid.connectivities[E2CDim]
         kh_smag_e = np.maximum(
             kh_smag_e,
-            np.max(np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf), axis=1),
+            np.max(
+                np.where((e2c != -1)[:, :, np.newaxis], enh_diffu_3d[e2c], -math.inf),
+                axis=1,
+            ),
         )
         return dict(kh_smag_e=kh_smag_e)
 

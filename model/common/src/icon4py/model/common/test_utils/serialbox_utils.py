@@ -49,7 +49,6 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
-
 log = logging.getLogger(__name__)
 
 
@@ -94,7 +93,7 @@ class IconSavepoint:
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
             self.sizes[d] if d.kind is DimensionKind.HORIZONTAL else s
-            for s, d in zip(buffer.shape, dimensions)
+            for s, d in zip(buffer.shape, dimensions, strict=False)
         )
         buffer = buffer[tuple(map(slice, buffer_size))]
         return buffer
@@ -267,7 +266,8 @@ class IconGridSavepoint(IconSavepoint):
         return as_field(
             (dim,),
             np.squeeze(
-                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)],
+                1,
             ),
         )
 
@@ -276,7 +276,7 @@ class IconGridSavepoint(IconSavepoint):
 
     @staticmethod
     def _read_field_for_dim(field_name, read_func, dim: Dimension):
-        match (dim):
+        match dim:
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
             case dimension.EdgeDim:
@@ -1113,7 +1113,7 @@ class IconSerialDataProvider:
         self.rank = mpi_rank
         self.serializer: ser.Serializer = None
         self.file_path: str = path
-        self.fname = f"{fname_prefix}_rank{str(self.rank)}"
+        self.fname = f"{fname_prefix}_rank{self.rank!s}"
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
         self.grid_size = self._grid_size()

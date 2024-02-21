@@ -30,13 +30,20 @@ class TestFaceValPpmStencil01(StencilTest):
     PROGRAM = face_val_ppm_stencil_01
     OUTPUTS = (
         Output(
-            "z_slope", refslice=(slice(None), slice(None, -1)), gtslice=(slice(None), slice(1, -1))
+            "z_slope",
+            refslice=(slice(None), slice(None, -1)),
+            gtslice=(slice(None), slice(1, -1)),
         ),
     )
 
     @staticmethod
     def reference(
-        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, k: np.array, elev: int32, **kwargs
+        grid,
+        p_cc: np.array,
+        p_cellhgt_mc_now: np.array,
+        k: np.array,
+        elev: int32,
+        **kwargs,
     ):
         zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
             p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]
@@ -75,4 +82,10 @@ class TestFaceValPpmStencil01(StencilTest):
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
         elev = k[-2].as_scalar()
 
-        return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, k=k, elev=elev, z_slope=z_slope)
+        return dict(
+            p_cc=p_cc,
+            p_cellhgt_mc_now=p_cellhgt_mc_now,
+            k=k,
+            elev=elev,
+            z_slope=z_slope,
+        )

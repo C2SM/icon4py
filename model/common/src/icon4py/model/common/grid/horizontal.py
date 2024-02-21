@@ -11,13 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Final
+from typing import ClassVar, Final
 
 from gt4py.next.common import Dimension, Field
 
 from icon4py.model.common import dimension
 from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
-
 
 NUM_GHOST_ROWS: Final[int] = 2
 # values from mo_impl_constants.f90
@@ -80,33 +79,33 @@ class HorizontalMarkerIndex:
 
     """
 
-    _lateral_boundary = {
+    _lateral_boundary: ClassVar[Dimension, int] = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
         dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
         dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
-    _local = {
+    _local: ClassVar[Dimension, int] = {
         dimension.CellDim: _LOCAL_CELLS,
         dimension.EdgeDim: _LOCAL_EDGES,
         dimension.VertexDim: _LOCAL_VERTICES,
     }
-    _halo = {
+    _halo: ClassVar[Dimension, int] = {
         dimension.CellDim: _HALO_CELLS,
         dimension.EdgeDim: _HALO_EDGES,
         dimension.VertexDim: _HALO_VERTICES,
     }
-    _interior = {
+    _interior: ClassVar[Dimension, int] = {
         dimension.CellDim: _INTERIOR_CELLS,
         dimension.EdgeDim: _INTERIOR_EDGES,
         dimension.VertexDim: _INTERIOR_VERTICES,
     }
-    _nudging = {
+    _nudging: ClassVar[Dimension, int] = {
         dimension.CellDim: _NUDGING_CELLS,
         dimension.EdgeDim: _NUDGING_EDGES,
         # TODO [magdalena] there is no nudging for vertices?
         dimension.VertexDim: _NUDGING_VERTICES,
     }
-    _end = {
+    _end: ClassVar[Dimension, int] = {
         dimension.CellDim: _END_CELLS,
         dimension.EdgeDim: _END_EDGES,
         dimension.VertexDim: _END_VERTICES,
@@ -298,7 +297,7 @@ class CellParams:
 
 
 class RefinCtrlLevel:
-    _boundary_nudging_start = {
+    _boundary_nudging_start: ClassVar[Dimension, int] = {
         EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
         CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
     }
@@ -308,5 +307,7 @@ class RefinCtrlLevel:
         """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
         try:
             return cls._boundary_nudging_start[dim]
-        except KeyError:
-            raise ValueError(f"nudging start level only exists for {CellDim} and {EdgeDim}")
+        except KeyError as err:
+            raise ValueError(
+                f"nudging start level only exists for {CellDim} and {EdgeDim}"
+            ) from err

@@ -13,7 +13,6 @@
 import sys
 from typing import Final
 
-
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
 #: see https://glossary.ametsoc.org/wiki/Gas_constant.
 GAS_CONSTANT_DRY_AIR: Final[float] = 287.04

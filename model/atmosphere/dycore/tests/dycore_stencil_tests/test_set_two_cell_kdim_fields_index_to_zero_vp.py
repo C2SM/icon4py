@@ -45,7 +45,8 @@ class TestMoSolveNonhydroStencil01(StencilTest):
             k == k2, np.zeros_like(field_index_to_zero_2), field_index_to_zero_2
         )
         return dict(
-            field_index_to_zero_1=field_index_to_zero_1, field_index_to_zero_2=field_index_to_zero_2
+            field_index_to_zero_1=field_index_to_zero_1,
+            field_index_to_zero_2=field_index_to_zero_2,
         )
 
     @pytest.fixture

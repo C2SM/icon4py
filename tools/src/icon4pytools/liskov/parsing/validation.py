@@ -28,7 +28,6 @@ from icon4pytools.liskov.parsing.exceptions import (
 )
 from icon4pytools.liskov.parsing.utils import print_parsed_directive, remove_directive_types
 
-
 logger = setup_logger(__name__)
 
 
@@ -172,7 +171,6 @@ class DirectiveSemanticsValidator:
 
             unbalanced_directives = [name for name, count in directive_counts.items() if count != 0]
             if unbalanced_directives:
-
                 error_msg = f"Each unique stencil must have a corresponding {directives[0].pattern} and {directives[1].pattern} directive."
 
                 raise UnbalancedStencilDirectiveError(

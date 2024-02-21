@@ -18,7 +18,6 @@ from icon4py.model.common.dimension import CellDim, KDim
 
 from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
 
-
 chain_false_skipvalues = [
     "C2E",
     "C2V",

@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Callable, Type
+from typing import Callable, ClassVar, Type
 
 import icon4pytools.liskov.parsing.types as ts
 from icon4pytools.common.logger import setup_logger
@@ -19,13 +19,12 @@ from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInt
 from icon4pytools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
 from icon4pytools.liskov.pipeline.definition import Step
 
-
 logger = setup_logger(__name__)
 
 
 class Deserialiser(Step):
-    _FACTORIES: dict[str, Callable] = {}
-    _INTERFACE_TYPE: Type[SerialisationCodeInterface | IntegrationCodeInterface]
+    _FACTORIES: ClassVar[dict[str, Callable]] = {}
+    _INTERFACE_TYPE: ClassVar[Type[SerialisationCodeInterface | IntegrationCodeInterface]]
 
     def __call__(
         self, directives: ts.ParsedDict

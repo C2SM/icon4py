@@ -41,5 +41,9 @@ class TestUpwindVfluxPpmStencil01(StencilTest):
         z_delta_q = zero_field(grid, CellDim, KDim)
         z_a1 = zero_field(grid, CellDim, KDim)
         return dict(
-            z_face_up=z_face_up, z_face_low=z_face_low, p_cc=p_cc, z_delta_q=z_delta_q, z_a1=z_a1
+            z_face_up=z_face_up,
+            z_face_low=z_face_low,
+            p_cc=p_cc,
+            z_delta_q=z_delta_q,
+            z_a1=z_a1,
         )

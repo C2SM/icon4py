@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import uuid
+from typing import ClassVar
 
 import icon4pytools.liskov.parsing.parse
 import icon4pytools.liskov.parsing.types as ts
@@ -31,7 +32,6 @@ from icon4pytools.liskov.codegen.serialisation.interface import (
 )
 from icon4pytools.liskov.codegen.shared.deserialise import Deserialiser
 from icon4pytools.liskov.parsing.utils import extract_directive
-
 
 logger = setup_logger(__name__)
 
@@ -73,12 +73,12 @@ class SavepointDataFactory:
 
         deserialised = []
 
-        for i, (start, end) in enumerate(zip(start_stencil, end_stencil)):
+        for i, (start, end) in enumerate(zip(start_stencil, end_stencil, strict=True)):
             named_args = parsed["content"]["StartStencil"][i]
             stencil_name = _extract_stencil_name(named_args, start)
 
             if stencil_name in repeated:
-                stencil_name = f"{stencil_name}_{str(uuid.uuid4())}"
+                stencil_name = f"{stencil_name}_{uuid.uuid4()!s}"
 
             field_names = self._remove_unnecessary_keys(named_args)
 
@@ -215,7 +215,7 @@ class ImportDataFactory:
 
 
 class SerialisationCodeDeserialiser(Deserialiser):
-    _FACTORIES = {
+    _FACTORIES: ClassVar = {
         "Init": InitDataFactory(),
         "Savepoint": SavepointDataFactory(),
         "Import": ImportDataFactory(),

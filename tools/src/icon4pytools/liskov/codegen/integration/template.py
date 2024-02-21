@@ -16,8 +16,7 @@ from dataclasses import asdict
 from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
-from gt4py.eve.codegen import JinjaTemplate as as_jinja
-from gt4py.eve.codegen import TemplatedGenerator
+from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 
 from icon4pytools.liskov.codegen.integration.exceptions import UndeclaredFieldError
 from icon4pytools.liskov.codegen.integration.interface import (
@@ -152,7 +151,7 @@ class BaseEndStencilStatementGenerator(TemplatedGenerator):
             if len(split_idx) >= 3:
                 split_idx[-1] = "1"
 
-            setattr(f, "rh_index", enclose_in_parentheses(",".join(split_idx)))
+            f.rh_index = enclose_in_parentheses(",".join(split_idx))  # type: ignore[attr-defined]
         return self.generic_visit(out)
 
     OutputFields = as_jinja(

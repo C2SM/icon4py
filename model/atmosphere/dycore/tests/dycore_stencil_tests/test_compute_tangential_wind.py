@@ -24,7 +24,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def compute_tangential_wind_numpy(grid, vn: np.array, rbf_vec_coeff_e: np.array) -> np.array:
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
     e2c2e = grid.connectivities[E2C2EDim]
-    vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
+    vt = np.sum(
+        np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0),
+        axis=1,
+    )
     return vt
 
 

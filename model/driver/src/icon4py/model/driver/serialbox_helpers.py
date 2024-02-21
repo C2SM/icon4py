@@ -24,7 +24,6 @@ from icon4py.model.common.test_utils.serialbox_utils import (
     MetricSavepoint,
 )
 
-
 """
 Construct state objects from serialized data by reading from IconSavepoint s.
 
@@ -51,7 +50,9 @@ def construct_interpolation_state_for_diffusion(
     )
 
 
-def construct_metric_state_for_diffusion(savepoint: MetricSavepoint) -> DiffusionMetricState:
+def construct_metric_state_for_diffusion(
+    savepoint: MetricSavepoint,
+) -> DiffusionMetricState:
     return DiffusionMetricState(
         mask_hdiff=savepoint.mask_hdiff(),
         theta_ref_mc=savepoint.theta_ref_mc(),

@@ -30,7 +30,11 @@ class TestHflxLimiterMoStencil01a(StencilTest):
 
     @staticmethod
     def reference(
-        grid, p_mflx_tracer_h: np.ndarray, p_mass_flx_e: np.ndarray, p_cc: np.ndarray, **kwargs
+        grid,
+        p_mflx_tracer_h: np.ndarray,
+        p_mass_flx_e: np.ndarray,
+        p_cc: np.ndarray,
+        **kwargs,
     ):
         e2c = grid.connectivities[E2CDim]
         p_cc_e2c = p_cc[e2c]

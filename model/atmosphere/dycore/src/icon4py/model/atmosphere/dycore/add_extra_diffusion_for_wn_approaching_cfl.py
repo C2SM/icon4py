@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (  # noqa: A004 # import gt4py builtin
+from gt4py.next.ffront.fbuiltins import (  # import gt4py builtin
     Field,
     abs,
     astype,

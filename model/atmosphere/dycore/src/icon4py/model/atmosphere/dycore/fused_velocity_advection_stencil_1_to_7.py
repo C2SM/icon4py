@@ -156,7 +156,13 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
-    vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me = _fused_velocity_advection_stencil_1_to_6(
+    (
+        vt,
+        vn_ie,
+        z_vt_ie,
+        z_kin_hor_e,
+        z_w_concorr_me,
+    ) = _fused_velocity_advection_stencil_1_to_6(
         vn,
         rbf_vec_coeff_e,
         wgtfac_e,
@@ -291,7 +297,6 @@ def _fused_velocity_advection_stencil_1_to_7(
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
 ]:
-
     vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w = (
         _fused_velocity_advection_stencil_1_to_7_predictor(
             vn,
@@ -379,7 +384,6 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> Field[[EdgeDim, KDim], float]:
-
     return _fused_velocity_advection_stencil_1_to_7(
         vn,
         rbf_vec_coeff_e,

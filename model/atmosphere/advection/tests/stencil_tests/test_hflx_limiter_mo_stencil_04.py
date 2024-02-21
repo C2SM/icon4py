@@ -25,15 +25,22 @@ class TestHflxLimiterMoStencil04(StencilTest):
 
     @staticmethod
     def reference(
-        grid, z_anti: np.ndarray, r_m: np.ndarray, r_p: np.ndarray, z_mflx_low: np.ndarray, **kwargs
+        grid,
+        z_anti: np.ndarray,
+        r_m: np.ndarray,
+        r_p: np.ndarray,
+        z_mflx_low: np.ndarray,
+        **kwargs,
     ):
         r_frac = np.where(
             z_anti >= 0,
             np.minimum(
-                r_m[grid.connectivities[E2CDim][:, 0]], r_p[grid.connectivities[E2CDim][:, 1]]
+                r_m[grid.connectivities[E2CDim][:, 0]],
+                r_p[grid.connectivities[E2CDim][:, 1]],
             ),
             np.minimum(
-                r_m[grid.connectivities[E2CDim][:, 1]], r_p[grid.connectivities[E2CDim][:, 0]]
+                r_m[grid.connectivities[E2CDim][:, 1]],
+                r_p[grid.connectivities[E2CDim][:, 0]],
             ),
         )
         return dict(p_mflx_tracer_h=z_mflx_low + np.minimum(1.0, r_frac) * z_anti)
@@ -46,5 +53,9 @@ class TestHflxLimiterMoStencil04(StencilTest):
         z_mflx_low = random_field(grid, EdgeDim, KDim)
         p_mflx_tracer_h = zero_field(grid, EdgeDim, KDim)
         return dict(
-            z_anti=z_anti, r_m=r_m, r_p=r_p, z_mflx_low=z_mflx_low, p_mflx_tracer_h=p_mflx_tracer_h
+            z_anti=z_anti,
+            r_m=r_m,
+            r_p=r_p,
+            z_mflx_low=z_mflx_low,
+            p_mflx_tracer_h=p_mflx_tracer_h,
         )

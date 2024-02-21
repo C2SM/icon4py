@@ -61,7 +61,14 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
         **kwargs,
     ) -> dict:
         w_concorr_c_result = _fused_solve_nonhydro_stencil_39_40_numpy(
-            grid, e_bln_c_s, z_w_concorr_me, wgtfac_c, wgtfacq_c, vert_idx, nlev, nflatlev
+            grid,
+            e_bln_c_s,
+            z_w_concorr_me,
+            wgtfac_c,
+            wgtfacq_c,
+            vert_idx,
+            nlev,
+            nflatlev,
         )
         return dict(w_concorr_c=w_concorr_c_result)
 

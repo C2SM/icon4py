@@ -18,7 +18,6 @@ from typing import Optional
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
 
-
 log = logging.getLogger(__name__)
 
 n_substeps_reduced = 2
@@ -26,7 +25,6 @@ n_substeps_reduced = 2
 
 @dataclass(frozen=True)
 class IconRunConfig:
-
     dtime: float = 600.0  # length of a time step [s]
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)

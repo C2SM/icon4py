@@ -54,5 +54,9 @@ class TestVLimitPrblSmStencil02(StencilTest):
         p_face_up = zero_field(grid, CellDim, KDim)
         p_face_low = zero_field(grid, CellDim, KDim)
         return dict(
-            l_limit=l_limit, p_cc=p_cc, p_face=p_face, p_face_up=p_face_up, p_face_low=p_face_low
+            l_limit=l_limit,
+            p_cc=p_cc,
+            p_face=p_face,
+            p_face_up=p_face_up,
+            p_face_low=p_face_low,
         )

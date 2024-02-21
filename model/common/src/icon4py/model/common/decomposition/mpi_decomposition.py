@@ -22,7 +22,6 @@ from gt4py.next import Dimension, Field
 
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
-
 try:
     import ghex
     import ghex.unstructured as unstructured
@@ -38,7 +37,6 @@ except ImportError:
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
-
 
 if TYPE_CHECKING:
     import mpi4py.MPI
@@ -87,7 +85,7 @@ class ParallelLogger(logging.Filter):
         if process_properties and process_properties.comm_size > 1:
             self._rank_info = f"rank={process_properties.rank}/{process_properties.comm_size} [{process_properties.comm_name}] "
 
-    def filter(  # noqa: A003 # overwriting logging.Filter.filter()
+    def filter(  # overwriting logging.Filter.filter()
         self, record: logging.LogRecord
     ) -> bool:
         record.rank = self._rank_info
@@ -95,7 +93,9 @@ class ParallelLogger(logging.Filter):
 
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
-def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
+def get_multinode_properties(
+    s: definitions.MultiNodeRun,
+) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True)
 
 

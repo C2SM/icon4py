@@ -14,8 +14,7 @@ from dataclasses import asdict
 from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
-from gt4py.eve.codegen import JinjaTemplate as as_jinja
-from gt4py.eve.codegen import TemplatedGenerator
+from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 
 from icon4pytools.liskov.codegen.serialisation.interface import InitData, SavepointData
 
@@ -119,7 +118,7 @@ class SavepointStatementGenerator(TemplatedGenerator):
                 raise Exception("No dimension found in `DecomposedField` {node}")
 
             f.variable = f.variable.replace(f"_{f.ptr_var}", "")
-            setattr(f, "alloc_dims", ",".join(generate_size_strings(f.dimension, f.variable)))
+            f.alloc_dims = ",".join(generate_size_strings(f.dimension, f.variable))  # type: ignore[attr-defined]
 
         return self.generic_visit(node)
 

@@ -420,12 +420,32 @@ class SimpleGrid(BaseGrid):
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                C2EDim,
+                CellDim,
+                CEDim,
+            ),
             "Koff": (lambda: KDim,),  # Koff is a special case
             "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                E2C2VDim,
+                EdgeDim,
+                ECVDim,
+            ),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                E2CDim,
+                EdgeDim,
+                ECDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2CDim,
+                CellDim,
+                CECDim,
+            ),
             "C2CECEC": (
                 self._get_offset_provider_for_sparse_fields,
                 C2E2C2E2CDim,
