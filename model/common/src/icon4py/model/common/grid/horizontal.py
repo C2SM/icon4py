@@ -81,33 +81,33 @@ class HorizontalMarkerIndex:
 
     """
 
-    _lateral_boundary: ClassVar[Dimension, int] = {
+    _lateral_boundary: ClassVar[dict[Dimension, int]] = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
         dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
         dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
-    _local: ClassVar[Dimension, int] = {
+    _local: ClassVar[dict[Dimension, int]] = {
         dimension.CellDim: _LOCAL_CELLS,
         dimension.EdgeDim: _LOCAL_EDGES,
         dimension.VertexDim: _LOCAL_VERTICES,
     }
-    _halo: ClassVar[Dimension, int] = {
+    _halo: ClassVar[dict[Dimension, int]] = {
         dimension.CellDim: _HALO_CELLS,
         dimension.EdgeDim: _HALO_EDGES,
         dimension.VertexDim: _HALO_VERTICES,
     }
-    _interior: ClassVar[Dimension, int] = {
+    _interior: ClassVar[dict[Dimension, int]] = {
         dimension.CellDim: _INTERIOR_CELLS,
         dimension.EdgeDim: _INTERIOR_EDGES,
         dimension.VertexDim: _INTERIOR_VERTICES,
     }
-    _nudging: ClassVar[Dimension, int] = {
+    _nudging: ClassVar[dict[Dimension, int]] = {
         dimension.CellDim: _NUDGING_CELLS,
         dimension.EdgeDim: _NUDGING_EDGES,
         # TODO [magdalena] there is no nudging for vertices?
         dimension.VertexDim: _NUDGING_VERTICES,
     }
-    _end: ClassVar[Dimension, int] = {
+    _end: ClassVar[dict[Dimension, int]] = {
         dimension.CellDim: _END_CELLS,
         dimension.EdgeDim: _END_EDGES,
         dimension.VertexDim: _END_VERTICES,
@@ -328,7 +328,7 @@ def cell_2_edge_interpolation(
 
 
 class RefinCtrlLevel:
-    _boundary_nudging_start: ClassVar[Dimension, int] = {
+    _boundary_nudging_start: ClassVar[dict[Dimension, int]] = {
         EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
         CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
     }
