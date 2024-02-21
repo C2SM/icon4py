@@ -144,18 +144,6 @@ def dallclose(a, b, rtol=1.0e-12, atol=0.0, equal_nan=False):
 
 
 def allocate_data(backend, input_data):
-    non_zero_offsets = [
-        (param, dim, dim_range)
-        for param, v in input_data.items()
-        if not is_scalar_type(v)
-        for dim, dim_range in zip(v.domain.dims, v.domain.ranges)
-        if dim_range.start != 0
-    ]
-    if non_zero_offsets:
-        param, dim, dim_range = non_zero_offsets[0]
-        raise RuntimeError(
-            f"Field '{param}' passed as array slice with offset {dim_range.start} on dimension {dim.value}."
-        )
     _allocate_field = constructors.as_field.partial(allocator=backend)
     input_data = {
         k: _allocate_field(domain=v.domain, data=v.ndarray) if not is_scalar_type(v) else v
