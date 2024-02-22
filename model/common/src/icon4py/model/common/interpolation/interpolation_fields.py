@@ -24,7 +24,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from icon4py.model.common.dimension import CellDim, C2EDim, EdgeDim, C2E, CEDim, C2CE, VertexDim, V2E, V2EDim, E2CDim
+from icon4py.model.common.dimension import CellDim, C2EDim, EdgeDim, C2E, CEDim, C2CE, VertexDim, V2E, V2EDim, E2CDim, VertexDim
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 from gt4py.next import where, neighbor_sum
@@ -407,3 +407,69 @@ def compute_e_flx_avg(
         e_flx_avg[llb:, i] = np.where(owner_mask[llb:], e_flx_avg[llb:, i] / checksum[llb:], e_flx_avg[llb:, i])
 
     return e_flx_avg
+
+#def arc_length_sphere(
+#    p_x: np.array,
+#    p_y: np.array,
+#) -> np.array:
+#
+#    z_lx = np.sqrt(np.sum(p_x, p_x, axis=0))
+#    z_ly = np.sqrt(np.sum(p_y, p_y, axis=0))
+#
+#    z_cc = np.sum(p_x, p_y, axis=0) / (z_lx * z_ly)
+#
+#    # in case we get numerically incorrect solutions
+#
+#    z_cc = np.where(z_cc > 1.0, 1.0, z_cc)
+#    z_cc = np.where(z_cc < -1.0, -1.0, z_cc)
+#
+#    p_arc = np.acos(z_cc)
+#
+#    return p_arc
+#
+#def compute_rbf_vec_coeff_vertex(
+#    rbf_vec_coeff_v_1: np.array,
+#    e_flx_avg: np.array,
+#    c_bln_avg: np.array,
+#    geofac_div: np.array,
+#    owner_mask: np.array,
+#    primal_cart_normal: np.array,
+#    E2C: np.array,
+#    C2E: np.array,
+#    C2E2C: np.array,
+#    E2C2E: np.array,
+#    lateral_boundary_cells: np.array,
+#    lateral_boundary_edges: np.array,
+#) -> np.array:
+#
+#    z_nx1 = primal_cart_normal[E2V[:]]
+#    z_nx2 = primal_cart_normal[E2V[:]]
+#
+#    z_nxprod = np.sum(z_nx1, z_nx2, axis=0)
+#    z_dist = arc_length_sphere(cartesian_center[V2E], cartesian_center[V2E])
+##    z_rbfmat[] = 
+##    numpy.linalg.cholesky
+#
+#    return rbf_vec_coeff_v_1
+
+def compute_cells_aw_verts(
+    cells_aw_verts: np.array,
+    dual_area: np.array,
+    edge_vert_length: np.array,
+    edge_cell_length: np.array,
+    owner_mask: np.array,
+    V2E: np.array,
+    E2V: np.array,
+    V2C: np.array,
+    E2C: np.array,
+    lateral_boundary_verts: np.array,
+) -> np.array:
+    llb = lateral_boundary_verts[0]
+    for i in range(2):
+        for je in range(6):
+            for jc in range(6):
+                mask = np.where(E2C[V2E[llb:, je], i] == V2C[llb:, jc], owner_mask[llb:], False)
+                index = np.arange(llb, lateral_boundary_verts[1])
+                idx_ve = np.where(E2V[V2E[llb:, je], 0] == index, 0, 1)
+                cells_aw_verts[llb:, jc] = np.where(mask, cells_aw_verts[llb:, jc] + 0.5 / dual_area[llb:] * edge_vert_length[V2E[llb:, je], idx_ve] * edge_cell_length[V2E[llb:, je], i], cells_aw_verts[llb:, jc])
+    return cells_aw_verts

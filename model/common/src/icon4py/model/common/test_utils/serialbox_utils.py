@@ -218,6 +218,9 @@ class IconGridSavepoint(IconSavepoint):
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
 
+    def edge_vert_length(self):
+        return self._get_field("edge_vert_length", EdgeDim, E2CDim)
+
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
 
