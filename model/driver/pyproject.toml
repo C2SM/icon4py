@@ -23,14 +23,19 @@ classifiers = [
 ]
 dependencies = [
   "gt4py>=1.0.1",
-  "icon4py-driver>=0.0.5"
+  "icon4py-common>=0.0.5",
+  "icon4py-atmosphere-dycore>=0.0.5",
+  "icon4py-atmosphere-diffusion>=0.0.5"
 ]
-description = "ICON dynamical core."
+description = "ICON model driver."
 dynamic = ['version']
 license = {file = "LICENSE"}
-name = "icon4py-atmosphere-driver"
+name = "icon4py-driver"
 readme = "README.md"
 requires-python = ">=3.10"
+
+[project.scripts]
+dycore_driver = "icon4py.model.driver.dycore_driver:main"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
@@ -76,7 +81,7 @@ warn_unused_ignores = true
 [tool.pytest]
 
 [tool.pytest.ini_options]
-addopts = ['-p icon4py.model.driver.test_utils.pytest_config']
+addopts = ['-p icon4py.model.common.test_utils.pytest_config']
 testpaths = 'tests'
 
 [tool.ruff]
@@ -134,7 +139,7 @@ lines-after-imports = 2
 max-complexity = 15
 
 [tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.atmosphere.driver.__init__.__version__'}
+version = {attr = 'icon4py.model.driver.__init__.__version__'}
 
 [tool.setuptools.package-data]
-'icon4py.model.atmosphere.driver' = ['py.typed']
+'icon4py.model.driver' = ['py.typed']
