@@ -25,7 +25,7 @@ dependencies = [
   "gt4py>=1.0.1",
   "icon4py-common>=0.0.5"
 ]
-description = "ICON dynamical core."
+description = "ICON advection."
 dynamic = ['version']
 license = {file = "LICENSE"}
 name = "icon4py-atmosphere-advection"
