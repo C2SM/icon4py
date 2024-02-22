@@ -158,25 +158,25 @@ def step_date_exit():
 
 
 @pytest.fixture
-def interpolation_savepoint(data_provider):  # F811
+def interpolation_savepoint(data_provider):
     """Load data from ICON interplation state savepoint."""
     return data_provider.from_interpolation_savepoint()
 
 
 @pytest.fixture
-def metrics_savepoint(data_provider):  # F811
+def metrics_savepoint(data_provider):
     """Load data from ICON mestric state savepoint."""
     return data_provider.from_metrics_savepoint()
 
 
 @pytest.fixture
-def metrics_nonhydro_savepoint(data_provider):  # F811
+def metrics_nonhydro_savepoint(data_provider):
     """Load data from ICON metric state nonhydro savepoint."""
     return data_provider.from_metrics_nonhydro_savepoint()
 
 
 @pytest.fixture
-def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):  # F811
+def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, jstep_init):
     """
     Load data from ICON savepoint at start of velocity_advection module.
 
@@ -189,7 +189,7 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, 
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init):  # F811
+def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -202,7 +202,7 @@ def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_ini
 
 
 @pytest.fixture
-def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):  # F811
+def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, jstep_exit):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -215,7 +215,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, 
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit):  # F811
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -228,7 +228,7 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):  # F811
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):
     """
     Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
 

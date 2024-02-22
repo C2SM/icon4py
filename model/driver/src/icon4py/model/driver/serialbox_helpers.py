@@ -24,6 +24,7 @@ from icon4py.model.common.test_utils.serialbox_utils import (
     MetricSavepoint,
 )
 
+
 """
 Construct state objects from serialized data by reading from IconSavepoint s.
 

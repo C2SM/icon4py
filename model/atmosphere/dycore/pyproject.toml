@@ -94,7 +94,6 @@ extend-exclude = [
   'setup.py'
 ]
 indent-width = 4
-# Same as Black.
 line-length = 100
 respect-gitignore = true
 show-fixes = true
@@ -129,6 +128,7 @@ known-third-party = [
   'gt4py',
   'icon4pytools'
 ]
+lines-after-imports = 2
 split-on-trailing-comma = false
 
 [tool.ruff.lint.mccabe]

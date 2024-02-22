@@ -15,6 +15,7 @@ from pathlib import Path
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_utils import TEST_DATA_ROOT
 
+
 MCH_GRID_FILE = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 

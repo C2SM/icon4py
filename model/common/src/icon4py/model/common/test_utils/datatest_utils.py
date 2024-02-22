@@ -15,6 +15,7 @@ from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
 
+
 DEFAULT_TEST_DATA_FOLDER = "testdata"
 
 

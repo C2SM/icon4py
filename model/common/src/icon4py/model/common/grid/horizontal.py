@@ -20,6 +20,7 @@ from icon4py.model.common import dimension
 from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
+
 NUM_GHOST_ROWS: Final[int] = 2
 # values from mo_impl_constants.f90
 _ICON_INDEX_OFFSET_CELLS: Final[int] = 8

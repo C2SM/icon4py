@@ -15,6 +15,7 @@ from typing import TypeAlias
 
 from gt4py.next.ffront.fbuiltins import float32, float64
 
+
 DEFAULT_PRECISION = "double"
 
 wpfloat: TypeAlias = float64

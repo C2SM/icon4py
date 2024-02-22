@@ -13,15 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import (  # import gt4py builtin
-    Field,
-    abs,
-    astype,
-    int32,
-    minimum,
-    neighbor_sum,
-    where,
-)
+from gt4py.next.ffront.fbuiltins import Field, abs, astype, int32, minimum, neighbor_sum, where
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat

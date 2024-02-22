@@ -27,6 +27,7 @@ from icon4pytools.icon4pygen.cli import main
 
 from .conftest import get_stencil_module_path
 
+
 DYCORE_PKG = "atmosphere.dycore"
 INTERPOLATION_PKG = "common.interpolation.stencils"
 DIFFUSION_PKG = "atmosphere.diffusion.stencils"

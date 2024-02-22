@@ -22,6 +22,7 @@ import pytest
 
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 
+
 if typing.TYPE_CHECKING:
     import netCDF4
 
@@ -55,6 +56,7 @@ from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 from .utils import MCH_GRID_FILE, R02B04_GLOBAL, resolve_file_from_gridfile_name
+
 
 SIMPLE_GRID_NC = "simple_grid.nc"
 

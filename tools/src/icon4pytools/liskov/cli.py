@@ -23,6 +23,7 @@ from icon4pytools.liskov.pipeline.collection import (
     run_code_generation,
 )
 
+
 logger = setup_logger(__name__)
 
 

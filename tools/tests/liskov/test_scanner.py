@@ -23,6 +23,7 @@ from icon4pytools.liskov.parsing.types import RawDirective
 
 from .fortran_samples import DIRECTIVES_SAMPLE, NO_DIRECTIVES_STENCIL, SINGLE_FUSED
 
+
 ALLOWED_EOL_CHARS = [")", "&"]
 
 

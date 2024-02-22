@@ -24,6 +24,7 @@ from gt4py.next.common import Dimension, DimensionKind
 
 from icon4pytools.py2f.typing_utils import parse_annotation
 
+
 FFI_DEF_EXTERN_DECORATOR = "@ffi.def_extern()"
 
 CFFI_GEN_DECORATOR = "@CffiMethod.register"

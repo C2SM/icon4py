@@ -29,6 +29,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
 
+
 H_START = "horizontal_start"
 H_END = "horizontal_end"
 V_START = "vertical_start"

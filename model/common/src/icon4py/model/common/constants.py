@@ -15,6 +15,7 @@ from typing import Final
 
 from icon4py.model.common.type_alias import wpfloat
 
+
 #: Gas constant for dry air [J/K/kg], called 'rd' in ICON (mo_physical_constants.f90),
 #: see https://glossary.ametsoc.org/wiki/Gas_constant.
 GAS_CONSTANT_DRY_AIR: Final[wpfloat] = 287.04

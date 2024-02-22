@@ -19,6 +19,7 @@ from icon4pytools.common.logger import setup_logger
 from icon4pytools.liskov.parsing.exceptions import DirectiveSyntaxError
 from icon4pytools.liskov.pipeline.definition import Step
 
+
 logger = setup_logger(__name__)
 
 
