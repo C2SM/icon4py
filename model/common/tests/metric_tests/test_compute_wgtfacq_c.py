@@ -25,7 +25,6 @@
 
 import pytest
 
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate_indices
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.stencils.compute_wgtfacq_c import compute_wgtfacq_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
@@ -47,25 +46,20 @@ from icon4py.model.common.type_alias import wpfloat
 @pytest.mark.datatest
 def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
     wgtfacq_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    wgtfacq_c_ref = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
+    wgtfacq_c_ref = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
     z_ifc = metrics_savepoint.z_ifc()
-    k = _allocate_indices(KDim, grid=icon_grid)
-    
+
     # wgtfacq_c not serialized -> infer from wgtfacq_c_dsl
-    wgtfacq_c_ref = wgtfacq_c_ref.asnumpy() 
-    wgtfacq_c_ref[:,0]= wgtfacq_c_dsl.asnumpy()[:,-1]
-    wgtfacq_c_ref[:,1]= wgtfacq_c_dsl.asnumpy()[:,-2]
-    wgtfacq_c_ref[:,2]= wgtfacq_c_dsl.asnumpy()[:,-3]
+    wgtfacq_c_ref = wgtfacq_c_ref.asnumpy()
+    wgtfacq_c_ref[:, 0] = wgtfacq_c_dsl.asnumpy()[:, -1]
+    wgtfacq_c_ref[:, 1] = wgtfacq_c_dsl.asnumpy()[:, -2]
+    wgtfacq_c_ref[:, 2] = wgtfacq_c_dsl.asnumpy()[:, -3]
 
     vertical_end = icon_grid.num_levels
 
-    compute_wgtfacq_c(
-        wgtfacq_c,
-        z_ifc,
-        k,
-        offset_provider={"Koff": KDim},
+    wgtfacq_c = compute_wgtfacq_c(
+        z_ifc.asnumpy(),
+        vertical_end,
     )
-
-    assert dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref)
-
+    assert dallclose(wgtfacq_c, wgtfacq_c_ref)

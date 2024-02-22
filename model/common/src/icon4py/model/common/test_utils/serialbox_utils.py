@@ -533,9 +533,6 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_c_dsl(self):
         return self._get_field("wgtfacq_c_dsl", CellDim, KDim)
 
-    def wgtfacq_c(self):
-        return self._get_field("wgtfacq_c", CellDim, KDim)
-
     def zdiff_gradp(self):
         field = self._get_field("zdiff_gradp_dsl", EdgeDim, E2CDim, KDim)
         return flatten_first_two_dims(ECDim, KDim, field=field)
