@@ -29,7 +29,6 @@ from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
 
-
 backend = run_gtfn
 
 

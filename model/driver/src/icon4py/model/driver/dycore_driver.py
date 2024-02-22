@@ -45,7 +45,6 @@ from icon4py.model.driver.io_utils import (
     read_static_fields,
 )
 
-
 log = logging.getLogger(__name__)
 
 

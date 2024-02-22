@@ -26,7 +26,6 @@ from icon4pytools.py2f.codegen import (
     as_field,
 )
 
-
 field_2d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,

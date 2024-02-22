@@ -25,7 +25,6 @@ from icon4pytools.liskov.parsing.scan import DirectivesScanner
 from icon4pytools.liskov.parsing.transform import StencilTransformer
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
 
-
 DESERIALISERS = {
     "integration": IntegrationCodeDeserialiser,
     "serialisation": SerialisationCodeDeserialiser,

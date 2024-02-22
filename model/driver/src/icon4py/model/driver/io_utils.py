@@ -43,7 +43,6 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_metric_state_for_diffusion,
 )
 
-
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"

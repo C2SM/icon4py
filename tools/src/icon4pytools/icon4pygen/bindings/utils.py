@@ -20,7 +20,6 @@ from gt4py.next.common import Dimension
 
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
 
-
 PYTHON_PATH = sys.executable
 
 

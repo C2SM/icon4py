@@ -18,9 +18,7 @@ import numpy as np
 import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import as_field
-from gt4py.next import common as gt_common
-from gt4py.next import constructors
+from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 from gt4py.next.program_processors.otf_compile_executor import (
     CachedOTFCompileExecutor,
@@ -30,7 +28,6 @@ from gt4py.next.program_processors.otf_compile_executor import (
 from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
 from ..type_alias import wpfloat
-
 
 try:
     import pytest_benchmark
@@ -62,10 +59,12 @@ def random_mask(
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
+    rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
-    arr[: int(arr.size * 0.5)] = True
-    np.random.shuffle(arr)
+    num_true = int(arr.size * 0.5)
+    arr[:num_true] = True
+    rng.shuffle(arr)
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
@@ -212,17 +211,17 @@ class StencilTest:
 
     Example (pseudo-code):
 
-        >>> class TestMultiplyByTwo(StencilTest): # doctest: +SKIP
-        ...    PROGRAM = multiply_by_two  # noqa: F821
-        ...    OUTPUTS = ("some_output",)
+        >>> class TestMultiplyByTwo(StencilTest):  # doctest: +SKIP
+        ...     PROGRAM = multiply_by_two  # noqa: F821
+        ...     OUTPUTS = ("some_output",)
         ...
-        ...    @pytest.fixture
-        ...    def input_data(self):
-        ...        return {"some_input": ..., "some_output": ...}
+        ...     @pytest.fixture
+        ...     def input_data(self):
+        ...         return {"some_input": ..., "some_output": ...}
         ...
-        ...    @staticmethod
-        ...    def reference(some_input, **kwargs):
-        ...        return dict(some_output=np.asarray(some_input)*2)
+        ...     @staticmethod
+        ...     def reference(some_input, **kwargs):
+        ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
     PROGRAM: ClassVar[Program]

@@ -26,7 +26,6 @@ from icon4pytools.liskov.codegen.integration.interface import (
 from icon4pytools.liskov.codegen.shared.types import CodeGenInput
 from icon4pytools.liskov.pipeline.definition import Step
 
-
 logger = setup_logger(__name__)
 
 
@@ -90,7 +89,9 @@ class StencilTransformer(Step):
     def _create_delete_directives(
         self, start_single: StartStencilData, end_single: EndStencilData
     ) -> None:
-        for attr, param in zip(["StartDelete", "EndDelete"], [start_single, end_single]):
+        for attr, param in zip(
+            ["StartDelete", "EndDelete"], [start_single, end_single], strict=False
+        ):
             directive = getattr(self.parsed, attr)
             if directive == UnusedDirective:
                 directive = []

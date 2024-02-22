@@ -18,7 +18,6 @@ from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 from icon4pytools.liskov.parsing.types import DIRECTIVE_IDENT
 from icon4pytools.liskov.pipeline.definition import Step
 
-
 logger = setup_logger(__name__)
 
 

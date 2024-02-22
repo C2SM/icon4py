@@ -14,8 +14,7 @@ from pathlib import Path
 from typing import Sequence
 
 from gt4py.eve import Node, codegen
-from gt4py.eve.codegen import JinjaTemplate as as_jinja
-from gt4py.eve.codegen import TemplatedGenerator
+from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from gt4py.next.type_system.type_specifications import ScalarKind
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (

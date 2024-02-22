@@ -17,7 +17,6 @@ from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02a import face_val
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field
 
-
 outslice = (slice(None), slice(1, None))
 
 

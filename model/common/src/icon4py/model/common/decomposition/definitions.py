@@ -25,7 +25,6 @@ from gt4py.next import Dimension
 
 from icon4py.model.common.utils import builder
 
-
 log = logging.getLogger(__name__)
 
 
@@ -85,7 +84,7 @@ class DecompositionInfo:
         return self._klevels
 
     def local_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
-        match (entry_type):
+        match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return self._to_local_index(dim)
             case DecompositionInfo.EntryType.HALO:
@@ -106,7 +105,7 @@ class DecompositionInfo:
         return self._global_index[dim].mask
 
     def global_index(self, dim: Dimension, entry_type: EntryType = EntryType.ALL):
-        match (entry_type):
+        match entry_type:
             case DecompositionInfo.EntryType.ALL:
                 return ma.getdata(self._global_index[dim], subok=False)
             case DecompositionInfo.EntryType.OWNED:

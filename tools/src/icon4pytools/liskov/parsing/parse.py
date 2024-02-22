@@ -24,7 +24,6 @@ from icon4pytools.liskov.parsing.types import ParsedDirective, RawDirective
 from icon4pytools.liskov.parsing.validation import VALIDATORS
 from icon4pytools.liskov.pipeline.definition import Step
 
-
 logger = setup_logger(__name__)
 
 
