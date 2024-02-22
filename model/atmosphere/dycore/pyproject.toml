@@ -128,8 +128,6 @@ known-third-party = [
   'gt4py',
   'icon4pytools'
 ]
-lines-after-imports = 2
-split-on-trailing-comma = false
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15

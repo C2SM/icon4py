@@ -38,12 +38,7 @@ class TestFaceValPpmStencil01(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        p_cc: np.array,
-        p_cellhgt_mc_now: np.array,
-        k: np.array,
-        elev: int32,
-        **kwargs,
+        grid, p_cc: np.array, p_cellhgt_mc_now: np.array, k: np.array, elev: int32, **kwargs
     ):
         zfac_m1 = (p_cc[:, 1:-1] - p_cc[:, :-2]) / (
             p_cellhgt_mc_now[:, 1:-1] + p_cellhgt_mc_now[:, :-2]

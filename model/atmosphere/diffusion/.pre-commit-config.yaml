@@ -6,7 +6,7 @@ default_stages: [commit, push]
 default_language_version:
   python: python3.10
 minimum_pre_commit_version: 2.20.0
-files: "model/atmosphere/diffusion.*"
+files: "model/atmosphere/diffusion/.*"
 
 repos:
 - repo: meta

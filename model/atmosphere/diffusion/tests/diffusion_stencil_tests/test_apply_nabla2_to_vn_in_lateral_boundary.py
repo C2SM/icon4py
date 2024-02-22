@@ -54,12 +54,7 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_nabla2_e: np.array,
-        area_edge: np.array,
-        vn: np.array,
-        fac_bdydiff_v,
-        **kwargs,
+        grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v, **kwargs
     ) -> dict:
         vn = apply_nabla2_to_vn_in_lateral_boundary_numpy(
             grid, z_nabla2_e, area_edge, vn, fac_bdydiff_v

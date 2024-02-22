@@ -29,8 +29,8 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
-    decomposition_info,
+from icon4py.model.common.test_utils.datatest_fixtures import (
+    decomposition_info,  # noqa : F401 fixture
 )
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fixture

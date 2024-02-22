@@ -41,9 +41,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     setup_fields_for_initial_step,
     zero_field,
 )
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
-    apply_diffusion_to_vn,
-)
+from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
 )
@@ -71,23 +69,15 @@ from icon4py.model.common.constants import (
     GAS_CONSTANT_DRY_AIR,
     dbl_eps,
 )
-from icon4py.model.common.decomposition.definitions import (
-    ExchangeRuntime,
-    SingleNodeExchange,
-)
+from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMarkerIndex,
-)
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
-
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.

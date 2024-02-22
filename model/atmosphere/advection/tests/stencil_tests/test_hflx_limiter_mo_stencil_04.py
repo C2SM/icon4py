@@ -25,12 +25,7 @@ class TestHflxLimiterMoStencil04(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        z_anti: np.ndarray,
-        r_m: np.ndarray,
-        r_p: np.ndarray,
-        z_mflx_low: np.ndarray,
-        **kwargs,
+        grid, z_anti: np.ndarray, r_m: np.ndarray, r_p: np.ndarray, z_mflx_low: np.ndarray, **kwargs
     ):
         r_frac = np.where(
             z_anti >= 0,

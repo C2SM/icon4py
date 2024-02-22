@@ -29,9 +29,7 @@ def zero_field(grid, *dims: Dimension, dtype=float):
 
 
 @field_operator
-def _identity_c_k(
-    field: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
     return field
 
 
@@ -41,9 +39,7 @@ def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim
 
 
 @field_operator
-def _identity_e_k(
-    field: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+def _identity_e_k(field: Field[[EdgeDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
     return field
 
 

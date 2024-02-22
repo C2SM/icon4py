@@ -34,7 +34,6 @@ from .utils import (
     verify_diffusion_fields,
 )
 
-
 backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 
 

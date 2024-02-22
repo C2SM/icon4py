@@ -60,14 +60,7 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
 
     @staticmethod
     def reference(
-        grid,
-        area_edge,
-        kh_smag_e,
-        z_nabla2_e,
-        z_nabla4_e2,
-        diff_multfac_vn,
-        vn,
-        **kwargs,
+        grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn, **kwargs
     ):
         vn = apply_nabla2_and_nabla4_global_to_vn_numpy(
             grid, area_edge, kh_smag_e, z_nabla2_e, z_nabla4_e2, diff_multfac_vn, vn
