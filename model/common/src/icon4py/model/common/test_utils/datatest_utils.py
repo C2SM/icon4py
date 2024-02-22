@@ -33,6 +33,7 @@ def get_test_data_root_path() -> Path:
 
 TEST_DATA_ROOT = get_test_data_root_path()
 SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
+GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/y2IMUx4pOQ6lyZ7/download",

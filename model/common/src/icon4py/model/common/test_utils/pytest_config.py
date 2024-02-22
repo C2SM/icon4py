@@ -139,6 +139,10 @@ def pytest_generate_tests(metafunc):
                 from icon4py.model.common.test_utils.grid_utils import get_icon_grid
 
                 grid_instance = get_icon_grid(on_gpu)
+            elif selected_grid_type == "icon_grid_local":
+                from icon4py.model.common.test_utils.grid_utils import get_icon_grid_local
+
+                grid_instance = get_icon_grid_local()
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])

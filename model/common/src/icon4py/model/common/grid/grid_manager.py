@@ -47,6 +47,9 @@ from icon4py.model.common.dimension import (
     V2E2VDim,
     V2EDim,
     VertexDim,
+    ECVDim,
+    CEDim,
+    ECDim,
 )
 from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
@@ -408,6 +411,13 @@ class GridManager:
             .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
             .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
             .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
+        )
+        icon_grid.update_size_connectivities(
+            {
+                ECVDim: icon_grid.size[EdgeDim] * icon_grid.size[E2C2VDim],
+                CEDim: icon_grid.size[CellDim] * icon_grid.size[C2EDim],
+                ECDim: icon_grid.size[EdgeDim] * icon_grid.size[E2CDim],
+            }
         )
 
         return icon_grid
