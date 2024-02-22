@@ -21,6 +21,7 @@ from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import format_fortran_code, write_string
 
+
 _DOMAIN_ARGS = [
     "vertical_lower",
     "vertical_upper",

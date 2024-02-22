@@ -14,6 +14,7 @@
 import numpy as np
 import pytest
 
+
 try:
     import mpi4py  # noqa: F401 # test for optional dependency
 except ImportError:
@@ -41,6 +42,7 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
     check_comm_size,
     processor_props,
 )
+
 
 """
 running tests with mpi:

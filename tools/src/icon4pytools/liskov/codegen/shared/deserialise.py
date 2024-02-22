@@ -19,6 +19,7 @@ from icon4pytools.liskov.codegen.integration.interface import IntegrationCodeInt
 from icon4pytools.liskov.codegen.serialisation.interface import SerialisationCodeInterface
 from icon4pytools.liskov.pipeline.definition import Step
 
+
 logger = setup_logger(__name__)
 
 

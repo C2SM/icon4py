@@ -18,6 +18,7 @@ from typing import Optional
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
 
+
 log = logging.getLogger(__name__)
 
 n_substeps_reduced = 2

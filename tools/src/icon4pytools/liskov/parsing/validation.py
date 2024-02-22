@@ -28,6 +28,7 @@ from icon4pytools.liskov.parsing.exceptions import (
 )
 from icon4pytools.liskov.parsing.utils import print_parsed_directive, remove_directive_types
 
+
 logger = setup_logger(__name__)
 
 

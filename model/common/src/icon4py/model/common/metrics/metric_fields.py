@@ -21,6 +21,7 @@ from icon4py.model.common.math.helpers import (
 )
 from icon4py.model.common.type_alias import wpfloat
 
+
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """

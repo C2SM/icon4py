@@ -33,6 +33,7 @@ from icon4pytools.liskov.codegen.serialisation.interface import (
 from icon4pytools.liskov.codegen.shared.deserialise import Deserialiser
 from icon4pytools.liskov.parsing.utils import extract_directive
 
+
 logger = setup_logger(__name__)
 
 KEYS_TO_REMOVE = [

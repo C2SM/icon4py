@@ -26,6 +26,7 @@ from icon4pytools.liskov.codegen.integration.interface import (
 from icon4pytools.liskov.codegen.shared.types import CodeGenInput
 from icon4pytools.liskov.pipeline.definition import Step
 
+
 logger = setup_logger(__name__)
 
 

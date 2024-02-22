@@ -13,6 +13,7 @@
 from dataclasses import dataclass
 from typing import Any, Protocol, Sequence, TypeAlias, TypedDict, runtime_checkable
 
+
 DIRECTIVE_IDENT = "!$DSL"
 
 

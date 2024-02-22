@@ -14,6 +14,7 @@
 from gt4py.next.common import DimensionKind
 from gt4py.next.ffront.fbuiltins import Dimension, FieldOffset
 
+
 KDim = Dimension("K", kind=DimensionKind.VERTICAL)
 KHalfDim = Dimension("KHalf", kind=DimensionKind.VERTICAL)
 EdgeDim = Dimension("Edge")

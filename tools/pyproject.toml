@@ -143,6 +143,7 @@ known-third-party = [
   'gt4py',
   'icon4py'
 ]
+lines-after-imports = 2
 
 [tool.ruff.lint.mccabe]
 max-complexity = 15

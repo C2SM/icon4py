@@ -22,6 +22,7 @@ from gt4py.next import Dimension, Field
 
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
+
 try:
     import ghex
     import ghex.unstructured as unstructured
@@ -37,6 +38,7 @@ except ImportError:
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
+
 
 if TYPE_CHECKING:
     import mpi4py.MPI

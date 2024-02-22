@@ -23,6 +23,7 @@ from icon4pytools.liskov.codegen.serialisation.template import (
 from icon4pytools.liskov.codegen.shared.generate import CodeGenerator
 from icon4pytools.liskov.codegen.shared.types import GeneratedCode
 
+
 logger = setup_logger(__name__)
 
 

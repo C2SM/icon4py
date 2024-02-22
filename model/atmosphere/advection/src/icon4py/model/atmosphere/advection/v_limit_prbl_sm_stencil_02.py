@@ -16,6 +16,7 @@ from gt4py.next.ffront.fbuiltins import Field, FieldOffset, int32, minimum, wher
 
 from icon4py.model.common.dimension import CellDim, KDim
 
+
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 

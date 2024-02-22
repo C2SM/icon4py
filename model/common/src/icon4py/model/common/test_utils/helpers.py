@@ -29,6 +29,7 @@ from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
 from ..type_alias import wpfloat
 
+
 try:
     import pytest_benchmark
 except ModuleNotFoundError:

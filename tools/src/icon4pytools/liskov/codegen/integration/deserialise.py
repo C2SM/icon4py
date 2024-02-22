@@ -49,6 +49,7 @@ from icon4pytools.liskov.parsing.utils import (
     string_to_bool,
 )
 
+
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_DECLARE_SUFFIX = "before"
