@@ -473,3 +473,50 @@ def compute_cells_aw_verts(
                 idx_ve = np.where(E2V[V2E[llb:, je], 0] == index, 0, 1)
                 cells_aw_verts[llb:, jc] = np.where(mask, cells_aw_verts[llb:, jc] + 0.5 / dual_area[llb:] * edge_vert_length[V2E[llb:, je], idx_ve] * edge_cell_length[V2E[llb:, je], i], cells_aw_verts[llb:, jc])
     return cells_aw_verts
+
+def compute_e_bln_c_s(
+    e_bln_c_s: np.array,
+    owner_mask: np.array,
+    C2E: np.array,
+    cells_lat: np.array,
+    cells_lon: np.array,
+    edges_lat: np.array,
+    edges_lon: np.array,
+    lateral_boundary_cells: np.array,
+) -> np.array:
+    llb = 0
+
+    yloc = cells_lat[llb:]
+    xloc = cells_lon[llb:]
+    pollat = np.where(yloc >= 0.0, yloc - np.pi*0.5, yloc + np.pi*0.5)
+    pollon = xloc
+    (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
+    x = np.zeros([3, lateral_boundary_cells[1] - llb])
+    y = np.zeros([3, lateral_boundary_cells[1] - llb])
+    wgt = np.zeros([3, lateral_boundary_cells[1] - llb])
+
+    for i in range(3):
+        ytemp = edges_lat[C2E[llb:, i]]
+        xtemp = edges_lon[C2E[llb:, i]]
+        (ytemp, xtemp) = rotate_latlon(ytemp, xtemp, pollat, pollon)
+        y[i]  = ytemp-yloc
+        x[i]  = xtemp-xloc
+        # This is needed when the date line is crossed
+        x[i] = np.where(x[i] > 3.5, x[i] - np.pi*2, x[i])
+        x[i] = np.where(x[i] < -3.5, x[i] + np.pi*2, x[i])
+
+    # The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+    # and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
+    # are not aliased into a checkerboard pattern between upward- and downward
+    # directed cells. The third condition is sum(w(i)) = 1. Analytical elimination yields...
+
+    mask = np.logical_and(abs(x[1]-x[0]) > 1.e-11, abs(y[2]-y[0]) > 1.e-11)
+    wgt[2] = np.where(mask, 1.0/((y[2]-y[0]) - (x[2]-x[0])*(y[1]-y[0])/(x[1]-x[0])) * (-y[0] + x[0]*(y[1]-y[0])/(x[1]-x[0])), 1.0/((y[1]-y[0]) - (x[1]-x[0])*(y[2]-y[0])/(x[2]-x[0])) * (-y[0] + x[0]*(y[2]-y[0])/(x[2]-x[0])))
+    wgt[1] = np.where(mask, (-x[0] - wgt[2]*(x[2]-x[0]))/(x[1]-x[0]), (-x[0] - wgt[1]*(x[1]-x[0]))/(x[2]-x[0]))
+    wgt[1], wgt[2] = np.where(mask, (wgt[1], wgt[2]), (wgt[2], wgt[1]))
+    wgt[0] = 1.0 - wgt[1] - wgt[2]
+
+    # Store results in ptr_patch%cells%e_bln_c_s
+    for i in range(3):
+        e_bln_c_s[llb:, i] = np.where(owner_mask[llb:], wgt[i], e_bln_c_s[llb:, i])
+    return e_bln_c_s

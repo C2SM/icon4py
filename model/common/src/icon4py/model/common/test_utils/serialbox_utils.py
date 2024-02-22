@@ -134,6 +134,12 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def edges_center_lat(self):
+        return self._get_field("edges_center_lat", EdgeDim)
+
+    def edges_center_lon(self):
+        return self._get_field("edges_center_lon", EdgeDim)
+
     def cell_center_lat(self):
         return self._get_field("cell_center_lat", CellDim)
 
