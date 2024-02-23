@@ -47,7 +47,7 @@ def _en_smag_fac_for_zero_nshift(
     return enh_smag_fac
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program
 def en_smag_fac_for_zero_nshift(
     vect_a: Field[[KDim], float],
     hdiff_smag_fac: float,
