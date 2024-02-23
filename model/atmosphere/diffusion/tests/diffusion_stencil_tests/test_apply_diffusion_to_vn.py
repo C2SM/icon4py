@@ -54,7 +54,6 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area,
         **kwargs,
     ):
-
         z_nabla4_e2 = calculate_nabla4_numpy(
             grid,
             u_vert,

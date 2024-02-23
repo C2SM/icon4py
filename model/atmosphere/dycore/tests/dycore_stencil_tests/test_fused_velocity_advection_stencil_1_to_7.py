@@ -67,7 +67,6 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         nlev,
         lvn_only,
     ):
-
         k = k[np.newaxis, :]
         k_nlev = k[:, :-1]
 
@@ -146,7 +145,6 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         halo_1,
         **kwargs,
     ):
-
         k_nlev = k[:-1]
 
         if istep == 1:

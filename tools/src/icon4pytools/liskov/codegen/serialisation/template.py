@@ -14,8 +14,7 @@ from dataclasses import asdict
 from typing import Any, Collection, Optional
 
 import gt4py.eve as eve
-from gt4py.eve.codegen import JinjaTemplate as as_jinja
-from gt4py.eve.codegen import TemplatedGenerator
+from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 
 from icon4pytools.liskov.codegen.serialisation.interface import InitData, SavepointData
 
