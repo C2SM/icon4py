@@ -26,6 +26,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
     get_ranked_data_path,
     GRIDS_PATH,
     REGIONAL_EXPERIMENT,
+    GLOBAL_EXPERIMENT,
 )
 
 MCH_CH_R04B09_LEVELS = 65
@@ -41,8 +42,17 @@ def get_icon_grid(on_gpu: bool):
 
 
 @functools.cache
-def get_icon_grid_local(on_gpu: bool = False) -> IconGrid:
-    grid_file = GRIDS_PATH.joinpath(REGIONAL_EXPERIMENT, "grid.nc")
+def get_icon_grid_global(on_gpu: bool = False) -> IconGrid:
+    return _load_from_file("r02b04_global", "icon_grid_0013_R02B04_R.nc")
+
+
+@functools.cache
+def get_icon_grid_regional(on_gpu: bool = False) -> IconGrid:
+    return _load_from_file(REGIONAL_EXPERIMENT, "grid.nc")
+
+
+def _load_from_file(directory: str, filename: str) -> IconGrid:
+    grid_file = GRIDS_PATH.joinpath(directory, filename)
     gm = GridManager(
         ToGt4PyTransformation(), str(grid_file), VerticalGridSize(MCH_CH_R04B09_LEVELS)
     )

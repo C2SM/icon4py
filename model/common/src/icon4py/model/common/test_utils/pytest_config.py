@@ -16,6 +16,8 @@ import os
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
+from icon4py.model.common.test_utils.grid_utils import get_icon_grid_global, get_icon_grid_regional
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
@@ -140,9 +142,13 @@ def pytest_generate_tests(metafunc):
 
                 grid_instance = get_icon_grid(on_gpu)
             elif selected_grid_type == "icon_grid_local":
-                from icon4py.model.common.test_utils.grid_utils import get_icon_grid_local
+                from icon4py.model.common.test_utils.grid_utils import get_icon_grid_regional
 
-                grid_instance = get_icon_grid_local()
+                grid_instance = get_icon_grid_regional(on_gpu)
+            elif selected_grid_type == "icon_grid_global":
+                from icon4py.model.common.test_utils.grid_utils import get_icon_grid_regional
+
+                grid_instance = get_icon_grid_global(on_gpu)
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
