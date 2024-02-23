@@ -24,6 +24,23 @@ from icon4py.model.common.test_utils.helpers import StencilTest, _shape, random_
 from icon4py.model.common.type_alias import vpfloat
 
 
+def set_two_cell_kdim_fields_index_to_zero_vp_numpy(
+    grid,
+    field_index_to_zero_1: np.array,
+    field_index_to_zero_2: np.array,
+    k: np.array,
+    k1: int32,
+    k2: int32,
+) -> tuple[np.array, np.array]:
+    field_index_to_zero_1 = np.where(
+        k == k1, np.zeros_like(field_index_to_zero_1), field_index_to_zero_1
+    )
+    field_index_to_zero_2 = np.where(
+        k == k2, np.zeros_like(field_index_to_zero_2), field_index_to_zero_2
+    )
+    return field_index_to_zero_1, field_index_to_zero_2
+
+
 class TestMoSolveNonhydroStencil01(StencilTest):
     PROGRAM = set_two_cell_kdim_fields_index_to_zero_vp
     OUTPUTS = ("field_index_to_zero_1", "field_index_to_zero_2")
@@ -37,12 +54,12 @@ class TestMoSolveNonhydroStencil01(StencilTest):
         k1: int32,
         k2: int32,
         **kwargs,
-    ) -> tuple[np.array]:
-        field_index_to_zero_1 = np.where(
-            k == k1, np.zeros_like(field_index_to_zero_1), field_index_to_zero_1
-        )
-        field_index_to_zero_2 = np.where(
-            k == k2, np.zeros_like(field_index_to_zero_2), field_index_to_zero_2
+    ) -> dict:
+        (
+            field_index_to_zero_1,
+            field_index_to_zero_2,
+        ) = set_two_cell_kdim_fields_index_to_zero_vp_numpy(
+            grid, field_index_to_zero_1, field_index_to_zero_2, k, k1, k2
         )
         return dict(
             field_index_to_zero_1=field_index_to_zero_1, field_index_to_zero_2=field_index_to_zero_2

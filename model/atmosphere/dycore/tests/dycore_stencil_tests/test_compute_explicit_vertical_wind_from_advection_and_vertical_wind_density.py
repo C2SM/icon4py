@@ -23,6 +23,28 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+def compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+    grid,
+    w_nnow: np.array,
+    ddt_w_adv_ntl1: np.array,
+    ddt_w_adv_ntl2: np.array,
+    z_th_ddz_exner_c: np.array,
+    rho_ic: np.array,
+    w_concorr_c: np.array,
+    vwind_expl_wgt: np.array,
+    dtime: wpfloat,
+    wgt_nnow_vel: wpfloat,
+    wgt_nnew_vel: wpfloat,
+    cpd: wpfloat,
+) -> tuple[np.array, np.array]:
+    z_w_expl = w_nnow + dtime * (
+        wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    )
+    vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
+    z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
+    return z_w_expl, z_contr_w_fl_l
+
+
 class TestMoSolveNonhydroStencil42(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
@@ -42,12 +64,24 @@ class TestMoSolveNonhydroStencil42(StencilTest):
         wgt_nnew_vel,
         cpd,
         **kwargs,
-    ) -> tuple[np.array]:
-        z_w_expl = w_nnow + dtime * (
-            wgt_nnow_vel * ddt_w_adv_ntl1 + wgt_nnew_vel * ddt_w_adv_ntl2 - cpd * z_th_ddz_exner_c
+    ) -> dict:
+        (
+            z_w_expl,
+            z_contr_w_fl_l,
+        ) = compute_explicit_vertical_wind_from_advection_and_vertical_wind_density_numpy(
+            grid,
+            w_nnow,
+            ddt_w_adv_ntl1,
+            ddt_w_adv_ntl2,
+            z_th_ddz_exner_c,
+            rho_ic,
+            w_concorr_c,
+            vwind_expl_wgt,
+            dtime,
+            wgt_nnow_vel,
+            wgt_nnew_vel,
+            cpd,
         )
-        vwind_expl_wgt = np.expand_dims(vwind_expl_wgt, axis=-1)
-        z_contr_w_fl_l = rho_ic * (-w_concorr_c + vwind_expl_wgt * w_nnow)
         return dict(z_w_expl=z_w_expl, z_contr_w_fl_l=z_contr_w_fl_l)
 
     @pytest.fixture
