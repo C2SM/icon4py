@@ -10,9 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import numpy as np
-from gt4py.next.program_processors.runners.roundtrip import backend as roundtrip
+import pytest
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -24,7 +23,9 @@ from icon4py.model.common.test_utils.reference_funcs import (
 
 
 # TODO (magdalena) stencil does not run on embedded backend, broadcast(0.0, (KDim,)) return scalar?
-def test_init_enh_smag_fac():
+def test_init_enh_smag_fac(backend):
+    if backend is None:
+        pytest.skip("stencil does not (yet) run on embedded backend")
     grid = SimpleGrid()
     enh_smag_fac = zero_field(grid, KDim)
     a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
@@ -32,7 +33,7 @@ def test_init_enh_smag_fac():
     z = (0.1, 0.2, 0.3, 0.4)
 
     enhanced_smag_fac_np = enhanced_smagorinski_factor_numpy(fac, z, a_vec.asnumpy())
-    en_smag_fac_for_zero_nshift.with_backend(roundtrip)(
+    en_smag_fac_for_zero_nshift.with_backend(backend)(
         a_vec,
         *fac,
         *z,

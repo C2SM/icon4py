@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, GridType, field_operator, program
+from gt4py.next import Field, field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
 
 from icon4py.model.common.dimension import KDim, Koff
