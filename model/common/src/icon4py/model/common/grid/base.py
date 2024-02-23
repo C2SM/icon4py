@@ -87,6 +87,10 @@ class BaseGrid(ABC):
     def num_levels(self) -> int:
         pass
 
+    @abstractmethod
+    def _has_skip_values(self, dimension: Dimension) -> bool:
+        pass
+
     @cached_property
     def offset_providers(self):
         offset_providers = {}
@@ -125,7 +129,11 @@ class BaseGrid(ABC):
             xp = np
 
         return NeighborTableOffsetProvider(
-            xp.asarray(self.connectivities[dim]), from_dim, to_dim, self.size[dim]
+            xp.asarray(self.connectivities[dim]),
+            from_dim,
+            to_dim,
+            self.size[dim],
+            has_skip_values=self._has_skip_values(from_dim, to_dim),
         )
 
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):

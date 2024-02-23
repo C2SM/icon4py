@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next.common import Dimension
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
@@ -49,7 +49,7 @@ class IconGrid(BaseGrid):
         self.start_indices = {}
         self.end_indices = {}
         self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
+            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),  #
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
@@ -100,6 +100,34 @@ class IconGrid(BaseGrid):
     def limited_area(self):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
+
+    def _has_skip_values(self, dimension: Dimension) -> bool:
+        """
+        Determine whether a sparse dimension has skip values.
+
+        For the icosahedral global grid skip values are only present for the pentagon points. In the local area model there are also skip values at the boundaries when
+        accessing neighbouring cells or edges from vertices.
+        """
+        assert dimension.kind == DimensionKind.LOCAL, "only local dimensions have skip values"
+        if dimension in (V2EDim, V2CDim):
+            return True
+        elif self.limited_area:
+            if dimension in (
+                # E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
+                # "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
+                # "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+                # "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+                # "C2CECEC ": (
+                E2CDim,
+                C2E2CDim,
+                C2E2CODim,
+                E2C2VDim,
+                E2C2EDim,
+                E2C2EODim,
+            ):
+                return True
+        else:
+            return False
 
     @property
     def n_shift(self):
