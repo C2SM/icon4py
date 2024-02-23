@@ -468,7 +468,7 @@ def compute_cells_aw_verts(
     for i in range(2):
         for je in range(6):
             for jc in range(6):
-                mask = np.where(E2C[V2E[llb:, je], i] == V2C[llb:, jc], owner_mask[llb:], False)
+                mask = np.where(np.logical_and(V2E[llb:, je] >= 0, E2C[V2E[llb:, je], i] == V2C[llb:, jc]), owner_mask[llb:], False)
                 index = np.arange(llb, lateral_boundary_verts[1])
                 idx_ve = np.where(E2V[V2E[llb:, je], 0] == index, 0, 1)
                 cells_aw_verts[llb:, jc] = np.where(mask, cells_aw_verts[llb:, jc] + 0.5 / dual_area[llb:] * edge_vert_length[V2E[llb:, je], idx_ve] * edge_cell_length[V2E[llb:, je], i], cells_aw_verts[llb:, jc])
