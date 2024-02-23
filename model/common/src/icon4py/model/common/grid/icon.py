@@ -53,15 +53,35 @@ class IconGrid(BaseGrid):
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                E2CDim,
+                EdgeDim,
+                ECDim,
+            ),
             "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
             "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
             "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
             "C2V": (self._get_offset_provider, C2VDim, CellDim, VertexDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                E2C2VDim,
+                EdgeDim,
+                ECVDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2CDim,
+                CellDim,
+                CECDim,
+            ),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                C2EDim,
+                CellDim,
+                CEDim,
+            ),
             "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
             "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
@@ -108,16 +128,12 @@ class IconGrid(BaseGrid):
         For the icosahedral global grid skip values are only present for the pentagon points. In the local area model there are also skip values at the boundaries when
         accessing neighbouring cells or edges from vertices.
         """
-        assert dimension.kind == DimensionKind.LOCAL, "only local dimensions have skip values"
+        assert dimension.kind == DimensionKind.LOCAL, "only local dimensions can have skip values"
         if dimension in (V2EDim, V2CDim):
             return True
         elif self.limited_area:
             if dimension in (
-                # E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-                # "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-                # "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
-                # "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
-                # "C2CECEC ": (
+                C2E2C2E2CDim,
                 E2CDim,
                 C2E2CDim,
                 C2E2CODim,

@@ -23,7 +23,9 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
+from icon4py.model.common.grid.utils import (
+    neighbortable_offset_provider_for_1d_sparse_fields,
+)
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
@@ -133,14 +135,18 @@ class BaseGrid(ABC):
             from_dim,
             to_dim,
             self.size[dim],
-            has_skip_values=self._has_skip_values(from_dim, to_dim),
+            has_skip_values=self._has_skip_values(dim),
         )
 
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
         return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[dim].shape, from_dim, to_dim, self.config.on_gpu
+            self.connectivities[dim].shape,
+            from_dim,
+            to_dim,
+            on_gpu=self.config.on_gpu,
+            has_skip_values=self._has_skip_values(dim),
         )
 
     def get_offset_provider(self, name):
