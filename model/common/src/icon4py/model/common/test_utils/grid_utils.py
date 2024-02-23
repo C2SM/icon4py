@@ -42,21 +42,23 @@ def get_icon_grid(on_gpu: bool):
 
 
 @functools.cache
-def get_icon_grid_global(on_gpu: bool = False) -> IconGrid:
-    return _load_from_file("r02b04_global", "icon_grid_0013_R02B04_R.nc")
+def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGrid:
+    if experiment == GLOBAL_EXPERIMENT:
+        return _load_from_gridfile("r02b04_global", "icon_grid_0013_R02B04_R.nc", on_gpu=on_gpu)
+    elif experiment == REGIONAL_EXPERIMENT:
+        return _load_from_gridfile(REGIONAL_EXPERIMENT, "icon_grid_0013_R02B04_R.nc", on_gpu=on_gpu)
+    else:
+        raise ValueError(f"Unknown grid file for: {experiment}")
 
 
-@functools.cache
-def get_icon_grid_regional(on_gpu: bool = False) -> IconGrid:
-    return _load_from_file(REGIONAL_EXPERIMENT, "grid.nc")
-
-
-def _load_from_file(directory: str, filename: str) -> IconGrid:
+def _load_from_gridfile(directory: str, filename: str, on_gpu: bool) -> IconGrid:
     grid_file = GRIDS_PATH.joinpath(directory, filename)
     gm = GridManager(
-        ToGt4PyTransformation(), str(grid_file), VerticalGridSize(MCH_CH_R04B09_LEVELS)
+        ToGt4PyTransformation(),
+        str(grid_file),
+        VerticalGridSize(MCH_CH_R04B09_LEVELS),
     )
-    gm()
+    gm(on_gpu=on_gpu)
     return gm.get_grid()
 
 
