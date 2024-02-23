@@ -583,36 +583,22 @@ def compute_pos_on_tplane_e(
     primal_normal_v2: np.array,
     dual_normal_v1: np.array,
     dual_normal_v2: np.array,
+    cells_lat: np.array,
+    cells_lon: np.array,
+    edges_lat: np.array,
+    edges_lon: np.array,
+    owner_mask: np.array,
+    E2C: np.array,
 ) -> np.array:
-#    ! get geographical coordinates of edge midpoint
-#    xyloc_edge[0] = ptr_patch%edges%center(je,jb)%lon
-#    xyloc_edge[1] = ptr_patch%edges%center(je,jb)%lat
-#
-#        ! get line and block indices of neighbour cells
-#        ilc1 = ptr_patch%edges%cell_idx(je,jb,1)
-#        ibc1 = ptr_patch%edges%cell_blk(je,jb,1)
-#        ilc2 = ptr_patch%edges%cell_idx(je,jb,2)
-#        ibc2 = ptr_patch%edges%cell_blk(je,jb,2)
-#
-#        ! get geographical coordinates of first cell center
-#        xyloc_n1(1)   = ptr_patch%cells%center(ilc1,ibc1)%lon
-#        xyloc_n1(2)   = ptr_patch%cells%center(ilc1,ibc1)%lat
-#
-#        ! projection first cell center into local \lambda-\Phi-system
-#        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_n1(1), xyloc_n1(2), &! in
-#          & xyloc_plane_n1(1), xyloc_plane_n1(2) )                   ! out
-#
-#
-#        ! get geographical coordinates of second cell center
-#        xyloc_n2(1)   = ptr_patch%cells%center(ilc2,ibc2)%lon
-#        xyloc_n2(2)   = ptr_patch%cells%center(ilc2,ibc2)%lat
-#
-#        ! projection second cell center into local \lambda-\Phi-system
-#        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_n2(1), xyloc_n2(2), &! in
-#          & xyloc_plane_n2(1), xyloc_plane_n2(2) )                   ! out
+    #     get geographical coordinates of edge midpoint
+    #     get line and block indices of neighbour cells
+    #     get geographical coordinates of first cell center
+    #     projection first cell center into local \lambda-\Phi-system
+    #     get geographical coordinates of second cell center
+    #     projection second cell center into local \lambda-\Phi-system
+    xyloc_plane_n1[0], xyloc_plane_n1[1] = gnomonic_proj(edges_lon, edges_lat, cells_lon[E2C[:, 0]], cells_lat[E2C[:, 0]])
+    xyloc_plane_n2[0], xyloc_plane_n2[1] = gnomonic_proj(edges_lon, edges_lat, cells_lon[E2C[:, 1]], cells_lat[E2C[:, 1]])
 
-#    xyloc_plane_n1 =
-#    xyloc_plane_n2 =
     pos_on_tplane_e[:, 0, 0] = grid_sphere_radius * (xyloc_plane_n1[0] * primal_normal_v1 + xyloc_plane_n1[1] * primal_normal_v2)
     pos_on_tplane_e[:, 0, 1] = grid_sphere_radius * (xyloc_plane_n1[0] * dual_normal_v1 + xyloc_plane_n1[1] * dual_normal_v2)
     pos_on_tplane_e[:, 1, 0] = grid_sphere_radius * (xyloc_plane_n2[0] * primal_normal_v1 + xyloc_plane_n2[1] * primal_normal_v2)
