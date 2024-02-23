@@ -36,20 +36,20 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
     C2VDim,
+    CEDim,
     CellDim,
     E2C2EDim,
     E2C2EODim,
     E2C2VDim,
     E2CDim,
     E2VDim,
+    ECDim,
+    ECVDim,
     EdgeDim,
     V2CDim,
     V2E2VDim,
     V2EDim,
     VertexDim,
-    ECVDim,
-    CEDim,
-    ECDim,
 )
 from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
@@ -191,10 +191,10 @@ class GridFile:
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
-        except KeyError:
+        except KeyError as err:
             msg = f"{name} does not exist in dataset"
             self._log.warning(msg)
-            raise IconGridError(msg)
+            raise IconGridError(msg) from err
 
 
 class IconGridError(RuntimeError):
@@ -321,10 +321,10 @@ class GridManager:
             raise IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
-        except KeyError:
+        except KeyError as err:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
-            raise IconGridError(msg)
+            raise IconGridError(msg) from err
 
     def _constuct_grid(self, dataset: Dataset, on_gpu: bool) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
