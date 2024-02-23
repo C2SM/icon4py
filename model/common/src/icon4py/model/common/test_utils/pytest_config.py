@@ -138,6 +138,7 @@ def pytest_generate_tests(metafunc):
 
                 grid_instance = SimpleGrid()
             elif selected_grid_type == "icon_grid":
+                # TODO (halungge) remove this branch
                 from icon4py.model.common.test_utils.grid_utils import get_icon_grid
 
                 grid_instance = get_icon_grid(on_gpu)
