@@ -162,3 +162,4 @@ class PrepAdvection:
     vn_traj: Field[[EdgeDim, KDim], float]
     mass_flx_me: Field[[EdgeDim, KDim], float]
     mass_flx_ic: Field[[CellDim, KDim], float]
+    vol_flx_ic: Field[[CellDim, KDim], float]
