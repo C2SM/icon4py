@@ -24,7 +24,6 @@ from icon4py.model.common.type_alias import wpfloat
 def _compute_wgtfac_c_nlev(
     z_ifc: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-
     z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-2]) - z_ifc)
     return z_wgtfac_c
 
@@ -33,7 +32,6 @@ def _compute_wgtfac_c_nlev(
 def _compute_wgtfac_c_0(
     z_ifc: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-
     z_wgtfac_c = (z_ifc(Koff[+1]) - z_ifc) / (z_ifc(Koff[+2]) - z_ifc)
     return z_wgtfac_c
 
@@ -42,7 +40,6 @@ def _compute_wgtfac_c_0(
 def _compute_wgtfac_c_inner(
     z_ifc: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-
     z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
     return z_wgtfac_c
 
@@ -53,7 +50,6 @@ def _compute_wgtfac_c(
     k: Field[[KDim], int32],
     nlev: int32,
 ) -> Field[[CellDim, KDim], wpfloat]:
-
     wgt_fac_c = where((k > int32(0)) & (k < nlev), _compute_wgtfac_c_inner(z_ifc), z_ifc)
     wgt_fac_c = where(k == int32(0), _compute_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
     wgt_fac_c = where(k == nlev, _compute_wgtfac_c_nlev(z_ifc=z_ifc), wgt_fac_c)

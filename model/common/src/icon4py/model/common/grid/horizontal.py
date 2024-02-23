@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Final
+from typing import ClassVar, Final
 
 from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
 from gt4py.next.ffront.fbuiltins import int32
@@ -82,33 +82,33 @@ class HorizontalMarkerIndex:
 
     """
 
-    _lateral_boundary = {
+    _lateral_boundary: ClassVar = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
         dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
         dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
-    _local = {
+    _local: ClassVar = {
         dimension.CellDim: _LOCAL_CELLS,
         dimension.EdgeDim: _LOCAL_EDGES,
         dimension.VertexDim: _LOCAL_VERTICES,
     }
-    _halo = {
+    _halo: ClassVar = {
         dimension.CellDim: _HALO_CELLS,
         dimension.EdgeDim: _HALO_EDGES,
         dimension.VertexDim: _HALO_VERTICES,
     }
-    _interior = {
+    _interior: ClassVar = {
         dimension.CellDim: _INTERIOR_CELLS,
         dimension.EdgeDim: _INTERIOR_EDGES,
         dimension.VertexDim: _INTERIOR_VERTICES,
     }
-    _nudging = {
+    _nudging: ClassVar = {
         dimension.CellDim: _NUDGING_CELLS,
         dimension.EdgeDim: _NUDGING_EDGES,
         # TODO [magdalena] there is no nudging for vertices?
         dimension.VertexDim: _NUDGING_VERTICES,
     }
-    _end = {
+    _end: ClassVar = {
         dimension.CellDim: _END_CELLS,
         dimension.EdgeDim: _END_EDGES,
         dimension.VertexDim: _END_VERTICES,
@@ -329,7 +329,7 @@ def cell_2_edge_interpolation(
 
 
 class RefinCtrlLevel:
-    _boundary_nudging_start = {
+    _boundary_nudging_start: ClassVar = {
         EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
         CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
     }
@@ -339,5 +339,7 @@ class RefinCtrlLevel:
         """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
         try:
             return cls._boundary_nudging_start[dim]
-        except KeyError:
-            raise ValueError(f"nudging start level only exists for {CellDim} and {EdgeDim}")
+        except KeyError as err:
+            raise ValueError(
+                f"nudging start level only exists for {CellDim} and {EdgeDim}"
+            ) from err

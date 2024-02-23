@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def average_k_level_up(
-    half_level_field: Field[[CellDim, KDim], wpfloat]
+    half_level_field: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
     """
     Calculate the mean value of adjacent interface levels.
@@ -37,7 +37,7 @@ def average_k_level_up(
 
 @field_operator
 def difference_k_level_down(
-    half_level_field: Field[[CellDim, KDim], wpfloat]
+    half_level_field: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
     """
     Calculate the difference value of adjacent interface levels.
@@ -55,7 +55,7 @@ def difference_k_level_down(
 
 @field_operator
 def difference_k_level_up(
-    half_level_field: Field[[CellDim, KDim], wpfloat]
+    half_level_field: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
     """
     Calculate the difference value of adjacent interface levels.
