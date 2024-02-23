@@ -85,6 +85,31 @@ def compute_geofac_rot(
     geofac_rot_ = where(owner_mask, dual_edge_length(V2E)*edge_orientation/dual_area, 0.0)
     return geofac_rot_
 
+def compute_geofac_div_np(
+    geofac_div: np.array,
+    primal_edge_length: np.array,
+    edge_orientation: np.array,
+    area: np.array,
+    C2E: np.array,
+) -> np.array:
+    for i in range(3):
+        geofac_div[:, i] = primal_edge_length[C2E[:, i]]*edge_orientation[:, i]/area
+    return geofac_div
+
+def compute_geofac_rot_np(
+    geofac_rot: np.array,
+    dual_edge_length: np.array,
+    edge_orientation: np.array,
+    dual_area: np.array,
+    V2E: np.array,
+    owner_mask: np.array,
+    lateral_boundary_verts: np.array,
+) -> np.array:
+    llb = lateral_boundary_verts[0]
+    for i in range(6):
+        geofac_rot[llb:, i] = np.where(owner_mask[llb:], dual_edge_length[V2E[llb:, i]]*edge_orientation[llb:, i]/dual_area[llb:], 0.0)
+    return geofac_rot
+
 def compute_geofac_n2s(
     geofac_n2s: np.array,
     dual_edge_length: np.array,
@@ -520,3 +545,76 @@ def compute_e_bln_c_s(
     for i in range(3):
         e_bln_c_s[llb:, i] = np.where(owner_mask[llb:], wgt[i], e_bln_c_s[llb:, i])
     return e_bln_c_s
+
+def gnomonic_proj(
+    lon_c: np.array,
+    lat_c: np.array,
+    lon: np.array,
+    lat: np.array,
+) -> (np.array, np.array):
+    #
+    # !LITERATURE:
+    # Map Projections: A Working Manual, Snyder, 1987, p. 165
+    #
+    #
+    #REAL(wp), INTENT(in) :: lat_c, lon_c  ! center on tangent plane
+    #REAL(wp), INTENT(in) :: lat, lon      ! point to be projected
+    #REAL(wp), INTENT(out):: x, y          ! coordinates of projected point
+
+    #REAL(wp) :: zk   ! scale factor perpendicular to the radius from the
+    # center of the map
+    #REAL(wp) :: cosc ! cosine of the angular distance of the given point
+    # (lat,lon) from the center of projection
+
+    #-----------------------------------------------------------------------
+
+    cosc = np.sin(lat_c)*np.sin(lat) + np.cos(lat_c)*np.cos(lat)*np.cos(lon-lon_c)
+    zk   = 1.0/cosc
+
+    x    = zk * np.cos(lat)*np.sin(lon-lon_c)
+    y    = zk * ( np.cos(lat_c)*np.sin(lat) - np.sin(lat_c)*np.cos(lat)*np.cos(lon-lon_c) )
+
+    return x, y 
+
+def compute_pos_on_tplane_e(
+    pos_on_tplane_e: np.array,
+    grid_sphere_radius: np.array,
+    primal_normal_v1: np.array,
+    primal_normal_v2: np.array,
+    dual_normal_v1: np.array,
+    dual_normal_v2: np.array,
+) -> np.array:
+#    ! get geographical coordinates of edge midpoint
+#    xyloc_edge[0] = ptr_patch%edges%center(je,jb)%lon
+#    xyloc_edge[1] = ptr_patch%edges%center(je,jb)%lat
+#
+#        ! get line and block indices of neighbour cells
+#        ilc1 = ptr_patch%edges%cell_idx(je,jb,1)
+#        ibc1 = ptr_patch%edges%cell_blk(je,jb,1)
+#        ilc2 = ptr_patch%edges%cell_idx(je,jb,2)
+#        ibc2 = ptr_patch%edges%cell_blk(je,jb,2)
+#
+#        ! get geographical coordinates of first cell center
+#        xyloc_n1(1)   = ptr_patch%cells%center(ilc1,ibc1)%lon
+#        xyloc_n1(2)   = ptr_patch%cells%center(ilc1,ibc1)%lat
+#
+#        ! projection first cell center into local \lambda-\Phi-system
+#        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_n1(1), xyloc_n1(2), &! in
+#          & xyloc_plane_n1(1), xyloc_plane_n1(2) )                   ! out
+#
+#
+#        ! get geographical coordinates of second cell center
+#        xyloc_n2(1)   = ptr_patch%cells%center(ilc2,ibc2)%lon
+#        xyloc_n2(2)   = ptr_patch%cells%center(ilc2,ibc2)%lat
+#
+#        ! projection second cell center into local \lambda-\Phi-system
+#        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_n2(1), xyloc_n2(2), &! in
+#          & xyloc_plane_n2(1), xyloc_plane_n2(2) )                   ! out
+
+#    xyloc_plane_n1 =
+#    xyloc_plane_n2 =
+    pos_on_tplane_e[:, 0, 0] = grid_sphere_radius * (xyloc_plane_n1[0] * primal_normal_v1 + xyloc_plane_n1[1] * primal_normal_v2)
+    pos_on_tplane_e[:, 0, 1] = grid_sphere_radius * (xyloc_plane_n1[0] * dual_normal_v1 + xyloc_plane_n1[1] * dual_normal_v2)
+    pos_on_tplane_e[:, 1, 0] = grid_sphere_radius * (xyloc_plane_n2[0] * primal_normal_v1 + xyloc_plane_n2[1] * primal_normal_v2)
+    pos_on_tplane_e[:, 1, 1] = grid_sphere_radius * (xyloc_plane_n2[0] * dual_normal_v1 + xyloc_plane_n2[1] * dual_normal_v2)
+    return pos_on_tplane_e
