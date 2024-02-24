@@ -31,7 +31,6 @@ def update_theta_and_exner_numpy(
     exner: np.array,
     rd_o_cvd: float,
 ) -> tuple[np.array]:
-    area = np.expand_dims(area, axis=0)
     z_theta = theta_v
     theta_v = theta_v + (np.expand_dims(area, axis=-1) * z_temp)
     exner = exner * (1.0 + rd_o_cvd * (theta_v / z_theta - 1.0))

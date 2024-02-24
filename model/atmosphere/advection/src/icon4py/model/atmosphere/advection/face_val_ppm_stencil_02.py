@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, concat_where
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 
@@ -56,17 +56,15 @@ def _face_val_ppm_stencil_02(
     slevp1: int32,
     elevp1: int32,
 ) -> Field[[CellDim, KDim], float]:
-    k = broadcast(k, (CellDim, KDim))
-
-    p_face = where(
+    p_face = concat_where(
         (k == slevp1) | (k == elev),
         _face_val_ppm_stencil_02a(p_cc, p_cellhgt_mc_now),
         p_face_in,
     )
 
-    p_face = where((k == slev), _face_val_ppm_stencil_02b(p_cc), p_face)
+    p_face = concat_where((k == slev), _face_val_ppm_stencil_02b(p_cc), p_face)
 
-    p_face = where((k == elevp1), _face_val_ppm_stencil_02c(p_cc), p_face)
+    p_face = concat_where((k == elevp1), _face_val_ppm_stencil_02c(p_cc), p_face)
 
     return p_face
 

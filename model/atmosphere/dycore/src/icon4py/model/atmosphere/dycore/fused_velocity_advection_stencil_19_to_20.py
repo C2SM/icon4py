@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, maximum, where
+from gt4py.next.ffront.fbuiltins import int32, maximum, concat_where
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
     _add_extra_diffusion_for_wn_approaching_cfl,
@@ -78,8 +78,8 @@ def _fused_velocity_advection_stencil_19_to_20(
     )
 
     ddt_vn_apc = (
-        where(
-            maximum(2, nrdmax - 2) <= k < nlev - 3,
+        concat_where(
+            (k >= maximum(2, nrdmax - 2)) & (k < nlev - 3),
             _add_extra_diffusion_for_wn_approaching_cfl(
                 levelmask,
                 c_lin_e,

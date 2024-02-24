@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
+from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where, concat_where
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -56,35 +56,44 @@ def _fused_velocity_advection_stencil_16_to_18(
     nrdmax: int32,
     extra_diffu: bool,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    k = broadcast(k, (CellDim, KDim))
-
     ddt_w_adv = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (int32(1) <= k),
-        _compute_advective_vertical_wind_tendency(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
+        (cell_lower_bound <= cell < cell_upper_bound),
+        concat_where(
+            k >= int32(1),
+            _compute_advective_vertical_wind_tendency(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
+            ddt_w_adv,
+        ),
         ddt_w_adv,
     )
     ddt_w_adv = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (int32(1) <= k),
-        _add_interpolated_horizontal_advection_of_w(e_bln_c_s, z_v_grad_w, ddt_w_adv),
+        (cell_lower_bound <= cell < cell_upper_bound),
+        concat_where(
+            k >= int32(1),
+            _add_interpolated_horizontal_advection_of_w(e_bln_c_s, z_v_grad_w, ddt_w_adv),
+            ddt_w_adv,
+        ),
         ddt_w_adv,
     )
     ddt_w_adv = (
         where(
-            (cell_lower_bound <= cell < cell_upper_bound)
-            & (maximum(2, nrdmax - 2) <= k < nlev - 3),
-            _add_extra_diffusion_for_w_con_approaching_cfl(
-                levelmask,
-                cfl_clipping,
-                owner_mask,
-                z_w_con_c,
-                ddqz_z_half,
-                area,
-                geofac_n2s,
-                w,
+            (cell_lower_bound <= cell < cell_upper_bound),
+            concat_where(
+                (k >= maximum(2, nrdmax - 2)) & (k < nlev - 3),
+                _add_extra_diffusion_for_w_con_approaching_cfl(
+                    levelmask,
+                    cfl_clipping,
+                    owner_mask,
+                    z_w_con_c,
+                    ddqz_z_half,
+                    area,
+                    geofac_n2s,
+                    w,
+                    ddt_w_adv,
+                    scalfac_exdiff,
+                    cfl_w_limit,
+                    dtime,
+                ),
                 ddt_w_adv,
-                scalfac_exdiff,
-                cfl_w_limit,
-                dtime,
             ),
             ddt_w_adv,
         )

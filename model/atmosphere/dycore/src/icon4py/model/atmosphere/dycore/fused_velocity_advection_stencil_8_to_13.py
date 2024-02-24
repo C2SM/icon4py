@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where
+from gt4py.next.ffront.fbuiltins import int32, where, concat_where
 
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
@@ -47,7 +47,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    z_ekinh = where(
+    z_ekinh = concat_where(
         k < nlev,
         _interpolate_to_cell_center(z_kin_hor_e, e_bln_c_s),
         z_ekinh,
@@ -55,20 +55,20 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
 
     z_w_concorr_mc = _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s)
 
-    w_concorr_c = where(
-        nflatlev + 1 <= k < nlev,
+    w_concorr_c = concat_where(
+        (nflatlev + 1 <= k) & (k < nlev),
         _interpolate_to_half_levels_vp(interpolant=z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
     )
 
-    z_w_con_c = where(
+    z_w_con_c = concat_where(
         k < nlev,
         _copy_cell_kdim_field_to_vp(w),
         _set_cell_kdim_field_to_zero_vp(),
     )
 
-    z_w_con_c = where(
-        nflatlev + 1 <= k < nlev,
+    z_w_con_c = concat_where(
+        (nflatlev + 1 <= k) & (k < nlev),
         _correct_contravariant_vertical_velocity(z_w_con_c, w_concorr_c),
         z_w_con_c,
     )
@@ -134,7 +134,6 @@ def _fused_velocity_advection_stencil_8_to_13(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-
     z_ekinh, w_concorr_c, z_w_con_c = (
         _fused_velocity_advection_stencil_8_to_13_predictor(
             z_kin_hor_e,
@@ -183,7 +182,6 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
     nlev: int32,
     nflatlev: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-
     return _fused_velocity_advection_stencil_8_to_13(
         z_kin_hor_e,
         e_bln_c_s,

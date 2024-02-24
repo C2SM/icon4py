@@ -73,6 +73,8 @@ class TestFaceValPpmStencil01(StencilTest):
         p_cc = random_field(grid, CellDim, KDim, extend={KDim: 1})
         p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
-        elev = k[-2]
+        elev = k[-2].as_scalar()
+
+        # TODO domain seems wrong we can only check k >= 1
 
         return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, k=k, elev=elev, z_slope=z_slope)

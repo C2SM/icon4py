@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import GridType, field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import Field, int32, concat_where
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
@@ -34,12 +34,16 @@ def _fused_solve_nonhydro_stencil_39_40(
     nlev: int32,
     nflatlev: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    w_concorr_c = where(
-        nflatlev + 1 <= vert_idx < nlev,
+    w_concorr_c = concat_where(
+        nflatlev + 1 <= vert_idx,  # < nlev,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        # concat_where(
+        #     vert_idx < nlev,
+        #     _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s, z_w_concorr_me, wgtfacq_c
         ),
+        # ),
     )
     return w_concorr_c
 

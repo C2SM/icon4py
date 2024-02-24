@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where, concat_where
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -50,10 +50,9 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-    k = broadcast(k, (CellDim, KDim))
     dwdx, dwdy = (
-        where(
-            int32(0) < k,
+        concat_where(
+            k > int32(0),
             _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
             (dwdx, dwdy),
         )
@@ -69,9 +68,13 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         w_old,
     )
 
-    w = where(
-        (int32(0) < k) & (k < nrdmax) & (interior_idx <= cell) & (cell < halo_idx),
-        _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
+    w = concat_where(
+        (k > int32(0)) & (k < nrdmax),
+        where(
+            (interior_idx <= cell) & (cell < halo_idx),
+            _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
+            w,
+        ),
         w,
     )
 
