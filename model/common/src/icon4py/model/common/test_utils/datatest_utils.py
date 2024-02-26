@@ -37,7 +37,7 @@ SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
 
 DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/y2IMUx4pOQ6lyZ7/download",
-    2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
+    2: "https://polybox.ethz.ch/index.php/s/gAdsCSXd3zZ9Gz0/download",
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/uK3jtrWK90Z4kHC/download"}
