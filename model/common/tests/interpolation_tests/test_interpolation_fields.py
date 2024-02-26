@@ -470,7 +470,7 @@ def test_compute_pos_on_tplane_e(
     pos_on_tplane_e_ref = interpolation_savepoint.pos_on_tplane_e().asnumpy()
     sphere_radius = grid_savepoint.sphere_radius().asnumpy()
     primal_normal_v1 = grid_savepoint.primal_normal_v1().asnumpy()
-    primal_normal_v2 = grid_savepoint.primal_normal_v1().asnumpy()
+    primal_normal_v2 = grid_savepoint.primal_normal_v2().asnumpy()
     dual_normal_v1 = grid_savepoint.dual_normal_v1().asnumpy()
     dual_normal_v2 = grid_savepoint.dual_normal_v2().asnumpy()
     owner_mask = grid_savepoint.e_owner_mask().asnumpy()
@@ -510,7 +510,6 @@ def test_compute_pos_on_tplane_e(
         E2C,
         E2V,
         E2C2E,
+        lateral_boundary_edges,
     )
-    print(pos_on_tplane_e_ref)
-    print(pos_on_tplane_e)
     assert np.allclose(pos_on_tplane_e, pos_on_tplane_e_ref)
