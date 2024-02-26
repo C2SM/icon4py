@@ -21,7 +21,9 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
-from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import accumulate_prep_adv_fields
+from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
+    accumulate_prep_adv_fields,
+)
 from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
 )
@@ -65,8 +67,12 @@ from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_the
 from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import compute_exner_from_rhotheta
-from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import compute_graddiv2_of_vn
+from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
+    compute_exner_from_rhotheta,
+)
+from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
+    compute_graddiv2_of_vn,
+)
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
 )
@@ -89,11 +95,15 @@ from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables
 from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
-from icon4py.model.atmosphere.dycore.compute_theta_and_exner import compute_theta_and_exner
+from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
+    compute_theta_and_exner,
+)
 from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
-from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
+    copy_cell_kdim_field_to_vp,
+)
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -132,14 +142,27 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
 )
-from icon4py.model.atmosphere.dycore.update_mass_volume_flux import update_mass_volume_flux
-from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import update_mass_flux_weighted
+from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
+    update_mass_volume_flux,
+)
+from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
+    update_mass_flux_weighted,
+)
 from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
-from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
-from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
+from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
+    VelocityAdvection,
+)
+from icon4py.model.common.decomposition.definitions import (
+    ExchangeRuntime,
+    SingleNodeExchange,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.base import BaseGrid
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMarkerIndex,
+)
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
@@ -1918,8 +1941,9 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                set_zero_c_k.with_backend(backend)(
-                    field=prep_adv.mass_flx_ic,
+                set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                    prep_adv.mass_flx_ic,
+                    prep_adv.vol_flx_ic,
                     horizontal_start=start_cell_nudging,
                     horizontal_end=end_cell_local,
                     vertical_start=0,
@@ -1933,6 +1957,7 @@ class SolveNonhydro:
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             w=prognostic_state[nnew].w,
             mass_flx_ic=prep_adv.mass_flx_ic,
+            vol_flx_ic=prep_adv.vol_flx_ic,
             r_nsubsteps=r_nsubsteps,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
