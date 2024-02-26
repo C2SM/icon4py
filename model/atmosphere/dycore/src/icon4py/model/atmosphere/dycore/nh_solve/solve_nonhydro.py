@@ -79,8 +79,8 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressu
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
-    compute_horizontal_gradient_of_extner_pressure_for_multiple_levels,
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+    compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
 )
 from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
@@ -1013,7 +1013,7 @@ class SolveNonhydro:
                 },
             )
 
-            compute_horizontal_gradient_of_extner_pressure_for_multiple_levels.with_backend(
+            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(
                 backend
             )(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
