@@ -116,7 +116,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         k = indices_field(KDim, grid, is_halfdim=True, dtype=int32)
 
         nlev = grid.num_levels
-        nflatlev = 4
+        nflatlev = 13
 
         istep = 1
 
