@@ -74,7 +74,7 @@ from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary impo
     _set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
-from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.update_density_exner_wind import _update_density_exner_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
 
@@ -998,7 +998,7 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _update_densety_exener_wind(
+        _update_density_exner_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),

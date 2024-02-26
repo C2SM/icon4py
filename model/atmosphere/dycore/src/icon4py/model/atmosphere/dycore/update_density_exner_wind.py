@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _update_densety_exener_wind(
+def _update_density_exner_wind(
     rho_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_rho: Field[[CellDim, KDim], wpfloat],
     theta_v_now: Field[[CellDim, KDim], wpfloat],
@@ -42,7 +42,7 @@ def _update_densety_exener_wind(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def update_densety_exener_wind(
+def update_density_exner_wind(
     rho_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_rho: Field[[CellDim, KDim], wpfloat],
     theta_v_now: Field[[CellDim, KDim], wpfloat],
@@ -58,7 +58,7 @@ def update_densety_exener_wind(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _update_densety_exener_wind(
+    _update_density_exner_wind(
         rho_now,
         grf_tend_rho,
         theta_v_now,
