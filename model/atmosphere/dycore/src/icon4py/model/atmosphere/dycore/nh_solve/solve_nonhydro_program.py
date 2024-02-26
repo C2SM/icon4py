@@ -352,7 +352,9 @@ def _predictor_stencils_11_lower_upper(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(k_field == int32(0), _return_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic)
+    z_theta_v_pr_ic = where(
+        k_field == int32(0), _return_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic
+    )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,

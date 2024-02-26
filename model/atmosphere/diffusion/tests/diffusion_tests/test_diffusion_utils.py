@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
-    scale_k,
     return_zero_v_k,
+    scale_k,
     setup_fields_for_initial_step,
 )
 from icon4py.model.common.dimension import KDim, VertexDim

@@ -34,7 +34,9 @@ class TestSetCellKdimFieldToZeroVp(StencilTest):
 
     @staticmethod
     def reference(grid, field_to_zero_vp: np.array, **kwargs) -> dict:
-        field_to_zero_vp = return_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp=field_to_zero_vp)
+        field_to_zero_vp = return_cell_kdim_field_to_zero_vp_numpy(
+            field_to_zero_vp=field_to_zero_vp
+        )
         return dict(field_to_zero_vp=field_to_zero_vp)
 
     @pytest.fixture
