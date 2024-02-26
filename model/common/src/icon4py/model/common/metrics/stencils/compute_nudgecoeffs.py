@@ -27,7 +27,6 @@ def _compute_nudgecoeffs(
     nudge_efold_width: wpfloat,
     nudge_zone_width: int32,
 ) -> Field[[EdgeDim], wpfloat]:
-
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
         nudge_max_coeffs

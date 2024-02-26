@@ -62,7 +62,6 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         z_w_con_c,
         **kwargs,
     ):
-
         k_nlev = k[:-1]
 
         z_ekinh = np.where(

@@ -134,7 +134,6 @@ def _fused_velocity_advection_stencil_8_to_13(
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
-
     z_ekinh, w_concorr_c, z_w_con_c = (
         _fused_velocity_advection_stencil_8_to_13_predictor(
             z_kin_hor_e,
@@ -183,7 +182,6 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
     nlev: int32,
     nflatlev: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-
     return _fused_velocity_advection_stencil_8_to_13(
         z_kin_hor_e,
         e_bln_c_s,
