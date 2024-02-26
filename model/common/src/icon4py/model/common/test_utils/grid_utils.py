@@ -14,7 +14,6 @@ import functools
 
 import pytest
 
-from icon4py.model.common.decomposition.definitions import SingleNodeRun
 from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
@@ -22,24 +21,10 @@ from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRIDS_PATH,
     REGIONAL_EXPERIMENT,
-    SERIALIZED_DATA_PATH,
-    create_icon_serial_data_provider,
-    get_datapath_for_experiment,
-    get_processor_properties_for_run,
-    get_ranked_data_path,
 )
 
 
 MCH_CH_R04B09_LEVELS = 65
-
-
-def get_icon_grid(on_gpu: bool):
-    processor_properties = get_processor_properties_for_run(SingleNodeRun())
-    ranked_path = get_ranked_data_path(SERIALIZED_DATA_PATH, processor_properties)
-    data_path = get_datapath_for_experiment(ranked_path)
-    icon_data_provider = create_icon_serial_data_provider(data_path, processor_properties)
-    grid_savepoint = icon_data_provider.from_savepoint_grid()
-    return grid_savepoint.construct_icon_grid(on_gpu)
 
 
 @functools.cache
