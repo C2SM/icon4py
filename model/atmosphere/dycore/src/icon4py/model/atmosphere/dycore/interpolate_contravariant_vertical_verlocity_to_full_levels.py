@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _interpolate_contravatiant_vertical_verlocity_to_full_levels(
+def _interpolate_contravariant_vertical_verlocity_to_full_levels(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
     """Formerly know as _mo_velocity_advection_stencil_15."""
@@ -29,7 +29,7 @@ def _interpolate_contravatiant_vertical_verlocity_to_full_levels(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def interpolate_contravatiant_vertical_verlocity_to_full_levels(
+def interpolate_contravariant_vertical_verlocity_to_full_levels(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -37,7 +37,7 @@ def interpolate_contravatiant_vertical_verlocity_to_full_levels(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _interpolate_contravatiant_vertical_verlocity_to_full_levels(
+    _interpolate_contravariant_vertical_verlocity_to_full_levels(
         z_w_con_c,
         out=z_w_con_c_full,
         domain={

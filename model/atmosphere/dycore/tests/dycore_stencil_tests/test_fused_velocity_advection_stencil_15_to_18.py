@@ -36,8 +36,8 @@ from .test_add_interpolated_horizontal_advection_of_w import (
 from .test_compute_advective_vertical_wind_tendency import (
     compute_advective_vertical_wind_tendency_numpy,
 )
-from .test_interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy,
+from .test_interpolate_contravariant_vertical_verlocity_to_full_levels import (
+    interpolate_contravariant_vertical_verlocity_to_full_levels_numpy,
 )
 
 
@@ -155,7 +155,7 @@ class TestFusedVelocityAdvectionStencil15To18(StencilTest):
         extra_diffu,
         **kwargs,
     ):
-        z_w_con_c_full = interpolate_contravatiant_vertical_verlocity_to_full_levels_numpy(
+        z_w_con_c_full = interpolate_contravariant_vertical_verlocity_to_full_levels_numpy(
             grid, z_w_con_c
         )
 

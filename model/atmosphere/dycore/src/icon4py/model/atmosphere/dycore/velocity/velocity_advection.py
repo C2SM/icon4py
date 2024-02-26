@@ -35,8 +35,8 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_verti
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    interpolate_contravatiant_vertical_verlocity_to_full_levels,
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_verlocity_to_full_levels import (
+    interpolate_contravariant_vertical_verlocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
@@ -339,7 +339,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)(
+        interpolate_contravariant_vertical_verlocity_to_full_levels.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -587,7 +587,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)(
+        interpolate_contravariant_vertical_verlocity_to_full_levels.with_backend(backend)(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
