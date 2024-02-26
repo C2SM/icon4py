@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestcomputeGraddiv2OfVn(StencilTest):
+class TestComputeGraddiv2OfVn(StencilTest):
     PROGRAM = compute_graddiv2_of_vn
     OUTPUTS = ("z_graddiv2_vn",)
 
