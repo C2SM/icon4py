@@ -135,7 +135,7 @@ def generate_gtheader(
 
     if temporaries:
         translation = translation.replace(
-            lift_mode=LiftMode.FORCE_TEMPORARIES,
+            lift_mode=LiftMode.USE_TEMPORARIES,
             symbolic_domain_sizes={
                 "Cell": "num_cells",
                 "Edge": "num_edges",
