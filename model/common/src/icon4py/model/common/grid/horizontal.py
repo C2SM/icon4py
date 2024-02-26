@@ -13,12 +13,22 @@
 import math
 from dataclasses import InitVar, dataclass, field
 from functools import cached_property
-from typing import Final
+from typing import ClassVar, Final
 
-from gt4py.next.common import Dimension, Field
+from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants, dimension
-from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
+from icon4py.model.common.dimension import (
+    E2C,
+    CellDim,
+    E2CDim,
+    ECDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+)
+from icon4py.model.common.type_alias import wpfloat
 
 
 NUM_GHOST_ROWS: Final[int] = 2
@@ -61,8 +71,9 @@ _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
 _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
 _END_VERTICES: Final[int] = 0
 
+
 class RefinCtrlLevel:
-    _boundary_nudging_start = {
+    _boundary_nudging_start: ClassVar = {
         EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
         CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
     }
@@ -72,8 +83,10 @@ class RefinCtrlLevel:
         """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
         try:
             return cls._boundary_nudging_start[dim]
-        except KeyError:
-            raise ValueError(f"nudging start level only exists for {CellDim} and {EdgeDim}")
+        except KeyError as err:
+            raise ValueError(
+                f"nudging start level only exists for {CellDim} and {EdgeDim}"
+            ) from err
 
 
 class HorizontalMarkerIndex:
@@ -96,33 +109,33 @@ class HorizontalMarkerIndex:
 
     """
 
-    _lateral_boundary = {
+    _lateral_boundary: ClassVar = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
         dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
         dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
-    _local = {
+    _local: ClassVar = {
         dimension.CellDim: _LOCAL_CELLS,
         dimension.EdgeDim: _LOCAL_EDGES,
         dimension.VertexDim: _LOCAL_VERTICES,
     }
-    _halo = {
+    _halo: ClassVar = {
         dimension.CellDim: _HALO_CELLS,
         dimension.EdgeDim: _HALO_EDGES,
         dimension.VertexDim: _HALO_VERTICES,
     }
-    _interior = {
+    _interior: ClassVar = {
         dimension.CellDim: _INTERIOR_CELLS,
         dimension.EdgeDim: _INTERIOR_EDGES,
         dimension.VertexDim: _INTERIOR_VERTICES,
     }
-    _nudging = {
+    _nudging: ClassVar = {
         dimension.CellDim: _NUDGING_CELLS,
         dimension.EdgeDim: _NUDGING_EDGES,
         # TODO [magdalena] there is no nudging for vertices?
         dimension.VertexDim: _NUDGING_VERTICES,
     }
-    _end = {
+    _end: ClassVar = {
         dimension.CellDim: _END_CELLS,
         dimension.EdgeDim: _END_EDGES,
         dimension.VertexDim: _END_VERTICES,
@@ -296,22 +309,26 @@ class EdgeParams:
 
 @dataclass(frozen=True)
 class CellParams:
+    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
     """
-    Area of a cell.
+    Interpolate a Cell Field to Edges.
 
-    defined int ICON in mo_model_domain.f90:t_grid_cells%area
+    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
+    where the value is set to the one valid in_field value without multiplication by coeff.
+    This essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
+    be 1 for this Edge index.
     """
     length_rescale_factor: float
 
     global_num_cells: InitVar[int]
-    mean_cell_area: field(init=False)
+    mean_cell_area: field(init=False) = None
 
     def __post_init__(self, global_num_cells):
         object.__setattr__(
             self,
             "mean_cell_area",
-            CellParams.mean_cell_area(
+            CellParams._compute_mean_cell_area(
                 self.length_rescale_factor * constants.EARTH_RADIUS,
                 global_num_cells,
             ),
@@ -322,7 +339,7 @@ class CellParams:
         return math.sqrt(self.mean_cell_area)
 
     @staticmethod
-    def mean_cell_area(radius, num_cells):
+    def _compute_mean_cell_area(radius, num_cells):
         """
         Compute the mean cell area.
 
@@ -337,3 +354,37 @@ class CellParams:
         return 4.0 * math.pi * radius**2 / num_cells
 
 
+@field_operator
+def _cell_2_edge_interpolation(
+    in_field: Field[[CellDim, KDim], wpfloat], coeff: Field[[EdgeDim, E2CDim], wpfloat]
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    """
+    Interpolate a Cell Field to Edges.
+
+    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
+    where the value is set to the one valid in_field value without multiplication by coeff.
+    This essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
+    be 1 for this Edge index.
+    """
+    return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def cell_2_edge_interpolation(
+    in_field: Field[[CellDim, KDim], wpfloat],
+    coeff: Field[[EdgeDim, E2CDim], wpfloat],
+    out_field: Field[[EdgeDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _cell_2_edge_interpolation(
+        in_field,
+        coeff,
+        out=out_field,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

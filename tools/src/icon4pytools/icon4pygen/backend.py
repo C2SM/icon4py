@@ -34,7 +34,9 @@ DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
 GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 
 
-def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+def transform_and_configure_fencil(
+    fencil: itir.FencilDefinition,
+) -> itir.FencilDefinition:
     """Transform the domain representation and configure the FencilDefinition parameters."""
     grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
 
@@ -135,7 +137,7 @@ def generate_gtheader(
 
     if temporaries:
         translation = translation.replace(
-            lift_mode=LiftMode.FORCE_TEMPORARIES,
+            lift_mode=LiftMode.USE_TEMPORARIES,
             symbolic_domain_sizes={
                 "Cell": "num_cells",
                 "Edge": "num_edges",

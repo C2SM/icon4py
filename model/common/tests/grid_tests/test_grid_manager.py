@@ -27,7 +27,7 @@ if typing.TYPE_CHECKING:
     import netCDF4
 
 try:
-    import netCDF4  # noqa: F811
+    import netCDF4
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
@@ -554,7 +554,9 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
 
 
 @functools.cache
-def init_grid_manager(fname, num_levels=65, transformation=ToGt4PyTransformation()):
+def init_grid_manager(fname, num_levels=65, transformation=None):
+    if transformation is None:
+        transformation = ToGt4PyTransformation()
     grid_manager = GridManager(transformation, fname, VerticalGridSize(num_levels))
     grid_manager()
     return grid_manager
@@ -605,7 +607,8 @@ def test_gridmanager_given_file_not_found_then_abort():
 @pytest.mark.with_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size):
     trafo = ToGt4PyTransformation()
-    input_field = np.random.randint(-1, size, (size,))
+    rng = np.random.default_rng()
+    input_field = rng.integers(-1, size, size)
     offset = trafo.get_offset_for_index_field(input_field)
     expected = np.where(input_field >= 0, -1, 0)
     assert np.allclose(expected, offset)

@@ -24,13 +24,13 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,
 )
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fixture
     check_comm_size,
     processor_props,
@@ -110,7 +110,10 @@ def test_run_solve_nonhydro_single_step(
     lprep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp_v.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim),
     )
 
     nnow = 0

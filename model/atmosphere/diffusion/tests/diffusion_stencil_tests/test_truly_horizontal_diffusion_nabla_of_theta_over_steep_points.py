@@ -89,7 +89,6 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
         z_temp: np.array,
         **kwargs,
     ) -> dict:
-
         z_temp = truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
             grid,
             mask,
