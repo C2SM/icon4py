@@ -1013,9 +1013,7 @@ class SolveNonhydro:
                 },
             )
 
-            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(
-                backend
-            )(
+            compute_horizontal_gradient_of_exner_pressure_for_multiple_levels.with_backend(backend)(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,

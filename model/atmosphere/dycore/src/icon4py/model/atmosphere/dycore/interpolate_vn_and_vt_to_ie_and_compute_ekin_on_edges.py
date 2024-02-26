@@ -18,7 +18,9 @@ from gt4py.next.ffront.fbuiltins import Field, int32
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import _interpolate_vt_to_interface_edges
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
+    _interpolate_vt_to_interface_edges,
+)
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
