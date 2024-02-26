@@ -464,43 +464,53 @@ def test_compute_e_bln_c_s(
     assert np.allclose(e_bln_c_s, e_bln_c_s_ref)
 
 @pytest.mark.datatest
-def test_compute_e_bln_c_s(
+def test_compute_pos_on_tplane_e(
     grid_savepoint, interpolation_savepoint, icon_grid
 ):
-    pos_on_tplane_e_ref = interpolation_savepoint.e_bln_c_s().asnumpy()
-    grid_sphere_radius = grid_savepoint.grid_sphere_radius().asnumpy()
+    pos_on_tplane_e_ref = interpolation_savepoint.pos_on_tplane_e().asnumpy()
+    sphere_radius = grid_savepoint.sphere_radius().asnumpy()
     primal_normal_v1 = grid_savepoint.primal_normal_v1().asnumpy()
     primal_normal_v2 = grid_savepoint.primal_normal_v1().asnumpy()
     dual_normal_v1 = grid_savepoint.dual_normal_v1().asnumpy()
     dual_normal_v2 = grid_savepoint.dual_normal_v2().asnumpy()
     owner_mask = grid_savepoint.e_owner_mask().asnumpy()
-    E2C = icon_grid.connectivities[E2CDim]
-    cells_lat = grid_savepoint.cell_center_lat().asnumpy()
     cells_lon = grid_savepoint.cell_center_lon().asnumpy()
-    edges_lat = grid_savepoint.edges_center_lat().asnumpy()
+    cells_lat = grid_savepoint.cell_center_lat().asnumpy()
     edges_lon = grid_savepoint.edges_center_lon().asnumpy()
-    lateral_boundary_cells = np.arange(2)
-    lateral_boundary_cells[0] = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    edges_lat = grid_savepoint.edges_center_lat().asnumpy()
+    verts_lon = grid_savepoint.verts_vertex_lon().asnumpy()
+    verts_lat = grid_savepoint.verts_vertex_lat().asnumpy()
+    E2C = icon_grid.connectivities[E2CDim]
+    E2V = icon_grid.connectivities[E2VDim]
+    E2C2E = icon_grid.connectivities[E2C2EDim]
+    lateral_boundary_edges = np.arange(2)
+    lateral_boundary_edges[0] = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
-    lateral_boundary_cells[1] = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+    lateral_boundary_edges[1] = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
     )
-    pos_on_tplane_e = np.zeros([lateral_boundary_cells[1], 3])
+    pos_on_tplane_e = np.zeros([lateral_boundary_edges[1], 8, 2])
     pos_on_tplane_e = compute_pos_on_tplane_e(
         pos_on_tplane_e,
-        grid_sphere_radius,
+        sphere_radius,
         primal_normal_v1,
         primal_normal_v2,
         dual_normal_v1,
         dual_normal_v2,
-        cells_lat,
         cells_lon,
-        edges_lat,
+        cells_lat,
         edges_lon,
+        edges_lat,
+        verts_lon,
+        verts_lat,
         owner_mask,
         E2C,
+        E2V,
+        E2C2E,
     )
+    print(pos_on_tplane_e_ref)
+    print(pos_on_tplane_e)
     assert np.allclose(pos_on_tplane_e, pos_on_tplane_e_ref)

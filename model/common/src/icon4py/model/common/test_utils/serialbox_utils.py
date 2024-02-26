@@ -134,6 +134,27 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def verts_vertex_lat(self):
+        return self._get_field("verts_vertex_lat", VertexDim)
+
+    def verts_vertex_lon(self):
+        return self._get_field("verts_vertex_lon", VertexDim)
+
+    def primal_normal_v1(self):
+        return self._get_field("primal_normal_v1", EdgeDim)
+
+    def primal_normal_v2(self):
+        return self._get_field("primal_normal_v2", EdgeDim)
+
+    def dual_normal_v1(self):
+        return self._get_field("dual_normal_v1", EdgeDim)
+
+    def dual_normal_v2(self):
+        return self._get_field("dual_normal_v2", EdgeDim)
+
+    def sphere_radius(self):
+        return self._get_field("grid_sphere_radius")
+
     def edges_center_lat(self):
         return self._get_field("edges_center_lat", EdgeDim)
 
@@ -500,6 +521,9 @@ class InterpolationSavepoint(IconSavepoint):
 
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
+
+    def pos_on_tplane_e(self):
+        return self._get_field("pos_on_tplane_e", EdgeDim, E2C2EDim, E2CDim)
 
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", EdgeDim, E2CDim)

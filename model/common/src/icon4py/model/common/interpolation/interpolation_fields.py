@@ -583,12 +583,16 @@ def compute_pos_on_tplane_e(
     primal_normal_v2: np.array,
     dual_normal_v1: np.array,
     dual_normal_v2: np.array,
-    cells_lat: np.array,
     cells_lon: np.array,
-    edges_lat: np.array,
+    cells_lat: np.array,
     edges_lon: np.array,
+    edges_lat: np.array,
+    vertex_lon: np.array,
+    vertex_lat: np.array,
     owner_mask: np.array,
     E2C: np.array,
+    E2V: np.array,
+    E2C2E: np.array,
 ) -> np.array:
     #     get geographical coordinates of edge midpoint
     #     get line and block indices of neighbour cells
@@ -596,11 +600,36 @@ def compute_pos_on_tplane_e(
     #     projection first cell center into local \lambda-\Phi-system
     #     get geographical coordinates of second cell center
     #     projection second cell center into local \lambda-\Phi-system
+    xyloc_plane_n1 = np.zeros([2, 31558])
+    xyloc_plane_n2 = np.zeros([2, 31558])
     xyloc_plane_n1[0], xyloc_plane_n1[1] = gnomonic_proj(edges_lon, edges_lat, cells_lon[E2C[:, 0]], cells_lat[E2C[:, 0]])
     xyloc_plane_n2[0], xyloc_plane_n2[1] = gnomonic_proj(edges_lon, edges_lat, cells_lon[E2C[:, 1]], cells_lat[E2C[:, 1]])
+
+    xyloc_quad = np.zeros([4, 2, 31558])
+    xyloc_plane_quad = np.zeros([4, 2, 31558])
+    for ne in range(4):
+        xyloc_quad[ne, 0] = edges_lon[E2C2E[:, ne]]
+        xyloc_quad[ne, 1] = edges_lat[E2C2E[:, ne]]
+        xyloc_plane_quad[ne, 0], xyloc_plane_quad[ne, 1] = gnomonic_proj(edges_lon, edges_lat, xyloc_quad[ne, 0], xyloc_quad[ne, 1])
+
+    xyloc_ve = np.zeros([2, 2, 31558])
+    xyloc_plane_ve = np.zeros([2, 2, 31558])
+    for nv in range(2):
+        xyloc_ve[nv, 0] = vertex_lon[E2V[:, nv]]
+        xyloc_ve[nv, 1] = vertex_lat[E2V[:, nv]]
+        xyloc_plane_ve[nv, 0], xyloc_plane_ve[nv, 1] = gnomonic_proj(edges_lon, edges_lat, xyloc_ve[nv, 0], xyloc_ve[nv, 1])
 
     pos_on_tplane_e[:, 0, 0] = grid_sphere_radius * (xyloc_plane_n1[0] * primal_normal_v1 + xyloc_plane_n1[1] * primal_normal_v2)
     pos_on_tplane_e[:, 0, 1] = grid_sphere_radius * (xyloc_plane_n1[0] * dual_normal_v1 + xyloc_plane_n1[1] * dual_normal_v2)
     pos_on_tplane_e[:, 1, 0] = grid_sphere_radius * (xyloc_plane_n2[0] * primal_normal_v1 + xyloc_plane_n2[1] * primal_normal_v2)
     pos_on_tplane_e[:, 1, 1] = grid_sphere_radius * (xyloc_plane_n2[0] * dual_normal_v1 + xyloc_plane_n2[1] * dual_normal_v2)
+
+    for ne in range(4):
+        pos_on_tplane_e[:, 2 + ne, 0] = grid_sphere_radius * (xyloc_plane_quad[ne, 0] * primal_normal_v1 + xyloc_plane_quad[ne, 1] * primal_normal_v2)
+        pos_on_tplane_e[:, 2 + ne, 1] = grid_sphere_radius * (xyloc_plane_quad[ne, 0] * dual_normal_v1 + xyloc_plane_quad[ne, 1] * dual_normal_v2)
+
+    for nv in range(2):
+        pos_on_tplane_e[:, 6 + nv, 0] = grid_sphere_radius * (xyloc_plane_ve[nv, 0] * primal_normal_v1 + xyloc_plane_ve[nv, 1] * primal_normal_v2)
+        pos_on_tplane_e[:, 6 + nv, 1] = grid_sphere_radius * (xyloc_plane_ve[nv, 0] * dual_normal_v1 + xyloc_plane_ve[nv, 1] * dual_normal_v2)
+
     return pos_on_tplane_e
