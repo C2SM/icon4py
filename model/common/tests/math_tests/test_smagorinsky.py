@@ -10,11 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import numpy as np
 import pytest
 
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 from icon4py.model.common.test_utils.reference_funcs import (
@@ -22,11 +22,10 @@ from icon4py.model.common.test_utils.reference_funcs import (
 )
 
 
-# TODO (magdalena) stencil does not run on embedded backend, broadcast(0.0, (KDim,)) return scalar?
-def test_init_enh_smag_fac(backend):
+# TODO (halungge) stencil does not run on embedded backend, broadcast(0.0, (KDim,)) return scalar?
+def test_init_enh_smag_fac(backend, grid):
     if backend is None:
-        pytest.skip("stencil does not (yet) run on embedded backend")
-    grid = SimpleGrid()
+        pytest.skip("test does not run on embedded backend")
     enh_smag_fac = zero_field(grid, KDim)
     a_vec = random_field(grid, KDim, low=1.0, high=10.0, extend={KDim: 1})
     fac = (0.67, 0.5, 1.3, 0.8)
