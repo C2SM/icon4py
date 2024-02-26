@@ -17,7 +17,7 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -33,25 +33,34 @@ class TestInterpolateVtToIe(StencilTest):
     OUTPUTS = ("z_vt_ie",)
 
     @staticmethod
-    def reference(grid, wgtfac_e: np.array, vt: np.array, **kwargs) -> dict:
-        z_vt_ie = interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt)
-        return dict(
-            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)]
-        )
+    def reference(
+        grid,
+        wgtfac_e: np.array,
+        vt: np.array,
+        z_vt_ie: np.array,
+        horizontal_start: int32,
+        horizontal_end: int32,
+        vertical_start: int32,
+        vertical_end: int32,
+    ) -> dict:
+        subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
+        z_vt_ie = z_vt_ie.copy()
+        z_vt_ie[subset] = interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt)[subset]
+        return dict(z_vt_ie=z_vt_ie)
 
     @pytest.fixture
     def input_data(self, grid):
         wgtfac_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
-        z_vt_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_vt_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,
             vt=vt,
-            z_vt_ie=z_vt_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
-            horizontal_start=int32(1),
-            horizontal_end=int32(grid.num_cells),
+            z_vt_ie=z_vt_ie,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(1),
             vertical_end=int32(grid.num_levels),
         )

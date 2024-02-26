@@ -29,14 +29,22 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _calculate_bdy_divdamp,
     _calculate_scal_divdamp,
+    zero_field,
 )
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import (
+    CellParams,
+    EdgeParams,
+    HorizontalMarkerIndex,
+)
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
+from icon4py.model.common.test_utils.datatest_utils import (
+    GLOBAL_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+)
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.serialbox_utils import IconNonHydroInitSavepoint
 
@@ -84,7 +92,11 @@ def test_validate_divdamp_fields_against_savepoint_values(
         offset_provider={},
     )
     _calculate_bdy_divdamp.with_backend(backend)(
-        scal_divdamp, config.nudge_max_coeff, constants.dbl_eps, out=bdy_divdamp, offset_provider={}
+        scal_divdamp,
+        config.nudge_max_coeff,
+        constants.dbl_eps,
+        out=bdy_divdamp,
+        offset_provider={},
     )
 
     assert dallclose(scal_divdamp.asnumpy(), savepoint_nonhydro_init.scal_divdamp().asnumpy())
@@ -96,8 +108,18 @@ def test_validate_divdamp_fields_against_savepoint_values(
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (
+            REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            12500.0,
+        ),
+        (
+            GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+            50000.0,
+        ),
     ],
 )
 def test_nonhydro_predictor_step(
@@ -481,8 +503,18 @@ def create_vertical_params(damping_height, grid_savepoint):
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (
+            REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            12500.0,
+        ),
+        (
+            GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+            50000.0,
+        ),
     ],
 )
 def test_nonhydro_corrector_step(
@@ -516,10 +548,13 @@ def test_nonhydro_corrector_step(
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
-    nnow = 0  # TODO: @abishekg7 read from serialized data?
+    nnow = 0
     nnew = 1
 
     diagnostic_state_nh = construct_diagnostics(sp)
@@ -608,7 +643,8 @@ def test_nonhydro_corrector_step(
     )
 
     assert dallclose(
-        prognostic_state_ls[nnew].exner.asnumpy(), savepoint_nonhydro_exit.exner_new().asnumpy()
+        prognostic_state_ls[nnew].exner.asnumpy(),
+        savepoint_nonhydro_exit.exner_new().asnumpy(),
     )
 
     assert dallclose(
@@ -628,7 +664,9 @@ def test_nonhydro_corrector_step(
     )
     # stencil 31
     assert dallclose(
-        solve_nonhydro.z_vn_avg.asnumpy(), savepoint_nonhydro_exit.z_vn_avg().asnumpy(), rtol=5e-7
+        solve_nonhydro.z_vn_avg.asnumpy(),
+        savepoint_nonhydro_exit.z_vn_avg().asnumpy(),
+        rtol=5e-7,
     )
 
     # stencil 32
@@ -663,8 +701,18 @@ def test_nonhydro_corrector_step(
 @pytest.mark.parametrize(
     "experiment,step_date_init, step_date_exit, damping_height",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (
+            REGIONAL_EXPERIMENT,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            12500.0,
+        ),
+        (
+            GLOBAL_EXPERIMENT,
+            "2000-01-01T00:00:02.000",
+            "2000-01-01T00:00:02.000",
+            50000.0,
+        ),
     ],
 )
 def test_run_solve_nonhydro_single_step(
@@ -697,7 +745,10 @@ def test_run_solve_nonhydro_single_step(
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
     nnow = 0
@@ -776,6 +827,7 @@ def test_run_solve_nonhydro_single_step(
     )
 
 
+@pytest.mark.slow_tests
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize(
@@ -809,7 +861,10 @@ def test_run_solve_nonhydro_multi_step(
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
     nnow = 0

@@ -588,7 +588,6 @@ class TestDivideFluxAreaListStencil01(StencilTest):
         dreg_patch2_3_lon_vmask,
         dreg_patch2_3_lat_vmask,
     ):
-
         dreg_patch2_1_lon_vmask = np.where(
             mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
         )

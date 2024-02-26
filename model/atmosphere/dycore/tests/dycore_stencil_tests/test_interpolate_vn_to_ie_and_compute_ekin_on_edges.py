@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -55,16 +55,29 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
     PROGRAM = interpolate_vn_to_ie_and_compute_ekin_on_edges
     OUTPUTS = ("vn_ie", "z_kin_hor_e")
 
-    @classmethod
-    def reference(cls, grid, wgtfac_e: np.array, vn: np.array, vt: np.array, **kwargs) -> dict:
-        vn_ie, z_kin_hor_e = interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(
-            grid, wgtfac_e, vn, vt
+    @staticmethod
+    def reference(
+        grid,
+        wgtfac_e: np.array,
+        vn: np.array,
+        vt: np.array,
+        vn_ie: np.array,
+        z_kin_hor_e: np.array,
+        horizontal_start: int32,
+        horizontal_end: int32,
+        vertical_start: int32,
+        vertical_end: int32,
+    ) -> dict:
+        subset = (slice(horizontal_start, horizontal_end), slice(vertical_start, vertical_end))
+        vn_ie, z_kin_hor_e = vn_ie.copy(), z_kin_hor_e.copy()
+        vn_ie[subset], z_kin_hor_e[subset] = (
+            x[subset]
+            for x in interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy(grid, wgtfac_e, vn, vt)
         )
+
         return dict(
-            vn_ie=vn_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
-            z_kin_hor_e=z_kin_hor_e[
-                int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)
-            ],
+            vn_ie=vn_ie,
+            z_kin_hor_e=z_kin_hor_e,
         )
 
     @pytest.fixture
@@ -73,19 +86,17 @@ class TestInterpolateVnToIeAndComputeEkinOnEdges(StencilTest):
         vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
         vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
-        vn_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_kin_hor_e = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_kin_hor_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_e=wgtfac_e,
             vn=vn,
             vt=vt,
-            vn_ie=vn_ie[int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)],
-            z_kin_hor_e=z_kin_hor_e[
-                int32(1) : int32(grid.num_cells), int32(1) : int32(grid.num_levels)
-            ],
-            horizontal_start=int32(1),
-            horizontal_end=int32(grid.num_cells),
+            vn_ie=vn_ie,
+            z_kin_hor_e=z_kin_hor_e,
+            horizontal_start=int32(0),
+            horizontal_end=int32(grid.num_edges),
             vertical_start=int32(1),
             vertical_end=int32(grid.num_levels),
         )

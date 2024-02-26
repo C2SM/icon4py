@@ -15,7 +15,7 @@ import inspect
 from collections import OrderedDict
 from importlib.resources import files
 from types import MappingProxyType
-from typing import Any, Sequence
+from typing import Any, ClassVar, Sequence
 
 import cffi
 import gt4py.next as gtx
@@ -31,7 +31,7 @@ CFFI_GEN_DECORATOR = "@CffiMethod.register"
 
 
 class CffiMethod:
-    _registry: dict[str, list[str]] = {}
+    _registry: ClassVar[dict[str, list[str]]] = {}
 
     @classmethod
     def register(cls, func):

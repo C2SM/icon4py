@@ -39,10 +39,10 @@ class CodeMetadata:
                 params.update(ctx.parent.params)
 
             return params
-        except Exception as e:
+        except Exception as err:
             raise MissingClickContextError(
-                f"Cannot fetch click context in this thread as no click command has been executed.\n {e}"
-            )
+                f"Cannot fetch click context in this thread as no click command has been executed.\n {err}"
+            ) from err
 
     @property
     def version(self) -> str:
