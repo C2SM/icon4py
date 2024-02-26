@@ -28,7 +28,7 @@ def interpolate_vt_to_interface_edges_numpy(grid, wgtfac_e: np.array, vt: np.arr
     return z_vt_ie
 
 
-class TestInterpolateVtToInterface_edges(StencilTest):
+class TestInterpolateVtToInterfaceEdges(StencilTest):
     PROGRAM = interpolate_vt_to_interface_edges
     OUTPUTS = ("z_vt_ie",)
 
