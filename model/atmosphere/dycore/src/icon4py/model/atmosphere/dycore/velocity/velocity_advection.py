@@ -42,7 +42,7 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpola
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -215,7 +215,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            interpolate_vt_to_ie.with_backend(backend)(
+            interpolate_vt_to_interface_edges.with_backend(backend)(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,

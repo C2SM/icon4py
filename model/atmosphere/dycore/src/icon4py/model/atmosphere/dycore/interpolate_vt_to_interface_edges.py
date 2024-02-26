@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _interpolate_vt_to_ie(
+def _interpolate_vt_to_interface_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
@@ -33,7 +33,7 @@ def _interpolate_vt_to_ie(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def interpolate_vt_to_ie(
+def interpolate_vt_to_interface_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -42,7 +42,7 @@ def interpolate_vt_to_ie(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _interpolate_vt_to_ie(
+    _interpolate_vt_to_interface_edges(
         wgtfac_e,
         vt,
         out=z_vt_ie,
