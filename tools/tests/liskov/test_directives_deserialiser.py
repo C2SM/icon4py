@@ -116,7 +116,7 @@ def test_data_factories_no_args(factory_class, directive_type, string, startln, 
     factory = factory_class()
     result = factory(parsed)
 
-    if type(result) is list:
+    if isinstance(result, list):
         result = result[0]
 
     assert isinstance(result, expected)
@@ -253,7 +253,7 @@ def test_data_factories_with_args(factory, target, mock_data):
 def test_start_create_factory(mock_data, extra_fields):
     factory = StartCreateDataFactory()
     result = factory(mock_data)
-    if type(result) is list:
+    if isinstance(result, list):
         result = result[0]
     assert isinstance(result, StartCreateData)
     assert result.extra_fields == extra_fields

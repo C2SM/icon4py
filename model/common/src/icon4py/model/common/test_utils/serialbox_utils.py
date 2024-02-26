@@ -94,7 +94,7 @@ class IconSavepoint:
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
             self.sizes[d] if d.kind is DimensionKind.HORIZONTAL else s
-            for s, d in zip(buffer.shape, dimensions)
+            for s, d in zip(buffer.shape, dimensions, strict=False)
         )
         buffer = buffer[tuple(map(slice, buffer_size))]
         return buffer
@@ -276,7 +276,7 @@ class IconGridSavepoint(IconSavepoint):
 
     @staticmethod
     def _read_field_for_dim(field_name, read_func, dim: Dimension):
-        match (dim):
+        match dim:
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
             case dimension.EdgeDim:
@@ -520,6 +520,9 @@ class MetricSavepoint(IconSavepoint):
 
     def theta_ref_ic(self):
         return self._get_field("theta_ref_ic", CellDim, KDim)
+
+    def z_ifc(self):
+        return self._get_field("z_ifc", CellDim, KDim)
 
     def theta_ref_me(self):
         return self._get_field("theta_ref_me", EdgeDim, KDim)
@@ -1110,7 +1113,7 @@ class IconSerialDataProvider:
         self.rank = mpi_rank
         self.serializer: ser.Serializer = None
         self.file_path: str = path
-        self.fname = f"{fname_prefix}_rank{str(self.rank)}"
+        self.fname = f"{fname_prefix}_rank{self.rank!s}"
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
         self.grid_size = self._grid_size()

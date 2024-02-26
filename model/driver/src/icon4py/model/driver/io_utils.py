@@ -29,7 +29,10 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
+from icon4py.model.common.decomposition.definitions import (
+    DecompositionInfo,
+    ProcessProperties,
+)
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
@@ -229,7 +232,10 @@ def read_decomp_info(
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[
-    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
+    DiffusionMetricState,
+    DiffusionInterpolationState,
+    MetricStateNonHydro,
+    InterpolationState,
 ]:
     """
     Read fields for metric and interpolation state.

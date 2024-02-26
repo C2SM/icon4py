@@ -115,12 +115,14 @@ class ParsedGranuleDeserialiser:
 
     def _make_init_data(self) -> InitData:
         """Create an `InitData` object and sets it to the `Init` key in the `data` dictionary."""
-        first_intent_in_subroutine = [
-            var_dict
-            for intent_dict in self.parsed.subroutines.values()
-            for intent, var_dict in intent_dict.items()
-            if intent == "in"
-        ][0]
+        first_intent_in_subroutine = next(
+            (
+                var_dict
+                for intent_dict in self.parsed.subroutines.values()
+                for intent, var_dict in intent_dict.items()
+                if intent == "in"
+            )
+        )
 
         startln = self._get_codegen_line(first_intent_in_subroutine["codegen_ctx"], "init")
 

@@ -14,8 +14,7 @@
 import os
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
-from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
+from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
 
 def pytest_configure(config):
@@ -48,7 +47,7 @@ def pytest_addoption(parser):
             "--backend",
             action="store",
             default="roundtrip",
-            help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
+            help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
         pass
@@ -89,9 +88,9 @@ def pytest_generate_tests(metafunc):
 
         backends = {
             "embedded": None,
-            "roundtrip": run_roundtrip,
-            "gtfn_cpu": run_gtfn,
-            "gtfn_gpu": run_gtfn_gpu,
+            "roundtrip": itir_python,
+            "gtfn_cpu": gtfn_cpu,
+            "gtfn_gpu": gtfn_gpu,
         }
         gpu_backends = ["gtfn_gpu"]
 
@@ -143,6 +142,6 @@ def pytest_generate_tests(metafunc):
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
-        except ValueError as e:
+        except ValueError as err:
             available_grids = ["simple_grid", "icon_grid"]
-            raise Exception(f"{e}. Select from: {available_grids}")
+            raise Exception(f"{err}. Select from: {available_grids}") from err
