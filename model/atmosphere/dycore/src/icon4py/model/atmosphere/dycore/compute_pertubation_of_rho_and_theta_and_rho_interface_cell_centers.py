@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+def _compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -45,7 +45,7 @@ def _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+def compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -59,7 +59,7 @@ def compute_pertubation_of_rho_and_theta_and_rho_at_ic(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+    _compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers(
         wgtfac_c,
         rho,
         rho_ref_mc,

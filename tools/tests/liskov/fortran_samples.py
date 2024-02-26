@@ -128,7 +128,7 @@ MULTIPLE_STENCILS = """\
     !$DSL         z_rth_pr_1=nproma,p_patch%nlev,p_patch%nblks_c; z_rth_pr_2=nproma,p_patch%nlev,p_patch%nblks_c; &
     !$DSL         rho_ic=nproma,p_patch%nlev,p_patch%nblks_c)
 
-    !$DSL START STENCIL(name=compute_pertubation_of_rho_and_theta_and_rho_at_ic; wgtfac_c=p_nh%metrics%wgtfac_c(:,:,1); rho=p_nh%prog(nnow)%rho(:,:,1); rho_ref_mc=p_nh%metrics%rho_ref_mc(:,:,1); &
+    !$DSL START STENCIL(name=compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers; wgtfac_c=p_nh%metrics%wgtfac_c(:,:,1); rho=p_nh%prog(nnow)%rho(:,:,1); rho_ref_mc=p_nh%metrics%rho_ref_mc(:,:,1); &
     !$DSL               theta_v=p_nh%prog(nnow)%theta_v(:,:,1); theta_ref_mc=p_nh%metrics%theta_ref_mc(:,:,1); rho_ic=p_nh%diag%rho_ic(:,:,1); z_rth_pr_1=z_rth_pr(:,:,1,1); &
     !$DSL               z_rth_pr_2=z_rth_pr(:,:,1,2); vertical_lower=2; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
               !$ACC PARALLEL IF(i_am_accel_node) DEFAULT(NONE) ASYNC(1)
@@ -155,7 +155,7 @@ MULTIPLE_STENCILS = """\
               !$ACC END PARALLEL
     #endif
 
-    !$DSL END STENCIL(name=compute_pertubation_of_rho_and_theta_and_rho_at_ic)
+    !$DSL END STENCIL(name=compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers)
 
 
     !$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary; &
