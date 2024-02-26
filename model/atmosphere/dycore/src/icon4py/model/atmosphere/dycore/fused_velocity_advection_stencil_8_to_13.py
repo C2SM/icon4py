@@ -22,8 +22,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
+from icon4py.model.atmosphere.dycore.return_cell_kdim_field_to_zero_vp import (
+    _return_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -64,7 +64,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     z_w_con_c = where(
         k < nlev,
         _copy_cell_kdim_field_to_vp(w),
-        _set_cell_kdim_field_to_zero_vp(),
+        _return_cell_kdim_field_to_zero_vp(),
     )
 
     z_w_con_c = where(
@@ -103,7 +103,7 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
     z_w_con_c = where(
         k < nlev,
         _copy_cell_kdim_field_to_vp(w),
-        _set_cell_kdim_field_to_zero_vp(),
+        _return_cell_kdim_field_to_zero_vp(),
     )
 
     z_w_con_c = where(

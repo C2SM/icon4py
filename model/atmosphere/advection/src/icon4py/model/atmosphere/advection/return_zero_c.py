@@ -11,22 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import pytest
+from gt4py.next.common import Field, GridType
+from gt4py.next.ffront.decorator import field_operator, program
+from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.atmosphere.advection.set_zero_c import set_zero_c
 from icon4py.model.common.dimension import CellDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-class TestSetZeroCellK(StencilTest):
-    PROGRAM = set_zero_c
-    OUTPUTS = ("field",)
+@field_operator
+def _return_zero_c() -> Field[[CellDim], float]:
+    return broadcast(0.0, (CellDim,))
 
-    @staticmethod
-    def reference(grid, **kwargs):
-        return dict(field=zero_field(grid, CellDim).asnumpy())
 
-    @pytest.fixture
-    def input_data(self, grid):
-        field = random_field(grid, CellDim)
-        return dict(field=field)
+@program(grid_type=GridType.UNSTRUCTURED)
+def return_zero_c(field: Field[[CellDim], float]):
+    _return_zero_c(out=field)

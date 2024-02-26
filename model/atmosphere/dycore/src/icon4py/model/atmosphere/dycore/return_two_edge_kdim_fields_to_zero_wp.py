@@ -20,7 +20,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _set_two_edge_kdim_fields_to_zero_wp() -> (
+def _return_two_edge_kdim_fields_to_zero_wp() -> (
     tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]
 ):
     """Formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33."""
@@ -28,7 +28,7 @@ def _set_two_edge_kdim_fields_to_zero_wp() -> (
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def set_two_edge_kdim_fields_to_zero_wp(
+def return_two_edge_kdim_fields_to_zero_wp(
     edge_kdim_field_to_zero_wp_1: Field[[EdgeDim, KDim], wpfloat],
     edge_kdim_field_to_zero_wp_2: Field[[EdgeDim, KDim], wpfloat],
     horizontal_start: int32,
@@ -36,7 +36,7 @@ def set_two_edge_kdim_fields_to_zero_wp(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _set_two_edge_kdim_fields_to_zero_wp(
+    _return_two_edge_kdim_fields_to_zero_wp(
         out=(edge_kdim_field_to_zero_wp_1, edge_kdim_field_to_zero_wp_2),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
