@@ -28,11 +28,15 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.common.dimension import CEDim
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    dallclose,
+    zero_field,
+)
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
@@ -133,7 +137,10 @@ def test_run_timeloop_single_step(
     # do_prep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v

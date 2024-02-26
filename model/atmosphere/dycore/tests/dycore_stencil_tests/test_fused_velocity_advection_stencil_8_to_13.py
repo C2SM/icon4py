@@ -15,21 +15,18 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_14 import (
-    fused_velocity_advection_stencil_8_to_14,
+from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_13 import (
+    fused_velocity_advection_stencil_8_to_13,
 )
+from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
     random_field,
-    random_mask,
     zero_field,
 )
 
-from .test_compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
-    compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy,
-)
 from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
     correct_contravariant_vertical_velocity_numpy,
@@ -39,13 +36,11 @@ from .test_interpolate_to_half_levels_vp import interpolate_to_half_levels_vp_nu
 from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
-class TestFusedVelocityAdvectionStencil8To14(StencilTest):
-    PROGRAM = fused_velocity_advection_stencil_8_to_14
+class TestFusedVelocityAdvectionStencil8To13(StencilTest):
+    PROGRAM = fused_velocity_advection_stencil_8_to_13
     OUTPUTS = (
         "z_ekinh",
-        "cfl_clipping",
-        "pre_levelmask",
-        "vcfl",
+        "w_concorr_c",
         "z_w_con_c",
     )
 
@@ -57,76 +52,52 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         z_w_concorr_me,
         wgtfac_c,
         w,
-        ddqz_z_half,
-        cfl_clipping,
-        pre_levelmask,
-        vcfl,
         z_w_concorr_mc,
         w_concorr_c,
         z_ekinh,
         k,
         istep,
-        cfl_w_limit,
-        dtime,
-        nlevp1,
         nlev,
         nflatlev,
-        nrdmax,
         z_w_con_c,
         **kwargs,
     ):
+        k_nlev = k[:-1]
 
         z_ekinh = np.where(
-            k < nlev,
+            k_nlev < nlev,
             interpolate_to_cell_center_numpy(grid, z_kin_hor_e, e_bln_c_s),
             z_ekinh,
         )
 
         if istep == 1:
             z_w_concorr_mc = np.where(
-                (nflatlev < k) & (k < nlev),
+                (nflatlev <= k_nlev) & (k_nlev < nlev),
                 interpolate_to_cell_center_numpy(grid, z_w_concorr_me, e_bln_c_s),
                 z_w_concorr_mc,
             )
 
             w_concorr_c = np.where(
-                (nflatlev + 1 < k) & (k < nlev),
-                interpolate_to_half_levels_vp_numpy(
-                    grid=grid, interpolant=z_w_concorr_mc, wgtfac_c=wgtfac_c
-                ),
+                (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
+                interpolate_to_half_levels_vp_numpy(grid, z_w_concorr_mc, wgtfac_c),
                 w_concorr_c,
             )
 
         z_w_con_c = np.where(
-            k < nlevp1,
+            k < nlev,
             copy_cell_kdim_field_to_vp_numpy(w),
             set_cell_kdim_field_to_zero_vp_numpy(z_w_con_c),
         )
 
-        z_w_con_c = np.where(
-            (nflatlev + 1 < k) & (k < nlev),
-            correct_contravariant_vertical_velocity_numpy(z_w_con_c, w_concorr_c),
-            z_w_con_c,
+        z_w_con_c[:, :-1] = np.where(
+            (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
+            correct_contravariant_vertical_velocity_numpy(z_w_con_c[:, :-1], w_concorr_c),
+            z_w_con_c[:, :-1],
         )
-
-        condition = (np.maximum(3, nrdmax - 2) < k) & (k < nlev - 3)
-        (
-            cfl_clipping_new,
-            vcfl_new,
-            z_w_con_c_new,
-        ) = compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
-            grid, ddqz_z_half, z_w_con_c, cfl_w_limit, dtime
-        )
-
-        cfl_clipping = np.where(condition, cfl_clipping_new, cfl_clipping)
-        vcfl = np.where(condition, vcfl_new, vcfl)
-        z_w_con_c = np.where(condition, z_w_con_c_new, z_w_con_c)
 
         return dict(
             z_ekinh=z_ekinh,
-            cfl_clipping=cfl_clipping,
-            pre_levelmask=pre_levelmask,
-            vcfl=vcfl,
+            w_concorr_c=w_concorr_c,
             z_w_con_c=z_w_con_c,
         )
 
@@ -139,48 +110,37 @@ class TestFusedVelocityAdvectionStencil8To14(StencilTest):
         z_w_concorr_mc = zero_field(grid, CellDim, KDim)
         wgtfac_c = random_field(grid, CellDim, KDim)
         w_concorr_c = zero_field(grid, CellDim, KDim)
-        w = random_field(grid, CellDim, KDim)
-        z_w_con_c = zero_field(grid, CellDim, KDim)
-        ddqz_z_half = random_field(grid, CellDim, KDim)
-        cfl_clipping = random_mask(grid, CellDim, KDim, dtype=bool)
-        pre_levelmask = random_mask(
-            grid, CellDim, KDim, dtype=bool
-        )  # TODO should be just a K field
+        w = random_field(grid, CellDim, KDim, extend={KDim: 1})
+        z_w_con_c = zero_field(grid, CellDim, KDim, extend={KDim: 1})
 
-        vcfl = zero_field(grid, CellDim, KDim)
-        cfl_w_limit = 5.0
-        dtime = 9.0
+        k = indices_field(KDim, grid, is_halfdim=True, dtype=int32)
 
-        k = zero_field(grid, KDim, dtype=int32)
-        for level in range(grid.num_levels):
-            k[level] = level
-
-        nlevp1 = grid.num_levels + 1
         nlev = grid.num_levels
         nflatlev = 13
-        nrdmax = 10
 
         istep = 1
+
+        horizontal_start = 0
+        horizontal_end = grid.num_cells
+        vertical_start = 0
+        vertical_end = nlev + 1
+
         return dict(
             z_kin_hor_e=z_kin_hor_e,
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,
-            ddqz_z_half=ddqz_z_half,
-            cfl_clipping=cfl_clipping,
-            pre_levelmask=pre_levelmask,
-            vcfl=vcfl,
             z_w_concorr_mc=z_w_concorr_mc,
             w_concorr_c=w_concorr_c,
             z_ekinh=z_ekinh,
+            z_w_con_c=z_w_con_c,
             k=k,
             istep=istep,
-            cfl_w_limit=cfl_w_limit,
-            dtime=dtime,
-            nlevp1=nlevp1,
             nlev=nlev,
             nflatlev=nflatlev,
-            nrdmax=nrdmax,
-            z_w_con_c=z_w_con_c,
+            horizontal_start=horizontal_start,
+            horizontal_end=horizontal_end,
+            vertical_start=vertical_start,
+            vertical_end=vertical_end,
         )

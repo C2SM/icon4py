@@ -60,7 +60,7 @@ class TestFaceValPpmStencil02(StencilTest):
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim)[0], dtype=int32))
         slev = int32(1)
         slevp1 = slev + int32(1)
-        elev = k[-3]
+        elev = int32(k[-3].as_scalar())
         elevp1 = elev + int32(1)
 
         return dict(
