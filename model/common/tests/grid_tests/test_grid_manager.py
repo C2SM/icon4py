@@ -20,7 +20,10 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
+from icon4py.model.common.test_utils.datatest_utils import (
+    GLOBAL_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+)
 
 
 if typing.TYPE_CHECKING:
@@ -111,14 +114,21 @@ MCH_CH_R04B09_EDGE_DOMAINS = {
 def simple_grid_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_GRID_NC).absolute()
     grid = SimpleGrid()
+
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
+    dataset.setncattr(GridFile.PropertyName.LEVEL, 0)
+    dataset.setncattr(GridFile.PropertyName.ROOT, 0)
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=grid.num_vertices)
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=grid.num_edges)
     dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=grid.num_cells)
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[E2VDim])
-    dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=grid.size[E2C2EDim])
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[E2VDim]
+    )
+    dataset.createDimension(
+        GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=grid.size[E2C2EDim]
+    )
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
     dataset.createDimension(GridFile.DimensionName.CELL_GRF, size=14)
@@ -144,8 +154,12 @@ def simple_grid_gridfile(tmp_path):
         (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[C2EDim])
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[V2CDim])
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[C2EDim]
+    )
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[V2CDim]
+    )
 
     _add_to_dataset(
         dataset,
@@ -277,7 +291,9 @@ def test_gridparser_dimension(simple_grid_gridfile):
     grid_parser = GridFile(data)
     grid = SimpleGrid()
     assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == grid.num_cells
-    assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == grid.num_vertices
+    assert (
+        grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == grid.num_vertices
+    )
     assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == grid.num_edges
 
 
@@ -292,9 +308,15 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
     dataset = netCDF4.Dataset(file, "r")
     grid_file = GridFile(dataset)
 
-    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
-    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
-    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
+    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(
+        CellDim
+    )
+    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(
+        EdgeDim
+    )
+    assert grid_file.dimension(
+        GridFile.DimensionName.VERTEX_NAME
+    ) == grid_savepoint.num(VertexDim)
 
 
 @pytest.mark.with_netcdf
@@ -304,10 +326,18 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
     grid = SimpleGrid()
     grid_parser = GridFile(data)
 
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), grid.connectivities[C2EDim])
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.E2C), grid.connectivities[E2CDim])
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2E), grid.connectivities[V2EDim])
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), grid.connectivities[V2CDim])
+    assert np.allclose(
+        grid_parser.int_field(GridFile.OffsetName.C2E), grid.connectivities[C2EDim]
+    )
+    assert np.allclose(
+        grid_parser.int_field(GridFile.OffsetName.E2C), grid.connectivities[E2CDim]
+    )
+    assert np.allclose(
+        grid_parser.int_field(GridFile.OffsetName.V2E), grid.connectivities[V2EDim]
+    )
+    assert np.allclose(
+        grid_parser.int_field(GridFile.OffsetName.V2C), grid.connectivities[V2CDim]
+    )
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -883,7 +913,12 @@ def test_get_start_end_index_for_local_grid(
             R02B04_GLOBAL_NUM_EDGES,
         ),
         (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 0, 0),
-        (VertexDim, HorizontalMarkerIndex.local(VertexDim), 0, R02B04_GLOBAL_NUM_VERTICES),
+        (
+            VertexDim,
+            HorizontalMarkerIndex.local(VertexDim),
+            0,
+            R02B04_GLOBAL_NUM_VERTICES,
+        ),
         (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 0, 0),
         (
             VertexDim,
@@ -911,7 +946,10 @@ def test_get_start_end_index_for_global_grid(
 
 @pytest.mark.parametrize(
     "grid_file, global_num_cells",
-    [(R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS), (MCH_GRID_FILE, MCH_CH_RO4B09_GLOBAL_NUM_CELLS)],
+    [
+        (R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
+        (MCH_GRID_FILE, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+    ],
 )
 def test_grid_level_and_root(grid_file, global_num_cells):
     file = resolve_file_from_gridfile_name(grid_file)

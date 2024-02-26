@@ -27,4 +27,6 @@ from icon4py.model.common.grid.icon import GlobalGridParams
 )
 def test_mean_cell_area_calculation(grid_root, grid_level, expected):
     params = GlobalGridParams(grid_root, grid_level)
-    assert expected == CellParams.mean_cell_area(constants.EARTH_RADIUS, params.num_cells)
+    assert expected == CellParams._compute_mean_cell_area(
+        constants.EARTH_RADIUS, params.num_cells
+    )
