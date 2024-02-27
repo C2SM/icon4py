@@ -154,7 +154,9 @@ class OptionalModulesTransformer(Step):
     def _transform_stencils(self) -> None:
         """Identify stencils to transform based on 'optional_modules_to_enable' and applies necessary changes."""
         stencils_to_remove = []
-        for start_stencil, end_stencil in zip(self.parsed.StartStencil, self.parsed.EndStencil):
+        for start_stencil, end_stencil in zip(
+            self.parsed.StartStencil, self.parsed.EndStencil, strict=False
+        ):
             if self._should_remove_stencil(start_stencil):
                 stencils_to_remove.extend([start_stencil, end_stencil])
 
