@@ -20,13 +20,13 @@ def compute_wgtfacq_c(
 ) -> np.array:
 
     nlev = nlevp1 - 1
-    wgtfacq_c = np.zeros(z_ifc.shape)
+    wgtfacq_c = np.zeros((z_ifc.shape[0], nlevp1))
     z1 = 0.5 * (z_ifc[:, nlev] - z_ifc[:, nlevp1])
     z2 = 0.5 * (z_ifc[:, nlev] + z_ifc[:, nlev - 1]) - z_ifc[:, nlevp1]
     z3 = 0.5 * (z_ifc[:, nlev - 1] + z_ifc[:, nlev - 2]) - z_ifc[:, nlevp1]
 
-    wgtfacq_c[:, 2] = z1 * z2 / (z2 - z3) / (z1 - z3)
-    wgtfacq_c[:, 1] = (z1 - wgtfacq_c[:, 2] * (z1 - z3)) / (z1 - z2)
-    wgtfacq_c[:, 0] = 1.0 - (wgtfacq_c[:, 1] + wgtfacq_c[:, 2])
+    wgtfacq_c[:, nlev - 2] = z1 * z2 / (z2 - z3) / (z1 - z3)
+    wgtfacq_c[:, nlev - 1] = (z1 - wgtfacq_c[:, nlev - 2] * (z1 - z3)) / (z1 - z2)
+    wgtfacq_c[:, nlev] = 1.0 - (wgtfacq_c[:, nlev - 1] + wgtfacq_c[:, nlev - 2])
 
     return wgtfacq_c

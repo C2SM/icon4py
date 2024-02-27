@@ -25,7 +25,6 @@
 
 import pytest
 
-from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.stencils.compute_wgtfacq_c import compute_wgtfacq_c
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
@@ -39,22 +38,13 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
 def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
-    wgtfacq_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    wgtfacq_c_ref = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
     z_ifc = metrics_savepoint.z_ifc()
-
-    # wgtfacq_c not serialized -> infer from wgtfacq_c_dsl
-    wgtfacq_c_ref = wgtfacq_c_ref.asnumpy()
-    wgtfacq_c_ref[:, 0] = wgtfacq_c_dsl.asnumpy()[:, -1]
-    wgtfacq_c_ref[:, 1] = wgtfacq_c_dsl.asnumpy()[:, -2]
-    wgtfacq_c_ref[:, 2] = wgtfacq_c_dsl.asnumpy()[:, -3]
 
     vertical_end = icon_grid.num_levels
 
@@ -62,4 +52,4 @@ def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixtu
         z_ifc.asnumpy(),
         vertical_end,
     )
-    assert dallclose(wgtfacq_c, wgtfacq_c_ref)
+    assert dallclose(wgtfacq_c, wgtfacq_c_dsl.asnumpy())
