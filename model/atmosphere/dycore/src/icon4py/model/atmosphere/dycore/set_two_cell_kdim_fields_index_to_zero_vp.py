@@ -29,7 +29,7 @@ def _set_two_cell_kdim_fields_index_to_zero_vp(
     k: Field[[KDim], int32],
     k1: int32,
     k2: int32,
-) -> (tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]):
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_45 and _mo_solve_nonhydro_stencil_45_b."""
     k = broadcast(k, (CellDim, KDim))
 

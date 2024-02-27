@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import Any, Optional, Protocol, Sequence, Type, cast
+from typing import Any, Callable, ClassVar, Optional, Protocol, Sequence, Type, cast
 
 import icon4pytools.liskov.parsing.parse
 import icon4pytools.liskov.parsing.types as ts
@@ -65,10 +65,10 @@ def _extract_stencil_name(named_args: dict, directive: ts.ParsedDirective) -> st
     """Extract stencil name from directive arguments."""
     try:
         stencil_name = named_args["name"]
-    except KeyError as e:
+    except KeyError as err:
         raise MissingDirectiveArgumentError(
-            f"Missing argument {e} in {directive.type_name} directive on line {directive.startln}."
-        )
+            f"Missing argument {err} in {directive.type_name} directive on line {directive.startln}."
+        ) from err
     return stencil_name
 
 
@@ -79,10 +79,10 @@ def _extract_boolean_kwarg(
     if a := args.get(arg_name):
         try:
             return string_to_bool(a)
-        except Exception:
+        except Exception as err:
             raise DirectiveSyntaxError(
                 f"Expected boolean string as value to keyword argument {arg_name} on line {directive.startln}. Got {a}"
-            )
+            ) from err
     return False
 
 
@@ -343,10 +343,10 @@ class StartStencilDataFactoryBase(DataFactoryBase):
                 vlower=named_args["vertical_lower"],
                 vupper=named_args["vertical_upper"],
             )
-        except Exception:
+        except Exception as err:
             raise MissingBoundsError(
                 f"Missing or invalid bounds provided in stencil: {named_args['name']}"
-            )
+            ) from err
         return bounds
 
     def _make_fields(
@@ -444,7 +444,7 @@ class InsertDataFactory(DataFactoryBase):
 
 
 class IntegrationCodeDeserialiser(Deserialiser):
-    _FACTORIES = {
+    _FACTORIES: ClassVar[dict[str, Callable]] = {
         "StartCreate": StartCreateDataFactory(),
         "EndCreate": EndCreateDataFactory(),
         "Imports": ImportsDataFactory(),

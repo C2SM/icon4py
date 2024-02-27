@@ -136,12 +136,12 @@ def test_decomposition_info_local_index(
     halo_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.HALO)
     assert halo_indices.shape[0] == my_total - my_owned
     assert halo_indices.shape[0] < all_indices.shape[0]
-    assert np.alltrue(halo_indices <= np.max(all_indices))
+    assert np.all(halo_indices <= np.max(all_indices))
 
     owned_indices = decomposition_info.local_index(dim, DecompositionInfo.EntryType.OWNED)
     assert owned_indices.shape[0] == my_owned
     assert owned_indices.shape[0] <= all_indices.shape[0]
-    assert np.alltrue(owned_indices <= np.max(all_indices))
+    assert np.all(owned_indices <= np.max(all_indices))
     _assert_index_partitioning(all_indices, halo_indices, owned_indices)
 
 
@@ -197,7 +197,8 @@ def test_decomposition_info_matches_gridsize(
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_create_multi_node_runtime_with_mpi(
-    download_ser_data, decomposition_info, processor_props  # noqa: F811  # fixture
+    decomposition_info,  # noqa: F811 # fixture
+    processor_props,  # noqa: F811  # fixture
 ):
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
@@ -209,7 +210,8 @@ def test_create_multi_node_runtime_with_mpi(
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
 def test_create_single_node_runtime_without_mpi(
-    processor_props, decomposition_info  # noqa: F811 # fixture
+    processor_props,  # noqa: F811 # fixture
+    decomposition_info,  # noqa: F811 # fixture
 ):
     props = processor_props
     exchange = create_exchange(props, decomposition_info)
