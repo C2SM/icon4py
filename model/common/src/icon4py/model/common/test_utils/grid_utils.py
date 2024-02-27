@@ -32,7 +32,7 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
     if experiment == GLOBAL_EXPERIMENT:
         return _load_from_gridfile("r02b04_global", "icon_grid_0013_R02B04_R.nc", on_gpu=on_gpu)
     elif experiment == REGIONAL_EXPERIMENT:
-        return _load_from_gridfile(REGIONAL_EXPERIMENT, "icon_grid_0013_R02B04_R.nc", on_gpu=on_gpu)
+        return _load_from_gridfile(REGIONAL_EXPERIMENT, "grid.nc", on_gpu=on_gpu)
     else:
         raise ValueError(f"Unknown grid file for: {experiment}")
 
