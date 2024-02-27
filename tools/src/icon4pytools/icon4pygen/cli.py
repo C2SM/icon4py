@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import os
 import pathlib
+from typing import ClassVar
 
 import click
 
 
 class ModuleType(click.ParamType):
     dycore_import_path = "icon4py.model.atmosphere.dycore"
-    names = [
+    names: ClassVar[list[str]] = [
         f"{dycore_import_path}.mo_nh_diffusion_stencil_",
         f"{dycore_import_path}.mo_solve_nonhydro_stencil_",
         f"{dycore_import_path}.mo_velocity_advection_stencil_",

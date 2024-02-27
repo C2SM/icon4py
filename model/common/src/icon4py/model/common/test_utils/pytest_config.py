@@ -47,7 +47,7 @@ def pytest_addoption(parser):
             "--backend",
             action="store",
             default="roundtrip",
-            help="GT4Py backend to use when executing stencils. Defaults to rountrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
+            help="GT4Py backend to use when executing stencils. Defaults to roundtrip backend, other options include gtfn_cpu, gtfn_gpu, and embedded",
         )
     except ValueError:
         pass
@@ -142,6 +142,6 @@ def pytest_generate_tests(metafunc):
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
-        except ValueError as e:
+        except ValueError as err:
             available_grids = ["simple_grid", "icon_grid"]
-            raise Exception(f"{e}. Select from: {available_grids}")
+            raise Exception(f"{err}. Select from: {available_grids}") from err
