@@ -18,7 +18,15 @@ def compute_wgtfacq_c(
     z_ifc: np.array,
     nlevp1: int,
 ) -> np.array:
+    """
+    Compute weighting factor for quadratic interpolation to surface.
 
+    Args:
+        z_ifc: Field[CellDim, KDim] (half levels), geometric height at the vertical interface of cells.
+        nlev: int, last level
+    Returns:
+    Field[CellDim, KDim] (full levels)
+    """
     nlev = nlevp1 - 1
     wgtfacq_c = np.zeros((z_ifc.shape[0], nlevp1))
     z1 = 0.5 * (z_ifc[:, nlev] - z_ifc[:, nlevp1])
