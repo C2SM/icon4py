@@ -29,7 +29,10 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
+from icon4py.model.common.decomposition.definitions import (
+    DecompositionInfo,
+    ProcessProperties,
+)
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
@@ -71,7 +74,7 @@ def read_icon_grid(
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
-            .construct_icon_grid()
+            .construct_icon_grid(on_gpu=False)
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -229,7 +232,10 @@ def read_decomp_info(
 def read_static_fields(
     path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[
-    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState
+    DiffusionMetricState,
+    DiffusionInterpolationState,
+    MetricStateNonHydro,
+    InterpolationState,
 ]:
     """
     Read fields for metric and interpolation state.
@@ -251,7 +257,7 @@ def read_static_fields(
         icon_grid = (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
-            .construct_icon_grid()
+            .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             dataprovider.from_interpolation_savepoint()

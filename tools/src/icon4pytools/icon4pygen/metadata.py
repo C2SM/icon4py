@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
 from gt4py import eve
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
@@ -26,11 +26,16 @@ from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.common.dimension import CellDim, EdgeDim, Koff, VertexDim
 
-from icon4pytools.icon4pygen.exceptions import (
-    InvalidConnectivityException,
-    MultipleFieldOperatorException,
-)
+from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+
+
+H_START = "horizontal_start"
+H_END = "horizontal_end"
+V_START = "vertical_start"
+V_END = "vertical_end"
+
+SPECIAL_DOMAIN_MARKERS = [H_START, H_END, V_START, V_END]
 
 
 @dataclass(frozen=True)
@@ -50,16 +55,16 @@ class FieldInfo:
 
 
 @dataclass
-class DummyConnectivity:
+class DummyConnectivity(Connectivity):
     """Provides static information to the code generator (`max_neighbors`, `has_skip_values`)."""
 
     max_neighbors: int
-    has_skip_values: int
+    has_skip_values: bool
     origin_axis: Dimension
     neighbor_axis: Dimension = Dimension("unused")
     index_type: type[int] = int
 
-    def mapped_index(_, __) -> int:
+    def mapped_index(self, cur_index, neigh_index) -> int:
         raise AssertionError("Unreachable")
         return 0
 
@@ -87,21 +92,20 @@ def _ignore_subscript(node: past.Expr) -> past.Name:
 
 def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
-    assert is_list_of_names(
-        fvprog.past_node.body[0].args
+    assert all(
+        is_list_of_names(body.args) for body in fvprog.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for arg in fvprog.past_node.body[0].args)
+    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args)  # type: ignore[attr-defined] # Checked in the assert
 
-    out_arg = fvprog.past_node.body[0].kwargs["out"]
-    output_fields = (
-        [_ignore_subscript(f) for f in out_arg.elts]
-        if isinstance(out_arg, past.TupleExpr)
-        else [_ignore_subscript(out_arg)]
-    )
+    out_args = (body.kwargs["out"] for body in fvprog.past_node.body)
+    output_fields = []
+    for out_arg in out_args:
+        if isinstance(out_arg, past.TupleExpr):
+            output_fields.extend([_ignore_subscript(f) for f in out_arg.elts])
+        else:
+            output_fields.extend([_ignore_subscript(out_arg)])
     assert all(isinstance(f, past.Name) for f in output_fields)
     output_arg_ids = set(arg.id for arg in output_fields)
-
-    domain_arg_ids = _get_domain_arg_ids(fvprog)
 
     fields: dict[str, FieldInfo] = {
         field_node.id: FieldInfo(
@@ -110,7 +114,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             out=(field_node.id in output_arg_ids),
         )
         for field_node in fvprog.past_node.params
-        if field_node.id not in domain_arg_ids
+        if field_node.id not in SPECIAL_DOMAIN_MARKERS
     }
 
     return fields
@@ -146,9 +150,6 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
             fvprog = fencil_def
         case _:
             fvprog = program(fencil_def)
-
-    if len(fvprog.past_node.body) > 1:
-        raise MultipleFieldOperatorException()
 
     return fvprog
 
@@ -201,6 +202,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         max_neighbors=IcoChainSize.get(location_chain) + include_center,
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
+        neighbor_axis=location_chain[-1],
     )
 
 

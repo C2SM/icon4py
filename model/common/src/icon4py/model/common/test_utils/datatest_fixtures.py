@@ -76,10 +76,10 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             download_and_extract(uri, ranked_data_path, destination_path, data_file)
         if processor_props.comm:
             processor_props.comm.barrier()
-    except KeyError:
+    except KeyError as err:
         raise AssertionError(
             f"no data for communicator of size {processor_props.comm_size} exists, use 1, 2 or 4"
-        )
+        ) from err
 
 
 @pytest.fixture
@@ -103,7 +103,7 @@ def icon_grid(grid_savepoint, experiment):
 
     Uses the special grid_savepoint that contains data from p_patch
     """
-    return grid_savepoint.construct_icon_grid()
+    return grid_savepoint.construct_icon_grid(on_gpu=False)
 
 
 @pytest.fixture
@@ -189,7 +189,7 @@ def savepoint_velocity_init(data_provider, step_date_init, istep_init, vn_only, 
 
 
 @pytest.fixture
-def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init):  # noqa F811
+def savepoint_nonhydro_init(data_provider, step_date_init, istep_init, jstep_init):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -215,7 +215,7 @@ def savepoint_velocity_exit(data_provider, step_date_exit, istep_exit, vn_only, 
 
 
 @pytest.fixture
-def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit):  # noqa F811
+def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exit):
     """
     Load data from ICON savepoint at exist of solve_nonhydro module.
 
@@ -228,7 +228,7 @@ def savepoint_nonhydro_exit(data_provider, step_date_exit, istep_exit, jstep_exi
 
 
 @pytest.fixture
-def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):  # noqa F811
+def savepoint_nonhydro_step_exit(data_provider, step_date_exit, jstep_exit):
     """
     Load data from ICON savepoint at final exit (after predictor and corrector, and 3 final stencils) of solve_nonhydro module.
 

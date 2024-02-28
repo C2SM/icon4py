@@ -16,10 +16,13 @@ from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
+    C2E2C2E2CDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CECDim,
+    CECECDim,
     CEDim,
     CellDim,
     E2C2EDim,
@@ -55,12 +58,19 @@ class IconGrid(BaseGrid):
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
             "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
             "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
+            "C2V": (self._get_offset_provider, C2VDim, CellDim, VertexDim),
             "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
             "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
             "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
             "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
             "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
+            "C2CECEC ": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2C2E2CDim,
+                CellDim,
+                CECECDim,
+            ),
         }
 
     @builder

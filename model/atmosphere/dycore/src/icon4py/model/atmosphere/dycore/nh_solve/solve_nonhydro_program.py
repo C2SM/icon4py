@@ -17,77 +17,65 @@ from gt4py.next.ffront.fbuiltins import int32, where
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
+    _compute_contravariant_correction_of_w,
+)
+from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
+    _compute_contravariant_correction_of_w_for_lower_boundary,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
+    _compute_explicit_part_for_rho_and_exner,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
+    _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
+)
+from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_speed_and_vertical_wind_times_density import (
+    _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density,
+)
+from icon4py.model.atmosphere.dycore.compute_first_vertical_derivative import (
+    _compute_first_vertical_derivative,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
+    _compute_horizontal_advection_of_rho_and_theta,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
+    _compute_horizontal_kinetic_energy,
+)
 from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
     _compute_pertubation_of_rho_and_theta,
 )
+from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_at_ic import (
+    _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
+)
+from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
+    _compute_solver_coefficients_matrix,
+)
+from icon4py.model.atmosphere.dycore.compute_virtual_potential_temperatures_and_pressure_gradient import (
+    _compute_virtual_potential_temperatures_and_pressure_gradient,
+)
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_02 import (
-    _mo_solve_nonhydro_stencil_02,
+from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
+    _extrapolate_temporally_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_04 import (
-    _mo_solve_nonhydro_stencil_04,
+from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
+    _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_05 import (
-    _mo_solve_nonhydro_stencil_05,
+from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
+from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
+    _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_06 import (
-    _mo_solve_nonhydro_stencil_06,
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
+    _set_cell_kdim_field_to_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_08 import (
-    _mo_solve_nonhydro_stencil_08,
+from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+    _set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_09 import (
-    _mo_solve_nonhydro_stencil_09,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_lower import (
-    _mo_solve_nonhydro_stencil_11_lower,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_11_upper import (
-    _mo_solve_nonhydro_stencil_11_upper,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1 import (
-    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_36 import (
-    _mo_solve_nonhydro_stencil_36,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_37 import (
-    _mo_solve_nonhydro_stencil_37,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_39 import (
-    _mo_solve_nonhydro_stencil_39,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_40 import (
-    _mo_solve_nonhydro_stencil_40,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_42 import (
-    _mo_solve_nonhydro_stencil_42,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_43 import (
-    _mo_solve_nonhydro_stencil_43,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_44 import (
-    _mo_solve_nonhydro_stencil_44,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45 import (
-    _mo_solve_nonhydro_stencil_45,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_45_b import (
-    _mo_solve_nonhydro_stencil_45_b,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_47 import (
-    _mo_solve_nonhydro_stencil_47,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_49 import (
-    _mo_solve_nonhydro_stencil_49,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_61 import (
-    _mo_solve_nonhydro_stencil_61,
-)
-from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_62 import (
-    _mo_solve_nonhydro_stencil_62,
+from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
+    _set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
 
 
@@ -134,7 +122,7 @@ def _predictor_stencils_2_3(
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     (z_exner_ex_pr, exner_pr) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_02(exner_exfac, exner, exner_ref_mc, exner_pr),
+        _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
     z_exner_ex_pr = where(k_field == nlev, _set_zero_c_k(), z_exner_ex_pr)
@@ -186,7 +174,7 @@ def _predictor_stencils_4_5_6(
     # Perturbation Exner pressure on bottom half level
     z_exner_ic = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_04(wgtfacq_c_dsl, z_exner_ex_pr),
+        _interpolate_to_surface(wgtfacq_c_dsl, z_exner_ex_pr),
         z_exner_ic,
     )
 
@@ -194,14 +182,14 @@ def _predictor_stencils_4_5_6(
     # possibly GZ will want to consider the cache ramifications of this change for CPU
     z_exner_ic = where(
         k_field < nlev,
-        _mo_solve_nonhydro_stencil_05(wgtfac_c, z_exner_ex_pr),
+        _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr),
         z_exner_ic,
     )
 
     # First vertical derivative of perturbation Exner pressure
     z_dexner_dz_c_1 = where(
         k_field < nlev,
-        _mo_solve_nonhydro_stencil_06(z_exner_ic, inv_ddqz_z_full),
+        _compute_first_vertical_derivative(z_exner_ic, inv_ddqz_z_full),
         z_dexner_dz_c_1,
     )
     return z_exner_ic, z_dexner_dz_c_1
@@ -274,13 +262,15 @@ def _predictor_stencils_7_8_9(
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         k_field >= int32(1),
-        _mo_solve_nonhydro_stencil_08(wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+            wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
+        ),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         k_field >= int32(1),
-        _mo_solve_nonhydro_stencil_09(
+        _compute_virtual_potential_temperatures_and_pressure_gradient(
             wgtfac_c,
             z_rth_pr_2,
             theta_v,
@@ -362,13 +352,11 @@ def _predictor_stencils_11_lower_upper(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(
-        k_field == int32(0), _mo_solve_nonhydro_stencil_11_lower(), z_theta_v_pr_ic
-    )
+    z_theta_v_pr_ic = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic)
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_11_upper(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic, z_theta_v_pr_ic),
+        _set_theta_v_prime_ic_at_lower_boundary(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
         (z_theta_v_pr_ic, theta_v_ic),
     )
     return z_theta_v_pr_ic, theta_v_ic
@@ -405,7 +393,7 @@ def predictor_stencils_11_lower_upper(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+def compute_horizontal_advection_of_rho_and_theta(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
     pos_on_tplane_e_1: Field[[ECDim], float],
@@ -430,7 +418,7 @@ def mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1(
+    _compute_horizontal_advection_of_rho_and_theta(
         p_vn,
         p_vt,
         pos_on_tplane_e_1,
@@ -482,7 +470,7 @@ def _predictor_stencils_35_36(
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k_field >= int32(1),
-        _mo_solve_nonhydro_stencil_36(wgtfac_e, vn, vt),
+        _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
@@ -539,7 +527,7 @@ def predictor_stencils_37_38(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_solve_nonhydro_stencil_37(
+    _compute_horizontal_kinetic_energy(
         vn,
         vt,
         out=(vn_ie, z_vt_ie, z_kin_hor_e),
@@ -572,13 +560,15 @@ def _stencils_39_40(
 ) -> Field[[CellDim, KDim], float]:
     w_concorr_c = where(
         k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
-        _mo_solve_nonhydro_stencil_39(e_bln_c_s, z_w_concorr_me, wgtfac_c),
+        _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
 
     w_concorr_c = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_40(e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl),
+        _compute_contravariant_correction_of_w_for_lower_boundary(
+            e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl
+        ),
         w_concorr_c,
     )
 
@@ -654,7 +644,7 @@ def _stencils_42_44_45_45b(
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= int32(1)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_42(
+        _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
             ddt_w_adv_ntl1,
             ddt_w_adv_ntl2,
@@ -672,7 +662,7 @@ def _stencils_42_44_45_45b(
 
     (z_beta, z_alpha) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_44(
+        _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
             theta_v_nnow,
@@ -686,9 +676,9 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
+    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
 
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -794,7 +784,7 @@ def _stencils_43_44_45_45b(
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= int32(1)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_43(
+        _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
             z_th_ddz_exner_c,
@@ -808,7 +798,7 @@ def _stencils_43_44_45_45b(
     )
     (z_beta, z_alpha) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_44(
+        _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
             theta_v_nnow,
@@ -822,8 +812,8 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _mo_solve_nonhydro_stencil_45(), z_alpha)
-    z_q = where(k_field == int32(0), _mo_solve_nonhydro_stencil_45_b(), z_q)
+    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -916,13 +906,13 @@ def _stencils_47_48_49(
 ]:
     (w_nnew, z_contr_w_fl_l) = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_47(w_concorr_c),
+        _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c),
         (w_nnew, z_contr_w_fl_l),
     )
     # 48 and 49 are identical except for bounds
     (z_rho_expl, z_exner_expl) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_49(
+        _compute_explicit_part_for_rho_and_exner(
             rho_nnow,
             inv_ddqz_z_full,
             z_flxdiv_mass,
@@ -1008,14 +998,14 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _mo_solve_nonhydro_stencil_61(
+        _update_densety_exener_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),
     )
     w_new = where(
         k_field == nlev,
-        _mo_solve_nonhydro_stencil_62(w_now, grf_tend_w, dtime),
+        _update_wind(w_now, grf_tend_w, dtime),
         w_new,
     )
     return rho_new, exner_new, w_new

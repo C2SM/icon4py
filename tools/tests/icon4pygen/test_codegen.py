@@ -21,12 +21,11 @@ import icon4py.model.atmosphere.dycore as dycore
 import icon4py.model.common.interpolation.stencils as intp
 import icon4py.model.common.type_alias as type_alias
 import pytest
-from click.testing import CliRunner
 from gt4py.next.ffront.fbuiltins import float32, float64
 
 from icon4pytools.icon4pygen.cli import main
 
-from .helpers import get_stencil_module_path
+from .conftest import get_stencil_module_path
 
 
 DYCORE_PKG = "atmosphere.dycore"
@@ -36,11 +35,6 @@ DIFFUSION_PKG = "atmosphere.diffusion.stencils"
 LEVELS_PER_THREAD = "1"
 BLOCK_SIZE = "128"
 OUTPATH = "."
-
-
-@pytest.fixture
-def cli():
-    return CliRunner()
 
 
 def dycore_fencils() -> list[tuple[str, str]]:
@@ -131,14 +125,17 @@ def check_code_was_generated(stencil_name: str) -> None:
     check_cpp_codegen(f"{stencil_name}.cpp")
 
 
+# TODO: (samkellerhals) add temporaries codegen here once all work.
 @pytest.mark.parametrize(
     ("stencil_module", "stencil_name"),
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
 )
-def test_codegen(cli, stencil_module, stencil_name) -> None:
+@pytest.mark.parametrize("flags", [()], ids=["normal"])
+def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH])
+        cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
+        result = cli.invoke(main, cli_args)
         assert result.exit_code == 0
         check_code_was_generated(stencil_name)
 

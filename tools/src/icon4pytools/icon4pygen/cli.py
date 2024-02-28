@@ -17,13 +17,14 @@ from __future__ import annotations
 
 import os
 import pathlib
+from typing import ClassVar
 
 import click
 
 
 class ModuleType(click.ParamType):
     dycore_import_path = "icon4py.model.atmosphere.dycore"
-    names = [
+    names: ClassVar[list[str]] = [
         f"{dycore_import_path}.mo_nh_diffusion_stencil_",
         f"{dycore_import_path}.mo_solve_nonhydro_stencil_",
         f"{dycore_import_path}.mo_velocity_advection_stencil_",
@@ -60,7 +61,13 @@ class ModuleType(click.ParamType):
     "--imperative",
     is_flag=True,
     type=bool,
-    help="Whether to use the imperative code generation backend.",
+    help="Whether to use the imperative mode in generated gridtools code.",
+)
+@click.option(
+    "--temporaries",
+    is_flag=True,
+    type=bool,
+    help="Whether to use the temporaries in generated gridtools code.",
 )
 def main(
     fencil: str,
@@ -70,6 +77,7 @@ def main(
     enable_mixed_precision: bool,
     outpath: pathlib.Path,
     imperative: bool,
+    temporaries: bool,
 ) -> None:
     """
     Generate Gridtools C++ code for an icon4py fencil as well as all the associated C++ and Fortran bindings.
@@ -87,5 +95,5 @@ def main(
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def, is_global)
-    GTHeader(stencil_info)(outpath, imperative)
+    GTHeader(stencil_info)(outpath, imperative, temporaries)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)

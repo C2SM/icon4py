@@ -217,6 +217,11 @@ class DiffusionConfig:
 
         #: Number of dynamics substeps per fast-physics step
         #: Called 'ndyn_substeps' in mo_nonhydrostatic_nml.f90
+
+        # TODO (magdalena) ndyn_substeps may dynamically increase during a model run in order to
+        #       reduce instabilities. Need to figure out whether the parameter is the configured
+        #       (constant!) one or the dynamical one. In the latter case it should be removed from
+        #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
 
         #: If True, compute horizontal diffusion only at the large time step
@@ -377,9 +382,8 @@ class Diffusion:
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.thresh_tdiff: float = (
-            -5.0
-        )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self.thresh_tdiff: float = -5.0
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
@@ -466,6 +470,7 @@ class Diffusion:
             offset_provider={"Koff": KDim},
         )
 
+        # TODO (magdalena) port to gt4py?
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
             nshift=0,
