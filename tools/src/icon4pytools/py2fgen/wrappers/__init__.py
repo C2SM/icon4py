@@ -10,17 +10,3 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
-from click.testing import CliRunner
-
-from icon4pytools.py2f.py2fgen import main
-
-
-@pytest.mark.skip(reason="This is skipped. TODO: mixed-precision needs to be fixed in the CI.")
-def test_py2fgen():
-    cli = CliRunner()
-    module = "icon4pytools.py2f.wrappers.diffusion_wrapper"
-    build_path = "./build"
-    with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, build_path])
-        assert result.exit_code == 0
