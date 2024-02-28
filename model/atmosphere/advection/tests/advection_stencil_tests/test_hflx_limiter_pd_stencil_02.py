@@ -23,40 +23,23 @@ class TestHflxLimiterPdStencil02(StencilTest):
     OUTPUTS = ("p_mflx_tracer_h",)
 
     @staticmethod
-    def reference(grid, refin_ctrl, r_m, p_mflx_tracer_h, bound, **kwargs):
+    def reference(grid, r_m, p_mflx_tracer_h, **kwargs):
         e2c = grid.connectivities[E2CDim]
         r_m_e2c = r_m[e2c]
-        refin_ctrl_expanded = np.expand_dims(refin_ctrl, axis=-1)
         p_mflx_tracer_h_out = np.where(
-            refin_ctrl_expanded != bound,
-            np.where(
                 p_mflx_tracer_h >= 0,
                 p_mflx_tracer_h * r_m_e2c[:, 0],
                 p_mflx_tracer_h * r_m_e2c[:, 1],
-            ),
-            p_mflx_tracer_h,
-        )
+            )
         return dict(p_mflx_tracer_h=p_mflx_tracer_h_out)
 
     @pytest.fixture(params=[("no_match", 4), ("everywhere_match", 7), ("partly_match", 4)])
     def input_data(self, request, grid):
-        bound = np.int32(7)
-        scenario, ctrl_value = request.param
-
-        if scenario == "no_match":
-            refin_ctrl = constant_field(grid, ctrl_value, EdgeDim, dtype=np.int32)
-        elif scenario == "everywhere_match":
-            refin_ctrl = constant_field(grid, bound, EdgeDim, dtype=np.int32)
-        elif scenario == "partly_match":
-            refin_ctrl = constant_field(grid, 5, EdgeDim, dtype=np.int32)
-            refin_ctrl[2:6] = bound
 
         r_m = random_field(grid, CellDim, KDim)
         p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
         return dict(
-            refin_ctrl=refin_ctrl,
             r_m=r_m,
             p_mflx_tracer_h=p_mflx_tracer_h_in,
-            bound=bound,
         )
