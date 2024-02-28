@@ -105,6 +105,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             divdamp_fac = 0.0025,
+            lhdiff_rcf=True,
         )
 
     def _default_config():
@@ -131,13 +132,13 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
             dtime=300.0,
-            end_date=datetime(1, 1, 1, 0, 10, 0),
+            end_date=datetime(1, 1, 1, 1, 0, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
         )
         output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=300),
-            output_file_time_interval=timedelta(seconds=300),
+            output_time_interval=timedelta(seconds=3600),
+            output_file_time_interval=timedelta(seconds=3600),
             output_path=Path("./"),
         )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)

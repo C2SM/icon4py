@@ -560,6 +560,7 @@ class Diffusion:
         self.kh_smag_e = _allocate(EdgeDim, KDim)
         self.kh_smag_ec = _allocate(EdgeDim, KDim)
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
+        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
         self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
@@ -810,6 +811,7 @@ class Diffusion:
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
             primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
             z_nabla2_e=self.z_nabla2_e,
+            z_nabla4_e2=self.z_nabla4_e2,
             inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             area_edge=self.edge_params.edge_areas,

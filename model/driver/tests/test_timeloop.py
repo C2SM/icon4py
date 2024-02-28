@@ -45,6 +45,7 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_metric_state_for_diffusion,
 )
 from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
+from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import mo_init_ddt_cell_zero, mo_init_ddt_edge_zero
 from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
 from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
@@ -411,6 +412,28 @@ def test_jabw_initial_condition(
     ddt_vn_apc_ntl1 = _allocate(EdgeDim, KDim, grid=icon_grid)
     ddt_vn_apc_ntl2 = _allocate(EdgeDim, KDim, grid=icon_grid)
 
+    mo_init_ddt_edge_zero.with_backend(backend)(
+        solve_nonhydro_diagnostic_state.ddt_vn_phy,
+        solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,
+        solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2,
+        icon_grid.get_start_index(EdgeDim, HorizontalMarkerIndex.interior(EdgeDim)),
+        icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim)),
+        0,
+        icon_grid.num_levels,
+        offset_provider={}
+    )
+
+    mo_init_ddt_cell_zero.with_backend(backend)(
+        solve_nonhydro_diagnostic_state.theta_v_ic,
+        solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
+        solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2,
+        icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+        icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+        0,
+        icon_grid.num_levels+1,
+        offset_provider={}
+    )
+
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().ddt_vn_phy().asnumpy(),
         ddt_vn_phy.asnumpy(),
@@ -439,6 +462,53 @@ def test_jabw_initial_condition(
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(2).asnumpy(),
         ddt_w_adv_ntl2.asnumpy(),
+    )
+
+    ##
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_vn_phy().asnumpy(),
+        solve_nonhydro_diagnostic_state.ddt_vn_phy.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_vn_apc_pc(1).asnumpy(),
+        solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_vn_apc_pc(2).asnumpy(),
+        solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_exner_phy().asnumpy(),
+        solve_nonhydro_diagnostic_state.ddt_exner_phy.asnumpy(),
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(1).asnumpy(),
+        solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1.asnumpy(),
+    )
+    print()
+    print(
+        data_provider.from_savepoint_jabw_first_output().ddt_exner_phy().asnumpy().shape,
+        ' == ',
+        solve_nonhydro_diagnostic_state.ddt_exner_phy.asnumpy().shape
+    )
+    print(
+        data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(1).asnumpy().shape,
+        ' == ',
+        solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1.asnumpy().shape
+    )
+    print(
+        data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(2).asnumpy().shape,
+        ' == ',
+        solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2.asnumpy().shape
+    )
+
+    assert dallclose(
+        data_provider.from_savepoint_jabw_first_output().ddt_w_adv_pc(2).asnumpy(),
+        solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2.asnumpy(),
     )
 
     # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
