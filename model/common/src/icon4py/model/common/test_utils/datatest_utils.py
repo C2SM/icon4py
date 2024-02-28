@@ -17,6 +17,16 @@ from icon4py.model.common.decomposition.definitions import get_processor_propert
 
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
+GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
+REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
+R02B04_GLOBAL = "r02b04_global"
+
+MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
+R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
+GRID_URIS = {
+    REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
+    R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
+}
 
 
 def get_test_data_root_path() -> Path:
@@ -41,9 +51,6 @@ DATA_URIS = {
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/uK3jtrWK90Z4kHC/download"}
-
-REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
-GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 
 
 def get_processor_properties_for_run(run_instance):
