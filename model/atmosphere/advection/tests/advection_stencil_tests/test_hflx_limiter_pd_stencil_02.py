@@ -15,7 +15,7 @@ import pytest
 
 from icon4py.model.atmosphere.advection.hflx_limiter_pd_stencil_02 import hflx_limiter_pd_stencil_02
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, constant_field, random_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
 class TestHflxLimiterPdStencil02(StencilTest):
@@ -27,15 +27,14 @@ class TestHflxLimiterPdStencil02(StencilTest):
         e2c = grid.connectivities[E2CDim]
         r_m_e2c = r_m[e2c]
         p_mflx_tracer_h_out = np.where(
-                p_mflx_tracer_h >= 0,
-                p_mflx_tracer_h * r_m_e2c[:, 0],
-                p_mflx_tracer_h * r_m_e2c[:, 1],
-            )
+            p_mflx_tracer_h >= 0,
+            p_mflx_tracer_h * r_m_e2c[:, 0],
+            p_mflx_tracer_h * r_m_e2c[:, 1],
+        )
         return dict(p_mflx_tracer_h=p_mflx_tracer_h_out)
 
     @pytest.fixture(params=[("no_match", 4), ("everywhere_match", 7), ("partly_match", 4)])
     def input_data(self, request, grid):
-
         r_m = random_field(grid, CellDim, KDim)
         p_mflx_tracer_h_in = random_field(grid, EdgeDim, KDim)
 
