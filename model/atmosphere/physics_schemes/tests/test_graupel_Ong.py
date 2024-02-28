@@ -32,16 +32,12 @@ from gt4py.next.ffront.fbuiltins import (
     int32
 )
 
-from icon4py.atm_phy_schemes.gscp_graupel_Ong import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
-from icon4py.atm_phy_schemes.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
+from icon4py.model.atmosphere.graupel import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
+from icon4py.model.atmosphere.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
 from typing import Final
 from icon4py.model.common.dimension import CellDim, KDim
 from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn_cpu import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_imperative,
-)
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 import serialbox as ser
 

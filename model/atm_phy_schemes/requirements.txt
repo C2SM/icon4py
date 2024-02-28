@@ -1,4 +1,0 @@
--r ../base-requirements.txt
-../common
-../shared
-.
