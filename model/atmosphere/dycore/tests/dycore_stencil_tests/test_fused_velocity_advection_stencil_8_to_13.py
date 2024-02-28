@@ -91,9 +91,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         z_w_con_c[:, :-1] = np.where(
             (nflatlev + 1 <= k_nlev) & (k_nlev < nlev),
-            correct_contravariant_vertical_velocity_numpy(
-                z_w_con_c[:, :-1], w_concorr_c
-            ),
+            correct_contravariant_vertical_velocity_numpy(z_w_con_c[:, :-1], w_concorr_c),
             z_w_con_c[:, :-1],
         )
 

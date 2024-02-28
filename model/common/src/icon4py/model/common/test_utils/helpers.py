@@ -101,7 +101,8 @@ def constant_field(
     grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
 ) -> gt_common.Field:
     return as_field(
-        dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
+        dims,
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
 
 
@@ -181,7 +182,9 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
+            input_data[name].asnumpy()[gtslice],
+            reference_outputs[name][refslice],
+            equal_nan=True,
         ), f"Validation failed for '{name}'"
 
 
@@ -238,21 +241,22 @@ class StencilTest:
 
 
 @pytest.fixture
-def uses_icon_grid_with_otf(backend, grid):
-    """Check whether we are using a compiled backend with the icon_grid.
+def uses_local_area_icon_grid_with_otf(backend, grid):
+    """Check whether we are using a compiled backend with a limited_area icon_grid.
 
     Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
     """
     if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if isinstance(backend.executor, (OTFCompileExecutor, CachedOTFCompileExecutor)):
-            return True
-        try:
-            from gt4py.next.program_processors.runners import dace_iterator
-
-            if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
+        if grid.limited_area:
+            if isinstance(backend.executor, (OTFCompileExecutor, CachedOTFCompileExecutor)):
                 return True
-        except ImportError:
-            pass
+            try:
+                from gt4py.next.program_processors.runners import dace_iterator
+
+                if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
+                    return True
+            except ImportError:
+                pass
     return False
 
 

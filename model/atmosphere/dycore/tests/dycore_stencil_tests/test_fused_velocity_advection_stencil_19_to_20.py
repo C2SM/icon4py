@@ -42,7 +42,9 @@ from .test_add_extra_diffusion_for_wn_approaching_cfl import (
 from .test_compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency_numpy,
 )
-from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
+from .test_mo_math_divrot_rot_vertex_ri_dsl import (
+    mo_math_divrot_rot_vertex_ri_dsl_numpy,
+)
 
 
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
@@ -120,8 +122,8 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid, uses_icon_grid_with_otf):
-        if uses_icon_grid_with_otf:
+    def input_data(self, grid, uses_local_area_icon_grid_with_otf):
+        if uses_local_area_icon_grid_with_otf:
             pytest.skip(
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
