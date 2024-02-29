@@ -32,8 +32,8 @@ from gt4py.next.ffront.fbuiltins import (
     int32
 )
 
-from icon4py.model.atmosphere.graupel import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
-from icon4py.model.atmosphere.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
 from typing import Final
 from icon4py.model.common.dimension import CellDim, KDim
 from gt4py.next import as_field
@@ -42,7 +42,7 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 import serialbox as ser
 
 
-@pytest.mark.parametrize("date_no,Nblocks,rank,debug,data_output", [(date_i,120,rank_j,False,False) for date_i in range(1) for rank_j in range(1)])
+@pytest.mark.parametrize("date_no,Nblocks,rank,debug,data_output", [(date_i,120,rank_j,False,False) for date_i in range(1) for rank_j in range(5)])
 def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
 
     backend = run_gtfn
@@ -343,7 +343,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
             ref_data[item] = np.concatenate((ref_data[item], serializer.read(item, exit_savePoint)), axis=0)
 
     # read serialized rendency data
-    if ( tendency_serialization ):
+    if tendency_serialization:
         for item in ser_tend_name:
             exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_no]]
             tend_data[item] = serializer.read(item, exit_savePoint)
@@ -557,11 +557,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
         offset_provider={}
     )
 
-    '''
-
-    '''
-
-    if (const_data["ser_graupel_ldiag_ttend"]):
+    if const_data["ser_graupel_ldiag_ttend"]:
         _graupel_t_tendency(
             const_data["ser_graupel_dt"],
             predict_field["ser_graupel_temperature"],
@@ -572,7 +568,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
             offset_provider={}
         )
 
-    if (const_data["ser_graupel_ldiag_qtend"]):
+    if const_data["ser_graupel_ldiag_qtend"]:
         _graupel_q_tendency(
             const_data["ser_graupel_dt"],
             predict_field["ser_graupel_qv"],
@@ -631,12 +627,12 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
         diff_data[item] = np.abs(predict_field[item].asnumpy() - ref_data[item]) / ref_data[item]
         diff_data[item] = np.where(np.abs(ref_data[item]) <= 1.e-20 , predict_field[item].asnumpy(), diff_data[item])
 
-    if (tendency_serialization):
+    if tendency_serialization:
         for item in ser_tend_name:
-            diff_data[item] = np.abs(tend_field[item] - tend_data[item]) / tend_data[item]
+            diff_data[item] = np.abs(tend_field[item].asnumpy() - tend_data[item]) / tend_data[item]
             diff_data[item] = np.where(np.abs(tend_data[item]) <= 1.e-30, tend_field[item].asnumpy(), tend_data[item])
 
-    if ( tendency_serialization ):
+    if tendency_serialization:
         print("Max predict-ref tendency difference:")
         for item in ser_tend_name:
             print(item, ": ", np.abs(tend_field[item].asnumpy() - tend_data[item]).max(), diff_data[item].max())
@@ -685,7 +681,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
         predict_field["ser_graupel_qg"].asnumpy() - ref_data["ser_graupel_qg"]
     ).max())
 
-    if (data_output):
+    if data_output:
         with open(base_dir+'analysis_dz_rank'+str(rank)+'.dat','w') as f:
             for i in range(cell_size):
                 for k in range(k_size):
@@ -755,7 +751,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
                         f.write(" {0:.20e} ".format(ref_data[item][i, k]))
                     f.write("\n")
 
-        if ( tendency_serialization ):
+        if tendency_serialization:
             with open(base_dir + 'analysis_ref_tend_rank' + str(rank) + '.dat', 'w') as f:
                 for i in range(cell_size):
                     for k in range(k_size):

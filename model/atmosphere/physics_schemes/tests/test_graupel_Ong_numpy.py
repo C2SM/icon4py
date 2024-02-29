@@ -29,8 +29,8 @@ from gt4py.next.ffront.fbuiltins import (
     int32
 )
 
-from icon4py.atm_phy_schemes.gscp_graupel_Ong_numpy import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
-from icon4py.atm_phy_schemes.gscp_graupel_Ong_numpy import GraupelGlobalConstants, GraupelFunctionConstants
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong_numpy import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong_numpy import GraupelGlobalConstants, GraupelFunctionConstants
 from typing import Final
 
 import serialbox as ser

@@ -19,18 +19,18 @@ import trace
 import numpy as np
 from hypothesis import given, settings, target
 
-from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
-from icon4py.atm_phy_schemes.mo_satad import _newtonian_iteration_temp, satad, _satad
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.mo_convect_tables import conv_table
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.mo_satad import _newtonian_iteration_temp, satad, _satad
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.shared.mo_physical_constants import phy_const
-from icon4py.model.common.test_utils.simple_mesh import SimpleMesh
+from icon4py.model.common.mo_physical_constants import phy_const
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import maximizeTendency, random_field_strategy
 
 import os
 import sys
 import serialbox as ser
-from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners.gtfn_cpu import (
+from gt4py.next import as_field
+from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
@@ -314,7 +314,7 @@ def test_serialize_mo_satad():
 
     ser_field = {}
     for item in field_name:
-        ser_field[item] = np_as_located_field(CellDim, KDim)(np.array(ser_data[item], dtype=float))
+        ser_field[item] = as_field((CellDim, KDim), np.array(ser_data[item], dtype=float))
 
     satad(ser_field['qv'], ser_field['qc'], ser_field['temperature'], ser_field['rho'], offset_provider={})
     q = 0

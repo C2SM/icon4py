@@ -30,14 +30,14 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 # from icon4py.testutils.utils import to_icon4py_field, zero_field
-from gt4py.next.iterator.embedded import index_field, np_as_located_field
+from gt4py.next import as_field
 from numpy import exp as numpy_exp
 from numpy import log as numpy_log
 from numpy import sqrt as numpy_sqrt
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.shared.mo_math_utilities import gamma_fct
-from icon4py.shared.mo_physical_constants import phy_const
+from icon4py.model.common.math.math_utilities import gamma_fct
+from icon4py.model.common.mo_physical_constants import phy_const
 
 
 class Constants(FrozenNamespace):

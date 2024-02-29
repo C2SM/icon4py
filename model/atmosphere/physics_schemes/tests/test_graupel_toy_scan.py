@@ -16,9 +16,9 @@ from gt4py.next.ffront.decorator import program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field
 from hypothesis import given, settings
 
-from icon4py.common.dimension import CellDim, KDim
-from icon4py.testutils.simple_mesh import SimpleMesh
-from icon4py.testutils.utils import random_field_strategy, zero_field
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.test_utils.helpers import random_field_strategy, zero_field
 
 
 """Do Implicit sedimentaion
@@ -28,7 +28,7 @@ TODO David:
 
 """
 
-MESH = SimpleMesh()
+MESH = SimpleGrid()
 
 
 def graupel_toy_numpy(qc, qr):

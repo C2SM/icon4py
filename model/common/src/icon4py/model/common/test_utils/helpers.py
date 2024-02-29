@@ -30,6 +30,7 @@ from gt4py.next.program_processors.otf_compile_executor import (
 )
 
 from ..grid.base import BaseGrid
+from ..grid.simple import SimpleGrid
 from ..grid.icon import IconGrid
 from ..type_alias import wpfloat
 
@@ -46,10 +47,10 @@ def backend(request):
 
 
 def objShape(
-    obj: Union[tuple, np.ndarray, SimpleMesh], *dims: gt_common.Dimension
+    obj: Union[tuple, np.ndarray, SimpleGrid], *dims: gt_common.Dimension
 ):
 
-    if isinstance(obj, SimpleMesh):
+    if isinstance(obj, SimpleGrid):
         return tuple(map(lambda x: obj.size[x], dims))
     if isinstance(obj, tuple):
         return obj
@@ -89,7 +90,7 @@ def random_mask(
 
 
 def to_icon4py_field(
-    field: Union[tuple, np.ndarray, SimpleMesh],
+    field: Union[tuple, np.ndarray, SimpleGrid],
     *dims: gt_common.Dimension,
     dtype=float,
 ) -> gt_common.Field:
@@ -131,7 +132,7 @@ def constant_field(
 
 
 def random_field_strategy(
-    mesh: Union[tuple, np.ndarray, SimpleMesh],
+    mesh: Union[tuple, np.ndarray, SimpleGrid],
     *dims,
     min_value=None,
     max_value=None,

@@ -27,10 +27,10 @@ from gt4py.next.ffront.fbuiltins import (
     int32
 )
 
-from icon4py.atm_phy_schemes.gscp_graupel_Ong import graupel, _graupel, _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong import graupel, _graupel, _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
 from icon4py.model.common.dimension import CellDim, KDim
-from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next.program_processors.runners.gtfn_cpu import (
+from gt4py.next import as_field
+from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
@@ -125,25 +125,25 @@ def test_graupel_Ong_serialized_data():
     velocity_field = {}
     for item in ser_field_name:
         if (item == "ser_graupel_temperature"):
-            ser_field[item] = np_as_located_field(CellDim, KDim)(np.full((cell_size, k_size), fill_value=273.15,dtype=float64))
+            ser_field[item] = as_field((CellDim, KDim), np.full((cell_size, k_size), fill_value=273.15,dtype=float64))
         elif (item == "ser_graupel_rho"):
-            ser_field[item] = np_as_located_field(CellDim, KDim)(np.full((cell_size, k_size), fill_value=1.0,dtype=float64))
+            ser_field[item] = as_field((CellDim, KDim), np.full((cell_size, k_size), fill_value=1.0,dtype=float64))
         elif (item == "ser_graupel_pres"):
-            ser_field[item] = np_as_located_field(CellDim, KDim)(np.full((cell_size, k_size), fill_value=101325.0,dtype=float64))
+            ser_field[item] = as_field((CellDim, KDim), np.full((cell_size, k_size), fill_value=101325.0,dtype=float64))
         elif (item == "ser_graupel_dz"):
-            ser_field[item] = np_as_located_field(CellDim, KDim)(np.full((cell_size, k_size), fill_value=50.0,dtype=float64))
+            ser_field[item] = as_field((CellDim, KDim), np.full((cell_size, k_size), fill_value=50.0,dtype=float64))
         else:
-            ser_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size,k_size), dtype=float64))
-        predict_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size,k_size), dtype=float64))
+            ser_field[item] = as_field((CellDim, KDim), np.zeros((cell_size,k_size), dtype=float64))
+        predict_field[item] = as_field((CellDim, KDim), np.zeros((cell_size,k_size), dtype=float64))
     for item in ser_tend_name:
-        tend_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+        tend_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
     for item in ser_redundant_name:
         if (item != "ser_graupel_klev"):
-            redundant_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+            redundant_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
         else:
-            redundant_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=int32))
+            redundant_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=int32))
     for item in velocity_field_name:
-        velocity_field[item] = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+        velocity_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
 
     # run graupel
 
