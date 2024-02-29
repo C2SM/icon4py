@@ -154,9 +154,6 @@ def allocate_data(backend, input_data):
 
 Bounds = namedtuple("Bounds", ["horizontal_start", "horizontal_end", "vertical_start", "vertical_end"])
 
-@dataclass(frozen=True)
-class Output:
-    name: str
 
 def _test_validation(self, grid, backend, input_data, bounds):
 
@@ -181,15 +178,15 @@ def _test_validation(self, grid, backend, input_data, bounds):
         },
     )
 
-    # To imitate the action of the gt4py stencil, we slice the reference output to only apply it in the given domain
-    for out_name in self.OUTPUTS:
+    # To imitate the action of the gt4py stencil, we slice the reference output to only apply it in the given domain.
+    # This allows us to also verify the regions of the output fields which should not be touched by the stencil.
+    for output_field_name in self.OUTPUTS:
         subset = (slice(bounds.horizontal_start, bounds.horizontal_end), slice(bounds.vertical_start, bounds.vertical_end),)
-        reference_data[out_name][subset] = reference_outputs[out_name][subset]
+        reference_data[output_field_name][subset] = reference_outputs[output_field_name][subset]
 
-    for out in self.OUTPUTS:
         assert np.allclose(
-            stencil_data[out].asnumpy(), reference_data[out].asnumpy(), equal_nan=True
-        ), f"Validation failed for '{out}'"
+            stencil_data[output_field_name].asnumpy(), reference_data[output_field_name].asnumpy(), equal_nan=True
+        ), f"Validation failed for '{output_field_name}'"
 
 
 if pytest_benchmark:

@@ -49,10 +49,6 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             vn=vn,
         )
 
-    @pytest.fixture
-    def bounds(self, grid):
-        return Bounds(0, grid.num_edges, 0, grid.num_levels)
-
     @staticmethod
     def reference(
         grid, z_nabla2_e: np.array, area_edge: np.array, vn: np.array, fac_bdydiff_v, **kwargs
@@ -61,3 +57,8 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             grid, z_nabla2_e, area_edge, vn, fac_bdydiff_v
         )
         return dict(vn=vn)
+
+    @pytest.fixture
+    def bounds(self, grid):
+        return Bounds(0, grid.num_edges, 0, grid.num_levels)
+
