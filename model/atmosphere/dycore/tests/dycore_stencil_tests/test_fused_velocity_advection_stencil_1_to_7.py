@@ -19,29 +19,14 @@ from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 imp
     fused_velocity_advection_stencil_1_to_7,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
-from icon4py.model.common.dimension import (
-    CellDim,
-    E2C2EDim,
-    EdgeDim,
-    KDim,
-    V2CDim,
-    VertexDim,
-)
-from icon4py.model.common.test_utils.helpers import (
-    StencilTest,
-    random_field,
-    zero_field,
-)
+from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
-from .test_compute_contravariant_correction import (
-    compute_contravariant_correction_numpy,
-)
+from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity_numpy,
 )
-from .test_compute_horizontal_kinetic_energy import (
-    compute_horizontal_kinetic_energy_numpy,
-)
+from .test_compute_horizontal_kinetic_energy import compute_horizontal_kinetic_energy_numpy
 from .test_compute_tangential_wind import compute_tangential_wind_numpy
 from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import (

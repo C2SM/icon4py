@@ -182,9 +182,7 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].asnumpy()[gtslice],
-            reference_outputs[name][refslice],
-            equal_nan=True,
+            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
         ), f"Validation failed for '{name}'"
 
 
