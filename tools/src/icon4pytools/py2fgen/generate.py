@@ -20,6 +20,7 @@ from icon4pytools.icon4pygen.bindings.utils import format_fortran_code
 from icon4pytools.py2fgen.template import (
     CffiPlugin,
     CHeaderGenerator,
+    F90Interface,
     F90InterfaceGenerator,
     PythonWrapper,
     PythonWrapperGenerator,
@@ -80,5 +81,5 @@ def generate_f90_interface(plugin: CffiPlugin) -> str:
         plugin: The CffiPlugin instance containing information for code generation.
     """
     logger.info("Generating Fortran interface...")
-    generated_code = F90InterfaceGenerator.apply(plugin)
+    generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
     return format_fortran_code(generated_code)

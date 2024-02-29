@@ -22,8 +22,8 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.py2fgen.cffi import unpack
-from icon4pytools.py2fgen.utils import build_array_size_args, flatten_and_get_unique_elts
+from icon4pytools.py2fgen.plugin import unpack
+from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
@@ -81,7 +81,7 @@ def to_c_type(scalar_type: ScalarKind) -> str:
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
 
-def to_f_type(scalar_type: ScalarKind) -> str:
+def to_iso_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding ISO C type."""
     return BUILTIN_TO_ISO_C_TYPE[scalar_type]
 
@@ -104,7 +104,7 @@ def render_c_pointer(param: FuncParameter) -> str:
     return "*" if len(param.dimensions) > 0 else ""
 
 
-def render_fortran_array_dimensions(param: FuncParameter) -> str:
+def render_fortran_array_dimensions(param: FuncParameter, assumed_size_array: bool) -> str:
     """
     Render Fortran array dimensions for array types.
 
@@ -114,9 +114,13 @@ def render_fortran_array_dimensions(param: FuncParameter) -> str:
     Returns:
         A string representing Fortran array dimensions.
     """
-    if len(param.dimensions) > 0:
+    if len(param.dimensions) > 0 and assumed_size_array:
+        return "dimension(*),"
+
+    if len(param.dimensions) > 0 and not assumed_size_array:
         dims = ",".join(":" for _ in param.dimensions)
         return f"dimension({dims}),"
+
     return ""
 
 
@@ -196,6 +200,10 @@ def {{ _this_node.function.name }}_wrapper(
     # Unpack pointers into Ndarrays
     {% for arg in _this_node.function.args %}
     {% if arg.is_array %}
+    {%- if _this_node.debug_mode %}
+    msg = 'printing {{ arg.name }}: %s' % str({{ arg.name}})
+    print(msg)
+    {% endif %}
     {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
     {%- if _this_node.debug_mode %}
     msg = 'shape of {{ arg.name }} = %s' % str({{ arg.name}}.shape)
@@ -243,38 +251,116 @@ class CHeaderGenerator(TemplatedGenerator):
     FuncParameter = as_jinja("""{{rendered_type}}{{pointer}} {{name}}""")
 
 
+class F90FunctionDeclaration(Func):
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__post_init__()  # call Func __post_init__
+
+
+class DimensionPosition(Node):
+    variable: str
+    size_arg: str
+    index: int
+
+
+class F90FunctionDefinition(Func):
+    dimension_size_declarations: Sequence[DimensionPosition] = datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__post_init__()  # call Func __post_init__
+
+        dim_positions = []
+        for arg in self.args:
+            for index, size_arg in enumerate(arg.size_args):
+                dim_positions.append(
+                    DimensionPosition(variable=str(arg.name), size_arg=size_arg, index=index + 1)
+                )  # Use Fortran indexing
+
+        self.dimension_size_declarations = dim_positions
+
+
+class F90Interface(Node):
+    cffi_plugin: CffiPlugin
+    function_declaration: F90FunctionDeclaration = datamodels.field(init=False)
+    function_definition: F90FunctionDefinition = datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        function = self.cffi_plugin.function
+        self.function_declaration = F90FunctionDeclaration(
+            name=function.name, args=function.args, is_gt4py_program=function.is_gt4py_program
+        )
+        self.function_definition = F90FunctionDefinition(
+            name=function.name, args=function.args, is_gt4py_program=function.is_gt4py_program
+        )
+
+
 class F90InterfaceGenerator(TemplatedGenerator):
-    CffiPlugin = as_jinja(
+    F90Interface = as_jinja(
         """\
-    module {{ plugin_name }}
-    use, intrinsic:: iso_c_binding
+module {{ _this_node.cffi_plugin.plugin_name }}
+    use, intrinsic :: iso_c_binding
     implicit none
 
-    public
-    interface
-    {{ function }}
-    end interface
-    end module
-    """
+    public :: run_{{ _this_node.cffi_plugin.function.name }}
+
+interface
+    {{ function_declaration }}
+end interface
+
+contains
+    {{ function_definition }}
+end module
+"""
     )
 
-    def visit_Func(self, func: Func, **kwargs):
+    def visit_F90FunctionDeclaration(self, func: F90FunctionDeclaration, **kwargs):
         arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
         if func.global_size_args:
             arg_names += ",&\n" + ", &\n".join(func.global_size_args)
+        return self.generic_visit(func, assumed_size_array=True, param_names=arg_names)
 
-        return self.generic_visit(func, param_names=arg_names)
+    F90FunctionDeclaration = as_jinja(
+        """
+subroutine {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper")
+   import :: c_int, c_double    ! maybe use use, intrinsic :: iso_c_binding instead?
+   {% for size_arg in global_size_args %}
+   integer(c_int), value :: {{ size_arg }}
+   {% endfor %}
+   {% for arg in args %}
+   {{ arg }}
+   {% endfor %}
+end subroutine {{name}}_wrapper
+    """
+    )
 
-    Func = as_jinja(
-        """subroutine {{name}}_wrapper({{param_names}}) bind(c, name='{{name}}_wrapper')
-       use, intrinsic :: iso_c_binding
-       {% for size_arg in global_size_args -%}
-       integer(c_int), value, target :: {{ size_arg }}
-       {% endfor %}
-       {% for arg in args: %}\
-       {{arg}}\
-       {% endfor %}\
-    end subroutine {{name}}_wrapper
+    def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs):
+        arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
+        param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
+        return self.generic_visit(
+            func,
+            assumed_size_array=False,
+            param_names=arg_names,
+            param_names_with_size_args=param_names_with_size_args,
+        )
+
+    F90FunctionDefinition = as_jinja(
+        """
+subroutine run_{{name}}({{param_names}})
+   use, intrinsic :: iso_c_binding
+   {% for size_arg in global_size_args %}
+   integer(c_int) :: {{ size_arg }}
+   {% endfor %}
+   {% for arg in args %}
+   {{ arg }}
+   {% endfor %}
+
+    ! Maybe these should be unique, but then which variables should we choose?
+   {% for d in _this_node.dimension_size_declarations %}
+   {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
+   {% endfor %}
+
+   call {{ name }}_wrapper({{ param_names_with_size_args }})
+
+end subroutine run_{{name}}
     """
     )
 
@@ -282,12 +368,23 @@ class F90InterfaceGenerator(TemplatedGenerator):
         return self.generic_visit(
             param,
             value=as_f90_value(param),
-            rendered_type=to_f_type(param.d_type),
-            dim=render_fortran_array_dimensions(param),
+            iso_c_type=to_iso_c_type(param.d_type),
+            dim=render_fortran_array_dimensions(param, kwargs["assumed_size_array"]),
             explicit_size=render_fortran_array_sizes(param),
         )
 
-    FuncParameter = as_jinja(
-        """{{rendered_type}}, {{dim}} {{value}} target :: {{name}}{{ explicit_size }}
-    """
-    )
+    FuncParameter = as_jinja("""{{iso_c_type}}, {{dim}} {{value}} target :: {{name}}""")
+
+
+def build_array_size_args() -> dict[str, str]:
+    array_size_args = {}
+    from icon4py.model.common import dimension
+
+    for var_name, var in vars(dimension).items():
+        if isinstance(var, Dimension):
+            dim_name = var_name.replace(
+                "Dim", ""
+            )  # Assumes we keep suffixing each Dimension with Dim
+            size_name = f"n_{dim_name}"
+            array_size_args[dim_name] = size_name
+    return array_size_args

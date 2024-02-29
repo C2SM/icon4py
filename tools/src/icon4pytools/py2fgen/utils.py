@@ -17,20 +17,6 @@ from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
 
-def build_array_size_args() -> dict[str, str]:
-    array_size_args = {}
-    from icon4py.model.common import dimension
-
-    for var_name, var in vars(dimension).items():
-        if isinstance(var, Dimension):
-            dim_name = var_name.replace(
-                "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim
-            size_name = f"n_{dim_name}"
-            array_size_args[dim_name] = size_name
-    return array_size_args
-
-
 class Backend(Enum):
     CPU = "run_gtfn"
     GPU = "run_gtfn_gpu"

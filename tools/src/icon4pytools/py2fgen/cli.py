@@ -16,13 +16,13 @@ import pathlib
 import click
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
-from icon4pytools.py2fgen.cffi import generate_and_compile_cffi_plugin
 from icon4pytools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,
     generate_python_wrapper,
 )
 from icon4pytools.py2fgen.parsing import parse
+from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
 from icon4pytools.py2fgen.utils import Backend
 
 

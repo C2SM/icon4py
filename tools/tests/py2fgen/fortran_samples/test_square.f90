@@ -16,8 +16,8 @@ program call_square_wrapper_cffi_plugin
     kdim = 10
 
     ! allocate arrays (allocate in column-major order)
-    allocate(input(kdim, cdim))
-    allocate(result(kdim, cdim))
+    allocate(input(cdim, kdim))
+    allocate(result(cdim, kdim))
 
     ! initialise arrays
     input = 5.0d0
@@ -37,9 +37,9 @@ program call_square_wrapper_cffi_plugin
 
     ! Call the appropriate cffi plugin
 #ifdef USE_SQUARE_FROM_FUNCTION
-    call square_from_function_wrapper(input, result, cdim, kdim)
+    call run_square_from_function(input, result)
 #else
-    call square_wrapper(input, result, cdim, kdim)
+    call run_square(input, result)
 #endif
 
      ! print array shapes and values before computation

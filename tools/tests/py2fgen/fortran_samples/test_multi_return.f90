@@ -14,10 +14,10 @@ program call_multi_return_cffi_plugin
     kdim = 10
 
     ! allocate arrays (allocate in column-major order)
-    allocate(z_vn_avg(kdim, edim))
-    allocate(mass_fl_e(kdim, edim))
-    allocate(vn_traj(kdim, edim))
-    allocate(mass_flx_me(kdim, edim))
+    allocate(z_vn_avg(edim, kdim))
+    allocate(mass_fl_e(edim, kdim))
+    allocate(vn_traj(edim, kdim))
+    allocate(mass_flx_me(edim, kdim))
 
     ! initialize arrays and variables
     z_vn_avg = 1.0d0
@@ -43,8 +43,8 @@ program call_multi_return_cffi_plugin
     print *
 
     ! call the cffi plugin
-    call multi_return_wrapper(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
-            horizontal_start, horizontal_end, vertical_start, vertical_end, edim, kdim)
+    call run_multi_return(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
+            horizontal_start, horizontal_end, vertical_start, vertical_end)
 
     ! print array shapes and values before computation
     print *, "Arrays after computation:"
