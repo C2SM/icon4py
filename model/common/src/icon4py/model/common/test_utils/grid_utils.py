@@ -54,16 +54,13 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
 
 def _load_from_gridfile(file_path: str, filename: str, num_levels: int, on_gpu: bool) -> IconGrid:
     grid_file = GRIDS_PATH.joinpath(file_path, filename)
-    try:
-        if not grid_file.exists():
-            download_and_extract(
-                GRID_URIS[file_path],
-                grid_file.parent,
-                grid_file.parent,
-                "downloaded_grid.tar.gz",
-            )
-    except:
-        raise FileNotFoundError(f"Grid file {grid_file} not found")
+    if not grid_file.exists():
+        download_and_extract(
+            GRID_URIS[file_path],
+            grid_file.parent,
+            grid_file.parent,
+            "downloaded_grid.tar.gz",
+        )
     gm = GridManager(
         ToGt4PyTransformation(),
         str(grid_file),
