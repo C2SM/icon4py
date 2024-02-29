@@ -17,7 +17,6 @@ import pytest
 from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRID_URIS,
@@ -49,17 +48,18 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
             on_gpu=on_gpu,
         )
     else:
-        raise ValueError(f"Unknown grid file for: {experiment}")
+        raise ValueError(f"Unknown experiment: {experiment}")
 
 
 def _load_from_gridfile(file_path: str, filename: str, num_levels: int, on_gpu: bool) -> IconGrid:
     grid_file = GRIDS_PATH.joinpath(file_path, filename)
     if not grid_file.exists():
+        from icon4py.model.common.test_utils.data_handling import download_and_extract
+
         download_and_extract(
             GRID_URIS[file_path],
             grid_file.parent,
             grid_file.parent,
-            "downloaded_grid.tar.gz",
         )
     gm = GridManager(
         ToGt4PyTransformation(),
