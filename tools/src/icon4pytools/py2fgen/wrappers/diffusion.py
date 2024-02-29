@@ -57,8 +57,6 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-from icon4pytools.py2f.cffi_utils import CffiMethod, to_fields
-
 
 # TODO (magdalena) Revise interface architecture with Fortran granules:
 # The module variable to match the Fortran interface: where only fields are passed.
@@ -69,8 +67,6 @@ nproma = 50000
 field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim: nproma}
 
 
-@to_fields(dim_sizes=field_sizes)
-@CffiMethod.register
 def diffusion_init(
     nproma: int,
     nlev: int,
@@ -234,7 +230,6 @@ def diffusion_init(
     )
 
 
-@CffiMethod.register
 def diffusion_run(
     dtime: float,
     linit: bool,
