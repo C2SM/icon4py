@@ -129,9 +129,11 @@ class SavepointDataFactory:
         fields = [
             FieldSerialisationData(
                 variable=variable,
-                association="z_hydro_corr(:,:,1)"  # special case
-                if association == "z_hydro_corr(:,nlev,1)"
-                else association,
+                association=(
+                    "z_hydro_corr(:,:,1)"  # special case
+                    if association == "z_hydro_corr(:,nlev,1)"
+                    else association
+                ),
                 decomposed=False,
                 dimension=None,
                 typespec=None,
