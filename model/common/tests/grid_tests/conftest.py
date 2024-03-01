@@ -25,10 +25,9 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     processor_props,
     ranked_data_path,
 )
-
-from .utils import MCH_GRID_FILE
+from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 
 
 @pytest.fixture
 def grid_file():
-    return MCH_GRID_FILE
+    return REGIONAL_EXPERIMENT

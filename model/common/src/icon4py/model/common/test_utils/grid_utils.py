@@ -10,26 +10,64 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import functools
 
 import pytest
 
-from icon4py.model.common.decomposition.definitions import SingleNodeRun
+from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
+from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.test_utils.datatest_utils import (
-    SERIALIZED_DATA_PATH,
-    create_icon_serial_data_provider,
-    get_datapath_for_experiment,
-    get_processor_properties_for_run,
-    get_ranked_data_path,
+    GLOBAL_EXPERIMENT,
+    GRID_URIS,
+    GRIDS_PATH,
+    R02B04_GLOBAL,
+    REGIONAL_EXPERIMENT,
 )
 
 
-def get_icon_grid(on_gpu: bool):
-    processor_properties = get_processor_properties_for_run(SingleNodeRun())
-    ranked_path = get_ranked_data_path(SERIALIZED_DATA_PATH, processor_properties)
-    data_path = get_datapath_for_experiment(ranked_path)
-    icon_data_provider = create_icon_serial_data_provider(data_path, processor_properties)
-    grid_savepoint = icon_data_provider.from_savepoint_grid()
-    return grid_savepoint.construct_icon_grid(on_gpu)
+GLOBAL_NUM_LEVELS = 80
+
+MCH_CH_R04B09_LEVELS = 65
+
+
+@functools.cache
+def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGrid:
+    if experiment == GLOBAL_EXPERIMENT:
+        return _load_from_gridfile(
+            R02B04_GLOBAL,
+            "icon_grid_0013_R02B04_R.nc",
+            num_levels=GLOBAL_NUM_LEVELS,
+            on_gpu=on_gpu,
+        )
+    elif experiment == REGIONAL_EXPERIMENT:
+        return _load_from_gridfile(
+            REGIONAL_EXPERIMENT,
+            "grid.nc",
+            num_levels=MCH_CH_R04B09_LEVELS,
+            on_gpu=on_gpu,
+        )
+    else:
+        raise ValueError(f"Unknown experiment: {experiment}")
+
+
+def _load_from_gridfile(file_path: str, filename: str, num_levels: int, on_gpu: bool) -> IconGrid:
+    grid_file = GRIDS_PATH.joinpath(file_path, filename)
+    if not grid_file.exists():
+        from icon4py.model.common.test_utils.data_handling import download_and_extract
+
+        download_and_extract(
+            GRID_URIS[file_path],
+            grid_file.parent,
+            grid_file.parent,
+        )
+    gm = GridManager(
+        ToGt4PyTransformation(),
+        str(grid_file),
+        VerticalGridSize(num_levels),
+    )
+    gm(on_gpu=on_gpu)
+    return gm.get_grid()
 
 
 @pytest.fixture
