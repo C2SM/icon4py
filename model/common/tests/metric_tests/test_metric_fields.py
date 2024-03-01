@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests.metric_tests.utils import is_otf
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
@@ -58,8 +59,8 @@ class TestComputeZMc(StencilTest):
         )
 
 
-def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend, is_otf):
-    if not is_otf:
+def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
+    if not is_otf(backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
@@ -93,8 +94,8 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend, is_otf):
     assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
-def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend, is_otf):
-    if not is_otf:
+def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
+    if not is_otf(backend):
         pytest.skip("skipping: unsupported backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
