@@ -97,12 +97,7 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid, uses_local_area_icon_grid_with_otf):
-        if uses_local_area_icon_grid_with_otf:
-            pytest.skip(
-                "Execution domain needs to be restricted or boundary taken into account in stencil."
-            )
-
+    def input_data(self, grid):
         edge = indices_field(EdgeDim, grid, is_halfdim=False, dtype=int32)
 
         u_vert = random_field(grid, VertexDim, KDim)

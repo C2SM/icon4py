@@ -54,12 +54,7 @@ class TestCalculateNabla2ForZ(StencilTest):
         return dict(z_nabla2_e=z_nabla2_e)
 
     @pytest.fixture
-    def input_data(self, grid, uses_local_area_icon_grid_with_otf):
-        if uses_local_area_icon_grid_with_otf:
-            pytest.skip(
-                "Execution domain needs to be restricted or boundary taken into account in stencil."
-            )
-
+    def input_data(self, grid):
         kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
         inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
         theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
