@@ -14,16 +14,13 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
+import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.program_processors.otf_compile_executor import (
-    CachedOTFCompileExecutor,
-    OTFCompileExecutor,
-)
 
 from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
@@ -101,8 +98,7 @@ def constant_field(
     grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
 ) -> gt_common.Field:
     return as_field(
-        dims,
-        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
+        dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
     )
 
 
@@ -246,7 +242,9 @@ def uses_local_area_icon_grid_with_otf(backend, grid):
     """
     if hasattr(backend, "executor") and isinstance(grid, IconGrid):
         if grid.limited_area:
-            if isinstance(backend.executor, (OTFCompileExecutor, CachedOTFCompileExecutor)):
+            if isinstance(
+                backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
+            ):
                 return True
             try:
                 from gt4py.next.program_processors.runners import dace_iterator
