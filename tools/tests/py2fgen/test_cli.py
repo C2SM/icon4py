@@ -29,6 +29,11 @@ def wrapper_module():
     return "icon4pytools.py2fgen.wrappers.simple"
 
 
+@pytest.fixture
+def diffusion_module():
+    return "icon4pytools.py2fgen.wrappers.diffusion_test_case"
+
+
 def run_test_case(
     cli,
     module: str,
@@ -106,6 +111,20 @@ def test_py2fgen_compilation_and_execution_square_from_function(
         samples_path,
         "test_square",
         ("-DUSE_SQUARE_FROM_FUNCTION",),
+    )
+
+
+@pytest.mark.parametrize("backend", ("ROUNDTRIP",))
+def test_py2fgen_compilation_and_execution_diffusion_test_case(
+    cli_runner, backend, samples_path, diffusion_module
+):
+    run_test_case(
+        cli_runner,
+        diffusion_module,
+        "diffusion_test_case",
+        backend,
+        samples_path,
+        "test_diffusion",
     )
 
 

@@ -27,6 +27,7 @@ Fortran granule interfaces:
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
+
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -56,7 +57,6 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, Horizon
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-
 
 # TODO (magdalena) Revise interface architecture with Fortran granules:
 # The module variable to match the Fortran interface: where only fields are passed.

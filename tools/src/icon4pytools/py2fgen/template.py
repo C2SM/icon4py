@@ -371,8 +371,12 @@ end subroutine {{name}}_wrapper
     )
 
     def visit_F90FunctionDefinition(self, func: F90FunctionDefinition, **kwargs):
-        arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
-        param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
+        if len(func.args) < 1:
+            arg_names, param_names_with_size_args = "", ""
+        else:
+            arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
+            param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
+
         return self.generic_visit(
             func,
             assumed_size_array=False,
