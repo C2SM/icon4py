@@ -12,4 +12,4 @@ benchmark_model_icon_grid:
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
-      - GRID: [icon_grid, icon_grid_global]
+        GRID: [icon_grid, icon_grid_global]
