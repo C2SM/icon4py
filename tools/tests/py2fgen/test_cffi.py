@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from cffi import FFI
 
-from icon4pytools.py2fgen.cffi import unpack
+from icon4pytools.py2fgen.plugin import unpack
 
 
 @pytest.fixture
@@ -26,11 +26,11 @@ def ffi():
 @pytest.mark.parametrize(
     "data, expected_result",
     [
-        ([1.0, 2.0, 3.0, 4.0], np.array([[1.0, 2.0], [3.0, 4.0]])),
-        ([1, 2, 3, 4], np.array([[1, 2], [3, 4]])),
+        ([1.0, 2.0, 3.0, 4.0], np.array([[1.0, 3.0], [2.0, 4.0]])),
+        ([1, 2, 3, 4], np.array([[1, 3], [2, 4]])),
     ],
 )
-def test_unpack(data, expected_result, ffi):
+def test_unpack_column_major(data, expected_result, ffi):
     ptr = ffi.new("double[]", data) if isinstance(data[0], float) else ffi.new("int[]", data)
 
     rows, cols = expected_result.shape

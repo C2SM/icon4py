@@ -24,7 +24,7 @@ program call_square_wrapper_cffi_plugin
     result = 0.0d0
 
     ! print array shapes and values before computation
-    print *, "Arrays before computation:"
+    print *, "Fortran Arrays before calling Python:"
     write(str_buffer, '("Shape of input = ", I2, ",", I2)') size(input, 1), size(input, 2)
     print *, trim(str_buffer)
     write(str_buffer, '("Shape of result = ", I2, ",", I2)') size(result, 1), size(result, 2)
@@ -43,7 +43,7 @@ program call_square_wrapper_cffi_plugin
 #endif
 
      ! print array shapes and values before computation
-    print *, "Arrays after computation:"
+    print *, "Fortran arrays after calling Python:"
     write(str_buffer, '("Shape of input = ", I2, ",", I2)') size(input, 1), size(input, 2)
     print *, trim(str_buffer)
     write(str_buffer, '("Shape of result = ", I2, ",", I2)') size(result, 1), size(result, 2)

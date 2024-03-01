@@ -19,6 +19,7 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4pytools.py2fgen.template import (
     CffiPlugin,
     CHeaderGenerator,
+    F90Interface,
     F90InterfaceGenerator,
     Func,
     FuncParameter,
@@ -107,25 +108,60 @@ def test_fortran_interface():
     plugin = CffiPlugin(
         module_name="libtest", plugin_name="libtest_plugin", function=foo, imports=["import foo"]
     )
-    interface = F90InterfaceGenerator.apply(plugin)
+    interface = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
     expected = """
     module libtest_plugin
-    use, intrinsic:: iso_c_binding
+    use, intrinsic :: iso_c_binding
     implicit none
 
-    public
-    interface
-        subroutine foo_wrapper(one, &
-                       two, &
+    public :: run_foo
+
+interface
+
+subroutine foo_wrapper(one, &
+                       two,&
                        n_Cell, &
-                       n_K) bind(c, name='foo_wrapper')
-            use, intrinsic :: iso_c_binding
-            integer(c_int), value, target :: n_Cell
-            integer(c_int), value, target :: n_K
-            integer(c_int), value, target :: one
-            real(c_double), dimension(:, :), target :: two(n_Cell, n_K)
-        end subroutine foo_wrapper
-    end interface
-    end module
+                       n_K) bind(c, name="foo_wrapper")
+   import :: c_int, c_double    ! maybe use use, intrinsic :: iso_c_binding instead?
+
+   integer(c_int), value :: n_Cell
+
+   integer(c_int), value :: n_K
+
+   integer(c_int),  value, target :: one
+
+   real(c_double), dimension(*),  target :: two
+
+end subroutine foo_wrapper
+
+end interface
+
+contains
+
+subroutine run_foo(one, &
+                   two)
+   use, intrinsic :: iso_c_binding
+
+   integer(c_int) :: n_Cell
+
+   integer(c_int) :: n_K
+
+   integer(c_int),  value, target :: one
+
+   real(c_double), dimension(:,:),  target :: two
+
+   ! Maybe these should be unique, but then which variables should we choose?
+
+   n_Cell = SIZE(two, 1)
+
+   n_K = SIZE(two, 2)
+
+   call foo_wrapper(one, &
+                    two,&
+                    n_Cell, &
+                    n_K)
+
+end subroutine run_foo
+end module
     """
     assert compare_ignore_whitespace(interface, expected)

@@ -76,6 +76,20 @@ class PythonWrapper(CffiPlugin):
     cffi_unpack: str = inspect.getsource(unpack)
 
 
+def build_array_size_args() -> dict[str, str]:
+    array_size_args = {}
+    from icon4py.model.common import dimension
+
+    for var_name, var in vars(dimension).items():
+        if isinstance(var, Dimension):
+            dim_name = var_name.replace(
+                "Dim", ""
+            )  # Assumes we keep suffixing each Dimension with Dim
+            size_name = f"n_{dim_name}"
+            array_size_args[dim_name] = size_name
+    return array_size_args
+
+
 def to_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
@@ -171,6 +185,7 @@ from {{ plugin_name }} import ffi
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next import as_field
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -197,16 +212,22 @@ def {{ _this_node.function.name }}_wrapper(
 {%- endfor -%}
 ):
 
+    {%- if _this_node.debug_mode %}
+    print("Python Execution Context Start")
+    {% endif %}
+
     # Unpack pointers into Ndarrays
     {% for arg in _this_node.function.args %}
     {% if arg.is_array %}
     {%- if _this_node.debug_mode %}
-    msg = 'printing {{ arg.name }}: %s' % str({{ arg.name}})
+    msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
     print(msg)
     {% endif %}
     {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
     {%- if _this_node.debug_mode %}
-    msg = 'shape of {{ arg.name }} = %s' % str({{ arg.name}}.shape)
+    msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
+    print(msg)
+    msg = 'printing shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
     print(msg)
     {% endif %}
     {% endif %}
@@ -216,9 +237,12 @@ def {{ _this_node.function.name }}_wrapper(
     {% for arg in _this_node.function.args %}
     {% if arg.is_array %}
     {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
+    # {{ arg.name }} = as_field(({{ ", ".join(arg.gtdims) }}), {{ arg.name }})
     {%- if _this_node.debug_mode %}
-    print({{ arg.name }})
-    print({{ arg.name }}.shape)
+    msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
+    print(msg)
+    msg = 'printing {{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
+    print(msg)
     {% endif %}
     {% endif %}
     {% endfor %}
@@ -231,7 +255,21 @@ def {{ _this_node.function.name }}_wrapper(
     {%- if _this_node.function.is_gt4py_program -%}
     offset_provider=grid.offset_providers
     {%- endif -%}
-)
+    )
+
+    {% if _this_node.debug_mode %}
+    # debug info
+    {% for arg in _this_node.function.args %}
+    msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+    print(msg)
+    msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+    print(msg)
+    {% endfor %}
+    {% endif %}
+
+    {%- if _this_node.debug_mode %}
+    print("Python Execution Context End")
+    {% endif %}
 """
     )
 
@@ -374,17 +412,3 @@ end subroutine run_{{name}}
         )
 
     FuncParameter = as_jinja("""{{iso_c_type}}, {{dim}} {{value}} target :: {{name}}""")
-
-
-def build_array_size_args() -> dict[str, str]:
-    array_size_args = {}
-    from icon4py.model.common import dimension
-
-    for var_name, var in vars(dimension).items():
-        if isinstance(var, Dimension):
-            dim_name = var_name.replace(
-                "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim
-            size_name = f"n_{dim_name}"
-            array_size_args[dim_name] = size_name
-    return array_size_args
