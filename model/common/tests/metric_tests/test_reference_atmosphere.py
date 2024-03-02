@@ -13,7 +13,6 @@
 
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
-from model.common.tests.metric_tests.utils import is_otf
 
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
@@ -27,7 +26,7 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
 )
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.common.test_utils.helpers import dallclose, is_otf, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 

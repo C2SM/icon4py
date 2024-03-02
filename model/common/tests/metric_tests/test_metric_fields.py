@@ -15,7 +15,6 @@ import numpy as np
 import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
-from model.common.tests.metric_tests.utils import is_otf
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
@@ -23,7 +22,13 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddqz_z_half,
     compute_z_mc,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, dallclose, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    dallclose,
+    is_otf,
+    random_field,
+    zero_field,
+)
 
 
 class TestComputeZMc(StencilTest):
