@@ -16,7 +16,7 @@ import numpy as np
 
 def compute_wgtfacq_c(
     z_ifc: np.array,
-    nlevp1: int,
+    nlev: int,
 ) -> np.array:
     """
     Compute weighting factor for quadratic interpolation to surface.
@@ -27,14 +27,13 @@ def compute_wgtfacq_c(
     Returns:
     Field[CellDim, KDim] (full levels)
     """
-    nlev = nlevp1 - 1
-    wgtfacq_c = np.zeros((z_ifc.shape[0], nlevp1))
-    z1 = 0.5 * (z_ifc[:, nlev] - z_ifc[:, nlevp1])
-    z2 = 0.5 * (z_ifc[:, nlev] + z_ifc[:, nlev - 1]) - z_ifc[:, nlevp1]
-    z3 = 0.5 * (z_ifc[:, nlev - 1] + z_ifc[:, nlev - 2]) - z_ifc[:, nlevp1]
+    wgtfacq_c = np.zeros((z_ifc.shape[0], nlev))
+    z1 = 0.5 * (z_ifc[:, nlev - 1] - z_ifc[:, nlev])
+    z2 = 0.5 * (z_ifc[:, nlev - 1] + z_ifc[:, nlev - 2]) - z_ifc[:, nlev]
+    z3 = 0.5 * (z_ifc[:, nlev - 2] + z_ifc[:, nlev - 3]) - z_ifc[:, nlev]
 
-    wgtfacq_c[:, nlev - 2] = z1 * z2 / (z2 - z3) / (z1 - z3)
-    wgtfacq_c[:, nlev - 1] = (z1 - wgtfacq_c[:, nlev - 2] * (z1 - z3)) / (z1 - z2)
-    wgtfacq_c[:, nlev] = 1.0 - (wgtfacq_c[:, nlev - 1] + wgtfacq_c[:, nlev - 2])
+    wgtfacq_c[:, nlev - 3] = z1 * z2 / (z2 - z3) / (z1 - z3)
+    wgtfacq_c[:, nlev - 2] = (z1 - wgtfacq_c[:, nlev - 3] * (z1 - z3)) / (z1 - z2)
+    wgtfacq_c[:, nlev - 1] = 1.0 - (wgtfacq_c[:, nlev - 2] + wgtfacq_c[:, nlev - 3])
 
     return wgtfacq_c
