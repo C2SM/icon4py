@@ -10,24 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    damping_height,
-    data_provider,
-    datapath,
-    decomposition_info,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
-)
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
+from pathlib import Path
+
+import pytest
 
 
 @pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT
+def samples_path():
+    return Path(__file__).parent / "fortran_samples"

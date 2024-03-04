@@ -10,24 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    damping_height,
-    data_provider,
-    datapath,
-    decomposition_info,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
-)
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
+from icon4pytools.py2fgen.parsing import parse
+from icon4pytools.py2fgen.template import CffiPlugin
 
 
-@pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT
+def test_parse_functions_on_wrapper():
+    module_path = "icon4pytools.py2fgen.wrappers.diffusion"
+    function_name = "diffusion_init"
+    plugin = parse(module_path, function_name)
+    assert isinstance(plugin, CffiPlugin)
+    assert plugin.plugin_name == "diffusion_init_plugin"

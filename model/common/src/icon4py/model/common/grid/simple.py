@@ -14,6 +14,7 @@
 from dataclasses import dataclass
 
 import numpy as np
+from gt4py.next import Dimension
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -453,6 +454,9 @@ class SimpleGrid(BaseGrid):
     @property
     def num_levels(self) -> int:
         return self.config.num_levels
+
+    def _has_skip_values(self, dimension: Dimension) -> bool:
+        return False
 
     def _configure(self):
         horizontal_grid_size = HorizontalGridSize(
