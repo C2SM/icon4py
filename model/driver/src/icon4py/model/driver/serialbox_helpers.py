@@ -67,7 +67,7 @@ def construct_diagnostics_for_diffusion(
     savepoint: IconDiffusionInitSavepoint,
     grid_savepoint: IconGridSavepoint,
 ) -> DiffusionDiagnosticState:
-    grid = grid_savepoint.construct_icon_grid()
+    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     dwdx = savepoint.dwdx() if savepoint.dwdx() else zero_field(grid, CellDim, KDim)
     dwdy = savepoint.dwdy() if savepoint.dwdy() else zero_field(grid, CellDim, KDim)
     return DiffusionDiagnosticState(

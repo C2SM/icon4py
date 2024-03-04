@@ -856,8 +856,6 @@ class TimeLoop:
         test_c1 = diagnostic_metric_state.rbf_vec_coeff_c1
         test_c2 = diagnostic_metric_state.rbf_vec_coeff_c2
         test_vn_np = prognostic_state_list[self._now].vn.asnumpy()
-        # test_u_np = diagnostic_state.u.asnumpy()
-        # test_v_np = diagnostic_state.v.asnumpy()
         test_c2e2c2e_np = self.grid.connectivities[C2E2C2EDim]
         test_c1_np = diagnostic_metric_state.rbf_vec_coeff_c1.asnumpy()
         test_c2_np = diagnostic_metric_state.rbf_vec_coeff_c2.asnumpy()
@@ -880,6 +878,7 @@ class TimeLoop:
 
             timer.start()
             fo(
+            #mo_rbf_vec_interpol_cell.with_backend(backend)(
                 test_vn,
                 test_c1,
                 test_c2,

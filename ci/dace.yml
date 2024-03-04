@@ -1,0 +1,28 @@
+include:
+  - local: 'ci/base.yml'
+
+variables:
+  DACE_VERSION: "0.15.1"
+
+build:
+  extends: .build_template
+
+test_model_simple_grid:
+    extends: .test_template
+    stage: test
+    script:
+        - pip install dace==$DACE_VERSION
+        - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --verbose
+    parallel:
+      matrix:
+        - BACKEND: [dace_cpu, dace_gpu]
+
+benchmark_model_icon_grid:
+    extends: .test_template
+    stage: benchmark
+    script:
+      - pip install dace==$DACE_VERSION
+      - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid_global --verbose
+    parallel:
+      matrix:
+        - BACKEND: [dace_cpu, dace_gpu]

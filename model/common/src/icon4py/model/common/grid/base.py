@@ -11,8 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import warnings
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from functools import cached_property
 from typing import Callable, Dict
 
 import numpy as np
@@ -26,6 +28,10 @@ from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
 
 
+class MissingConnectivity(ValueError):
+    pass
+
+
 @dataclass(
     frozen=True,
 )
@@ -35,6 +41,7 @@ class GridConfig:
     limited_area: bool = True
     n_shift_total: int = 0
     lvertnest: bool = False
+    on_gpu: bool = False
 
     @property
     def num_levels(self):
@@ -80,6 +87,22 @@ class BaseGrid(ABC):
     def num_levels(self) -> int:
         pass
 
+    @abstractmethod
+    def _has_skip_values(self, dimension: Dimension) -> bool:
+        pass
+
+    @cached_property
+    def offset_providers(self):
+        offset_providers = {}
+        for key, value in self.offset_provider_mapping.items():
+            try:
+                method, *args = value
+                offset_providers[key] = method(*args) if args else method()
+            except MissingConnectivity:
+                warnings.warn(f"{key} connectivity is missing from grid.", stacklevel=2)
+
+        return offset_providers
+
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
         self.connectivities.update({d: k.astype(int) for d, k in connectivity.items()})
@@ -97,13 +120,31 @@ class BaseGrid(ABC):
         self.size[KDim] = self.config.num_levels
 
     def _get_offset_provider(self, dim, from_dim, to_dim):
+        if dim not in self.connectivities:
+            raise MissingConnectivity()
+
+        if self.config.on_gpu:
+            import cupy as xp
+        else:
+            xp = np
+
         return NeighborTableOffsetProvider(
-            self.connectivities[dim], from_dim, to_dim, self.size[dim]
+            xp.asarray(self.connectivities[dim]),
+            from_dim,
+            to_dim,
+            self.size[dim],
+            has_skip_values=self._has_skip_values(dim),
         )
 
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
+        if dim not in self.connectivities:
+            raise MissingConnectivity()
         return neighbortable_offset_provider_for_1d_sparse_fields(
-            self.connectivities[dim].shape, from_dim, to_dim
+            self.connectivities[dim].shape,
+            from_dim,
+            to_dim,
+            on_gpu=self.config.on_gpu,
+            has_skip_values=self._has_skip_values(dim),
         )
 
     def get_offset_provider(self, name):
@@ -112,14 +153,6 @@ class BaseGrid(ABC):
             return method(*args)
         else:
             raise Exception(f"Offset provider for {name} not found.")
-
-    def get_all_offset_providers(self):
-        offset_providers = {}
-        for key, value in self.offset_provider_mapping.items():
-            method, *args = value
-            offset_providers[key] = method(*args) if args else method()
-
-        return offset_providers
 
     def update_size_connectivities(self, new_sizes):
         self.size.update(new_sizes)

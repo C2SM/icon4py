@@ -26,7 +26,7 @@ from icon4py.model.common.type_alias import vpfloat
 def _set_two_cell_kdim_fields_to_zero_vp() -> (
     tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]
 ):
-    """Formerly known as_mo_solve_nonhydro_stencil_01."""
+    """Formerly known as _mo_solve_nonhydro_stencil_01."""
     return _set_cell_kdim_field_to_zero_vp(), _set_cell_kdim_field_to_zero_vp()
 
 

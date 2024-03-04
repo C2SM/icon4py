@@ -394,9 +394,8 @@ class Diffusion:
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.thresh_tdiff: float = (
-            -5.0
-        )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self.thresh_tdiff: float = -5.0
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
@@ -530,6 +529,7 @@ class Diffusion:
             offset_provider=self.offset_provider_koff,
         )
 
+        # TODO (magdalena) port to gt4py?
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
             nshift=0,
@@ -563,7 +563,6 @@ class Diffusion:
         self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
-        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
         self.horizontal_cell_index = _index_field(CellDim)

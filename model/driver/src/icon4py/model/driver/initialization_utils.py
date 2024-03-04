@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, V2C2VDim, E2C2VDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
@@ -109,7 +109,7 @@ def read_icon_grid(
         return (
             sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
-            .construct_icon_grid()
+            .construct_icon_grid(on_gpu=False)
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
@@ -346,6 +346,7 @@ def model_initialization_jabw(
         vn_traj=_allocate(EdgeDim, KDim, grid=icon_grid),
         mass_flx_me=_allocate(EdgeDim, KDim, grid=icon_grid),
         mass_flx_ic=_allocate(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
     log.info(f'Initialization completed.')
 
@@ -575,7 +576,7 @@ def read_static_fields(
         icon_grid = (
             sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
-            .construct_icon_grid()
+            .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()

@@ -23,36 +23,32 @@ from gt4py.next.program_processors.runners.gtfn import (
 )
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
+)
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
+    add_extra_diffusion_for_wn_approaching_cfl,
+)
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
+)
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
+    interpolate_contravatiant_vertical_verlocity_to_full_levels,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    interpolate_vn_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_01 import (
-    mo_velocity_advection_stencil_01,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_02 import (
-    mo_velocity_advection_stencil_02,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_03 import (
-    mo_velocity_advection_stencil_03,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_07 import (
-    mo_velocity_advection_stencil_07,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_15 import (
-    mo_velocity_advection_stencil_15,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_18 import (
-    mo_velocity_advection_stencil_18,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_19 import (
-    mo_velocity_advection_stencil_19,
-)
-from icon4py.model.atmosphere.dycore.mo_velocity_advection_stencil_20 import (
-    mo_velocity_advection_stencil_20,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -115,21 +111,21 @@ class VelocityAdvection:
 
         self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
         self.stencil_mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_01 = mo_velocity_advection_stencil_01.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_02 = mo_velocity_advection_stencil_02.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_03 = mo_velocity_advection_stencil_03.with_backend(backend)
+        self.stencil_compute_tangential_wind = compute_tangential_wind.with_backend(backend)
+        self.stencil_interpolate_vn_to_ie_and_compute_ekin_on_edges = interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(backend)
+        self.stencil_interpolate_vt_to_ie = interpolate_vt_to_ie.with_backend(backend)
         self.stencil_4_5 = velocity_prog.fused_stencils_4_5.with_backend(backend)
         self.stencil_extrapolate_at_top = velocity_prog.extrapolate_at_top.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_07 = mo_velocity_advection_stencil_07.with_backend(backend)
+        self.stencil_compute_horizontal_advection_term_for_vertical_velocity = compute_horizontal_advection_term_for_vertical_velocity.with_backend(backend)
         self.stencil_interpolate_to_cell_center = interpolate_to_cell_center.with_backend(backend)
         self.stencil_9_10 = velocity_prog.fused_stencils_9_10.with_backend(backend)
         self.stencil_11_to_13 = velocity_prog.fused_stencils_11_to_13.with_backend(backend)
         self.stencil_14 = velocity_prog.fused_stencil_14.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_15 = mo_velocity_advection_stencil_15.with_backend(backend)
+        self.stencil_interpolate_contravatiant_vertical_verlocity_to_full_levels = interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)
         self.stencil_16_to_17 = velocity_prog.fused_stencils_16_to_17.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_18 = mo_velocity_advection_stencil_18.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_19 = mo_velocity_advection_stencil_19.with_backend(backend)
-        self.stencil_mo_velocity_advection_stencil_20 = mo_velocity_advection_stencil_20.with_backend(backend)
+        self.stencil_add_extra_diffusion_for_w_con_approaching_cfl = add_extra_diffusion_for_w_con_approaching_cfl.with_backend(backend)
+        self.stencil_compute_advective_normal_wind_tendency = compute_advective_normal_wind_tendency.with_backend(backend)
+        self.stencil_add_extra_diffusion_for_wn_approaching_cfl = add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)
 
         self.offset_provider_v2c = {
                     "V2C": self.grid.get_offset_provider("V2C"),
@@ -265,7 +261,7 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_v2e,
         )
 
-        self.stencil_mo_velocity_advection_stencil_01(
+        self.stencil_compute_tangential_wind(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
             vt=diagnostic_state.vt,
@@ -276,7 +272,7 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_e2c2e,
         )
 
-        self.stencil_mo_velocity_advection_stencil_02(
+        self.stencil_interpolate_vn_to_ie_and_compute_ekin_on_edges(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
@@ -290,7 +286,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            self.stencil_mo_velocity_advection_stencil_03(
+            self.stencil_interpolate_vt_to_ie(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
@@ -331,7 +327,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            self.stencil_mo_velocity_advection_stencil_07(
+            self.stencil_compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -404,7 +400,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        self.stencil_mo_velocity_advection_stencil_15(
+        self.stencil_interpolate_contravatiant_vertical_verlocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -430,7 +426,7 @@ class VelocityAdvection:
                 offset_provider=self.offset_provider_c2e_c2ce_koff,
             )
 
-            self.stencil_mo_velocity_advection_stencil_18(
+            self.stencil_add_extra_diffusion_for_w_con_approaching_cfl(
                 levmask=self.levmask,
                 cfl_clipping=self.cfl_clipping,
                 owner_mask=self.c_owner_mask,
@@ -452,7 +448,7 @@ class VelocityAdvection:
 
         self.levelmask = self.levmask
 
-        self.stencil_mo_velocity_advection_stencil_19(
+        self.stencil_compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -471,7 +467,7 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_e2c_e2v_e2ec_koff,
         )
 
-        self.stencil_mo_velocity_advection_stencil_20(
+        self.stencil_add_extra_diffusion_for_wn_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -569,7 +565,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            self.stencil_mo_velocity_advection_stencil_07(
+            self.stencil_compute_horizontal_advection_term_for_vertical_velocity(
                 vn_ie=diagnostic_state.vn_ie,
                 inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
                 w=prognostic_state.w,
@@ -626,7 +622,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        self.stencil_mo_velocity_advection_stencil_15(
+        self.stencil_interpolate_contravatiant_vertical_verlocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -651,7 +647,7 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_c2e_c2ce_koff,
         )
 
-        self.stencil_mo_velocity_advection_stencil_18(
+        self.stencil_add_extra_diffusion_for_w_con_approaching_cfl(
             levmask=self.levmask,
             cfl_clipping=self.cfl_clipping,
             owner_mask=self.c_owner_mask,
@@ -674,7 +670,7 @@ class VelocityAdvection:
         # This behaviour needs to change for multiple blocks
         self.levelmask = self.levmask
 
-        self.stencil_mo_velocity_advection_stencil_19(
+        self.stencil_compute_advective_normal_wind_tendency(
             z_kin_hor_e=z_kin_hor_e,
             coeff_gradekin=self.metric_state.coeff_gradekin,
             z_ekinh=self.z_ekinh,
@@ -693,7 +689,7 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_e2c_e2v_e2ec_koff,
         )
 
-        self.stencil_mo_velocity_advection_stencil_20(
+        self.stencil_add_extra_diffusion_for_wn_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,

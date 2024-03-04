@@ -29,13 +29,17 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, VertexDim, C2E2C2EDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    dallclose,
+    zero_field,
+)
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.driver.initialization_utils import model_initialization_jabw
@@ -161,7 +165,6 @@ def test_jabw_initial_condition(
 
 
 @pytest.mark.datatest
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
     [
@@ -290,7 +293,10 @@ def test_run_timeloop_single_step(
     # do_prep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(), mass_flx_me=sp.mass_flx_me(), mass_flx_ic=sp.mass_flx_ic()
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
     iconrun_config = construct_iconrun_config(
