@@ -26,23 +26,11 @@
 import pytest
 
 from icon4py.model.common.metrics.stencils.compute_wgtfacq_c import compute_wgtfacq_c
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
-    data_provider,
-    datapath,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    processor_props,
-    ranked_data_path,
-)
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
-def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
+def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # fixture
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
     z_ifc = metrics_savepoint.z_ifc()
 
