@@ -14,16 +14,13 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
+import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.program_processors.otf_compile_executor import (
-    CachedOTFCompileExecutor,
-    OTFCompileExecutor,
-)
 
 from ..grid.base import BaseGrid
 from ..grid.icon import IconGrid
@@ -238,21 +235,24 @@ class StencilTest:
 
 
 @pytest.fixture
-def uses_icon_grid_with_otf(backend, grid):
-    """Check whether we are using a compiled backend with the icon_grid.
+def uses_local_area_icon_grid_with_otf(backend, grid):
+    """Check whether we are using a compiled backend with a limited_area icon_grid.
 
     Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
     """
     if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if isinstance(backend.executor, (OTFCompileExecutor, CachedOTFCompileExecutor)):
-            return True
-        try:
-            from gt4py.next.program_processors.runners import dace_iterator
-
-            if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
+        if grid.limited_area:
+            if isinstance(
+                backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
+            ):
                 return True
-        except ImportError:
-            pass
+            try:
+                from gt4py.next.program_processors.runners import dace_iterator
+
+                if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
+                    return True
+            except ImportError:
+                pass
     return False
 
 
