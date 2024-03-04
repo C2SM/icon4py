@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 class TestMoDiagTemperature(StencilTest):
     PROGRAM = mo_diagnose_temperature
-    OUTPUTS = ("temperature", "p_v_out")
+    OUTPUTS = ("temperature",)
 
     @staticmethod
     def reference(

@@ -16,13 +16,14 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, broadcast
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _mo_init_ddt_cell_zero(
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float]
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KDim], vpfloat]
 ]:
     ddt_exner_phy = broadcast(0.0, (CellDim, KDim))
     ddt_w_adv_ntl1 = broadcast(0.0, (CellDim, KDim))
@@ -36,9 +37,9 @@ def _mo_init_ddt_cell_zero(
 @field_operator
 def _mo_init_ddt_edge_zero(
 ) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float]
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat]
 ]:
     ddt_vn_phy = broadcast(0.0, (EdgeDim, KDim))
     ddt_vn_apc_ntl1 = broadcast(0.0, (EdgeDim, KDim))
@@ -51,9 +52,9 @@ def _mo_init_ddt_edge_zero(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_init_ddt_cell_zero(
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
+    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv_ntl2: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -73,9 +74,9 @@ def mo_init_ddt_cell_zero(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_init_ddt_edge_zero(
-    ddt_vn_phy: Field[[EdgeDim, KDim], float],
-    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float],
-    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float],
+    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

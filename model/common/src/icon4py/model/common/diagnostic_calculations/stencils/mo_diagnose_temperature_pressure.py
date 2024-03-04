@@ -16,24 +16,25 @@ from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, exp, log, sqrt
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _mo_diagnose_temperature(
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    theta_v: Field[[CellDim, KDim], vpfloat],
+    exner: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
     temperature = theta_v * exner
     return temperature
 
 @field_operator
 def _mo_diagnose_pressure_sfc(
-    exner_nlev_minus2: Field[[CellDim], float],
-    temperature_nlev: Field[[CellDim], float],
-    temperature_nlev_minus1: Field[[CellDim], float],
-    temperature_nlev_minus2: Field[[CellDim], float],
-    ddqz_z_full_nlev: Field[[CellDim], float],
-    ddqz_z_full_nlev_minus1: Field[[CellDim], float],
-    ddqz_z_full_nlev_minus2: Field[[CellDim], float],
+    exner_nlev_minus2: Field[[CellDim], vpfloat],
+    temperature_nlev: Field[[CellDim], vpfloat],
+    temperature_nlev_minus1: Field[[CellDim], vpfloat],
+    temperature_nlev_minus2: Field[[CellDim], vpfloat],
+    ddqz_z_full_nlev: Field[[CellDim], wpfloat],
+    ddqz_z_full_nlev_minus1: Field[[CellDim], wpfloat],
+    ddqz_z_full_nlev_minus2: Field[[CellDim], wpfloat],
     cpd_o_rd: float,
     p0ref: float,
     grav_o_rd: float,
@@ -61,10 +62,10 @@ def _scan_pressure(
 
 @field_operator
 def _mo_diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], float],
-    temperature: Field[[CellDim, KDim], float],
-    pressure_sfc: Field[[CellDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    temperature: Field[[CellDim, KDim], vpfloat],
+    pressure_sfc: Field[[CellDim], vpfloat],
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
     redundant, pressure, pressure_ifc = _scan_pressure(
         ddqz_z_full,
         temperature,
@@ -74,9 +75,9 @@ def _mo_diagnose_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_diagnose_temperature(
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    temperature: Field[[CellDim, KDim], float],
+    theta_v: Field[[CellDim, KDim], vpfloat],
+    exner: Field[[CellDim, KDim], vpfloat],
+    temperature: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -96,17 +97,17 @@ def mo_diagnose_temperature(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_diagnose_pressure_sfc(
-    exner_nlev_minus2: Field[[CellDim], float],
-    temperature_nlev: Field[[CellDim], float],
-    temperature_nlev_minus1: Field[[CellDim], float],
-    temperature_nlev_minus2: Field[[CellDim], float],
-    ddqz_z_full_nlev: Field[[CellDim], float],
-    ddqz_z_full_nlev_minus1: Field[[CellDim], float],
-    ddqz_z_full_nlev_minus2: Field[[CellDim], float],
-    pressure_sfc: Field[[CellDim], float],
-    cpd_o_rd: float,
-    p0ref: float,
-    grav_o_rd: float,
+    exner_nlev_minus2: Field[[CellDim], vpfloat],
+    temperature_nlev: Field[[CellDim], vpfloat],
+    temperature_nlev_minus1: Field[[CellDim], vpfloat],
+    temperature_nlev_minus2: Field[[CellDim], vpfloat],
+    ddqz_z_full_nlev: Field[[CellDim], wpfloat],
+    ddqz_z_full_nlev_minus1: Field[[CellDim], wpfloat],
+    ddqz_z_full_nlev_minus2: Field[[CellDim], wpfloat],
+    pressure_sfc: Field[[CellDim], vpfloat],
+    cpd_o_rd: wpfloat,
+    p0ref: wpfloat,
+    grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
 ):
@@ -129,11 +130,11 @@ def mo_diagnose_pressure_sfc(
 
 @program
 def mo_diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], float],
-    temperature: Field[[CellDim, KDim], float],
-    pressure_sfc: Field[[CellDim], float],
-    pressure: Field[[CellDim, KDim], float],
-    pressure_ifc: Field[[CellDim, KDim], float],
+    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    temperature: Field[[CellDim, KDim], vpfloat],
+    pressure_sfc: Field[[CellDim], vpfloat],
+    pressure: Field[[CellDim, KDim], vpfloat],
+    pressure_ifc: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

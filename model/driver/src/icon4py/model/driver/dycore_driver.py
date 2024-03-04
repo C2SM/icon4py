@@ -45,7 +45,7 @@ from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperatu
 from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, IconOutputConfig, read_config
-from icon4py.model.driver.io_utils import (
+from icon4py.model.driver.initialization_utils import (
     configure_logging,
     read_decomp_info,
     read_geometry_fields,
@@ -53,9 +53,8 @@ from icon4py.model.driver.io_utils import (
     read_initial_state,
     read_static_fields,
     SerializationType,
-    InitializationType,
-    mo_rbf_vec_interpol_cell_numpy,
 )
+from icon4py.model.driver.testcase_functions import mo_rbf_vec_interpol_cell_numpy
 from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.dimension import C2VDim, V2C2VDim, E2C2VDim, CellDim, EdgeDim, C2E2C2EDim, KDim
@@ -64,11 +63,11 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 from gt4py.next import as_field
 from gt4py.next.program_processors.runners import gtfn
 from gt4py.next.otf.compilation.build_systems import cmake
-from gt4py.next.otf.compilation.cache import Strategy
+#from gt4py.next.otf.compilation.cache import Strategy
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
-
+'''
 compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
     name="run_gtfn_cached_cmake_release",
     otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
@@ -78,7 +77,8 @@ compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExec
         )),
     hash_function=gtfn.compilation_hash),
 )
-backend = compiler_cached_release_backend
+'''
+backend = compiler_cached_backend #compiler_cached_release_backend
 
 log = logging.getLogger(__name__)
 
@@ -660,7 +660,6 @@ class TimeLoop:
         diagnostic_state: DiagnosticState,
         diagnostic_metric_state: DiagnosticMetricState
     ):
-        # TODO (Chia Rui): Move computation diagnostic variables to a module (diag_for_output_dyn subroutine)
         self.stencil_mo_rbf_vec_interpol_cell(
             prognostic_state.vn,
             diagnostic_metric_state.rbf_vec_coeff_c1,
@@ -690,7 +689,6 @@ class TimeLoop:
         temperature_nlev = diagnostic_state.temperature[:, self.grid.num_levels - 1]
         temperature_nlev_minus1 = diagnostic_state.temperature[:, self.grid.num_levels - 2]
         temperature_nlev_minus2 = diagnostic_state.temperature[:, self.grid.num_levels - 3]
-        # TODO (Chia Rui): ddqz_z_full is constant, move slicing to initialization
         ddqz_z_full_nlev = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 1]
         ddqz_z_full_nlev_minus1 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 2]
         ddqz_z_full_nlev_minus2 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 3]
@@ -830,7 +828,6 @@ class TimeLoop:
                 diagnostic_metric_state
             )
 
-            # TODO (Chia Rui): simple IO enough for JW test
             log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
             if not self.is_run_from_serializedData:
@@ -998,7 +995,7 @@ class TimeLoop:
 
 # "icon_pydycore"
 
-def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationType, init_type: InitializationType, file_path: Path, props: ProcessProperties):
+def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationType, file_path: Path, props: ProcessProperties):
     """
     Inititalize the driver run.
 
@@ -1040,7 +1037,7 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
-    ) = read_static_fields(fname_prefix, file_path, ser_type=ser_type, init_type=init_type)
+    ) = read_static_fields(experiment_name, fname_prefix, file_path, ser_type=ser_type)
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -1081,12 +1078,13 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
         prognostic_state_now,
         prognostic_state_next,
     ) = read_initial_state(
+        experiment_name,
+        fname_prefix,
         icon_grid,
         cell_geometry,
         edge_geometry,
         file_path,
-        rank=props.rank,
-        initialization_type=init_type
+        rank=props.rank
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
@@ -1128,17 +1126,16 @@ def initialize(experiment_name: str, fname_prefix: str, ser_type: SerializationT
 @click.argument("fname_prefix")
 @click.option("--experiment_name", default="mch_ch_r04b09_dsl")
 @click.option("--ser_type", default="serialbox")
-@click.option("--init_type", default="serialbox")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
 @click.option("--speed_test", default=False)
-def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_path, mpi, speed_test):
+def main(input_path, fname_prefix, experiment_name, ser_type, run_path, mpi, speed_test):
     """
     Run the driver.
 
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
-    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/jw_node1_nproma50000/ jabw --experiment_name=jabw --ser_type=serialbox --init_type=jabw
-    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data icon_pydycore --ser_type=serialbox --init_type=serialbox
+    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/jw_node1_nproma50000/ jabw --experiment_name=jabw --ser_type=serialbox
+    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data icon_pydycore --ser_type=serialbox
 
     steps:
     1. initialize model from serialized data:
@@ -1169,7 +1166,7 @@ def main(input_path, fname_prefix, experiment_name, ser_type, init_type, run_pat
         output_state,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(experiment_name, fname_prefix, ser_type, init_type, Path(input_path), parallel_props)
+    ) = initialize(experiment_name, fname_prefix, ser_type, Path(input_path), parallel_props)
 
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

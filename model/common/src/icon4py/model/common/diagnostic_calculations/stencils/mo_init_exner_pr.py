@@ -16,20 +16,23 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.type_alias import vpfloat, wpfloat
+
 
 @field_operator
 def _mo_init_exner_pr(
-    exner: Field[[CellDim, KDim], float],
-    exner_ref: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    exner: Field[[CellDim, KDim], vpfloat],
+    exner_ref: Field[[CellDim, KDim], vpfloat],
+) -> Field[[CellDim, KDim], vpfloat]:
     exner_pr = exner - exner_ref
     return exner_pr
 
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_init_exner_pr(
-    exner: Field[[CellDim, KDim], float],
-    exner_ref: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
+    exner: Field[[CellDim, KDim], vpfloat],
+    exner_ref: Field[[CellDim, KDim], vpfloat],
+    exner_pr: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

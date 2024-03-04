@@ -68,7 +68,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 
 from gt4py.next.program_processors.runners import gtfn
 from gt4py.next.otf.compilation.build_systems import cmake
-from gt4py.next.otf.compilation.cache import Strategy
+#from gt4py.next.otf.compilation.cache import Strategy
 
 log = logging.getLogger(__name__)
 
@@ -76,7 +76,7 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-
+'''
 compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
     name="run_gtfn_cached_cmake_release",
     otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
@@ -86,8 +86,8 @@ compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExec
         )),
     hash_function=gtfn.compilation_hash),
 )
-
-backend = compiler_cached_release_backend
+'''
+backend = cached_backend #compiler_cached_release_backend
 #
 
 

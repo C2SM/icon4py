@@ -40,9 +40,11 @@ DATA_URIS = {
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/uK3jtrWK90Z4kHC/download"}
+DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
 
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
+JABW_EXPERIMENT = "jabw_R02B04"
 
 
 def get_processor_properties_for_run(run_instance):

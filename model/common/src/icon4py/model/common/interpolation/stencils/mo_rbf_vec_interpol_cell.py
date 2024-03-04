@@ -16,12 +16,12 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import C2E2C2E, CellDim, EdgeDim, KDim, C2E2C2EDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _mo_rbf_vec_interpol_cell(
-    p_e_in: Field[[EdgeDim, KDim], wpfloat],
+    p_e_in: Field[[EdgeDim, KDim], vpfloat],
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
@@ -32,11 +32,11 @@ def _mo_rbf_vec_interpol_cell(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_rbf_vec_interpol_cell(
-    p_e_in: Field[[EdgeDim, KDim], wpfloat],
+    p_e_in: Field[[EdgeDim, KDim], vpfloat],
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
-    p_u_out: Field[[CellDim, KDim], wpfloat],
-    p_v_out: Field[[CellDim, KDim], wpfloat],
+    p_u_out: Field[[CellDim, KDim], vpfloat],
+    p_v_out: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
