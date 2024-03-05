@@ -14,6 +14,7 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
+import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
