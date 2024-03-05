@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
 
-from pathlib import Path
+from typing import Any
 
 import numpy as np
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -27,7 +27,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.decomposition.definitions import SingleNodeProcessProperties
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CEDim,
@@ -42,69 +41,54 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_utils import create_icon_serial_data_provider
+from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 
 
-# todo: add type hints
-def run_diffusion_simulation(
-    datapath,
-    vct_a,
-    theta_ref_mc,
-    wgtfac_c,
-    e_bln_c_s,
-    geofac_div,
-    geofac_grg_x,
-    geofac_grg_y,
-    geofac_n2s,
-    nudgecoeff_e,
-    rbf_coeff_1,
-    rbf_coeff_2,
-    dwdx,
-    dwdy,
-    hdef_ic,
-    div_ic,
-    w,
-    vn,
-    exner,
-    theta_v,
-    rho,
-    dual_normal_cell_x,
-    dual_normal_cell_y,
-    dual_normal_vert_x,
-    dual_normal_vert_y,
-    primal_normal_cell_x,
-    primal_normal_cell_y,
-    primal_normal_vert_x,
-    primal_normal_vert_y,
-    tangent_orientation,
-    inverse_primal_edge_lengths,
-    inv_dual_edge_length,
-    inv_vert_vert_length,
-    edge_areas,
-    f_e,
-    cell_areas,
-    mean_cell_area,
-    ndyn_substeps,
-    dtime,
-    rayleigh_damping_height,
-    nflatlev,
-    nflat_gradp,
-    diffusion_type,
-    hdiff_w,
-    hdiff_vn,
-    zdiffu_t,
-    type_t_diffu,
-    type_vn_diffu,
-    hdiff_efdt_ratio,
-    smagorinski_scaling_factor,
-    hdiff_temp,
-):
+DIFFUSION: Diffusion = Diffusion()
+
+GRID_PATH = "/home/sk/Dev/icon4py/testdata"
+GRID_FILENAME = "grid.nc"
+
+
+def diffusion_init(
+    vct_a: Any,
+    theta_ref_mc: Any,
+    wgtfac_c: Any,
+    e_bln_c_s: Any,
+    geofac_div: Any,
+    geofac_grg_x: Any,
+    geofac_grg_y: Any,
+    geofac_n2s: Any,
+    nudgecoeff_e: Any,
+    rbf_coeff_1: Any,
+    rbf_coeff_2: Any,
+    num_levels: int,
+    mean_cell_area: float,
+    ndyn_substeps: int,
+    rayleigh_damping_height: float,
+    nflatlev: int,
+    nflat_gradp: int,
+    diffusion_type: Any,
+    hdiff_w: Any,
+    hdiff_vn: Any,
+    zdiffu_t: Any,
+    type_t_diffu: Any,
+    type_vn_diffu: Any,
+    hdiff_efdt_ratio: float,
+    smagorinski_scaling_factor: float,
+    hdiff_temp: Any,
+    tangent_orientation: Any,
+    inverse_primal_edge_lengths: Any,
+    inv_dual_edge_length: Any,
+    inv_vert_vert_length: Any,
+    edge_areas: Any,
+    f_e: Any,
+    cell_areas: Any,
+) -> Any:
     # grid
-    # todo: how to instantiate grid without serialized data?
-    processor_props = SingleNodeProcessProperties()
-    data_provider = create_icon_serial_data_provider(Path(datapath), processor_props)
-    grid_savepoint = data_provider.from_savepoint_grid()
-    icon_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    icon_grid = _load_from_gridfile(
+        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=False
+    )
 
     # Edge geometry
     edge_params = EdgeParams(
@@ -175,8 +159,8 @@ def run_diffusion_simulation(
 
     # initialisation
     print("Initialising diffusion...")
-    diffusion = Diffusion()
-    diffusion.init(
+
+    DIFFUSION.init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -187,6 +171,19 @@ def run_diffusion_simulation(
         cell_params=cell_params,
     )
 
+
+def diffusion_run(
+    w: Any,
+    vn: Any,
+    exner: Any,
+    theta_v: Any,
+    rho: Any,
+    hdef_ic: Any,
+    div_ic: Any,
+    dwdx: Any,
+    dwdy: Any,
+    dtime: float,
+) -> None:
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
         w=w,
@@ -205,13 +202,13 @@ def run_diffusion_simulation(
 
     # running diffusion
     print("Running diffusion...")
-    diffusion.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
+
+    DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
+
+    print("Done running diffusion.")
 
 
 if __name__ == "__main__":
-    # serialised data path for instantiating grid
-    datapath = "/home/sk/Dev/icon4py/testdata/ser_icondata/mpitask1/exclaim_ape_R02B04/ser_data"
-
     # grid parameters
     num_cells = 20480
     num_edges = 30720
@@ -234,7 +231,7 @@ if __name__ == "__main__":
     nflat_gradp = 59
 
     # diffusion configuration
-    diffusion_type = DiffusionType.SMAGORINSKY_4TH_ORDER
+    diffusion_type = DiffusionType.SMAGORINSKY_4TH_ORDER  # 5
     hdiff_w = True
     hdiff_vn = True
     zdiffu_t = False
@@ -352,56 +349,51 @@ if __name__ == "__main__":
         CellDim,
     )(cell_areas)
 
-    run_diffusion_simulation(
-        datapath,
-        vct_a,
-        theta_ref_mc,
-        wgtfac_c,
-        e_bln_c_s,
-        geofac_div,
-        geofac_grg_x,
-        geofac_grg_y,
-        geofac_n2s,
-        nudgecoeff_e,
-        rbf_coeff_1,
-        rbf_coeff_2,
-        dwdx,
-        dwdy,
-        hdef_ic,
-        div_ic,
-        w,
-        vn,
-        exner,
-        theta_v,
-        rho,
-        dual_normal_cell_x,
-        dual_normal_cell_y,
-        dual_normal_vert_x,
-        dual_normal_vert_y,
-        primal_normal_cell_x,
-        primal_normal_cell_y,
-        primal_normal_vert_x,
-        primal_normal_vert_y,
-        tangent_orientation,
-        inverse_primal_edge_lengths,
-        inv_dual_edge_length,
-        inv_vert_vert_length,
-        edge_areas,
-        f_e,
-        cell_areas,
-        mean_cell_area,
-        ndyn_substeps,
-        dtime,
-        rayleigh_damping_height,
-        nflatlev,
-        nflat_gradp,
-        diffusion_type,
-        hdiff_w,
-        hdiff_vn,
-        zdiffu_t,
-        type_t_diffu,
-        type_vn_diffu,
-        hdiff_efdt_ratio,
-        smagorinski_scaling_factor,
-        hdiff_temp,
+    diffusion_init(
+        vct_a=vct_a,
+        theta_ref_mc=theta_ref_mc,
+        wgtfac_c=wgtfac_c,
+        e_bln_c_s=e_bln_c_s,
+        geofac_div=geofac_div,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+        geofac_n2s=geofac_n2s,
+        nudgecoeff_e=nudgecoeff_e,
+        rbf_coeff_1=rbf_coeff_1,
+        rbf_coeff_2=rbf_coeff_2,
+        num_levels=num_levels,
+        mean_cell_area=mean_cell_area,
+        ndyn_substeps=ndyn_substeps,
+        rayleigh_damping_height=rayleigh_damping_height,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+        diffusion_type=diffusion_type,
+        hdiff_w=hdiff_w,
+        hdiff_vn=hdiff_vn,
+        zdiffu_t=zdiffu_t,
+        type_t_diffu=type_t_diffu,
+        type_vn_diffu=type_vn_diffu,
+        hdiff_efdt_ratio=hdiff_efdt_ratio,
+        smagorinski_scaling_factor=smagorinski_scaling_factor,
+        hdiff_temp=hdiff_temp,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inv_dual_edge_length=inv_dual_edge_length,
+        inv_vert_vert_length=inv_vert_vert_length,
+        edge_areas=edge_areas,
+        f_e=f_e,
+        cell_areas=cell_areas,
+    )
+
+    diffusion_run(
+        w=w,
+        vn=vn,
+        exner=exner,
+        theta_v=theta_v,
+        rho=rho,
+        hdef_ic=hdef_ic,
+        div_ic=div_ic,
+        dwdx=dwdx,
+        dwdy=dwdy,
+        dtime=dtime,
     )

@@ -61,7 +61,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 # TODO (magdalena) Revise interface architecture with Fortran granules:
 # The module variable to match the Fortran interface: where only fields are passed.
 # We should rather instantiate the object init and return it.
-diffusion: Diffusion()
+diffusion: Diffusion = Diffusion()
 
 nproma = 50000
 field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim: nproma}
