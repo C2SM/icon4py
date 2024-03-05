@@ -26,12 +26,18 @@ from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
 from icon4pytools.py2fgen.utils import Backend
 
 
+def parse_comma_separated_list(ctx, param, value):
+    # Splits the input string by commas and strips any leading/trailing whitespace from the strings
+    return [item.strip() for item in value.split(",")]
+
+
 @click.command("py2fgen")
 @click.argument(
     "module_import_path",
     type=str,
 )
-@click.argument("function_name", type=str)
+@click.argument("functions", type=str, callback=parse_comma_separated_list)
+@click.argument("plugin_name", type=str)
 @click.option(
     "--build-path",
     "-b",
@@ -54,7 +60,8 @@ from icon4pytools.py2fgen.utils import Backend
 )
 def main(
     module_import_path: str,
-    function_name: str,
+    functions: list[str],
+    plugin_name: str,
     build_path: pathlib.Path,
     debug_mode: bool,
     gt4py_backend: str,
@@ -63,7 +70,7 @@ def main(
     backend = Backend[gt4py_backend]
     build_path.mkdir(exist_ok=True, parents=True)
 
-    plugin = parse(module_import_path, function_name)
+    plugin = parse(module_import_path, functions, plugin_name)
 
     c_header = generate_c_header(plugin)
     python_wrapper = generate_python_wrapper(plugin, backend.value, debug_mode)
@@ -71,9 +78,7 @@ def main(
 
     generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, build_path)
     write_string(f90_interface, build_path, f"{plugin.plugin_name}.f90")
-
-    if debug_mode:
-        write_string(python_wrapper, build_path, f"{plugin.plugin_name}.py")
+    write_string(python_wrapper, build_path, f"{plugin.plugin_name}.py")
 
 
 if __name__ == "__main__":

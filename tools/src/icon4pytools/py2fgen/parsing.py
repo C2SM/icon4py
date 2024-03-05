@@ -61,14 +61,18 @@ class FuncDefVisitor(ast.NodeVisitor):
                 self.type_hints[arg.arg] = annotation
 
 
-def parse(module_name: str, function_name: str) -> CffiPlugin:
+def parse(module_name: str, functions: list[str], plugin_name: str) -> CffiPlugin:
     module = importlib.import_module(module_name)
-    parsed_function = _parse_function(module, function_name)
     parsed_imports = _extract_import_statements(module)
+
+    parsed_functions = []
+    for f in functions:
+        parsed_functions.append(_parse_function(module, f))
+
     return CffiPlugin(
         module_name=module_name,
-        plugin_name=f"{function_name}_plugin",
-        function=parsed_function,
+        plugin_name=plugin_name,
+        function=parsed_functions,
         imports=parsed_imports,
     )
 
@@ -104,7 +108,9 @@ def _get_simple_func_params(func: Callable, type_hints: dict[str, str]) -> List[
     return [
         FuncParameter(
             name=s,
-            d_type=parse_type_spec(from_type_hint(param.annotation))[1],
+            d_type=parse_type_spec(from_type_hint(param.annotation))[
+                1
+            ],  # todo: add error for missing type hint
             dimensions=[
                 Dimension(value=d.value)
                 for d in parse_type_spec(from_type_hint(param.annotation))[0]

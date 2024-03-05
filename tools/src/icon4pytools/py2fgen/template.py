@@ -66,7 +66,7 @@ class CffiPlugin(Node):
     module_name: str
     plugin_name: str
     imports: list[str]
-    function: Func
+    function: list[Func]
 
 
 class PythonWrapper(CffiPlugin):
@@ -198,16 +198,20 @@ from icon4py.model.common.grid.simple import SimpleGrid
 # We need a grid to pass offset providers
 grid = SimpleGrid()
 
-from {{ module_name }} import {{ _this_node.function.name }}
+{% for func in _this_node.function %}
+from {{ module_name }} import {{ func.name }}
+{% endfor %}
 
 {{ cffi_unpack }}
 
+{% for func in _this_node.function %}
+
 {{ cffi_decorator }}
-def {{ _this_node.function.name }}_wrapper(
-{%- for arg in _this_node.function.args -%}
-{{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or _this_node.function.global_size_args %}, {% endif %}
+def {{ func.name }}_wrapper(
+{%- for arg in func.args -%}
+{{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
-{%- for arg in _this_node.function.global_size_args -%}
+{%- for arg in func.global_size_args -%}
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
@@ -217,7 +221,7 @@ def {{ _this_node.function.name }}_wrapper(
     {% endif %}
 
     # Unpack pointers into Ndarrays
-    {% for arg in _this_node.function.args %}
+    {% for arg in func.args %}
     {% if arg.is_array %}
     {%- if _this_node.debug_mode %}
     msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
@@ -234,10 +238,9 @@ def {{ _this_node.function.name }}_wrapper(
     {% endfor %}
 
     # Allocate GT4Py Fields
-    {% for arg in _this_node.function.args %}
+    {% for arg in func.args %}
     {% if arg.is_array %}
     {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
-    # {{ arg.name }} = as_field(({{ ", ".join(arg.gtdims) }}), {{ arg.name }})
     {%- if _this_node.debug_mode %}
     msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
     print(msg)
@@ -247,19 +250,19 @@ def {{ _this_node.function.name }}_wrapper(
     {% endif %}
     {% endfor %}
 
-    {{ _this_node.function.name }}
-    {%- if _this_node.function.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
-    {%- for arg in _this_node.function.args -%}
-    {{ arg.name }}{{ ", " if not loop.last or _this_node.function.is_gt4py_program else "" }}
+    {{ func.name }}
+    {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
+    {%- for arg in func.args -%}
+    {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
     {%- endfor -%}
-    {%- if _this_node.function.is_gt4py_program -%}
+    {%- if func.is_gt4py_program -%}
     offset_provider=grid.offset_providers
     {%- endif -%}
     )
 
     {% if _this_node.debug_mode %}
     # debug info
-    {% for arg in _this_node.function.args %}
+    {% for arg in func.args %}
     msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
     print(msg)
     msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
@@ -270,15 +273,17 @@ def {{ _this_node.function.name }}_wrapper(
     {%- if _this_node.debug_mode %}
     print("Python Execution Context End")
     {% endif %}
+
+    {% endfor %}
 """
     )
 
 
 class CHeaderGenerator(TemplatedGenerator):
-    CffiPlugin = as_jinja("""extern void {{_this_node.function.name}}_wrapper({{function}});""")
+    CffiPlugin = as_jinja("""{{'\n'.join(function)}}""")
 
     Func = as_jinja(
-        "{%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%}"
+        "extern void {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
     )
 
     def visit_FuncParameter(self, param: FuncParameter):
@@ -318,17 +323,19 @@ class F90FunctionDefinition(Func):
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
-    function_declaration: F90FunctionDeclaration = datamodels.field(init=False)
-    function_definition: F90FunctionDefinition = datamodels.field(init=False)
+    function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
+    function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        function = self.cffi_plugin.function
-        self.function_declaration = F90FunctionDeclaration(
-            name=function.name, args=function.args, is_gt4py_program=function.is_gt4py_program
-        )
-        self.function_definition = F90FunctionDefinition(
-            name=function.name, args=function.args, is_gt4py_program=function.is_gt4py_program
-        )
+        functions = self.cffi_plugin.function
+        self.function_declaration = [
+            F90FunctionDeclaration(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
+            for f in functions
+        ]
+        self.function_definition = [
+            F90FunctionDefinition(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
+            for f in functions
+        ]
 
 
 class F90InterfaceGenerator(TemplatedGenerator):
@@ -338,14 +345,16 @@ module {{ _this_node.cffi_plugin.plugin_name }}
     use, intrinsic :: iso_c_binding
     implicit none
 
-    public :: run_{{ _this_node.cffi_plugin.function.name }}
+    {% for func in _this_node.cffi_plugin.function %}
+    public :: run_{{ func.name }}
+    {% endfor %}
 
 interface
-    {{ function_declaration }}
+    {{ '\n'.join(function_declaration) }}
 end interface
 
 contains
-    {{ function_definition }}
+    {{ '\n'.join(function_definition) }}
 end module
 """
     )
