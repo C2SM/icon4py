@@ -54,7 +54,6 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area,
         **kwargs,
     ):
-
         z_nabla4_e2 = calculate_nabla4_numpy(
             grid,
             u_vert,
@@ -98,8 +97,8 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid, uses_icon_grid_with_otf):
-        if uses_icon_grid_with_otf:
+    def input_data(self, grid, uses_local_area_icon_grid_with_otf):
+        if uses_local_area_icon_grid_with_otf:
             pytest.skip(
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )

@@ -11,12 +11,55 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from dataclasses import dataclass
-from typing import Final
+from typing import ClassVar, Final
 
-from gt4py.next.common import Dimension, Field
+from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import dimension
-from icon4py.model.common.dimension import CellDim, ECDim, ECVDim, EdgeDim
+from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
+
+
+NUM_GHOST_ROWS: Final[int] = 2
+# values from mo_impl_constants.f90
+_ICON_INDEX_OFFSET_CELLS: Final[int] = 8
+_GRF_BOUNDARY_WIDTH_CELL: Final[int] = 4
+_MIN_RL_CELL_INT: Final[int] = -4
+_MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
+_MAX_RL_CELL: Final[int] = 5
+
+_ICON_INDEX_OFFSET_VERTEX: Final[int] = 7
+_MIN_RL_VERTEX_INT: Final[int] = _MIN_RL_CELL_INT
+_MIN_RL_VERTEX: Final[int] = _MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
+_MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
+
+_ICON_INDEX_OFFSET_EDGES: Final[int] = 13
+_GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
+_MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
+_MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
+_MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
+
+_LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
+_INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
+_NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
+_HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
+_LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
+_END_EDGES: Final[int] = 0
+
+_LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS
+_INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS
+_NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS
+_HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS
+_LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
+_END_CELLS: Final[int] = 0
+
+_LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX
+_INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX
+_NUDGING_VERTICES: Final[int] = 0
+_HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
+_LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
+_END_VERTICES: Final[int] = 0
 
 
 class HorizontalMarkerIndex:
@@ -39,73 +82,33 @@ class HorizontalMarkerIndex:
 
     """
 
-    NUM_GHOST_ROWS: Final[int] = 2
-    # values from mo_impl_constants.f90
-    _ICON_INDEX_OFFSET_CELLS: Final[int] = 8
-    _GRF_BOUNDARY_WIDTH_CELL: Final[int] = 4
-    _MIN_RL_CELL_INT: Final[int] = -4
-    _MIN_RL_CELL: Final[int] = _MIN_RL_CELL_INT - 2 * NUM_GHOST_ROWS
-    _MAX_RL_CELL: Final[int] = 5
-
-    _ICON_INDEX_OFFSET_VERTEX: Final[int] = 7
-    _MIN_RL_VERTEX_INT: Final[int] = _MIN_RL_CELL_INT
-    _MIN_RL_VERTEX: Final[int] = _MIN_RL_VERTEX_INT - (NUM_GHOST_ROWS + 1)
-    _MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
-
-    _ICON_INDEX_OFFSET_EDGES: Final[int] = 13
-    _GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
-    _MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
-    _MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
-    _MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
-
-    _LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
-    _INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
-    _NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
-    _HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
-    _LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
-    _END_EDGES: Final[int] = 0
-
-    _LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS
-    _INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS
-    _NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS
-    _HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS
-    _LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
-    _END_CELLS: Final[int] = 0
-
-    _LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX
-    _INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX
-    _NUDGING_VERTICES: Final[int] = 0
-    _HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
-    _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
-    _END_VERTICES: Final[int] = 0
-
-    _lateral_boundary = {
+    _lateral_boundary: ClassVar = {
         dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
         dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
         dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
-    _local = {
+    _local: ClassVar = {
         dimension.CellDim: _LOCAL_CELLS,
         dimension.EdgeDim: _LOCAL_EDGES,
         dimension.VertexDim: _LOCAL_VERTICES,
     }
-    _halo = {
+    _halo: ClassVar = {
         dimension.CellDim: _HALO_CELLS,
         dimension.EdgeDim: _HALO_EDGES,
         dimension.VertexDim: _HALO_VERTICES,
     }
-    _interior = {
+    _interior: ClassVar = {
         dimension.CellDim: _INTERIOR_CELLS,
         dimension.EdgeDim: _INTERIOR_EDGES,
         dimension.VertexDim: _INTERIOR_VERTICES,
     }
-    _nudging = {
+    _nudging: ClassVar = {
         dimension.CellDim: _NUDGING_CELLS,
         dimension.EdgeDim: _NUDGING_EDGES,
         # TODO [magdalena] there is no nudging for vertices?
         dimension.VertexDim: _NUDGING_VERTICES,
     }
-    _end = {
+    _end: ClassVar = {
         dimension.CellDim: _END_CELLS,
         dimension.EdgeDim: _END_EDGES,
         dimension.VertexDim: _END_VERTICES,
@@ -133,6 +136,11 @@ class HorizontalMarkerIndex:
     def nudging(cls, dim: Dimension) -> int:
         """Indicate the nudging zone."""
         return cls._nudging[dim]
+
+    @classmethod
+    def nudging_2nd_level(cls, dim: Dimension) -> int:
+        """Indicate the nudging zone for 2nd level."""
+        return cls.nudging(dim) + 1
 
     @classmethod
     def interior(cls, dim: Dimension) -> int:
@@ -281,11 +289,57 @@ class EdgeParams:
 
 @dataclass(frozen=True)
 class CellParams:
+    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
+
     mean_cell_area: float
 
-    """
-    Area of a cell.
 
-    defined int ICON in mo_model_domain.f90:t_grid_cells%area
+@field_operator
+def _cell_2_edge_interpolation(
+    in_field: Field[[CellDim, KDim], wpfloat], coeff: Field[[EdgeDim, E2CDim], wpfloat]
+) -> Field[[EdgeDim, KDim], wpfloat]:
     """
+    Interpolate a Cell Field to Edges.
+
+    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
+    where the value is set to the one valid in_field value without multiplication by coeff.
+    This essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
+    be 1 for this Edge index.
+    """
+    return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def cell_2_edge_interpolation(
+    in_field: Field[[CellDim, KDim], wpfloat],
+    coeff: Field[[EdgeDim, E2CDim], wpfloat],
+    out_field: Field[[EdgeDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _cell_2_edge_interpolation(
+        in_field,
+        coeff,
+        out=out_field,
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+class RefinCtrlLevel:
+    _boundary_nudging_start: ClassVar = {
+        EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
+        CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
+    }
+
+    @classmethod
+    def boundary_nudging_start(cls, dim: Dimension) -> int:
+        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
+        try:
+            return cls._boundary_nudging_start[dim]
+        except KeyError as err:
+            raise ValueError(
+                f"nudging start level only exists for {CellDim} and {EdgeDim}"
+            ) from err

@@ -386,9 +386,8 @@ class Diffusion:
         self._exchange = exchange
         self._initialized = False
         self.rd_o_cvd: float = GAS_CONSTANT_DRY_AIR / (CPD - GAS_CONSTANT_DRY_AIR)
-        self.thresh_tdiff: float = (
-            -5.0
-        )  #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
+        self.thresh_tdiff: float = -5.0
         self.grid: Optional[IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None

@@ -16,9 +16,11 @@ from typing import TypeAlias
 from gt4py.next.ffront.fbuiltins import float32, float64
 
 
+DEFAULT_PRECISION = "double"
+
 wpfloat: TypeAlias = float64
 
-precision = os.environ.get("FLOAT_PRECISION", "double").lower()
+precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
 if precision == "double":
     vpfloat = wpfloat
 elif precision == "mixed":
