@@ -38,6 +38,18 @@ def backend(request):
     return request.param
 
 
+def is_otf(backend) -> bool:
+    # want to exclude python backends:
+    #   - cannot run on embedded: because of slicing
+    #   - roundtrip is very slow on large grid
+    if hasattr(backend, "executor"):
+        if isinstance(
+            backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
+        ):
+            return True
+    return False
+
+
 def _shape(
     grid,
     *dims: gt_common.Dimension,
