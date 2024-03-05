@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+# type: ignore
 
 from pathlib import Path
 
@@ -31,11 +32,14 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     CEDim,
     CellDim,
+    ECDim,
+    ECVDim,
     EdgeDim,
     KDim,
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import create_icon_serial_data_provider
@@ -64,6 +68,22 @@ def run_diffusion_simulation(
     exner,
     theta_v,
     rho,
+    dual_normal_cell_x,
+    dual_normal_cell_y,
+    dual_normal_vert_x,
+    dual_normal_vert_y,
+    primal_normal_cell_x,
+    primal_normal_cell_y,
+    primal_normal_vert_x,
+    primal_normal_vert_y,
+    tangent_orientation,
+    inverse_primal_edge_lengths,
+    inv_dual_edge_length,
+    inv_vert_vert_length,
+    edge_areas,
+    f_e,
+    cell_areas,
+    mean_cell_area,
     ndyn_substeps,
     dtime,
     rayleigh_damping_height,
@@ -79,16 +99,35 @@ def run_diffusion_simulation(
     smagorinski_scaling_factor,
     hdiff_temp,
 ):
+    # grid
     # todo: how to instantiate grid without serialized data?
     processor_props = SingleNodeProcessProperties()
     data_provider = create_icon_serial_data_provider(Path(datapath), processor_props)
     grid_savepoint = data_provider.from_savepoint_grid()
     icon_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 
-    # todo: construct this by hand?
-    edge_params = grid_savepoint.construct_edge_geometry()
-    cell_params = grid_savepoint.construct_cell_geometry()
+    # Edge geometry
+    edge_params = EdgeParams(
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inverse_dual_edge_lengths=inv_dual_edge_length,
+        inverse_vertex_vertex_lengths=inv_vert_vert_length,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_areas=edge_areas,
+        f_e=f_e,
+    )
 
+    # cell geometry
+    cell_params = CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
+
+    # diffusion parameters
     config = DiffusionConfig(
         diffusion_type=diffusion_type,
         hdiff_w=hdiff_w,
@@ -102,8 +141,9 @@ def run_diffusion_simulation(
         n_substeps=ndyn_substeps,
     )
 
-    params = DiffusionParams(config)
+    diffusion_params = DiffusionParams(config)
 
+    # vertical parameters
     vertical_params = VerticalModelParams(
         vct_a=vct_a,
         rayleigh_damping_height=rayleigh_damping_height,
@@ -111,6 +151,7 @@ def run_diffusion_simulation(
         nflat_gradp=nflat_gradp,
     )
 
+    # metric state
     metric_state = DiffusionMetricState(
         mask_hdiff=None,
         theta_ref_mc=theta_ref_mc,
@@ -120,6 +161,7 @@ def run_diffusion_simulation(
         zd_diffcoef=None,
     )
 
+    # interpolation state
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,
@@ -131,12 +173,13 @@ def run_diffusion_simulation(
         nudgecoeff_e=nudgecoeff_e,
     )
 
+    # initialisation
     print("Initialising diffusion...")
     diffusion = Diffusion()
     diffusion.init(
         grid=icon_grid,
         config=config,
-        params=params,
+        params=diffusion_params,
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -144,6 +187,7 @@ def run_diffusion_simulation(
         cell_params=cell_params,
     )
 
+    # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
         w=w,
         vn=vn,
@@ -159,6 +203,7 @@ def run_diffusion_simulation(
         dwdy=dwdy,
     )
 
+    # running diffusion
     print("Running diffusion...")
     diffusion.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
 
@@ -174,6 +219,10 @@ if __name__ == "__main__":
     num_levels = 60
     num_c2ec2o = 4
     num_v2e = 6
+    num_ce = num_edges * 2
+    num_ec = num_edges * 2
+    num_ecv = num_edges * 4
+    mean_cell_area = 24907282236.708576
 
     # other configuration parameters
     limited_area = False
@@ -196,26 +245,45 @@ if __name__ == "__main__":
     hdiff_temp = True
 
     # input data - numpy
-    vct_a = np.random.uniform(low=0, high=75000, size=(num_levels,))
-    theta_ref_mc = np.random.uniform(low=0, high=1, size=(num_cells, num_levels))
-    wgtfac_c = np.random.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    e_bln_c_s = np.random.uniform(low=0, high=1, size=(num_edges * 2,))
-    geofac_div = np.random.uniform(low=-10, high=10, size=(num_edges * 2,))
-    geofac_grg_x = np.random.uniform(low=-10, high=10, size=(num_cells, 4))
-    geofac_grg_y = np.random.uniform(low=-10, high=10, size=(num_cells, 4))
-    geofac_n2s = np.random.uniform(low=-10, high=10, size=(num_cells, 4))
+    rng = np.random.default_rng()
+
+    vct_a = rng.uniform(
+        low=0, high=75000, size=(num_levels,)
+    )  # has to be from 0 to 75000, must have larger values than rayleigh damping height
+    theta_ref_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
+    wgtfac_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
+    e_bln_c_s = rng.uniform(low=0, high=1, size=(num_ce,))
+    geofac_div = rng.uniform(low=0, high=1, size=(num_ce,))
+    geofac_grg_x = rng.uniform(low=0, high=1, size=(num_cells, 4))
+    geofac_grg_y = rng.uniform(low=0, high=1, size=(num_cells, 4))
+    geofac_n2s = rng.uniform(low=0, high=1, size=(num_cells, 4))
     nudgecoeff_e = np.zeros((num_edges,))
-    rbf_coeff_1 = np.random.uniform(low=-0.4, high=0.4, size=(num_vertices, num_v2e))
-    rbf_coeff_2 = np.random.uniform(low=-7, high=7, size=(num_vertices, num_v2e))
+    rbf_coeff_1 = rng.uniform(low=0, high=1, size=(num_vertices, num_v2e))
+    rbf_coeff_2 = rng.uniform(low=0, high=1, size=(num_vertices, num_v2e))
     dwdx = np.zeros((num_cells, num_levels))
     dwdy = np.zeros((num_cells, num_levels))
     hdef_ic = np.zeros((num_cells, num_levels + 1))
     div_ic = np.zeros((num_cells, num_levels + 1))
-    w = np.random.uniform(low=-1, high=1, size=(num_cells, num_levels + 1))
-    vn = np.random.uniform(low=-5, high=5, size=(num_edges, num_levels))
-    exner = np.random.uniform(low=0, high=1, size=(num_cells, num_levels))
-    theta_v = np.random.uniform(low=0, high=4000, size=(num_cells, num_levels))
-    rho = np.random.uniform(low=1.5, high=5, size=(num_cells, num_levels))
+    w = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
+    vn = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
+    exner = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
+    theta_v = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
+    rho = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
+    dual_normal_cell_x = rng.uniform(low=0, high=1, size=(num_ec))
+    dual_normal_cell_y = rng.uniform(low=0, high=1, size=(num_ec))
+    dual_normal_vert_x = rng.uniform(low=0, high=1, size=(num_ecv))
+    dual_normal_vert_y = rng.uniform(low=0, high=1, size=(num_ecv))
+    primal_normal_cell_x = rng.uniform(low=0, high=1, size=(num_ec))
+    primal_normal_cell_y = rng.uniform(low=0, high=1, size=(num_ec))
+    primal_normal_vert_x = rng.uniform(low=0, high=1, size=(num_ecv))
+    primal_normal_vert_y = rng.uniform(low=0, high=1, size=(num_ecv))
+    tangent_orientation = rng.uniform(low=0, high=1, size=(num_edges))
+    inverse_primal_edge_lengths = rng.uniform(low=0, high=1, size=(num_edges))
+    inv_dual_edge_length = rng.uniform(low=0, high=1, size=(num_edges))
+    inv_vert_vert_length = rng.uniform(low=0, high=1, size=(num_edges))
+    edge_areas = rng.uniform(low=0, high=1, size=(num_edges))
+    f_e = rng.uniform(low=0, high=1, size=(num_edges))
+    cell_areas = rng.uniform(low=0, high=1, size=(num_cells))
 
     # input data - gt4py fields
     theta_ref_mc = np_as_located_field(CellDim, KDim)(theta_ref_mc)
@@ -238,6 +306,51 @@ if __name__ == "__main__":
     exner = np_as_located_field(CellDim, KDim)(exner)
     theta_v = np_as_located_field(CellDim, KDim)(theta_v)
     rho = np_as_located_field(CellDim, KDim)(rho)
+    dual_normal_cell_x = np_as_located_field(
+        ECDim,
+    )(dual_normal_cell_x)
+    dual_normal_cell_y = np_as_located_field(
+        ECDim,
+    )(dual_normal_cell_y)
+    dual_normal_vert_x = np_as_located_field(
+        ECVDim,
+    )(dual_normal_vert_x)
+    dual_normal_vert_y = np_as_located_field(
+        ECVDim,
+    )(dual_normal_vert_y)
+    primal_normal_cell_x = np_as_located_field(
+        ECDim,
+    )(primal_normal_cell_x)
+    primal_normal_cell_y = np_as_located_field(
+        ECDim,
+    )(primal_normal_cell_y)
+    primal_normal_vert_x = np_as_located_field(
+        ECVDim,
+    )(primal_normal_vert_x)
+    primal_normal_vert_y = np_as_located_field(
+        ECVDim,
+    )(primal_normal_vert_y)
+    tangent_orientation = np_as_located_field(
+        EdgeDim,
+    )(tangent_orientation)
+    inverse_primal_edge_lengths = np_as_located_field(
+        EdgeDim,
+    )(inverse_primal_edge_lengths)
+    inv_dual_edge_length = np_as_located_field(
+        EdgeDim,
+    )(inv_dual_edge_length)
+    inv_vert_vert_length = np_as_located_field(
+        EdgeDim,
+    )(inv_vert_vert_length)
+    edge_areas = np_as_located_field(
+        EdgeDim,
+    )(edge_areas)
+    f_e = np_as_located_field(
+        EdgeDim,
+    )(f_e)
+    cell_areas = np_as_located_field(
+        CellDim,
+    )(cell_areas)
 
     run_diffusion_simulation(
         datapath,
@@ -261,6 +374,22 @@ if __name__ == "__main__":
         exner,
         theta_v,
         rho,
+        dual_normal_cell_x,
+        dual_normal_cell_y,
+        dual_normal_vert_x,
+        dual_normal_vert_y,
+        primal_normal_cell_x,
+        primal_normal_cell_y,
+        primal_normal_vert_x,
+        primal_normal_vert_y,
+        tangent_orientation,
+        inverse_primal_edge_lengths,
+        inv_dual_edge_length,
+        inv_vert_vert_length,
+        edge_areas,
+        f_e,
+        cell_areas,
+        mean_cell_area,
         ndyn_substeps,
         dtime,
         rayleigh_damping_height,
