@@ -25,28 +25,19 @@
 
 import pytest
 
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate_indices
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.metrics.stencils.compute_wgtfacq_c import compute_wgtfacq_c
+from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
-def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # fixture
-    wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
-    wgtfac_c_ref = metrics_savepoint.wgtfac_c()
+def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # fixture
+    wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
     z_ifc = metrics_savepoint.z_ifc()
-    k = _allocate_indices(KDim, grid=icon_grid, is_halfdim=True)
 
     vertical_end = icon_grid.num_levels
 
-    compute_wgtfac_c(
-        wgtfac_c,
-        z_ifc,
-        k,
-        nlev=vertical_end,
-        offset_provider={"Koff": KDim},
+    wgtfacq_c = compute_wgtfacq_c(
+        z_ifc.asnumpy(),
+        vertical_end,
     )
-
-    assert dallclose(wgtfac_c.asnumpy(), wgtfac_c_ref.asnumpy())
+    assert dallclose(wgtfacq_c, wgtfacq_c_dsl.asnumpy())
