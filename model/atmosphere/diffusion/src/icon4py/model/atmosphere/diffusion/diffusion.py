@@ -655,7 +655,15 @@ class Diffusion:
         connectivity_C2E2C = self.grid.get_offset_provider("C2E2C")
         connectivity_C2CEC = self.grid.get_offset_provider("C2CEC")
 
-        @dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)
+        def dace_jit(fuse_func):
+            def wrapper(*args, **kwargs):
+                if backend == run_dace_cpu:
+                    return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs)
+                else:
+                    fuse_func(*args, **kwargs)
+            return wrapper
+
+        @dace_jit
         def fuse():
             scale_k.with_backend(backend)(
                 self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
@@ -923,20 +931,23 @@ class Diffusion:
             # handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
             # log.debug("communication of prognogistic.vn - end")
 
-        with dace.config.temporary_config():
-            dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
-            dace.config.Config.set("compiler", "allow_view_arguments", value=True)
-            dace.config.Config.set("frontend", "check_args", value=True)
-            compiler_args ="-std=c++14 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
-            on_gpu = False
-            dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
+        if backend == run_dace_cpu:
+            with dace.config.temporary_config():
+                dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
+                dace.config.Config.set("compiler", "allow_view_arguments", value=True)
+                dace.config.Config.set("frontend", "check_args", value=True)
+                compiler_args ="-std=c++14 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
+                on_gpu = False
+                dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
 
-            fuse(__connectivity_V2E=connectivity_V2E.table,
-                 __connectivity_E2C2V=connectivity_E2C2V.table,
-                 __connectivity_E2ECV=connectivity_E2ECV.table,
-                 __connectivity_C2E=connectivity_C2E.table,
-                 __connectivity_C2CE=connectivity_C2CE.table,
-                 __connectivity_C2E2CO=connectivity_C2E2CO.table,
-                 __connectivity_E2C=connectivity_E2C.table,
-                 __connectivity_C2E2C=connectivity_C2E2C.table,
-                 __connectivity_C2CEC=connectivity_C2CEC.table,)
+                fuse(__connectivity_V2E=connectivity_V2E.table,
+                    __connectivity_E2C2V=connectivity_E2C2V.table,
+                    __connectivity_E2ECV=connectivity_E2ECV.table,
+                    __connectivity_C2E=connectivity_C2E.table,
+                    __connectivity_C2CE=connectivity_C2CE.table,
+                    __connectivity_C2E2CO=connectivity_C2E2CO.table,
+                    __connectivity_E2C=connectivity_E2C.table,
+                    __connectivity_C2E2C=connectivity_C2E2C.table,
+                    __connectivity_C2CEC=connectivity_C2CEC.table,)
+        else:
+            fuse()
