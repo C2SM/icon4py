@@ -36,12 +36,15 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
     C2VDim,
+    CEDim,
     CellDim,
     E2C2EDim,
     E2C2EODim,
     E2C2VDim,
     E2CDim,
     E2VDim,
+    ECDim,
+    ECVDim,
     EdgeDim,
     V2CDim,
     V2E2VDim,
@@ -237,9 +240,9 @@ class GridManager:
         self._grid: Optional[IconGrid] = None
         self._file_name = grid_file
 
-    def __call__(self):
+    def __call__(self, on_gpu: bool = False):
         dataset = self._read_gridfile(self._file_name)
-        _, grid = self._constuct_grid(dataset)
+        _, grid = self._constuct_grid(dataset, on_gpu=on_gpu)
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> Dataset:
@@ -323,9 +326,9 @@ class GridManager:
             self._log.error(msg)
             raise IconGridError(msg) from err
 
-    def _constuct_grid(self, dataset: Dataset) -> tuple[UUID, IconGrid]:
+    def _constuct_grid(self, dataset: Dataset, on_gpu: bool) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
-        return grid_id, self._from_grid_dataset(dataset)
+        return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu)
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
@@ -351,7 +354,7 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_grid_dataset(self, dataset: Dataset) -> IconGrid:
+    def _from_grid_dataset(self, dataset: Dataset, on_gpu: bool) -> IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
@@ -383,8 +386,7 @@ class GridManager:
         ) = self._read_grid_refinement_information(dataset)
 
         config = GridConfig(
-            horizontal_config=grid_size,
-            vertical_config=self._config,
+            horizontal_config=grid_size, vertical_config=self._config, on_gpu=on_gpu
         )
         icon_grid = (
             IconGrid()
@@ -408,6 +410,13 @@ class GridManager:
             .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
             .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
             .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
+        )
+        icon_grid.update_size_connectivities(
+            {
+                ECVDim: icon_grid.size[EdgeDim] * icon_grid.size[E2C2VDim],
+                CEDim: icon_grid.size[CellDim] * icon_grid.size[C2EDim],
+                ECDim: icon_grid.size[EdgeDim] * icon_grid.size[E2CDim],
+            }
         )
 
         return icon_grid
