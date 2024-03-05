@@ -14,7 +14,7 @@
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionConfig, DiffusionParams, DiffusionType
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -30,13 +30,34 @@ from ..utils import (
     verify_diffusion_fields,
 )
 
+@pytest.fixture
+def r04b09_diffusion_config(
+    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
+) -> DiffusionConfig:
+    """
+    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
-@pytest.mark.xfail(
-    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
-)
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
+    """
+    return DiffusionConfig(
+        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w=True,
+        hdiff_vn=True,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=24.0,
+        hdiff_w_efdt_ratio=15.0,
+        smagorinski_scaling_factor=0.025,
+        zdiffu_t=True,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
+        n_substeps=ndyn_substeps,
+    )
+
 @pytest.mark.mpi
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize("linit", [True, False])
+@pytest.mark.parametrize("linit", [True, ])
 def test_parallel_diffusion(
     r04b09_diffusion_config,
     step_date_init,
