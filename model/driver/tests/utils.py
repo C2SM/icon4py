@@ -177,13 +177,11 @@ def exclaim_ape_iconrun_config(
 
 
 def construct_iconrun_config(
-    name: str,
-    date_init: str,
-    date_exit: str,
-    diffusion_linit_init: bool,
-    ndyn_substeps: int = 5
+    name: str, date_init: str, date_exit: str, diffusion_linit_init: bool, ndyn_substeps: int = 5
 ):
     if name.lower() in "mch_ch_r04b09_dsl":
-        return mch_ch_r04b09_dsl_iconrun_config(date_init,date_exit,diffusion_linit_init,ndyn_substeps)
+        return mch_ch_r04b09_dsl_iconrun_config(
+            date_init, date_exit, diffusion_linit_init, ndyn_substeps
+        )
     elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_iconrun_config(date_init,date_exit,diffusion_linit_init,ndyn_substeps)
+        return exclaim_ape_iconrun_config(date_init, date_exit, diffusion_linit_init, ndyn_substeps)

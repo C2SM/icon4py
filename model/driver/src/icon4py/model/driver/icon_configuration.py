@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
@@ -44,6 +44,7 @@ class IconOutputConfig:
     output_time_interval: timedelta = timedelta(minutes=1)
     output_file_time_interval: timedelta = timedelta(minutes=1)
     output_path: Path = Path("./")
+
 
 @dataclass
 class IconConfig:
@@ -103,12 +104,17 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac = 0.0025,
+            divdamp_fac=0.0025,
             lhdiff_rcf=True,
         )
 
     def _default_config():
-        return _default_run_config(), _default_output_config(), _default_diffusion_config(), NonHydrostaticConfig()
+        return (
+            _default_run_config(),
+            _default_output_config(),
+            _default_diffusion_config(),
+            NonHydrostaticConfig(),
+        )
 
     def _mch_ch_r04b09_config():
         return (
@@ -150,12 +156,27 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     if experiment == "mch_ch_r04b09_dsl":
-        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _mch_ch_r04b09_config()
     elif experiment == "jabw":
-        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _Jablownoski_Williamson_config()
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _Jablownoski_Williamson_config()
     else:
         log.warning("Experiment name is not specified, default configuration is used.")
-        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _default_config()
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _default_config()
     return IconConfig(
         run_config=model_run_config,
         output_config=model_output_config,

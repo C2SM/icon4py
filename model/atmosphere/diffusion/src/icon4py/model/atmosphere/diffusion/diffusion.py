@@ -80,9 +80,6 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-from gt4py.next.program_processors.runners import gtfn
-from gt4py.next.otf.compilation.build_systems import cmake
-#from gt4py.next.otf.compilation.cache import Strategy
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -96,18 +93,7 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-'''
-compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
-    name="run_gtfn_cached_cmake_release",
-    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
-        compilation=gtfn.compiler.Compiler(
-            cache_strategy=Strategy.PERSISTENT,
-            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
-        )),
-    hash_function=gtfn.compilation_hash),
-)
-'''
-backend = cached_backend #compiler_cached_release_backend
+backend = cached_backend
 
 
 class DiffusionType(int, Enum):
@@ -413,19 +399,41 @@ class Diffusion:
         self._horizontal_start_index_w_diffusion: int32 = 0
 
         # backend
-        self.stencil_init_diffusion_local_fields_for_regular_timestep = init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
-        self.stencil_setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(backend)
+        self.stencil_init_diffusion_local_fields_for_regular_timestep = (
+            init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
+        )
+        self.stencil_setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
+            backend
+        )
         self.stencil_scale_k = scale_k.with_backend(backend)
-        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
-        self.stencil_calculate_nabla2_and_smag_coefficients_for_vn = calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
-        self.stencil_calculate_diagnostic_quantities_for_turbulence = calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
-        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex = mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
+        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex = (
+            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
+        )
+        self.stencil_calculate_nabla2_and_smag_coefficients_for_vn = (
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
+        )
+        self.stencil_calculate_diagnostic_quantities_for_turbulence = (
+            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
+        )
+        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex = (
+            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
+        )
         self.stencil_apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(backend)
         self.stencil_copy_field = copy_field.with_backend(backend)
-        self.stencil_apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)
-        self.stencil_calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(backend)
+        self.stencil_apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
+            apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
+                backend
+            )
+        )
+        self.stencil_calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
+            calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
+                backend
+            )
+        )
         self.stencil_calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(backend)
-        self.stencil_truly_horizontal_diffusion_nabla_of_theta_over_steep_points = truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
+        self.stencil_truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
+        )
         self.stencil_update_theta_and_exner = update_theta_and_exner.with_backend(backend)
 
         self.offset_provider = None
@@ -470,31 +478,31 @@ class Diffusion:
         self.offset_provider_koff = {"Koff": KDim}
         self.offset_provider_v2e = {"V2E": self.grid.get_offset_provider("V2E")}
         self.offset_provider_e2c2v_e2ecv = {
-                "E2C2V": self.grid.get_offset_provider("E2C2V"),
-                "E2ECV": self.grid.get_offset_provider("E2ECV"),
-            }
+            "E2C2V": self.grid.get_offset_provider("E2C2V"),
+            "E2ECV": self.grid.get_offset_provider("E2ECV"),
+        }
         self.offset_provider_c2e_c2ce_koff = {
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                    "Koff": KDim,
-                }
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+            "Koff": KDim,
+        }
         self.offset_provider_c2e2co = {
-                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-            }
+            "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+        }
         self.offset_provider_e2c_c2e2c = {
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "C2E2C": self.grid.get_offset_provider("C2E2C"),
-            }
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "C2E2C": self.grid.get_offset_provider("C2E2C"),
+        }
         self.offset_provider_c2e_e2c_c2ce = {
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            }
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+        }
         self.offset_provider_c2cec_c2e2c_koff = {
-                    "C2CEC": self.grid.get_offset_provider("C2CEC"),
-                    "C2E2C": self.grid.get_offset_provider("C2E2C"),
-                    "Koff": KDim,
-                }
+            "C2CEC": self.grid.get_offset_provider("C2CEC"),
+            "C2E2C": self.grid.get_offset_provider("C2E2C"),
+            "Koff": KDim,
+        }
 
         def _get_start_index_for_w_diffusion() -> int32:
             return self.grid.get_start_index(
@@ -560,7 +568,6 @@ class Diffusion:
         self.kh_smag_e = _allocate(EdgeDim, KDim)
         self.kh_smag_ec = _allocate(EdgeDim, KDim)
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
-        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
         # TODO(Magdalena): this is KHalfDim
@@ -701,9 +708,7 @@ class Diffusion:
         )
 
         # dtime dependent: enh_smag_factor,
-        self.stencil_scale_k(
-            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
-        )
+        self.stencil_scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
         self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -810,7 +815,6 @@ class Diffusion:
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
             primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
             z_nabla2_e=self.z_nabla2_e,
-            z_nabla4_e2=self.z_nabla4_e2,
             inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
             area_edge=self.edge_params.edge_areas,

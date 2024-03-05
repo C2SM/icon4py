@@ -308,6 +308,7 @@ class EdgeParams:
             primal_normal_y,
         )
 
+
 @dataclass(frozen=True)
 class CellParams:
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area

@@ -179,7 +179,13 @@ def diffusion_init(
         primal_normal_vert_y=edges_primal_normal_vert_2,
         edge_areas=edges_area_edge,
     )
-    cell_params = CellParams(area=cells_area, mean_cell_area=mean_cell_area)
+    # TODO (Chia Rui): check whether it is okay to set cell_center to None
+    cell_params = CellParams(
+        area=cells_area,
+        mean_cell_area=mean_cell_area,
+        cell_center_lon=None,  # type: ignore
+        cell_center_lat=None,  # type: ignore
+    )
     config: DiffusionConfig = DiffusionConfig(
         diffusion_type=DiffusionType(hdiff_order),
         hdiff_w=lhdiff_w,

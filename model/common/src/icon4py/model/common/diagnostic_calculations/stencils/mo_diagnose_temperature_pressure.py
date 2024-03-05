@@ -13,10 +13,11 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, exp, log, sqrt
+from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, sqrt
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
 
 @field_operator
 def _mo_diagnose_temperature(
@@ -25,6 +26,7 @@ def _mo_diagnose_temperature(
 ) -> Field[[CellDim, KDim], vpfloat]:
     temperature = theta_v * exner
     return temperature
+
 
 @field_operator
 def _mo_diagnose_pressure_sfc(
@@ -39,12 +41,19 @@ def _mo_diagnose_pressure_sfc(
     p0ref: float,
     grav_o_rd: float,
 ) -> Field[[CellDim], float]:
-    pressure_sfc = (
-        p0ref * exp(cpd_o_rd * log(exner_nlev_minus2) + grav_o_rd * (ddqz_z_full_nlev / temperature_nlev + ddqz_z_full_nlev_minus1 / temperature_nlev_minus1 + 0.5 * ddqz_z_full_nlev_minus2 / temperature_nlev_minus2))
+    pressure_sfc = p0ref * exp(
+        cpd_o_rd * log(exner_nlev_minus2)
+        + grav_o_rd
+        * (
+            ddqz_z_full_nlev / temperature_nlev
+            + ddqz_z_full_nlev_minus1 / temperature_nlev_minus1
+            + 0.5 * ddqz_z_full_nlev_minus2 / temperature_nlev_minus2
+        )
     )
     return pressure_sfc
 
-@scan_operator(axis=KDim,forward=False,init=(True,0.0,0.0))
+
+@scan_operator(axis=KDim, forward=False, init=(True, 0.0, 0.0))
 def _scan_pressure(
     state: tuple[bool, float, float],
     ddqz_z_full: float,
@@ -52,13 +61,14 @@ def _scan_pressure(
     pressure_sfc: float,
 ):
     if state[0]:
-        pressure_first_level = pressure_sfc * exp( -ddqz_z_full / temperature )
-        pressure = sqrt( pressure_sfc * pressure_first_level )
+        pressure_first_level = pressure_sfc * exp(-ddqz_z_full / temperature)
+        pressure = sqrt(pressure_sfc * pressure_first_level)
         return False, pressure, pressure_first_level
     else:
-        pressure_interface = state[1] * exp( -ddqz_z_full / temperature )
-        pressure = sqrt( state[1] * pressure_interface )
+        pressure_interface = state[1] * exp(-ddqz_z_full / temperature)
+        pressure = sqrt(state[1] * pressure_interface)
         return False, pressure, pressure_interface
+
 
 @field_operator
 def _mo_diagnose_pressure(
@@ -66,12 +76,9 @@ def _mo_diagnose_pressure(
     temperature: Field[[CellDim, KDim], vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    redundant, pressure, pressure_ifc = _scan_pressure(
-        ddqz_z_full,
-        temperature,
-        pressure_sfc
-    )
+    redundant, pressure, pressure_ifc = _scan_pressure(ddqz_z_full, temperature, pressure_sfc)
     return pressure, pressure_ifc
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_diagnose_temperature(
@@ -86,14 +93,13 @@ def mo_diagnose_temperature(
     _mo_diagnose_temperature(
         theta_v,
         exner,
-        out=(
-            temperature
-        ),
+        out=(temperature),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_diagnose_pressure_sfc(
@@ -128,6 +134,7 @@ def mo_diagnose_pressure_sfc(
         },
     )
 
+
 @program
 def mo_diagnose_pressure(
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
@@ -144,12 +151,6 @@ def mo_diagnose_pressure(
         ddqz_z_full,
         temperature,
         pressure_sfc,
-        out=(
-            pressure,
-            pressure_ifc
-        ),
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end)
-        },
+        out=(pressure, pressure_ifc),
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

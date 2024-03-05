@@ -17,8 +17,8 @@ import numpy as np
 from gt4py.next import Dimension
 
 from icon4py.model.common.dimension import (
-    C2E2C2EDim,
     C2E2C2E2CDim,
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -43,7 +43,6 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.base import BaseGrid, GridConfig
 
 # periodic
-# [15, 4, 3, 12, 14, 1, 7, 6, 2],  # 1c c2e2c2e
 # 0v---0e-- 1v---3e-- 2v---6e-- 0v
 # |  \ 0c   |  \ 1c   |  \2c
 # |   \1e   |   \4e   |   \7e

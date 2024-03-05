@@ -11,13 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from pathlib import Path
 import os
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
-from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT, JABW_EXPERIMENT
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
@@ -30,68 +29,45 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, VertexDim, C2E2C2EDim, KDim
+from icon4py.model.common.dimension import C2E2C2EDim, CEDim, CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
+from icon4py.model.common.test_utils.datatest_utils import (
+    GLOBAL_EXPERIMENT,
+    JABW_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+)
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     dallclose,
-    zero_field,
 )
 from icon4py.model.driver.dycore_driver import TimeLoop
-from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.driver.initialization_utils import model_initialization_jabw
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import mo_init_ddt_cell_zero, mo_init_ddt_edge_zero
-from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
-from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
-from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
-from gt4py.next.program_processors.runners import gtfn
-from gt4py.next.otf.compilation.build_systems import cmake
-#from gt4py.next.otf.compilation.cache import Strategy
 
 from .utils import (
     construct_diffusion_config,
-    construct_nonhydrostatic_config,
     construct_iconrun_config,
+    construct_nonhydrostatic_config,
 )
 
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
-'''
-compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
-    name="run_gtfn_cached_cmake_release",
-    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
-        compilation=gtfn.compiler.Compiler(
-            cache_strategy=Strategy.PERSISTENT,
-            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
-        )),
-    hash_function=gtfn.compilation_hash),
-)
-'''
-backend = compiler_cached_backend#compiler_cached_release_backend
+backend = compiler_cached_backend
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-"experiment, experiment_name, fname_prefix, rank, debug",
+    "experiment, experiment_name, fname_prefix, rank, debug",
     [
-        (
-            JABW_EXPERIMENT,
-            "jabw",
-            "icon_pydycore",
-            0,
-            False
-        ),
+        (JABW_EXPERIMENT, "jabw", "icon_pydycore", 0, False),
     ],
 )
 def test_jabw_initial_condition(
@@ -103,9 +79,8 @@ def test_jabw_initial_condition(
     data_provider,
     grid_savepoint,
     icon_grid,
-    debug
+    debug,
 ):
-
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
@@ -116,51 +91,45 @@ def test_jabw_initial_condition(
         divdamp_fac_o2,
         diagnostic_state,
         prognostic_state_now,
-        prognostic_state_next
+        prognostic_state_next,
     ) = model_initialization_jabw(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        datapath,
-        fname_prefix,
-        rank
+        icon_grid, cell_geometry, edge_geometry, datapath, fname_prefix, rank
     )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
 
     assert dallclose(
         data_provider.from_savepoint_jabw_final().rho().asnumpy(),
-        prognostic_state_now.rho.asnumpy()
+        prognostic_state_now.rho.asnumpy(),
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_final().exner().asnumpy(),
-        prognostic_state_now.exner.asnumpy()
+        prognostic_state_now.exner.asnumpy(),
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
-        prognostic_state_now.theta_v.asnumpy()
+        prognostic_state_now.theta_v.asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(),
-        prognostic_state_now.vn.asnumpy()
+        data_provider.from_savepoint_jabw_final().vn().asnumpy(), prognostic_state_now.vn.asnumpy()
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
-        diagnostic_state.pressure.asnumpy()
+        diagnostic_state.pressure.asnumpy(),
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
-        diagnostic_state.temperature.asnumpy()
+        diagnostic_state.temperature.asnumpy(),
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
-        diagnostic_state.pressure_sfc.asnumpy()
+        diagnostic_state.pressure_sfc.asnumpy(),
     )
 
 
@@ -261,8 +230,7 @@ def test_run_timeloop_single_step(
     )
     diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
     diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init,
-        grid_savepoint
+        timeloop_diffusion_savepoint_init, grid_savepoint
     )
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -304,7 +272,7 @@ def test_run_timeloop_single_step(
         timeloop_date_init,
         timeloop_date_exit,
         timeloop_diffusion_linit_init,
-        ndyn_substeps=ndyn_substeps
+        ndyn_substeps=ndyn_substeps,
     )
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
@@ -405,12 +373,15 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = TimeLoop(iconrun_config, icon_grid, diffusion, solve_nonhydro, is_run_from_serializedData=True)
+    timeloop = TimeLoop(
+        iconrun_config, icon_grid, diffusion, solve_nonhydro, is_run_from_serializedData=True
+    )
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
     initial_prognostic_date = "2021-06-20T12:00:10.000"
-    if experiment == GLOBAL_EXPERIMENT: initial_prognostic_date = "2000-01-01T00:00:00.000"
+    if experiment == GLOBAL_EXPERIMENT:
+        initial_prognostic_date = "2000-01-01T00:00:00.000"
 
     if timeloop_date_exit == initial_prognostic_date:
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
@@ -443,7 +414,9 @@ def test_run_timeloop_single_step(
 
     diagnostic_metric_state = DiagnosticMetricState(
         ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
-        rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float), # TODO: change to C2E2C2EDim
+        rbf_vec_coeff_c1=_allocate(
+            CellDim, C2E2C2EDim, grid=icon_grid, dtype=float
+        ),  # TODO: change to C2E2C2EDim
         rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
         v_lat=_allocate(VertexDim, grid=icon_grid),
         v_lon=_allocate(VertexDim, grid=icon_grid),
@@ -471,13 +444,11 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
-
     if debug_mode:
         script_dir = os.path.dirname(os.path.abspath(__file__))
         base_dir = script_dir + "/"
 
         def printing(ref, predict, title: str):
-            maximum, minimum = 0.0, 0.0
             with open(base_dir + "analysis_" + title + ".dat", "w") as f:
                 cell_size = ref.shape[0]
                 k_size = ref.shape[1]
@@ -523,7 +494,6 @@ def test_run_timeloop_single_step(
     assert dallclose(
         vn_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-        #atol=5e-13,
         atol=6e-12,
     )
 
@@ -548,5 +518,3 @@ def test_run_timeloop_single_step(
         rho_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
     )
-
-

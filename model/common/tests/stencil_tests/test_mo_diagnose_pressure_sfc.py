@@ -15,11 +15,11 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.dimension import CellDim
-from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
+from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
 from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import (
     mo_diagnose_pressure_sfc,
 )
+from icon4py.model.common.dimension import CellDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
@@ -38,12 +38,20 @@ class TestMoDiagPressureSfc(StencilTest):
         ddqz_z_full_nlev: np.array,
         ddqz_z_full_nlev_minus1: np.array,
         ddqz_z_full_nlev_minus2: np.array,
-        **kwargs
+        **kwargs,
     ) -> dict:
-        pressure_sfc = (
-            P0REF * np.exp(CPD_O_RD * np.log(exner_nlev_minus2) + GRAV_O_RD * (ddqz_z_full_nlev / temperature_nlev + ddqz_z_full_nlev_minus1 / temperature_nlev_minus1 + 0.5 * ddqz_z_full_nlev_minus2 / temperature_nlev_minus2 ) )
+        pressure_sfc = P0REF * np.exp(
+            CPD_O_RD * np.log(exner_nlev_minus2)
+            + GRAV_O_RD
+            * (
+                ddqz_z_full_nlev / temperature_nlev
+                + ddqz_z_full_nlev_minus1 / temperature_nlev_minus1
+                + 0.5 * ddqz_z_full_nlev_minus2 / temperature_nlev_minus2
+            )
         )
-        return dict(pressure_sfc=pressure_sfc,)
+        return dict(
+            pressure_sfc=pressure_sfc,
+        )
 
     @pytest.fixture
     def input_data(self, grid):
