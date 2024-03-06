@@ -10,218 +10,167 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-# flake8: noqa
+# type: ignore
 
-# We use gt4py type annotations and thus need to ignore this in MyPy
-# mypy: disable-error-code="valid-type"
-
-"""
-Wrapper module for diffusion granule.
-
-Module contains a diffusion_init and diffusion_run function that follow the architecture of
-Fortran granule interfaces:
-- all arguments needed from external sources are passed.
-- passing of scalar types or fields of simple types
-"""
-
-import numpy as np
 from gt4py.next.common import Field
-from gt4py.next.ffront.fbuiltins import int32
-
+from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
+    DiffusionParams,
+)
+from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
-    DiffusionParams,
-    DiffusionType,
 )
 from icon4py.model.common.dimension import (
-    C2E2CDim,
     C2E2CODim,
-    C2EDim,
-    CECDim,
+    CEDim,
     CellDim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
+    ECDim,
     ECVDim,
     EdgeDim,
     KDim,
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 
-# TODO (magdalena) Revise interface architecture with Fortran granules:
-# The module variable to match the Fortran interface: where only fields are passed.
-# We should rather instantiate the object init and return it.
-diffusion: Diffusion = Diffusion()
 
-nproma = 50000
-field_sizes = {EdgeDim: nproma, CellDim: nproma, VertexDim: nproma}
+DIFFUSION: Diffusion = Diffusion()
+
+GRID_PATH = (
+    "/home/sk/Dev/icon4py/testdata"  # todo(samkellerhals): we need a better way to set this path
+)
+GRID_FILENAME = "grid.nc"
 
 
 def diffusion_init(
-    nproma: int,
-    nlev: int,
-    n_shift_total: int,
-    nrdmax: float,
-    n_dyn_substeps: int,
-    nudge_max_coeff: float,
-    denom_diffu_v: float,
-    hdiff_smag_fac: float,
-    hdiff_order: int,
-    hdiff_efdt_ratio: float,
-    itype_sher: int,
-    itype_vn_diffu: int,
-    itype_t_diffu: int,
-    lhdiff_rcf: bool,
-    lhdiff_w: bool,
-    lhdiff_temp: bool,
-    l_limited_area: bool,
-    l_zdiffu_t: bool,
-    lsmag_3d: bool,
-    vct_a: Field[[KDim], float],
-    e_bln_c_s: Field[[CellDim, C2EDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-    geofac_n2s: Field[[CellDim, C2E2CODim], float],
-    geofac_grg_x: Field[[CellDim, C2E2CODim], float],
-    geofac_grg_y: Field[[CellDim, C2E2CODim], float],
-    nudgecoeff_e: Field[[EdgeDim], float],
-    zd_intcoef: Field[
-        [CellDim, C2E2CDim, KDim], float
-    ],  # special DSL field:   zd_intcoef_dsl in mo_vertical_grid.f90
-    zd_diffcoef: Field[
-        [CellDim, KDim], float
-    ],  # special DSL field mask instead of list: zd_diffcoef_dsl in mo_vertical_grid.f90
-    wgtfac_c: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-    edges_vertex_idx: Field[[EdgeDim, E2VDim], int32],
-    edges_cell_idx: Field[[EdgeDim, E2CDim], int32],
-    edges_tangent_orientation: Field[[EdgeDim], float],
-    edges_primal_normal_vert_1: Field[[ECVDim], float],  # shallow derived type in Fortran
-    edges_primal_normal_vert_2: Field[[ECVDim], float],  # shallow derived type in Fortran
-    edges_dual_normal_vert_1: Field[[ECVDim], float],  # shallow derived type in Fortran
-    edges_dual_normal_vert_2: Field[[ECVDim], float],  # shallow derived type in Fortran
-    edges_inv_vert_vert_lengths: Field[[EdgeDim], float],
-    edges_inv_primal_edge_length: Field[[EdgeDim], float],
-    edges_inv_dual_edge_length: Field[[EdgeDim], float],
-    edges_area_edge: Field[[EdgeDim], float],
-    cells_neighbor_idx: Field[[CellDim, C2E2CDim], int32],
-    cells_edge_idx: Field[[CellDim, C2EDim], int32],
-    cells_area: Field[[CellDim], float],
-    # dsl specific additional args
-    mean_cell_area: float,
-    mask_hdiff: Field[[CellDim, KDim], bool],
-    zd_vertoffset: Field[
-        [CECDim], int32
-    ],  # vertical offsets used in DSL for absolute indices zd_vertidx in mo_vertical_grid.f90
-    rbf_coeff_1: Field[[VertexDim, V2EDim], float],  # -> used in rbf_vec_interpol_vertex
-    rbf_coeff_2: Field[[VertexDim, V2EDim], float],  # -> used in rbf_vec_interpol_vertex
-    verts_edge_idx: Field[[VertexDim, V2EDim], int32],  # -> mo_intp_rbf_rbf_vec_interpol_vertex
+    vct_a: Field[[KDim], float64],
+    theta_ref_mc: Field[[CellDim, KDim], float64],
+    wgtfac_c: Field[[CellDim, KDim], float64],
+    e_bln_c_s: Field[[CEDim], float64],
+    geofac_div: Field[[CEDim], float64],
+    geofac_grg_x: Field[[CellDim, C2E2CODim], float64],
+    geofac_grg_y: Field[[CellDim, C2E2CODim], float64],
+    geofac_n2s: Field[[CellDim, C2E2CODim], float64],
+    nudgecoeff_e: Field[[EdgeDim], float64],
+    rbf_coeff_1: Field[[VertexDim, V2EDim], float64],
+    rbf_coeff_2: Field[[VertexDim, V2EDim], float64],
+    num_levels: int32,
+    mean_cell_area: float64,
+    ndyn_substeps: int32,
+    rayleigh_damping_height: float64,
+    nflatlev: int32,
+    nflat_gradp: int32,
+    diffusion_type: int32,
+    hdiff_w: bool,
+    hdiff_vn: bool,
+    zdiffu_t: bool,
+    type_t_diffu: int32,
+    type_vn_diffu: int32,
+    hdiff_efdt_ratio: float64,
+    smagorinski_scaling_factor: float64,
+    hdiff_temp: bool,
+    tangent_orientation: Field[[EdgeDim], float64],
+    inverse_primal_edge_lengths: Field[[EdgeDim], float64],
+    inv_dual_edge_length: Field[[EdgeDim], float64],
+    inv_vert_vert_length: Field[[EdgeDim], float64],
+    edge_areas: Field[[EdgeDim], float64],
+    f_e: Field[[EdgeDim], float64],
+    cell_areas: Field[[CellDim], float64],
+    primal_normal_vert_x: Field[[ECVDim], float64],
+    primal_normal_vert_y: Field[[ECVDim], float64],
+    dual_normal_vert_x: Field[[ECVDim], float64],
+    dual_normal_vert_y: Field[[ECVDim], float64],
+    primal_normal_cell_x: Field[[ECDim], float64],
+    primal_normal_cell_y: Field[[ECDim], float64],
+    dual_normal_cell_x: Field[[ECDim], float64],
+    dual_normal_cell_y: Field[[ECDim], float64],
 ):
-    """
-    Instantiate and Initialize the diffusion object.
-
-    should only accept simple fields as arguments for compatibility with the standalone
-    Fortran ICON Diffusion component (aka Diffusion granule)
-
-    """
-    if diffusion.initialized:
-        raise DuplicateInitializationException("Diffusion has already been already initialized")
-
-    horizontal_size = HorizontalGridSize(num_cells=nproma, num_vertices=nproma, num_edges=nproma)
-    vertical_size = VerticalGridSize(num_lev=nlev)
-    mesh_config = GridConfig(
-        horizontal_config=horizontal_size,
-        vertical_config=vertical_size,
-        limited_area=l_limited_area,
-        n_shift_total=n_shift_total,
+    # grid
+    icon_grid = _load_from_gridfile(
+        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=False
     )
-    # we need the start, end indices in order for the grid to be functional those are not passed
-    # to init in the Fortran diffusion granule since they are hidden away in the get_indices_[c,e,v]
-    # diffusion_run does take p_patch in order to pass it on to other subroutines (interpolation, get_indices...
 
-    c2e2c0 = np.column_stack(
-        (
-            (np.asarray(cells_neighbor_idx)),
-            (np.asarray(range(np.asarray(cells_neighbor_idx).shape[0]))),
-        )
-    )
-    e2c2v = np.asarray(edges_vertex_idx)
-    e2v = e2c2v[:, 0:2]
-    connectivities = {
-        E2CDim: np.asarray(edges_cell_idx),
-        E2C2VDim: e2c2v,
-        E2VDim: e2v,
-        C2EDim: np.asarray(cells_edge_idx),
-        C2E2CDim: (np.asarray(cells_neighbor_idx)),
-        C2E2CODim: c2e2c0,
-        V2EDim: np.asarray(verts_edge_idx),
-    }
-    # TODO (Magdalena) we need start_index, end_index: those are not passed in the fortran granules,
-    #  because they are used through get_indices only
-    grid = IconGrid().with_config(mesh_config).with_connectivities(connectivities)
+    # Edge geometry
     edge_params = EdgeParams(
-        tangent_orientation=edges_tangent_orientation,
-        inverse_primal_edge_lengths=edges_inv_primal_edge_length,
-        dual_normal_vert_x=edges_dual_normal_vert_1,
-        dual_normal_vert_y=edges_dual_normal_vert_2,
-        inverse_dual_edge_lengths=edges_inv_dual_edge_length,
-        inverse_vertex_vertex_lengths=edges_inv_vert_vert_lengths,
-        primal_normal_vert_x=edges_primal_normal_vert_1,
-        primal_normal_vert_y=edges_primal_normal_vert_2,
-        edge_areas=edges_area_edge,
+        tangent_orientation=tangent_orientation,
+        inverse_primal_edge_lengths=inverse_primal_edge_lengths,
+        inverse_dual_edge_lengths=inv_dual_edge_length,
+        inverse_vertex_vertex_lengths=inv_vert_vert_length,
+        primal_normal_vert_x=primal_normal_vert_x,
+        primal_normal_vert_y=primal_normal_vert_y,
+        dual_normal_vert_x=dual_normal_vert_x,
+        dual_normal_vert_y=dual_normal_vert_y,
+        primal_normal_cell_x=primal_normal_cell_x,
+        primal_normal_cell_y=primal_normal_cell_y,
+        dual_normal_cell_x=dual_normal_cell_x,
+        dual_normal_cell_y=dual_normal_cell_y,
+        edge_areas=edge_areas,
+        f_e=f_e,
     )
-    cell_params = CellParams(area=cells_area, mean_cell_area=mean_cell_area)
-    config: DiffusionConfig = DiffusionConfig(
-        diffusion_type=DiffusionType(hdiff_order),
-        hdiff_w=lhdiff_w,
-        hdiff_temp=lhdiff_temp,
-        type_vn_diffu=itype_vn_diffu,
-        smag_3d=lsmag_3d,
-        type_t_diffu=itype_t_diffu,
-        hdiff_efdt_ratio=hdiff_efdt_ratio,
-        hdiff_w_efdt_ratio=hdiff_efdt_ratio,
-        smagorinski_scaling_factor=hdiff_smag_fac,
-        n_substeps=n_dyn_substeps,
-        zdiffu_t=l_zdiffu_t,
-        hdiff_rcf=lhdiff_rcf,
-        velocity_boundary_diffusion_denom=denom_diffu_v,
-        max_nudging_coeff=nudge_max_coeff,
-    )
-    vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=nrdmax)
 
-    derived_diffusion_params = DiffusionParams(config)
+    # cell geometry
+    cell_params = CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
+
+    # diffusion parameters
+    config = DiffusionConfig(
+        diffusion_type=diffusion_type,
+        hdiff_w=hdiff_w,
+        hdiff_vn=hdiff_vn,
+        zdiffu_t=zdiffu_t,
+        type_t_diffu=type_t_diffu,
+        type_vn_diffu=type_vn_diffu,
+        hdiff_efdt_ratio=hdiff_efdt_ratio,
+        smagorinski_scaling_factor=smagorinski_scaling_factor,
+        hdiff_temp=hdiff_temp,
+        n_substeps=ndyn_substeps,
+    )
+
+    diffusion_params = DiffusionParams(config)
+
+    # vertical parameters
+    vertical_params = VerticalModelParams(
+        vct_a=vct_a,
+        rayleigh_damping_height=rayleigh_damping_height,
+        nflatlev=nflatlev,
+        nflat_gradp=nflat_gradp,
+    )
+
+    # metric state
     metric_state = DiffusionMetricState(
+        mask_hdiff=None,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        mask_hdiff=mask_hdiff,
-        zd_vertoffset=zd_vertoffset,
-        zd_diffcoef=zd_diffcoef,
-        zd_intcoef=zd_intcoef,
-    )
-    interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s,
-        rbf_coeff_1,
-        rbf_coeff_2,
-        geofac_div,
-        geofac_n2s,
-        geofac_grg_x,
-        geofac_grg_y,
-        nudgecoeff_e,
+        zd_intcoef=None,
+        zd_vertoffset=None,
+        zd_diffcoef=None,
     )
 
-    diffusion.init(
-        grid=grid,
+    # interpolation state
+    interpolation_state = DiffusionInterpolationState(
+        e_bln_c_s=e_bln_c_s,
+        rbf_coeff_1=rbf_coeff_1,
+        rbf_coeff_2=rbf_coeff_2,
+        geofac_div=geofac_div,
+        geofac_n2s=geofac_n2s,
+        geofac_grg_x=geofac_grg_x,
+        geofac_grg_y=geofac_grg_y,
+        nudgecoeff_e=nudgecoeff_e,
+    )
+
+    # initialisation
+    print("Initialising diffusion...")
+
+    DIFFUSION.init(
+        grid=icon_grid,
         config=config,
-        params=derived_diffusion_params,
+        params=diffusion_params,
         vertical_params=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
@@ -231,37 +180,36 @@ def diffusion_init(
 
 
 def diffusion_run(
-    dtime: float,
-    linit: bool,
-    vn: Field[[EdgeDim, KDim], float],
-    w: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    div_ic: Field[[CellDim, KDim], float],
-    hdef_ic: Field[[CellDim, KDim], float],
-    dwdx: Field[[CellDim, KDim], float],
-    dwdy: Field[[CellDim, KDim], float],
-    rho: Field[[CellDim, KDim], float],
+    w: Field[[CellDim, KDim], float64],
+    vn: Field[[EdgeDim, KDim], float64],
+    exner: Field[[CellDim, KDim], float64],
+    theta_v: Field[[CellDim, KDim], float64],
+    rho: Field[[CellDim, KDim], float64],
+    hdef_ic: Field[[CellDim, KDim], float64],
+    div_ic: Field[[CellDim, KDim], float64],
+    dwdx: Field[[CellDim, KDim], float64],
+    dwdy: Field[[CellDim, KDim], float64],
+    dtime: float64,
 ):
-    diagnostic_state = DiffusionDiagnosticState(hdef_ic, div_ic, dwdx, dwdy)
+    # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
-        rho=rho,
         w=w,
         vn=vn,
         exner=exner,
         theta_v=theta_v,
+        rho=rho,
     )
-    if linit:
-        diffusion.initial_run(
-            diagnostic_state,
-            prognostic_state,
-            dtime,
-        )
-    else:
-        diffusion.run(diagnostic_state, prognostic_state, dtime)
 
+    diagnostic_state = DiffusionDiagnosticState(
+        hdef_ic=hdef_ic,
+        div_ic=div_ic,
+        dwdx=dwdx,
+        dwdy=dwdy,
+    )
 
-class DuplicateInitializationException(Exception):
-    """Raised if the component is already initilalized."""
+    # running diffusion
+    print("Running diffusion...")
 
-    pass
+    DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
+
+    print("Done running diffusion.")

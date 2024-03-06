@@ -263,10 +263,12 @@ def {{ func.name }}_wrapper(
     {% if _this_node.debug_mode %}
     # debug info
     {% for arg in func.args %}
+    {% if arg.is_array %}
     msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
     print(msg)
     msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
     print(msg)
+    {% endif %}
     {% endfor %}
     {% endif %}
 

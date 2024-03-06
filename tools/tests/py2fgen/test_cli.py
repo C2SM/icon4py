@@ -64,20 +64,20 @@ def compile_fortran_code(
     plugin_name: str, samples_path: Path, fortran_driver: str, extra_compiler_flags: tuple[str, ...]
 ):
     subprocess.run(["gfortran", "-c", f"{plugin_name}.f90", "."], check=True)
+    command = [
+        "gfortran",
+        "-cpp",
+        "-I.",
+        "-Wl,-rpath=.",
+        "-L.",
+        f"{plugin_name}.f90",
+        str(samples_path / f"{fortran_driver}.f90"),
+        f"-l{plugin_name}",
+        "-o",
+        plugin_name,
+    ] + [f for f in extra_compiler_flags]
     subprocess.run(
-        [
-            "gfortran",
-            "-cpp",
-            "-I.",
-            "-Wl,-rpath=.",
-            "-L.",
-            f"{plugin_name}.f90",
-            str(samples_path / f"{fortran_driver}.f90"),
-            f"-l{plugin_name}",
-            "-o",
-            plugin_name,
-        ]
-        + [f for f in extra_compiler_flags],
+        command,
         check=True,
     )
 
@@ -122,4 +122,16 @@ def test_py2fgen_compilation_and_execution_multi_return(
         backend,
         samples_path,
         "test_multi_return",
+    )
+
+
+def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
+    run_test_case(
+        cli_runner,
+        "icon4pytools.py2fgen.wrappers.diffusion",
+        "diffusion_init,diffusion_run",
+        "diffusion_plugin",
+        "ROUNDTRIP",  # diffusion code selects its own backend.
+        samples_path,
+        "test_diffusion",
     )
