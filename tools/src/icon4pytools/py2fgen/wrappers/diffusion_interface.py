@@ -178,17 +178,17 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w,
-    vn,
-    exner,
-    theta_v,
-    rho,
-    hdef_ic,
-    div_ic,
-    dwdx,
-    dwdy,
+    w: Field[[CellDim, KDim], float64],
+    vn: Field[[CellDim, KDim], float64],
+    exner: Field[[CellDim, KDim], float64],
+    theta_v: Field[[CellDim, KDim], float64],
+    rho: Field[[CellDim, KDim], float64],
+    hdef_ic: Field[[CellDim, KDim], float64],
+    div_ic: Field[[CellDim, KDim], float64],
+    dwdx: Field[[CellDim, KDim], float64],
+    dwdy: Field[[CellDim, KDim], float64],
     dtime: float,
-) -> None:
+):
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
         w=w,

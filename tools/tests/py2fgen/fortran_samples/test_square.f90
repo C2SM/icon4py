@@ -33,9 +33,9 @@ program call_square_wrapper_cffi_plugin
 
     ! Call the appropriate cffi plugin
 #ifdef USE_SQUARE_FROM_FUNCTION
-    call run_square_from_function(input, result)
+    call square_from_function(input, result)
 #else
-    call run_square(input, result)
+    call square(input, result)
 #endif
 
      ! print array shapes and values before computation

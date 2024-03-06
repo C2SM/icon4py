@@ -43,7 +43,7 @@ program call_multi_return_cffi_plugin
     print *
 
     ! call the cffi plugin
-    call run_multi_return(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
+    call multi_return(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
             horizontal_start, horizontal_end, vertical_start, vertical_end)
 
     ! print array shapes and values before computation

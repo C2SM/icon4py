@@ -346,7 +346,7 @@ module {{ _this_node.cffi_plugin.plugin_name }}
     implicit none
 
     {% for func in _this_node.cffi_plugin.function %}
-    public :: run_{{ func.name }}
+    public :: {{ func.name }}
     {% endfor %}
 
 interface
@@ -395,7 +395,7 @@ end subroutine {{name}}_wrapper
 
     F90FunctionDefinition = as_jinja(
         """
-subroutine run_{{name}}({{param_names}})
+subroutine {{name}}({{param_names}})
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
@@ -411,7 +411,7 @@ subroutine run_{{name}}({{param_names}})
 
    call {{ name }}_wrapper({{ param_names_with_size_args }})
 
-end subroutine run_{{name}}
+end subroutine {{name}}
     """
     )
 

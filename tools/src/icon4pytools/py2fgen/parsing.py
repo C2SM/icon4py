@@ -110,7 +110,7 @@ def _get_simple_func_params(func: Callable, type_hints: dict[str, str]) -> List[
             name=s,
             d_type=parse_type_spec(from_type_hint(param.annotation))[
                 1
-            ],  # todo: add error for missing type hint
+            ],  # todo: add error for missing type hint, also fix parsing if return type hint is given in function
             dimensions=[
                 Dimension(value=d.value)
                 for d in parse_type_spec(from_type_hint(param.annotation))[0]
