@@ -1,10 +1,6 @@
 program call_square_wrapper_cffi_plugin
     use, intrinsic :: iso_c_binding
-#ifdef USE_SQUARE_FROM_FUNCTION
-    use square_from_function_plugin
-#else
     use square_plugin
-#endif
     implicit none
     character(len=100) :: str_buffer
     integer(c_int) :: cdim, kdim, i, j
