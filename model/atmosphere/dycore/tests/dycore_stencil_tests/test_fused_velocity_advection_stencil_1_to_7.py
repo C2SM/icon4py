@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 imp
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
@@ -207,6 +208,10 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         pytest.skip(
             "Verification of z_v_grad_w currently not working, because numpy version incorrect."
         )
+        if isinstance(grid, IconGrid) and grid.limited_area:
+            pytest.xfail(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
 
         c_intp = random_field(grid, VertexDim, V2CDim)
         vn = random_field(grid, EdgeDim, KDim)
