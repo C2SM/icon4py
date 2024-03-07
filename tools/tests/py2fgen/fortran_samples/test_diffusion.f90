@@ -195,12 +195,6 @@ program diffusion_simulation
    ! Call diffusion_run
    call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime)
 
-   print *, "Ran diffusion once"
-
-   call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime)
-
-   print *, "Ran diffusion twice"
-
    print *, "passed: could run diffusion"
 
 end program diffusion_simulation

@@ -370,7 +370,7 @@ end module
     F90FunctionDeclaration = as_jinja(
         """
 subroutine {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper")
-   import :: c_int, c_double    ! maybe use use, intrinsic :: iso_c_binding instead?
+   import :: c_int, c_double
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
@@ -395,6 +395,7 @@ end subroutine {{name}}_wrapper
             param_names_with_size_args=param_names_with_size_args,
         )
 
+    # todo(samkellerhals): Consider using unique SIZE args
     F90FunctionDefinition = as_jinja(
         """
 subroutine {{name}}({{param_names}})
@@ -406,7 +407,6 @@ subroutine {{name}}({{param_names}})
    {{ arg }}
    {% endfor %}
 
-    ! Maybe these should be unique, but then which variables should we choose?
    {% for d in _this_node.dimension_size_declarations %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
