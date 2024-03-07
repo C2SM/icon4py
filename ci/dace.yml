@@ -22,7 +22,8 @@ benchmark_model_icon_grid:
     stage: benchmark
     script:
       - pip install dace==$DACE_VERSION
-      - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid_global --verbose
+      - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
     parallel:
       matrix:
         - BACKEND: [dace_cpu, dace_gpu]
+          GRID: [icon_grid, icon_grid_global]

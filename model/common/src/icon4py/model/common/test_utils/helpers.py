@@ -23,7 +23,6 @@ from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 
 from ..grid.base import BaseGrid
-from ..grid.icon import IconGrid
 from ..type_alias import wpfloat
 
 
@@ -244,28 +243,6 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
-
-
-@pytest.fixture
-def uses_local_area_icon_grid_with_otf(backend, grid):
-    """Check whether we are using a compiled backend with a limited_area icon_grid.
-
-    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
-    """
-    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if grid.limited_area:
-            if isinstance(
-                backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
-            ):
-                return True
-            try:
-                from gt4py.next.program_processors.runners import dace_iterator
-
-                if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
-                    return True
-            except ImportError:
-                pass
-    return False
 
 
 def reshape(arr: np.array, shape: tuple[int, ...]):

@@ -8,7 +8,8 @@ benchmark_model_icon_grid:
   extends: .test_template
   stage: benchmark
   script:
-    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid_global --verbose
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]
