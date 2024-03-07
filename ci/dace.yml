@@ -7,7 +7,7 @@ variables:
 build:
   extends: .build_template
 
-test_model_simple_grid:
+test_model_stencils:
   extends: .test_template
   stage: test
   script:
@@ -18,7 +18,7 @@ test_model_simple_grid:
     - BACKEND: [dace_cpu, dace_gpu]
       GRID: [simple_grid, icon_grid]
 
-benchmark_model_icon_grid:
+benchmark_model_stencils:
   extends: .test_template
   stage: benchmark
   script:
