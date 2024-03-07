@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -121,6 +122,11 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if isinstance(grid, IconGrid) and grid.limited_area:
+            pytest.xfail(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+
         z_kin_hor_e = random_field(grid, EdgeDim, KDim)
         coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)

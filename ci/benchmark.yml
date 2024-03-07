@@ -4,7 +4,7 @@ include:
 build:
   extends: .build_template
 
-benchmark_model_icon_grid:
+benchmark_model_stencils:
   extends: .test_template
   stage: benchmark
   script:
