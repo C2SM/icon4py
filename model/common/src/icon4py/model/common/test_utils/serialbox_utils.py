@@ -23,9 +23,9 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common import dimension
 from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
-    C2E2C2EDim,
     C2EDim,
     C2VDim,
     CECDim,
@@ -40,8 +40,8 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
-    V2CDim,
     V2C2VDim,
+    V2CDim,
     V2EDim,
     VertexDim,
 )
@@ -269,9 +269,11 @@ class IconGridSavepoint(IconSavepoint):
     def c2e(self):
         return self._get_connectivity_array("c2e", CellDim)
 
-    def _get_connectivity_array(self, name: str, target_dim: Dimension, reverse: bool=False):
+    def _get_connectivity_array(self, name: str, target_dim: Dimension, reverse: bool = False):
         if reverse:
-            connectivity = np.transpose(self._read_int32(name, offset=1))[: self.sizes[target_dim], :]
+            connectivity = np.transpose(self._read_int32(name, offset=1))[
+                : self.sizes[target_dim], :
+            ]
         else:
             connectivity = self._read_int32(name, offset=1)[: self.sizes[target_dim], :]
         self.log.debug(f" connectivity {name} : {connectivity.shape}")
@@ -284,12 +286,14 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("e2c2e", EdgeDim)
 
     def c2e2c2e(self):
-        try:
-            return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
-        except:
-            print("c2e2c2e connectivity is not in serialized data. Please check.")
-            print("Initiliaze with zero field")
+        if self._c2e2c2e() is None:
             return np.zeros((self.sizes[CellDim], 9), dtype=int)
+        else:
+            return self._c2e2c2e()
+
+    @optionally_registered
+    def _c2e2c2e(self):
+        return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
 
     def e2c(self):
         return self._get_connectivity_array("e2c", EdgeDim)
@@ -311,13 +315,14 @@ class IconGridSavepoint(IconSavepoint):
         return self._get_connectivity_array("v2c", VertexDim)
 
     def v2c2v(self):
-        try:
-            return self._get_connectivity_array("v2c2v", VertexDim)
-        except:
-            print("v2c2v connectivity is not in serialized data. Please check.")
-            print("Initiliaze with zero field")
+        if self._v2c2v() is None:
             return np.zeros((self.sizes[VertexDim], 6), dtype=int)
+        else:
+            return self._v2c2v()
 
+    @optionally_registered
+    def _v2c2v(self):
+        return self._get_connectivity_array("v2c2v", VertexDim)
 
     def c2v(self):
         return self._get_connectivity_array("c2v", CellDim)
@@ -478,7 +483,7 @@ class IconGridSavepoint(IconSavepoint):
             edge_center_lat=self.edge_center_lat(),
             edge_center_lon=self.edge_center_lon(),
             primal_normal_x=self.primal_normal_x(),
-            primal_normal_y=self.primal_normal_y()
+            primal_normal_y=self.primal_normal_y(),
         )
 
     def construct_cell_geometry(self) -> CellParams:
@@ -486,7 +491,7 @@ class IconGridSavepoint(IconSavepoint):
             area=self.cell_areas(),
             mean_cell_area=self.mean_cell_area(),
             cell_center_lat=self.cell_center_lat(),
-            cell_center_lon=self.cell_center_lon()
+            cell_center_lon=self.cell_center_lon(),
         )
 
 
@@ -1247,6 +1252,7 @@ class IconJabwInitSavepoint(IconSavepoint):
     def lonC(self):
         return self.serializer.read("lonC", self.savepoint)[0]
 
+
 class IconJabwIntermediateSavepoint(IconSavepoint):
     def exner(self):
         return self._get_field("exner_intermediate", CellDim, KDim)
@@ -1262,6 +1268,7 @@ class IconJabwIntermediateSavepoint(IconSavepoint):
 
     def temperature(self):
         return self._get_field("temperature_intermediate", CellDim, KDim)
+
 
 class IconJabwFinalSavepoint(IconSavepoint):
     def exner(self):
@@ -1290,6 +1297,7 @@ class IconJabwFinalSavepoint(IconSavepoint):
 
     def eta_v_e(self):
         return self._get_field("zeta_v_e_final", EdgeDim, KDim)
+
 
 class IconJabwFirstOutputSavepoint(IconSavepoint):
     def pressure(self):
@@ -1445,34 +1453,18 @@ class IconSerialDataProvider:
         )
         return IconNHFinalExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_jabw_init(
-        self
-    ) -> IconJabwInitSavepoint:
-        savepoint = (
-            self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
-        )
+    def from_savepoint_jabw_init(self) -> IconJabwInitSavepoint:
+        savepoint = self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
         return IconJabwInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_jabw_intermediate(
-        self
-    ) -> IconJabwIntermediateSavepoint:
-        savepoint = (
-            self.serializer.savepoint["icon-jabw-intermediate"].id[1].as_savepoint()
-        )
+    def from_savepoint_jabw_intermediate(self) -> IconJabwIntermediateSavepoint:
+        savepoint = self.serializer.savepoint["icon-jabw-intermediate"].id[1].as_savepoint()
         return IconJabwIntermediateSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_jabw_final(
-        self
-    ) -> IconJabwFinalSavepoint:
-        savepoint = (
-            self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
-        )
+    def from_savepoint_jabw_final(self) -> IconJabwFinalSavepoint:
+        savepoint = self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
         return IconJabwFinalSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_jabw_first_output(
-        self
-    ) -> IconJabwFirstOutputSavepoint:
-        savepoint = (
-            self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
-        )
+    def from_savepoint_jabw_first_output(self) -> IconJabwFirstOutputSavepoint:
+        savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
         return IconJabwFirstOutputSavepoint(savepoint, self.serializer, size=self.grid_size)
