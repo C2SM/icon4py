@@ -13,6 +13,10 @@ test_model_stencils:
     matrix:
     - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
       GRID: [simple_grid, icon_grid]
+      exclude:
+      # exclude slow test configurations
+      - BACKEND: roundtrip
+        GRID: icon_grid
 
 test_tools:
   extends: .test_template
