@@ -46,18 +46,15 @@ def test_unpack_column_major(data, expected_result, ffi):
 def test_compile_and_run_cffi_plugin_from_C():
     plugin_name = "test_plugin"
     c_header = "int test_function();"
-    c_source_code = (
-        f"""
+    c_source_code = f"""
     #include <stdio.h>
-    #include \"{plugin_name}.h\"
-    """
-        + """
-    int main() {
-        printf(\"%d\\n\", test_function());
+    #include "{plugin_name}.h"
+
+    int main() {{
+        printf("%d\\n", test_function());
         return 0;
-    }
+    }}
     """
-    )
 
     python_wrapper = """
     from test_plugin import ffi
