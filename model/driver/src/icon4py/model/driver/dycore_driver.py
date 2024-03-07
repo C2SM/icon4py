@@ -153,6 +153,7 @@ class OutputState:
             """
             output variables
             """
+            vn = self._nf4_basegrp[i].createVariable("vn", "f8", ("time", "height_2", "ncells_2",))
             u = self._nf4_basegrp[i].createVariable("u", "f8", ("time", "height_2", "ncells",))
             v = self._nf4_basegrp[i].createVariable("v", "f8", ("time", "height_2", "ncells",))
             temperature = self._nf4_basegrp[i].createVariable("temperature", "f8", ("time", "height_2", "ncells",))
@@ -201,6 +202,7 @@ class OutputState:
             times.calendar = "gregorian"
             times.axis = "T"
 
+            vn.units = "m s-1"
             u.units = "m s-1"
             v.units = "m s-1"
             w.units = "m s-1"
@@ -211,6 +213,7 @@ class OutputState:
             theta_v.units = "K"
             exner.units = ""
 
+            vn.param = "9.9.9"
             u.param = "2.2.0"
             v.param = "3.2.0"
             w.param = "9.2.0"
@@ -249,6 +252,7 @@ class OutputState:
             vertex_longitudes.bounds = "vlat_bnds"
             levels.bounds = "height_2_bnds"
 
+            vn.standard_name = "normal_wind"
             u.standard_name = "eastward_wind"
             v.standard_name = "northward_wind"
             w.standard_name = "upward_air_velocity"
@@ -259,6 +263,7 @@ class OutputState:
             theta_v.standard_name = "virtual_potential_temperature"
             exner.standard_name = "exner_pressure"
 
+            vn.long_name = "Normal wind on edge"
             u.long_name = "Zonal wind"
             v.long_name = "Meridional wind"
             w.long_name = "Vertical velocity"
@@ -269,6 +274,7 @@ class OutputState:
             theta_v.long_name = "Virtual potential temperature"
             exner.long_name = "Exner pressure"
 
+            vn.CDI_grid_type = "unstructured"
             u.CDI_grid_type = "unstructured"
             v.CDI_grid_type = "unstructured"
             w.CDI_grid_type = "unstructured"
@@ -279,6 +285,7 @@ class OutputState:
             theta_v.CDI_grid_type = "unstructured"
             exner.CDI_grid_type = "unstructured"
 
+            vn.number_of_grid_in_reference = 1
             u.number_of_grid_in_reference = 1
             v.number_of_grid_in_reference = 1
             w.number_of_grid_in_reference = 1
@@ -289,6 +296,7 @@ class OutputState:
             theta_v.number_of_grid_in_reference = 1
             exner.number_of_grid_in_reference = 1
 
+            vn.coordinates = "elat elon"
             u.coordinates = "clat clon"
             v.coordinates = "clat clon"
             w.coordinates = "clat clon"
@@ -477,6 +485,7 @@ class OutputState:
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
         log.info(f"Times are  {times[:]}")
         times[self._current_write_step] = date2num(current_date, units=times.units, calendar=times.calendar)
+        self._nf4_basegrp[self._current_file_number].variables["vn"][self._current_write_step, :, :] = prognostic_state.vn.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["u"][self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["v"][self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["w"][self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
