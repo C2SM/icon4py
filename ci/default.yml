@@ -5,13 +5,14 @@ build:
   extends: .build_template
 
 test_model_simple_grid:
-    extends: .test_template
-    stage: test
-    script:
-      - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=$BACKEND
-    parallel:
-      matrix:
-        - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+  parallel:
+    matrix:
+    - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+      GRID: [simple_grid, icon_grid]
 
 test_tools:
   extends: .test_template
