@@ -15,7 +15,7 @@ test_model_stencils:
       GRID: [simple_grid, icon_grid]
   rules:
     # exclude slow test configurations
-    - if: '$BACKEND == roundtrip && $GRID == icon_grid'
+    - if: $BACKEND == roundtrip && $GRID == icon_grid
       when: never
 
 test_tools:
