@@ -29,7 +29,7 @@ import pytest
 from icon4py.model.common.dimension import EdgeDim, CellDim, C2EDim, VertexDim, V2EDim, KDim, E2CDim, C2E2CDim, E2VDim, C2VDim, V2CDim, E2C2EODim, E2C2EDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_geofac_grdiv, compute_c_bln_avg, compute_mass_conservation_c_bln_avg, compute_e_flx_avg, compute_cells_aw_verts, compute_e_bln_c_s, compute_geofac_div_np, compute_geofac_rot_np, compute_pos_on_tplane_e
+from icon4py.model.common.interpolation.interpolation_fields import compute_c_lin_e, compute_geofac_div, compute_geofac_rot, compute_geofac_n2s, compute_primal_normal_ec, compute_geofac_grg, compute_geofac_grdiv, compute_c_bln_avg, compute_mass_conservation_c_bln_avg, compute_e_flx_avg, compute_cells_aw_verts, compute_e_bln_c_s, compute_geofac_div_np, compute_geofac_rot_np, compute_pos_on_tplane_e, compute_pos_on_tplane_e_x_y
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     datapath,
@@ -513,3 +513,25 @@ def test_compute_pos_on_tplane_e(
         lateral_boundary_edges,
     )
     assert np.allclose(pos_on_tplane_e, pos_on_tplane_e_ref)
+
+@pytest.mark.datatest
+def test_compute_pos_on_tplane_e_x_y(
+    grid_savepoint, interpolation_savepoint, icon_grid
+):
+    pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
+    pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
+    pos_on_tplane_e = interpolation_savepoint.pos_on_tplane_e().asnumpy()
+    lateral_boundary_edges = np.arange(2)
+    lateral_boundary_edges[0] = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    )
+    lateral_boundary_edges[1] = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+    )
+    pos_on_tplane_e_x = np.zeros(lateral_boundary_edges[1] * 2)
+    pos_on_tplane_e_y = np.zeros(lateral_boundary_edges[1] * 2)
+    pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(pos_on_tplane_e_x, pos_on_tplane_e_y, pos_on_tplane_e)
+    assert np.allclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref)
+    assert np.allclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref)

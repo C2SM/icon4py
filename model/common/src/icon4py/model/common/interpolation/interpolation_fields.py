@@ -635,3 +635,12 @@ def compute_pos_on_tplane_e(
         pos_on_tplane_e[llb:, 6 + nv, 1] = np.where(owner_mask[llb:], grid_sphere_radius * (xyloc_plane_ve[nv, 0] * dual_normal_v1[llb:] + xyloc_plane_ve[nv, 1] * dual_normal_v2[llb:]), pos_on_tplane_e[llb:, 6 + nv, 1])
 
     return pos_on_tplane_e
+
+def compute_pos_on_tplane_e_x_y(
+    pos_on_tplane_e_x: np.array,
+    pos_on_tplane_e_y: np.array,
+    pos_on_tplane_e: np.array,
+) -> (np.array, np.array):
+    pos_on_tplane_e_x = np.reshape(pos_on_tplane_e[:, 0:2, 0], (np.size(pos_on_tplane_e[:, 0:2, 0])))
+    pos_on_tplane_e_y = np.reshape(pos_on_tplane_e[:, 0:2, 1], (np.size(pos_on_tplane_e[:, 0:2, 1])))
+    return pos_on_tplane_e_x, pos_on_tplane_e_y
