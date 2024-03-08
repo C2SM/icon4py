@@ -3,7 +3,7 @@ program call_square_wrapper_cffi_plugin
    use square_plugin
    implicit none
    character(len=100) :: str_buffer
-   integer(c_int) :: cdim, kdim, i, j
+   integer(c_int) :: cdim, kdim, i, j, rc
    logical :: computation_correct
    real(c_double), dimension(:, :), allocatable :: input, result
 
@@ -31,12 +31,17 @@ program call_square_wrapper_cffi_plugin
    print *, "result = ", result
    print *
 
-   ! Call the appropriate cffi plugin
 #ifdef USE_SQUARE_FROM_FUNCTION
-   call square_from_function(input, result)
+   call square_from_function(input, result, rc)
+#elif USE_SQUARE_ERROR
+   call square_error(input, result, rc)
 #else
-   call square(input, result)
+   call square(input, result, rc)
 #endif
+   if (rc /= 0) then
+       print *, "Python failed with exit code = ", rc
+       call exit(1)
+   end if
 
    ! print array shapes and values before computation
    print *, "Fortran arrays after calling Python:"

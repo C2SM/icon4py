@@ -3,7 +3,7 @@ program call_multi_return_cffi_plugin
    use multi_return_plugin
    implicit none
 
-   integer(c_int) :: edim, kdim, i, j, horizontal_start, horizontal_end, vertical_start, vertical_end
+   integer(c_int) :: edim, kdim, i, j, horizontal_start, horizontal_end, vertical_start, vertical_end, rc
    logical :: computation_correct
    character(len=100) :: str_buffer
    real(c_double) :: r_nsubsteps
@@ -44,7 +44,11 @@ program call_multi_return_cffi_plugin
 
    ! call the cffi plugin
    call multi_return(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
-                     horizontal_start, horizontal_end, vertical_start, vertical_end)
+                     horizontal_start, horizontal_end, vertical_start, vertical_end, rc)
+   print *, "Python exit code = ", rc
+   if (rc /= 0) then
+       call exit(1)
+   end if
 
    ! print array shapes and values before computation
    print *, "Arrays after computation:"

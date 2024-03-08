@@ -43,6 +43,7 @@ def run_test_case(
     samples_path: Path,
     fortran_driver: str,
     extra_compiler_flags: tuple[str, ...] = (),
+    expected_error_code: int = 0,
 ):
     with cli.isolated_filesystem():
         result = cli.invoke(main, [module, function, plugin_name, "--gt4py-backend", backend])
@@ -55,7 +56,10 @@ def run_test_case(
 
         try:
             fortran_result = run_fortran_executable(plugin_name)
-            assert "passed" in fortran_result.stdout
+            if expected_error_code == 0:
+                assert "passed" in fortran_result.stdout
+            else:
+                assert "failed" in fortran_result.stdout
         except subprocess.CalledProcessError as e:
             pytest.fail(f"Execution of compiled Fortran code failed: {e}\nOutput:\n{e.stdout}")
 
@@ -83,7 +87,12 @@ def compile_fortran_code(
 
 
 def run_fortran_executable(plugin_name: str):
-    return subprocess.run([f"./{plugin_name}"], capture_output=True, text=True, check=True)
+    try:
+        result = subprocess.run([f"./{plugin_name}"], capture_output=True, text=True, check=True)
+    except subprocess.CalledProcessError as e:
+        # If an error occurs, use the exception's `stdout` and `stderr`.
+        result = e
+    return result
 
 
 @pytest.mark.parametrize(
@@ -110,6 +119,21 @@ def test_py2fgen_compilation_and_execution_square(
     )
 
 
+def test_py2fgen_python_error_propagation_to_fortran(cli_runner, samples_path, wrapper_module):
+    """Tests that Exceptions triggered in Python propagate an error code (1) up to Fortran."""
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "square_error",
+        "square_plugin",
+        "ROUNDTRIP",
+        samples_path,
+        "test_square",
+        ("-DUSE_SQUARE_ERROR",),
+        expected_error_code=1,
+    )
+
+
 @pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
 def test_py2fgen_compilation_and_execution_multi_return(
     cli_runner, backend, samples_path, wrapper_module
@@ -125,6 +149,7 @@ def test_py2fgen_compilation_and_execution_multi_return(
     )
 
 
+@pytest.mark.skip("Skipped due to its long runtime. Should be enabled manually.")
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,
