@@ -27,24 +27,29 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CEDim,
+    CECDim,
+    C2EDim,
     CellDim,
     ECDim,
     ECVDim,
     EdgeDim,
     KDim,
     V2EDim,
+    E2C2VDim,
+    E2CDim,
+    C2E2CDim,
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
-
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 DIFFUSION: Diffusion = Diffusion()
 
 GRID_PATH = (
-    "/home/sk/Dev/icon4py/testdata"  # todo(samkellerhals): we need a better way to set this path
+    "/scratch/mch/agopal/run-granule-with-py2fgen"  # todo(samkellerhals): we need a better way to set this path
 )
 GRID_FILENAME = "grid.nc"
 
@@ -61,6 +66,10 @@ def diffusion_init(
     nudgecoeff_e: Field[[EdgeDim], float64],
     rbf_coeff_1: Field[[VertexDim, V2EDim], float64],
     rbf_coeff_2: Field[[VertexDim, V2EDim], float64],
+    mask_hdiff: Field[[CellDim, KDim], bool],
+    zd_diffcoef: Field[[CellDim, KDim], float64],
+    zd_vertoffset: Field[[CellDim, C2E2CDim, KDim], int32],
+    zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float64],
     num_levels: int32,
     mean_cell_area: float64,
     ndyn_substeps: int32,
@@ -97,6 +106,7 @@ def diffusion_init(
         file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=False
     )
 
+    print("0000000 Initialising diffusion...")
     # Edge geometry
     edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
@@ -144,12 +154,12 @@ def diffusion_init(
 
     # metric state
     metric_state = DiffusionMetricState(
-        mask_hdiff=None,
+        mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=None,
-        zd_vertoffset=None,
-        zd_diffcoef=None,
+        zd_intcoef=flatten_first_two_dims(CECDim, KDim, field=zd_intcoef),
+        zd_vertoffset=flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset),
+        zd_diffcoef=zd_diffcoef,
     )
 
     # interpolation state
