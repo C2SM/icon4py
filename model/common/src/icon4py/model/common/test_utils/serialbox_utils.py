@@ -478,7 +478,7 @@ class IconGridSavepoint(IconSavepoint):
 
 
 class InterpolationSavepoint(IconSavepoint):
-    def divavg_cntrwgt (self):
+    def divavg_cntrwgt(self):
         return self._get_field("divavg_cntrwgt", dtype=float)
 
     def c_bln_avg(self):
