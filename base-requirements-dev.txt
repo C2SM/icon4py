@@ -1,6 +1,6 @@
 # VCS
 -e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
-git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
+#git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
 bump2version>=1.0.1
