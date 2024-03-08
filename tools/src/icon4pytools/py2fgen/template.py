@@ -215,68 +215,76 @@ def {{ func.name }}_wrapper(
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
+    try:
+        {%- if _this_node.debug_mode %}
+        print("Python Execution Context Start")
+        {% endif %}
 
-    {%- if _this_node.debug_mode %}
-    print("Python Execution Context Start")
-    {% endif %}
+        # Unpack pointers into Ndarrays
+        {% for arg in func.args %}
+        {% if arg.is_array %}
+        {%- if _this_node.debug_mode %}
+        msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
+        print(msg)
+        {% endif %}
+        {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+        {%- if _this_node.debug_mode %}
+        msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
+        print(msg)
+        msg = 'printing shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
+        print(msg)
+        {% endif %}
+        {% endif %}
+        {% endfor %}
 
-    # Unpack pointers into Ndarrays
-    {% for arg in func.args %}
-    {% if arg.is_array %}
-    {%- if _this_node.debug_mode %}
-    msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
-    print(msg)
-    {% endif %}
-    {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
-    {%- if _this_node.debug_mode %}
-    msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
-    print(msg)
-    msg = 'printing shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
-    print(msg)
-    {% endif %}
-    {% endif %}
-    {% endfor %}
+        # Allocate GT4Py Fields
+        {% for arg in func.args %}
+        {% if arg.is_array %}
+        {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
+        {%- if _this_node.debug_mode %}
+        msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
+        print(msg)
+        msg = 'printing {{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
+        print(msg)
+        {% endif %}
+        {% endif %}
+        {% endfor %}
 
-    # Allocate GT4Py Fields
-    {% for arg in func.args %}
-    {% if arg.is_array %}
-    {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
-    {%- if _this_node.debug_mode %}
-    msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
-    print(msg)
-    msg = 'printing {{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
-    print(msg)
-    {% endif %}
-    {% endif %}
-    {% endfor %}
+        {{ func.name }}
+        {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
+        {%- for arg in func.args -%}
+        {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
+        {%- endfor -%}
+        {%- if func.is_gt4py_program -%}
+        offset_provider=grid.offset_providers
+        {%- endif -%}
+        )
 
-    {{ func.name }}
-    {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
-    {%- for arg in func.args -%}
-    {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
-    {%- endfor -%}
-    {%- if func.is_gt4py_program -%}
-    offset_provider=grid.offset_providers
-    {%- endif -%}
-    )
+        {% if _this_node.debug_mode %}
+        # debug info
+        {% for arg in func.args %}
+        {% if arg.is_array %}
+        msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+        print(msg)
+        msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+        print(msg)
+        {% endif %}
+        {% endfor %}
+        {% endif %}
 
-    {% if _this_node.debug_mode %}
-    # debug info
-    {% for arg in func.args %}
-    {% if arg.is_array %}
-    msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
-    print(msg)
-    msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
-    print(msg)
-    {% endif %}
-    {% endfor %}
-    {% endif %}
+        {%- if _this_node.debug_mode %}
+        print("Python Execution Context End")
+        {% endif %}
 
-    {%- if _this_node.debug_mode %}
-    print("Python Execution Context End")
-    {% endif %}
+    except Exception as e:
+        print(f"A Python error occurred: {e}")
+        return 1
 
-    {% endfor %}
+    return 0
+
+        {% endfor %}
+
+
 """
     )
 
@@ -285,7 +293,7 @@ class CHeaderGenerator(TemplatedGenerator):
     CffiPlugin = as_jinja("""{{'\n'.join(function)}}""")
 
     Func = as_jinja(
-        "extern void {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
+        "extern int {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
     )
 
     def visit_FuncParameter(self, param: FuncParameter):
@@ -369,15 +377,16 @@ end module
 
     F90FunctionDeclaration = as_jinja(
         """
-subroutine {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper")
+function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
    import :: c_int, c_double
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
+   integer(c_int) :: rc  ! Stores the return code
    {% for arg in args %}
    {{ arg }}
    {% endfor %}
-end subroutine {{name}}_wrapper
+end function {{name}}_wrapper
     """
     )
 
@@ -398,7 +407,7 @@ end subroutine {{name}}_wrapper
     # todo(samkellerhals): Consider using unique SIZE args
     F90FunctionDefinition = as_jinja(
         """
-subroutine {{name}}({{param_names}})
+subroutine {{name}}({{param_names}}, &\nrc)
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
@@ -406,12 +415,13 @@ subroutine {{name}}({{param_names}})
    {% for arg in args %}
    {{ arg }}
    {% endfor %}
+   integer(c_int) :: rc  ! Stores the return code
 
    {% for d in _this_node.dimension_size_declarations %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
 
-   call {{ name }}_wrapper({{ param_names_with_size_args }})
+   rc = {{ name }}_wrapper({{ param_names_with_size_args }})
 
 end subroutine {{name}}
     """

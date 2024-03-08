@@ -39,6 +39,8 @@ program diffusion_simulation
    use diffusion_plugin
    implicit none
 
+   integer(c_int) :: rc
+
    ! Constants and types
    integer(c_int), parameter :: num_cells = 20480
    integer(c_int), parameter :: num_edges = 30720
@@ -190,10 +192,20 @@ program diffusion_simulation
                        inv_vert_vert_length, edge_areas, f_e, cell_areas, primal_normal_vert_x, &
                        primal_normal_vert_y, dual_normal_vert_x, dual_normal_vert_y, &
                        primal_normal_cell_x, primal_normal_cell_y, dual_normal_cell_x, &
-                       dual_normal_cell_y)
+                       dual_normal_cell_y, rc)
+
+   print *, "Python exit code = ", rc
+   if (rc /= 0) then
+       call exit(1)
+   end if
 
    ! Call diffusion_run
-   call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime)
+   call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, rc)
+
+   print *, "Python exit code = ", rc
+   if (rc /= 0) then
+       call exit(1)
+   end if
 
    print *, "passed: could run diffusion"
 
