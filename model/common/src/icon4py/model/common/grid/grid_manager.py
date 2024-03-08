@@ -36,10 +36,15 @@ from icon4py.model.common.dimension import (
     C2E2CODim,
     C2EDim,
     C2VDim,
+    CEDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
     E2C2VDim,
     E2CDim,
     E2VDim,
+    ECDim,
+    ECVDim,
     EdgeDim,
     V2CDim,
     V2E2VDim,
@@ -80,7 +85,8 @@ class GridFile:
     class OffsetName(GridFileName):
         """Names for connectivities used in the grid file."""
 
-        # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> calculate?
+        # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
+        #               from e2c and c2e
         # e2c2v: diamond vertices: not present in grid file -> constructed from e2c and c2v
 
         #: name of C2E2C connectivity in grid file: dims(nv=3, cell)
@@ -185,10 +191,10 @@ class GridFile:
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
-        except KeyError:
+        except KeyError as err:
             msg = f"{name} does not exist in dataset"
             self._log.warning(msg)
-            raise IconGridError(msg)
+            raise IconGridError(msg) from err
 
 
 class IconGridError(RuntimeError):
@@ -234,9 +240,9 @@ class GridManager:
         self._grid: Optional[IconGrid] = None
         self._file_name = grid_file
 
-    def __call__(self):
+    def __call__(self, on_gpu: bool = False):
         dataset = self._read_gridfile(self._file_name)
-        _, grid = self._constuct_grid(dataset)
+        _, grid = self._constuct_grid(dataset, on_gpu=on_gpu)
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> Dataset:
@@ -315,14 +321,14 @@ class GridManager:
             raise IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
-        except KeyError:
+        except KeyError as err:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
-            raise IconGridError(msg)
+            raise IconGridError(msg) from err
 
-    def _constuct_grid(self, dataset: Dataset) -> tuple[UUID, IconGrid]:
+    def _constuct_grid(self, dataset: Dataset, on_gpu: bool) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
-        return grid_id, self._from_grid_dataset(dataset)
+        return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu)
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
@@ -348,7 +354,7 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_grid_dataset(self, dataset: Dataset) -> IconGrid:
+    def _from_grid_dataset(self, dataset: Dataset, on_gpu: bool) -> IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
@@ -363,7 +369,9 @@ class GridManager:
         c2v = self._get_index_field(reader, GridFile.OffsetName.C2V)
         e2v = self._get_index_field(reader, GridFile.OffsetName.E2V)
 
-        e2c2v = self._construct_diamond_array(c2v, e2c)
+        e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
+        e2c2e = self._construct_diamond_edges(e2c, c2e)
+        e2c2e0 = np.column_stack((e2c2e, np.asarray(range(e2c2e.shape[0]))))
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
@@ -378,8 +386,7 @@ class GridManager:
         ) = self._read_grid_refinement_information(dataset)
 
         config = GridConfig(
-            horizontal_config=grid_size,
-            vertical_config=self._config,
+            horizontal_config=grid_size, vertical_config=self._config, on_gpu=on_gpu
         )
         icon_grid = (
             IconGrid()
@@ -396,22 +403,120 @@ class GridManager:
                     C2E2CODim: c2e2c0,
                     E2C2VDim: e2c2v,
                     V2E2VDim: v2e2v,
+                    E2C2EDim: e2c2e,
+                    E2C2EODim: e2c2e0,
                 }
             )
             .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
             .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
             .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
         )
+        icon_grid.update_size_connectivities(
+            {
+                ECVDim: icon_grid.size[EdgeDim] * icon_grid.size[E2C2VDim],
+                CEDim: icon_grid.size[CellDim] * icon_grid.size[C2EDim],
+                ECDim: icon_grid.size[EdgeDim] * icon_grid.size[E2CDim],
+            }
+        )
 
         return icon_grid
 
-    def _construct_diamond_array(self, c2v: np.ndarray, e2c: np.ndarray):
-        dummy_c2v = np.append(
-            c2v,
-            GridFile.INVALID_INDEX * np.ones((1, c2v.shape[1]), dtype=np.int32),
-            axis=0,
-        )
+    @staticmethod
+    def _construct_diamond_vertices(
+        e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray
+    ) -> np.ndarray:
+        r"""
+        Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
+
+        Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
+
+                     v0
+                    / \
+                  /    \
+                 /      \
+                /        \
+               v1---e0---v3
+                \       /
+                 \     /
+                  \   /
+                   \ /
+                    v2
+        For example for this diamond: e0 -> (v0, v1, v2, v3)
+        Ordering is the same as ICON uses.
+
+        Args:
+            e2v: np.ndarray containing the connectivity table for edge-to-vertex
+            c2v: np.ndarray containing the connectivity table for cell-to-vertex
+            e2c: np.ndarray containing the connectivity table for edge-to-cell
+
+        Returns: np.ndarray containing the connectivity table for edge-to-vertex on the diamond
+        """
+        dummy_c2v = _patch_with_dummy_lastline(c2v)
         expanded = dummy_c2v[e2c[:, :], :]
         sh = expanded.shape
+        flat = expanded.reshape(sh[0], sh[1] * sh[2])
+        far_indices = np.zeros_like(e2v)
+        # TODO (magdalena) vectorize speed this up?
+        for i in range(sh[0]):
+            far_indices[i, :] = flat[i, ~np.in1d(flat[i, :], e2v[i, :])][:2]
+        return np.hstack((e2v, far_indices))
+
+    @staticmethod
+    def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray) -> np.ndarray:
+        r"""
+        Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
+
+        Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
+
+            / \
+          /    \
+         e2    e1
+        /    c0  \
+        ----e0----
+        \   c1   /
+         e3    e4
+          \   /
+           \ /
+
+        For example, for this diamond for e0 -> (e1, e2, e3, e4)
+
+
+        Args:
+            e2c: np.ndarray containing the connectivity table for edge-to-cell
+            c2e: np.ndarray containing the connectivity table for cell-to-edge
+
+        Returns: np.ndarray containing the connectivity table for central edge-to- boundary edges
+                 on the diamond
+        """
+        dummy_c2e = _patch_with_dummy_lastline(c2e)
+        expanded = dummy_c2e[e2c, :]
+        sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
-        return np.apply_along_axis(np.unique, 1, flattened)
+
+        diamond_sides = 4
+        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=np.int32)
+        for i in range(sh[0]):
+            var = flattened[i, (~np.in1d(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
+            e2c2e[i, : var.shape[0]] = var
+        return e2c2e
+
+
+def _patch_with_dummy_lastline(ar):
+    """
+    Patch an array for easy access with an another offset containing invalid indices (-1).
+
+    Enlarges this table to contain a fake last line to account for numpy wrap around when
+    encountering a -1 = GridFile.INVALID_INDEX value
+
+    Args:
+        ar: np.ndarray connectivity array to be patched
+
+    Returns: same array with an additional line containing only GridFile.INVALID_INDEX
+
+    """
+    patched_ar = np.append(
+        ar,
+        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=np.int32),
+        axis=0,
+    )
+    return patched_ar

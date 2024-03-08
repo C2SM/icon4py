@@ -13,7 +13,7 @@
 
 import importlib
 from inspect import getmembers
-from typing import Any, Sequence
+from typing import Any, ClassVar, Sequence
 
 from gt4py.next.ffront.decorator import Program
 
@@ -32,7 +32,7 @@ logger = setup_logger(__name__)
 
 
 class UpdateFieldsWithGt4PyStencils(Step):
-    _STENCIL_PACKAGES = [
+    _STENCIL_PACKAGES: ClassVar[list[str]] = [
         "atmosphere.dycore",
         "atmosphere.advection",
         "atmosphere.diffusion.stencils",
@@ -58,9 +58,9 @@ class UpdateFieldsWithGt4PyStencils(Step):
             for f in s.fields:
                 try:
                     field_info = gt4py_fields[f.variable]
-                except KeyError:
+                except KeyError as err:
                     error_msg = f"Used field variable name ({f.variable}) that is incompatible with the expected field names defined in {s.name} in icon4py."
-                    raise IncompatibleFieldError(error_msg)
+                    raise IncompatibleFieldError(error_msg) from err
                 f.out = field_info.out
                 f.inp = field_info.inp
 

@@ -10,12 +10,17 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import ClassVar
 
 from icon4pytools.icon4pygen.bindings.exceptions import BindingsRenderingException
 
 
 class LocationRenderer:
-    type_dispatcher = {"Cell": "Cells", "Edge": "Edges", "Vertex": "Vertices"}
+    type_dispatcher: ClassVar[dict[str, str]] = {
+        "Cell": "Cells",
+        "Edge": "Edges",
+        "Vertex": "Vertices",
+    }
 
     @classmethod
     def location_type(cls, cls_name: str) -> str:

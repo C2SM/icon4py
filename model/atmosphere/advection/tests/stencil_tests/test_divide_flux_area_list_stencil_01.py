@@ -118,6 +118,7 @@ def _line_intersect_numpy(
     return intersect_1, intersect_2
 
 
+@pytest.mark.slow_tests
 class TestDivideFluxAreaListStencil01(StencilTest):
     PROGRAM = divide_flux_area_list_stencil_01
     OUTPUTS = (
@@ -588,7 +589,6 @@ class TestDivideFluxAreaListStencil01(StencilTest):
         dreg_patch2_3_lon_vmask,
         dreg_patch2_3_lat_vmask,
     ):
-
         dreg_patch2_1_lon_vmask = np.where(
             mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
         )
@@ -1478,7 +1478,6 @@ class TestDivideFluxAreaListStencil01(StencilTest):
             dreg_patch2_4_lat_vmask=dreg_patch2_4_lat_vmask,
         )
 
-    @pytest.mark.slow_tests
     @pytest.fixture
     def input_data(self, grid):
         famask_int = random_mask(grid, EdgeDim, KDim, dtype=int32)

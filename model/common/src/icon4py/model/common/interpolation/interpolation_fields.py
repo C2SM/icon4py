@@ -318,7 +318,6 @@ def rotate_latlon(
     pollat: np.array,
     pollon: np.array,
 ) -> (np.array, np.array):
-
     rotlat = np.arcsin(
         np.sin(lat) * np.sin(pollat) + np.cos(lat) * np.cos(pollat) * np.cos(lon - pollon)
     )

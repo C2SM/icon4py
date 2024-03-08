@@ -18,6 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import E2C2VDim, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 
 from .test_apply_nabla2_and_nabla4_global_to_vn import apply_nabla2_and_nabla4_global_to_vn_numpy
@@ -54,7 +55,6 @@ class TestApplyDiffusionToVn(StencilTest):
         limited_area,
         **kwargs,
     ):
-
         z_nabla4_e2 = calculate_nabla4_numpy(
             grid,
             u_vert,
@@ -98,9 +98,9 @@ class TestApplyDiffusionToVn(StencilTest):
         return dict(vn=vn)
 
     @pytest.fixture
-    def input_data(self, grid, uses_icon_grid_with_otf):
-        if uses_icon_grid_with_otf:
-            pytest.skip(
+    def input_data(self, grid):
+        if isinstance(grid, IconGrid) and grid.limited_area:
+            pytest.xfail(
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 

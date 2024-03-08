@@ -18,6 +18,7 @@ import gt4py.eve as eve
 from gt4py.eve.codegen import TemplatedGenerator
 
 from icon4pytools.icon4pygen.bindings.utils import format_fortran_code
+from icon4pytools.liskov.codegen.integration.template import InsertStatement
 from icon4pytools.liskov.codegen.shared.types import CodeGenInput, GeneratedCode
 from icon4pytools.liskov.pipeline.definition import Step
 
@@ -53,7 +54,11 @@ class CodeGenerator(Step):
         """
         parent = parent_node(**kwargs)
         source = code_generator.apply(parent)
-        formatted_source = format_fortran_code(source)
+        # DSL INSERT Statements should be inserted verbatim meaning no fortran formatting
+        if parent_node is InsertStatement:
+            formatted_source = source
+        else:
+            formatted_source = format_fortran_code(source)
         return formatted_source
 
     def _generate(

@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -36,9 +37,13 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
+from .test_add_extra_diffusion_for_wn_approaching_cfl import (
+    add_extra_diffusion_for_wn_approaching_cfl_numpy,
+)
+from .test_compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency_numpy,
+)
 from .test_mo_math_divrot_rot_vertex_ri_dsl import mo_math_divrot_rot_vertex_ri_dsl_numpy
-from .test_mo_velocity_advection_stencil_19 import mo_velocity_advection_stencil_19_numpy
-from .test_mo_velocity_advection_stencil_20 import mo_velocity_advection_stencil_20_numpy
 
 
 class TestFusedVelocityAdvectionStencil19To20(StencilTest):
@@ -77,7 +82,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
         coeff_gradekin = np.reshape(coeff_gradekin, (grid.num_edges, 2))
 
-        ddt_vn_apc = mo_velocity_advection_stencil_19_numpy(
+        ddt_vn_apc = compute_advective_normal_wind_tendency_numpy(
             grid,
             z_kin_hor_e,
             coeff_gradekin,
@@ -93,7 +98,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
         condition = (np.maximum(2, nrdmax - 2) <= k) & (k < nlev - 3)
 
-        ddt_vn_apc_extra_diffu = mo_velocity_advection_stencil_20_numpy(
+        ddt_vn_apc_extra_diffu = add_extra_diffusion_for_wn_approaching_cfl_numpy(
             grid,
             levelmask,
             c_lin_e,
@@ -116,9 +121,9 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
         return dict(ddt_vn_apc=ddt_vn_apc)
 
     @pytest.fixture
-    def input_data(self, grid, uses_icon_grid_with_otf):
-        if uses_icon_grid_with_otf:
-            pytest.skip(
+    def input_data(self, grid):
+        if isinstance(grid, IconGrid) and grid.limited_area:
+            pytest.xfail(
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 

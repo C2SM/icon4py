@@ -94,7 +94,7 @@ class IconSavepoint:
     def _reduce_to_dim_size(self, buffer, dimensions):
         buffer_size = (
             self.sizes[d] if d.kind is DimensionKind.HORIZONTAL else s
-            for s, d in zip(buffer.shape, dimensions)
+            for s, d in zip(buffer.shape, dimensions, strict=False)
         )
         buffer = buffer[tuple(map(slice, buffer_size))]
         return buffer
@@ -342,7 +342,7 @@ class IconGridSavepoint(IconSavepoint):
 
     @staticmethod
     def _read_field_for_dim(field_name, read_func, dim: Dimension):
-        match (dim):
+        match dim:
             case dimension.CellDim:
                 return read_func(f"c_{field_name}")
             case dimension.EdgeDim:
@@ -380,7 +380,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self) -> IconGrid:
+    def construct_icon_grid(self, on_gpu: bool) -> IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -598,6 +598,9 @@ class MetricSavepoint(IconSavepoint):
     def theta_ref_ic(self):
         return self._get_field("theta_ref_ic", CellDim, KDim)
 
+    def z_ifc(self):
+        return self._get_field("z_ifc", CellDim, KDim)
+
     def theta_ref_me(self):
         return self._get_field("theta_ref_me", EdgeDim, KDim)
 
@@ -767,6 +770,18 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
 
 class IconNonHydroInitSavepoint(IconSavepoint):
+    def z_vt_ie(self):
+        return self._get_field("z_vt_ie", EdgeDim, KDim)
+
+    def z_kin_hor_e(self):
+        return self._get_field("z_kin_hor_e", EdgeDim, KDim)
+
+    def vn_ie(self):
+        return self._get_field("vn_ie", EdgeDim, KDim)
+
+    def vt(self):
+        return self._get_field("vt", EdgeDim, KDim)
+
     def bdy_divdamp(self):
         return self._get_field("bdy_divdamp", KDim)
 
@@ -809,21 +824,20 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def grf_tend_vn(self):
         return self._get_field("grf_tend_vn", EdgeDim, KDim)
 
+    def w_concorr_c(self):
+        return self._get_field("w_concorr_c", CellDim, KDim)
+
+    def ddt_vn_apc_pc(self, ntnd):
+        return self._get_field_component("ddt_vn_apc_pc", ntnd, (EdgeDim, KDim))
+
+    def ddt_w_adv_pc(self, ntnd):
+        return self._get_field_component("ddt_w_adv_ntl", ntnd, (CellDim, KDim))
+
     def ddt_vn_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_vn_adv_ntl", self.savepoint).astype(float))[
-            :, :, ntl - 1
-        ]
-        dims = (EdgeDim, KDim)
-        buffer = self._reduce_to_dim_size(buffer, dims)
-        return as_field(dims, buffer)
+        return self._get_field_component("ddt_vn_apc_pc", ntl, (EdgeDim, KDim))
 
     def ddt_w_adv_ntl(self, ntl):
-        buffer = np.squeeze(self.serializer.read("ddt_w_adv_ntl", self.savepoint).astype(float))[
-            :, :, ntl - 1
-        ]
-        dims = (CellDim, KDim)
-        buffer = self._reduce_to_dim_size(buffer, dims)
-        return as_field(dims, buffer)
+        return self._get_field_component("ddt_w_adv_ntl", ntl, (CellDim, KDim))
 
     def grf_tend_w(self):
         return self._get_field("grf_tend_w", CellDim, KDim)
@@ -1176,7 +1190,7 @@ class IconSerialDataProvider:
         self.rank = mpi_rank
         self.serializer: ser.Serializer = None
         self.file_path: str = path
-        self.fname = f"{fname_prefix}_rank{str(self.rank)}"
+        self.fname = f"{fname_prefix}_rank{self.rank!s}"
         self.log = logging.getLogger(__name__)
         self._init_serializer(do_print)
         self.grid_size = self._grid_size()

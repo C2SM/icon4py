@@ -16,7 +16,7 @@ variables:
 
 .build_template:
   stage: build
-  extends: .container-builder
+  extends: .container-builder-cscs-zen2
   variables:
     DOCKERFILE: ci/docker/Dockerfile.build
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
@@ -42,4 +42,4 @@ variables:
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     CSCS_NEEDED_DATA: icon4py
-    TEST_DATA_PATH: "/apps/daint/UES/jenkssl/ciext/icon4py"
+    TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"

@@ -172,7 +172,6 @@ class DirectiveSemanticsValidator:
 
             unbalanced_directives = [name for name, count in directive_counts.items() if count != 0]
             if unbalanced_directives:
-
                 error_msg = f"Each unique stencil must have a corresponding {directives[0].pattern} and {directives[1].pattern} directive."
 
                 raise UnbalancedStencilDirectiveError(
