@@ -31,11 +31,48 @@ contains
          end do
       end do
    end subroutine fill_random_2d
+
+    subroutine fill_random_2d_int(array, low, high)
+    use, intrinsic :: iso_c_binding, only: c_int
+    implicit none
+
+    integer(c_int), intent(inout) :: array(:, :)
+    integer(c_int), intent(in) :: low, high
+    integer :: i, j
+    real :: rnd  ! real number between 0 and 1
+
+    do i = 1, size(array, 1)
+        do j = 1, size(array, 2)
+            call random_number(rnd)
+            array(i, j) = int(low + rnd * (high - low))
+        end do
+    end do
+    end subroutine fill_random_2d_int
+
+    subroutine fill_random_2d_bool(array)
+    use, intrinsic :: iso_c_binding, only: c_int
+    implicit none
+
+    logical(c_int), intent(inout) :: array(:, :)
+    integer :: i, j
+    real :: rnd  ! real number between 0 and 1
+
+    do i = 1, size(array, 1)
+        do j = 1, size(array, 2)
+            call random_number(rnd)
+            if (rnd < 0.5) then
+                array(i, j) = .false.
+            else
+                array(i, j) = .true.
+            endif
+        end do
+    end do
+end subroutine fill_random_2d_bool
 end module random_utils
 
 program diffusion_simulation
    use, intrinsic :: iso_c_binding
-   use random_utils, only: fill_random_1d, fill_random_2d
+   use random_utils, only: fill_random_1d, fill_random_2d, fill_random_2d_bool, fill_random_2d_int
    use diffusion_plugin
    implicit none
 
@@ -51,6 +88,7 @@ program diffusion_simulation
    integer(c_int), parameter :: num_ce = num_edges*2
    integer(c_int), parameter :: num_ec = num_edges*2
    integer(c_int), parameter :: num_ecv = num_edges*4
+   integer(c_int), parameter :: num_cec = num_cells*3
    real(c_double), parameter :: mean_cell_area = 24907282236.708576
    integer(c_int), parameter :: ndyn_substeps = 2
    real(c_double), parameter :: dtime = 2.0
@@ -60,7 +98,7 @@ program diffusion_simulation
    integer(c_int), parameter :: diffusion_type = 5 ! Assuming DiffusionType.SMAGORINSKY_4TH_ORDER is represented by 5
    logical(c_int), parameter :: hdiff_w = .true.
    logical(c_int), parameter :: hdiff_vn = .true.
-   logical(c_int), parameter :: zdiffu_t = .false.
+   logical(c_int), parameter :: zdiffu_t = .true. ! this runs stencil 15 which uses the boolean mask
    integer(c_int), parameter :: type_t_diffu = 2
    integer(c_int), parameter :: type_vn_diffu = 1
    real(c_double), parameter :: hdiff_efdt_ratio = 24.0
@@ -104,7 +142,17 @@ program diffusion_simulation
    real(c_double), dimension(:), allocatable :: f_e
    real(c_double), dimension(:), allocatable :: cell_areas
 
+   real(c_double), dimension(:, :), allocatable :: zd_diffcoef !(num_cells, num_levels)
+   integer(c_int), dimension(:, :), allocatable :: zd_vertoffset !(num_cec, num_levels)
+   real(c_double), dimension(:, :), allocatable :: zd_intcoef !(num_cec, num_levels)
+   logical(c_int), dimension(:, :), allocatable :: mask_hdiff !(num_cec, num_levels)
+
+
    ! allocating arrays
+   allocate(zd_diffcoef(num_cells, num_levels))
+   allocate(zd_vertoffset(num_cec, num_levels))
+   allocate(zd_intcoef(num_cec, num_levels))
+   allocate(mask_hdiff(num_cec, num_levels))
    allocate (vct_a(num_levels))
    allocate (theta_ref_mc(num_cells, num_levels))
    allocate (wgtfac_c(num_cells, num_levels + 1))
@@ -181,11 +229,18 @@ program diffusion_simulation
    call fill_random_2d(theta_v, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(rho, 0.0_c_double, 1.0_c_double)
 
+   call fill_random_2d(zd_diffcoef, 0.0_c_double, 1.0_c_double)
+   call fill_random_2d(zd_intcoef, 0.0_c_double, 1.0_c_double)
+
+   call fill_random_2d_bool(mask_hdiff)
+   call fill_random_2d_int(zd_vertoffset, 0, 1)
+
    ! Call diffusion_init
    call diffusion_init(vct_a, theta_ref_mc, wgtfac_c, e_bln_c_s, geofac_div, &
                        geofac_grg_x, geofac_grg_y, geofac_n2s, nudgecoeff_e, rbf_coeff_1, &
-                       rbf_coeff_2, num_levels, mean_cell_area, ndyn_substeps, &
-                       rayleigh_damping_height, nflatlev, nflat_gradp, diffusion_type, &
+                       rbf_coeff_2, mask_hdiff, zd_diffcoef, zd_vertoffset, zd_intcoef, &
+                       num_levels, mean_cell_area, ndyn_substeps, rayleigh_damping_height, &
+                       nflatlev, nflat_gradp, diffusion_type, &
                        hdiff_w, hdiff_vn, zdiffu_t, type_t_diffu, type_vn_diffu, &
                        hdiff_efdt_ratio, smagorinski_scaling_factor, hdiff_temp, &
                        tangent_orientation, inverse_primal_edge_lengths, inv_dual_edge_length, &

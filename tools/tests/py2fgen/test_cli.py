@@ -46,7 +46,7 @@ def run_test_case(
     expected_error_code: int = 0,
 ):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function, plugin_name, "--gt4py-backend", backend])
+        result = cli.invoke(main, [module, function, plugin_name, "--gt4py-backend", backend, "-d"])
         assert result.exit_code == 0, "CLI execution failed"
 
         try:
@@ -149,7 +149,7 @@ def test_py2fgen_compilation_and_execution_multi_return(
     )
 
 
-@pytest.mark.skip("Skipped due to its long runtime. Should be enabled manually.")
+# @pytest.mark.skip("Skipped due to its long runtime. Should be enabled manually.")
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,

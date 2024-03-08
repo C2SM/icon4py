@@ -378,7 +378,7 @@ end module
     F90FunctionDeclaration = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double
+   import :: c_int, c_double, c_bool
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}

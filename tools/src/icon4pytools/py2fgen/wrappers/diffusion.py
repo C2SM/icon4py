@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common.dimension import (
     C2E2CODim,
+    CECDim,
     CEDim,
     CellDim,
     ECDim,
@@ -61,6 +62,10 @@ def diffusion_init(
     nudgecoeff_e: Field[[EdgeDim], float64],
     rbf_coeff_1: Field[[VertexDim, V2EDim], float64],
     rbf_coeff_2: Field[[VertexDim, V2EDim], float64],
+    mask_hdiff: Field[[CellDim, KDim], bool],
+    zd_diffcoef: Field[[CellDim, KDim], float64],
+    zd_vertoffset: Field[[CECDim, KDim], int32],
+    zd_intcoef: Field[[CECDim, KDim], float64],
     num_levels: int32,
     mean_cell_area: float64,
     ndyn_substeps: int32,
@@ -144,12 +149,12 @@ def diffusion_init(
 
     # metric state
     metric_state = DiffusionMetricState(
-        mask_hdiff=None,
+        mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=None,
-        zd_vertoffset=None,
-        zd_diffcoef=None,
+        zd_intcoef=zd_intcoef,
+        zd_vertoffset=zd_vertoffset,
+        zd_diffcoef=zd_diffcoef,
     )
 
     # interpolation state
