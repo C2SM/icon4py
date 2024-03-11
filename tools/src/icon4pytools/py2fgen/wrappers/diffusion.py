@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common.dimension import (
     C2E2CODim,
+    CECDim,
     CEDim,
     CECDim,
     C2EDim,
