@@ -143,7 +143,6 @@ class BaseGrid(ABC):
             self.connectivities[dim].shape,
             from_dim,
             to_dim,
-            on_gpu=self.config.on_gpu,
             has_skip_values=self._has_skip_values(dim),
         )
 
