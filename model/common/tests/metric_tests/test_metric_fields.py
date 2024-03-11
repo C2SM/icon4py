@@ -22,7 +22,13 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddqz_z_half,
     compute_z_mc,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, dallclose, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    dallclose,
+    is_otf,
+    random_field,
+    zero_field,
+)
 
 
 class TestComputeZMc(StencilTest):
@@ -58,8 +64,8 @@ class TestComputeZMc(StencilTest):
         )
 
 
-def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend, is_otf):
-    if not is_otf:
+def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
+    if not is_otf(backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
@@ -93,8 +99,8 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend, is_otf):
     assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
-def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend, is_otf):
-    if not is_otf:
+def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
+    if not is_otf(backend):
         pytest.skip("skipping: unsupported backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
