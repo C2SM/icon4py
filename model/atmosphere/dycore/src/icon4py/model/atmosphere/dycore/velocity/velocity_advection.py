@@ -25,8 +25,8 @@ import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as ve
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
-    add_extra_diffusion_for_wn_approaching_cfl,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
@@ -419,7 +419,7 @@ class VelocityAdvection:
             },
         )
 
-        add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)(
+        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(backend)(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -667,7 +667,7 @@ class VelocityAdvection:
             },
         )
 
-        add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)(
+        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl.with_backend(backend)(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
