@@ -58,7 +58,7 @@ def _btraj_dreg_stencil_03(
     p_cell_rel_idx_dsl = where(lvn_pos, int32(0), int32(1))
     p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
-    # departure points of the departure cell. Point 1 belongs to edge-vertex 1, 
+    # departure points of the departure cell. Point 1 belongs to edge-vertex 1,
     # point 2 belongs to edge_vertex 2.
     #
     # position of vertex 4 (vn > 0) / vertex 2(vn < 0) in normal direction
@@ -73,7 +73,6 @@ def _btraj_dreg_stencil_03(
     # determine correct position on tangential plane
     pos_on_tplane_e_x = where(lvn_pos, pos_on_tplane_e_1_x, pos_on_tplane_e_2_x)
     pos_on_tplane_e_y = where(lvn_pos, pos_on_tplane_e_1_y, pos_on_tplane_e_2_y)
-
 
     # Calculate position of departure region vertices in a translated
     # coordinate system. The origin is located at the circumcenter
