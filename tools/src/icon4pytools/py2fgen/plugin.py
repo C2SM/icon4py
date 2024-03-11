@@ -16,6 +16,7 @@ from pathlib import Path
 import cffi
 import numpy as np
 from cffi import FFI
+from numpy.typing import NDArray
 
 from icon4pytools.common.logger import setup_logger
 
@@ -25,7 +26,7 @@ ffi = FFI()
 logger = setup_logger(__name__)
 
 
-def unpack(ptr, *sizes: int) -> np.ndarray:
+def unpack(ptr, *sizes: int) -> NDArray:
     """
     Converts a C pointer pointing to data in Fortran (column-major) order into a NumPy array.
 
@@ -62,12 +63,26 @@ def unpack(ptr, *sizes: int) -> np.ndarray:
     }
     dtype = dtype_map.get(c_type, np.dtype(c_type))
 
-    # TODO(samkellerhals): see if we can fix type issue
     # Create a NumPy array from the buffer, specifying the Fortran order
     arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
         sizes, order="F"
     )
     return arr
+
+
+def int_array_to_bool_array(int_array: NDArray) -> NDArray:
+    """
+    Converts a NumPy array of integers to a boolean array.
+    In the input array, 0 represents False, and any non-zero value (1 or -1) represents True.
+
+    Args:
+        int_array: A NumPy array of integers.
+
+    Returns:
+        A NumPy array of booleans.
+    """
+    bool_array = int_array != 0
+    return bool_array
 
 
 def generate_and_compile_cffi_plugin(

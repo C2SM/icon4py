@@ -149,7 +149,7 @@ def test_py2fgen_compilation_and_execution_multi_return(
     )
 
 
-# @pytest.mark.skip("Skipped due to its long runtime. Should be enabled manually.")
+@pytest.mark.skip("Skipped due to its long runtime. Should be enabled manually.")
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,

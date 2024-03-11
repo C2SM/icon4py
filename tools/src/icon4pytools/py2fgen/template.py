@@ -22,7 +22,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.py2fgen.plugin import unpack
+from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 
 
@@ -74,6 +74,7 @@ class PythonWrapper(CffiPlugin):
     debug_mode: bool
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
+    int_to_bool: str = inspect.getsource(int_array_to_bool_array)
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -204,6 +205,8 @@ from {{ module_name }} import {{ func.name }}
 
 {{ cffi_unpack }}
 
+{{ int_to_bool }}
+
 {% for func in _this_node.function %}
 
 {{ cffi_decorator }}
@@ -228,6 +231,11 @@ def {{ func.name }}_wrapper(
         print(msg)
         {% endif %}
         {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+
+        {%- if arg.d_type.name == "BOOL" %}
+        {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
+        {%- endif %}
+
         {%- if _this_node.debug_mode %}
         msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
         print(msg)
