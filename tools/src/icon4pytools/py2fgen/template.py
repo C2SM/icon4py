@@ -184,6 +184,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # necessary imports for generated code to work
 from {{ plugin_name }} import ffi
 import numpy as np
+from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next import as_field
