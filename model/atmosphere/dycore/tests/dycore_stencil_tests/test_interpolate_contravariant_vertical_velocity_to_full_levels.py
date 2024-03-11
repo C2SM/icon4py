@@ -28,7 +28,7 @@ def interpolate_contravariant_vertical_velocity_to_full_levels_numpy(grid, z_w_c
     return z_w_con_c_full
 
 
-class TestInterpolateContravariantVerticalVerlocityToFullLevels(StencilTest):
+class TestInterpolateContravariantVerticalVelocityToFullLevels(StencilTest):
     PROGRAM = interpolate_contravariant_vertical_velocity_to_full_levels
     OUTPUTS = ("z_w_con_c_full",)
 
