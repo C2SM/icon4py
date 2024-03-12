@@ -86,8 +86,8 @@ from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import 
     compute_hydrostatic_correction_term,
 )
 from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
-    compute_pertubation_of_rho_and_theta,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables,
@@ -838,7 +838,7 @@ class SolveNonhydro:
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
 
-        compute_pertubation_of_rho_and_theta.with_backend(backend)(
+        compute_perturbation_of_rho_and_theta.with_backend(backend)(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,

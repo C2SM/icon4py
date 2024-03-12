@@ -41,11 +41,11 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_the
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
-    _compute_pertubation_of_rho_and_theta,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    _compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers import (
-    _compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
+    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
 )
 from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
@@ -256,13 +256,13 @@ def _predictor_stencils_7_8_9(
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
         k_field == int32(0),
-        _compute_pertubation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         k_field >= int32(1),
-        _compute_pertubation_of_rho_and_theta_and_rho_interface_cell_centers(
+        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
             wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
         ),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
