@@ -110,14 +110,14 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_to_zero_vp import (
-    init_two_cell_kdim_fields_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
+    init_two_cell_kdim_fields_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_to_zero_wp import (
-    init_two_cell_kdim_fields_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
+    init_two_cell_kdim_fields_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_to_zero_wp import (
-    init_two_edge_kdim_fields_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
+    init_two_edge_kdim_fields_with_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
@@ -733,9 +733,9 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            init_two_cell_kdim_fields_to_zero_vp.with_backend(backend)(
-                cell_kdim_field_to_zero_vp_1=self.z_rth_pr_1,
-                cell_kdim_field_to_zero_vp_2=self.z_rth_pr_2,
+            init_two_cell_kdim_fields_with_zero_vp.with_backend(backend)(
+                cell_kdim_field_with_zero_vp_1=self.z_rth_pr_1,
+                cell_kdim_field_with_zero_vp_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_end,
                 vertical_start=0,
@@ -1250,9 +1250,9 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            init_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
-                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
-                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
+            init_two_cell_kdim_fields_with_zero_wp.with_backend(backend)(
+                cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
@@ -1704,9 +1704,9 @@ class SolveNonhydro:
                 log.debug("corrector: doing prep advection")
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
-                    init_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
-                        edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
-                        edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
+                    init_two_edge_kdim_fields_with_zero_wp.with_backend(backend)(
+                        edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
+                        edge_kdim_field_with_zero_wp_2=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
                         horizontal_end=end_edge_end,
                         vertical_start=0,
@@ -1814,9 +1814,9 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            init_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
-                cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
-                cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
+            init_two_cell_kdim_fields_with_zero_wp.with_backend(backend)(
+                cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
@@ -1939,7 +1939,7 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                init_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                init_two_cell_kdim_fields_with_zero_wp.with_backend(backend)(
                     prep_adv.mass_flx_ic,
                     prep_adv.vol_flx_ic,
                     horizontal_start=start_cell_nudging,

@@ -23,8 +23,8 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_to_zero_wp import (
-    _init_two_edge_kdim_fields_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
+    _init_two_edge_kdim_fields_with_zero_wp,
 )
 from icon4py.model.common.dimension import (
     E2C,
@@ -63,7 +63,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
     )
 
-    w_con_e, difcoef = _init_two_edge_kdim_fields_to_zero_wp()
+    w_con_e, difcoef = _init_two_edge_kdim_fields_with_zero_wp()
 
     w_con_e = where(
         levelmask | levelmask(Koff[1]),
