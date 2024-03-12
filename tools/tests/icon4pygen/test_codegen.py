@@ -14,6 +14,7 @@
 import os
 import pkgutil
 import re
+import traceback
 from importlib import reload
 
 import icon4py.model.atmosphere.diffusion.stencils as diffusion
@@ -136,7 +137,10 @@ def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
     with cli.isolated_filesystem():
         cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
         result = cli.invoke(main, cli_args)
-        assert result.exit_code == 0
+        if not result.exit_code == 0:
+            traceback.format_exception(*result.exc_info)
+            msg = "".join(traceback.format_exception(*result.exc_info))
+            pytest.fail("Codegen failed with error:\n" + msg)
         check_code_was_generated(stencil_name)
 
 
