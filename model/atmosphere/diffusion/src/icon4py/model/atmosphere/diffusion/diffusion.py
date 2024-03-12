@@ -26,6 +26,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
+    run_gtfn_gpu,
 )
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -92,7 +93,7 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_cached  #
+backend = cached_backend
 
 
 class DiffusionType(int, Enum):
@@ -271,9 +272,6 @@ class DiffusionConfig:
             self.apply_to_temperature = False
             self.apply_to_horizontal_wind = False
             self.apply_to_vertical_wind = False
-        else:
-            self.apply_to_temperature = True
-            self.apply_to_horizontal_wind = True
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
@@ -400,6 +398,46 @@ class Diffusion:
         self.cell_params: Optional[CellParams] = None
         self._horizontal_start_index_w_diffusion: int32 = 0
 
+        # backend
+        self.stencil_init_diffusion_local_fields_for_regular_timestep = (
+            init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
+        )
+        self.stencil_setup_fields_for_initial_step = setup_fields_for_initial_step.with_backend(
+            backend
+        )
+        self.stencil_scale_k = scale_k.with_backend(backend)
+        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex = (
+            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
+        )
+        self.stencil_calculate_nabla2_and_smag_coefficients_for_vn = (
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)
+        )
+        self.stencil_calculate_diagnostic_quantities_for_turbulence = (
+            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)
+        )
+        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex = (
+            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)
+        )
+        self.stencil_apply_diffusion_to_vn = apply_diffusion_to_vn.with_backend(backend)
+        self.stencil_copy_field = copy_field.with_backend(backend)
+        self.stencil_apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = (
+            apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(
+                backend
+            )
+        )
+        self.stencil_calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools = (
+            calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(
+                backend
+            )
+        )
+        self.stencil_calculate_nabla2_for_theta = calculate_nabla2_for_theta.with_backend(backend)
+        self.stencil_truly_horizontal_diffusion_nabla_of_theta_over_steep_points = (
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)
+        )
+        self.stencil_update_theta_and_exner = update_theta_and_exner.with_backend(backend)
+
+        self.offset_provider = None
+
     def init(
         self,
         grid: IconGrid,
@@ -437,6 +475,35 @@ class Diffusion:
 
         self._allocate_temporary_fields()
 
+        self.offset_provider_koff = {"Koff": KDim}
+        self.offset_provider_v2e = {"V2E": self.grid.get_offset_provider("V2E")}
+        self.offset_provider_e2c2v_e2ecv = {
+            "E2C2V": self.grid.get_offset_provider("E2C2V"),
+            "E2ECV": self.grid.get_offset_provider("E2ECV"),
+        }
+        self.offset_provider_c2e_c2ce_koff = {
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+            "Koff": KDim,
+        }
+        self.offset_provider_c2e2co = {
+            "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+        }
+        self.offset_provider_e2c_c2e2c = {
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "C2E2C": self.grid.get_offset_provider("C2E2C"),
+        }
+        self.offset_provider_c2e_e2c_c2ce = {
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+        }
+        self.offset_provider_c2cec_c2e2c_koff = {
+            "C2CEC": self.grid.get_offset_provider("C2CEC"),
+            "C2E2C": self.grid.get_offset_provider("C2E2C"),
+            "Koff": KDim,
+        }
+
         def _get_start_index_for_w_diffusion() -> int32:
             return self.grid.get_start_index(
                 CellDim,
@@ -458,7 +525,7 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
 
-        init_diffusion_local_fields_for_regular_timestep.with_backend(backend)(
+        self.stencil_init_diffusion_local_fields_for_regular_timestep(
             params.K4,
             config.substep_as_float,
             *params.smagorinski_factor,
@@ -467,7 +534,7 @@ class Diffusion:
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.offset_provider_koff,
         )
 
         # TODO (magdalena) port to gt4py?
@@ -503,7 +570,6 @@ class Diffusion:
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
-        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         # TODO(Magdalena): this is KHalfDim
         self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
         self.horizontal_cell_index = _index_field(CellDim)
@@ -532,7 +598,7 @@ class Diffusion:
         diff_multfac_vn = zero_field(self.grid, KDim)
         smag_limit = zero_field(self.grid, KDim)
 
-        setup_fields_for_initial_step.with_backend(backend)(
+        self.stencil_setup_fields_for_initial_step(
             self.params.K4,
             self.config.hdiff_efdt_ratio,
             diff_multfac_vn,
@@ -642,12 +708,10 @@ class Diffusion:
         )
 
         # dtime dependent: enh_smag_factor,
-        scale_k.with_backend(backend)(
-            self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
-        )
+        self.stencil_scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
+        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -657,7 +721,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
+            offset_provider=self.offset_provider_v2e,
         )
         log.debug("rbf interpolation 1: end")
 
@@ -667,7 +731,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
-        calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(
+        self.stencil_calculate_nabla2_and_smag_coefficients_for_vn(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
@@ -688,10 +752,7 @@ class Diffusion:
             horizontal_end=edge_end_local_minus2,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={
-                "E2C2V": self.grid.get_offset_provider("E2C2V"),
-                "E2ECV": self.grid.get_offset_provider("E2ECV"),
-            },
+            offset_provider=self.offset_provider_e2c2v_e2ecv,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
@@ -701,7 +762,7 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
-            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
+            self.stencil_calculate_diagnostic_quantities_for_turbulence(
                 kh_smag_ec=self.kh_smag_ec,
                 vn=prognostic_state.vn,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -714,11 +775,7 @@ class Diffusion:
                 horizontal_end=cell_end_local,
                 vertical_start=1,
                 vertical_end=klevels,
-                offset_provider={
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.offset_provider_c2e_c2ce_koff,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -732,7 +789,7 @@ class Diffusion:
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
+        self.stencil_mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -742,7 +799,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={"V2E": self.grid.get_offset_provider("V2E")},
+            offset_provider=self.offset_provider_v2e,
         )
         log.debug("2nd rbf interpolation: end")
 
@@ -752,7 +809,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        apply_diffusion_to_vn.with_backend(backend)(
+        self.stencil_apply_diffusion_to_vn(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
@@ -774,10 +831,7 @@ class Diffusion:
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={
-                "E2C2V": self.grid.get_offset_provider("E2C2V"),
-                "E2ECV": self.grid.get_offset_provider("E2ECV"),
-            },
+            offset_provider=self.offset_provider_e2c2v_e2ecv,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
@@ -787,8 +841,8 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
+        self.stencil_copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+        self.stencil_apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
@@ -811,9 +865,7 @@ class Diffusion:
             horizontal_end=cell_end_halo,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={
-                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-            },
+            offset_provider=self.offset_provider_c2e2co,
         )
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
@@ -822,7 +874,7 @@ class Diffusion:
         log.debug(
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
-        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(backend)(
+        self.stencil_calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -832,16 +884,13 @@ class Diffusion:
             horizontal_end=edge_end_halo,
             vertical_start=(klevels - 2),
             vertical_end=klevels,
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "C2E2C": self.grid.get_offset_provider("C2E2C"),
-            },
+            offset_provider=self.offset_provider_e2c_c2e2c,
         )
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        calculate_nabla2_for_theta.with_backend(backend)(
+        self.stencil_calculate_nabla2_for_theta(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             theta_v=prognostic_state.theta_v,
@@ -851,18 +900,14 @@ class Diffusion:
             horizontal_end=cell_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            },
+            offset_provider=self.offset_provider_c2e_e2c_c2ce,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
         log.debug(
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
         if self.config.apply_zdiffusion_t:
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
+            self.stencil_truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
                 mask=self.metric_state.mask_hdiff,
                 zd_vertoffset=self.metric_state.zd_vertoffset,
                 zd_diffcoef=self.metric_state.zd_diffcoef,
@@ -875,18 +920,14 @@ class Diffusion:
                 horizontal_end=cell_end_local,
                 vertical_start=0,
                 vertical_end=klevels,
-                offset_provider={
-                    "C2CEC": self.grid.get_offset_provider("C2CEC"),
-                    "C2E2C": self.grid.get_offset_provider("C2E2C"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.offset_provider_c2cec_c2e2c_koff,
             )
 
             log.debug(
                 "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
             )
         log.debug("running stencil 16 (update_theta_and_exner): start")
-        update_theta_and_exner.with_backend(backend)(
+        self.stencil_update_theta_and_exner(
             z_temp=self.z_temp,
             area=self.cell_params.area,
             theta_v=prognostic_state.theta_v,
