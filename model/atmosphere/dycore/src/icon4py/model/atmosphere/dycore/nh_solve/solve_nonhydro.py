@@ -110,14 +110,14 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.atmosphere.dycore.return_two_cell_kdim_fields_to_zero_vp import (
-    return_two_cell_kdim_fields_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_to_zero_vp import (
+    init_two_cell_kdim_fields_to_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.return_two_cell_kdim_fields_to_zero_wp import (
-    return_two_cell_kdim_fields_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_to_zero_wp import (
+    init_two_cell_kdim_fields_to_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.return_two_edge_kdim_fields_to_zero_wp import (
-    return_two_edge_kdim_fields_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_to_zero_wp import (
+    init_two_edge_kdim_fields_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
@@ -136,8 +136,8 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate_indices,
     _calculate_divdamp_fields,
     compute_z_raylfac,
-    return_zero_c_k,
-    return_zero_e_k,
+    init_zero_c_k,
+    init_zero_e_k,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
@@ -733,7 +733,7 @@ class SolveNonhydro:
 
         # initialize nest boundary points of z_rth_pr with zero
         if self.grid.limited_area:
-            return_two_cell_kdim_fields_to_zero_vp.with_backend(backend)(
+            init_two_cell_kdim_fields_to_zero_vp.with_backend(backend)(
                 cell_kdim_field_to_zero_vp_1=self.z_rth_pr_1,
                 cell_kdim_field_to_zero_vp_2=self.z_rth_pr_2,
                 horizontal_start=start_cell_lb,
@@ -904,7 +904,7 @@ class SolveNonhydro:
                 EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - offset
             )
 
-            return_zero_e_k.with_backend(backend)(
+            init_zero_e_k.with_backend(backend)(
                 field=z_fields.z_rho_e,
                 horizontal_start=tmp_0_0,
                 horizontal_end=tmp_0_1,
@@ -913,7 +913,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            return_zero_e_k.with_backend(backend)(
+            init_zero_e_k.with_backend(backend)(
                 field=z_fields.z_theta_v_e,
                 horizontal_start=tmp_0_0,
                 horizontal_end=tmp_0_1,
@@ -924,7 +924,7 @@ class SolveNonhydro:
 
             # initialize also nest boundary points with zero
             if self.grid.limited_area:
-                return_zero_e_k.with_backend(backend)(
+                init_zero_e_k.with_backend(backend)(
                     field=z_fields.z_rho_e,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_local_minus1,
@@ -933,7 +933,7 @@ class SolveNonhydro:
                     offset_provider={},
                 )
 
-                return_zero_e_k.with_backend(backend)(
+                init_zero_e_k.with_backend(backend)(
                     field=z_fields.z_theta_v_e,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_local_minus1,
@@ -1250,7 +1250,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            return_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+            init_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
                 cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1704,7 +1704,7 @@ class SolveNonhydro:
                 log.debug("corrector: doing prep advection")
                 if lclean_mflx:
                     log.debug("corrector: start stencil 33")
-                    return_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
+                    init_two_edge_kdim_fields_to_zero_wp.with_backend(backend)(
                         edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
                         edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
                         horizontal_start=start_edge_lb,
@@ -1814,7 +1814,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            return_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+            init_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
                 cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1939,7 +1939,7 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                return_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
+                init_two_cell_kdim_fields_to_zero_wp.with_backend(backend)(
                     prep_adv.mass_flx_ic,
                     prep_adv.vol_flx_ic,
                     horizontal_start=start_cell_nudging,
@@ -1980,7 +1980,7 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                return_zero_c_k.with_backend(backend)(
+                init_zero_c_k.with_backend(backend)(
                     field=prep_adv.mass_flx_ic,
                     horizontal_start=start_cell_lb,
                     horizontal_end=end_cell_nudging,

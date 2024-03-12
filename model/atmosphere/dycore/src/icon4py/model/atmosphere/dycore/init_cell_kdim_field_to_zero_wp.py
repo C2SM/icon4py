@@ -13,34 +13,28 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
-from icon4py.model.atmosphere.dycore.return_cell_kdim_field_to_zero_wp import (
-    _return_cell_kdim_field_to_zero_wp,
-)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _return_two_cell_kdim_fields_to_zero_wp() -> (
-    tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]
-):
-    """Formerly known as _mo_solve_nonhydro_stencil_46."""
-    return _return_cell_kdim_field_to_zero_wp(), _return_cell_kdim_field_to_zero_wp()
+def _init_cell_kdim_field_to_zero_wp() -> Field[[CellDim, KDim], wpfloat]:
+    """Formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64."""
+    return broadcast(wpfloat("0.0"), (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def return_two_cell_kdim_fields_to_zero_wp(
-    cell_kdim_field_to_zero_wp_1: Field[[CellDim, KDim], wpfloat],
-    cell_kdim_field_to_zero_wp_2: Field[[CellDim, KDim], wpfloat],
+def init_cell_kdim_field_to_zero_wp(
+    field_to_zero_wp: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _return_two_cell_kdim_fields_to_zero_wp(
-        out=(cell_kdim_field_to_zero_wp_1, cell_kdim_field_to_zero_wp_2),
+    _init_cell_kdim_field_to_zero_wp(
+        out=field_to_zero_wp,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

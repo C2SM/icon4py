@@ -64,8 +64,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.return_cell_kdim_field_to_zero_vp import (
-    _return_cell_kdim_field_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_to_zero_vp import (
+    _init_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
     _set_lower_boundary_condition_for_w_and_contravariant_correction,
@@ -73,7 +73,7 @@ from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_cont
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _return_zero_c_k, _return_zero_e_k
+from icon4py.model.atmosphere.dycore.state_utils.utils import _init_zero_c_k, _init_zero_e_k
 from icon4py.model.atmosphere.dycore.update_density_exner_wind import _update_density_exner_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
@@ -92,19 +92,19 @@ def init_test_fields(
     indices_cells_2: int32,
     nlev: int32,
 ):
-    _return_zero_e_k(
+    _init_zero_e_k(
         out=z_rho_e,
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-    _return_zero_e_k(
+    _init_zero_e_k(
         out=z_theta_v_e,
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-    _return_zero_e_k(
+    _init_zero_e_k(
         out=z_graddiv_vn,
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-    _return_zero_c_k(
+    _init_zero_c_k(
         out=z_dwdz_dd,
         domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
@@ -125,7 +125,7 @@ def _predictor_stencils_2_3(
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(k_field == nlev, _return_zero_c_k(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _init_zero_c_k(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
@@ -353,7 +353,7 @@ def _predictor_stencils_11_lower_upper(
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_theta_v_pr_ic = where(
-        k_field == int32(0), _return_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic
+        k_field == int32(0), _init_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic
     )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
@@ -678,9 +678,9 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _return_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_to_zero_vp(), z_alpha)
 
-    z_q = where(k_field == int32(0), _return_cell_kdim_field_to_zero_vp(), z_q)
+    z_q = where(k_field == int32(0), _init_cell_kdim_field_to_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -814,8 +814,8 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _return_cell_kdim_field_to_zero_vp(), z_alpha)
-    z_q = where(k_field == int32(0), _return_cell_kdim_field_to_zero_vp(), z_q)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_q = where(k_field == int32(0), _init_cell_kdim_field_to_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 

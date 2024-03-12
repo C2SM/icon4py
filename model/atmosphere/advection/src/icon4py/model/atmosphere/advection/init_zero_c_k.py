@@ -15,14 +15,14 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.common.dimension import CellDim
+from icon4py.model.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _return_zero_c() -> Field[[CellDim], float]:
-    return broadcast(0.0, (CellDim,))
+def _init_zero_c_k() -> Field[[CellDim, KDim], float]:
+    return broadcast(0.0, (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def return_zero_c(field: Field[[CellDim], float]):
-    _return_zero_c(out=field)
+def init_zero_c_k(field: Field[[CellDim, KDim], float]):
+    _init_zero_c_k(out=field)

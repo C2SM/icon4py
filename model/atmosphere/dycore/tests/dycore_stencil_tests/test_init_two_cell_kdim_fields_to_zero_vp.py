@@ -15,16 +15,16 @@ import numpy as np
 import pytest as pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.return_two_cell_kdim_fields_to_zero_vp import (
-    return_two_cell_kdim_fields_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_to_zero_vp import (
+    init_two_cell_kdim_fields_to_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestSetTwoCellKdimFieldsToZeroVp(StencilTest):
-    PROGRAM = return_two_cell_kdim_fields_to_zero_vp
+class TestInitTwoCellKdimFieldsToZeroVp(StencilTest):
+    PROGRAM = init_two_cell_kdim_fields_to_zero_vp
     OUTPUTS = ("cell_kdim_field_to_zero_vp_1", "cell_kdim_field_to_zero_vp_2")
 
     @staticmethod

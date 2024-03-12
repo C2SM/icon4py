@@ -57,29 +57,29 @@ def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDi
 
 
 @field_operator
-def _return_zero_v_k() -> Field[[VertexDim, KDim], float]:
+def _init_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
 @program
-def return_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _return_zero_v_k(out=field)
+def init_zero_v_k(field: Field[[VertexDim, KDim], float]):
+    _init_zero_v_k(out=field)
 
 
 @field_operator
-def _return_zero_e_k() -> Field[[EdgeDim, KDim], float]:
+def _init_zero_e_k() -> Field[[EdgeDim, KDim], float]:
     return broadcast(0.0, (EdgeDim, KDim))
 
 
 @program
-def return_zero_e_k(
+def init_zero_e_k(
     field: Field[[EdgeDim, KDim], float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _return_zero_e_k(
+    _init_zero_e_k(
         out=field,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
@@ -89,19 +89,19 @@ def return_zero_e_k(
 
 
 @field_operator
-def _return_zero_c_k() -> Field[[CellDim, KDim], float]:
+def _init_zero_c_k() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
 @program
-def return_zero_c_k(
+def init_zero_c_k(
     field: Field[[CellDim, KDim], float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _return_zero_c_k(
+    _init_zero_c_k(
         out=field,
         domain={
             CellDim: (horizontal_start, horizontal_end),

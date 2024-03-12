@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
 
 
-class TestSetThetaVPrimeIcAtLowerBoundary(StencilTest):
+class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     PROGRAM = set_theta_v_prime_ic_at_lower_boundary
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 

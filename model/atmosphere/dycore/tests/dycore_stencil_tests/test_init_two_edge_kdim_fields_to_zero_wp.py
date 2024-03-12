@@ -15,16 +15,16 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.return_two_edge_kdim_fields_to_zero_wp import (
-    return_two_edge_kdim_fields_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_to_zero_wp import (
+    init_two_edge_kdim_fields_to_zero_wp,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestSetTwoEdgeKdimFieldsToZeroWp(StencilTest):
-    PROGRAM = return_two_edge_kdim_fields_to_zero_wp
+class TestInitTwoEdgeKdimFieldsToZeroWp(StencilTest):
+    PROGRAM = init_two_edge_kdim_fields_to_zero_wp
     OUTPUTS = ("edge_kdim_field_to_zero_wp_1", "edge_kdim_field_to_zero_wp_2")
 
     @staticmethod

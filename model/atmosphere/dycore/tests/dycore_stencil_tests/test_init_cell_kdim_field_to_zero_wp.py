@@ -15,36 +15,29 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.return_cell_kdim_field_to_zero_vp import (
-    return_cell_kdim_field_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_to_zero_wp import (
+    init_cell_kdim_field_to_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
+from icon4py.model.common.type_alias import wpfloat
 
 
-def return_cell_kdim_field_to_zero_vp_numpy(field_to_zero_vp: np.array) -> np.array:
-    field_to_zero_vp = np.zeros_like(field_to_zero_vp)
-    return field_to_zero_vp
-
-
-class TestSetCellKdimFieldToZeroVp(StencilTest):
-    PROGRAM = return_cell_kdim_field_to_zero_vp
-    OUTPUTS = ("field_to_zero_vp",)
+class TestInitCellKdimFieldToZeroWp(StencilTest):
+    PROGRAM = init_cell_kdim_field_to_zero_wp
+    OUTPUTS = ("field_to_zero_wp",)
 
     @staticmethod
-    def reference(grid, field_to_zero_vp: np.array, **kwargs) -> dict:
-        field_to_zero_vp = return_cell_kdim_field_to_zero_vp_numpy(
-            field_to_zero_vp=field_to_zero_vp
-        )
-        return dict(field_to_zero_vp=field_to_zero_vp)
+    def reference(grid, field_to_zero_wp: np.array, **kwargs) -> dict:
+        field_to_zero_wp = np.zeros_like(field_to_zero_wp)
+        return dict(field_to_zero_wp=field_to_zero_wp)
 
     @pytest.fixture
     def input_data(self, grid):
-        field_to_zero_vp = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        field_to_zero_wp = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
-            field_to_zero_vp=field_to_zero_vp,
+            field_to_zero_wp=field_to_zero_wp,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

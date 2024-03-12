@@ -38,8 +38,8 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.return_cell_kdim_field_to_zero_vp import (
-    _return_cell_kdim_field_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_to_zero_vp import (
+    _init_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
 
@@ -210,7 +210,7 @@ def _fused_stencils_11_to_13(
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = where(k_field == nlev, _return_cell_kdim_field_to_zero_vp(), local_z_w_con_c)
+    local_z_w_con_c = where(k_field == nlev, _init_cell_kdim_field_to_zero_vp(), local_z_w_con_c)
 
     local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),

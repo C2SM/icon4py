@@ -54,13 +54,13 @@ def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDi
 
 
 @field_operator
-def _return_zero_v_k() -> Field[[VertexDim, KDim], float]:
+def _init_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
 @program
-def return_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _return_zero_v_k(out=field)
+def init_zero_v_k(field: Field[[VertexDim, KDim], float]):
+    _init_zero_v_k(out=field)
 
 
 @field_operator

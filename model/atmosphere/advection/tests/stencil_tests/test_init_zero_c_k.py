@@ -13,13 +13,13 @@
 
 import pytest
 
-from icon4py.model.atmosphere.advection.return_zero_c_k import return_zero_c_k
+from icon4py.model.atmosphere.advection.init_zero_c_k import init_zero_c_k
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
-class TestSetZeroCK(StencilTest):
-    PROGRAM = return_zero_c_k
+class TestInitZeroCK(StencilTest):
+    PROGRAM = init_zero_c_k
     OUTPUTS = ("field",)
 
     @staticmethod
