@@ -37,7 +37,7 @@ else:
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
 def zero_field(grid, *dims: Dimension, dtype=float):
     shapex = tuple(map(lambda x: grid.size[x], dims))
-    return as_field(dims, np.zeros(shapex, dtype=dtype))
+    return as_field(dims, xp.zeros(shapex, dtype=dtype))
 
 
 @field_operator

@@ -105,7 +105,11 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_gpu_cached
+
+if os.environ.get("GT4PY_GPU"):
+    backend = run_gtfn_gpu_cached
+else:
+    backend = run_gtfn_cached
 
 
 class DiffusionType(int, Enum):
