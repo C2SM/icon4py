@@ -541,14 +541,6 @@ class Diffusion:
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
 
-        # TODO (magdalena) port to gt4py?
-        self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
-            k_size=self.grid.num_levels,
-            nshift=0,
-            physical_heights=self.vertical_params.physical_heights,
-            nrdmax=self.vertical_params.index_of_damping_layer,
-        )
-
         self.stencil_init_diffusion_local_fields_for_regular_timestep(
             params.K4,
             config.substep_as_float,
@@ -559,6 +551,14 @@ class Diffusion:
             self.smag_limit,
             self.enh_smag_fac,
             offset_provider=self.offset_provider_koff,
+        )
+
+        # TODO (magdalena) port to gt4py?
+        self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
+            k_size=self.grid.num_levels,
+            nshift=0,
+            physical_heights=self.vertical_params.physical_heights,
+            nrdmax=self.vertical_params.index_of_damping_layer,
         )
 
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
