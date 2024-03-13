@@ -69,8 +69,8 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.stencils.rbf_vec_interpol_edge2vertex import (
-    rbf_vec_interpol_edge2vertex,
+from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
+    mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.model_backend import backend
