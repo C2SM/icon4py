@@ -635,7 +635,7 @@ class Diffusion:
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
-        rbf_vec_interpol_edge2vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -717,7 +717,7 @@ class Diffusion:
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
-        rbf_vec_interpol_edge2vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
