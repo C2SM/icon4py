@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -37,7 +38,7 @@ def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
     return astype(vn_ie_wp, vpfloat), z_kin_hor_e
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_vn_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],

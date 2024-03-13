@@ -17,10 +17,11 @@ from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
-def _mo_init_ddt_cell_zero() -> (
+def _init_three_cell_kdim_fields_with_zero() -> (
     tuple[
         Field[[CellDim, KDim], vpfloat],
         Field[[CellDim, KDim], vpfloat],
@@ -34,7 +35,7 @@ def _mo_init_ddt_cell_zero() -> (
 
 
 @field_operator
-def _mo_init_ddt_edge_zero() -> (
+def _init_three_edge_kdim_fields_with_zero() -> (
     tuple[
         Field[[EdgeDim, KDim], vpfloat],
         Field[[EdgeDim, KDim], vpfloat],
@@ -47,8 +48,8 @@ def _mo_init_ddt_edge_zero() -> (
     return (ddt_vn_phy, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_init_ddt_cell_zero(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def init_three_cell_kdim_fields_with_zero(
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv_ntl2: Field[[CellDim, KDim], vpfloat],
@@ -57,7 +58,7 @@ def mo_init_ddt_cell_zero(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_init_ddt_cell_zero(
+    _init_three_cell_kdim_fields_with_zero(
         out=(ddt_exner_phy, ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         domain={
             CellDim: (horizontal_start, horizontal_end),
@@ -66,8 +67,8 @@ def mo_init_ddt_cell_zero(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_init_ddt_edge_zero(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def init_three_edge_kdim_fields_with_zero(
     ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
     ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], vpfloat],
@@ -76,7 +77,7 @@ def mo_init_ddt_edge_zero(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_init_ddt_edge_zero(
+    _init_three_edge_kdim_fields_with_zero(
         out=(ddt_vn_phy, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),

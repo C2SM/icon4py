@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -34,7 +35,7 @@ def _compute_dwdz_for_divergence_damping(
     return astype(z_dwdz_dd_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],

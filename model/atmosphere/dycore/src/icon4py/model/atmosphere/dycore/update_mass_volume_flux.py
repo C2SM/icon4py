@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -36,7 +37,7 @@ def _update_mass_volume_flux(
     return mass_flx_ic_wp, vol_flx_ic_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_mass_volume_flux(
     z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
     rho_ic: Field[[CellDim, KDim], wpfloat],

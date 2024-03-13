@@ -18,7 +18,7 @@ from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.grid.icon import IconGrid
 
 
-def mo_rbf_vec_interpol_cell_numpy(
+def rbf_vec_interpol_edge2cell_numpy(
     p_e_in: np.array,
     ptr_coeff_1: np.array,
     ptr_coeff_2: np.array,
@@ -41,7 +41,7 @@ def mo_rbf_vec_interpol_cell_numpy(
     return p_u_out, p_v_out
 
 
-def mo_cells2edges_scalar_numpy(
+def scalar_interpol_cell2edge_numpy(
     grid: IconGrid,
     cells2edges_interpolation_coeff: np.array,
     cell_scalar: np.array,
@@ -56,7 +56,7 @@ def mo_cells2edges_scalar_numpy(
     return edge_scalar
 
 
-def mo_u2vn_jabw_numpy(
+def jablonowski_williamson_u2vn_numpy(
     jw_u0: float,
     jw_up: float,
     latC: float,
@@ -92,7 +92,7 @@ def mo_u2vn_jabw_numpy(
     return vn
 
 
-def mo_hydro_adjust(
+def hydrostatic_adjustment(
     wgtfac_c: np.array,
     ddqz_z_half: np.array,
     exner_ref_mc: np.array,
@@ -130,7 +130,7 @@ def mo_hydro_adjust(
     return rho, exner, theta_v
 
 
-def mo_diagnose_temperature_numpy(
+def diagnose_temperature_numpy(
     theta_v: np.array,
     exner: np.array,
 ) -> np.array:
@@ -138,7 +138,7 @@ def mo_diagnose_temperature_numpy(
     return temperature
 
 
-def mo_diagnose_pressure_sfc_numpy(
+def diagnose_pressure_sfc_numpy(
     exner: np.array,
     temperature: np.array,
     ddqz_z_full: np.array,
@@ -156,7 +156,7 @@ def mo_diagnose_pressure_sfc_numpy(
     return pressure_sfc
 
 
-def mo_diagnose_pressure_numpy(
+def diagnose_pressure_numpy(
     pressure_sfc: np.array,
     temperature: np.array,
     ddqz_z_full: np.array,

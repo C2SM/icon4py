@@ -21,7 +21,6 @@ import numpy as np
 from cftime import date2num, num2date
 from devtools import Timer
 from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
@@ -40,15 +39,15 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import (
-    mo_diagnose_pressure,
-    mo_diagnose_pressure_sfc,
-    mo_diagnose_temperature,
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature_pressure import (
+    diagnose_pressure,
+    diagnose_pressure_sfc,
+    diagnose_temperature,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import (
-    mo_init_ddt_cell_zero,
-    mo_init_ddt_edge_zero,
+from icon4py.model.common.diagnostic_calculations.stencils.init_exner_pr import init_exner_pr
+from icon4py.model.common.utillity_functions.init_zero import (
+    init_three_cell_kdim_fields_with_zero,
+    init_three_edge_kdim_fields_with_zero,
 )
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
@@ -61,8 +60,8 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import (
-    mo_rbf_vec_interpol_cell,
+from icon4py.model.common.interpolation.stencils.rbf_vec_interpol_edge2cell import (
+    rbf_vec_interpol_edge2cell,
 )
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -76,12 +75,9 @@ from icon4py.model.driver.initialization_utils import (
     read_initial_state,
     read_static_fields,
 )
-from icon4py.model.driver.testcase_functions import mo_rbf_vec_interpol_cell_numpy
+from icon4py.model.driver.testcase_functions import rbf_vec_interpol_edge2cell_numpy
+from icon4py.model.common.model_backend import backend
 
-
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
 
 log = logging.getLogger(__name__)
 
@@ -867,17 +863,17 @@ class TimeLoop:
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
-        self.stencil_mo_rbf_vec_interpol_cell = mo_rbf_vec_interpol_cell.with_backend(backend)
-        self.stencil_mo_diagnose_temperature = mo_diagnose_temperature.with_backend(backend)
-        self.stencil_mo_diagnose_pressure_sfc = mo_diagnose_pressure_sfc.with_backend(backend)
-        self.stencil_mo_diagnose_pressure = mo_diagnose_pressure.with_backend(backend)
-        self.stencil_mo_init_exner_pr = mo_init_exner_pr.with_backend(backend)
-        self.stencil_mo_init_ddt_cell_zero = mo_init_ddt_cell_zero.with_backend(backend)
-        self.stencil_mo_init_ddt_edge_zero = mo_init_ddt_edge_zero.with_backend(backend)
+        self.stencil_rbf_vec_interpol_cell = rbf_vec_interpol_edge2cell.with_backend(backend)
+        self.stencil_diagnose_temperature = diagnose_temperature.with_backend(backend)
+        self.stencil_diagnose_pressure_sfc = diagnose_pressure_sfc.with_backend(backend)
+        self.stencil_diagnose_pressure = diagnose_pressure.with_backend(backend)
+        self.stencil_init_exner_pr = init_exner_pr.with_backend(backend)
+        self.stencil_init_three_cell_kdim_fields_with_zero = init_three_cell_kdim_fields_with_zero.with_backend(backend)
+        self.stencil_init_three_edge_kdim_fields_with_zero = init_three_edge_kdim_fields_with_zero.with_backend(backend)
 
-        self.offset_provider_c2e2c2e = {
-            "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
-        }
+        #self.offset_provider_c2e2c2e = {
+        #    "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
+        #}
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -949,7 +945,17 @@ class TimeLoop:
         diagnostic_state: DiagnosticState,
         diagnostic_metric_state: DiagnosticMetricState,
     ):
-        self.stencil_mo_rbf_vec_interpol_cell(
+        log.debug(
+            f"max min vn: {prognostic_state.vn.asnumpy().max()} {prognostic_state.vn.asnumpy().min()}"
+        )
+        log.debug(
+            f"max min u: {diagnostic_state.u.asnumpy().max()} {diagnostic_state.u.asnumpy().min()}"
+        )
+        log.debug(
+            f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}"
+        )
+        #self.stencil_rbf_vec_interpol_cell(
+        rbf_vec_interpol_edge2cell(
             prognostic_state.vn,
             diagnostic_metric_state.rbf_vec_coeff_c1,
             diagnostic_metric_state.rbf_vec_coeff_c2,
@@ -959,13 +965,14 @@ class TimeLoop:
             self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             0,
             self.grid.num_levels,
-            offset_provider=self.offset_provider_c2e2c2e,
+            offset_provider=self.grid.offset_providers,#self.offset_provider_c2e2c2e,
         )
         log.debug(
             f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}"
         )
 
-        self.stencil_mo_diagnose_temperature(
+        #self.stencil_diagnose_temperature(
+        diagnose_temperature(
             prognostic_state.theta_v,
             prognostic_state.exner,
             diagnostic_state.temperature,
@@ -983,7 +990,8 @@ class TimeLoop:
         ddqz_z_full_nlev = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 1]
         ddqz_z_full_nlev_minus1 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 2]
         ddqz_z_full_nlev_minus2 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 3]
-        self.stencil_mo_diagnose_pressure_sfc(
+        #self.stencil_diagnose_pressure_sfc(
+        diagnose_pressure_sfc(
             exner_nlev_minus2,
             temperature_nlev,
             temperature_nlev_minus1,
@@ -1026,7 +1034,8 @@ class TimeLoop:
         )
 
         if not self.is_run_from_serializedData:
-            self.stencil_mo_init_exner_pr(
+            #self.stencil_init_exner_pr(
+            init_exner_pr(
                 prognostic_state_list[self._now].exner,
                 self.solve_nonhydro.metric_state_nonhydro.exner_ref_mc,
                 solve_nonhydro_diagnostic_state.exner_pr,
@@ -1057,8 +1066,8 @@ class TimeLoop:
             )
 
             if not self.is_run_from_serializedData:
-                """
-                self.stencil_mo_init_ddt_cell_zero(
+                #self.stencil_init_three_cell_kdim_fields_with_zero(
+                init_three_cell_kdim_fields_with_zero(
                     solve_nonhydro_diagnostic_state.ddt_exner_phy,
                     solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
                     solve_nonhydro_diagnostic_state.ddt_w_adv_ntl2,
@@ -1068,8 +1077,8 @@ class TimeLoop:
                     self.grid.num_levels,
                     offset_provider={}
                 )
-                """
-                self.stencil_mo_init_ddt_edge_zero(
+                #self.stencil_init_three_edge_kdim_fields_with_zero(
+                init_three_edge_kdim_fields_with_zero(
                     solve_nonhydro_diagnostic_state.ddt_vn_phy,
                     solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,
                     solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl2,
@@ -1143,14 +1152,14 @@ class TimeLoop:
         log.info(
             f"starting speed-test time loop for gt4py-version rbf interpolation with n_timesteps={self._n_time_steps}"
         )
-        fo = mo_rbf_vec_interpol_cell.with_backend(backend)
+        fo = rbf_vec_interpol_edge2cell.with_backend(backend)
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"run timestep : {time_step}")
 
             timer.start()
-            fo(
-                # mo_rbf_vec_interpol_cell.with_backend(backend)(
+            #fo(
+            rbf_vec_interpol_edge2cell(
                 test_vn,
                 test_c1,
                 test_c2,
@@ -1174,7 +1183,7 @@ class TimeLoop:
             log.info(f"run timestep : {time_step}")
 
             timer.start()
-            test_u_np, test_v_np = mo_rbf_vec_interpol_cell_numpy(
+            test_u_np, test_v_np = rbf_vec_interpol_edge2cell_numpy(
                 test_vn_np,
                 test_c1_np,
                 test_c2_np,

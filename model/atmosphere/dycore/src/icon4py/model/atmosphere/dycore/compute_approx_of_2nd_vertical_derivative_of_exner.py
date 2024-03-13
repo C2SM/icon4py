@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -34,7 +35,7 @@ def _compute_approx_of_2nd_vertical_derivative_of_exner(
     return z_dexner_dz_c_2_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_approx_of_2nd_vertical_derivative_of_exner(
     z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
     d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],

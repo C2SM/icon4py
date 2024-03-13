@@ -39,6 +39,7 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -97,7 +98,7 @@ def _add_extra_diffusion_for_wn_approaching_cfl(
     return astype(ddt_vn_apc_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_wn_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],

@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
 from icon4py.model.common.dimension import ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -92,7 +93,7 @@ def _apply_diffusion_to_vn(
     return vn
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_vn(
     u_vert: Field[[VertexDim, KDim], vpfloat],
     v_vert: Field[[VertexDim, KDim], vpfloat],

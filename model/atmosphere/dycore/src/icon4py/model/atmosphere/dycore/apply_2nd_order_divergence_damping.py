@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -32,7 +33,7 @@ def _apply_2nd_order_divergence_damping(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_2nd_order_divergence_damping(
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],

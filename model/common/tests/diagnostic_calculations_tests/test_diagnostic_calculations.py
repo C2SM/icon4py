@@ -19,19 +19,19 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
-from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import (
-    mo_diagnose_pressure_sfc,
-    mo_diagnose_temperature,
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature_pressure import (
+    diagnose_pressure_sfc,
+    diagnose_temperature,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import (
+from icon4py.model.common.diagnostic_calculations.stencils.init_exner_pr import init_exner_pr
+from icon4py.model.common.utils.init_zero import (
     mo_init_ddt_cell_zero,
     mo_init_ddt_edge_zero,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import (
-    mo_rbf_vec_interpol_cell,
+from icon4py.model.common.interpolation.stencils.rbf_vec_interpol_edge2cell import (
+    rbf_vec_interpol_edge2cell,
 )
 from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
@@ -76,7 +76,7 @@ def test_diagnostic_calculations_in_jabw(
         icon_grid, cell_geometry, edge_geometry, datapath, fname_prefix, rank
     )
 
-    mo_init_exner_pr.with_backend(backend)(
+    init_exner_pr.with_backend(backend)(
         prognostic_state_now.exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         solve_nonhydro_diagnostic_state.exner_pr,
@@ -87,7 +87,7 @@ def test_diagnostic_calculations_in_jabw(
         offset_provider={},
     )
 
-    mo_diagnose_temperature.with_backend(backend)(
+    diagnose_temperature.with_backend(backend)(
         prognostic_state_now.theta_v,
         prognostic_state_now.exner,
         diagnostic_state.temperature,
@@ -106,7 +106,7 @@ def test_diagnostic_calculations_in_jabw(
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
     ref_u = _allocate(CellDim, KDim, grid=icon_grid)
     ref_v = _allocate(CellDim, KDim, grid=icon_grid)
-    mo_rbf_vec_interpol_cell.with_backend(backend)(
+    rbf_vec_interpol_edge2cell.with_backend(backend)(
         prognostic_state_now.vn,
         rbv_vec_coeff_c1,
         rbv_vec_coeff_c2,
@@ -135,7 +135,7 @@ def test_diagnostic_calculations_in_jabw(
     ddqz_z_full_nlev_minus2 = data_provider.from_metrics_savepoint().ddqz_z_full()[
         :, icon_grid.num_levels - 3
     ]
-    mo_diagnose_pressure_sfc.with_backend(backend)(
+    diagnose_pressure_sfc.with_backend(backend)(
         exner_nlev_minus2,
         temperature_nlev,
         temperature_nlev_minus1,

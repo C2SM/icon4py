@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -35,7 +36,7 @@ def _add_analysis_increments_from_data_assimilation(
     return z_rho_expl_wp, z_exner_expl_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_analysis_increments_from_data_assimilation(
     z_rho_expl: Field[[CellDim, KDim], wpfloat],
     z_exner_expl: Field[[CellDim, KDim], wpfloat],

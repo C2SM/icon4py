@@ -17,10 +17,11 @@ from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, sqrt
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
-def _mo_diagnose_temperature(
+def _diagnose_temperature(
     theta_v: Field[[CellDim, KDim], vpfloat],
     exner: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
@@ -29,7 +30,7 @@ def _mo_diagnose_temperature(
 
 
 @field_operator
-def _mo_diagnose_pressure_sfc(
+def _diagnose_pressure_sfc(
     exner_nlev_minus2: Field[[CellDim], vpfloat],
     temperature_nlev: Field[[CellDim], vpfloat],
     temperature_nlev_minus1: Field[[CellDim], vpfloat],
@@ -71,7 +72,7 @@ def _scan_pressure(
 
 
 @field_operator
-def _mo_diagnose_pressure(
+def _diagnose_pressure(
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
@@ -80,8 +81,8 @@ def _mo_diagnose_pressure(
     return pressure, pressure_ifc
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_diagnose_temperature(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def diagnose_temperature(
     theta_v: Field[[CellDim, KDim], vpfloat],
     exner: Field[[CellDim, KDim], vpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],
@@ -90,7 +91,7 @@ def mo_diagnose_temperature(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_diagnose_temperature(
+    _diagnose_temperature(
         theta_v,
         exner,
         out=(temperature),
@@ -101,8 +102,8 @@ def mo_diagnose_temperature(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_diagnose_pressure_sfc(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def diagnose_pressure_sfc(
     exner_nlev_minus2: Field[[CellDim], vpfloat],
     temperature_nlev: Field[[CellDim], vpfloat],
     temperature_nlev_minus1: Field[[CellDim], vpfloat],
@@ -117,7 +118,7 @@ def mo_diagnose_pressure_sfc(
     horizontal_start: int32,
     horizontal_end: int32,
 ):
-    _mo_diagnose_pressure_sfc(
+    _diagnose_pressure_sfc(
         exner_nlev_minus2,
         temperature_nlev,
         temperature_nlev_minus1,
@@ -136,7 +137,7 @@ def mo_diagnose_pressure_sfc(
 
 
 @program
-def mo_diagnose_pressure(
+def diagnose_pressure(
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
@@ -147,7 +148,7 @@ def mo_diagnose_pressure(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_diagnose_pressure(
+    _diagnose_pressure(
         ddqz_z_full,
         temperature,
         pressure_sfc,

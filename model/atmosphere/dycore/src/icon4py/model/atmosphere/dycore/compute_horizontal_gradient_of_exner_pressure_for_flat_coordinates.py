@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -31,7 +32,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     return astype(z_gradh_exner_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],

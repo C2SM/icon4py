@@ -15,35 +15,35 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import (
-    mo_init_exner_pr,
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature_pressure import (
+    diagnose_temperature,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoDiagInitExnerPr(StencilTest):
-    PROGRAM = mo_init_exner_pr
-    OUTPUTS = ("exner_pr",)
+class TestMoDiagTemperature(StencilTest):
+    PROGRAM = diagnose_temperature
+    OUTPUTS = ("temperature",)
 
     @staticmethod
-    def reference(grid, exner: np.array, exner_ref: np.array, **kwargs) -> dict:
-        exner_pr = exner - exner_ref
+    def reference(grid, theta_v: np.array, exner: np.array, **kwargs) -> dict:
+        temperature = theta_v * exner
         return dict(
-            exner_pr=exner_pr,
+            temperature=temperature,
         )
 
     @pytest.fixture
     def input_data(self, grid):
+        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
         exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner_ref = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner_pr = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        temperature = zero_field(grid, CellDim, KDim, dtype=wpfloat)
 
         return dict(
+            theta_v=theta_v,
             exner=exner,
-            exner_ref=exner_ref,
-            exner_pr=exner_pr,
+            temperature=temperature,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

@@ -25,6 +25,7 @@ from gt4py.next.ffront.fbuiltins import (
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -66,7 +67,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     return astype(ddt_w_adv_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],

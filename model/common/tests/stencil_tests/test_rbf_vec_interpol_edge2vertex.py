@@ -16,15 +16,15 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim, V2EDim, VertexDim
-from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
+from icon4py.model.common.interpolation.stencils.rbf_vec_interpol_edge2vertex import (
+    rbf_vec_interpol_edge2vertex,
 )
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
-    PROGRAM = mo_intp_rbf_rbf_vec_interpol_vertex
+    PROGRAM = rbf_vec_interpol_edge2vertex
     OUTPUTS = ("p_u_out", "p_v_out")
 
     @staticmethod

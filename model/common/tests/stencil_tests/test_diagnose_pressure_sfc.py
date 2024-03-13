@@ -16,8 +16,8 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
-from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import (
-    mo_diagnose_pressure_sfc,
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature_pressure import (
+    diagnose_pressure_sfc,
 )
 from icon4py.model.common.dimension import CellDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 class TestMoDiagPressureSfc(StencilTest):
-    PROGRAM = mo_diagnose_pressure_sfc
+    PROGRAM = diagnose_pressure_sfc
     OUTPUTS = ("pressure_sfc",)
 
     @staticmethod

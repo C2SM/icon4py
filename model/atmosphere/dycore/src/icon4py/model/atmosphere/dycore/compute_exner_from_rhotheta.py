@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, exp, int32, log
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -33,7 +34,7 @@ def _compute_exner_from_rhotheta(
     return theta_v_wp, exner_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_exner_from_rhotheta(
     rho: Field[[CellDim, KDim], wpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],

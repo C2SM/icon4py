@@ -17,10 +17,11 @@ from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
-def _mo_init_exner_pr(
+def _init_exner_pr(
     exner: Field[[CellDim, KDim], vpfloat],
     exner_ref: Field[[CellDim, KDim], vpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
@@ -28,8 +29,8 @@ def _mo_init_exner_pr(
     return exner_pr
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_init_exner_pr(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def init_exner_pr(
     exner: Field[[CellDim, KDim], vpfloat],
     exner_ref: Field[[CellDim, KDim], vpfloat],
     exner_pr: Field[[CellDim, KDim], vpfloat],
@@ -38,7 +39,7 @@ def mo_init_exner_pr(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_init_exner_pr(
+    _init_exner_pr(
         exner,
         exner_ref,
         out=exner_pr,

@@ -17,10 +17,11 @@ from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
-def _mo_rbf_vec_interpol_cell(
+def _rbf_vec_interpol_edge2cell(
     p_e_in: Field[[EdgeDim, KDim], vpfloat],
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
@@ -30,8 +31,8 @@ def _mo_rbf_vec_interpol_cell(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_rbf_vec_interpol_cell(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def rbf_vec_interpol_edge2cell(
     p_e_in: Field[[EdgeDim, KDim], vpfloat],
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
@@ -42,7 +43,7 @@ def mo_rbf_vec_interpol_cell(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_rbf_vec_interpol_cell(
+    _rbf_vec_interpol_edge2cell(
         p_e_in,
         ptr_coeff_1,
         ptr_coeff_2,

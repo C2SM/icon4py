@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @scan_operator(axis=KDim, forward=False, init=wpfloat("0.0"))
@@ -27,7 +28,7 @@ def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     return w + w_state * astype(z_q, wpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def solve_tridiagonal_matrix_for_w_back_substitution(
     z_q: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
