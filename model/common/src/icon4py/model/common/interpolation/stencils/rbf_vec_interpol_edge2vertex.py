@@ -16,11 +16,12 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_intp_rbf_rbf_vec_interpol_vertex(
+def _rbf_vec_interpol_edge2vertex(
     p_e_in: Field[[EdgeDim, KDim], wpfloat],
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
     ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
@@ -30,8 +31,8 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def mo_intp_rbf_rbf_vec_interpol_vertex(
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def rbf_vec_interpol_edge2vertex(
     p_e_in: Field[[EdgeDim, KDim], wpfloat],
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
     ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
@@ -42,7 +43,7 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_intp_rbf_rbf_vec_interpol_vertex(
+    _rbf_vec_interpol_edge2vertex(
         p_e_in,
         ptr_coeff_1,
         ptr_coeff_2,

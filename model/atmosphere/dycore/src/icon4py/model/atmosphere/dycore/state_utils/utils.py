@@ -23,6 +23,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.model_backend import backend
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
@@ -51,7 +52,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
@@ -61,7 +62,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program
+@program(backend=backend)
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
@@ -71,7 +72,7 @@ def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
     return broadcast(0.0, (EdgeDim, KDim))
 
 
-@program
+@program(backend=backend)
 def set_zero_e_k(
     field: Field[[EdgeDim, KDim], float],
     horizontal_start: int32,
@@ -93,7 +94,7 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
-@program
+@program(backend=backend)
 def set_zero_c_k(
     field: Field[[CellDim, KDim], float],
     horizontal_start: int32,
@@ -153,7 +154,7 @@ def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program
+@program(backend=backend)
 def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):

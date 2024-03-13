@@ -27,6 +27,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
 from icon4py.model.common.dimension import CECDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -62,7 +63,7 @@ def _apply_diffusion_to_theta_and_exner(
     return theta_v, exner
 
 
-@program
+@program(backend=backend)
 def apply_diffusion_to_theta_and_exner(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],

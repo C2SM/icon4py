@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta impor
     _calculate_nabla2_of_theta,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -36,7 +37,7 @@ def _calculate_nabla2_for_theta(
     return z_temp
 
 
-@program
+@program(backend=backend)
 def calculate_nabla2_for_theta(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],

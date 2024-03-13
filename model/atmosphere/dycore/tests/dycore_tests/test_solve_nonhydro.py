@@ -13,7 +13,6 @@
 import logging
 
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     IntermediateFields,
@@ -40,6 +39,7 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -53,9 +53,6 @@ from .utils import (
     construct_interpolation_state_for_nonhydro,
     construct_nh_metric_state,
 )
-
-
-backend = run_gtfn
 
 
 @pytest.mark.datatest
