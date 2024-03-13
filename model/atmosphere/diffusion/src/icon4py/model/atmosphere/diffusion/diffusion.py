@@ -19,6 +19,7 @@ from enum import Enum
 from typing import Final, Optional
 
 import numpy as np
+import cupy as cp
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
@@ -26,6 +27,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn,
     run_gtfn_cached,
     run_gtfn_imperative,
+    run_gtfn_gpu_cached,
 )
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -92,8 +94,8 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_cached  #
-
+#backend = run_gtfn_cached  #
+backend = run_gtfn_gpu_cached
 
 class DiffusionType(int, Enum):
     """
@@ -490,7 +492,7 @@ class Diffusion:
 
         def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
-            return as_field((dim,), np.arange(size, dtype=int32))
+            return as_field((dim,), cp.arange(size, dtype=int32))
 
         self.diff_multfac_vn = _allocate(KDim)
 
@@ -509,7 +511,7 @@ class Diffusion:
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = as_field(
-            (CellDim, KDim), np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+            (CellDim, KDim), cp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
 
     def initial_run(

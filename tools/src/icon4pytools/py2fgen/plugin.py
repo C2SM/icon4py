@@ -15,9 +15,10 @@ from pathlib import Path
 
 import cffi
 import numpy as np
+import cupy as cp
 from cffi import FFI
 from numpy.typing import NDArray
-
+from cupy.cuda.memory import MemoryPointer, UnownedMemory
 from icon4pytools.common.logger import setup_logger
 
 
@@ -64,9 +65,30 @@ def unpack(ptr, *sizes: int) -> NDArray:
     dtype = dtype_map.get(c_type, np.dtype(c_type))
 
     # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
-        sizes, order="F"
-    )
+    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype)
+    #.reshape(  # type: ignore
+    #    sizes, order="F"
+    #)
+    intptr=int(ffi.cast("intptr_t", ptr))
+    #intptr=int(ffi.cast("uintptr_t", ptr))
+    msg = "intptr = %s" % str(intptr)
+    print(msg)
+    print(cp.cuda.runtime.pointerGetAttributes(intptr).devicePointer)
+    print(cp.cuda.runtime.pointerGetAttributes(intptr).hostPointer)
+    print(cp.cuda.runtime.pointerGetAttributes(intptr).device)
+    print(cp.cuda.runtime.pointerGetAttributes(intptr).memoryType)
+    msg = "printing shape = %s" % str(sizes)
+    print(msg)
+    msg = "printing strides = %s" % str(arr.strides)
+    print(msg)
+    mem = cp.cuda.UnownedMemory(intptr, length, ptr, device_id=0)
+    #mem = cp.cuda.UnownedMemory(intptr, length, ffi.buffer(ptr, length * ffi.sizeof(c_type)), device_id=0)
+    mem_ptr = cp.cuda.MemoryPointer(mem, 0)
+    #mem_ptr = cp.cuda.MemoryPointer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), 0)
+    arr = cp.ndarray(shape=sizes,dtype=dtype, memptr= mem_ptr, order="F")
+    #arr = cp.ndarray(shape=(1,),dtype=np.float64, memptr= mem_ptr)
+    #arr = 0
+
     return arr
 
 

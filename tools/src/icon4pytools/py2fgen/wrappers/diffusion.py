@@ -104,7 +104,7 @@ def diffusion_init(
 ):
     # grid
     icon_grid = _load_from_gridfile(
-        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=False
+        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=True
     )
 
     print("0000000 Initialising diffusion...")

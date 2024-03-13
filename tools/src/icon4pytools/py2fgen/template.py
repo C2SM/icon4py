@@ -184,6 +184,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # necessary imports for generated code to work
 from {{ plugin_name }} import ffi
 import numpy as np
+import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -196,7 +197,7 @@ from icon4py.model.common.grid.simple import SimpleGrid
 {% for stmt in imports -%}
 {{ stmt }}
 {% endfor %}
-
+print(cp.show_config())
 # We need a grid to pass offset providers
 grid = SimpleGrid()
 
@@ -219,75 +220,75 @@ def {{ func.name }}_wrapper(
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
-    try:
-        {%- if _this_node.debug_mode %}
-        print("Python Execution Context Start")
-        {% endif %}
+    #try:
+    {%- if _this_node.debug_mode %}
+    print("Python Execution Context Start")
+    {% endif %}
 
-        # Unpack pointers into Ndarrays
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {%- if _this_node.debug_mode %}
-        msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
-        print(msg)
-        {% endif %}
-        {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+    # Unpack pointers into Ndarrays
+    {% for arg in func.args %}
+    {% if arg.is_array %}
+    {%- if _this_node.debug_mode %}
+    msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
+    print(msg)
+    {% endif %}
+    {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
 
-        {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
-        {%- endif %}
+    {%- if arg.d_type.name == "BOOL" %}
+    {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
+    {%- endif %}
 
-        {%- if _this_node.debug_mode %}
-        msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
-        print(msg)
-        msg = 'printing shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
-        print(msg)
-        {% endif %}
-        {% endif %}
-        {% endfor %}
+    {%- if _this_node.debug_mode %}
+    msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
+    print(msg)
+    msg = 'printing shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
+    print(msg)
+    {% endif %}
+    {% endif %}
+    {% endfor %}
 
-        # Allocate GT4Py Fields
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
-        {%- if _this_node.debug_mode %}
-        msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
-        print(msg)
-        msg = 'printing {{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
-        print(msg)
-        {% endif %}
-        {% endif %}
-        {% endfor %}
+    # Allocate GT4Py Fields
+    {% for arg in func.args %}
+    {% if arg.is_array %}
+    {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
+    {%- if _this_node.debug_mode %}
+    msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
+    print(msg)
+    msg = 'printing {{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
+    print(msg)
+    {% endif %}
+    {% endif %}
+    {% endfor %}
 
-        {{ func.name }}
-        {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
-        {%- for arg in func.args -%}
-        {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
-        {%- endfor -%}
-        {%- if func.is_gt4py_program -%}
-        offset_provider=grid.offset_providers
-        {%- endif -%}
-        )
+    {{ func.name }}
+    {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
+    {%- for arg in func.args -%}
+    {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
+    {%- endfor -%}
+    {%- if func.is_gt4py_program -%}
+    offset_provider=grid.offset_providers
+    {%- endif -%}
+    )
 
-        {% if _this_node.debug_mode %}
-        # debug info
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
-        print(msg)
-        msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
-        print(msg)
-        {% endif %}
-        {% endfor %}
-        {% endif %}
+    {% if _this_node.debug_mode %}
+    # debug info
+    {% for arg in func.args %}
+    {% if arg.is_array %}
+    msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+    print(msg)
+    msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+    print(msg)
+    {% endif %}
+    {% endfor %}
+    {% endif %}
 
-        {%- if _this_node.debug_mode %}
-        print("Python Execution Context End")
-        {% endif %}
+    {%- if _this_node.debug_mode %}
+    print("Python Execution Context End")
+    {% endif %}
 
-    except Exception as e:
-        print(f"A Python error occurred: {e}")
-        return 1
+    #except Exception as e:
+    #print(f"A Python error occurred: {e}")
+    #return 1
 
     return 0
 
