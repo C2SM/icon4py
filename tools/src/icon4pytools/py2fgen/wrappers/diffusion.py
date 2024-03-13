@@ -140,6 +140,7 @@ def diffusion_init(
     diffusion_params = DiffusionParams(config)
 
     # vertical parameters
+    # todo: use xp
     vertical_params = VerticalModelParams(
         vct_a=vct_a,
         rayleigh_damping_height=rayleigh_damping_height,
@@ -158,6 +159,7 @@ def diffusion_init(
     )
 
     # interpolation state
+    # todo: cupy arrays instead of as_numpy? (geofac_n2s_c, geofac_n2s)
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=e_bln_c_s,
         rbf_coeff_1=rbf_coeff_1,

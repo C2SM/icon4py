@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
 from typing import Tuple
 
 import numpy as np
@@ -20,6 +21,17 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
+
+
+# Choose array backend
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+
+    xp = cp
+else:
+    import numpy as np
+
+    xp = np
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
@@ -185,8 +197,8 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-    heights = physical_heights.asnumpy()
-    buffer = np.zeros(k_size)
+    heights = physical_heights.ndarray
+    buffer = xp.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
         / 12.0
