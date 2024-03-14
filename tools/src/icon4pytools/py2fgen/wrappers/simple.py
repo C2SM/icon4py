@@ -84,4 +84,4 @@ def square_error(
     inp: Field[[CellDim, KDim], float64],
     result: Field[[CellDim, KDim], float64],
 ):
-    raise Exception
+    raise Exception("Exception foo occurred")

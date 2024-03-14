@@ -197,6 +197,16 @@ from icon4py.model.common.grid.simple import SimpleGrid
 {{ stmt }}
 {% endfor %}
 
+import logging
+
+log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+
+logging.basicConfig(filename='py_cffi.log',
+                    level=logging.DEBUG,
+                    format=log_format,
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
+
 # We need a grid to pass offset providers
 grid = SimpleGrid()
 
@@ -221,15 +231,15 @@ def {{ func.name }}_wrapper(
 ):
     try:
         {%- if _this_node.debug_mode %}
-        print("Python Execution Context Start")
+        logging.info("Python Execution Context Start")
         {% endif %}
 
         # Unpack pointers into Ndarrays
         {% for arg in func.args %}
         {% if arg.is_array %}
         {%- if _this_node.debug_mode %}
-        msg = 'printing {{ arg.name }} before unpacking: %s' % str({{ arg.name}})
-        print(msg)
+        msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
+        logging.debug(msg)
         {% endif %}
         {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
 
@@ -238,10 +248,10 @@ def {{ func.name }}_wrapper(
         {%- endif %}
 
         {%- if _this_node.debug_mode %}
-        msg = 'printing {{ arg.name }} after unpacking: %s' % str({{ arg.name}})
-        print(msg)
-        msg = 'printing shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
-        print(msg)
+        msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name}})
+        logging.debug(msg)
+        msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
+        logging.debug(msg)
         {% endif %}
         {% endif %}
         {% endfor %}
@@ -251,10 +261,10 @@ def {{ func.name }}_wrapper(
         {% if arg.is_array %}
         {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
         {%- if _this_node.debug_mode %}
-        msg = 'printing shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
-        print(msg)
-        msg = 'printing {{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
-        print(msg)
+        msg = 'shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
+        logging.debug(msg)
+        msg = '{{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
+        logging.debug(msg)
         {% endif %}
         {% endif %}
         {% endfor %}
@@ -273,20 +283,20 @@ def {{ func.name }}_wrapper(
         # debug info
         {% for arg in func.args %}
         {% if arg.is_array %}
-        msg = 'printing shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
-        print(msg)
-        msg = 'printing {{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
-        print(msg)
+        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+        logging.debug(msg)
+        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+        logging.debug(msg)
         {% endif %}
         {% endfor %}
         {% endif %}
 
         {%- if _this_node.debug_mode %}
-        print("Python Execution Context End")
+        logging.info("Python Execution Context End")
         {% endif %}
 
     except Exception as e:
-        print(f"A Python error occurred: {e}")
+        logging.exception(f"A Python error occurred: {e}")
         return 1
 
     return 0
