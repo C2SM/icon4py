@@ -16,7 +16,7 @@ from __future__ import annotations
 import functools
 import logging
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Sequence, Union
+from typing import TYPE_CHECKING, Sequence, Union, Any, Dict, Optional, Sequence, Tuple
 
 from gt4py.next import Dimension, Field
 
@@ -38,6 +38,15 @@ except ImportError:
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
+
+import sys
+import site
+import dace
+import dace.library
+from dace.frontend.python.common import SDFGConvertible
+from dace.memlet import Memlet
+from dace import dtypes
+from dace.properties import CodeBlock
 
 
 if TYPE_CHECKING:
@@ -114,7 +123,7 @@ class MPICommProcessProperties(definitions.ProcessProperties):
         return self.comm.Get_size()
 
 
-class GHexMultiNodeExchange:
+class GHexMultiNodeExchange(SDFGConvertible):
     def __init__(
         self,
         props: definitions.ProcessProperties,
@@ -141,6 +150,9 @@ class GHexMultiNodeExchange:
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = unstructured.make_co(self._context)
+
+        self.return_sdfg = False
+
         log.info("communication object initialized")
 
     def _domain_descriptor_info(self, descr):
@@ -204,7 +216,181 @@ class GHexMultiNodeExchange:
     def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
+    
+    def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
+        if self.return_sdfg:
+            sdfg = dace.SDFG('_halo_exchange_')
+            state = sdfg.add_state()
 
+            sdfg.add_scalar('__context_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__comm_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__pattern_CellDim_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__pattern_VertexDim_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__pattern_EdgeDim_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__domain_descriptor_CellDim_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__domain_descriptor_VertexDim_ptr', dtype=dace.uintp)
+            sdfg.add_scalar('__domain_descriptor_EdgeDim_ptr', dtype=dace.uintp)
+
+            buffers = []
+            for arg in zip(self.__sdfg_signature__()[0], args):
+                buffer_name = arg[0]
+                data_descriptor = arg[1]
+                sdfg.add_array(buffer_name,
+                            data_descriptor.shape,
+                            data_descriptor.dtype,
+                            storage=data_descriptor.storage,
+                            strides=data_descriptor.strides)
+                buffers.append(buffer_name)
+
+            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
+                                            inputs=None,
+                                            outputs=None,
+                                            code='',
+                                            language=dace.dtypes.Language.CPP,
+                                            side_effects=True,
+                                            debuginfo=None)
+
+            in_connectors = {}
+            out_connectors = {}
+            for i, arg in enumerate(zip(self.__sdfg_signature__()[0], args)):
+                buffer_name = arg[0]
+                data_descriptor = arg[1]
+
+                buffer = state.add_read(buffer_name)
+                in_connectors[buffer_name] = dtypes.pointer(data_descriptor.dtype)
+                state.add_edge(buffer, buffer_name, tasklet, buffer_name, Memlet.from_array(buffer_name, data_descriptor))
+
+                # update = state.add_write(buffer_name)
+                # out_connectors[f'OUT_buffer_{i}'] = dtypes.pointer(data_descriptor.dtype)
+                # state.add_edge(tasklet, f'OUT_buffer_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
+
+            tasklet.in_connectors = in_connectors
+            tasklet.out_connectors = out_connectors
+            tasklet.environments = ['icon4py.model.common.decomposition.mpi_decomposition.DaceGHEX']
+            
+            pattern_type = self._patterns[self.dim].__cpp_type__
+            domain_descriptor_type = self._domain_descriptors[self.dim].__cpp_type__
+            communication_object_type = self._comm.__cpp_type__
+
+            if self.dim == CellDim:
+                dim = 'CellDim'
+            elif self.dim == VertexDim:
+                dim = 'VertexDim'
+            else:
+                dim = 'EdgeDim'
+    
+            fields_desc = '\n'
+            for i, arg in enumerate(args):
+                # https://github.com/ghex-org/GHEX/blob/master/bindings/python/unstructured/field_descriptor.cpp
+                if len(arg.shape) > 2:
+                    raise ValueError("field has too many dimensions")
+                if arg.shape[0] != self._domain_descriptors[self.dim].size():
+                    raise ValueError("field's first dimension must match the size of the domain")
+                
+                levels_first = True
+                outer_strides = 0
+                # DaCe strides: number of elements to jump
+                # GHEX/NumPy strides: number of bytes to jump
+                if len(arg.shape) == 2 and arg.strides[1] != 1:
+                    levels_first = False
+                    if arg.strides[0] != 1:
+                        raise ValueError("field's strides are not compatible with GHEX")
+                    outer_strides = arg.strides[1]
+                elif len(arg.shape) == 2:
+                    if arg.strides[1] != 1:
+                        raise ValueError("field's strides are not compatible with GHEX")
+                    outer_strides = arg.strides[0]
+                else:
+                    if arg.strides[0] != 1:
+                        raise ValueError("field's strides are not compatible with GHEX")
+
+                levels = 1 if len(arg.shape) == 1 else arg.shape[1]
+
+                device = 'cpu' if arg.storage.value <= 5 else 'gpu'
+                field_dtype = arg.dtype.ctype
+                
+                fields_desc += f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}> field_desc_{i}{{*domain_descriptor, field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+
+            code = f'''
+                    ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr);
+                    
+                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim}_ptr);
+                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim}_ptr);
+                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr);
+
+                    {fields_desc}
+
+                    auto h = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(self.num_fields)])});
+                    {'h.wait();' if self.wait else ''}
+                    '''
+
+            # # Debugging
+            # code += '''
+            #         // Generate filename based on MPI rank
+            #         std::stringstream filenameStream;
+            #         filenameStream << "RANK_" << m->rank() << ".txt";
+            #         std::string filename = filenameStream.str();
+
+            #         // Open a file for writing
+            #         std::ofstream outFile(filename);
+
+            #         // Check if the file is open
+            #         if (outFile.is_open()) {
+            #             // Write the variable to the file
+            #             outFile << m->rank() << std::endl;
+            #             if (m->rank() == 0 || m->rank() == 1)
+            #                 outFile << field_desc_0.domain_size() << pattern->size() << std::endl;
+
+            #             // Close the file
+            #             outFile.close();
+            #         } else {
+            #             // Failed to open the file
+            #             ;
+            #         }
+            #         '''
+
+            tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+
+            return sdfg
+        else:
+            res = self.exchange(self.dim, *args)
+            if self.wait:
+                res.wait()
+
+    def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
+        self.return_sdfg = True
+
+        sdfg = self.__call__(*args, **kwargs)
+        
+        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
+        sdfg.arg_names.extend(['__context_ptr', '__comm_ptr',
+                               '__pattern_CellDim_ptr', '__pattern_VertexDim_ptr', '__pattern_EdgeDim_ptr',
+                               '__domain_descriptor_CellDim_ptr', '__domain_descriptor_VertexDim_ptr', '__domain_descriptor_EdgeDim_ptr'])
+        
+        return sdfg
+
+    def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        return {'__context_ptr':self._context.expose_context_ptr(),
+                '__comm_ptr':self._comm.expose_comm_ptr(),
+                '__pattern_CellDim_ptr':self._patterns[CellDim].expose_pattern_ptr(),
+                '__pattern_VertexDim_ptr':self._patterns[VertexDim].expose_pattern_ptr(),
+                '__pattern_EdgeDim_ptr':self._patterns[EdgeDim].expose_pattern_ptr(),
+                '__domain_descriptor_CellDim_ptr':self._domain_descriptors[CellDim].expose_domain_descriptor_ptr(),
+                '__domain_descriptor_VertexDim_ptr':self._domain_descriptors[VertexDim].expose_domain_descriptor_ptr(),
+                '__domain_descriptor_EdgeDim_ptr':self._domain_descriptors[EdgeDim].expose_domain_descriptor_ptr(),
+                }
+    
+    def prep_halo(self, dim: Dimension, num_fields: int, wait: bool = True):
+        self.dim = dim
+        self.num_fields = num_fields
+        self.wait = wait
+        return self
+
+    def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
+        args = []
+        for i in range(self.num_fields):
+            args.append(f'field_{i}')
+        return (args,[])
 
 @dataclass
 class MultiNodeResult:
@@ -227,3 +413,23 @@ def create_multinode_node_exchange(
         return GHexMultiNodeExchange(props, decomp_info)
     else:
         return SingleNodeExchange()
+
+@dace.library.environment
+class DaceGHEX:
+    python_site_packages = site.getsitepackages()[0]
+    ghex_path = python_site_packages + '/ghex'
+
+    cmake_minimum_version = None
+    cmake_packages = []
+    cmake_variables = {}
+    cmake_compile_flags = []
+    cmake_link_flags = [f"-L{ghex_path}/lib -lghex -lhwmalloc -loomph_common -loomph_mpi"]
+    cmake_includes = [f'{sys.prefix}/include', f'{ghex_path}/include', f'{python_site_packages}/gridtools_cpp/data/include']
+    cmake_files = []
+    cmake_libraries = []
+
+    headers = ["ghex/context.hpp", "ghex/unstructured/pattern.hpp", "ghex/unstructured/user_concepts.hpp", "ghex/communication_object.hpp"]
+    state_fields = []
+    init_code = ""
+    finalize_code = ""
+    dependencies = []
