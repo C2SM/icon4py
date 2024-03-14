@@ -94,8 +94,8 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-#backend = run_gtfn_cached  #
-backend = run_gtfn_gpu_cached
+backend = run_gtfn_cached  #
+#backend = run_gtfn_gpu_cached
 
 class DiffusionType(int, Enum):
     """

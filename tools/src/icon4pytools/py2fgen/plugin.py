@@ -64,8 +64,10 @@ def unpack(ptr, *sizes: int) -> NDArray:
     }
     dtype = dtype_map.get(c_type, np.dtype(c_type))
 
+    mempool = cp.get_default_memory_pool()
+
     # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype)
+    #arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype)
     #.reshape(  # type: ignore
     #    sizes, order="F"
     #)
@@ -73,21 +75,23 @@ def unpack(ptr, *sizes: int) -> NDArray:
     #intptr=int(ffi.cast("uintptr_t", ptr))
     msg = "intptr = %s" % str(intptr)
     print(msg)
-    print(cp.cuda.runtime.pointerGetAttributes(intptr).devicePointer)
-    print(cp.cuda.runtime.pointerGetAttributes(intptr).hostPointer)
-    print(cp.cuda.runtime.pointerGetAttributes(intptr).device)
-    print(cp.cuda.runtime.pointerGetAttributes(intptr).memoryType)
+    #print(cp.cuda.runtime.pointerGetAttributes(intptr).memoryType)
     msg = "printing shape = %s" % str(sizes)
     print(msg)
-    msg = "printing strides = %s" % str(arr.strides)
-    print(msg)
+    #msg = "printing strides = %s" % str(arr.strides)
+    #print(msg)
     mem = cp.cuda.UnownedMemory(intptr, length, ptr, device_id=0)
     #mem = cp.cuda.UnownedMemory(intptr, length, ffi.buffer(ptr, length * ffi.sizeof(c_type)), device_id=0)
     mem_ptr = cp.cuda.MemoryPointer(mem, 0)
+    #print(cp.cuda.runtime.pointerGetAttributes(mem_ptr).devicePointer)
+    #print(cp.cuda.runtime.pointerGetAttributes(mem_ptr).hostPointer)
+    #print(cp.cuda.runtime.pointerGetAttributes(mem_ptr).device)
     #mem_ptr = cp.cuda.MemoryPointer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), 0)
     arr = cp.ndarray(shape=sizes,dtype=dtype, memptr= mem_ptr, order="F")
     #arr = cp.ndarray(shape=(1,),dtype=np.float64, memptr= mem_ptr)
     #arr = 0
+    print(mempool.used_bytes())              # 512
+    print(mempool.total_bytes())             # 512
 
     return arr
 

@@ -50,7 +50,7 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_
 DIFFUSION: Diffusion = Diffusion()
 
 GRID_PATH = (
-    "/scratch/mch/agopal/run-granule-with-py2fgen"  # todo(samkellerhals): we need a better way to set this path
+    "/bret/scratch/cscs/agopal/copy_run-granule-with-py2fgen"  # todo(samkellerhals): we need a better way to set this path
 )
 GRID_FILENAME = "grid.nc"
 
