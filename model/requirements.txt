@@ -2,5 +2,6 @@
 ./atmosphere/dycore
 ./atmosphere/diffusion
 ./atmosphere/advection
+./atmosphere/ham
 ./common
 ./driver

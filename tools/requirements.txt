@@ -1,6 +1,7 @@
 -r ../base-requirements.txt
 ../model/atmosphere/dycore
 ../model/atmosphere/advection
+../model/atmosphere/ham
 ../model/atmosphere/diffusion
 ../model/common
 .

@@ -22,6 +22,13 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: run-atmosphere-ham-precommit
+        name: Run Model Atmosphere HAM Pre-commit
+        entry: pre-commit run --config model/atmosphere/ham/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: run-atmosphere-diffusion-precommit
         name: Run Model Atmosphere Diffusion Pre-commit
         entry: pre-commit run --config model/atmosphere/diffusion/.pre-commit-config.yaml --all-files

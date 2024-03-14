@@ -4,6 +4,7 @@
 ./model/atmosphere/dycore
 ./model/atmosphere/diffusion
 ./model/atmosphere/advection
+./model/atmosphere/ham
 ./model/common[netcdf]
 ./model/driver
 

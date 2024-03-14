@@ -2,5 +2,6 @@
 -e ../model/atmosphere/dycore
 -e ../model/atmosphere/diffusion
 -e ../model/atmosphere/advection
+-e ../model/atmosphere/ham
 -e ../model/common
 -e .[all]

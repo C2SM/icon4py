@@ -35,6 +35,7 @@ class UpdateFieldsWithGt4PyStencils(Step):
     _STENCIL_PACKAGES: ClassVar[list[str]] = [
         "atmosphere.dycore",
         "atmosphere.advection",
+        "atmosphere.ham",
         "atmosphere.diffusion.stencils",
         "common.interpolation.stencils",
     ]
