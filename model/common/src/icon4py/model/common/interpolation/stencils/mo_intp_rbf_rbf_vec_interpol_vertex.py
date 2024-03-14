@@ -16,8 +16,8 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import V2E, EdgeDim, KDim, V2EDim, VertexDim
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.model_backend import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
