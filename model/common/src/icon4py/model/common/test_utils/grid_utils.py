@@ -26,6 +26,10 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 
 
+REGIONAL_GRIDFILE = "grid.nc"
+
+GLOBAL_GRIDFILE = "icon_grid_0013_R02B04_R.nc"
+
 GLOBAL_NUM_LEVELS = 80
 
 MCH_CH_R04B09_LEVELS = 65
@@ -36,14 +40,14 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
     if experiment == GLOBAL_EXPERIMENT:
         return _load_from_gridfile(
             R02B04_GLOBAL,
-            "icon_grid_0013_R02B04_R.nc",
+            GLOBAL_GRIDFILE,
             num_levels=GLOBAL_NUM_LEVELS,
             on_gpu=on_gpu,
         )
     elif experiment == REGIONAL_EXPERIMENT:
         return _load_from_gridfile(
             REGIONAL_EXPERIMENT,
-            "grid.nc",
+            REGIONAL_GRIDFILE,
             num_levels=MCH_CH_R04B09_LEVELS,
             on_gpu=on_gpu,
         )
