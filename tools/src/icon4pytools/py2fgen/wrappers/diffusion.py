@@ -27,11 +27,14 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common.dimension import (
+    C2E2CDim,
     C2E2CODim,
+    C2EDim,
     CECDim,
     CEDim,
     CellDim,
-    ECDim,
+    E2C2VDim,
+    E2CDim,
     ECVDim,
     EdgeDim,
     KDim,
@@ -42,13 +45,15 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 
 DIFFUSION: Diffusion = Diffusion()
+GRID_PATH = os.environ.get("ICON_GRID_LOC")
 
-GRID_PATH = (
-    "/home/sk/Dev/icon4py/testdata"  # todo(samkellerhals): we need a better way to set this path
-)
+if not GRID_PATH:
+    raise Exception("Did not specify ICON_GRID_LOC environment variable.")
+
 GRID_FILENAME = "grid.nc"
 
 
@@ -56,8 +61,8 @@ def diffusion_init(
     vct_a: Field[[KDim], float64],
     theta_ref_mc: Field[[CellDim, KDim], float64],
     wgtfac_c: Field[[CellDim, KDim], float64],
-    e_bln_c_s: Field[[CEDim], float64],
-    geofac_div: Field[[CEDim], float64],
+    e_bln_c_s: Field[[CellDim, C2EDim], float64],
+    geofac_div: Field[[CellDim, C2EDim], float64],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float64],
     geofac_grg_y: Field[[CellDim, C2E2CODim], float64],
     geofac_n2s: Field[[CellDim, C2E2CODim], float64],
@@ -66,8 +71,8 @@ def diffusion_init(
     rbf_coeff_2: Field[[VertexDim, V2EDim], float64],
     mask_hdiff: Field[[CellDim, KDim], bool],
     zd_diffcoef: Field[[CellDim, KDim], float64],
-    zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_intcoef: Field[[CECDim, KDim], float64],
+    zd_vertoffset: Field[[CellDim, C2E2CDim, KDim], int32],
+    zd_intcoef: Field[[CellDim, C2E2CDim, KDim], float64],
     num_levels: int32,
     mean_cell_area: float64,
     ndyn_substeps: int32,
@@ -90,14 +95,14 @@ def diffusion_init(
     edge_areas: Field[[EdgeDim], float64],
     f_e: Field[[EdgeDim], float64],
     cell_areas: Field[[CellDim], float64],
-    primal_normal_vert_x: Field[[ECVDim], float64],
-    primal_normal_vert_y: Field[[ECVDim], float64],
-    dual_normal_vert_x: Field[[ECVDim], float64],
-    dual_normal_vert_y: Field[[ECVDim], float64],
-    primal_normal_cell_x: Field[[ECDim], float64],
-    primal_normal_cell_y: Field[[ECDim], float64],
-    dual_normal_cell_x: Field[[ECDim], float64],
-    dual_normal_cell_y: Field[[ECDim], float64],
+    primal_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
+    primal_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
+    dual_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
+    dual_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
+    primal_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
+    primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
+    dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
+    dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
 ):
     # grid
     if os.environ.get("GT4PY_GPU"):
@@ -115,14 +120,14 @@ def diffusion_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=primal_normal_vert_x,
-        primal_normal_vert_y=primal_normal_vert_y,
-        dual_normal_vert_x=dual_normal_vert_x,
-        dual_normal_vert_y=dual_normal_vert_y,
-        primal_normal_cell_x=primal_normal_cell_x,
-        primal_normal_cell_y=primal_normal_cell_y,
-        dual_normal_cell_x=dual_normal_cell_x,
-        dual_normal_cell_y=dual_normal_cell_y,
+        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, ECVDim),
+        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, ECVDim),
+        dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, ECVDim),
+        dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, ECVDim),
+        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, ECVDim),
+        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, ECVDim),
+        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, ECVDim),
+        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECVDim),
         edge_areas=edge_areas,
         f_e=f_e,
     )
@@ -147,7 +152,6 @@ def diffusion_init(
     diffusion_params = DiffusionParams(config)
 
     # vertical parameters
-    # todo: use xp
     vertical_params = VerticalModelParams(
         vct_a=vct_a,
         rayleigh_damping_height=rayleigh_damping_height,
@@ -160,18 +164,17 @@ def diffusion_init(
         mask_hdiff=mask_hdiff,
         theta_ref_mc=theta_ref_mc,
         wgtfac_c=wgtfac_c,
-        zd_intcoef=zd_intcoef,
-        zd_vertoffset=zd_vertoffset,
+        zd_intcoef=flatten_first_two_dims(CECDim, KDim, field=zd_intcoef),
+        zd_vertoffset=flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset),
         zd_diffcoef=zd_diffcoef,
     )
 
     # interpolation state
-    # todo: cupy arrays instead of as_numpy? (geofac_n2s_c, geofac_n2s)
     interpolation_state = DiffusionInterpolationState(
-        e_bln_c_s=e_bln_c_s,
+        e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
         rbf_coeff_2=rbf_coeff_2,
-        geofac_div=geofac_div,
+        geofac_div=as_1D_sparse_field(geofac_div, CEDim),
         geofac_n2s=geofac_n2s,
         geofac_grg_x=geofac_grg_x,
         geofac_grg_y=geofac_grg_y,
