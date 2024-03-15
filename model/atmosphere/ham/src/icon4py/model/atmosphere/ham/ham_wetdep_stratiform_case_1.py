@@ -35,7 +35,7 @@ def _ham_wetdep_stratiform_case_1(
 
     pxtp1c_kt_tmp = pxtp1c_kt * paclc
     pxtp10_kt_tmp = pxtp10_kt * (1. - paclc)
-    zxtp10_tmp    = pxtp10_kt
+    zxtp10_tmp    = pxtp10_kt_tmp
     zmf_tmp       = pdpg / ztmst
     
     return (pxtp1c_kt_tmp, pxtp10_kt_tmp, zmf_tmp, zxtp10_tmp)
