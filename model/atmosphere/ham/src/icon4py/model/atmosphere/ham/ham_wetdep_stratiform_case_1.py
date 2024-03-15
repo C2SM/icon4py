@@ -38,7 +38,7 @@ def _ham_wetdep_stratiform_case_1(
     zxtp10_tmp    = pxtp10_kt
     zmf_tmp       = pdpg / ztmst
     
-    return (pxtp1c_kt_tmp, pxtp10_kt_tmp, zxtp10_tmp, zmf_tmp)
+    return (pxtp1c_kt_tmp, pxtp10_kt_tmp, zmf_tmp, zxtp10_tmp)
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
