@@ -11,8 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
+import os
+
 import numpy as np
-import pytest
 from gt4py.next import np_as_located_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common.dimension import (
@@ -31,7 +32,18 @@ from icon4py.model.common.dimension import (
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 
-@pytest.mark.skip("Enable manually for local testing.")
+# Choose array backend
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+
+    xp = cp
+else:
+    import numpy as np
+
+    xp = np
+
+
+# @pytest.mark.skip("Enable manually for local testing.")
 def test_diffusion_wrapper_py():
     # grid parameters
     num_cells = 20480
@@ -65,7 +77,7 @@ def test_diffusion_wrapper_py():
     hdiff_temp = True
 
     # input data - numpy
-    rng = np.random.default_rng()
+    rng = xp.random.default_rng()
 
     vct_a = rng.uniform(
         low=0, high=75000, size=(num_levels,)
@@ -77,13 +89,13 @@ def test_diffusion_wrapper_py():
     geofac_grg_x = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
     geofac_grg_y = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
     geofac_n2s = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
-    nudgecoeff_e = np.zeros((num_edges,))
+    nudgecoeff_e = xp.zeros((num_edges,))
     rbf_coeff_1 = rng.uniform(low=0, high=1, size=(num_vertices, num_v2e))
     rbf_coeff_2 = rng.uniform(low=0, high=1, size=(num_vertices, num_v2e))
-    dwdx = np.zeros((num_cells, num_levels))
-    dwdy = np.zeros((num_cells, num_levels))
-    hdef_ic = np.zeros((num_cells, num_levels + 1))
-    div_ic = np.zeros((num_cells, num_levels + 1))
+    dwdx = xp.zeros((num_cells, num_levels))
+    dwdy = xp.zeros((num_cells, num_levels))
+    hdef_ic = xp.zeros((num_cells, num_levels + 1))
+    div_ic = xp.zeros((num_cells, num_levels + 1))
     w = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
     vn = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
     exner = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
@@ -105,9 +117,9 @@ def test_diffusion_wrapper_py():
     f_e = rng.uniform(low=0, high=1, size=(num_edges))
     cell_areas = rng.uniform(low=0, high=1, size=(num_cells))
     zd_diffcoef = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    zd_vertoffset = np.round(
+    zd_vertoffset = xp.round(
         rng.uniform(low=0, high=1, size=(num_cells, num_c2e2c, num_levels))
-    ).astype(np.int32)
+    ).astype(xp.int32)
     zd_intcoef = rng.uniform(low=0, high=1, size=(num_cells, num_c2e2c, num_levels))
 
     # Create a boolean array based on a condition

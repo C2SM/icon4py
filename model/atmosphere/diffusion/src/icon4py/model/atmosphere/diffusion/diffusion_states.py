@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
+import os
 from dataclasses import dataclass
 
 from gt4py.next import as_field
@@ -27,6 +28,17 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+
+
+# Choose array backend
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+
+    xp = cp
+else:
+    import numpy as np
+
+    xp = np
 
 
 @dataclass(frozen=True)
@@ -88,11 +100,11 @@ class DiffusionInterpolationState:
 
     @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
-        return as_field((CellDim,), data=self.geofac_n2s.asnumpy()[:, 0])
+        return as_field((CellDim,), data=xp.asarray(self.geofac_n2s.asnumpy()[:, 0]))
 
     @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
-        geofac_nbh_ar = self.geofac_n2s.asnumpy()[:, 1:]
+        geofac_nbh_ar = xp.asarray(self.geofac_n2s.asnumpy()[:, 1:])
         old_shape = geofac_nbh_ar.shape
         return as_field(
             (CECDim,),
