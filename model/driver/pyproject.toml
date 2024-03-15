@@ -34,6 +34,23 @@ name = "icon4py-driver"
 readme = "README.md"
 requires-python = ">=3.10"
 
+[project.optional-dependencies]
+conf = ["omegaconf", "hydra-core", "pyyaml"]
+io = [
+  "xarray[complete]",
+  "uxarray",
+  "cfunits",
+  "cftime",
+  "scikit-learn",
+  "numba",
+  "scipy",
+  "holoviews",
+  "matplotlib",
+  "cartopy",
+  "dask",
+  "datashader"
+]
+
 [project.scripts]
 dycore_driver = "icon4py.model.driver.dycore_driver:main"
 

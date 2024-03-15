@@ -1,0 +1,8 @@
+base_name: icon4py_atm_
+filename_pattern: '{base_name}_{time}.nc'
+start_time: '{start_stime}'
+end_time: '{end_time}'
+output_interval: HOUR
+variables:
+- normal_velocity
+- air_density
