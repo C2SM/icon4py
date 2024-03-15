@@ -24,6 +24,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _ham_wetdep_init_to_zero() -> Field[[CellDim, KDim], wpfloat]:
+
     return _set_cell_kdim_field_to_zero_wp()
 
 
@@ -45,6 +46,7 @@ def ham_wetdep_init_to_zero(
     vertical_start  : int32,
     vertical_end    : int32
 ):
+
     _ham_wetdep_init_to_zero(out=zdxtevapic  , domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)})
     _ham_wetdep_init_to_zero(out=zdxtevapbc  , domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)})
     _ham_wetdep_init_to_zero(out=zxtfrac_col , domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)})
