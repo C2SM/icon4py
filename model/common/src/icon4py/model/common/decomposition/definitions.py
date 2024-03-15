@@ -17,13 +17,16 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Protocol
+from typing import Any, Protocol, Any, Dict, Optional, Sequence, Tuple
 
 import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
 from icon4py.model.common.utils import builder
+
+import dace
+from dace.frontend.python.common import SDFGConvertible
 
 
 log = logging.getLogger(__name__)
@@ -148,7 +151,9 @@ class ExchangeRuntime(Protocol):
 
 
 @dataclass
-class SingleNodeExchange:
+class SingleNodeExchange(SDFGConvertible):
+    return_sdfg = False
+
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
@@ -160,6 +165,33 @@ class SingleNodeExchange:
 
     def get_size(self):
         return 1
+
+    def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
+        if self.return_sdfg:
+            sdfg = dace.SDFG('_halo_exchange_')
+            sdfg.add_state()
+            return sdfg
+        else:
+            res = self.exchange(self.dim, *args)
+            if self.wait:
+                res.wait()
+
+    def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
+        self.return_sdfg = True
+        sdfg = self.__call__(*args, **kwargs)
+        return sdfg
+    
+    def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        return {}
+    
+    def prep_halo(self, dim: Dimension, num_fields: int, wait: bool = True):
+        self.dim = dim
+        self.num_fields = num_fields
+        self.wait = wait
+        return self
+
+    def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
+        return ([],[])
 
 
 class SingleNodeResult:

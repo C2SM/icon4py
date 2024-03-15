@@ -82,6 +82,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 import dace
 from dace.transformation.auto import auto_optimize as autoopt
 from gt4py.next.program_processors.runners.dace_iterator import run_dace_cpu
+from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 
 
 """
@@ -658,7 +659,36 @@ class Diffusion:
         def dace_jit(fuse_func):
             def wrapper(*args, **kwargs):
                 if backend == run_dace_cpu:
-                    return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs)
+                    with dace.config.temporary_config():
+                        dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
+                        dace.config.Config.set("compiler", "allow_view_arguments", value=True)
+                        dace.config.Config.set("frontend", "check_args", value=True)
+                        compiler_args ="-std=c++17 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
+                        on_gpu = False
+                        dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
+                        
+                        return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs,
+                                    __context_ptr=self._exchange._context.expose_context_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __comm_ptr=self._exchange._comm.expose_comm_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    #                    
+                                    __pattern_CellDim_ptr=self._exchange._patterns[CellDim].expose_pattern_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __pattern_VertexDim_ptr=self._exchange._patterns[VertexDim].expose_pattern_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __pattern_EdgeDim_ptr=self._exchange._patterns[EdgeDim].expose_pattern_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    #
+                                    __domain_descriptor_CellDim_ptr=self._exchange._domain_descriptors[CellDim].expose_domain_descriptor_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __domain_descriptor_VertexDim_ptr=self._exchange._domain_descriptors[VertexDim].expose_domain_descriptor_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __domain_descriptor_EdgeDim_ptr=self._exchange._domain_descriptors[EdgeDim].expose_domain_descriptor_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    #
+                                    __connectivity_V2E=connectivity_V2E.table,
+                                    __connectivity_E2C2V=connectivity_E2C2V.table,
+                                    __connectivity_E2ECV=connectivity_E2ECV.table,
+                                    __connectivity_C2E=connectivity_C2E.table,
+                                    __connectivity_C2CE=connectivity_C2CE.table,
+                                    __connectivity_C2E2CO=connectivity_C2E2CO.table,
+                                    __connectivity_E2C=connectivity_E2C.table,
+                                    __connectivity_C2E2C=connectivity_C2E2C.table,
+                                    __connectivity_C2CEC=connectivity_C2CEC.table,
+                                )
                 else:
                     fuse_func(*args, **kwargs)
             return wrapper
@@ -686,39 +716,7 @@ class Diffusion:
 
             self._exchange.prep_halo(VertexDim, 2, True)(self.u_vert, self.v_vert)
 
-        if backend == run_dace_cpu:
-            with dace.config.temporary_config():
-                dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
-                dace.config.Config.set("compiler", "allow_view_arguments", value=True)
-                dace.config.Config.set("frontend", "check_args", value=True)
-                compiler_args ="-std=c++17 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
-                on_gpu = False
-                dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
-
-                fuse(
-                    __context_ptr=self._exchange._context.expose_context_ptr(),
-                    __comm_ptr=self._exchange._comm.expose_comm_ptr(),
-                    #                    
-                    __pattern_CellDim_ptr=self._exchange._patterns[CellDim].expose_pattern_ptr(),
-                    __pattern_VertexDim_ptr=self._exchange._patterns[VertexDim].expose_pattern_ptr(),
-                    __pattern_EdgeDim_ptr=self._exchange._patterns[EdgeDim].expose_pattern_ptr(),
-                    #
-                    __domain_descriptor_CellDim_ptr=self._exchange._domain_descriptors[CellDim].expose_domain_descriptor_ptr(),
-                    __domain_descriptor_VertexDim_ptr=self._exchange._domain_descriptors[VertexDim].expose_domain_descriptor_ptr(),
-                    __domain_descriptor_EdgeDim_ptr=self._exchange._domain_descriptors[EdgeDim].expose_domain_descriptor_ptr(),
-                    #
-                    __connectivity_V2E=connectivity_V2E.table,
-                    __connectivity_E2C2V=connectivity_E2C2V.table,
-                    __connectivity_E2ECV=connectivity_E2ECV.table,
-                    __connectivity_C2E=connectivity_C2E.table,
-                    __connectivity_C2CE=connectivity_C2CE.table,
-                    __connectivity_C2E2CO=connectivity_C2E2CO.table,
-                    __connectivity_E2C=connectivity_E2C.table,
-                    __connectivity_C2E2C=connectivity_C2E2C.table,
-                    __connectivity_C2CEC=connectivity_C2CEC.table,
-                    )
-        else:
-            fuse()
+        fuse()
         
         # # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         # log.debug("communication rbf extrapolation of vn - start")
