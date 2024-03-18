@@ -85,3 +85,17 @@ def square_error(
     result: Field[[CellDim, KDim], float64],
 ):
     raise Exception("Exception foo occurred")
+
+
+def identity(
+    inp: Field[[CellDim, KDim], float64],
+):
+    print("inp BEFORE running gtfn gpu stencil on Python side")
+    print(inp.ndarray)
+
+    from gt4py.next.program_processors.runners.gtfn import run_gtfn_gpu
+
+    square.with_backend(run_gtfn_gpu)(inp, inp, offset_provider={})
+
+    print("inp AFTER running gtfn gpu stencil on Python side")
+    print(inp.ndarray)

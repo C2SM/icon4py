@@ -42,15 +42,18 @@ def run_test_case(
     backend: str,
     samples_path: Path,
     fortran_driver: str,
+    compiler: str = "gfortran",
     extra_compiler_flags: tuple[str, ...] = (),
     expected_error_code: int = 0,
 ):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function, plugin_name, "--gt4py-backend", backend, "-d"])
+        result = cli.invoke(main, [module, function, plugin_name, "--backend", backend, "-d"])
         assert result.exit_code == 0, "CLI execution failed"
 
         try:
-            compile_fortran_code(plugin_name, samples_path, fortran_driver, extra_compiler_flags)
+            compile_fortran_code(
+                plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags
+            )
         except subprocess.CalledProcessError as e:
             pytest.fail(f"Compilation failed: {e}")
 
@@ -65,11 +68,15 @@ def run_test_case(
 
 
 def compile_fortran_code(
-    plugin_name: str, samples_path: Path, fortran_driver: str, extra_compiler_flags: tuple[str, ...]
+    plugin_name: str,
+    samples_path: Path,
+    fortran_driver: str,
+    compiler: str,
+    extra_compiler_flags: tuple[str, ...],
 ):
     subprocess.run(["gfortran", "-c", f"{plugin_name}.f90", "."], check=True)
     command = [
-        "gfortran",
+        f"{compiler}",
         "-cpp",
         "-I.",
         "-Wl,-rpath=.",
@@ -104,7 +111,7 @@ def run_fortran_executable(plugin_name: str):
         ("ROUNDTRIP", ""),
     ],
 )
-def test_py2fgen_compilation_and_execution_square(
+def test_py2fgen_compilation_and_execution_square_cpu(
     cli_runner, backend, samples_path, wrapper_module, extra_flags
 ):
     run_test_case(
@@ -115,6 +122,26 @@ def test_py2fgen_compilation_and_execution_square(
         backend,
         samples_path,
         "test_square",
+        extra_flags,
+    )
+
+
+@pytest.mark.parametrize(
+    "backend, extra_flags",
+    [("GPU", ("-acc",))],
+)
+def test_py2fgen_compilation_and_execution_square_gpu(
+    cli_runner, backend, samples_path, wrapper_module, extra_flags
+):
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "identity",
+        "identity_plugin",
+        backend,
+        samples_path,
+        "test_gpu",
+        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",
         extra_flags,
     )
 

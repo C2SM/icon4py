@@ -17,7 +17,7 @@ from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
 
 
-class Backend(Enum):
+class GT4PyBackend(Enum):
     CPU = "run_gtfn"
     GPU = "run_gtfn_gpu"
     ROUNDTRIP = "run_roundtrip"

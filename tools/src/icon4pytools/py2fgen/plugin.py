@@ -14,6 +14,7 @@ import logging
 from pathlib import Path
 
 import cffi
+import cupy as cp   # type: ignore
 import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray
@@ -68,6 +69,46 @@ def unpack(ptr, *sizes: int) -> NDArray:
         sizes, order="F"
     )
     return arr
+
+
+def unpack_gpu(ptr, *sizes: int) -> cp.ndarray:
+    if not sizes:
+        raise ValueError("Sizes must be provided to determine the array shape.")
+
+    length = np.prod(sizes)
+    c_type = ffi.getctype(ffi.typeof(ptr).item)
+
+    dtype_map = {
+        "int": cp.int32,
+        "double": cp.float64,
+    }
+    dtype = dtype_map.get(c_type, None)
+    if dtype is None:
+        raise ValueError(f"Unsupported C data type: {c_type}")
+
+    itemsize = ffi.sizeof(c_type)
+    total_size = length * itemsize
+
+    device_id = 0
+    with cp.cuda.Device(device_id):
+        ptr_val = int(ffi.cast("uintptr_t", ptr))
+
+        mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=device_id)
+        memptr = cp.cuda.MemoryPointer(mem, 0)
+
+        # invalid memory access?
+        # cp_arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order='F')
+
+        np_arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
+            sizes, order="F"
+        )
+        print(type(np_arr))
+
+        # Convert the NumPy array to a CuPy array
+        cp_arr = cp.array(np_arr, copy=False)
+        print(type(cp_arr))
+
+    return cp_arr
 
 
 def int_array_to_bool_array(int_array: NDArray) -> NDArray:
