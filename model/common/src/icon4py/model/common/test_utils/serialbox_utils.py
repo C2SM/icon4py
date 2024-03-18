@@ -134,14 +134,71 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def verts_vertex_lat(self):
+        return self._get_field("verts_vertex_lat", VertexDim)
+
+    def verts_vertex_lon(self):
+        return self._get_field("verts_vertex_lon", VertexDim)
+
+    def primal_normal_v1(self):
+        return self._get_field("primal_normal_v1", EdgeDim)
+
+    def primal_normal_v2(self):
+        return self._get_field("primal_normal_v2", EdgeDim)
+
+    def dual_normal_v1(self):
+        return self._get_field("dual_normal_v1", EdgeDim)
+
+    def dual_normal_v2(self):
+        return self._get_field("dual_normal_v2", EdgeDim)
+
+    def sphere_radius(self):
+        return self._get_field("grid_sphere_radius")
+
+    def edges_center_lat(self):
+        return self._get_field("edges_center_lat", EdgeDim)
+
+    def edges_center_lon(self):
+        return self._get_field("edges_center_lon", EdgeDim)
+
+    def cell_center_lat(self):
+        return self._get_field("cell_center_lat", CellDim)
+
+    def cell_center_lon(self):
+        return self._get_field("cell_center_lon", CellDim)
+
+    def v_num_edges(self):
+        return self._get_field("v_num_edges", VertexDim)
+
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", EdgeDim)
 
+    def edge_orientation(self):
+        return self._get_field("cells_edge_orientation", CellDim, C2EDim)
+
+    def vertex_edge_orientation(self):
+        return self._get_field("v_edge_orientation", VertexDim, V2EDim)
+
+    def vertex_dual_area(self):
+        return self._get_field("v_dual_area", VertexDim)
+
     def inverse_primal_edge_lengths(self):
         return self._get_field("inv_primal_edge_length", EdgeDim)
+
+    def primal_edge_length(self):
+        return self._get_field("primal_edge_length", EdgeDim)
+
+    def primal_cart_normal_x(self):
+        return self._get_field("primal_cart_normal_x", EdgeDim)
+
+    def primal_cart_normal_y(self):
+        return self._get_field("primal_cart_normal_y", EdgeDim)
+
+    def primal_cart_normal_z(self):
+        return self._get_field("primal_cart_normal_z", EdgeDim)
 
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", EdgeDim)
@@ -182,8 +239,14 @@ class IconGridSavepoint(IconSavepoint):
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
+    def dual_edge_length(self):
+        return self._get_field("dual_edge_length", EdgeDim)
+
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
+
+    def edge_vert_length(self):
+        return self._get_field("edge_vert_length", EdgeDim, E2CDim)
 
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
@@ -216,6 +279,9 @@ class IconGridSavepoint(IconSavepoint):
 
     def e_owner_mask(self):
         return self._get_field("e_owner_mask", EdgeDim, dtype=bool)
+
+    def v_owner_mask(self):
+        return self._get_field("v_owner_mask", VertexDim, dtype=bool)
 
     def f_e(self):
         return self._get_field("f_e", EdgeDim)
@@ -413,6 +479,12 @@ class IconGridSavepoint(IconSavepoint):
 
 
 class InterpolationSavepoint(IconSavepoint):
+    def divavg_cntrwgt(self):
+        return self._get_field("divavg_cntrwgt", dtype=float)
+
+    def c_bln_avg(self):
+        return self._get_field("c_bln_avg", CellDim, C2EDim)
+
     def c_intp(self):
         return self._get_field("c_intp", VertexDim, V2CDim)
 
@@ -451,6 +523,9 @@ class InterpolationSavepoint(IconSavepoint):
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
+    def pos_on_tplane_e(self):
+        return self._get_field("pos_on_tplane_e", EdgeDim, E2C2EDim, E2CDim)
+
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", EdgeDim, E2CDim)
         return as_1D_sparse_field(field[:, 0:2], ECDim)
@@ -470,6 +545,9 @@ class InterpolationSavepoint(IconSavepoint):
 
     def rbf_vec_coeff_v2(self):
         return self._get_field("rbf_vec_coeff_v2", VertexDim, V2EDim)
+
+    def rbf_vec_idx_v(self):
+        return self._get_field("rbf_vec_idx_v", VertexDim, V2EDim)
 
 
 class MetricSavepoint(IconSavepoint):
