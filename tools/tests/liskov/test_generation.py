@@ -159,8 +159,8 @@ def expected_end_create_source():
 @pytest.fixture
 def expected_imports_source():
     return """\
-  USE fused_stencil, ONLY: wrap_run_fused_stencil
-  USE stencil1, ONLY: wrap_run_stencil1"""
+  USE fused_stencil, ONLY: wrap_run_and_verify_fused_stencil
+  USE stencil1, ONLY: wrap_run_and_verify_stencil1"""
 
 
 @pytest.fixture
@@ -199,7 +199,7 @@ def expected_end_stencil_source():
     return """
         call nvtxEndRange()
 #endif
-        call wrap_run_stencil1( &
+        call wrap_run_and_verify_stencil1( &
            scalar1=scalar1, &
            inp1=inp1(:, :, 1), &
            out1=out1(:, :, 1), &
@@ -251,7 +251,7 @@ def expected_start_fused_stencil_source():
 @pytest.fixture
 def expected_end_fused_stencil_source():
     return """
-        call wrap_run_fused_stencil( &
+        call wrap_run_and_verify_fused_stencil( &
            scalar1=scalar1, &
            inp1=inp1(:, :, 1), &
            out1=out1(:, :, 1), &
