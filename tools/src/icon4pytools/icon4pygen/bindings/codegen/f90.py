@@ -139,7 +139,6 @@ class F90Generator(TemplatedGenerator):
         use, intrinsic :: iso_c_binding
         use openacc
         {{binds}}
-        {{tol_decls}}
         integer(c_int) :: vertical_start
         integer(c_int) :: vertical_end
         integer(c_int) :: horizontal_start
@@ -150,7 +149,6 @@ class F90Generator(TemplatedGenerator):
         horizontal_start = horizontal_lower-1
         horizontal_end = horizontal_upper
         {{k_sizes_assignments}}
-        {{conditionals}}
         !$ACC host_data use_device( &
         {{host_data_run}}
         !$ACC )
@@ -513,22 +511,18 @@ class F90WrapRunFun(Node):
     stencil_name: str
     all_fields: Sequence[Field]
     out_fields: Sequence[Field]
-    tol_fields: Sequence[Field]
 
     params: F90EntityList = eve.datamodels.field(init=False)
     binds: F90EntityList = eve.datamodels.field(init=False)
-    conditionals: F90EntityList = eve.datamodels.field(init=False)
     k_sizes: F90EntityList = eve.datamodels.field(init=False)
     k_sizes_assignments: F90EntityList = eve.datamodels.field(init=False)
     host_data_run: F90EntityList = eve.datamodels.field(init=False)
-    tol_decls: F90EntityList = eve.datamodels.field(init=False)
     run_ver_params: F90EntityList = eve.datamodels.field(init=False)
     run_params: F90EntityList = eve.datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         param_fields = (
             [F90Field(name=field.name) for field in self.all_fields]
-            + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
             + [F90Field(name=name) for name in _DOMAIN_ARGS]
         )
         bind_fields = (
@@ -554,11 +548,6 @@ class F90WrapRunFun(Node):
                 for name in _DOMAIN_ARGS
             ]
         )
-        tol_fields = [
-            F90TypedField(name=field.name, suffix=s, dtype="real(c_double)")
-            for s in ["rel_err_tol", "abs_err_tol"]
-            for field in self.tol_fields
-        ]
         k_sizes_fields = [
             F90TypedField(name=field.name, suffix=s, dtype="integer")
             for s in ["k_size"]
@@ -570,15 +559,6 @@ class F90WrapRunFun(Node):
                 right_side=f"SIZE({field.name}, 2)",
             )
             for field in self.out_fields
-        ]
-        cond_fields = [
-            F90Conditional(
-                predicate=f"present({field.name}_{short}_tol)",
-                if_branch=f"{field.name}_{short}_err_tol = {field.name}_{short}_tol",
-                else_branch=f"{field.name}_{short}_err_tol = DEFAULT_{long}_ERROR_THRESHOLD",
-            )
-            for short, long in [("rel", "RELATIVE"), ("abs", "ABSOLUTE")]
-            for field in self.tol_fields
         ]
         host_data_run_fields = [
             F90HostDataField(name=field.name) for field in self.all_fields if field.rank() != 0
@@ -611,26 +591,9 @@ class F90WrapRunFun(Node):
             ]
         )
 
-        for field in self.tol_fields:
-            param_fields += [F90Field(name=field.name, suffix=s) for s in ["rel_tol", "abs_tol"]]
-            bind_fields += [
-                F90TypedField(
-                    name=field.name,
-                    suffix=s,
-                    dtype="real(c_double)",
-                    dims="value",
-                    optional=True,
-                )
-                for s in ["rel_tol", "abs_tol"]
-            ]
-            run_ver_param_fields += [
-                F90Field(name=field.name, suffix=s) for s in ["rel_err_tol", "abs_err_tol"]
-            ]
 
         self.params = F90EntityList(fields=param_fields, line_end=", &", line_end_last=" &")
         self.binds = F90EntityList(fields=bind_fields)
-        self.tol_decls = F90EntityList(fields=tol_fields)
-        self.conditionals = F90EntityList(fields=cond_fields)
         self.k_sizes = F90EntityList(fields=k_sizes_fields)
         self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
         self.host_data_run = F90EntityList(fields=host_data_run_fields, line_end=", &", line_end_last=" &")
@@ -734,7 +697,6 @@ class F90File(Node):
             stencil_name=self.stencil_name,
             all_fields=all_fields,
             out_fields=out_fields,
-            tol_fields=tol_fields,
         )
 
         self.wrap_setup_fun = F90WrapSetupFun(
