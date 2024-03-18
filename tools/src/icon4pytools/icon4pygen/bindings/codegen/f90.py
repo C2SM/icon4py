@@ -501,11 +501,14 @@ class F90WrapRunAndVerifyFun(Node):
         self.conditionals = F90EntityList(fields=cond_fields)
         self.k_sizes = F90EntityList(fields=k_sizes_fields)
         self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
-        self.host_data_run_and_verify = F90EntityList(fields=host_data_run_and_verify_fields, line_end=", &", line_end_last=" &")
+        self.host_data_run_and_verify = F90EntityList(
+            fields=host_data_run_and_verify_fields, line_end=", &", line_end_last=" &"
+        )
         self.run_ver_params = F90EntityList(
             fields=run_ver_param_fields, line_end=", &", line_end_last=" &"
         )
         self.run_params = F90EntityList(fields=run_param_fields, line_end=", &", line_end_last=" &")
+
 
 class F90WrapRunFun(Node):
     stencil_name: str
@@ -521,10 +524,9 @@ class F90WrapRunFun(Node):
     run_params: F90EntityList = eve.datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        param_fields = (
-            [F90Field(name=field.name) for field in self.all_fields]
-            + [F90Field(name=name) for name in _DOMAIN_ARGS]
-        )
+        param_fields = [F90Field(name=field.name) for field in self.all_fields] + [
+            F90Field(name=name) for name in _DOMAIN_ARGS
+        ]
         bind_fields = (
             [
                 F90TypedField(
@@ -591,16 +593,18 @@ class F90WrapRunFun(Node):
             ]
         )
 
-
         self.params = F90EntityList(fields=param_fields, line_end=", &", line_end_last=" &")
         self.binds = F90EntityList(fields=bind_fields)
         self.k_sizes = F90EntityList(fields=k_sizes_fields)
         self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
-        self.host_data_run = F90EntityList(fields=host_data_run_fields, line_end=", &", line_end_last=" &")
+        self.host_data_run = F90EntityList(
+            fields=host_data_run_fields, line_end=", &", line_end_last=" &"
+        )
         self.run_ver_params = F90EntityList(
             fields=run_ver_param_fields, line_end=", &", line_end_last=" &"
         )
         self.run_params = F90EntityList(fields=run_param_fields, line_end=", &", line_end_last=" &")
+
 
 class F90WrapSetupFun(Node):
     stencil_name: str
