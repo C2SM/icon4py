@@ -86,7 +86,7 @@ def check_fortran_codegen(fname: str) -> None:
         f"run_and_verify_{stencil_name}",
         f"setup_{stencil_name}",
         f"free_{stencil_name}",
-        f"wrap_run_{stencil_name}",
+        f"wrap_run_and_verify{stencil_name}",
     ]
     check_for_matches(fname, patterns)
 

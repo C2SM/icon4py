@@ -198,7 +198,7 @@ class EndStencilStatementGenerator(BaseEndStencilStatementGenerator):
         {% if _this_node.noprofile %}{% else %}call nvtxEndRange(){% endif %}
         {%- endif %}
         {% if _this_node.noendif %}{% else %}#endif{% endif %}
-        call wrap_run_{{ name }}( &
+        call wrap_run_and_verify_{{ name }}( &
             {{ input_fields }}
             {{ output_fields }}
             {{ tolerance_fields }}
@@ -214,7 +214,7 @@ class EndStencilStatementGenerator(BaseEndStencilStatementGenerator):
 class EndFusedStencilStatementGenerator(BaseEndStencilStatementGenerator):
     EndFusedStencilStatement = as_jinja(
         """
-        call wrap_run_{{ name }}( &
+        call wrap_run_and_verify_{{ name }}( &
             {{ input_fields }}
             {{ output_fields }}
             {{ tolerance_fields }}
@@ -401,7 +401,7 @@ class ImportsStatement(eve.Node):
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """  {% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
+        """  {% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_and_verify_{{ name }}\n{% endfor %}"""
     )
 
 
