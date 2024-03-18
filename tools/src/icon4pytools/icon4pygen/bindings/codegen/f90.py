@@ -520,7 +520,6 @@ class F90WrapRunFun(Node):
     k_sizes: F90EntityList = eve.datamodels.field(init=False)
     k_sizes_assignments: F90EntityList = eve.datamodels.field(init=False)
     host_data_run: F90EntityList = eve.datamodels.field(init=False)
-    run_ver_params: F90EntityList = eve.datamodels.field(init=False)
     run_params: F90EntityList = eve.datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -597,12 +596,7 @@ class F90WrapRunFun(Node):
         self.binds = F90EntityList(fields=bind_fields)
         self.k_sizes = F90EntityList(fields=k_sizes_fields)
         self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
-        self.host_data_run = F90EntityList(
-            fields=host_data_run_fields, line_end=", &", line_end_last=" &"
-        )
-        self.run_ver_params = F90EntityList(
-            fields=run_ver_param_fields, line_end=", &", line_end_last=" &"
-        )
+        self.host_data_run = F90EntityList(fields=host_data_run_fields, line_end=", &", line_end_last=" &")
         self.run_params = F90EntityList(fields=run_param_fields, line_end=", &", line_end_last=" &")
 
 
