@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
+import os
+import time
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
@@ -103,8 +105,13 @@ def diffusion_init(
     dual_normal_cell_y: Field[[ EdgeDim, E2CDim], float64],
 ):
     # grid
+    if os.environ.get("GT4PY_GPU"):
+        on_gpu = True
+    else:
+        on_gpu = False
+
     icon_grid = _load_from_gridfile(
-        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=True
+        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=on_gpu
     )
 
     print("0000000 Initialising diffusion...")
@@ -146,6 +153,7 @@ def diffusion_init(
     diffusion_params = DiffusionParams(config)
 
     # vertical parameters
+    # todo: use xp
     vertical_params = VerticalModelParams(
         vct_a=vct_a,
         rayleigh_damping_height=rayleigh_damping_height,
@@ -164,6 +172,7 @@ def diffusion_init(
     )
 
     # interpolation state
+    # todo: cupy arrays instead of as_numpy? (geofac_n2s_c, geofac_n2s)
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -178,6 +187,8 @@ def diffusion_init(
     # initialisation
     print("Initialising diffusion...")
 
+    start_time = time.time()
+
     DIFFUSION.init(
         grid=icon_grid,
         config=config,
@@ -188,6 +199,11 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
     )
+
+    end_time = time.time()
+
+    print("Done running initialising diffusion.")
+    print(f"Diffusion initialisation time: {end_time - start_time:.2f} seconds")
 
 
 def diffusion_run(
@@ -218,9 +234,13 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    # running diffusion
     print("Running diffusion...")
+
+    start_time = time.time()
 
     DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
 
+    end_time = time.time()
+
     print("Done running diffusion.")
+    print(f"Diffusion run time: {end_time - start_time:.2f} seconds")

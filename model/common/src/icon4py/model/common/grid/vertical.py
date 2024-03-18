@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -22,6 +23,16 @@ from icon4py.model.common.dimension import KDim
 
 
 log = logging.getLogger(__name__)
+
+# Choose array backend
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+
+    xp = cp
+else:
+    import numpy as np
+
+    xp = np
 
 
 @dataclass(frozen=True)
@@ -49,7 +60,7 @@ class VerticalModelParams:
     nflat_gradp: Final[int32] = None
 
     def __post_init__(self):
-        vct_a_array = self.vct_a.asnumpy()
+        vct_a_array = xp.asarray(self.vct_a.asnumpy())
         object.__setattr__(
             self,
             "index_of_damping_layer",
@@ -79,11 +90,11 @@ class VerticalModelParams:
     ) -> int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return int32(np.min(np.where(interface_height < top_moist_threshold)))
+        return int(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
     def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
-        return int32(np.argmax(np.where(vct_a >= damping_height)))
+        return int(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
 
     @property
     def physical_heights(self) -> Field[[KDim], float]:

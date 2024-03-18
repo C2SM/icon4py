@@ -184,7 +184,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # necessary imports for generated code to work
 from {{ plugin_name }} import ffi
 import numpy as np
-import cupy as cp
+import os
 from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -193,11 +193,13 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+    print(cp.show_config())
 # all other imports from the module from which the function is being wrapped
 {% for stmt in imports -%}
 {{ stmt }}
 {% endfor %}
-print(cp.show_config())
 # We need a grid to pass offset providers
 grid = SimpleGrid()
 

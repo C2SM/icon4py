@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
 import functools
 import logging
 import math
@@ -28,7 +29,6 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_imperative,
     run_gtfn_gpu_cached,
-    run_gtfn_gpu,
 )
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -82,22 +82,35 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
 
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
 
+# Choose array backend
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+
+    xp = cp
+else:
+    import numpy as np
+
+    xp = np
+
 # flake8: noqa
 log = logging.getLogger(__name__)
+
+# todo: need a way to switch these backe
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-backend = run_gtfn_cached  #
-#backend = run_gtfn_gpu_cached
-backend = cached_backend
+
+if os.environ.get("GT4PY_GPU"):
+    backend = run_gtfn_gpu_cached
+else:
+    backend = run_gtfn_cached
 
 class DiffusionType(int, Enum):
     """
@@ -547,6 +560,7 @@ class Diffusion:
             physical_heights=self.vertical_params.physical_heights,
             nrdmax=self.vertical_params.index_of_damping_layer,
         )
+
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
 
@@ -560,7 +574,7 @@ class Diffusion:
 
         def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
-            return as_field((dim,), cp.arange(size, dtype=int32))
+            return as_field((dim,), xp.arange(size, dtype=int32))
 
         self.diff_multfac_vn = _allocate(KDim)
 
@@ -578,7 +592,7 @@ class Diffusion:
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = as_field(
-            (CellDim, KDim), cp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+            (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
 
     def initial_run(
