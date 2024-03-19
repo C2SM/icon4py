@@ -564,20 +564,6 @@ class F90WrapRunFun(Node):
         host_data_run_fields = [
             F90HostDataField(name=field.name) for field in self.all_fields if field.rank() != 0
         ]
-        run_ver_param_fields = (
-            [F90Field(name=field.name) for field in self.all_fields]
-            + [F90Field(name=field.name, suffix="before") for field in self.out_fields]
-            + [F90Field(name=field.name, suffix="k_size") for field in self.out_fields]
-            + [
-                F90Field(name=name)
-                for name in [
-                    "vertical_start",
-                    "vertical_end",
-                    "horizontal_start",
-                    "horizontal_end",
-                ]
-            ]
-        )
         run_param_fields = (
             [F90Field(name=field.name) for field in self.all_fields]
             + [F90Field(name=field.name, suffix="k_size") for field in self.out_fields]
