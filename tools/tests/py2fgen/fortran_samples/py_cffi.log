@@ -1,0 +1,106 @@
+2024-03-19 14:45:37.946 - INFO - Python Execution Context Start
+2024-03-19 14:45:37.946 - DEBUG - Total GPUs available: 1
+2024-03-19 14:45:37.946 - DEBUG - <CUDA Device 0>
+2024-03-19 14:45:37.946 - DEBUG - inp before unpacking: <cdata 'void *' 0x75f69dafa000>
+2024-03-19 14:45:37.973 - DEBUG - inp after unpacking: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 14:45:37.973 - DEBUG - shape of inp after unpacking = (5, 5)
+2024-03-19 14:45:37.973 - DEBUG - shape of inp after allocating as field = (5, 5)
+2024-03-19 14:45:37.974 - DEBUG - inp after allocating as field: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 14:45:47.320 - DEBUG - shape of inp after computation = (5, 5)
+2024-03-19 14:45:47.320 - DEBUG - inp after computation: [[25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]]
+2024-03-19 14:45:47.320 - INFO - Python Execution Context End
+2024-03-19 14:46:14.770 - INFO - Python Execution Context Start
+2024-03-19 14:46:14.770 - DEBUG - Total GPUs available: 1
+2024-03-19 14:46:14.770 - DEBUG - <CUDA Device 0>
+2024-03-19 14:46:14.770 - DEBUG - inp before unpacking: <cdata 'void *' 0x7c3e3fafa000>
+2024-03-19 14:46:14.796 - DEBUG - inp after unpacking: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 14:46:14.796 - DEBUG - shape of inp after unpacking = (5, 5)
+2024-03-19 14:46:14.796 - DEBUG - shape of inp after allocating as field = (5, 5)
+2024-03-19 14:46:14.796 - DEBUG - inp after allocating as field: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 14:46:24.238 - DEBUG - shape of inp after computation = (5, 5)
+2024-03-19 14:46:24.238 - DEBUG - inp after computation: [[25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]]
+2024-03-19 14:46:24.238 - INFO - Python Execution Context End
+2024-03-19 14:47:03.138 - INFO - Python Execution Context Start
+2024-03-19 14:47:03.138 - DEBUG - Total GPUs available: 1
+2024-03-19 14:47:03.138 - DEBUG - <CUDA Device 0>
+2024-03-19 14:47:03.138 - DEBUG - inp before unpacking: <cdata 'void *' NULL>
+2024-03-19 14:47:03.171 - ERROR - A Python error occurred: cudaErrorIllegalAddress: an illegal memory access was encountered
+Traceback (most recent call last):
+  File "<init code for 'identity_plugin'>", line 169, in identity_wrapper
+  File "<init code for 'identity_plugin'>", line 118, in unpack_gpu
+  File "cupy/_core/core.pyx", line 1741, in cupy._core.core._ndarray_base.__str__
+  File "cupy/_core/core.pyx", line 1854, in cupy._core.core._ndarray_base.get
+  File "cupy/cuda/memory.pyx", line 586, in cupy.cuda.memory.MemoryPointer.copy_to_host_async
+  File "cupy_backends/cuda/api/runtime.pyx", line 606, in cupy_backends.cuda.api.runtime.memcpyAsync
+  File "cupy_backends/cuda/api/runtime.pyx", line 146, in cupy_backends.cuda.api.runtime.check_status
+cupy_backends.cuda.api.runtime.CUDARuntimeError: cudaErrorIllegalAddress: an illegal memory access was encountered
+2024-03-19 14:47:36.518 - INFO - Python Execution Context Start
+2024-03-19 14:47:36.518 - DEBUG - Total GPUs available: 1
+2024-03-19 14:47:36.518 - DEBUG - <CUDA Device 0>
+2024-03-19 14:47:36.518 - DEBUG - inp before unpacking: <cdata 'void *' 0x730477afa000>
+2024-03-19 14:47:36.543 - DEBUG - inp after unpacking: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 14:47:36.543 - DEBUG - shape of inp after unpacking = (5, 5)
+2024-03-19 14:47:36.543 - DEBUG - shape of inp after allocating as field = (5, 5)
+2024-03-19 14:47:36.544 - DEBUG - inp after allocating as field: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 14:47:46.116 - DEBUG - shape of inp after computation = (5, 5)
+2024-03-19 14:47:46.117 - DEBUG - inp after computation: [[25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]]
+2024-03-19 14:47:46.117 - INFO - Python Execution Context End
+2024-03-19 15:02:43.797 - INFO - Python Execution Context Start
+2024-03-19 15:02:43.797 - DEBUG - Total GPUs available: 1
+2024-03-19 15:02:43.797 - DEBUG - <CUDA Device 0>
+2024-03-19 15:02:43.797 - DEBUG - inp before unpacking: <cdata 'void *' 0x7f083fafa000>
+2024-03-19 15:02:43.822 - DEBUG - inp after unpacking: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 15:02:43.823 - DEBUG - shape of inp after unpacking = (5, 5)
+2024-03-19 15:02:43.823 - DEBUG - shape of inp after allocating as field = (5, 5)
+2024-03-19 15:02:43.823 - DEBUG - inp after allocating as field: [[5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]
+ [5. 5. 5. 5. 5.]]
+2024-03-19 15:02:53.529 - DEBUG - shape of inp after computation = (5, 5)
+2024-03-19 15:02:53.529 - DEBUG - inp after computation: [[25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]
+ [25. 25. 25. 25. 25.]]
+2024-03-19 15:02:53.529 - INFO - Python Execution Context End

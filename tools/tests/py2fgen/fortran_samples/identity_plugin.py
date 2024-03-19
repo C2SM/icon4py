@@ -10,21 +10,33 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import logging
-from pathlib import Path
 
-import cffi
-import cupy as cp  # type: ignore
+# necessary imports for generated code to work
+import logging
+
+import cupy as cp
 import numpy as np
-from cffi import FFI
+
+# all other imports from the module from which the function is being wrapped
+from gt4py.next.ffront.fbuiltins import Field, float64, int32
+from gt4py.next.iterator.embedded import np_as_located_field
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
+from identity_plugin import ffi
 from numpy.typing import NDArray
 
-from icon4pytools.common.logger import setup_logger
+
+log_format = "%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s"
+
+logging.basicConfig(
+    filename="py_cffi.log", level=logging.DEBUG, format=log_format, datefmt="%Y-%m-%d %H:%M:%S"
+)
+
+# We need a grid to pass offset providers
+grid = SimpleGrid()
 
 
-ffi = FFI()
-
-logger = setup_logger(__name__)
+from icon4pytools.py2fgen.wrappers.simple import identity
 
 
 def unpack(ptr, *sizes: int) -> NDArray:
@@ -133,56 +145,54 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     return bool_array
 
 
-def generate_and_compile_cffi_plugin(
-    plugin_name: str, c_header: str, python_wrapper: str, build_path: Path
-) -> None:
-    """
-    Create and compile a CFFI plugin.
+def list_available_gpus():
+    num_gpus = cp.cuda.runtime.getDeviceCount()
+    logging.debug("Total GPUs available: %d" % num_gpus)
 
-    This function generates a C shared library and Fortran interface for Python functions
-    to be exposed in the {plugin_name} module. It creates a linkable C library named
-    'lib{plugin_name}.so' in the specified build directory.
+    for i in range(num_gpus):
+        device = cp.cuda.Device(i)
+        logging.debug(device)
 
-    Args:
-        plugin_name: Name of the plugin.
-        c_header: C header signatures for the Python functions.
-        python_wrapper: Python code wrapping the original function to be exposed.
-        build_path: Path to the build directory.
-    """
+
+@ffi.def_extern()
+def identity_wrapper(inp: Field[[CellDim, KDim], float64], n_Cell: int32, n_K: int32):
     try:
-        header_file_path = write_c_header(build_path, plugin_name, c_header)
-        compile_cffi_plugin(
-            builder=configure_cffi_builder(c_header, plugin_name, header_file_path),
-            python_wrapper=python_wrapper,
-            build_path=str(build_path),
-            plugin_name=plugin_name,
-        )
+        logging.info("Python Execution Context Start")
+
+        list_available_gpus()
+
+        # Unpack pointers into Ndarrays
+
+        msg = "inp before unpacking: %s" % str(inp)
+        logging.debug(msg)
+
+        inp = unpack_gpu(inp, n_Cell, n_K)
+        msg = "inp after unpacking: %s" % str(inp)
+        logging.debug(msg)
+        msg = "shape of inp after unpacking = %s" % str(inp.shape)
+        logging.debug(msg)
+
+        # Allocate GT4Py Fields
+
+        inp = np_as_located_field(CellDim, KDim)(inp)
+        msg = "shape of inp after allocating as field = %s" % str(inp.shape)
+        logging.debug(msg)
+        msg = "inp after allocating as field: %s" % str(inp.ndarray)
+        logging.debug(msg)
+
+        identity(inp)
+
+        # debug info
+
+        msg = "shape of inp after computation = %s" % str(inp.shape)
+        logging.debug(msg)
+        msg = "inp after computation: %s" % str(inp.ndarray)
+        logging.debug(msg)
+
+        logging.info("Python Execution Context End")
+
     except Exception as e:
-        logging.error(f"Error generating and compiling CFFI plugin: {e}")
-        raise
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
 
-
-def write_c_header(build_path: Path, plugin_name: str, c_header: str) -> Path:
-    """Write the C header file to the specified path."""
-    c_header_file = plugin_name + ".h"
-    header_file_path = build_path / c_header_file
-    with open(header_file_path, "w") as f:
-        f.write(c_header)
-    return header_file_path
-
-
-def configure_cffi_builder(c_header: str, plugin_name: str, header_file_path: Path) -> cffi.FFI:
-    """Configure and returns a CFFI FFI builder instance."""
-    builder = cffi.FFI()
-    builder.embedding_api(c_header)
-    builder.set_source(plugin_name, f'#include "{header_file_path.name}"')
-    return builder
-
-
-def compile_cffi_plugin(
-    builder: cffi.FFI, python_wrapper: str, build_path: str, plugin_name: str
-) -> None:
-    """Compile the CFFI plugin with the given configuration."""
-    logger.info("Compiling CFFI dynamic library...")
-    builder.embedding_init_code(python_wrapper)
-    builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)
+    return 0

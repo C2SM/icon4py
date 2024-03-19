@@ -414,7 +414,7 @@ end module
     F90FunctionDeclaration = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool
+   import :: c_int, c_double, c_bool, c_ptr
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
@@ -472,4 +472,4 @@ end subroutine {{name}}
             explicit_size=render_fortran_array_sizes(param),
         )
 
-    FuncParameter = as_jinja("""{{iso_c_type}}, {{dim}} {{value}} target :: {{name}}""")
+    FuncParameter = as_jinja("""{{iso_c_type}}, value :: {{name}}""")

@@ -74,7 +74,7 @@ def compile_fortran_code(
     compiler: str,
     extra_compiler_flags: tuple[str, ...],
 ):
-    subprocess.run(["gfortran", "-c", f"{plugin_name}.f90", "."], check=True)
+    # subprocess.run(["gfortran", "-c", f"{plugin_name}.f90", "."], check=True)
     command = [
         f"{compiler}",
         "-cpp",
@@ -83,6 +83,7 @@ def compile_fortran_code(
         "-L.",
         f"{plugin_name}.f90",
         str(samples_path / f"{fortran_driver}.f90"),
+        "/home/sk/Dev/icon4py/tools/tests/py2fgen/fortran_samples/acc_wrapper.o",
         f"-l{plugin_name}",
         "-o",
         plugin_name,

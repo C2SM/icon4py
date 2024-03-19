@@ -1,0 +1,1 @@
+extern int identity_wrapper(void *inp, int n_Cell, int n_K);
