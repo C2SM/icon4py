@@ -83,6 +83,10 @@ import dace
 from dace.transformation.auto import auto_optimize as autoopt
 from gt4py.next.program_processors.runners.dace_iterator import run_dace_cpu
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
+try:
+    import ghex
+except ImportError:
+    ghex = None
 
 
 """
@@ -666,18 +670,19 @@ class Diffusion:
                         compiler_args ="-std=c++17 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
                         on_gpu = False
                         dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
-                        
+
                         return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs,
-                                    __context_ptr=self._exchange._context.expose_context_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __comm_ptr=self._exchange._comm.expose_comm_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    #                    
-                                    __pattern_CellDim_ptr=self._exchange._patterns[CellDim].expose_pattern_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __pattern_VertexDim_ptr=self._exchange._patterns[VertexDim].expose_pattern_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __pattern_EdgeDim_ptr=self._exchange._patterns[EdgeDim].expose_pattern_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                     #
-                                    __domain_descriptor_CellDim_ptr=self._exchange._domain_descriptors[CellDim].expose_domain_descriptor_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __domain_descriptor_VertexDim_ptr=self._exchange._domain_descriptors[VertexDim].expose_domain_descriptor_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __domain_descriptor_EdgeDim_ptr=self._exchange._domain_descriptors[EdgeDim].expose_domain_descriptor_ptr() if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    #                    
+                                    __pattern_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __pattern_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __pattern_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    #
+                                    __domain_descriptor_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __domain_descriptor_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                    __domain_descriptor_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                     #
                                     __connectivity_V2E=connectivity_V2E.table,
                                     __connectivity_E2C2V=connectivity_E2C2V.table,
@@ -714,14 +719,11 @@ class Diffusion:
             )
             log.debug("rbf interpolation 1: end")
 
+            log.debug("communication rbf extrapolation of vn - start")
             self._exchange.prep_halo(VertexDim, 2, True)(self.u_vert, self.v_vert)
+            log.debug("communication rbf extrapolation of vn - end")
 
         fuse()
-        
-        # # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
-        # log.debug("communication rbf extrapolation of vn - start")
-        # self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
-        # log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(

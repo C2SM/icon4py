@@ -260,9 +260,9 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 in_connectors[buffer_name] = dtypes.pointer(data_descriptor.dtype)
                 state.add_edge(buffer, buffer_name, tasklet, buffer_name, Memlet.from_array(buffer_name, data_descriptor))
 
-                # update = state.add_write(buffer_name)
-                # out_connectors[f'OUT_buffer_{i}'] = dtypes.pointer(data_descriptor.dtype)
-                # state.add_edge(tasklet, f'OUT_buffer_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
+                update = state.add_write(buffer_name)
+                out_connectors[f'OUT_buffer_{i}'] = dtypes.pointer(data_descriptor.dtype)
+                state.add_edge(tasklet, f'OUT_buffer_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
 
             tasklet.in_connectors = in_connectors
             tasklet.out_connectors = out_connectors
@@ -324,30 +324,25 @@ class GHexMultiNodeExchange(SDFGConvertible):
                     {'h.wait();' if self.wait else ''}
                     '''
 
-            # # Debugging
-            # code += '''
-            #         // Generate filename based on MPI rank
-            #         std::stringstream filenameStream;
-            #         filenameStream << "RANK_" << m->rank() << ".txt";
-            #         std::string filename = filenameStream.str();
-
-            #         // Open a file for writing
-            #         std::ofstream outFile(filename);
-
-            #         // Check if the file is open
-            #         if (outFile.is_open()) {
-            #             // Write the variable to the file
-            #             outFile << m->rank() << std::endl;
-            #             if (m->rank() == 0 || m->rank() == 1)
-            #                 outFile << field_desc_0.domain_size() << pattern->size() << std::endl;
-
-            #             // Close the file
-            #             outFile.close();
-            #         } else {
-            #             // Failed to open the file
-            #             ;
-            #         }
-            #         '''
+            # Debugging
+            field_desc_out = '\n'
+            for i, arg in enumerate(args):
+                field_desc_out += f'outFile << field_desc_{i}.device_id() << ", " << field_desc_{i}.domain_id() << ", " << field_desc_{i}.domain_size() << ", " << field_desc_{i}.num_components() << std::endl;\n'
+            code += f'''
+                    std::stringstream filenameStream;
+                    filenameStream << "RANK_" << m->rank() << ".txt";
+                    std::string filename = filenameStream.str();
+                    std::ofstream outFile(filename);
+                    if (outFile.is_open()) {{
+                        outFile << m->rank() << ", " << m->size() << std::endl;
+                        outFile << pattern->size() << ", " << pattern->max_tag() << std::endl;
+                        outFile << domain_descriptor->domain_id() << ", " << domain_descriptor->inner_size() << ", " << domain_descriptor->size() << std::endl;
+                        {field_desc_out}
+                        outFile.close();
+                    }} else {{
+                        ;
+                    }}
+                    '''
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
 
@@ -370,14 +365,14 @@ class GHexMultiNodeExchange(SDFGConvertible):
         return sdfg
 
     def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        return {'__context_ptr':self._context.expose_context_ptr(),
-                '__comm_ptr':self._comm.expose_comm_ptr(),
-                '__pattern_CellDim_ptr':self._patterns[CellDim].expose_pattern_ptr(),
-                '__pattern_VertexDim_ptr':self._patterns[VertexDim].expose_pattern_ptr(),
-                '__pattern_EdgeDim_ptr':self._patterns[EdgeDim].expose_pattern_ptr(),
-                '__domain_descriptor_CellDim_ptr':self._domain_descriptors[CellDim].expose_domain_descriptor_ptr(),
-                '__domain_descriptor_VertexDim_ptr':self._domain_descriptors[VertexDim].expose_domain_descriptor_ptr(),
-                '__domain_descriptor_EdgeDim_ptr':self._domain_descriptors[EdgeDim].expose_domain_descriptor_ptr(),
+        return {'__context_ptr':ghex.expose_cpp_ptr(self._context),
+                '__comm_ptr':ghex.expose_cpp_ptr(self._comm),
+                '__pattern_CellDim_ptr':ghex.expose_cpp_ptr(self._patterns[CellDim]),
+                '__pattern_VertexDim_ptr':ghex.expose_cpp_ptr(self._patterns[VertexDim]),
+                '__pattern_EdgeDim_ptr':ghex.expose_cpp_ptr(self._patterns[EdgeDim]),
+                '__domain_descriptor_CellDim_ptr':ghex.expose_cpp_ptr(self._domain_descriptors[CellDim]),
+                '__domain_descriptor_VertexDim_ptr':ghex.expose_cpp_ptr(self._domain_descriptors[VertexDim]),
+                '__domain_descriptor_EdgeDim_ptr':ghex.expose_cpp_ptr(self._domain_descriptors[EdgeDim]),
                 }
     
     def prep_halo(self, dim: Dimension, num_fields: int, wait: bool = True):
@@ -417,7 +412,7 @@ def create_multinode_node_exchange(
 @dace.library.environment
 class DaceGHEX:
     python_site_packages = site.getsitepackages()[0]
-    ghex_path = python_site_packages + '/ghex'
+    ghex_path = '/Users/kotsaloc/repos/icon4py/_external_src/GHEX/build' #python_site_packages + '/ghex'
 
     cmake_minimum_version = None
     cmake_packages = []
