@@ -18,7 +18,7 @@ from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim, Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
 from icon4pytools.icon4pygen.metadata import StencilInfo
@@ -144,7 +144,7 @@ def generate_gtheader(
     return translation.generate_stencil_source(
         transformed_fencil,
         offset_provider=offset_provider,
-        column_axis=None,
+        column_axis=KDim,  # only used for ScanOperator
         **kwargs,
     )
 
