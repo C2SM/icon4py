@@ -222,25 +222,17 @@ class GHexMultiNodeExchange(SDFGConvertible):
             sdfg = dace.SDFG('_halo_exchange_')
             state = sdfg.add_state()
 
-            sdfg.add_scalar('__context_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__comm_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__pattern_CellDim_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__pattern_VertexDim_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__pattern_EdgeDim_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__domain_descriptor_CellDim_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__domain_descriptor_VertexDim_ptr', dtype=dace.uintp)
-            sdfg.add_scalar('__domain_descriptor_EdgeDim_ptr', dtype=dace.uintp)
+            for cpp_ptr_name in self.__sdfg_closure__():
+                sdfg.add_scalar(cpp_ptr_name, dtype=dace.uintp)
 
-            buffers = []
             for arg in zip(self.__sdfg_signature__()[0], args):
                 buffer_name = arg[0]
                 data_descriptor = arg[1]
                 sdfg.add_array(buffer_name,
-                            data_descriptor.shape,
-                            data_descriptor.dtype,
-                            storage=data_descriptor.storage,
-                            strides=data_descriptor.strides)
-                buffers.append(buffer_name)
+                               data_descriptor.shape,
+                               data_descriptor.dtype,
+                               storage=data_descriptor.storage,
+                               strides=data_descriptor.strides)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
                                             inputs=None,
@@ -358,9 +350,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         sdfg = self.__call__(*args, **kwargs)
         
         sdfg.arg_names.extend(self.__sdfg_signature__()[0])
-        sdfg.arg_names.extend(['__context_ptr', '__comm_ptr',
-                               '__pattern_CellDim_ptr', '__pattern_VertexDim_ptr', '__pattern_EdgeDim_ptr',
-                               '__domain_descriptor_CellDim_ptr', '__domain_descriptor_VertexDim_ptr', '__domain_descriptor_EdgeDim_ptr'])
+        sdfg.arg_names.extend(list(self.__sdfg_closure__().keys()))
         
         return sdfg
 
