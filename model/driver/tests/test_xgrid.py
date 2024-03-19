@@ -25,7 +25,7 @@ from icon4py.model.driver.io.xgrid import (
     IconUGridPatch,
     dump_ugrid_file,
     extract_horizontal_coordinates,
-    load_icon_grid_data,
+    load_data_file,
 )
 
 
@@ -37,7 +37,7 @@ def grid_files():
 
 @pytest.mark.parametrize("file", grid_files())
 def test_convert_to_ugrid(file):
-    with load_icon_grid_data(file) as ds:
+    with load_data_file(file) as ds:
         patch = IconUGridPatch()
         uxds = patch(ds, validate=True)
         assert uxds.attrs["title"] == "ICON grid description"
@@ -53,7 +53,7 @@ def test_convert_to_ugrid(file):
         
 @pytest.mark.parametrize("file", grid_files())
 def test_dump_ugrid_file(file, tmpdir):
-    with load_icon_grid_data(file) as ds:
+    with load_data_file(file) as ds:
         patch = IconUGridPatch()
         uxds = patch(ds)
         output_dir = Path(tmpdir).joinpath("output")
@@ -65,7 +65,7 @@ def test_dump_ugrid_file(file, tmpdir):
         
 @pytest.mark.parametrize("file", grid_files())
 def test_extract_horizontal_coordinates(file):
-    with load_icon_grid_data(file) as ds:
+    with load_data_file(file) as ds:
         dims = ds.dims    
         coords = extract_horizontal_coordinates(ds)
         # TODO (halungge) fix data  

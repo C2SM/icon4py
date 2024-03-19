@@ -19,7 +19,7 @@ import xarray as xa
 
 
 @contextlib.contextmanager
-def load_icon_grid_data(filename: Path) -> xa.Dataset:
+def load_data_file(filename: Path) -> xa.Dataset:
     ds = xa.open_dataset(filename)
     try:
         yield ds
@@ -30,7 +30,7 @@ def load_icon_grid_data(filename: Path) -> xa.Dataset:
 def extract_horizontal_coordinates(ds: xa.Dataset):
     """
     Extract the coordinates from the ICON grid file.
-    TODO (@halungge) does not work for decomposed grids
+    TODO (@halungge) does it  work for decomposed grids?
     """
     return dict(
         cell=(ds["clat"], ds["clon"]),
@@ -38,6 +38,20 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
         edge=(ds["elat"], ds["elon"]),
     )
 
+
+
+    
+    
+def extract_bounds(ds: xa.Dataset):
+    """
+    Extract the bounds from the ICON grid file.
+    TODO (@halungge) does it  work for decomposed grids?
+    """
+    return dict(
+        cell=(ds["clat_vertices"], ds["clon_vertices"]),
+        vertex=(ds["vlat_vertices"], ds["vlon_vertices"]),
+        edge=(ds["elat_vertices"], ds["elon_vertices"]),
+    )
 
 class IconUGridPatch:
     """
@@ -62,7 +76,7 @@ class IconUGridPatch:
             "end_idx_e",
             "start_idx_v",
             "end_idx_v",
-            "edge_index",  # TODO (magdalena) do not exist on local grid
+            "edge_index",  # TODO (magdalena) do not exist on local grid?
             "vertex_index",
             "cell_index",
         )
