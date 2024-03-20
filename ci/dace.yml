@@ -2,7 +2,7 @@ include:
   - local: 'ci/base.yml'
 
 variables:
-  DACE_VERSION: "ab6647b38"
+  DACE_VERSION: "e542965a9"
 
 build:
   extends: .build_template
