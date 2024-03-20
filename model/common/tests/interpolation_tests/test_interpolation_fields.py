@@ -152,7 +152,8 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
         C2E_,
         E2C_,
         C2E2C_,
-        lateral_boundary,
+        lateral_boundary[0],
+        lateral_boundary[1],
     )
     assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
 
@@ -183,7 +184,8 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         owner_mask,
         C2E_,
         E2C_,
-        lateral_boundary,
+        lateral_boundary[0],
+        lateral_boundary[1],
     )
     geofac_grg = compute_geofac_grg(
         primal_normal_ec,
@@ -192,7 +194,8 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         C2E_,
         E2C_,
         C2E2C_,
-        lateral_boundary,
+        lateral_boundary[0],
+        lateral_boundary[1],
     )
     assert np.allclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy())
     assert np.allclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy())
@@ -225,7 +228,8 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
         E2C_,
         C2E2C_,
         E2C2E_,
-        lateral_boundary,
+        lateral_boundary[0],
+        lateral_boundary[1],
     )
     assert np.allclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
@@ -233,7 +237,7 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
 @pytest.mark.datatest
 def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     cell_areas = grid_savepoint.cell_areas().asnumpy()
-    divavg_cntrwgt = interpolation_savepoint.divavg_cntrwgt().asnumpy()
+    divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     C2E2C = icon_grid.connectivities[C2E2CDim]
@@ -256,24 +260,24 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         divavg_cntrwgt,
         owner_mask,
         C2E2C,
-        lateral_boundary,
         lat,
         lon,
+        lateral_boundary[0],
+        lateral_boundary[1],
     )
     c_bln_avg = compute_mass_conservation_c_bln_avg(
         c_bln_avg,
         divavg_cntrwgt,
         owner_mask,
         C2E2C,
-        lateral_boundary,
         lat,
         lon,
         cell_areas,
         1000,
+        lateral_boundary[0],
+        lateral_boundary[1],
+        lateral_boundary[2],
     )
-    print(c_bln_avg_ref)
-    print("aaaaa")
-    print(c_bln_avg)
     assert np.allclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 
 
@@ -332,8 +336,10 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         C2E,
         C2E2C,
         E2C2E,
-        lateral_boundary_cells,
-        lateral_boundary_edges,
+        lateral_boundary_cells[1],
+        lateral_boundary_edges[1],
+        lateral_boundary_edges[2],
+        lateral_boundary_edges[3],
     )
     assert np.allclose(e_flx_avg, e_flx_avg_ref)
 
@@ -367,7 +373,8 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
         E2V,
         V2C,
         E2C,
-        lateral_boundary_verts,
+        lateral_boundary_verts[0],
+        lateral_boundary_verts[1],
     )
     assert np.allclose(cells_aw_verts, cells_aw_verts_ref)
 
@@ -397,7 +404,7 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
         cells_lon,
         edges_lat,
         edges_lon,
-        lateral_boundary_cells,
+        lateral_boundary_cells[1],
     )
     assert np.allclose(e_bln_c_s, e_bln_c_s_ref)
 
@@ -446,7 +453,8 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
         E2C,
         E2V,
         E2C2E,
-        lateral_boundary_edges,
+        lateral_boundary_edges[0],
+        lateral_boundary_edges[1],
     )
     assert np.allclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref)
     assert np.allclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref)

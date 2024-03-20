@@ -100,7 +100,8 @@ def compute_geofac_n2s(
     c2e: np.array,
     e2c: np.array,
     c2e2c: np.array,
-    lateral_boundary: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     """
     Compute geofac_n2s.
@@ -112,16 +113,17 @@ def compute_geofac_n2s(
         c2e:
         e2c:
         c2e2c:
-        lateral_boundary:
+	second_boundary_layer_start_index:
+	second_boundary_layer_end_index:
     """
-    llb = lateral_boundary[0]
-    geofac_n2s = np.zeros([lateral_boundary[1], 4])
+    llb = second_boundary_layer_start_index
+    geofac_n2s = np.zeros([second_boundary_layer_end_index, 4])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(lateral_boundary[1]),
-                np.arange(lateral_boundary[1]),
-                np.arange(lateral_boundary[1]),
+                np.arange(second_boundary_layer_end_index),
+                np.arange(second_boundary_layer_end_index),
+                np.arange(second_boundary_layer_end_index),
             )
         )
     )
@@ -150,16 +152,17 @@ def compute_primal_normal_ec(
     owner_mask: np.array,
     c2e: np.array,
     e2c: np.array,
-    lateral_boundary: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
-    primal_normal_ec = np.zeros([lateral_boundary[1], 3, 2])
-    llb = lateral_boundary[0]
+    llb = second_boundary_layer_start_index
+    primal_normal_ec = np.zeros([second_boundary_layer_end_index, 3, 2])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(lateral_boundary[1]),
-                np.arange(lateral_boundary[1]),
-                np.arange(lateral_boundary[1]),
+                np.arange(second_boundary_layer_end_index),
+                np.arange(second_boundary_layer_end_index),
+                np.arange(second_boundary_layer_end_index),
             )
         )
     )
@@ -181,7 +184,8 @@ def compute_geofac_grg(
     c2e: np.array,
     e2c: np.array,
     c2e2c: np.array,
-    lateral_boundary: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     """
     Compute geofac_grg.
@@ -194,16 +198,17 @@ def compute_geofac_grg(
         c2e:
         e2c:
         c2e2c:
-        lateral_boundary:
+	second_boundary_layer_start_index:
+	second_boundary_layer_end_index:
     """
-    geofac_grg = np.zeros([lateral_boundary[1], 4, 2])
-    llb = lateral_boundary[0]
+    llb = second_boundary_layer_start_index
+    geofac_grg = np.zeros([second_boundary_layer_end_index, 4, 2])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(lateral_boundary[1]),
-                np.arange(lateral_boundary[1]),
-                np.arange(lateral_boundary[1]),
+                np.arange(second_boundary_layer_end_index),
+                np.arange(second_boundary_layer_end_index),
+                np.arange(second_boundary_layer_end_index),
             )
         )
     )
@@ -236,7 +241,8 @@ def compute_geofac_grdiv(
     e2c: np.array,
     c2e2c: np.array,
     e2c2e: np.array,
-    lateral_boundary: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     """
     Compute geofac_grdiv.
@@ -249,11 +255,12 @@ def compute_geofac_grdiv(
         c2e:
         e2c:
         c2e2c:
-        lateral_boundary:
+	second_boundary_layer_start_index:
+	second_boundary_layer_end_index:
     """
-    geofac_grdiv = np.zeros([lateral_boundary[1], 5])
-    llb = lateral_boundary[0]
-    index = np.arange(llb, lateral_boundary[1])
+    llb = second_boundary_layer_start_index
+    geofac_grdiv = np.zeros([second_boundary_layer_end_index, 5])
+    index = np.arange(llb, second_boundary_layer_end_index)
     for j in range(3):
         mask = np.where(c2e[e2c[llb:, 1], j] == index, owner_mask[llb:], False)
         geofac_grdiv[llb:, 0] = np.where(mask, geofac_div[e2c[llb:, 1], j], geofac_grdiv[llb:, 0])
@@ -299,12 +306,13 @@ def rotate_latlon(
 
 
 def compute_c_bln_avg(
-    divavg_cntrwgt: np.array,
+    divavg_cntrwgt: np.int32,
     owner_mask: np.array,
     c2e2c: np.array,
-    lateral_boundary: np.array,
     lat: np.array,
     lon: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     """
     Compute c_bln_avg.
@@ -314,21 +322,22 @@ def compute_c_bln_avg(
         divavg_cntrwgt:
 	owner_mask:
 	c2e2c:
-	lateral_boundary:
 	lat:
 	lon:
+	second_boundary_layer_start_index:
+	second_boundary_layer_end_index:
     """
-    c_bln_avg = np.zeros([lateral_boundary[1], 4])
-    llb = lateral_boundary[0]
+    llb = second_boundary_layer_start_index
+    c_bln_avg = np.zeros([second_boundary_layer_end_index, 4])
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
     xloc = lon[llb:]
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    x = np.zeros([3, lateral_boundary[1] - llb])
-    y = np.zeros([3, lateral_boundary[1] - llb])
-    wgt = np.zeros([3, lateral_boundary[1] - llb])
+    x = np.zeros([3, second_boundary_layer_end_index - llb])
+    y = np.zeros([3, second_boundary_layer_end_index - llb])
+    wgt = np.zeros([3, second_boundary_layer_end_index - llb])
 
     for i in range(3):
         ytemp = lat[c2e2c[llb:, i]]
@@ -379,11 +388,13 @@ def compute_mass_conservation_c_bln_avg(
     divavg_cntrwgt: np.array,
     owner_mask: np.array,
     c2e2c: np.array,
-    lateral_boundary: np.array,
     lat: np.array,
     lon: np.array,
     cell_areas: np.array,
     niter: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
+    third_boundary_layer_start_index: np.int32,
 ) -> np.array:
     """
     Compute c_bln_avg.
@@ -394,19 +405,21 @@ def compute_mass_conservation_c_bln_avg(
         divavg_cntrwgt:
 	owner_mask:
 	c2e2c:
-	lateral_boundary:
 	lat:
 	lon:
 	cell_areas:
 	niter: number of iterations until convergence is assumed
+	second_boundary_layer_start_index:
+	second_boundary_layer_end_index:
+	third_boundary_layer_start_index:
 
     in this routine halo cell exchanges (sync) are missing
     """
-    llb = lateral_boundary[0]
-    llb2 = lateral_boundary[2]
-    index = np.arange(llb, lateral_boundary[1])
+    llb = second_boundary_layer_start_index
+    llb2 = third_boundary_layer_start_index
+    index = np.arange(llb, second_boundary_layer_end_index)
 
-    inv_neighbor_id = -np.ones([lateral_boundary[1] - llb, 3], dtype=int)
+    inv_neighbor_id = -np.ones([second_boundary_layer_end_index - llb, 3], dtype=int)
     for i in range(3):
         for j in range(3):
             inv_neighbor_id[:, j] = np.where(
@@ -462,13 +475,15 @@ def compute_e_flx_avg(
     c2e: np.array,
     c2e2c: np.array,
     e2c2e: np.array,
-    lateral_boundary_cells: np.array,
-    lateral_boundary_edges: np.array,
+    second_boundary_layer_end_index_cells: np.int32,
+    second_boundary_layer_end_index_edges: np.int32,
+    third_boundary_layer_end_index_edges: np.int32,
+    fifth_boundary_layer_end_index_edges: np.int32,
 ) -> np.array:
-    e_flx_avg = np.zeros([lateral_boundary_edges[1], 5])
+    e_flx_avg = np.zeros([second_boundary_layer_end_index_edges, 5])
     llb = 0
-    index = np.arange(llb, lateral_boundary_cells[1])
-    inv_neighbor_id = -np.ones([lateral_boundary_cells[1] - llb, 3], dtype=int)
+    index = np.arange(llb, second_boundary_layer_end_index_cells)
+    inv_neighbor_id = -np.ones([second_boundary_layer_end_index_cells - llb, 3], dtype=int)
     for i in range(3):
         for j in range(3):
             inv_neighbor_id[:, j] = np.where(
@@ -477,8 +492,8 @@ def compute_e_flx_avg(
                 inv_neighbor_id[:, j],
             )
 
-    llb = lateral_boundary_edges[2]
-    index = np.arange(llb, lateral_boundary_edges[1])
+    llb = third_boundary_layer_end_index_edges
+    index = np.arange(llb, second_boundary_layer_end_index_edges)
     for j in range(3):
         for i in range(2):
             e_flx_avg[llb:, i + 1] = np.where(
@@ -504,7 +519,7 @@ def compute_e_flx_avg(
                 e_flx_avg[llb:, i + 3],
             )
 
-    iie = -np.ones([lateral_boundary_edges[1], 4], dtype=int)
+    iie = -np.ones([second_boundary_layer_end_index_edges, 4], dtype=int)
     iie[:, 0] = np.where(e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, -1)
     iie[:, 0] = np.where(
         np.logical_and(e2c[e2c2e[:, 0], 1] == e2c[:, 0], iie[:, 0] != 2), 4, iie[:, 0]
@@ -525,8 +540,8 @@ def compute_e_flx_avg(
         np.logical_and(e2c[e2c2e[:, 3], 1] == e2c[:, 1], iie[:, 3] != 1), 3, iie[:, 3]
     )
 
-    llb = lateral_boundary_edges[3]
-    index = np.arange(llb, lateral_boundary_edges[1])
+    llb = fifth_boundary_layer_end_index_edges
+    index = np.arange(llb, second_boundary_layer_end_index_edges)
     for i in range(3):
         e_flx_avg[llb:, 0] = np.where(
             owner_mask[llb:],
@@ -586,10 +601,11 @@ def compute_cells_aw_verts(
     e2v: np.array,
     v2c: np.array,
     e2c: np.array,
-    lateral_boundary_verts: np.array,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
-    cells_aw_verts = np.zeros([lateral_boundary_verts[1], 6])
-    llb = lateral_boundary_verts[0]
+    llb = second_boundary_layer_start_index
+    cells_aw_verts = np.zeros([second_boundary_layer_end_index, 6])
     for i in range(2):
         for je in range(6):
             for jc in range(6):
@@ -598,7 +614,7 @@ def compute_cells_aw_verts(
                     owner_mask[llb:],
                     False,
                 )
-                index = np.arange(llb, lateral_boundary_verts[1])
+                index = np.arange(llb, second_boundary_layer_end_index)
                 idx_ve = np.where(e2v[v2e[llb:, je], 0] == index, 0, 1)
                 cells_aw_verts[llb:, jc] = np.where(
                     mask,
@@ -619,18 +635,18 @@ def compute_e_bln_c_s(
     cells_lon: np.array,
     edges_lat: np.array,
     edges_lon: np.array,
-    lateral_boundary_cells: np.array,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
-    e_bln_c_s = np.zeros([lateral_boundary_cells[1], 3])
     llb = 0
+    e_bln_c_s = np.zeros([second_boundary_layer_end_index, 3])
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    x = np.zeros([3, lateral_boundary_cells[1] - llb])
-    y = np.zeros([3, lateral_boundary_cells[1] - llb])
-    wgt = np.zeros([3, lateral_boundary_cells[1] - llb])
+    x = np.zeros([3, second_boundary_layer_end_index - llb])
+    y = np.zeros([3, second_boundary_layer_end_index - llb])
+    wgt = np.zeros([3, second_boundary_layer_end_index - llb])
 
     for i in range(3):
         ytemp = edges_lat[c2e[llb:, i]]
@@ -720,18 +736,19 @@ def compute_pos_on_tplane_e_x_y(
     e2c: np.array,
     e2v: np.array,
     e2c2e: np.array,
-    lateral_boundary_edges,
+    second_boundary_layer_start_index: np.int32,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
-    pos_on_tplane_e = np.zeros([lateral_boundary_edges[1], 8, 2])
-    llb = lateral_boundary_edges[0]
+    llb = second_boundary_layer_start_index
+    pos_on_tplane_e = np.zeros([second_boundary_layer_end_index, 8, 2])
     #     get geographical coordinates of edge midpoint
     #     get line and block indices of neighbour cells
     #     get geographical coordinates of first cell center
     #     projection first cell center into local \lambda-\Phi-system
     #     get geographical coordinates of second cell center
     #     projection second cell center into local \lambda-\Phi-system
-    xyloc_plane_n1 = np.zeros([2, lateral_boundary_edges[1] - llb])
-    xyloc_plane_n2 = np.zeros([2, lateral_boundary_edges[1] - llb])
+    xyloc_plane_n1 = np.zeros([2, second_boundary_layer_end_index - llb])
+    xyloc_plane_n2 = np.zeros([2, second_boundary_layer_end_index - llb])
     xyloc_plane_n1[0], xyloc_plane_n1[1] = gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]]
     )
@@ -739,8 +756,8 @@ def compute_pos_on_tplane_e_x_y(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
 
-    xyloc_quad = np.zeros([4, 2, lateral_boundary_edges[1] - llb])
-    xyloc_plane_quad = np.zeros([4, 2, lateral_boundary_edges[1] - llb])
+    xyloc_quad = np.zeros([4, 2, second_boundary_layer_end_index - llb])
+    xyloc_plane_quad = np.zeros([4, 2, second_boundary_layer_end_index - llb])
     for ne in range(4):
         xyloc_quad[ne, 0] = edges_lon[e2c2e[llb:, ne]]
         xyloc_quad[ne, 1] = edges_lat[e2c2e[llb:, ne]]
@@ -748,8 +765,8 @@ def compute_pos_on_tplane_e_x_y(
             edges_lon[llb:], edges_lat[llb:], xyloc_quad[ne, 0], xyloc_quad[ne, 1]
         )
 
-    xyloc_ve = np.zeros([2, 2, lateral_boundary_edges[1] - llb])
-    xyloc_plane_ve = np.zeros([2, 2, lateral_boundary_edges[1] - llb])
+    xyloc_ve = np.zeros([2, 2, second_boundary_layer_end_index - llb])
+    xyloc_plane_ve = np.zeros([2, 2, second_boundary_layer_end_index - llb])
     for nv in range(2):
         xyloc_ve[nv, 0] = vertex_lon[e2v[llb:, nv]]
         xyloc_ve[nv, 1] = vertex_lat[e2v[llb:, nv]]
