@@ -311,8 +311,12 @@ def compute_c_bln_avg(
 
     calculate_bilinear_cellavg_wgt
     Args:
-        c_bln_avg:
         divavg_cntrwgt:
+	owner_mask:
+	c2e2c:
+	lateral_boundary:
+	lat:
+	lon:
     """
     c_bln_avg = np.zeros([lateral_boundary[1], 4])
     llb = lateral_boundary[0]
@@ -384,10 +388,17 @@ def compute_mass_conservation_c_bln_avg(
     """
     Compute c_bln_avg.
 
-    calculate_bilinear_cellavg_wgt
+    calculate_mass_conservation_bilinear_cellavg_wgt
     Args:
-        c_bln_avg:
+        c_bln_avg: bilinear cellavg wgt
         divavg_cntrwgt:
+	owner_mask:
+	c2e2c:
+	lateral_boundary:
+	lat:
+	lon:
+	cell_areas:
+	niter: number of iterations until convergence is assumed
 
     in this routine halo cell exchanges (sync) are missing
     """
@@ -666,22 +677,24 @@ def gnomonic_proj(
     lon: np.array,
     lat: np.array,
 ) -> (np.array, np.array):
-    #
-    # !LITERATURE:
-    # Map Projections: A Working Manual, Snyder, 1987, p. 165
-    #
-    #
-    # REAL(wp), INTENT(in) :: lat_c, lon_c  ! center on tangent plane
-    # REAL(wp), INTENT(in) :: lat, lon      ! point to be projected
-    # REAL(wp), INTENT(out):: x, y          ! coordinates of projected point
+    """
+    Compute gnomonic projection.
 
-    # REAL(wp) :: zk   ! scale factor perpendicular to the radius from the
-    # center of the map
-    # REAL(wp) :: cosc ! cosine of the angular distance of the given point
-    # (lat,lon) from the center of projection
+    gnomonic_proj
+    Args:
+        lon_c, lat_c: center on tangent plane
+	lat, lon: point to be projected
+    Return values:
+	x, y: coordinates of projected point
 
-    # -----------------------------------------------------------------------
-
+    Variables:
+	zk: scale factor perpendicular to the radius from the center of the map
+	cosc: cosine of the angular distance of the given point (lat,lon) from the center of projection
+    LITERATURE:
+	Map Projections: A Working Manual, Snyder, 1987, p. 165
+    TODO:
+	replace this with a suitable library call
+    """
     cosc = np.sin(lat_c) * np.sin(lat) + np.cos(lat_c) * np.cos(lat) * np.cos(lon - lon_c)
     zk = 1.0 / cosc
 
