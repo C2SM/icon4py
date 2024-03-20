@@ -413,7 +413,9 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        diffusion_init_savepoint, False
+    )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
@@ -523,7 +525,7 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    fname_prefix: str, path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
@@ -543,7 +545,7 @@ def read_geometry_fields(
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
             vct_a=sp.vct_a(),
-            rayleigh_damping_height=12500,
+            rayleigh_damping_height=damping_height,
             nflatlev=sp.nflatlev(),
             nflat_gradp=sp.nflat_gradp(),
         )

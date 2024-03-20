@@ -1305,7 +1305,7 @@ def initialize(
     icon_grid = read_icon_grid(fname_prefix, file_path, rank=props.rank, ser_type=ser_type)
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        fname_prefix, file_path, rank=props.rank, ser_type=ser_type
+        fname_prefix, file_path, config.run_config.damping_height, rank=props.rank, ser_type=ser_type
     )
     (
         diffusion_metric_state,

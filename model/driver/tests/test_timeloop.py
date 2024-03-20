@@ -135,9 +135,9 @@ def test_jabw_initial_condition(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
+    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, ndyn_substeps, damping_height",
     [
-        (
+(
             False,
             REGIONAL_EXPERIMENT,
             1,
@@ -201,6 +201,57 @@ def test_jabw_initial_condition(
             True,
             50000.0,
         ),
+        (
+            False,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            False,
+            False,
+            False,
+            5,
+            45000.0,
+        ),
+        (
+            False,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            False,
+            False,
+            False,
+            5,
+            45000.0,
+        ),
+        (
+            True,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:10:00.000",
+            False,
+            False,
+            True,
+            5,
+            45000.0,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
@@ -230,7 +281,7 @@ def test_run_timeloop_single_step(
     )
     diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
     diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init, grid_savepoint
+        timeloop_diffusion_savepoint_init, grid_savepoint, False
     )
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -272,6 +323,7 @@ def test_run_timeloop_single_step(
         timeloop_date_init,
         timeloop_date_exit,
         timeloop_diffusion_linit_init,
+        damping_height=damping_height,
         ndyn_substeps=ndyn_substeps,
     )
 
