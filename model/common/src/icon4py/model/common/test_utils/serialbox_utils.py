@@ -523,9 +523,6 @@ class InterpolationSavepoint(IconSavepoint):
     def nudgecoeff_e(self):
         return self._get_field("nudgecoeff_e", EdgeDim)
 
-    def pos_on_tplane_e(self):
-        return self._get_field("pos_on_tplane_e", EdgeDim, E2C2EDim, E2CDim)
-
     def pos_on_tplane_e_x(self):
         field = self._get_field("pos_on_tplane_e_x", EdgeDim, E2CDim)
         return as_1D_sparse_field(field[:, 0:2], ECDim)

@@ -94,39 +94,7 @@ def compute_geofac_rot(
     return geofac_rot_
 
 
-def compute_geofac_div_np(
-    geofac_div: np.array,
-    primal_edge_length: np.array,
-    edge_orientation: np.array,
-    area: np.array,
-    c2e: np.array,
-) -> np.array:
-    for i in range(3):
-        geofac_div[:, i] = primal_edge_length[c2e[:, i]] * edge_orientation[:, i] / area
-    return geofac_div
-
-
-def compute_geofac_rot_np(
-    geofac_rot: np.array,
-    dual_edge_length: np.array,
-    edge_orientation: np.array,
-    dual_area: np.array,
-    v2e: np.array,
-    owner_mask: np.array,
-    lateral_boundary_verts: np.array,
-) -> np.array:
-    llb = lateral_boundary_verts[0]
-    for i in range(6):
-        geofac_rot[llb:, i] = np.where(
-            owner_mask[llb:],
-            dual_edge_length[v2e[llb:, i]] * edge_orientation[llb:, i] / dual_area[llb:],
-            0.0,
-        )
-    return geofac_rot
-
-
 def compute_geofac_n2s(
-    geofac_n2s: np.array,
     dual_edge_length: np.array,
     geofac_div: np.array,
     c2e: np.array,
@@ -147,6 +115,7 @@ def compute_geofac_n2s(
         lateral_boundary:
     """
     llb = lateral_boundary[0]
+    geofac_n2s = np.zeros([lateral_boundary[1], 4])
     index = np.transpose(
         np.vstack(
             (
@@ -176,7 +145,6 @@ def compute_geofac_n2s(
 
 
 def compute_primal_normal_ec(
-    primal_normal_ec: np.array,
     primal_normal_cell_x: np.array,
     primal_normal_cell_y: np.array,
     owner_mask: np.array,
@@ -184,6 +152,7 @@ def compute_primal_normal_ec(
     e2c: np.array,
     lateral_boundary: np.array,
 ) -> np.array:
+    primal_normal_ec = np.zeros([lateral_boundary[1], 3, 2])
     llb = lateral_boundary[0]
     index = np.transpose(
         np.vstack(
@@ -206,7 +175,6 @@ def compute_primal_normal_ec(
 
 
 def compute_geofac_grg(
-    geofac_grg: np.array,
     primal_normal_ec: np.array,
     geofac_div: np.array,
     c_lin_e: np.array,
@@ -228,6 +196,7 @@ def compute_geofac_grg(
         c2e2c:
         lateral_boundary:
     """
+    geofac_grg = np.zeros([lateral_boundary[1], 4, 2])
     llb = lateral_boundary[0]
     index = np.transpose(
         np.vstack(
@@ -260,7 +229,6 @@ def compute_geofac_grg(
 
 
 def compute_geofac_grdiv(
-    geofac_grdiv: np.array,
     geofac_div: np.array,
     inv_dual_edge_length: np.array,
     owner_mask: np.array,
@@ -283,6 +251,7 @@ def compute_geofac_grdiv(
         c2e2c:
         lateral_boundary:
     """
+    geofac_grdiv = np.zeros([lateral_boundary[1], 5])
     llb = lateral_boundary[0]
     index = np.arange(llb, lateral_boundary[1])
     for j in range(3):
@@ -297,7 +266,7 @@ def compute_geofac_grdiv(
         )
     for j in range(2):
         for k in range(3):
-            mask = c2e[e2c[llb:, 0], k] == e2c2e[llb:, 0 + j]
+            mask = c2e[e2c[llb:, 0], k] == e2c2e[llb:, j]
             geofac_grdiv[llb:, 1 + j] = np.where(
                 mask,
                 -geofac_div[e2c[llb:, 0], k] * inv_dual_edge_length[llb:],
@@ -329,32 +298,7 @@ def rotate_latlon(
     return (rotlat, rotlon)
 
 
-def compute_c_bln_avg_torus(
-    c_bln_avg: np.array,
-    divavg_cntrwgt: np.array,
-    owner_mask: np.array,
-    c2e2c: np.array,
-    lateral_boundary: np.array,
-    lat: np.array,
-    lon: np.array,
-) -> np.array:
-    """
-    Compute c_bln_avg_torus.
-
-    calculate_uniform_bilinear_cellavg_wgt
-    Args:
-        c_bln_avg:
-        divavg_cntrwgt:
-    """
-    local_weight = divavg_cntrwgt
-    neigbor_weight = (1.0 - local_weight) / 3.0
-    c_bln_avg[:, 0] = local_weight
-    c_bln_avg[:, 1:3] = neigbor_weight
-    return c_bln_avg
-
-
 def compute_c_bln_avg(
-    c_bln_avg: np.array,
     divavg_cntrwgt: np.array,
     owner_mask: np.array,
     c2e2c: np.array,
@@ -370,6 +314,7 @@ def compute_c_bln_avg(
         c_bln_avg:
         divavg_cntrwgt:
     """
+    c_bln_avg = np.zeros([lateral_boundary[1], 4])
     llb = lateral_boundary[0]
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
@@ -498,7 +443,6 @@ def compute_mass_conservation_c_bln_avg(
 
 
 def compute_e_flx_avg(
-    e_flx_avg: np.array,
     c_bln_avg: np.array,
     geofac_div: np.array,
     owner_mask: np.array,
@@ -510,7 +454,7 @@ def compute_e_flx_avg(
     lateral_boundary_cells: np.array,
     lateral_boundary_edges: np.array,
 ) -> np.array:
-    llb = lateral_boundary_cells[0]
+    e_flx_avg = np.zeros([lateral_boundary_edges[1], 5])
     llb = 0
     index = np.arange(llb, lateral_boundary_cells[1])
     inv_neighbor_id = -np.ones([lateral_boundary_cells[1] - llb, 3], dtype=int)
@@ -623,7 +567,6 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
-    cells_aw_verts: np.array,
     dual_area: np.array,
     edge_vert_length: np.array,
     edge_cell_length: np.array,
@@ -634,6 +577,7 @@ def compute_cells_aw_verts(
     e2c: np.array,
     lateral_boundary_verts: np.array,
 ) -> np.array:
+    cells_aw_verts = np.zeros([lateral_boundary_verts[1], 6])
     llb = lateral_boundary_verts[0]
     for i in range(2):
         for je in range(6):
@@ -658,7 +602,6 @@ def compute_cells_aw_verts(
 
 
 def compute_e_bln_c_s(
-    e_bln_c_s: np.array,
     owner_mask: np.array,
     c2e: np.array,
     cells_lat: np.array,
@@ -667,8 +610,8 @@ def compute_e_bln_c_s(
     edges_lon: np.array,
     lateral_boundary_cells: np.array,
 ) -> np.array:
+    e_bln_c_s = np.zeros([lateral_boundary_cells[1], 3])
     llb = 0
-
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
@@ -748,8 +691,7 @@ def gnomonic_proj(
     return x, y
 
 
-def compute_pos_on_tplane_e(
-    pos_on_tplane_e: np.array,
+def compute_pos_on_tplane_e_x_y(
     grid_sphere_radius: np.array,
     primal_normal_v1: np.array,
     primal_normal_v2: np.array,
@@ -767,6 +709,7 @@ def compute_pos_on_tplane_e(
     e2c2e: np.array,
     lateral_boundary_edges,
 ) -> np.array:
+    pos_on_tplane_e = np.zeros([lateral_boundary_edges[1], 8, 2])
     llb = lateral_boundary_edges[0]
     #     get geographical coordinates of edge midpoint
     #     get line and block indices of neighbour cells
@@ -866,14 +809,6 @@ def compute_pos_on_tplane_e(
             pos_on_tplane_e[llb:, 6 + nv, 1],
         )
 
-    return pos_on_tplane_e
-
-
-def compute_pos_on_tplane_e_x_y(
-    pos_on_tplane_e_x: np.array,
-    pos_on_tplane_e_y: np.array,
-    pos_on_tplane_e: np.array,
-) -> (np.array, np.array):
     pos_on_tplane_e_x = np.reshape(
         pos_on_tplane_e[:, 0:2, 0], (np.size(pos_on_tplane_e[:, 0:2, 0]))
     )
