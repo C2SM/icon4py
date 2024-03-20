@@ -138,7 +138,6 @@ def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
         cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
         result = cli.invoke(main, cli_args)
         if not result.exit_code == 0:
-            traceback.format_exception(*result.exc_info)
             assert (
                 result.exit_code == 0
             ), f"Codegen failed with error:\n{''.join(traceback.format_exception(*result.exc_info))}"
