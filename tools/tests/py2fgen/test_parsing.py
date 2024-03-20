@@ -11,9 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
-    grid,
-)
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-)
+from icon4pytools.py2fgen.parsing import parse
+from icon4pytools.py2fgen.template import CffiPlugin
+
+
+def test_parse_functions_on_wrapper():
+    module_path = "icon4pytools.py2fgen.wrappers.diffusion"
+    function_name = "diffusion_init"
+    plugin = parse(module_path, function_name)
+    assert isinstance(plugin, CffiPlugin)
+    assert plugin.plugin_name == "diffusion_init_plugin"

@@ -43,7 +43,7 @@ class FieldSerialisationData:
 
 @dataclass
 class SavepointData(CodeGenInput):
-    subroutine: str  # todo: change to name
+    subroutine: str
     intent: str
     fields: list[FieldSerialisationData]
     metadata: Optional[list[Metadata]]

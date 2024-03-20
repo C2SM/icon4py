@@ -13,26 +13,24 @@
 from pathlib import Path
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
-from icon4py.model.common.test_utils.datatest_utils import TEST_DATA_ROOT
+from icon4py.model.common.test_utils.datatest_utils import (
+    GRIDS_PATH,
+    MC_CH_R04B09_DSL_GRID_URI,
+    R02B04_GLOBAL,
+    R02B04_GLOBAL_GRID_URI,
+    REGIONAL_EXPERIMENT,
+)
 
 
-MCH_GRID_FILE = "mch_ch_r04b09_dsl"
-R02B04_GLOBAL = "r02b04_global"
-
-grids_path = TEST_DATA_ROOT.joinpath("grids")
-r04b09_dsl_grid_path = grids_path.joinpath(MCH_GRID_FILE)
+r04b09_dsl_grid_path = GRIDS_PATH.joinpath(REGIONAL_EXPERIMENT)
 r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1.tar.gz").name
 
-r02b04_global_grid_path = grids_path.joinpath(R02B04_GLOBAL)
+r02b04_global_grid_path = GRIDS_PATH.joinpath(R02B04_GLOBAL)
 r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
 
 
-MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
-R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
-
-
 def resolve_file_from_gridfile_name(name: str) -> Path:
-    if name == MCH_GRID_FILE:
+    if name == REGIONAL_EXPERIMENT:
         gridfile = r04b09_dsl_grid_path.joinpath("grid.nc")
         if not gridfile.exists():
             download_and_extract(
@@ -53,4 +51,4 @@ def resolve_file_from_gridfile_name(name: str) -> Path:
             )
         return gridfile
     else:
-        raise ValueError(f"invalid name: use one of {R02B04_GLOBAL, MCH_GRID_FILE}")
+        raise ValueError(f"invalid name: use one of {R02B04_GLOBAL, REGIONAL_EXPERIMENT}")

@@ -1,2 +1,2 @@
 -r ../../base-requirements-dev.txt
--e .
+-e .[netcdf]

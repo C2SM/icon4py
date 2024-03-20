@@ -10,24 +10,31 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    damping_height,
-    data_provider,
-    datapath,
-    decomposition_info,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
-)
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
+import numpy as np
+import pytest
+from cffi import FFI
+
+from icon4pytools.py2fgen.cffi import unpack
 
 
 @pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT
+def ffi():
+    return FFI()
+
+
+@pytest.mark.parametrize(
+    "data, expected_result",
+    [
+        ([1.0, 2.0, 3.0, 4.0], np.array([[1.0, 2.0], [3.0, 4.0]])),
+        ([1, 2, 3, 4], np.array([[1, 2], [3, 4]])),
+    ],
+)
+def test_unpack(data, expected_result, ffi):
+    ptr = ffi.new("double[]", data) if isinstance(data[0], float) else ffi.new("int[]", data)
+
+    rows, cols = expected_result.shape
+
+    result = unpack(ptr, rows, cols)
+
+    assert np.array_equal(result, expected_result)

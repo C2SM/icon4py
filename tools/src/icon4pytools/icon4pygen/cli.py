@@ -103,3 +103,7 @@ def main(
     stencil_info = get_stencil_info(fencil_def, is_global=is_global, force_skip_values=temporaries)
     GTHeader(stencil_info)(outpath, imperative, temporaries)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+    main()

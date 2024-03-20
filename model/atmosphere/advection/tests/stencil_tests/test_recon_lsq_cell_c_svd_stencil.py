@@ -27,6 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+@pytest.mark.slow_tests
 class TestReconLsqCellCSvdStencil(StencilTest):
     PROGRAM = recon_lsq_cell_c_svd_stencil
     OUTPUTS = (
@@ -235,7 +236,6 @@ class TestReconLsqCellCSvdStencil(StencilTest):
             p_coeff_10_dsl=p_coeff_10_dsl,
         )
 
-    @pytest.mark.slow_tests
     @pytest.fixture
     def input_data(self, grid):
         p_cc = random_field(grid, CellDim, KDim)
