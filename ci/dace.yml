@@ -13,7 +13,7 @@ test_model_stencils:
   script:
 # TODO(edopao): wait for next dace release to fix the inline_sdfgs simplify step
 #   - pip install dace==$DACE_VERSION
-    - pip install git+https://github.com:spcl/dace.git@$DACE_VERSION
+    - pip install git+https://github.com/spcl/dace.git@$DACE_VERSION
     - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
   parallel:
     matrix:
