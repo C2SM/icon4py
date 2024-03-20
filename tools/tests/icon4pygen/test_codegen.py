@@ -139,8 +139,9 @@ def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
         result = cli.invoke(main, cli_args)
         if not result.exit_code == 0:
             traceback.format_exception(*result.exc_info)
-            msg = "".join(traceback.format_exception(*result.exc_info))
-            pytest.fail("Codegen failed with error:\n" + msg)
+            assert (
+                result.exit_code == 0
+            ), f"Codegen failed with error:\n{''.join(traceback.format_exception(*result.exc_info))}"
         check_code_was_generated(stencil_name)
 
 
