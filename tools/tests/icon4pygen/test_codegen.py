@@ -131,7 +131,7 @@ def check_code_was_generated(stencil_name: str) -> None:
     ("stencil_module", "stencil_name"),
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
 )
-@pytest.mark.parametrize("flags", [()], ids=["normal"])
+@pytest.mark.parametrize("flags", [("--temporaries",), ()], ids=["temporaries", "normal"])
 def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
@@ -139,6 +139,11 @@ def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
         result = cli.invoke(main, cli_args)
         if not result.exit_code == 0:
             traceback.format_exception(*result.exc_info)
+            if (
+                isinstance(result.exception, NotImplementedError)
+                and result.exception.args[0] == "Dynamic offsets not supported in temporary pass."
+            ):
+                pytest.xfail(result.exception.args[0])
             msg = "".join(traceback.format_exception(*result.exc_info))
             pytest.fail("Codegen failed with error:\n" + msg)
         check_code_was_generated(stencil_name)
