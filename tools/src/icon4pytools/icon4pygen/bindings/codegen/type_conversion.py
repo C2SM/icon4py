@@ -22,7 +22,7 @@ BUILTIN_TO_ISO_C_TYPE: dict[ts.ScalarKind, str] = {
     ts.ScalarKind.INT64: "integer(c_long)",
 }
 BUILTIN_TO_CPP_TYPE: dict[ts.ScalarKind, str] = {
-    ts.ScalarKind.FLOAT64: "void",
+    ts.ScalarKind.FLOAT64: "double",
     ts.ScalarKind.FLOAT32: "float",
     ts.ScalarKind.BOOL: "int",
     ts.ScalarKind.INT32: "int",

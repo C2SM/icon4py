@@ -438,6 +438,7 @@ end function {{name}}_wrapper
             assumed_size_array=False,
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
+            arrays=[arg for arg in func.args if arg.is_array],
         )
 
     # todo(samkellerhals): Consider using unique SIZE args
@@ -453,12 +454,19 @@ subroutine {{name}}({{param_names}}, &\nrc)
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
+   !$ACC host_data use_device( &
+   {%- for arr in arrays %}
+       !$ACC {{ arr.name }}{% if not loop.last %}, &{% else %} &{% endif %}
+   {%- endfor %}
+   !$ACC )
+
    {% for d in _this_node.dimension_size_declarations %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
 
    rc = {{ name }}_wrapper({{ param_names_with_size_args }})
 
+   !$acc end host_data
 end subroutine {{name}}
     """
     )
@@ -472,4 +480,4 @@ end subroutine {{name}}
             explicit_size=render_fortran_array_sizes(param),
         )
 
-    FuncParameter = as_jinja("""{{iso_c_type}}, value :: {{name}}""")
+    FuncParameter = as_jinja("""{{iso_c_type}}, {{dim}} {{value}} target :: {{name}}""")

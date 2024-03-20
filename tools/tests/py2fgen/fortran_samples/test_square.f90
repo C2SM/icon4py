@@ -11,6 +11,8 @@ program call_square_wrapper_cffi_plugin
    cdim = 18
    kdim = 10
 
+   !$ACC enter data create(input, result)
+
    ! allocate arrays (allocate in column-major order)
    allocate (input(cdim, kdim))
    allocate (result(cdim, kdim))
@@ -18,6 +20,8 @@ program call_square_wrapper_cffi_plugin
    ! initialise arrays
    input = 5.0d0
    result = 0.0d0
+
+   !$ACC data copyin(input, result)
 
    ! print array shapes and values before computation
    print *, "Fortran Arrays before calling Python:"
@@ -42,6 +46,8 @@ program call_square_wrapper_cffi_plugin
        print *, "Python failed with exit code = ", rc
        call exit(1)
    end if
+
+   !$ACC update host(input, result)
 
    ! print array shapes and values before computation
    print *, "Fortran arrays after calling Python:"
@@ -68,6 +74,9 @@ program call_square_wrapper_cffi_plugin
       end do
       if (.not. computation_correct) exit
    end do
+
+   !$ACC end data
+   !$ACC exit data delete(input, result)
 
    ! deallocate arrays
    deallocate (input, result)

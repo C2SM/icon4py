@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import os
 import subprocess
 from pathlib import Path
 
@@ -74,7 +75,6 @@ def compile_fortran_code(
     compiler: str,
     extra_compiler_flags: tuple[str, ...],
 ):
-    # subprocess.run(["gfortran", "-c", f"{plugin_name}.f90", "."], check=True)
     command = [
         f"{compiler}",
         "-cpp",
@@ -83,7 +83,6 @@ def compile_fortran_code(
         "-L.",
         f"{plugin_name}.f90",
         str(samples_path / f"{fortran_driver}.f90"),
-        "/home/sk/Dev/icon4py/tools/tests/py2fgen/fortran_samples/acc_wrapper.o",
         f"-l{plugin_name}",
         "-o",
         plugin_name,
@@ -123,27 +122,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
         backend,
         samples_path,
         "test_square",
-        extra_flags,
-    )
-
-
-@pytest.mark.parametrize(
-    "backend, extra_flags",
-    [("GPU", ("-acc",))],
-)
-def test_py2fgen_compilation_and_execution_square_gpu(
-    cli_runner, backend, samples_path, wrapper_module, extra_flags
-):
-    run_test_case(
-        cli_runner,
-        wrapper_module,
-        "identity",
-        "identity_plugin",
-        backend,
-        samples_path,
-        "test_gpu",
-        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",
-        extra_flags,
+        extra_compiler_flags=extra_flags,
     )
 
 
@@ -157,7 +136,7 @@ def test_py2fgen_python_error_propagation_to_fortran(cli_runner, samples_path, w
         "ROUNDTRIP",
         samples_path,
         "test_square",
-        ("-DUSE_SQUARE_ERROR",),
+        extra_compiler_flags=("-DUSE_SQUARE_ERROR",),
         expected_error_code=1,
     )
 
@@ -184,7 +163,54 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
         "icon4pytools.py2fgen.wrappers.diffusion",
         "diffusion_init,diffusion_run",
         "diffusion_plugin",
-        "ROUNDTRIP",  # diffusion code selects its own backend.
+        "ROUNDTRIP",  # todo: diffusion code selects its own backend, it should be configurable from py2fgen.
         samples_path,
         "test_diffusion",
     )
+
+
+# todo(samkellerhals): find out nvfortran location on CI machine and set env variable in base.yml file.
+@pytest.mark.skip("Requires setting the path to NVFORTRAN_COMPILER as an environment variable.")
+@pytest.mark.parametrize(
+    "backend, extra_flags",
+    [("GPU", ("-acc", "-Minfo=acc"))],
+)
+def test_py2fgen_compilation_and_execution_square_gpu(
+    cli_runner, backend, samples_path, wrapper_module, extra_flags
+):
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "square",
+        "square_plugin",
+        backend,
+        samples_path,
+        "test_square",
+        os.environ["NVFORTRAN_COMPILER"],
+        extra_flags,
+    )
+
+
+# todo(samkellerhals): find out nvfortran location on CI machine and set env variable in base.yml file.
+@pytest.mark.skip("Requires setting the path to NVFORTRAN_COMPILER as an environment variable.")
+@pytest.mark.parametrize(
+    "backend, extra_flags",
+    [("GPU", ("-acc", "-Minfo=acc"))],
+)
+def test_py2fgen_compilation_and_execution_multi_return_gpu(
+    cli_runner, backend, samples_path, wrapper_module, extra_flags
+):
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "multi_return",
+        "multi_return_plugin",
+        backend,
+        samples_path,
+        "test_multi_return",
+        os.environ["NVFORTRAN_COMPILER"],
+        extra_flags,
+    )
+
+
+# todo: add GPU test for diffusion
