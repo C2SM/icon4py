@@ -239,8 +239,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
                                             outputs=None,
                                             code='',
                                             language=dace.dtypes.Language.CPP,
-                                            side_effects=True,
-                                            debuginfo=None)
+                                            side_effects=True,)
 
             in_connectors = {}
             out_connectors = {}
@@ -316,25 +315,25 @@ class GHexMultiNodeExchange(SDFGConvertible):
                     {'h.wait();' if self.wait else ''}
                     '''
 
-            # Debugging
-            field_desc_out = '\n'
-            for i, arg in enumerate(args):
-                field_desc_out += f'outFile << field_desc_{i}.device_id() << ", " << field_desc_{i}.domain_id() << ", " << field_desc_{i}.domain_size() << ", " << field_desc_{i}.num_components() << std::endl;\n'
-            code += f'''
-                    std::stringstream filenameStream;
-                    filenameStream << "RANK_" << m->rank() << ".txt";
-                    std::string filename = filenameStream.str();
-                    std::ofstream outFile(filename);
-                    if (outFile.is_open()) {{
-                        outFile << m->rank() << ", " << m->size() << std::endl;
-                        outFile << pattern->size() << ", " << pattern->max_tag() << std::endl;
-                        outFile << domain_descriptor->domain_id() << ", " << domain_descriptor->inner_size() << ", " << domain_descriptor->size() << std::endl;
-                        {field_desc_out}
-                        outFile.close();
-                    }} else {{
-                        ;
-                    }}
-                    '''
+            # # Debugging
+            # field_desc_out = '\n'
+            # for i, arg in enumerate(args):
+            #     field_desc_out += f'outFile << field_desc_{i}.device_id() << ", " << field_desc_{i}.domain_id() << ", " << field_desc_{i}.domain_size() << ", " << field_desc_{i}.num_components() << std::endl;\n'
+            # code += f'''
+            #         std::stringstream filenameStream;
+            #         filenameStream << "RANK_" << m->rank() << ".txt";
+            #         std::string filename = filenameStream.str();
+            #         std::ofstream outFile(filename);
+            #         if (outFile.is_open()) {{
+            #             outFile << m->rank() << ", " << m->size() << std::endl;
+            #             outFile << pattern->size() << ", " << pattern->max_tag() << std::endl;
+            #             outFile << domain_descriptor->domain_id() << ", " << domain_descriptor->inner_size() << ", " << domain_descriptor->size() << std::endl;
+            #             {field_desc_out}
+            #             outFile.close();
+            #         }} else {{
+            #             ;
+            #         }}
+            #         '''
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
 
@@ -343,6 +342,8 @@ class GHexMultiNodeExchange(SDFGConvertible):
             res = self.exchange(self.dim, *args)
             if self.wait:
                 res.wait()
+            else:
+                return res
 
     def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
         self.return_sdfg = True
