@@ -107,6 +107,7 @@ def diffusion_init(
     # grid
     if os.environ.get("GT4PY_GPU"):
         on_gpu = True
+        print("ON GPU.")
     else:
         on_gpu = False
 

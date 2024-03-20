@@ -213,4 +213,23 @@ def test_py2fgen_compilation_and_execution_multi_return_gpu(
     )
 
 
-# todo: add GPU test for diffusion
+# todo: add test
+# requires setting ICON_GRID_LOC and GT4PY_GPU=1
+@pytest.mark.parametrize(
+    "backend, extra_flags",
+    [("GPU", ("-acc", "-Minfo=acc"))],
+)
+def test_py2fgen_compilation_and_execution_diffusion_gpu(
+    cli_runner, samples_path, backend, extra_flags
+):
+    run_test_case(
+        cli_runner,
+        "icon4pytools.py2fgen.wrappers.diffusion",
+        "diffusion_init,diffusion_run",
+        "diffusion_plugin",
+        backend,
+        samples_path,
+        "test_diffusion",
+        os.environ["NVFORTRAN_COMPILER"],
+        extra_flags,
+    )

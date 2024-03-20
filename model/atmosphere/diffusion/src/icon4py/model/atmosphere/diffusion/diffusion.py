@@ -100,8 +100,6 @@ else:
 # flake8: noqa
 log = logging.getLogger(__name__)
 
-# todo: need a way to switch these backe
-
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
