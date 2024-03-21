@@ -10,12 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import pathlib
 
 import click
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
+from icon4pytools.py2fgen.config import GT4PyBackend
 from icon4pytools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,
@@ -23,7 +23,6 @@ from icon4pytools.py2fgen.generate import (
 )
 from icon4pytools.py2fgen.parsing import parse
 from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
-from icon4pytools.py2fgen.utils import Backend
 
 
 def parse_comma_separated_list(ctx, param, value):
@@ -52,9 +51,9 @@ def parse_comma_separated_list(ctx, param, value):
     help="Enable debug mode to print additional runtime information.",
 )
 @click.option(
-    "--gt4py-backend",
+    "--backend",
     "-g",
-    type=click.Choice([e.name for e in Backend], case_sensitive=False),
+    type=click.Choice([e.name for e in GT4PyBackend], case_sensitive=False),
     default="ROUNDTRIP",
     help="Set the gt4py backend to use.",
 )
@@ -64,16 +63,15 @@ def main(
     plugin_name: str,
     build_path: pathlib.Path,
     debug_mode: bool,
-    gt4py_backend: str,
+    backend: str,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
-    backend = Backend[gt4py_backend]
     build_path.mkdir(exist_ok=True, parents=True)
 
     plugin = parse(module_import_path, functions, plugin_name)
 
     c_header = generate_c_header(plugin)
-    python_wrapper = generate_python_wrapper(plugin, backend.value, debug_mode)
+    python_wrapper = generate_python_wrapper(plugin, backend, debug_mode)
     f90_interface = generate_f90_interface(plugin)
 
     generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, build_path)

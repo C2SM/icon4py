@@ -44,7 +44,6 @@ class StencilInfo:
     fields: dict[str, FieldInfo]
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
-    column_axis: Optional[Dimension]
 
 
 @dataclass(frozen=True)
@@ -236,10 +235,9 @@ def get_stencil_info(
     offsets = scan_for_offsets(fvprog)
     itir = fvprog.itir
     fields = _get_field_infos(fvprog)
-    column_axis = fvprog._column_axis
 
     offset_provider = {}
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(itir, fields, connectivity_chains, offset_provider, column_axis)
+    return StencilInfo(itir, fields, connectivity_chains, offset_provider)

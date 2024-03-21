@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import inspect
-from typing import Any, Optional, Sequence
+from typing import Any, Sequence
 
 from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
@@ -22,7 +22,8 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack
+from icon4pytools.py2fgen.config import GT4PyBackend
+from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 
 
@@ -70,11 +71,16 @@ class CffiPlugin(Node):
 
 
 class PythonWrapper(CffiPlugin):
-    gt4py_backend: Optional[str]
+    backend: str
     debug_mode: bool
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
+    cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
     int_to_bool: str = inspect.getsource(int_array_to_bool_array)
+    gt4py_backend: str = datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        self.gt4py_backend = GT4PyBackend[self.backend].value
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -184,11 +190,12 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # necessary imports for generated code to work
 from {{ plugin_name }} import ffi
 import numpy as np
+import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
@@ -201,11 +208,10 @@ import logging
 
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 
-logging.basicConfig(filename='py_cffi.log',
+logging.basicConfig(filename='py2f_cffi.log',
                     level=logging.DEBUG,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
-
 
 # We need a grid to pass offset providers
 grid = SimpleGrid()
@@ -215,6 +221,8 @@ from {{ module_name }} import {{ func.name }}
 {% endfor %}
 
 {{ cffi_unpack }}
+
+{{ cffi_unpack_gpu }}
 
 {{ int_to_bool }}
 
@@ -241,7 +249,7 @@ def {{ func.name }}_wrapper(
         msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
         logging.debug(msg)
         {% endif %}
-        {{ arg.name }} = unpack({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+        {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
 
         {%- if arg.d_type.name == "BOOL" %}
         {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
@@ -397,7 +405,7 @@ end module
     F90FunctionDeclaration = as_jinja(
         """
 function {{name}}_wrapper({{param_names}}) bind(c, name="{{name}}_wrapper") result(rc)
-   import :: c_int, c_double, c_bool
+   import :: c_int, c_double, c_bool, c_ptr
    {% for size_arg in global_size_args %}
    integer(c_int), value :: {{ size_arg }}
    {% endfor %}
@@ -421,6 +429,7 @@ end function {{name}}_wrapper
             assumed_size_array=False,
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
+            arrays=[arg for arg in func.args if arg.is_array],
         )
 
     # todo(samkellerhals): Consider using unique SIZE args
@@ -436,12 +445,19 @@ subroutine {{name}}({{param_names}}, &\nrc)
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
+   !$ACC host_data use_device( &
+   {%- for arr in arrays %}
+       !$ACC {{ arr.name }}{% if not loop.last %}, &{% else %} &{% endif %}
+   {%- endfor %}
+   !$ACC )
+
    {% for d in _this_node.dimension_size_declarations %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
 
    rc = {{ name }}_wrapper({{ param_names_with_size_args }})
 
+   !$acc end host_data
 end subroutine {{name}}
     """
     )
