@@ -10,9 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import xa
+from gt4py._core.definitions import ScalarT
 from gt4py.next import Field
+from gt4py.next.common import DimsT
+from typing_extensions import Protocol
 from xarray import DataArray
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -47,7 +49,22 @@ class Dimensions(GridFile.DimensionName):
     PRESSURE_LEVEL = "pressure_level"
     
     
+class AnnotatedField:
+    def __init__(self, field: Protocol[DimsT, ScalarT], name: str, attrs: dict):
+        self.field = field
+        self.name = name
+        self.attrs = attrs
+        self.coords = None
+
     
+    
+    def to_data_array(self, grid_ds: xa.Dataset) -> xa.DataArray:
+        """Convert a gt4py field to a xarray dataset"""
+        # TODO (magdalena) need to know the dimension because that determines the data array
+        return xa.DataArray(data=self.field.asnumpy(), dims=["lat", "lon", "height"], attrs=self.attrs)
+    
+    def set_coords(self, coords: tuple[DataArray, DataArray]):
+        self.coords = coords  
 
 
 # create a a xarray dataarray from a gt4py field
