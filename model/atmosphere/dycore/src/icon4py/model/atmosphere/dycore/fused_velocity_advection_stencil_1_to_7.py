@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import sys
+
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
@@ -34,6 +36,8 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 )
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+sys.setrecursionlimit(5500)
 
 
 @field_operator
@@ -124,6 +128,32 @@ def _fused_velocity_advection_stencil_1_to_6(
 
 
 @field_operator
+def _compute_z_v_grad_w(
+    w: Field[[CellDim, KDim], wpfloat],
+    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    tangent_orientation: Field[[EdgeDim], wpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+
+    z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
+
+    z_v_grad_w = _compute_horizontal_advection_term_for_vertical_velocity(
+        vn_ie,
+        inv_dual_edge_length,
+        w,
+        z_vt_ie,
+        inv_primal_edge_length,
+        tangent_orientation,
+        z_w_v,
+    )
+
+    return z_v_grad_w
+
+
+@field_operator
 def _fused_velocity_advection_stencil_1_to_7_predictor(
     vn: Field[[EdgeDim, KDim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
@@ -181,14 +211,14 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     z_v_grad_w = (
         where(
             (lateral_boundary_7 <= edge) & (edge < halo_1) & (k < nlev),
-            _compute_horizontal_advection_term_for_vertical_velocity(
+            _compute_z_v_grad_w(
+                w,
+                c_intp,
                 vn_ie,
                 inv_dual_edge_length,
-                w,
-                z_vt_ie,
                 inv_primal_edge_length,
+                z_vt_ie,
                 tangent_orientation,
-                z_w_v,
             ),
             z_v_grad_w,
         )
