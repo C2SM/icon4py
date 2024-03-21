@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-import os
 import time
 
 from gt4py.next.common import Field
@@ -47,14 +46,11 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
+
+# global diffusion object
 DIFFUSION: Diffusion = Diffusion()
-GRID_PATH = os.environ.get("ICON_GRID_LOC")
-
-if not GRID_PATH:
-    raise Exception("Did not specify ICON_GRID_LOC environment variable.")
-
-GRID_FILENAME = "grid.nc"
 
 
 def diffusion_init(
@@ -104,15 +100,20 @@ def diffusion_init(
     dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
 ):
-    # grid
-    if os.environ.get("GT4PY_GPU"):
+    # configuration
+    config = Icon4PyConfig()
+
+    # ICON grid
+    if config.DEVICE == "GPU":
         on_gpu = True
-        print("ON GPU.")
     else:
         on_gpu = False
 
     icon_grid = _load_from_gridfile(
-        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=on_gpu
+        file_path=config.ICON_GRID_LOC,
+        filename=config.GRID_FILENAME,
+        num_levels=num_levels,
+        on_gpu=on_gpu,
     )
 
     # Edge geometry

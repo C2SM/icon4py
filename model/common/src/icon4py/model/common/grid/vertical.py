@@ -11,28 +11,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-import os
 from dataclasses import dataclass, field
 from typing import Final
 
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
 from icon4py.model.common.dimension import KDim
 
 
 log = logging.getLogger(__name__)
+config = Icon4PyConfig()
 
 # Choose array backend
-if os.environ.get("GT4PY_GPU"):
-    import cupy as cp
-
-    xp = cp
-else:
-    import numpy as np
-
-    xp = np
+xp = config.ARRAY_NS
 
 
 @dataclass(frozen=True)

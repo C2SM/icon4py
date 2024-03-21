@@ -10,12 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
 import pathlib
 
 import click
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
+from icon4pytools.py2fgen.config import GT4PyBackend
 from icon4pytools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,
@@ -23,7 +23,6 @@ from icon4pytools.py2fgen.generate import (
 )
 from icon4pytools.py2fgen.parsing import parse
 from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
-from icon4pytools.py2fgen.utils import GT4PyBackend
 
 
 def parse_comma_separated_list(ctx, param, value):
@@ -67,9 +66,6 @@ def main(
     backend: str,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
-    if backend == "GPU":
-        os.environ["GT4PY_GPU"] = "1"
-
     build_path.mkdir(exist_ok=True, parents=True)
 
     plugin = parse(module_import_path, functions, plugin_name)

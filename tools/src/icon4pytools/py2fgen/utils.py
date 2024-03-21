@@ -11,16 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from enum import Enum
-
 from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
-
-
-class GT4PyBackend(Enum):
-    CPU = "run_gtfn"
-    GPU = "run_gtfn_gpu"
-    ROUNDTRIP = "run_roundtrip"
 
 
 def parse_type_spec(type_spec: TypeSpec) -> tuple[list[Dimension], ScalarKind]:

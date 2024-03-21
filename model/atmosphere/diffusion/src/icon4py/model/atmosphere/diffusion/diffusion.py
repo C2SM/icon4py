@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
 import functools
 import logging
 import math
@@ -19,16 +18,9 @@ from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_imperative,
-    run_gtfn_gpu_cached,
-)
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -80,6 +72,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -87,27 +80,13 @@ Diffusion module ported from ICON mo_nh_diffusion.f90.
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
 
-# Choose array backend
-if os.environ.get("GT4PY_GPU"):
-    import cupy as cp
-
-    xp = cp
-else:
-    import numpy as np
-
-    xp = np
-
 # flake8: noqa
 log = logging.getLogger(__name__)
+config = Icon4PyConfig()
 
-cached_backend = run_gtfn_cached
-compiled_backend = run_gtfn
-imperative_backend = run_gtfn_imperative
-
-if os.environ.get("GT4PY_GPU"):
-    backend = run_gtfn_gpu_cached
-else:
-    backend = run_gtfn_cached
+# array namespace and backend
+xp = config.ARRAY_NS
+backend = config.GT4PY_RUNNER
 
 
 class DiffusionType(int, Enum):

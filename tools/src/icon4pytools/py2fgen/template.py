@@ -22,8 +22,9 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
+from icon4pytools.py2fgen.config import GT4PyBackend
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
-from icon4pytools.py2fgen.utils import GT4PyBackend, flatten_and_get_unique_elts
+from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
@@ -194,7 +195,7 @@ from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
@@ -207,7 +208,7 @@ import logging
 
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 
-logging.basicConfig(filename='py_cffi.log',
+logging.basicConfig(filename='py2f_cffi.log',
                     level=logging.DEBUG,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
@@ -225,14 +226,6 @@ from {{ module_name }} import {{ func.name }}
 
 {{ int_to_bool }}
 
-def list_available_gpus():
-    num_gpus = cp.cuda.runtime.getDeviceCount()
-    logging.debug('Total GPUs available: %d' % num_gpus)
-
-    for i in range(num_gpus):
-        device = cp.cuda.Device(i)
-        logging.debug(device)
-
 {% for func in _this_node.function %}
 
 {{ cffi_decorator }}
@@ -248,8 +241,6 @@ def {{ func.name }}_wrapper(
         {%- if _this_node.debug_mode %}
         logging.info("Python Execution Context Start")
         {% endif %}
-
-        list_available_gpus()
 
         # Unpack pointers into Ndarrays
         {% for arg in func.args %}
