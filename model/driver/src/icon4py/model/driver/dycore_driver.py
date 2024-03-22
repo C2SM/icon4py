@@ -1042,7 +1042,7 @@ class TimeLoop:
         log.info(
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
         )
-        if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization:
+        if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization and not self.run_config.run_testcase:
             log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,

@@ -40,6 +40,8 @@ class IconRunConfig:
     """linit_dyn in ICON"""
     apply_initial_stabilization: bool = True  # False if in restart mode
 
+    run_testcase: bool = False
+
 
 @dataclass(frozen=True)
 class IconOutputConfig:
@@ -142,7 +144,8 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             dtime=300.0,
             end_date=datetime(1, 1, 1, 0, 15, 0),
             damping_height=45000.0,
-            apply_initial_stabilization=False,
+            apply_initial_stabilization=True,
+            run_testcase=True,
             n_substeps=5,
         )
         output_config = IconOutputConfig(

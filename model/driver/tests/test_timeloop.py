@@ -137,7 +137,7 @@ def test_jabw_initial_condition(
 @pytest.mark.parametrize(
     "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, ndyn_substeps, damping_height",
     [
-(
+        (
             False,
             REGIONAL_EXPERIMENT,
             1,
@@ -225,27 +225,27 @@ def test_jabw_initial_condition(
             2,
             0,
             4,
-            "2008-09-01T00:00:00.000",
             "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:10:00.000",
             False,
             False,
-            False,
+            True,
             5,
             45000.0,
         ),
         (
-            True,
+            False,
             JABW_EXPERIMENT,
             1,
             2,
             0,
             4,
-            "2008-09-01T00:05:00.000",
             "2008-09-01T00:10:00.000",
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:15:00.000",
+            "2008-09-01T00:15:00.000",
+            "2008-09-01T00:15:00.000",
             False,
             False,
             True,
@@ -280,9 +280,7 @@ def test_run_timeloop_single_step(
         interpolation_savepoint
     )
     diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init, grid_savepoint, False
-    )
+
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
         rayleigh_damping_height=damping_height,
@@ -311,12 +309,6 @@ def test_run_timeloop_single_step(
     nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     # do_prep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-    prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj(),
-        mass_flx_me=sp.mass_flx_me(),
-        mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
-    )
 
     iconrun_config = construct_iconrun_config(
         experiment,
@@ -401,6 +393,18 @@ def test_run_timeloop_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
+
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        timeloop_diffusion_savepoint_init, grid_savepoint, False
+    )
+
+    prep_adv = PrepAdvection(
+        vn_traj=sp.vn_traj(),
+        mass_flx_me=sp.mass_flx_me(),
+        mass_flx_ic=sp.mass_flx_ic(),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+    )
+
     nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
@@ -434,6 +438,8 @@ def test_run_timeloop_single_step(
     initial_prognostic_date = "2021-06-20T12:00:10.000"
     if experiment == GLOBAL_EXPERIMENT:
         initial_prognostic_date = "2000-01-01T00:00:00.000"
+    elif experiment == JABW_EXPERIMENT:
+        initial_prognostic_date = "2008-09-01T00:00:00.000"
 
     if timeloop_date_exit == initial_prognostic_date:
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
@@ -501,7 +507,7 @@ def test_run_timeloop_single_step(
         base_dir = script_dir + "/"
 
         def printing(ref, predict, title: str):
-            with open(base_dir + "analysis_" + title + ".dat", "w") as f:
+            with open(base_dir + "analysis_" + timeloop_date_init + "_" + title + ".dat", "w") as f:
                 cell_size = ref.shape[0]
                 k_size = ref.shape[1]
                 print(title, cell_size, k_size)
