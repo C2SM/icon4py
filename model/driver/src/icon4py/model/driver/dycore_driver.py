@@ -1056,8 +1056,8 @@ class TimeLoop:
                 f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
             )
 
+            """
             if not self.is_run_from_serializedData:
-                """
                 self.stencil_mo_init_ddt_cell_zero(
                     solve_nonhydro_diagnostic_state.ddt_exner_phy,
                     solve_nonhydro_diagnostic_state.ddt_w_adv_ntl1,
@@ -1068,7 +1068,6 @@ class TimeLoop:
                     self.grid.num_levels,
                     offset_provider={}
                 )
-                """
                 self.stencil_mo_init_ddt_edge_zero(
                     solve_nonhydro_diagnostic_state.ddt_vn_phy,
                     solve_nonhydro_diagnostic_state.ddt_vn_apc_ntl1,
@@ -1079,6 +1078,7 @@ class TimeLoop:
                     self.grid.num_levels,
                     offset_provider={},
                 )
+            """
 
             self._next_simulation_date()
 
