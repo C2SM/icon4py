@@ -82,7 +82,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 import dace
 from dace.transformation.auto import auto_optimize as autoopt
 from gt4py.next.program_processors.runners.dace_iterator import run_dace_cpu
-from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
+from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange, WaitOnCommHandle
 try:
     import ghex
 except ImportError:
@@ -659,6 +659,7 @@ class Diffusion:
         connectivity_E2C = self.grid.get_offset_provider("E2C")
         connectivity_C2E2C = self.grid.get_offset_provider("C2E2C")
         connectivity_C2CEC = self.grid.get_offset_provider("C2CEC")
+        wait_on_comm_handle = WaitOnCommHandle(self._exchange._comm if isinstance(self._exchange, GHexMultiNodeExchange) else None)
 
         def dace_jit(fuse_func):
             def wrapper(*args, **kwargs):
@@ -720,9 +721,16 @@ class Diffusion:
             log.debug("rbf interpolation 1: end")
 
             log.debug("communication rbf extrapolation of vn - start")
-            self._exchange.prep_halo(VertexDim, 2, True)(self.u_vert, self.v_vert)
+            communication_handle = self._exchange.prep_halo(VertexDim, 2, False)(self.u_vert, self.v_vert)
             log.debug("communication rbf extrapolation of vn - end")
 
+            h1 = wait_on_comm_handle(communication_handle[0])
+
+            print(80*'@', communication_handle[0], flush=True)
+            print(80*'@', h1, flush=True)
+
+            return h1
+        
         fuse()
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")

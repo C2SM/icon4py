@@ -233,13 +233,17 @@ class GHexMultiNodeExchange(SDFGConvertible):
                                data_descriptor.dtype,
                                storage=data_descriptor.storage,
                                strides=data_descriptor.strides)
+            
+            # return communication handle
+            sdfg.add_array("__return", shape=(1,), dtype=dace.uintp)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
-                                            inputs=None,
-                                            outputs=None,
-                                            code='',
-                                            language=dace.dtypes.Language.CPP,
-                                            side_effects=True,)
+                                              inputs=None,
+                                              outputs=None,
+                                              code='',
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=True,)
+            state.add_node(tasklet)
 
             in_connectors = {}
             out_connectors = {}
@@ -255,6 +259,10 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 out_connectors[f'OUT_buffer_{i}'] = dtypes.pointer(data_descriptor.dtype)
                 state.add_edge(tasklet, f'OUT_buffer_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
 
+            return_handle = state.add_write("__return")
+            state.add_edge(tasklet, '__out', return_handle, None, Memlet('__return', subset='0'))
+            out_connectors['__out'] = dace.uintp
+
             tasklet.in_connectors = in_connectors
             tasklet.out_connectors = out_connectors
             tasklet.environments = ['icon4py.model.common.decomposition.mpi_decomposition.DaceGHEX']
@@ -262,6 +270,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             pattern_type = self._patterns[self.dim].__cpp_type__
             domain_descriptor_type = self._domain_descriptors[self.dim].__cpp_type__
             communication_object_type = self._comm.__cpp_type__
+            communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
 
             if self.dim == CellDim:
                 dim = 'CellDim'
@@ -311,8 +320,10 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
                     {fields_desc}
 
-                    auto h = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(self.num_fields)])});
+                    ghex::communication_handle<{communication_handle_type}> h = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(self.num_fields)])});
                     {'h.wait();' if self.wait else ''}
+
+                    __out = reinterpret_cast<uintptr_t>(&h);
                     '''
 
             # # Debugging
@@ -329,6 +340,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             #             outFile << pattern->size() << ", " << pattern->max_tag() << std::endl;
             #             outFile << domain_descriptor->domain_id() << ", " << domain_descriptor->inner_size() << ", " << domain_descriptor->size() << std::endl;
             #             {field_desc_out}
+            #             outFile << __out << std::endl;
             #             outFile.close();
             #         }} else {{
             #             ;
@@ -377,6 +389,77 @@ class GHexMultiNodeExchange(SDFGConvertible):
         for i in range(self.num_fields):
             args.append(f'field_{i}')
         return (args,[])
+
+
+@dataclass
+class WaitOnCommHandle(SDFGConvertible):
+    communication_object: ...
+    return_sdfg : bool = False
+
+    def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
+        if self.return_sdfg:
+            sdfg = dace.SDFG('_halo_exchange_wait_')
+            state = sdfg.add_state()
+
+            for arg in zip(self.__sdfg_signature__()[0], args):
+                buffer_name = arg[0]
+                data_descriptor = arg[1]
+                sdfg.add_scalar(buffer_name, dtype=data_descriptor.dtype)
+
+            # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
+            sdfg.add_array(name='__return', shape=(1,), dtype=dace.int64)
+
+            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_wait_',
+                                              inputs=None,
+                                              outputs=None,
+                                              code='',
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=False,)
+            state.add_node(tasklet)
+            
+            in_connectors = {}
+            out_connectors = {}
+            for i, arg in enumerate(zip(self.__sdfg_signature__()[0], args)):
+                buffer_name = arg[0]
+                data_descriptor = arg[1]
+
+                buffer = state.add_read(buffer_name)
+                in_connectors[buffer_name] = data_descriptor.dtype
+                state.add_edge(buffer, buffer_name, tasklet, buffer_name, Memlet(buffer_name, subset='0'))
+
+            ret = state.add_write('__return')
+            state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
+            out_connectors['__out'] = dace.uintp
+
+            tasklet.in_connectors = in_connectors
+            tasklet.out_connectors = out_connectors
+
+            communication_object_type = self.communication_object.__cpp_type__
+            communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
+
+            code = f'''
+                    reinterpret_cast<ghex::communication_handle<{communication_handle_type}>*>(communication_handle_)->wait();
+                    __out = communication_handle_;
+                    '''
+            tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+
+            return sdfg
+        else:
+            communication_handle = args[0]
+            communication_handle.wait()
+
+    def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
+        self.return_sdfg = True
+        sdfg = self.__call__(*args, **kwargs)
+        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
+        return sdfg
+
+    def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        return {}
+    
+    def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
+        return (['communication_handle_'],[])
+
 
 @dataclass
 class MultiNodeResult:
