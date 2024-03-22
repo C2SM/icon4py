@@ -113,8 +113,8 @@ def compute_geofac_n2s(
         c2e:
         e2c:
         c2e2c:
-	second_boundary_layer_start_index:
-	second_boundary_layer_end_index:
+        second_boundary_layer_start_index:
+        second_boundary_layer_end_index:
     """
     llb = second_boundary_layer_start_index
     geofac_n2s = np.zeros([second_boundary_layer_end_index, 4])
@@ -198,8 +198,8 @@ def compute_geofac_grg(
         c2e:
         e2c:
         c2e2c:
-	second_boundary_layer_start_index:
-	second_boundary_layer_end_index:
+        second_boundary_layer_start_index:
+        second_boundary_layer_end_index:
     """
     llb = second_boundary_layer_start_index
     geofac_grg = np.zeros([second_boundary_layer_end_index, 4, 2])
@@ -255,8 +255,8 @@ def compute_geofac_grdiv(
         c2e:
         e2c:
         c2e2c:
-	second_boundary_layer_start_index:
-	second_boundary_layer_end_index:
+        second_boundary_layer_start_index:
+        second_boundary_layer_end_index:
     """
     llb = second_boundary_layer_start_index
     geofac_grdiv = np.zeros([second_boundary_layer_end_index, 5])
@@ -320,12 +320,12 @@ def compute_c_bln_avg(
     calculate_bilinear_cellavg_wgt
     Args:
         divavg_cntrwgt:
-	owner_mask:
-	c2e2c:
-	lat:
-	lon:
-	second_boundary_layer_start_index:
-	second_boundary_layer_end_index:
+        owner_mask:
+        c2e2c:
+        lat:
+        lon:
+        second_boundary_layer_start_index:
+        second_boundary_layer_end_index:
     """
     llb = second_boundary_layer_start_index
     c_bln_avg = np.zeros([second_boundary_layer_end_index, 4])
@@ -403,15 +403,15 @@ def compute_mass_conservation_c_bln_avg(
     Args:
         c_bln_avg: bilinear cellavg wgt
         divavg_cntrwgt:
-	owner_mask:
-	c2e2c:
-	lat:
-	lon:
-	cell_areas:
-	niter: number of iterations until convergence is assumed
-	second_boundary_layer_start_index:
-	second_boundary_layer_end_index:
-	third_boundary_layer_start_index:
+        owner_mask:
+        c2e2c:
+        lat:
+        lon:
+        cell_areas:
+        niter: number of iterations until convergence is assumed
+        second_boundary_layer_start_index:
+        second_boundary_layer_end_index:
+        third_boundary_layer_start_index:
 
     in this routine halo cell exchanges (sync) are missing
     """
@@ -699,17 +699,17 @@ def gnomonic_proj(
     gnomonic_proj
     Args:
         lon_c, lat_c: center on tangent plane
-	lat, lon: point to be projected
+        lat, lon: point to be projected
     Return values:
-	x, y: coordinates of projected point
+        x, y: coordinates of projected point
 
     Variables:
-	zk: scale factor perpendicular to the radius from the center of the map
-	cosc: cosine of the angular distance of the given point (lat,lon) from the center of projection
+        zk: scale factor perpendicular to the radius from the center of the map
+        cosc: cosine of the angular distance of the given point (lat,lon) from the center of projection
     LITERATURE:
-	Map Projections: A Working Manual, Snyder, 1987, p. 165
+        Map Projections: A Working Manual, Snyder, 1987, p. 165
     TODO:
-	replace this with a suitable library call
+        replace this with a suitable library call
     """
     cosc = np.sin(lat_c) * np.sin(lat) + np.cos(lat_c) * np.cos(lat) * np.cos(lon - lon_c)
     zk = 1.0 / cosc
