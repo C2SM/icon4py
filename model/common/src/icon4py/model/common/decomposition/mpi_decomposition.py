@@ -401,13 +401,16 @@ class WaitOnCommHandle(SDFGConvertible):
             sdfg = dace.SDFG('_halo_exchange_wait_')
             state = sdfg.add_state()
 
-            for arg in zip(self.__sdfg_signature__()[0], args):
-                buffer_name = arg[0]
-                data_descriptor = arg[1]
-                sdfg.add_scalar(buffer_name, dtype=data_descriptor.dtype)
+            buffer_name = self.__sdfg_signature__()[0][0]
+            data_descriptor = args[0]
+            sdfg.add_array(buffer_name,
+                            data_descriptor.shape,
+                            data_descriptor.dtype,
+                            storage=data_descriptor.storage,
+                            strides=data_descriptor.strides)
 
             # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-            sdfg.add_array(name='__return', shape=(1,), dtype=dace.int64)
+            sdfg.add_array(name='__return', shape=(1,), dtype=dace.uintp)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_wait_',
                                               inputs=None,
@@ -419,13 +422,10 @@ class WaitOnCommHandle(SDFGConvertible):
             
             in_connectors = {}
             out_connectors = {}
-            for i, arg in enumerate(zip(self.__sdfg_signature__()[0], args)):
-                buffer_name = arg[0]
-                data_descriptor = arg[1]
 
-                buffer = state.add_read(buffer_name)
-                in_connectors[buffer_name] = data_descriptor.dtype
-                state.add_edge(buffer, buffer_name, tasklet, buffer_name, Memlet(buffer_name, subset='0'))
+            buffer = state.add_read(buffer_name)
+            in_connectors[buffer_name] = dtypes.pointer(data_descriptor.dtype)
+            state.add_edge(buffer, buffer_name, tasklet, buffer_name, Memlet(buffer_name, subset='0'))
 
             ret = state.add_write('__return')
             state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
