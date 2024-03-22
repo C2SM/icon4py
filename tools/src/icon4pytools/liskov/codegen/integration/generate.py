@@ -68,11 +68,13 @@ class IntegrationCodeGenerator(CodeGenerator):
         self,
         interface: IntegrationCodeInterface,
         profile: bool = False,
+        verification: bool=False,
         metadatagen: bool = False,
     ):
         super().__init__()
         self.profile = profile
         self.interface = interface
+        self.verification= verification
         self.metadatagen = metadatagen
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
@@ -115,6 +117,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                 DeclareStatementGenerator,
                 self.interface.Declare[i].startln,
                 declare_data=declare,
+                verification=self.verification
             )
 
     def _generate_start_stencil(self) -> None:
@@ -152,6 +155,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     stencil.startln,
                     stencil_data=stencil,
                     profile=self.profile,
+                    verification=self.verification
                 )
             else:
                 self._generate(
@@ -160,6 +164,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     self.interface.StartStencil[i].startln,
                     stencil_data=stencil,
                     profile=self.profile,
+                    verification=self.verification
                 )
                 i += 1
 
@@ -177,6 +182,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                 self.interface.EndStencil[i].startln,
                 stencil_data=stencil,
                 profile=self.profile,
+                verification=self.verification,
                 noendif=self.interface.EndStencil[i].noendif,
                 noprofile=self.interface.EndStencil[i].noprofile,
                 noaccenddata=self.interface.EndStencil[i].noaccenddata,
@@ -192,6 +198,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     StartFusedStencilStatementGenerator,
                     stencil.startln,
                     stencil_data=stencil,
+                    verification=self.verification,
                 )
 
     def _generate_end_fused_stencil(self) -> None:
@@ -204,6 +211,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     EndFusedStencilStatementGenerator,
                     self.interface.EndFusedStencil[i].startln,
                     stencil_data=stencil,
+                    verification=self.verification,
                 )
 
     def _generate_delete(self) -> None:
@@ -234,6 +242,7 @@ class IntegrationCodeGenerator(CodeGenerator):
             ImportsStatementGenerator,
             self.interface.Imports.startln,
             stencils=[*self.interface.StartStencil, *self.interface.StartFusedStencil],
+            verification=self.verification,
         )
 
     def _generate_create(self) -> None:

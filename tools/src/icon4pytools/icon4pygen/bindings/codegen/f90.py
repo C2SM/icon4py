@@ -40,7 +40,6 @@ class F90Generator(TemplatedGenerator):
         implicit none
         interface
         {{run_fun}}
-        {{run_fun}}
         {{run_and_verify_fun}}
         {{setup_fun}}
         subroutine &
