@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-
+import pytest
 from gt4py.next import np_as_located_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common.dimension import (
@@ -27,15 +27,16 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 
-from icon4pytools.py2fgen.config import DEFAULT_ARRAY_NS
+from icon4pytools.py2fgen.config import Icon4PyConfig
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 
 # Choose array backend
-xp = DEFAULT_ARRAY_NS
+config = Icon4PyConfig()
+xp = config.ARRAY_NS
 
 
-# @pytest.mark.skip("Enable manually for local testing.")
+@pytest.mark.skip("Enable manually for local testing.")
 def test_diffusion_wrapper_py():
     # grid parameters
     num_cells = 20480
