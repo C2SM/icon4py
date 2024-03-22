@@ -315,7 +315,9 @@ def expected_insert_source():
 
 @pytest.fixture
 def integration_code_generator(integration_code_interface):
-    return IntegrationCodeGenerator(integration_code_interface, profile=True, metadatagen=False, verification=True)
+    return IntegrationCodeGenerator(
+        integration_code_interface, profile=True, metadatagen=False, verification=True
+    )
 
 
 def test_integration_code_generation(
