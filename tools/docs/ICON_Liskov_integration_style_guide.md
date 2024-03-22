@@ -19,6 +19,18 @@ The code should look as clean and concise as possible. Also it should be similar
 - `!$DSL INSERT` one empty line before and after, unless the inserted code is part of an `ACC` data region, or a function call.
 - `!$DSL START CREATE` after the `!$ACC CREATE` block, no empty line before and one empty line after.
 
+## Content of DSL statements
+
+- In `!$DSL START STENCIL` and `!$DSL START FUSED STENCIL`:
+  - each argument (`name` included) should appear on a new line and aligned with the beginning of the first argument (generally `name`);
+  - any equal sign `=` should be preceeded and followed by a single space;
+  - the opening and closing round bracket should be followed and preceeded by a single space, respectively. Ignore this if the statement is on a single line.
+- In `!$DSL DECLARE`:
+  - each argument (`type` included) should appear on a new line and aligned with the beginning of the first argument;
+  - any equal sign `=` should be preceeded and followed by a single space;
+  - any comma `,` should be followed by a single space, but no space should be added before;
+  - the opening and closing round bracket should be followed and preceeded by a single space, respectively. Ignore this if the statement is on a single line.
+
 ## Example
 
 ```fortran
@@ -52,10 +64,12 @@ SUBROUTINE diffusion(p_nh_prog,p_nh_diag,p_nh_metrics,p_patch,p_int,dtime,linit)
 
     REAL(wp) :: r_dtimensubsteps
 
-    !$DSL DECLARE(vn=nproma,p_patch%nlev,p_patch%nblks_e; &
-    !$DSL      exner=nproma,p_patch%nlev,p_patch%nblks_c; type=REAL(wp))
-    !$DSL DECLARE(kh_c=nproma,p_patch%nlev; &
-    !$DSL         z_nabla2_c=nproma,p_patch%nlev,p_patch%nblks_e; type=REAL(vp))
+    !$DSL DECLARE( vn = nproma, p_patch%nlev, p_patch%nblks_e; &
+    !$DSL          exner = nproma, p_patch%nlev, p_patch%nblks_c; &
+    !$DSL          type = REAL(wp) )
+    !$DSL DECLARE( kh_c = nproma, p_patch%nlev; &
+    !$DSL          z_nabla2_c = nproma, p_patch%nlev, p_patch%nblks_e;
+    !$DSL          type = REAL(vp) )
 
     !$DSL INSERT(REAL(vp) :: smallest_vpfloat = -HUGE(0._vp))
 
@@ -74,9 +88,15 @@ SUBROUTINE diffusion(p_nh_prog,p_nh_diag,p_nh_metrics,p_patch,p_int,dtime,linit)
 
 
         ! Computation of wind field deformation
-        !$DSL START STENCIL(name=calculate_nabla2_and_smag_coefficients_for_vn; smag_offset=smag_offset; &
-        !$DSL               kh_smag_e_rel_tol=1e-10_wp; kh_smag_ec_rel_tol=1e-10_wp; z_nabla2_e_rel_tol=1e-07_wp; &
-        !$DSL               vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+        !$DSL START STENCIL( name = calculate_nabla2_and_smag_coefficients_for_vn; &
+        !$DSL                smag_offset = smag_offset; &
+        !$DSL                kh_smag_e_rel_tol = 1e-10_wp; &
+        !$DSL                kh_smag_ec_rel_tol = 1e-10_wp; &
+        !$DSL                z_nabla2_e_rel_tol = 1e-07_wp; &
+        !$DSL                vertical_lower = 1; &
+        !$DSL                vertical_upper = nlev; &
+        !$DSL                horizontal_lower = i_startidx; &
+        !$DSL                horizontal_upper = i_endidx )
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
 
 !$NEC outerloop_unroll(4)
@@ -88,7 +108,7 @@ DO je = i_startidx, i_endidx
           ENDDO
         ENDDO
         !$ACC END PARALLEL LOOP
-        !$DSL END STENCIL(name=calculate_nabla2_and_smag_coefficients_for_vn)
+        !$DSL END STENCIL(name = calculate_nabla2_and_smag_coefficients_for_vn)
 
       ENDDO ! block jb
 
@@ -97,15 +117,24 @@ DO je = i_startidx, i_endidx
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, rl_end)
 
-        !$DSL START FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence; &
-        !$DSL  hdef_ic=p_nh_diag%hdef_ic(:,:,1); &
-        !$DSL  div_ic_abs_tol=1e-18_wp; vertical_lower=2; &
-        !$DSL  vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+        !$DSL START FUSED STENCIL( name = calculate_diagnostic_quantities_for_turbulence; &
+        !$DSL                      hdef_ic = p_nh_diag%hdef_ic(:,:,1); &
+        !$DSL                      div_ic_abs_tol = 1e-18_wp; &
+        !$DSL                      vertical_lower = 2; &
+        !$DSL                      vertical_upper = nlev; &
+        !$DSL                      horizontal_lower = i_startidx; &
+        !$DSL                      horizontal_upper = i_endidx )
 
-        !$DSL START STENCIL(name=temporary_fields_for_turbulence_diagnostics; kh_smag_ec=kh_smag_ec(:,:,1); vn=p_nh_prog%vn(:,:,1); &
-        !$DSL       diff_multfac_smag=diff_multfac_smag(:); kh_c=kh_c(:,:); div=div(:,:); &
-        !$DSL       vertical_lower=1; vertical_upper=nlev; horizontal_lower=i_startidx; &
-        !$DSL       horizontal_upper=i_endidx)
+        !$DSL START STENCIL( name = temporary_fields_for_turbulence_diagnostics; &
+        !$DSL                kh_smag_ec = kh_smag_ec(:,:,1); &
+        !$DSL                vn = p_nh_prog%vn(:,:,1); &
+        !$DSL                diff_multfac_smag = diff_multfac_smag(:); &
+        !$DSL                kh_c = kh_c(:,:); &
+        !$DSL                div = div(:,:); &
+        !$DSL                vertical_lower = 1; &
+        !$DSL                vertical_upper = nlev; &
+        !$DSL                horizontal_lower = i_startidx; &
+        !$DSL                horizontal_upper = i_endidx )
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
         DO jk = 1, nlev
           DO jc = i_startidx, i_endidx
@@ -115,10 +144,16 @@ DO je = i_startidx, i_endidx
           ENDDO
         ENDDO
         !$ACC END PARALLEL LOOP
-        !$DSL END STENCIL(name=temporary_fields_for_turbulence_diagnostics)
+        !$DSL END STENCIL(name = temporary_fields_for_turbulence_diagnostics)
 
-        !$DSL START STENCIL(name=calculate_diagnostics_for_turbulence; div=div; kh_c=kh_c; wgtfac_c=p_nh_metrics%wgtfac_c(:,:,1); &
-        !$DSL               vertical_lower=2; vertical_upper=nlev; horizontal_lower=i_startidx; horizontal_upper=i_endidx)
+        !$DSL START STENCIL( name = calculate_diagnostics_for_turbulence; 
+        !$DSL                div = div; &
+        !$DSL                kh_c = kh_c; &
+        !$DSL                wgtfac_c = p_nh_metrics%wgtfac_c(:,:,1); &
+        !$DSL                vertical_lower = 2; &
+        !$DSL                vertical_upper = nlev; &
+        !$DSL                horizontal_lower = i_startidx; &
+        !$DSL                horizontal_upper = i_endidx )
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
         DO jk = 2, nlev ! levels 1 and nlevp1 are unused
 
@@ -130,9 +165,9 @@ DO jc = i_startidx, i_endidx
           ENDDO
         ENDDO
         !$ACC END PARALLEL LOOP
-        !$DSL END STENCIL(name=calculate_diagnostics_for_turbulence)
+        !$DSL END STENCIL(name = calculate_diagnostics_for_turbulence)
 
-        !$DSL END FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)
+        !$DSL END FUSED STENCIL(name = calculate_diagnostic_quantities_for_turbulence)
 
 
     ...
