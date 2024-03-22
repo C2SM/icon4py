@@ -11,14 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import xa
-from gt4py._core.definitions import ScalarT
-from gt4py.next import Field
-from gt4py.next.common import DimsT
-from typing_extensions import Protocol
-from xarray import DataArray
+from gt4py.next.common import DimensionKind
 
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.grid_manager import GridFile
+from icon4py.model.driver.io.xgrid import dimension_mapping, ugrid_attributes
 
 
 ### CF attributes of the prognostic variables
@@ -43,43 +38,31 @@ diagnostic_attrs = dict(eastward_wind = dict(
 ),)
 
 
-class Dimensions(GridFile.DimensionName):
-    TIME = "time"
-    HEIGHT = "level"
-    PRESSURE_LEVEL = "pressure_level"
-    
-    
-class AnnotatedField:
-    def __init__(self, field: Protocol[DimsT, ScalarT], name: str, attrs: dict):
-        self.field = field
-        self.name = name
-        self.attrs = attrs
-        self.coords = None
 
     
-    
-    def to_data_array(self, grid_ds: xa.Dataset) -> xa.DataArray:
-        """Convert a gt4py field to a xarray dataset"""
-        # TODO (magdalena) need to know the dimension because that determines the data array
-        return xa.DataArray(data=self.field.asnumpy(), dims=["lat", "lon", "height"], attrs=self.attrs)
-    
-    def set_coords(self, coords: tuple[DataArray, DataArray]):
-        self.coords = coords  
 
-
-# create a a xarray dataarray from a gt4py field
+# TODO (halungge): add typing for the field, build from already attributed field
 def to_data_array(
-    field: Field[[CellDim, KDim], float], coords: tuple[DataArray, DataArray], attrs: dict
+    field, name:str = None, attrs: dict = {}
 ) -> xa.DataArray:
-    """Convert a gt4py field to a xarray dataset"""
-    return xa.DataArray(data=field.asnumpy(), coords=coords, dims=["lat", "lon", "height"], attrs=attrs)
+    """Convert a gt4py field to a xarray dataarray"""
+    dims = tuple(dimension_mapping[d.value] for d in field.domain.dims)
+    horizontal_dim = filter(lambda d: _is_horizontal(d), field.domain.dims)
+    uxgrid_attrs = ugrid_attributes(horizontal_dim)
+    attrs.update(uxgrid_attrs)
+    return xa.DataArray(data=field.ndarray,  dims=dims, attrs=attrs)
+
+
+def _is_horizontal(dim):
+    return dim.kind == DimensionKind.HORIZONTAL
+
+
 
 class OutputFile:
     def __init__(self, filename: str, grid_ds: xa.Dataset):
         self.filename = filename
         self.grid = grid_ds    
         
-        dims = Dimensions()
         
         
     

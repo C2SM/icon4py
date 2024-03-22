@@ -16,3 +16,4 @@ import cfdm as cf
 
 def test_create_dataarray():
     cf.CF()
+    cf.datum

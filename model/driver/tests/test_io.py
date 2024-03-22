@@ -14,6 +14,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
+from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.driver.io.io import FieldGroupMonitor, FieldIoConfig, IoConfig, to_delta
 
 
@@ -53,8 +54,9 @@ def test_io_monitor_output_time_updates_on_store():
     assert io_system.next_output_time == datetime.fromisoformat("2022-01-01T01:00:00")
     #TODO (magdalena) how to deal with non time matches? That is if the model time jumps over the output time
     
-  
-def test_io_monitor_fields_copied_on_store():
+@pytest.mark.datatest
+def test_io_monitor_fields_copied_on_store(grid_savepoint):
+    heights = grid_savepoint.vct_a()
     config = IoConfig(
         base_name="icon4py_atm_",
         filename_pattern="{base_name}_{time}.nc",
@@ -63,8 +65,9 @@ def test_io_monitor_fields_copied_on_store():
         output_interval="1 HOUR",
         variables=["normal_velocity", "air_density"],
     )
+    vertical = VerticalModelParams(heights)
     state = {"normal_velocity": dict(), "air_density": dict()}
-    io_system = FieldGroupMonitor(config)
+    io_system = FieldGroupMonitor(config, vertical_model_params=vertical)
     io_system.store(state, datetime.fromisoformat(config.start_time))
     #state["normal_velocity"] = 2.0
     assert False

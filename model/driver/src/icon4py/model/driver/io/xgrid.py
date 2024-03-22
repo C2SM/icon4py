@@ -14,8 +14,14 @@
 import contextlib
 from pathlib import Path
 
+from gt4py.next import Dimension, DimensionKind
+
 import uxarray
 import xarray as xa
+
+from icon4py.model.common.dimension import CellDim, KDim, EdgeDim, VertexDim
+
+MESH = "mesh"
 
 
 @contextlib.contextmanager
@@ -39,9 +45,29 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
     )
 
 
+dimension_mapping = {
+    CellDim:"cell",
+    KDim: "height",
+    EdgeDim:"edge",
+    VertexDim:"vertex"
+}
 
-    
-    
+coordinates_mapping={
+    CellDim: "clon clat",
+    VertexDim: "vlon vlat",
+    EdgeDim: "elon elat",
+}
+location_mapping = {
+    CellDim:"face",
+    VertexDim:"node",
+    EdgeDim:"edge",
+}
+
+def ugrid_attributes(dim:Dimension)->dict:
+    if dim.kind == DimensionKind.HORIZONTAL:
+        return dict(location=location_mapping[dim], coordinates=coordinates_mapping[dim], mesh=MESH)
+    else:
+        return {}
 def extract_bounds(ds: xa.Dataset):
     """
     Extract the bounds from the ICON grid file.

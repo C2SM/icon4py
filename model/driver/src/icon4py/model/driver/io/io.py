@@ -16,6 +16,12 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from dask.delayed import Delayed
+from xarray import DataArray, Dataset
+
+from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.driver.io.data import to_data_array
+
 
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
@@ -119,15 +125,41 @@ class FieldGroupMonitor(Monitor):
     @property
     def time_delta(self):
         return self._time_delta
-    def __init__(self, config: FieldIoConfig):
+    def __init__(self, config: FieldIoConfig, vertical:VerticalModelParams):
         self._next_output_time = datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
         self._field_names = config.filename_pattern
         self._variables = config.variables
+        self._dataset = self._init_dataset(vertical)
+        self._writer = NetCDFWriter(config.filename_pattern)
 
-
+    #initalise this Monitors dataset with:
+    # - global attributes
+    # - unlimited time dimension
+    # - vertical dimension
+    # - horizontal dimensions
+    def _init_dataset(self,vertical_grid:VerticalModelParams):
+        # dimension ordering T (ime),Z (height), lat, lon
+        attrs = dict(
+            Conventions="CF-1.7", # TODO (halungge) check changelog? latest version is 1.11
+            title="ICON4Py output", # TODO (halungge) let user define
+            institution="ETH Zurich and MeteoSwiss",
+            source="ICON4Py",
+            history="Created by ICON4Py",
+            references="https://icon4py.github.io",
+            comment="ICON inspired code in Python and GT4Py",
+            external_variables="",# TODO (halungge) add list of fields in ugrid file
+            uuidOfHGrid="", # TODO (halungge) add uuid of the grid
+        )
+        
+        time = DataArray([],name="time", attrs=dict(standard_name="time", long_name="time", units="seconds since 1970-01-01 00:00:00"))
+        level = to_data_array(vertical_grid.vct_a, attrs=dict(standard_name="height", long_name="height", units="m"))
+        coord_vars = dict(time=time, level=level) 
+        self._dataset = Dataset(data_vars=None, coords=coord_vars, attrs=attrs)
     def _update_fetch_times(self):
         self._next_output_time = self._next_output_time + self._time_delta
+
+    
 
     def store(self, state, model_time, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
@@ -142,6 +174,7 @@ class FieldGroupMonitor(Monitor):
             # this should do a deep copy of the data
             state_to_store = {field: state[field] for field in self._field_names}
             self._update_fetch_times()
+            
             # TODO (halungge) copy data buffer and trigger the processing chain asynchronously?
             
             # trigger processing chain asynchronously
@@ -153,17 +186,26 @@ class FieldGroupMonitor(Monitor):
 
 class IoMonitor(Monitor):
     """
-    Monitor implementation for Field IO.
+    Composite Monitor for all IO Groups
     """
 
     def __init__(self, config: IoConfig, **kwargs):
         config.validate()
         self._chains = [FieldGroupMonitor(conf) for conf in config.field_configs]
-            
-       
-        
-        
         self.config = config
         self.kwargs = kwargs
+
+
+class NetCDFWriter:
+    def __init__(self, filename, mode="a"):
+        self.filename = filename
+        self.mode = mode
         
-   
+
+    def write(self, dataset: Dataset, immediate=True)->[Delayed|None]:
+        delayed = dataset.to_netcdf(self.filename, mode=self.mode, engine="netcdf4", format="NETCDF4", unlimited_dims=["time"], compute=immediate)
+        return delayed
+    def close(self):
+        self.dataset.close()
+        self.dataset = None
+        return self.dataset
