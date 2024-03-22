@@ -212,7 +212,6 @@ class EndFusedStencilStatement(EndBasicStencilStatement):
         if self.verification:
             self.tolerance_fields = ToleranceFields(
                 fields=[f for f in all_fields if f.rel_tol or f.abs_tol],
-                verification=self.verification,
             )
         else:
             self.tolerance_fields = ToleranceFields(fields=[])
@@ -378,13 +377,13 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
 
-        {%- if _this_node.verification %}
+        {% if _this_node.verification %}
         !$ACC DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
         !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
         !$ACC      IF ( i_am_accel_node )
-        {%- endif -%}
+        {% endif %}
 
         #ifdef __DSL_VERIFY
         {%- if _this_node.verification %}
@@ -439,14 +438,7 @@ class ImportsStatement(eve.Node):
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """
-        {% for name in stencil_names %}
-        {%- if _this_node.verification %}
-        USE {{ name }}, ONLY: wrap_run_and_verify_{{ name }}\n
-        {% else %}
-        USE {{ name }}, ONLY: wrap_run_{{ name }}\n
-        {%- endif -%}
-        {% endfor %}"""
+        """  {% for name in stencil_names %}{% if _this_node.verification %}USE {{name}}, ONLY: wrap_run_and_verify_{{name}}\n{% else %}USE {{name}}, ONLY: wrap_run_{{name}}\n{% endif %}{% endfor %}"""
     )
 
 
