@@ -12,14 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import warnings
 from pathlib import Path
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, List
 
-from gt4py.next import common
 from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import KDim, Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
 from icon4pytools.icon4pygen.metadata import StencilInfo
@@ -118,7 +117,6 @@ def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
 def generate_gtheader(
     fencil: itir.FencilDefinition,
     offset_provider: dict[str, Connectivity | Dimension],
-    column_axis: Optional[common.Dimension],
     imperative: bool,
     temporaries: bool,
     **kwargs: Any,
@@ -146,7 +144,7 @@ def generate_gtheader(
     return translation.generate_stencil_source(
         transformed_fencil,
         offset_provider=offset_provider,
-        column_axis=column_axis,
+        column_axis=KDim,  # only used for ScanOperator
         **kwargs,
     )
 
@@ -162,7 +160,6 @@ class GTHeader:
         gtheader = generate_gtheader(
             fencil=self.stencil_info.itir,
             offset_provider=self.stencil_info.offset_provider,
-            column_axis=self.stencil_info.column_axis,
             imperative=imperative,
             temporaries=temporaries,
         )
