@@ -164,8 +164,6 @@ class DeclareStatementGenerator(TemplatedGenerator):
     )
 
 
-
-
 class EndBasicStencilStatement(eve.Node):
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
@@ -187,13 +185,16 @@ class EndStencilStatement(EndBasicStencilStatement):
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
         self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
-        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out], verification=self.verification)
+        self.output_fields = OutputFields(
+            fields=[f for f in all_fields if f.out], verification=self.verification
+        )
         if self.verification:
-          self.tolerance_fields = ToleranceFields(
-              fields=[f for f in all_fields if f.rel_tol or f.abs_tol],
-          )
+            self.tolerance_fields = ToleranceFields(
+                fields=[f for f in all_fields if f.rel_tol or f.abs_tol],
+            )
         else:
-          self.tolerance_fields = ToleranceFields(fields=[])
+            self.tolerance_fields = ToleranceFields(fields=[])
+
 
 class EndFusedStencilStatement(EndBasicStencilStatement):
     stencil_data: StartFusedStencilData
@@ -205,14 +206,16 @@ class EndFusedStencilStatement(EndBasicStencilStatement):
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
         self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
-        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out], verification=self.verification)
+        self.output_fields = OutputFields(
+            fields=[f for f in all_fields if f.out], verification=self.verification
+        )
         if self.verification:
-          self.tolerance_fields = ToleranceFields(
-              fields=[f for f in all_fields if f.rel_tol or f.abs_tol], verification=self.verification
-          )
+            self.tolerance_fields = ToleranceFields(
+                fields=[f for f in all_fields if f.rel_tol or f.abs_tol],
+                verification=self.verification,
+            )
         else:
-          self.tolerance_fields = ToleranceFields(fields=[])
-
+            self.tolerance_fields = ToleranceFields(fields=[])
 
 
 class BaseEndStencilStatementGenerator(TemplatedGenerator):

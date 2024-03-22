@@ -68,13 +68,13 @@ class IntegrationCodeGenerator(CodeGenerator):
         self,
         interface: IntegrationCodeInterface,
         profile: bool = False,
-        verification: bool=False,
+        verification: bool = False,
         metadatagen: bool = False,
     ):
         super().__init__()
         self.profile = profile
         self.interface = interface
-        self.verification= verification
+        self.verification = verification
         self.metadatagen = metadatagen
 
     def __call__(self, data: Any = None) -> list[GeneratedCode]:
@@ -117,7 +117,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                 DeclareStatementGenerator,
                 self.interface.Declare[i].startln,
                 declare_data=declare,
-                verification=self.verification
+                verification=self.verification,
             )
 
     def _generate_start_stencil(self) -> None:
@@ -155,7 +155,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     stencil.startln,
                     stencil_data=stencil,
                     profile=self.profile,
-                    verification=self.verification
+                    verification=self.verification,
                 )
             else:
                 self._generate(
@@ -164,7 +164,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     self.interface.StartStencil[i].startln,
                     stencil_data=stencil,
                     profile=self.profile,
-                    verification=self.verification
+                    verification=self.verification,
                 )
                 i += 1
 
