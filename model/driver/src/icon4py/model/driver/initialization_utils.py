@@ -288,6 +288,12 @@ def model_initialization_jabw(
     theta_v = as_field((CellDim, KDim), theta_v_numpy)
     pressure_ifc = as_field((CellDim, KDim), np.zeros((cell_size, num_levels), dtype=float))
 
+    vn_next = as_field((EdgeDim, KDim), vn_numpy)
+    w_next = as_field((CellDim, KDim), w_numpy)
+    exner_next = as_field((CellDim, KDim), exner_numpy)
+    rho_next = as_field((CellDim, KDim), rho_numpy)
+    theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
+
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
@@ -330,11 +336,11 @@ def model_initialization_jabw(
         exner=exner,
     )
     prognostic_state_next = PrognosticState(
-        w=w,
-        vn=vn,
-        theta_v=theta_v,
-        rho=rho,
-        exner=exner,
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
     )
 
     diffusion_diagnostic_state = DiffusionDiagnosticState(

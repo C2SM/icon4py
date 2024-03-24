@@ -249,6 +249,15 @@ class OutputState:
                     "ncells",
                 ),
             )
+            vn = self._nf4_basegrp[i].createVariable(
+                "vn",
+                "f8",
+                (
+                    "time",
+                    "height_2",
+                    "ncells_2",
+                ),
+            )
             temperature = self._nf4_basegrp[i].createVariable(
                 "temperature",
                 "f8",
@@ -477,6 +486,7 @@ class OutputState:
 
             u.standard_name = "eastward_wind"
             v.standard_name = "northward_wind"
+            vn.standard_name = "wind"
             w.standard_name = "upward_air_velocity"
             temperature.standard_name = "air_temperature"
             pressure.standard_name = "air_pressure"
@@ -487,6 +497,7 @@ class OutputState:
 
             u.long_name = "Zonal wind"
             v.long_name = "Meridional wind"
+            vn.long_name = "Wind"
             w.long_name = "Vertical velocity"
             temperature.long_name = "Temperature"
             pressure.long_name = "Pressure"
@@ -497,6 +508,7 @@ class OutputState:
 
             u.CDI_grid_type = "unstructured"
             v.CDI_grid_type = "unstructured"
+            vn.CDI_grid_type = "unstructured"
             w.CDI_grid_type = "unstructured"
             temperature.CDI_grid_type = "unstructured"
             pressure.CDI_grid_type = "unstructured"
@@ -507,6 +519,7 @@ class OutputState:
 
             u.number_of_grid_in_reference = 1
             v.number_of_grid_in_reference = 1
+            vn.number_of_grid_in_reference = 1
             w.number_of_grid_in_reference = 1
             temperature.number_of_grid_in_reference = 1
             pressure.number_of_grid_in_reference = 1
@@ -517,6 +530,7 @@ class OutputState:
 
             u.coordinates = "clat clon"
             v.coordinates = "clat clon"
+            vn.coordinates = "elat elon"
             w.coordinates = "clat clon"
             temperature.coordinates = "clat clon"
             pressure.coordinates = "clat clon"
@@ -731,6 +745,9 @@ class OutputState:
         self._nf4_basegrp[self._current_file_number].variables["v"][
             self._current_write_step, :, :
         ] = diagnostic_state.v.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["vn"][
+            self._current_write_step, :, :
+        ] = prognostic_state.vn.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["w"][
             self._current_write_step, :, :
         ] = prognostic_state.w.asnumpy().transpose()
