@@ -137,7 +137,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate_indices,
     _calculate_divdamp_fields,
     compute_z_raylfac,
-
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
@@ -1665,7 +1664,7 @@ class SolveNonhydro:
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
             horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2, # TODO: (halungge) this is actually the second halo line
+            horizontal_end=end_edge_local_minus2,  # TODO: (halungge) this is actually the second halo line
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
