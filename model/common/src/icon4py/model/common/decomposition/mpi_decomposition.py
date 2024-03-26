@@ -322,10 +322,10 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
                     {fields_desc}
 
-                    ghex::communication_handle<{communication_handle_type}> h = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args[2:]))])});
-                    {'h.wait();' if wait else ''}
+                    __state->h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args[2:]))])});
+                    { '__state->h_'+str(id(self._comm))+'.wait();' if wait else ''}
 
-                    __out = reinterpret_cast<uintptr_t>(&h);
+                    __out = reinterpret_cast<uintptr_t>(&__state->h_{id(self._comm)});
                     '''
 
             # # Debugging
@@ -350,6 +350,8 @@ class GHexMultiNodeExchange(SDFGConvertible):
             #         '''
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+            if self.counter == 0:
+                tasklet.state_fields = [f'ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};']
 
             return sdfg
         else:
