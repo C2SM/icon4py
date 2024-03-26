@@ -244,7 +244,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
                                strides=data_descriptor.strides)
             
             # return communication handle
-            sdfg.add_array("__return", shape=(1,), dtype=dace.uintp)
+            sdfg.add_scalar("__return", dtype=dace.uintp)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
                                               inputs=None,
@@ -404,14 +404,10 @@ class WaitOnCommHandle(SDFGConvertible):
 
             buffer_name = self.__sdfg_signature__()[0][0]
             data_descriptor = args[0]
-            sdfg.add_array(buffer_name,
-                           data_descriptor.shape,
-                           data_descriptor.dtype,
-                           storage=data_descriptor.storage,
-                           strides=data_descriptor.strides)
+            sdfg.add_scalar(buffer_name, data_descriptor.dtype, storage=data_descriptor.storage)
 
             # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-            sdfg.add_array(name='__return', shape=(1,), dtype=dace.uintp)
+            sdfg.add_scalar(name='__return', dtype=dace.uintp)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_wait_',
                                               inputs=None,
@@ -439,7 +435,7 @@ class WaitOnCommHandle(SDFGConvertible):
             communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
 
             code = f'''
-                    reinterpret_cast<ghex::communication_handle<{communication_handle_type}>*>(communication_handle_)->wait();
+                    __state->h_{id(self.communication_object)}.wait(); //reinterpret_cast<ghex::communication_handle<{communication_handle_type}>*>(communication_handle_)->wait();
                     __out = communication_handle_;
                     '''
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
