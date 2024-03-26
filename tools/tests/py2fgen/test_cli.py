@@ -48,7 +48,7 @@ def run_test_case(
     expected_error_code: int = 0,
 ):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function, plugin_name, "--backend", backend, "-d"])
+        result = cli.invoke(main, [module, function, plugin_name, "-b", backend, "-d"])
         assert result.exit_code == 0, "CLI execution failed"
 
         try:

@@ -27,7 +27,7 @@ from icon4pytools.py2fgen.template import CffiPlugin, Func, FuncParameter
 from icon4pytools.py2fgen.utils import parse_type_spec
 
 
-class ImportExtractor(ast.NodeVisitor):
+class ImportStmtVisitor(ast.NodeVisitor):
     """AST Visitor to extract import statements."""
 
     def __init__(self):
@@ -48,8 +48,8 @@ class ImportExtractor(ast.NodeVisitor):
             self.import_statements.append(import_statement)
 
 
-class FuncDefVisitor(ast.NodeVisitor):
-    """AST Visitor to extract function definitions and type hints."""
+class TypeHintVisitor(ast.NodeVisitor):
+    """AST Visitor to extract function parameter type hints."""
 
     def __init__(self):
         self.type_hints: dict[str, str] = {}
@@ -59,6 +59,10 @@ class FuncDefVisitor(ast.NodeVisitor):
             if arg.annotation:
                 annotation = ast.unparse(arg.annotation)
                 self.type_hints[arg.arg] = annotation
+            else:
+                raise TypeError(
+                    f"Missing type hint for parameter '{arg.arg}' in function '{node.name}'"
+                )
 
 
 def parse(module_name: str, functions: list[str], plugin_name: str) -> CffiPlugin:
@@ -77,6 +81,14 @@ def parse(module_name: str, functions: list[str], plugin_name: str) -> CffiPlugi
     )
 
 
+def _extract_import_statements(module: ModuleType) -> list[str]:
+    src = inspect.getsource(module)
+    tree = ast.parse(src)
+    visitor = ImportStmtVisitor()
+    visitor.visit(tree)
+    return visitor.import_statements
+
+
 def _parse_function(module: ModuleType, function_name: str) -> Func:
     func = unwrap(getattr(module, function_name))
     is_gt4py_program = isinstance(func, Program)
@@ -89,6 +101,32 @@ def _parse_function(module: ModuleType, function_name: str) -> Func:
     )
 
     return Func(name=function_name, args=params, is_gt4py_program=is_gt4py_program)
+
+
+def _extract_type_hint_strings(
+    module: ModuleType, func: Callable, is_gt4py_program: bool, function_name: str
+):
+    src = extract_function_signature(
+        inspect.getsource(module) if is_gt4py_program else inspect.getsource(func), function_name
+    )
+    tree = ast.parse(src)
+    visitor = TypeHintVisitor()
+    visitor.visit(tree)
+    return visitor.type_hints
+
+
+def extract_function_signature(code: str, function_name: str) -> str:
+    # This pattern attempts to match function definitions
+    pattern = rf"\bdef\s+{re.escape(function_name)}\s*\(([\s\S]*?)\)\s*:"
+
+    match = re.search(pattern, code)
+
+    if match:
+        # Constructing the full signature with empty return for ease of parsing by AST visitor
+        signature = match.group()
+        return signature.strip() + "\n  return None"
+    else:
+        raise Exception(f"Could not parse function signature from the following code:\n {code}")
 
 
 def _get_gt4py_func_params(func: Program, type_hints: dict[str, str]) -> List[FuncParameter]:
@@ -108,9 +146,7 @@ def _get_simple_func_params(func: Callable, type_hints: dict[str, str]) -> List[
     return [
         FuncParameter(
             name=s,
-            d_type=parse_type_spec(from_type_hint(param.annotation))[
-                1
-            ],  # todo: add error for missing type hint, also fix parsing if return type hint is given in function
+            d_type=parse_type_spec(from_type_hint(param.annotation))[1],
             dimensions=[
                 Dimension(value=d.value)
                 for d in parse_type_spec(from_type_hint(param.annotation))[0]
@@ -119,37 +155,3 @@ def _get_simple_func_params(func: Callable, type_hints: dict[str, str]) -> List[
         )
         for s, param in sig_params.items()
     ]
-
-
-def _extract_type_hint_strings(
-    module: ModuleType, func: Callable, is_gt4py_program: bool, function_name: str
-):
-    src = extract_function_signature(
-        inspect.getsource(module) if is_gt4py_program else inspect.getsource(func), function_name
-    )
-    tree = ast.parse(src)
-    visitor = FuncDefVisitor()
-    visitor.visit(tree)
-    return visitor.type_hints
-
-
-def extract_function_signature(code: str, function_name: str) -> str:
-    # This pattern attempts to match function definitions
-    pattern = rf"\bdef\s+{re.escape(function_name)}\s*\(([\s\S]*?)\)\s*:"
-
-    match = re.search(pattern, code)
-
-    if match:
-        # Constructing the full signature with empty return for ease of parsing by AST visitor
-        signature = match.group()
-        return signature.strip() + "\n  return None"
-    else:
-        raise Exception(f"Could not parse function signature from the following code:\n {code}")
-
-
-def _extract_import_statements(module: ModuleType) -> list[str]:
-    src = inspect.getsource(module)
-    tree = ast.parse(src)
-    visitor = ImportExtractor()
-    visitor.visit(tree)
-    return visitor.import_statements

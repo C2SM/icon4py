@@ -11,8 +11,21 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4pytools.py2fgen.parsing import parse
+import ast
+
+import pytest
+
+from icon4pytools.py2fgen.parsing import ImportStmtVisitor, TypeHintVisitor, parse
 from icon4pytools.py2fgen.template import CffiPlugin
+
+
+source = """
+import foo
+import bar
+
+def test_function(x: Field[[EdgeDim, KDim], float64], y: int):
+    return x * y
+"""
 
 
 def test_parse_functions_on_wrapper():
@@ -20,3 +33,26 @@ def test_parse_functions_on_wrapper():
     functions = ["diffusion_init", "diffusion_run"]
     plugin = parse(module_path, functions, "diffusion_plugin")
     assert isinstance(plugin, CffiPlugin)
+
+
+def test_import_visitor():
+    tree = ast.parse(source)
+    extractor = ImportStmtVisitor()
+    extractor.visit(tree)
+    expected_imports = ["import foo", "import bar"]
+    assert extractor.import_statements == expected_imports
+
+
+def test_type_hint_visitor():
+    tree = ast.parse(source)
+    visitor = TypeHintVisitor()
+    visitor.visit(tree)
+    expected_type_hints = {"x": "Field[[EdgeDim, KDim], float64]", "y": "int"}
+    assert visitor.type_hints == expected_type_hints
+
+
+def test_function_missing_type_hints():
+    tree = ast.parse(source.replace(": int", ""))
+    visitor = TypeHintVisitor()
+    with pytest.raises(TypeError):
+        visitor.visit(tree)
