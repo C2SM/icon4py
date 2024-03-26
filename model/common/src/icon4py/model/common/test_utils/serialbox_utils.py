@@ -134,6 +134,12 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def v_dual_area(self):
+        return self._get_field("v_dual_area", VertexDim)
+
+    def edge_vert_length(self):
+        return self._get_field("edge_vert_length", EdgeDim, E2C2VDim)
+
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 

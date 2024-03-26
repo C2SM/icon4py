@@ -43,6 +43,7 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.interpolation_fields3 import (
     compute_ddxn_z_half_e,
     compute_ddxnt_z_full,
+    compute_cells_aw_verts,
 )
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
@@ -88,11 +89,24 @@ def test_compute_ddxn_z_half_e(grid_savepoint, interpolation_savepoint, icon_gri
 
 @pytest.mark.datatest
 def test_compute_ddxt_z_half_e(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
-#    dual_area = grid_savepoint.dual_area().asnumpy()
-#    edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
+    dual_area = grid_savepoint.v_dual_area().asnumpy()
+    edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
+    e2c = icon_grid.connectivities[E2CDim]
+    v2c = icon_grid.connectivities[V2CDim]
+    v2e = icon_grid.connectivities[V2EDim]
+    e2v = icon_grid.connectivities[E2VDim]
+    second_boundary_layer_end_index = icon_grid.get_end_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
+    )
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
         edge_cell_length,
+        e2c,
+        v2c,
+        v2e,
+        e2v,
+        second_boundary_layer_end_index,
     )

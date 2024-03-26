@@ -86,8 +86,15 @@ def compute_ddxnt_z_full(
     return ddxnt_z_full
 
 def cells2verts_scalar(
+    c_int: np.array,
+    p_cell_in: np.array,
+    v2c: np.array,
 ) -> np.array:
-#    p_vert_out(jv,jk,jb) =                       &
+#    iz_ifc: np.array,
+#    cells_aw_verts: np.array,
+    p_vert_out = np.zeros()
+    for i in range(6):
+        p_vert_out[:, i] = p_vert_out[:, i] + p_cell_in[v2c[:, 0]]
 #           c_int(jv,1,jb) * p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
 #           c_int(jv,2,jb) * p_cell_in(iidx(jv,jb,2),jk,iblk(jv,jb,2)) + &
 #           c_int(jv,3,jb) * p_cell_in(iidx(jv,jb,3),jk,iblk(jv,jb,3)) + &
@@ -100,6 +107,20 @@ def compute_cells_aw_verts(
     dual_area: np.array,
     edge_vert_length: np.array,
     edge_cell_length: np.array,
+    e2c: np.array,
+    v2c: np.array,
+    v2e: np.array,
+    e2v: np.array,
+    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
-    cells_aw_verts = cells_aw_verts + 0.5 / dual_area * edge_vert_length * edge_cell_length
+    cells_aw_verts = np.zeros([second_boundary_layer_end_index, 6])
+    index = np.zeros([second_boundary_layer_end_index, 6])
+    for j in range (6):
+        index[:, j] = np.arange(second_boundary_layer_end_index)
+    idx_ve = np.where(index == e2v[v2e, 0], 0, 1)
+
+    for i in range(2):
+        for j in range (6):
+            for k in range (6):
+                cells_aw_verts[:, k] = np.where(e2c[v2e[:, j], i] == v2c[:, k], cells_aw_verts[:, k] + 0.5 / dual_area[:] * edge_vert_length[v2e[:, j], idx_ve[:, j]] * edge_cell_length[v2e[:, j], i], cells_aw_verts[:, k])
     return cells_aw_verts
