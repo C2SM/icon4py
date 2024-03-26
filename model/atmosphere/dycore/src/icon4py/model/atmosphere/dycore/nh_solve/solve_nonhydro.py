@@ -21,7 +21,10 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
-from icon4py.model.atmosphere.dycore import set_cell_kdim_field_to_zero_wp
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
+    set_cell_kdim_field_to_zero_wp,
+)
+
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )

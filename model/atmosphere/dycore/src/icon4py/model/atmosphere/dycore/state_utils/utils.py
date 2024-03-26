@@ -17,11 +17,13 @@ from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     abs,
+    broadcast,
     int32,
     maximum,
 )
 
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
@@ -53,6 +55,21 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
 @program
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
+
+
+@field_operator
+def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
+    tuple[
+        Field[[EdgeDim, KDim], wpfloat],
+        Field[[EdgeDim, KDim], wpfloat],
+        Field[[EdgeDim, KDim], wpfloat],
+    ]
+):
+    return (
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+    )
 
 
 @field_operator
