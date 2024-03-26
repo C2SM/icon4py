@@ -724,10 +724,10 @@ class Diffusion:
             communication_handle = self._exchange(False, VertexDim, self.u_vert, self.v_vert)
             log.debug("communication rbf extrapolation of vn - end")
 
-            h1 = wait_on_comm_handle(communication_handle[0])
+            h1 = wait_on_comm_handle(communication_handle)
 
-            print(80*'@', communication_handle[0], flush=True)
-            print(80*'@', h1[0], flush=True)
+            print(80*'@', communication_handle, flush=True)
+            print(80*'@', h1, flush=True)
 
             return h1
         
