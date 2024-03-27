@@ -48,6 +48,14 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
+@click.option("--dace", is_flag=True, type=bool, help="Select dace backend.", default=False)
+@click.option(
+    "--on_gpu",
+    is_flag=True,
+    type=bool,
+    help="Whether dace should target gpu device.",
+    default=False,
+)
 @click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
 @click.option(
     "--enable-mixed-precision", is_flag=True, type=bool, help="Enable mixed precision dycore"
@@ -73,6 +81,8 @@ def main(
     fencil: str,
     block_size: int,
     levels_per_thread: int,
+    dace: bool,
+    on_gpu: bool,
     is_global: bool,
     enable_mixed_precision: bool,
     outpath: pathlib.Path,
@@ -88,12 +98,22 @@ def main(
         LEVELS_PER_THREAD: how many k-levels to process per thread.
         OUTPATH: represents a path to the folder in which to write all generated code.
     """
-    from icon4pytools.icon4pygen.backend import GTHeader
     from icon4pytools.icon4pygen.bindings.workflow import PyBindGen
     from icon4pytools.icon4pygen.metadata import get_stencil_info, import_definition
 
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
     fencil_def = import_definition(fencil)
     stencil_info = get_stencil_info(fencil_def, is_global)
-    GTHeader(stencil_info)(outpath, imperative, temporaries)
+    if dace:
+        from icon4pytools.icon4pygen.backend import DaceCodegen
+
+        DaceCodegen(stencil_info)(outpath, imperative, temporaries)
+    else:
+        from icon4pytools.icon4pygen.backend import GTHeader
+
+        GTHeader(stencil_info)(outpath, on_gpu, temporaries)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+    main()

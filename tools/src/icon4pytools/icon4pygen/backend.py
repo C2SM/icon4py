@@ -18,6 +18,10 @@ from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
+from gt4py.next.program_processors.runners.dace_iterator import (
+    workflow as dace_workflow,
+)
+from gt4py.next.type_system import type_specifications as ts, type_translation as tt
 from icon4py.model.common.dimension import KDim, Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
@@ -33,7 +37,9 @@ DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
 GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 
 
-def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+def transform_and_configure_fencil(
+    fencil: itir.FencilDefinition,
+) -> itir.FencilDefinition:
     """Transform the domain representation and configure the FencilDefinition parameters."""
     grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
 
@@ -164,3 +170,78 @@ class GTHeader:
             temporaries=temporaries,
         )
         write_string(gtheader, outpath, f"{self.stencil_info.itir.id}.hpp")
+
+
+def generate_dace_code(
+    stencil_info: StencilInfo,
+    offset_provider: dict[str, Connectivity | Dimension],
+    on_gpu: bool,
+    temporaries: bool,
+    **kwargs: Any,
+) -> tuple[str, str]:
+    import dace  # type: ignore[import-untyped]
+
+    """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
+    check_for_domain_bounds(stencil_info.itir)
+
+    transformed_fencil = transform_and_configure_fencil(stencil_info.itir)
+
+    translation = dace_workflow.DaCeTranslator(
+        auto_optimize=True,
+        device_type=dace.DeviceType.GPU if on_gpu else dace.DeviceType.CPU,
+    )
+
+    if temporaries:
+        translation = translation.replace(
+            lift_mode=LiftMode.USE_TEMPORARIES,
+            symbolic_domain_sizes={
+                "Cell": "num_cells",
+                "Edge": "num_edges",
+                "Vertex": "num_vertices",
+            },
+        )
+
+    params = [str(p.id) for p in stencil_info.itir.params]
+    arg_types = [
+        stencil_info.fields[pname].field.type
+        if pname in stencil_info.fields
+        else ts.ScalarType(kind=tt.get_scalar_kind(p.dtype))
+        if p.dtype is not None
+        else ts.ScalarType(kind=ts.ScalarKind.INT32)
+        for p, pname in zip(stencil_info.itir.params, params, strict=False)
+    ]
+
+    sdfg = translation.generate_sdfg(
+        transformed_fencil,
+        arg_types,
+        offset_provider=offset_provider,
+        column_axis=KDim,  # only used for ScanOperator
+        **kwargs,
+    )
+
+    code_objs = sdfg.generate_code()
+    # `generate_code` produces 3 objects: 2 headers and 1 cpp source  file
+    cpp_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
+    assert len(cpp_objs) == 1
+    hdr_objs = [obj for obj in code_objs if obj.language == "h"]
+    assert len(hdr_objs) == 1
+    # we keep only the cpp source and use it as a header file
+    return hdr_objs[0].clean_code, cpp_objs[0].clean_code
+
+
+class DaceCodegen:
+    """Class for generating Gridtools C++ header using the DaCe backend."""
+
+    def __init__(self, stencil_info: StencilInfo) -> None:
+        self.stencil_info = stencil_info
+
+    def __call__(self, outpath: Path, on_gpu: bool, temporaries: bool) -> None:
+        """Generate C++ code using the DaCe backend and write it to a file."""
+        dc_hdr, dc_src = generate_dace_code(
+            self.stencil_info,
+            self.stencil_info.offset_provider,
+            on_gpu,
+            temporaries,
+        )
+        write_string(dc_hdr, outpath, f"{self.stencil_info.itir.id}.h")
+        write_string(dc_src, outpath, f"{self.stencil_info.itir.id}.c")
