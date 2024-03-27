@@ -14,18 +14,16 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
+import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
 from gt4py._core.definitions import is_scalar_type
-from gt4py.next import as_field
-from gt4py.next import common as gt_common
-from gt4py.next import constructors
+from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next.program_processors.otf_compile_executor import OTFCompileExecutor
 
 from ..grid.base import BaseGrid
-from ..grid.icon import IconGrid
+from ..type_alias import wpfloat
 
 
 try:
@@ -33,12 +31,22 @@ try:
 except ModuleNotFoundError:
     pytest_benchmark = None
 
-from ..grid.simple import SimpleGrid
-
 
 @pytest.fixture
 def backend(request):
     return request.param
+
+
+def is_otf(backend) -> bool:
+    # want to exclude python backends:
+    #   - cannot run on embedded: because of slicing
+    #   - roundtrip is very slow on large grid
+    if hasattr(backend, "executor"):
+        if isinstance(
+            backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
+        ):
+            return True
+    return False
 
 
 def _shape(
@@ -55,15 +63,17 @@ def _shape(
 
 
 def random_mask(
-    grid: SimpleGrid,
+    grid: BaseGrid,
     *dims: gt_common.Dimension,
     dtype: Optional[npt.DTypeLike] = None,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
+    rng = np.random.default_rng()
     shape = _shape(grid, *dims, extend=extend)
     arr = np.full(shape, False).flatten()
-    arr[: int(arr.size * 0.5)] = True
-    np.random.shuffle(arr)
+    num_true = int(arr.size * 0.5)
+    arr[:num_true] = True
+    rng.shuffle(arr)
     arr = np.reshape(arr, newshape=shape)
     if dtype:
         arr = arr.astype(dtype)
@@ -89,14 +99,14 @@ def random_field(
 def zero_field(
     grid: BaseGrid,
     *dims: gt_common.Dimension,
-    dtype=float,
+    dtype=wpfloat,
     extend: Optional[dict[gt_common.Dimension, int]] = None,
 ) -> gt_common.Field:
     return as_field(dims, np.zeros(shape=_shape(grid, *dims, extend=extend), dtype=dtype))
 
 
 def constant_field(
-    grid: SimpleGrid, value: float, *dims: gt_common.Dimension, dtype=float
+    grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
 ) -> gt_common.Field:
     return as_field(
         dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
@@ -210,17 +220,17 @@ class StencilTest:
 
     Example (pseudo-code):
 
-        >>> class TestMultiplyByTwo(StencilTest): # doctest: +SKIP
-        ...    PROGRAM = multiply_by_two  # noqa: F821
-        ...    OUTPUTS = ("some_output",)
+        >>> class TestMultiplyByTwo(StencilTest):  # doctest: +SKIP
+        ...     PROGRAM = multiply_by_two  # noqa: F821
+        ...     OUTPUTS = ("some_output",)
         ...
-        ...    @pytest.fixture
-        ...    def input_data(self):
-        ...        return {"some_input": ..., "some_output": ...}
+        ...     @pytest.fixture
+        ...     def input_data(self):
+        ...         return {"some_input": ..., "some_output": ...}
         ...
-        ...    @staticmethod
-        ...    def reference(some_input, **kwargs):
-        ...        return dict(some_output=np.asarray(some_input)*2)
+        ...     @staticmethod
+        ...     def reference(some_input, **kwargs):
+        ...         return dict(some_output=np.asarray(some_input) * 2)
     """
 
     PROGRAM: ClassVar[Program]
@@ -233,18 +243,6 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
-
-
-@pytest.fixture
-def uses_icon_grid_with_otf(backend, grid):
-    """Check whether we are using a compiled backend with the icon_grid.
-
-    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
-    """
-    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if isinstance(backend.executor, OTFCompileExecutor):
-            return True
-    return False
 
 
 def reshape(arr: np.array, shape: tuple[int, ...]):

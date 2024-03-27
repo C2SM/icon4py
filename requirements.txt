@@ -4,7 +4,7 @@
 ./model/atmosphere/dycore
 ./model/atmosphere/diffusion
 ./model/atmosphere/advection
-./model/common
+./model/common[netcdf]
 ./model/driver
 
 # icon4pytools

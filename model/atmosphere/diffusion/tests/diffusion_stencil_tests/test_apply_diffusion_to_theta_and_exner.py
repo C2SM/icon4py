@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_ex
     apply_diffusion_to_theta_and_exner,
 )
 from icon4py.model.common.dimension import C2E2CDim, CECDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -81,9 +82,9 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
         return dict(theta_v=theta_v, exner=exner)
 
     @pytest.fixture
-    def input_data(self, grid, uses_icon_grid_with_otf):
-        if uses_icon_grid_with_otf:
-            pytest.skip(
+    def input_data(self, grid):
+        if isinstance(grid, IconGrid) and grid.limited_area:
+            pytest.xfail(
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 

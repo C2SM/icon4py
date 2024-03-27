@@ -26,7 +26,6 @@ n_substeps_reduced = 2
 
 @dataclass(frozen=True)
 class IconRunConfig:
-
     dtime: float = 600.0  # length of a time step [s]
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)

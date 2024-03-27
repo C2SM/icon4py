@@ -1,0 +1,34 @@
+include:
+  - local: 'ci/base.yml'
+
+variables:
+  DACE_VERSION: "d0db188db"
+
+build:
+  extends: .build_template
+
+test_model_stencils:
+  extends: .test_template
+  stage: test
+  script:
+# TODO(edopao): wait for next dace release to fix the inline_sdfgs simplify step
+#   - pip install dace==$DACE_VERSION
+    - pip install git+https://github.com/spcl/dace.git@$DACE_VERSION
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+  parallel:
+    matrix:
+    - BACKEND: [dace_cpu, dace_gpu]
+      GRID: [simple_grid, icon_grid]
+
+benchmark_model_stencils:
+  extends: .test_template
+  stage: benchmark
+  script:
+# TODO(edopao): wait for next dace release to fix the inline_sdfgs simplify step
+#   - pip install dace==$DACE_VERSION
+    - pip install git+https://github.com/spcl/dace.git@$DACE_VERSION
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+  parallel:
+    matrix:
+    - BACKEND: [dace_cpu, dace_gpu]
+      GRID: [icon_grid, icon_grid_global]

@@ -40,24 +40,6 @@ dycore_driver = "icon4py.model.driver.dycore_driver:main"
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
 
-[tool.black]
-exclude = '''
-/(
-    \.git
-  | \.hg
-  | \.mypy_cache
-  | \.tox
-  | \.venv
-  | _build
-  | buck-out
-  | build
-  | dist
-)/
-'''
-include = '\.pyi?$'
-line-length = 100
-target-version = ['py310']
-
 [tool.coverage]
 
 [tool.coverage.html]
@@ -80,21 +62,6 @@ branch = true
 parallel = true
 source_pkgs = ['driver']
 
-[tool.isort]
-force_grid_wrap = 0
-include_trailing_comma = true
-known_first_party = ['icon4py.model']
-known_third_party = ['gt4py']
-lexicographical = true
-line_length = 100  # It should be the same as in `tool.black.line-length` above
-lines_after_imports = 2
-multi_line_output = 3
-profile = 'black'
-sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
-skip_gitignore = true
-skip_glob = ['*.venv/**', '_local/**']
-use_parentheses = true
-
 [tool.mypy]
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
@@ -116,6 +83,60 @@ warn_unused_ignores = true
 [tool.pytest.ini_options]
 addopts = ['-p icon4py.model.common.test_utils.pytest_config']
 testpaths = 'tests'
+
+[tool.ruff]
+extend-exclude = [
+  '.eggs',
+  '.gt_cache',
+  '.ipynb_checkpoints',
+  '.tox',
+  '_local_',
+  'build',
+  'dist',
+  'docs',
+  '_external_src',
+  'tests/_disabled',
+  'setup.py'
+]
+indent-width = 4
+line-length = 100
+respect-gitignore = true
+show-fixes = true
+# Assume Python 3.10
+target-version = "py310"
+
+[tool.ruff.format]
+docstring-code-format = true
+
+[tool.ruff.lint]
+extend-select = ['E', 'F', 'I', 'B', 'A', 'T10', 'ERA', 'NPY', 'RUF']
+# # Rules sets:
+# E: pycodestyle
+# F: Pyflakes
+# I: isort
+# B: flake8-bugbear
+# A: flake8-builtins
+# T10: flake8-debugger
+# ERA: eradicate
+# NPY: NumPy-specific rules
+# RUF: Ruff-specific rules
+ignore = [
+  'E501',  # Line too long (using Bugbear's B950 warning)
+  'RUF009'  # Do not perform function call in dataclass defaults
+]
+ignore-init-module-imports = true
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+known-first-party = ['icon4py.model']
+known-third-party = [
+  'gt4py',
+  'icon4pytools'
+]
+lines-after-imports = 2
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
 
 [tool.setuptools.dynamic]
 version = {attr = 'icon4py.model.driver.__init__.__version__'}
