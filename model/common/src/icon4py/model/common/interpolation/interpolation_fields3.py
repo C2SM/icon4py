@@ -35,27 +35,25 @@ def grad_fd_norm(
     inv_dual_edge_length: np.array,
     e2c: np.array,
     second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
     nlev,
 ) -> np.array:
     llb = second_boundary_layer_start_index
-    grad_norm_psi_e = np.zeros([second_boundary_layer_end_index, nlev])
+    grad_norm_psi_e = np.zeros([len(e2c[:, 0]), nlev])
     for i in range(nlev):
         grad_norm_psi_e[llb:, i] = (psi_c[e2c[llb:, 1], i] - psi_c[e2c[llb:, 0], i]) * inv_dual_edge_length[llb:]
     return grad_norm_psi_e
 
 def grad_fd_tang(
-    psi_c: np.array,
+    psi_v: np.array,
     inv_primal_edge_length: np.array,
     e2v: np.array,
     third_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
     nlev,
 ) -> np.array:
     llb = third_boundary_layer_start_index
-    grad_tang_psi_e = np.zeros([second_boundary_layer_end_index, nlev])
+    grad_tang_psi_e = np.zeros([len(e2v[:, 0]), nlev])
     for i in range(nlev):
-        grad_norm_psi_e[llb:, i] = (psi_v[e2v[llb:, 1], i] - psi_v[e2v[llb:, 0], i]) * inv_primal_edge_length[llb:]
+        grad_tang_psi_e[llb:, i] = (psi_v[e2v[llb:, 1], i] - psi_v[e2v[llb:, 0], i]) * inv_primal_edge_length[llb:]
     return grad_tang_psi_e
 
 def compute_ddxn_z_half_e(
@@ -63,10 +61,9 @@ def compute_ddxn_z_half_e(
     inv_dual_edge_length: np.array,
     e2c: np.array,
     second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     nlev = z_ifc.shape[1]
-    ddxn_z_half_e = grad_fd_norm(z_ifc, inv_dual_edge_length, e2c, second_boundary_layer_start_index, second_boundary_layer_end_index, nlev)
+    ddxn_z_half_e = grad_fd_norm(z_ifc, inv_dual_edge_length, e2c, second_boundary_layer_start_index, nlev)
     return ddxn_z_half_e
 
 def compute_ddxt_z_half_e(
@@ -74,9 +71,9 @@ def compute_ddxt_z_half_e(
     inv_primal_edge_length: np.array,
     e2v: np.array,
     third_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     nlev = z_ifv.shape[1]
+    ddxt_z_half_e = grad_fd_tang(z_ifv, inv_primal_edge_length, e2v, third_boundary_layer_start_index, nlev)
     return ddxt_z_half_e
 
 def compute_ddxnt_z_full(
@@ -86,15 +83,15 @@ def compute_ddxnt_z_full(
     return ddxnt_z_full
 
 def cells2verts_scalar(
-    c_int: np.array,
     p_cell_in: np.array,
+    c_int: np.array,
     v2c: np.array,
 ) -> np.array:
-#    iz_ifc: np.array,
-#    cells_aw_verts: np.array,
-    p_vert_out = np.zeros()
-    for i in range(6):
-        p_vert_out[:, i] = p_vert_out[:, i] + p_cell_in[v2c[:, 0]]
+    kdim = len(p_cell_in[0, :])
+    p_vert_out = np.zeros([len(c_int[:, 0]), kdim])
+    for j in range(kdim):
+        for i in range(6):
+            p_vert_out[:, j] = p_vert_out[:, j] + c_int[:, i] * p_cell_in[v2c[:, i], j]
 #           c_int(jv,1,jb) * p_cell_in(iidx(jv,jb,1),jk,iblk(jv,jb,1)) + &
 #           c_int(jv,2,jb) * p_cell_in(iidx(jv,jb,2),jk,iblk(jv,jb,2)) + &
 #           c_int(jv,3,jb) * p_cell_in(iidx(jv,jb,3),jk,iblk(jv,jb,3)) + &
