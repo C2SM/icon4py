@@ -48,7 +48,9 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
-@click.option("--dace", is_flag=True, type=bool, help="Select dace backend.", default=False)
+@click.option(
+    "--dace", is_flag=True, type=bool, help="Select dace backend.", default=False
+)
 @click.option(
     "--on_gpu",
     is_flag=True,
@@ -56,9 +58,14 @@ class ModuleType(click.ParamType):
     help="Whether dace should target gpu device.",
     default=False,
 )
-@click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
 @click.option(
-    "--enable-mixed-precision", is_flag=True, type=bool, help="Enable mixed precision dycore"
+    "--is_global", is_flag=True, type=bool, help="Whether this is a global run."
+)
+@click.option(
+    "--enable-mixed-precision",
+    is_flag=True,
+    type=bool,
+    help="Enable mixed precision dycore",
 )
 @click.argument(
     "outpath",
@@ -108,13 +115,13 @@ def main(
         from icon4pytools.icon4pygen.backend import DaceCodegen
         from icon4pytools.icon4pygen.bindings.workflow import DacePyBindGen
 
-        DaceCodegen(stencil_info)(outpath, imperative, temporaries)
+        DaceCodegen(stencil_info)(outpath, on_gpu, temporaries)
         DacePyBindGen(stencil_info, on_gpu)(outpath)
     else:
         from icon4pytools.icon4pygen.backend import GTHeader
 
-        GTHeader(stencil_info)(outpath, on_gpu, temporaries)
-        PyBindGen(stencil_info, on_gpu)(outpath)
+        GTHeader(stencil_info)(outpath, imperative, temporaries)
+        PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
 
 
 if __name__ == "__main__":
