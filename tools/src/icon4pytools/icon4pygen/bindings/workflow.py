@@ -96,8 +96,6 @@ class DacePyBindGen:
         return binding_fields, binding_offsets
 
     def __call__(self, outpath: Path) -> None:
-        levels_per_thread = 0
-        block_size = 0
         check_dir_exists(outpath)
         generate_f90_file(self.stencil_name, self.fields, self.offsets, outpath)
         generate_cpp_header(self.stencil_name, self.fields, outpath)
@@ -105,7 +103,5 @@ class DacePyBindGen:
             self.stencil_name,
             self.fields,
             self.offsets,
-            levels_per_thread,
-            block_size,
             outpath,
         )

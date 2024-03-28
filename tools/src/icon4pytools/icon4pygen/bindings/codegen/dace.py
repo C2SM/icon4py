@@ -58,23 +58,7 @@ class CppDefGenerator(TemplatedGenerator):
         #include "unstructured_interface.hpp"
         #include "verification_metrics.hpp"
         #include \"{{ funcname }}.hpp\"
-        #include <gridtools/common/array.hpp>
-        #include <gridtools/stencil/global_parameter.hpp>
-        #define GRIDTOOLS_DAWN_NO_INCLUDE
         #include <chrono>
-        #define BLOCK_SIZE {{ block_size }}
-        #define LEVELS_PER_THREAD {{ levels_per_thread }}
-        namespace {
-        template <int... sizes>
-        using block_sizes_t = gridtools::meta::zip<
-            gridtools::meta::iseq_to_list<
-                std::make_integer_sequence<int, sizeof...(sizes)>,
-                gridtools::meta::list, gridtools::integral_constant>,
-            gridtools::meta::list<gridtools::integral_constant<int, sizes>...>>;
-
-        using fn_backend_t =
-            gridtools::fn::backend::gpu<block_sizes_t<BLOCK_SIZE, LEVELS_PER_THREAD>>;
-        } // namespace
         """
     )
 
@@ -104,16 +88,6 @@ class CppDefGenerator(TemplatedGenerator):
             return ret;
           }
         };
-
-        template <class Ptr, class StrideMap>
-        auto get_sid(Ptr ptr, StrideMap const &strideMap) {
-          using namespace gridtools;
-          using namespace fn;
-          return sid::synthetic()
-              .set<sid::property::origin>(sid::host_device::simple_ptr_holder<Ptr>(ptr))
-              .template set<sid::property::strides>(strideMap)
-              .template set<sid::property::strides_kind, sid::unknown_kind>();
-        }
         """
     )
 
@@ -239,15 +213,6 @@ class CppDefGenerator(TemplatedGenerator):
         inline static json* jsonRecord_;
         inline static MeshInfoVtk* mesh_info_vtk_;
         inline static verify* verify_;
-
-        dim3 grid(int kSize, int elSize, bool kparallel) {
-            if (kparallel) {
-              int dK = (kSize + LEVELS_PER_THREAD - 1) / LEVELS_PER_THREAD;
-              return dim3((elSize + BLOCK_SIZE - 1) / BLOCK_SIZE, dK, 1);
-            } else {
-              return dim3((elSize + BLOCK_SIZE - 1) / BLOCK_SIZE, 1, 1);
-            }
-          }
         """
     )
 
@@ -258,34 +223,6 @@ class CppDefGenerator(TemplatedGenerator):
           printf("{{stencil_name}} has not been set up! make sure setup() is called before run!\\n");
           return;
       }
-      using namespace gridtools;
-      using namespace fn;
-      {% for field in _this_node.all_fields -%}
-        {% if field.is_sparse() == False and field.rank() > 0 %}
-          auto {{field.name}}_sid = get_sid({{field.name}}_, {{ field.renderer.render_sid() }});
-        {% endif %}
-      {% endfor -%}
-      {%- for field in _this_node.sparse_fields -%}
-        {%- for i in range(0, field.get_num_neighbors()) -%}
-            {{field.renderer.render_ctype('c++')}} *{{field.name}}_{{i}} = &{{field.name}}_[{{i}}*mesh_.{{field.renderer.render_stride_type()}}{%- if field.has_vertical_dimension -%}*kSize_{%- endif -%}];
-        {% endfor -%}
-        {%- for i in range(0, field.get_num_neighbors()) -%}
-            auto {{field.name}}_sid_{{i}} = get_sid({{field.name}}_{{i}}, {{ field.renderer.render_sid() }});
-        {% endfor -%}
-        auto {{field.name}}_sid_comp = sid::composite::keys<
-        {%- for i in range(0, field.get_num_neighbors()) -%}
-            integral_constant<int,{{i}}>{%- if not loop.last -%}, {%- endif -%}
-        {%- endfor -%}>::make_values(
-          {%- for i in range(0, field.get_num_neighbors()) -%}
-            {{field.name}}_sid_{{i}}{%- if not loop.last -%}, {%- endif -%}
-        {%- endfor -%}
-        );
-      {%- endfor %}
-      {% for field in _this_node.all_fields -%}
-        {%- if field.rank() == 0 -%}
-          gridtools::stencil::global_parameter {{field.name}}_gp { {{field.name}}_ };
-        {%- endif -%}
-      {% endfor -%}
       fn_backend_t cuda_backend{};
       cuda_backend.stream = stream_;
       {% for connection in _this_node.sparse_connections -%}
@@ -517,8 +454,6 @@ class CppFunc(Node):
 
 class IncludeStatements(Node):
     funcname: str
-    levels_per_thread: int
-    block_size: int
 
 
 class UtilityFunctions(Node):
@@ -617,8 +552,6 @@ class CppDefTemplate(Node):
     stencil_name: str
     fields: Sequence[Field]
     offsets: Sequence[Offset]
-    levels_per_thread: int
-    block_size: int
 
     includes: IncludeStatements = eve.datamodels.field(init=False)
     utility_functions: UtilityFunctions = eve.datamodels.field(init=False)
@@ -661,8 +594,6 @@ class CppDefTemplate(Node):
 
         self.includes = IncludeStatements(
             funcname=self.stencil_name,
-            levels_per_thread=self.levels_per_thread,
-            block_size=self.block_size,
         )
 
         self.utility_functions = UtilityFunctions()
@@ -756,16 +687,12 @@ def generate_cpp_definition(
     stencil_name: str,
     fields: Sequence[Field],
     offsets: Sequence[Offset],
-    levels_per_thread: int,
-    block_size: int,
     outpath: Path,
 ) -> None:
     definition = CppDefTemplate(
         stencil_name=stencil_name,
         fields=fields,
         offsets=offsets,
-        levels_per_thread=levels_per_thread,
-        block_size=block_size,
     )
     source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
     write_string(source, outpath, f"{stencil_name}.cpp")
