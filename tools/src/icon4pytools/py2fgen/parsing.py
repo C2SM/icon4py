@@ -137,7 +137,7 @@ def _get_gt4py_func_params(func: Program, type_hints: dict[str, str]) -> List[Fu
             dimensions=parse_type_spec(p.type)[0],
             py_type_hint=type_hints[p.id],
         )
-        for p in func.past_node.params
+        for p in func.past_stage.past_node.params
     ]
 
 
