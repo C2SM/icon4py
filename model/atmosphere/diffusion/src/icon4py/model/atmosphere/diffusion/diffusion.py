@@ -81,7 +81,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 
 import dace
 from dace.transformation.auto import auto_optimize as autoopt
-from gt4py.next.program_processors.runners.dace_iterator import run_dace_cpu
+from gt4py.next.program_processors.runners.dace import run_dace_cpu 
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange, WaitOnCommHandle
 try:
     import ghex
