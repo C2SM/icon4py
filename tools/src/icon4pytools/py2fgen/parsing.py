@@ -69,7 +69,7 @@ def parse(module_name: str, functions: list[str], plugin_name: str) -> CffiPlugi
     module = importlib.import_module(module_name)
     parsed_imports = _extract_import_statements(module)
 
-    parsed_functions = []
+    parsed_functions: list[Func] = []
     for f in functions:
         parsed_functions.append(_parse_function(module, f))
 

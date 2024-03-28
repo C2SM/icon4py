@@ -25,7 +25,7 @@ from icon4pytools.py2fgen.parsing import parse
 from icon4pytools.py2fgen.plugin import generate_and_compile_cffi_plugin
 
 
-def parse_comma_separated_list(ctx, param, value):
+def parse_comma_separated_list(ctx, param, value) -> list[str]:
     # Splits the input string by commas and strips any leading/trailing whitespace from the strings
     return [item.strip() for item in value.split(",")]
 
