@@ -223,10 +223,10 @@ def generate_dace_code(
     # `generate_code` produces 3 objects: 2 headers and 1 cpp source  file
     cpp_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
     assert len(cpp_objs) == 1
-    hdr_objs = [obj for obj in code_objs if obj.language == "h"]
-    assert len(hdr_objs) == 1
+    # hdr_objs = [obj for obj in code_objs if obj.language == "h"]
+    # assert len(hdr_objs) == 1
     # we keep only the cpp source and use it as a header file
-    return hdr_objs[0].clean_code, cpp_objs[0].clean_code
+    return cpp_objs[0].clean_code
 
 
 class DaceCodegen:
@@ -237,11 +237,10 @@ class DaceCodegen:
 
     def __call__(self, outpath: Path, on_gpu: bool, temporaries: bool) -> None:
         """Generate C++ code using the DaCe backend and write it to a file."""
-        dc_hdr, dc_src = generate_dace_code(
+        dc_src = generate_dace_code(
             self.stencil_info,
             self.stencil_info.offset_provider,
             on_gpu,
             temporaries,
         )
-        write_string(dc_hdr, outpath, f"{self.stencil_info.itir.id}.h")
-        write_string(dc_src, outpath, f"{self.stencil_info.itir.id}.c")
+        write_string(dc_src, outpath, f"{self.stencil_info.itir.id}.hpp")
