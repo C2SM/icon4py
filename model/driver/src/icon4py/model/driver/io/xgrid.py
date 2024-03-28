@@ -14,12 +14,12 @@
 import contextlib
 from pathlib import Path
 
-from gt4py.next import Dimension, DimensionKind
-
 import uxarray
 import xarray as xa
+from gt4py.next import Dimension, DimensionKind
 
-from icon4py.model.common.dimension import CellDim, KDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+
 
 MESH = "mesh"
 
@@ -57,6 +57,7 @@ coordinates_mapping={
     VertexDim: "vlon vlat",
     EdgeDim: "elon elat",
 }
+
 location_mapping = {
     CellDim:"face",
     VertexDim:"node",

@@ -38,6 +38,8 @@ from icon4py.model.common.type_alias import wpfloat
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid, metrics_savepoint, backend
 ):
+    if backend and not is_otf(backend):
+        pytest.skip("skipping: unsupported backend")
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     rho_ref_mc_ref = metrics_savepoint.rho_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
@@ -86,9 +88,11 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 
 
 @pytest.mark.datatest
-def test_compute_reference_atmsophere_on_half_level_mass_points(
+def test_compute_reference_atmsophere_on_half_level_masspoints(
     icon_grid, metrics_savepoint, backend
 ):
+    if backend and not is_otf(backend):
+        pytest.skip("skipping: unsupported backend")
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 

@@ -20,7 +20,7 @@ from dask.delayed import Delayed
 from xarray import DataArray, Dataset
 
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.driver.io.data import to_data_array
+from icon4py.model.driver.io.data import DEFAULT_CALENDAR, to_data_array
 
 
 def to_delta(value: str) -> timedelta:
@@ -86,7 +86,7 @@ class Monitor(ABC):
         """
         pass
 
-@dataclass
+@dataclass(frozen=True)
 class FieldIoConfig(Config):
     output_interval: str
     start_time: str
@@ -94,7 +94,7 @@ class FieldIoConfig(Config):
     variables: list[str]
     
 
-@dataclass
+@dataclass(from_dict=True)
 class IoConfig(Config):
     """
     Structured config for IO.
@@ -152,7 +152,7 @@ class FieldGroupMonitor(Monitor):
             uuidOfHGrid="", # TODO (halungge) add uuid of the grid
         )
         
-        time = DataArray([],name="time", attrs=dict(standard_name="time", long_name="time", units="seconds since 1970-01-01 00:00:00"))
+        time = DataArray([],name="time", attrs=dict(standard_name="time", long_name="time", units="seconds since 1970-01-01 00:00:00", calendar=DEFAULT_CALENDAR))
         level = to_data_array(vertical_grid.vct_a, attrs=dict(standard_name="height", long_name="height", units="m"))
         coord_vars = dict(time=time, level=level) 
         self._dataset = Dataset(data_vars=None, coords=coord_vars, attrs=attrs)
@@ -161,7 +161,7 @@ class FieldGroupMonitor(Monitor):
 
     
 
-    def store(self, state, model_time, **kwargs):
+    def store(self, state, model_time:datetime, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
 
 
@@ -172,8 +172,12 @@ class FieldGroupMonitor(Monitor):
         # TODO (halungge) how to handle non time matches? That is if the model time jumps over the output time
         if self._at_capture_time(model_time):
             # this should do a deep copy of the data
+            self._dataset = self._dataset.merge(state)
             state_to_store = {field: state[field] for field in self._field_names}
             self._update_fetch_times()
+            # see https: // github.com / pydata / xarray / issues / 1672  # issuecomment-685222909
+            
+            
             
             # TODO (halungge) copy data buffer and trigger the processing chain asynchronously?
             

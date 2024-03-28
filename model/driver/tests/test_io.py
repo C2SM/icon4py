@@ -13,9 +13,28 @@
 from datetime import datetime, timedelta
 
 import pytest
+from gt4py.next.ffront.fbuiltins import float32
 
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.driver.io.io import FieldGroupMonitor, FieldIoConfig, IoConfig, to_delta
+from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT
+from icon4py.model.common.test_utils.grid_utils import get_icon_grid_from_gridfile
+from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.driver.io.data import (
+    PROGNOSTIC_CF_ATTRIBUTES,
+    to_data_array,
+)
+from icon4py.model.driver.io.io import FieldGroupMonitor, FieldIoConfig, to_delta
+
+
+grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
+rho = random_field(grid, CellDim, KDim, dtype=float32)
+exner = random_field(grid, CellDim, KDim, dtype=float32)
+w = random_field(grid, CellDim, KDim,extend={KDim:1}, dtype=float32)
+
+model_state = {"air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
+         "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
+         "upward_air_velocity": to_data_array(w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"])}
 
 
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
@@ -57,18 +76,16 @@ def test_io_monitor_output_time_updates_on_store():
 @pytest.mark.datatest
 def test_io_monitor_fields_copied_on_store(grid_savepoint):
     heights = grid_savepoint.vct_a()
-    config = IoConfig(
-        base_name="icon4py_atm_",
-        filename_pattern="{base_name}_{time}.nc",
+    config = FieldIoConfig(
+        filename_pattern="_output_20220101.nc",
         start_time="2022-01-01T00:00:00",
-        end_time="2022-01-01T05:00:00",
         output_interval="1 HOUR",
-        variables=["normal_velocity", "air_density"],
+        variables=["upward_air_velocity", "air_density"],
     )
     vertical = VerticalModelParams(heights)
-    state = {"normal_velocity": dict(), "air_density": dict()}
-    io_system = FieldGroupMonitor(config, vertical_model_params=vertical)
-    io_system.store(state, datetime.fromisoformat(config.start_time))
+
+    io_system = FieldGroupMonitor(config, vertical=vertical)
+    io_system.store(model_state, datetime.fromisoformat(config.start_time))
     #state["normal_velocity"] = 2.0
     assert False
 
