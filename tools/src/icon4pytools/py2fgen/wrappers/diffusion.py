@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -45,8 +46,6 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-
-from icon4pytools.py2fgen.config import Icon4PyConfig
 
 
 # global diffusion object

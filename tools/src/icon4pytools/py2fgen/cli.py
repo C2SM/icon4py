@@ -13,9 +13,9 @@
 import pathlib
 
 import click
+from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
-from icon4pytools.py2fgen.config import GT4PyBackend
 from icon4pytools.py2fgen.generate import (
     generate_c_header,
     generate_f90_interface,

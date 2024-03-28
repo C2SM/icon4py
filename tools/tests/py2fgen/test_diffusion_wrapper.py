@@ -14,6 +14,7 @@
 import pytest
 from gt4py.next import np_as_located_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
+from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -27,7 +28,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 
-from icon4pytools.py2fgen.config import Icon4PyConfig
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 

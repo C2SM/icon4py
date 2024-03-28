@@ -17,8 +17,8 @@ from typing import Final
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from icon4pytools.py2fgen.config import Icon4PyConfig
 
+from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import KDim
 
 
