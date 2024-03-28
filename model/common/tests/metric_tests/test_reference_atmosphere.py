@@ -26,7 +26,7 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
 )
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.common.test_utils.helpers import dallclose, is_otf, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -123,8 +123,8 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
 
 
 @pytest.mark.datatest
-def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend, is_otf):
-    if not is_otf:
+def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
+    if not is_otf(backend):
         pytest.skip("skipping: unsupported backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
@@ -142,9 +142,9 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend, is_otf
 
 @pytest.mark.datatest
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
-    icon_grid, interpolation_savepoint, metrics_savepoint, backend, is_otf
+    icon_grid, interpolation_savepoint, metrics_savepoint, backend
 ):
-    if not is_otf:
+    if not is_otf(backend):
         pytest.skip("skipping: unsupported backend")
     rho_ref_me_ref = metrics_savepoint.rho_ref_me()
     theta_ref_me_ref = metrics_savepoint.theta_ref_me()

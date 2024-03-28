@@ -13,6 +13,8 @@ program call_multi_return_cffi_plugin
    edim = 27
    kdim = 10
 
+   !$ACC enter data create(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
+
    ! allocate arrays (allocate in column-major order)
    allocate (z_vn_avg(edim, kdim))
    allocate (mass_fl_e(edim, kdim))
@@ -29,6 +31,8 @@ program call_multi_return_cffi_plugin
    horizontal_end = edim
    vertical_start = 0
    vertical_end = kdim
+
+   !$ACC data copyin(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps)
 
    ! print array shapes and values before computation
    print *, "Arrays before computation:"
@@ -49,6 +53,8 @@ program call_multi_return_cffi_plugin
    if (rc /= 0) then
        call exit(1)
    end if
+
+   !$ACC update host(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
 
    ! print array shapes and values before computation
    print *, "Arrays after computation:"
@@ -73,6 +79,9 @@ program call_multi_return_cffi_plugin
       end do
       if (.not. computation_correct) exit
    end do
+
+   !$ACC end data
+   !$ACC exit data delete(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
 
    ! deallocate arrays
    deallocate (z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)

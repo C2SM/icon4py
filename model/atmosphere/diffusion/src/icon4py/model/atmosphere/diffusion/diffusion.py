@@ -19,17 +19,9 @@ from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
 
-import numpy as np
-import cupy as cp
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_imperative,
-    run_gtfn_gpu_cached,
-)
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -81,6 +73,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -88,29 +81,15 @@ Diffusion module ported from ICON mo_nh_diffusion.f90.
 Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 """
 
-# Choose array backend
-if os.environ.get("GT4PY_GPU"):
-    import cupy as cp
-
-    xp = cp
-else:
-    import numpy as np
-
-    xp = np
 
 # flake8: noqa
 log = logging.getLogger(__name__)
+config = Icon4PyConfig()
 
-# todo: need a way to switch these backe
+# array namespace and backend
+xp = config.ARRAY_NS
+backend = config.GT4PY_RUNNER
 
-cached_backend = run_gtfn_cached
-compiled_backend = run_gtfn
-imperative_backend = run_gtfn_imperative
-
-if os.environ.get("GT4PY_GPU"):
-    backend = run_gtfn_gpu_cached
-else:
-    backend = run_gtfn_cached
 
 class DiffusionType(int, Enum):
     """

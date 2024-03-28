@@ -13,25 +13,19 @@
 import os
 from typing import Tuple
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
 # Choose array backend
-if os.environ.get("GT4PY_GPU"):
-    import cupy as cp
-
-    xp = cp
-else:
-    import numpy as np
-
-    xp = np
+config = Icon4PyConfig()
+xp = config.ARRAY_NS
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py

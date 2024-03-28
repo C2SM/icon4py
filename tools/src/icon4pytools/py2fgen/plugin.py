@@ -14,6 +14,7 @@ import logging
 from pathlib import Path
 import os
 import cffi
+import cupy as cp  # type: ignore
 import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray
@@ -28,30 +29,21 @@ logger = setup_logger(__name__)
 
 def unpack(ptr, *sizes: int) -> NDArray:
     """
-    Converts a C pointer pointing to data in Fortran (column-major) order into a NumPy array.
-
-    This function facilitates the handling of numerical data shared between C (or Fortran) and Python,
-    especially when the data originates from Fortran routines that use column-major storage order.
-    It creates a NumPy array that directly views the data pointed to by `ptr`, without copying, and reshapes
-    it according to the specified dimensions. The resulting NumPy array uses Fortran order ('F') to preserve
-    the original data layout.
+    Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
+    This function is needed for operations requiring in-place modification of CPU data, enabling
+    changes made in Python to reflect immediately in the original Fortran memory space.
 
     Args:
-        ptr (CData): A CFFI pointer to the beginning of the data array. This pointer should reference
-            a contiguous block of memory whose total size matches the product of the specified dimensions.
-        *sizes (int): Variable length argument list representing the dimensions of the array. The product
-            of these sizes should match the total number of elements in the data block pointed to by `ptr`.
+        ptr (CData): A CFFI pointer to the beginning of the data array in CPU memory. This pointer
+                     should reference a contiguous block of memory whose total size matches the product
+                     of the specified dimensions.
+        *sizes (int): Variable length argument list specifying the dimensions of the array.
+                      These sizes determine the shape of the resulting NumPy array.
 
     Returns:
-        np.ndarray: A NumPy array view of the data pointed to by `ptr`. The array will have the shape
-        specified by `sizes` and the data type (`dtype`) corresponding to the C data type of `ptr`.
-        The array is created with Fortran order to match the original column-major data layout.
-
-    Note:
-        The function does not perform any copying of the data. Modifications to the resulting NumPy array
-        will affect the original data pointed to by `ptr`. Ensure that the lifetime of the data pointed to
-        by `ptr` extends beyond the use of the returned NumPy array to prevent data corruption or access
-        violations.
+        np.ndarray: A NumPy array that provides a direct view of the data pointed to by `ptr`.
+                    This array shares the underlying data with the original Fortran code, allowing
+                    modifications made through the array to affect the original data.
     """
     length = np.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
@@ -64,33 +56,63 @@ def unpack(ptr, *sizes: int) -> NDArray:
     dtype = dtype_map.get(c_type, np.dtype(c_type))
 
 
-    if os.environ.get("GT4PY_GPU"):
-        import cupy as cp
-        intptr=int(ffi.cast("intptr_t", ptr))
-        msg = "intptr = %s" % str(intptr)
-        print(msg)
-        msg = "printing shape = %s" % str(sizes)
-        print(msg)
-        arr1 = cp.empty((10,), dtype=np.float64)
-        print('test cupy address:'+str(arr1.data.ptr))
-        print('device'+str(cp.cuda.runtime.pointerGetAttributes(intptr).device))
-        print('.devicePointer:'+str(cp.cuda.runtime.pointerGetAttributes(intptr).devicePointer))
-        print('hostPointer'+str(cp.cuda.runtime.pointerGetAttributes(intptr).hostPointer))
-        #print('memoryType:'+str(cp.cuda.runtime.pointerGetAttributes(intptr).memoryType))
-        mem = cp.cuda.UnownedMemory(intptr, length, ptr, device_id=0)
-        #mem = cp.cuda.UnownedMemory(intptr, length, ffi.buffer(ptr, length * ffi.sizeof(c_type)), device_id=0)
-        mem_ptr = cp.cuda.MemoryPointer(mem, 0)
-        #mem_ptr = cp.cuda.MemoryPointer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), 0)
-        arr = cp.ndarray(shape=sizes,dtype=dtype, memptr= mem_ptr, order="F")
-        mempool = cp.get_default_memory_pool()
-        #arr = cp.ndarray(shape=(1,),dtype=np.float64, memptr= mem_ptr)
-        print(mempool.used_bytes())              # 512
-        print(mempool.total_bytes())             # 512
-    else:
-        # Create a NumPy array from the buffer, specifying the Fortran order
-        arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
-            sizes, order="F"
-        )
+    # Create a NumPy array from the buffer, specifying the Fortran order
+    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
+        sizes, order="F"
+    )
+
+    return arr
+
+
+def unpack_gpu(ptr, *sizes: int) -> cp.ndarray:
+    """
+    Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
+    This function is needed for operations that require in-place modification of GPU data,
+    enabling changes made in Python to reflect immediately in the original Fortran memory space.
+
+    Args:
+        ptr (cffi.CData): A CFFI pointer to GPU memory allocated by OpenACC, representing
+                          the starting address of the data. This pointer must correspond to
+                          a contiguous block of memory whose total size matches the product
+                          of the specified dimensions.
+        *sizes (int): Variable length argument list specifying the dimensions of the array.
+                      These sizes determine the shape of the resulting CuPy array.
+
+    Returns:
+        cp.ndarray: A CuPy array that provides a direct view of the data pointed to by `ptr`.
+                    This array shares the underlying data with the original Fortran code, allowing
+                    modifications made through the array to affect the original data.
+    """
+
+    if not sizes:
+        raise ValueError("Sizes must be provided to determine the array shape.")
+
+    length = np.prod(sizes)
+    c_type = ffi.getctype(ffi.typeof(ptr).item)
+
+    dtype_map = {
+        "int": cp.int32,
+        "double": cp.float64,
+    }
+    dtype = dtype_map.get(c_type, None)
+    if dtype is None:
+        raise ValueError(f"Unsupported C data type: {c_type}")
+
+    itemsize = ffi.sizeof(c_type)
+    total_size = length * itemsize
+    #total_size = length
+
+    # cupy array from OpenACC device pointer
+    current_device = cp.cuda.Device()
+    ptr_val = int(ffi.cast("uintptr_t", ptr))
+    #print('device'+str(cp.cuda.runtime.pointerGetAttributes(ptr_val).device))
+    #print('.devicePointer:'+str(cp.cuda.runtime.pointerGetAttributes(ptr_val).devicePointer))
+    #print('hostPointer'+str(cp.cuda.runtime.pointerGetAttributes(ptr_val).hostPointer))
+    #print('test cupy address:'+str(arr.data.ptr))
+    #mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
+    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=0)
+    memptr = cp.cuda.MemoryPointer(mem, 0)
+    arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
 
     return arr
 

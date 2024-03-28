@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-import os
 import time
 
 from gt4py.next.common import Field
@@ -27,16 +26,20 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common.dimension import (
+    C2E2CDim,
     C2E2CODim,
+    C2EDim,
     CECDim,
     CEDim,
     CECDim,
     C2EDim,
     CellDim,
-    ECDim,
+    E2C2VDim,
+    E2CDim,
     ECVDim,
     EdgeDim,
     KDim,
+    KHalfDim,
     V2EDim,
     E2C2VDim,
     E2CDim,
@@ -49,18 +52,17 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
-DIFFUSION: Diffusion = Diffusion()
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
-GRID_PATH = (
-    "/bret/scratch/cscs/agopal/copy_run-granule-with-py2fgen"  # todo(samkellerhals): we need a better way to set this path
-)
-GRID_FILENAME = "grid.nc"
+
+# global diffusion object
+DIFFUSION: Diffusion = Diffusion()
 
 
 def diffusion_init(
-    vct_a: Field[[KDim], float64],
+    vct_a: Field[[KHalfDim], float64],
     theta_ref_mc: Field[[CellDim, KDim], float64],
-    wgtfac_c: Field[[CellDim, KDim], float64],
+    wgtfac_c: Field[[CellDim, KHalfDim], float64],
     e_bln_c_s: Field[[CellDim, C2EDim], float64],
     geofac_div: Field[[CellDim, C2EDim], float64],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float64],
@@ -101,17 +103,23 @@ def diffusion_init(
     dual_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
     primal_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
-    dual_normal_cell_x: Field[[ EdgeDim, E2CDim], float64],
-    dual_normal_cell_y: Field[[ EdgeDim, E2CDim], float64],
+    dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
+    dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
 ):
-    # grid
-    if os.environ.get("GT4PY_GPU"):
+    # configuration
+    config = Icon4PyConfig()
+
+    # ICON grid
+    if config.DEVICE == "GPU":
         on_gpu = True
     else:
         on_gpu = False
 
     icon_grid = _load_from_gridfile(
-        file_path=GRID_PATH, filename=GRID_FILENAME, num_levels=num_levels, on_gpu=on_gpu
+        file_path=config.ICON_GRID_LOC,
+        filename=config.GRID_FILENAME,
+        num_levels=num_levels,
+        on_gpu=on_gpu,
     )
 
     print("0000000 Initialising diffusion...")
@@ -121,8 +129,8 @@ def diffusion_init(
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
         inverse_vertex_vertex_lengths=inv_vert_vert_length,
-        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x,ECVDim),
-        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y,ECVDim),
+        primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, ECVDim),
+        primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, ECVDim),
         dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, ECVDim),
         dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, ECVDim),
         primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, ECVDim),
@@ -207,15 +215,15 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: Field[[CellDim, KDim], float64],
+    w: Field[[CellDim, KHalfDim], float64],
     vn: Field[[EdgeDim, KDim], float64],
     exner: Field[[CellDim, KDim], float64],
     theta_v: Field[[CellDim, KDim], float64],
     rho: Field[[CellDim, KDim], float64],
-    hdef_ic: Field[[CellDim, KDim], float64],
-    div_ic: Field[[CellDim, KDim], float64],
-    dwdx: Field[[CellDim, KDim], float64],
-    dwdy: Field[[CellDim, KDim], float64],
+    hdef_ic: Field[[CellDim, KHalfDim], float64],
+    div_ic: Field[[CellDim, KHalfDim], float64],
+    dwdx: Field[[CellDim, KHalfDim], float64],
+    dwdy: Field[[CellDim, KHalfDim], float64],
     dtime: float64,
 ):
     # prognostic and diagnostic variables

@@ -1,3 +1,7 @@
+# nvidia
+*.ncu-rep
+
+
 ### Custom ####
 _build
 _local

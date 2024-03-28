@@ -18,11 +18,16 @@ from typing import Final
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
+from icon4pytools.py2fgen.config import Icon4PyConfig
 
 from icon4py.model.common.dimension import KDim
 
 
 log = logging.getLogger(__name__)
+config = Icon4PyConfig()
+
+# Choose array backend
+xp = config.ARRAY_NS
 
 # Choose array backend
 if os.environ.get("GT4PY_GPU"):

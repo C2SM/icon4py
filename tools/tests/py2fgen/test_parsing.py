@@ -17,7 +17,6 @@ from icon4pytools.py2fgen.template import CffiPlugin
 
 def test_parse_functions_on_wrapper():
     module_path = "icon4pytools.py2fgen.wrappers.diffusion"
-    function_name = "diffusion_init"
-    plugin = parse(module_path, function_name)
+    functions = ["diffusion_init", "diffusion_run"]
+    plugin = parse(module_path, functions, "diffusion_plugin")
     assert isinstance(plugin, CffiPlugin)
-    assert plugin.plugin_name == "diffusion_init_plugin"

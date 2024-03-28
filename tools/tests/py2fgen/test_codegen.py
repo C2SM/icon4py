@@ -90,7 +90,7 @@ def test_cheader_generation_for_single_function():
     )
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern void foo_wrapper(int one, double* two, int n_Cell, int n_K);"
+    assert header == "extern int foo_wrapper(int one, double* two, int n_Cell, int n_K);"
 
 
 def test_cheader_for_pointer_args():
@@ -99,7 +99,7 @@ def test_cheader_for_pointer_args():
     )
 
     header = CHeaderGenerator.apply(plugin)
-    assert header == "extern void bar_wrapper(float* one, int two, int n_Cell, int n_K);"
+    assert header == "extern int bar_wrapper(float* one, int two, int n_Cell, int n_K);"
 
 
 def compare_ignore_whitespace(s1: str, s2: str):
@@ -120,7 +120,7 @@ def dummy_plugin():
 def test_fortran_interface(dummy_plugin):
     interface = generate_f90_interface(dummy_plugin)
     expected = """
-module libtest_plugin
+    module libtest_plugin
    use, intrinsic :: iso_c_binding
    implicit none
 
@@ -130,44 +130,49 @@ module libtest_plugin
 
    interface
 
-      subroutine foo_wrapper(one, &
-                             two, &
-                             n_Cell, &
-                             n_K) bind(c, name="foo_wrapper")
-         import :: c_int, c_double
+      function foo_wrapper(one, &
+                           two, &
+                           n_Cell, &
+                           n_K) bind(c, name="foo_wrapper") result(rc)
+         import :: c_int, c_double, c_bool, c_ptr
 
          integer(c_int), value :: n_Cell
 
          integer(c_int), value :: n_K
+
+         integer(c_int) :: rc  ! Stores the return code
 
          integer(c_int), value, target :: one
 
          real(c_double), dimension(*), target :: two
 
-      end subroutine foo_wrapper
+      end function foo_wrapper
 
-      subroutine bar_wrapper(one, &
-                             two, &
-                             n_Cell, &
-                             n_K) bind(c, name="bar_wrapper")
-         import :: c_int, c_double
+      function bar_wrapper(one, &
+                           two, &
+                           n_Cell, &
+                           n_K) bind(c, name="bar_wrapper") result(rc)
+         import :: c_int, c_double, c_bool, c_ptr
 
          integer(c_int), value :: n_Cell
 
          integer(c_int), value :: n_K
 
+         integer(c_int) :: rc  ! Stores the return code
+
          real(c_float), dimension(*), target :: one
 
          integer(c_int), value, target :: two
 
-      end subroutine bar_wrapper
+      end function bar_wrapper
 
    end interface
 
 contains
 
    subroutine foo(one, &
-                  two)
+                  two, &
+                  rc)
       use, intrinsic :: iso_c_binding
 
       integer(c_int) :: n_Cell
@@ -178,19 +183,27 @@ contains
 
       real(c_double), dimension(:, :), target :: two
 
+      integer(c_int) :: rc  ! Stores the return code
+
+      !$ACC host_data use_device( &
+      !$ACC two &
+      !$ACC )
+
       n_Cell = SIZE(two, 1)
 
       n_K = SIZE(two, 2)
 
-      call foo_wrapper(one, &
+      rc = foo_wrapper(one, &
                        two, &
                        n_Cell, &
                        n_K)
 
+      !$acc end host_data
    end subroutine foo
 
    subroutine bar(one, &
-                  two)
+                  two, &
+                  rc)
       use, intrinsic :: iso_c_binding
 
       integer(c_int) :: n_Cell
@@ -201,32 +214,41 @@ contains
 
       integer(c_int), value, target :: two
 
+      integer(c_int) :: rc  ! Stores the return code
+
+      !$ACC host_data use_device( &
+      !$ACC one &
+      !$ACC )
+
       n_Cell = SIZE(one, 1)
 
       n_K = SIZE(one, 2)
 
-      call bar_wrapper(one, &
+      rc = bar_wrapper(one, &
                        two, &
                        n_Cell, &
                        n_K)
 
+      !$acc end host_data
    end subroutine bar
 
 end module
-    """
+"""
     assert compare_ignore_whitespace(interface, expected)
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, None, False)
+    interface = generate_python_wrapper(dummy_plugin, "GPU", False)
     expected = '''
 # necessary imports for generated code to work
 from libtest_plugin import ffi
 import numpy as np
+import cupy as cp
+from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_gpu
+from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
@@ -234,39 +256,38 @@ from icon4py.model.common.grid.simple import SimpleGrid
 import foo_module_x
 import bar_module_y
 
+import logging
+
+log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+
+logging.basicConfig(filename='py2f_cffi.log',
+                    level=logging.DEBUG,
+                    format=log_format,
+                    datefmt='%Y-%m-%d %H:%M:%S')
+
 # We need a grid to pass offset providers
 grid = SimpleGrid()
 
 from libtest import foo
 from libtest import bar
 
-
-def unpack(ptr, *sizes: int) -> np.ndarray:
+def unpack(ptr, *sizes: int) -> NDArray:
     """
-    Converts a C pointer pointing to data in Fortran (column-major) order into a NumPy array.
-
-    This function facilitates the handling of numerical data shared between C (or Fortran) and Python,
-    especially when the data originates from Fortran routines that use column-major storage order.
-    It creates a NumPy array that directly views the data pointed to by `ptr`, without copying, and reshapes
-    it according to the specified dimensions. The resulting NumPy array uses Fortran order ('F') to preserve
-    the original data layout.
+    Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
+    This function is needed for operations requiring in-place modification of CPU data, enabling
+    changes made in Python to reflect immediately in the original Fortran memory space.
 
     Args:
-        ptr (CData): A CFFI pointer to the beginning of the data array. This pointer should reference
-            a contiguous block of memory whose total size matches the product of the specified dimensions.
-        *sizes (int): Variable length argument list representing the dimensions of the array. The product
-            of these sizes should match the total number of elements in the data block pointed to by `ptr`.
+        ptr (CData): A CFFI pointer to the beginning of the data array in CPU memory. This pointer
+                     should reference a contiguous block of memory whose total size matches the product
+                     of the specified dimensions.
+        *sizes (int): Variable length argument list specifying the dimensions of the array.
+                      These sizes determine the shape of the resulting NumPy array.
 
     Returns:
-        np.ndarray: A NumPy array view of the data pointed to by `ptr`. The array will have the shape
-        specified by `sizes` and the data type (`dtype`) corresponding to the C data type of `ptr`.
-        The array is created with Fortran order to match the original column-major data layout.
-
-    Note:
-        The function does not perform any copying of the data. Modifications to the resulting NumPy array
-        will affect the original data pointed to by `ptr`. Ensure that the lifetime of the data pointed to
-        by `ptr` extends beyond the use of the returned NumPy array to prevent data corruption or access
-        violations.
+        np.ndarray: A NumPy array that provides a direct view of the data pointed to by `ptr`.
+                    This array shares the underlying data with the original Fortran code, allowing
+                    modifications made through the array to affect the original data.
     """
     length = np.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
@@ -278,32 +299,103 @@ def unpack(ptr, *sizes: int) -> np.ndarray:
     }
     dtype = dtype_map.get(c_type, np.dtype(c_type))
 
-    # TODO(samkellerhals): see if we can fix type issue
     # Create a NumPy array from the buffer, specifying the Fortran order
     arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
         sizes, order="F"
     )
     return arr
 
+
+def unpack_gpu(ptr, *sizes: int) -> cp.ndarray:
+    """
+    Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
+    This function is needed for operations that require in-place modification of GPU data,
+    enabling changes made in Python to reflect immediately in the original Fortran memory space.
+
+    Args:
+        ptr (cffi.CData): A CFFI pointer to GPU memory allocated by OpenACC, representing
+                          the starting address of the data. This pointer must correspond to
+                          a contiguous block of memory whose total size matches the product
+                          of the specified dimensions.
+        *sizes (int): Variable length argument list specifying the dimensions of the array.
+                      These sizes determine the shape of the resulting CuPy array.
+
+    Returns:
+        cp.ndarray: A CuPy array that provides a direct view of the data pointed to by `ptr`.
+                    This array shares the underlying data with the original Fortran code, allowing
+                    modifications made through the array to affect the original data.
+    """
+
+    if not sizes:
+        raise ValueError("Sizes must be provided to determine the array shape.")
+
+    length = np.prod(sizes)
+    c_type = ffi.getctype(ffi.typeof(ptr).item)
+
+    dtype_map = {
+        "int": cp.int32,
+        "double": cp.float64,
+    }
+    dtype = dtype_map.get(c_type, None)
+    if dtype is None:
+        raise ValueError(f"Unsupported C data type: {c_type}")
+
+    itemsize = ffi.sizeof(c_type)
+    total_size = length * itemsize
+
+    # cupy array from OpenACC device pointer
+    current_device = cp.cuda.Device()
+    ptr_val = int(ffi.cast("uintptr_t", ptr))
+    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
+    memptr = cp.cuda.MemoryPointer(mem, 0)
+    arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
+
+    return arr
+
+def int_array_to_bool_array(int_array: NDArray) -> NDArray:
+    """
+    Converts a NumPy array of integers to a boolean array.
+    In the input array, 0 represents False, and any non-zero value (1 or -1) represents True.
+
+    Args:
+        int_array: A NumPy array of integers.
+
+    Returns:
+        A NumPy array of booleans.
+    """
+    bool_array = int_array != 0
+    return bool_array
+
 @ffi.def_extern()
 def foo_wrapper(one: int32, two: Field[CellDim, KDim], float64], n_Cell: int32, n_K: int32):
-    # Unpack pointers into Ndarrays
-    two = unpack(two, n_Cell, n_K)
+    try:
+        # Unpack pointers into Ndarrays
+        two = unpack_gpu(two, n_Cell, n_K)
 
-    # Allocate GT4Py Fields
-    two = np_as_located_field(CellDim, KDim)(two)
+        # Allocate GT4Py Fields
+        two = np_as_located_field(CellDim, KDim)(two)
 
-    foo(one, two)
+        foo(one, two)
+    except Exception as e:
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
+    return 0
 
 @ffi.def_extern()
 def bar_wrapper(one: Field[CellDim, KDim], float64], two: int32, n_Cell: int32, n_K: int32):
-    # Unpack pointers into Ndarrays
-    one = unpack(one, n_Cell, n_K)
+    try:
+        # Unpack pointers into Ndarrays
+        one = unpack_gpu(one, n_Cell, n_K)
 
-    # Allocate GT4Py Fields
-    one = np_as_located_field(CellDim, KDim)(one)
+        # Allocate GT4Py Fields
+        one = np_as_located_field(CellDim, KDim)(one)
 
-    bar(one, two)
+        bar(one, two)
+
+    except Exception as e:
+        logging.exception(f"A Python error occurred: {e}")
+        return 1
+    return 0
     '''
     assert compare_ignore_whitespace(interface, expected)
 
@@ -311,7 +403,7 @@ def bar_wrapper(one: Field[CellDim, KDim], float64], two: int32, n_Cell: int32, 
 def test_c_header(dummy_plugin):
     interface = generate_c_header(dummy_plugin)
     expected = """
-    extern void foo_wrapper(int one, double *two, int n_Cell, int n_K);
-    extern void bar_wrapper(float *one, int two, int n_Cell, int n_K);
+    extern int foo_wrapper(int one, double *two, int n_Cell, int n_K);
+    extern int bar_wrapper(float *one, int two, int n_Cell, int n_K);
     """
     assert compare_ignore_whitespace(interface, expected)
