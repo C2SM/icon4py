@@ -19,12 +19,13 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     old_shape: tuple[int, int],
     origin_axis: Dimension,
     neighbor_axis: Dimension,
-    on_gpu: bool,
+    has_skip_values: bool,
 ):
-    if on_gpu:
-        import cupy as xp
-    else:
-        xp = np
-
-    table = xp.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
-    return NeighborTableOffsetProvider(table, origin_axis, neighbor_axis, table.shape[1])
+    table = np.arange(old_shape[0] * old_shape[1]).reshape(old_shape)
+    return NeighborTableOffsetProvider(
+        table,
+        origin_axis,
+        neighbor_axis,
+        table.shape[1],
+        has_skip_values=has_skip_values,
+    )

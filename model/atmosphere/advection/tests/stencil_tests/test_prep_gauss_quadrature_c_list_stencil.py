@@ -27,6 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+@pytest.mark.slow_tests
 class TestPrepGaussQuadratureCListStencil(StencilTest):
     PROGRAM = prep_gauss_quadrature_c_list_stencil
     OUTPUTS = (
@@ -527,7 +528,6 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             p_dreg_area=p_dreg_area,
         )
 
-    @pytest.mark.slow_tests
     @pytest.fixture
     def input_data(self, grid):
         famask_int = constant_field(grid, 1, EdgeDim, KDim, dtype=int32)

@@ -65,5 +65,5 @@ def test_grid_size_param_generation(temporaries, imperative):
     fencil = testee_prog.itir
 
     # validate the grid sizes appear in the generated code
-    gtheader = generate_gtheader(fencil, offset_provider, None, temporaries, imperative)
+    gtheader = generate_gtheader(fencil, offset_provider, temporaries, imperative)
     assert search_for_grid_sizes(gtheader)

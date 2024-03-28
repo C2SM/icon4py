@@ -6,6 +6,7 @@ _reports
 tmp
 testdata
 simple_mesh*.nc
+/prof
 
 ### GT4Py ####
 .gt_cache/
