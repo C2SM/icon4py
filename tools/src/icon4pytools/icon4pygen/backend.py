@@ -14,6 +14,7 @@ import warnings
 from pathlib import Path
 from typing import Any, Iterable, List
 
+from gt4py._core import definitions as core_defs
 from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
@@ -188,7 +189,7 @@ def generate_dace_code(
 
     translation = dace_workflow.DaCeTranslator(
         auto_optimize=True,
-        device_type=dace.DeviceType.GPU if on_gpu else dace.DeviceType.CPU,
+        device_type=core_defs.DeviceType.CUDA if on_gpu else core_defs.DeviceType.CPU,
     )
 
     if temporaries:
@@ -221,8 +222,7 @@ def generate_dace_code(
 
     code_objs = sdfg.generate_code()
     # `generate_code` produces 3 objects: 2 headers and 1 source  file
-    src_ext = "cu" if on_gpu else "cpp"
-    src_objs = [obj for obj in code_objs if obj.language == src_ext and obj.linkable]
+    src_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
     assert len(src_objs) == 1
     hdr_objs = [obj for obj in code_objs if obj.language == "h"]
     assert len(hdr_objs) == 1
@@ -244,4 +244,4 @@ class DaceCodegen:
             temporaries,
         )
         write_string(dc_hdr, outpath, f"{self.stencil_info.itir.id}_dace.h")
-        write_string(dc_src, outpath, f"{self.stencil_info.itir.id}_dace" + (".cu" if on_gpu else ".cpp"))
+        write_string(dc_src, outpath, f"{self.stencil_info.itir.id}_dace.cpp")
