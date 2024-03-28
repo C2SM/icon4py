@@ -240,7 +240,7 @@ end module
 def test_python_wrapper(dummy_plugin):
     interface = generate_python_wrapper(dummy_plugin, "GPU", False)
     expected = '''
-# necessary imports for generated code to work
+# necessary imports
 from libtest_plugin import ffi
 import numpy as np
 import cupy as cp
@@ -252,7 +252,7 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
-# all other imports from the module from which the function is being wrapped
+# embedded module imports
 import foo_module_x
 import bar_module_y
 
@@ -265,7 +265,7 @@ logging.basicConfig(filename='py2f_cffi.log',
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
-# We need a grid to pass offset providers
+# We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
 grid = SimpleGrid()
 
 from libtest import foo
@@ -304,7 +304,6 @@ def unpack(ptr, *sizes: int) -> NDArray:
         sizes, order="F"
     )
     return arr
-
 
 def unpack_gpu(ptr, *sizes: int) -> cp.ndarray:
     """
@@ -376,6 +375,7 @@ def foo_wrapper(one: int32, two: Field[CellDim, KDim], float64], n_Cell: int32, 
         two = np_as_located_field(CellDim, KDim)(two)
 
         foo(one, two)
+
     except Exception as e:
         logging.exception(f"A Python error occurred: {e}")
         return 1
@@ -396,6 +396,10 @@ def bar_wrapper(one: Field[CellDim, KDim], float64], two: int32, n_Cell: int32, 
         logging.exception(f"A Python error occurred: {e}")
         return 1
     return 0
+
+
+
+
     '''
     assert compare_ignore_whitespace(interface, expected)
 
