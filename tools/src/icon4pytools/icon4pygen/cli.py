@@ -106,13 +106,15 @@ def main(
     stencil_info = get_stencil_info(fencil_def, is_global)
     if dace:
         from icon4pytools.icon4pygen.backend import DaceCodegen
+        from icon4pytools.icon4pygen.bindings.workflow import DacePyBindGen
 
         DaceCodegen(stencil_info)(outpath, imperative, temporaries)
+        DacePyBindGen(stencil_info, on_gpu)(outpath)
     else:
         from icon4pytools.icon4pygen.backend import GTHeader
 
         GTHeader(stencil_info)(outpath, on_gpu, temporaries)
-    PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+        PyBindGen(stencil_info, on_gpu)(outpath)
 
 
 if __name__ == "__main__":
