@@ -91,7 +91,7 @@ def build_array_size_args() -> dict[str, str]:
         if isinstance(var, Dimension):
             dim_name = var_name.replace(
                 "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim
+            )  # Assumes we keep suffixing each Dimension with Dim in icon4py.common.dimension module
             size_name = f"n_{dim_name}"
             array_size_args[dim_name] = size_name
     return array_size_args
@@ -187,7 +187,7 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
-# necessary imports for generated code to work
+# necessary imports
 from {{ plugin_name }} import ffi
 import numpy as np
 import cupy as cp
@@ -199,7 +199,7 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
-# all other imports from the module from which the function is being wrapped
+# embedded module imports
 {% for stmt in imports -%}
 {{ stmt }}
 {% endfor %}
@@ -213,7 +213,7 @@ logging.basicConfig(filename='py2f_cffi.log',
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
-# We need a grid to pass offset providers
+# We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
 grid = SimpleGrid()
 
 {% for func in _this_node.function %}

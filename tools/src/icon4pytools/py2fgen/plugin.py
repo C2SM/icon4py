@@ -22,7 +22,7 @@ from numpy.typing import NDArray
 from icon4pytools.common.logger import setup_logger
 
 
-ffi = FFI()
+ffi = FFI()  # needed for unpack and unpack_gpu functions
 
 logger = setup_logger(__name__)
 
