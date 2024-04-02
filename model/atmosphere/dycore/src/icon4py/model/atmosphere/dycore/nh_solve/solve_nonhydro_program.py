@@ -67,13 +67,18 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_eki
 from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
+    _set_cell_kdim_field_to_zero_wp,
+)
 from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
     _set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    _broadcast_zero_to_three_edge_kdim_fields_wp,
+)
 from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
@@ -92,19 +97,12 @@ def init_test_fields(
     indices_cells_2: int32,
     nlev: int32,
 ):
-    _set_zero_e_k(
-        out=z_rho_e,
+    _broadcast_zero_to_three_edge_kdim_fields_wp(
+        out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-    _set_zero_e_k(
-        out=z_theta_v_e,
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
-    )
-    _set_zero_e_k(
-        out=z_graddiv_vn,
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
-    )
-    _set_zero_c_k(
+
+    _set_cell_kdim_field_to_zero_wp(
         out=z_dwdz_dd,
         domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
@@ -125,7 +123,7 @@ def _predictor_stencils_2_3(
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(k_field == nlev, _set_zero_c_k(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _set_cell_kdim_field_to_zero_wp(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
