@@ -48,6 +48,9 @@ class FuncParameter(Node):
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.is_array = True if len(self.dimensions) >= 1 else False
+        # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
+        # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
+        # side. So before generating the python wrapper code, we replace occurences of KHalfDim with KDim
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
