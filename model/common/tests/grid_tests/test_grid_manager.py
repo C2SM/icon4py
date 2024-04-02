@@ -123,12 +123,8 @@ def simple_grid_gridfile(tmp_path):
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=grid.num_edges)
     dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=grid.num_cells)
-    dataset.createDimension(
-        GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[E2VDim]
-    )
-    dataset.createDimension(
-        GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=grid.size[E2C2EDim]
-    )
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[E2VDim])
+    dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=grid.size[E2C2EDim])
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
     dataset.createDimension(GridFile.DimensionName.CELL_GRF, size=14)
@@ -154,12 +150,8 @@ def simple_grid_gridfile(tmp_path):
         (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(
-        GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[C2EDim]
-    )
-    dataset.createDimension(
-        GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[V2CDim]
-    )
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[C2EDim])
+    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[V2CDim])
 
     _add_to_dataset(
         dataset,
@@ -291,9 +283,7 @@ def test_gridparser_dimension(simple_grid_gridfile):
     grid_parser = GridFile(data)
     grid = SimpleGrid()
     assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == grid.num_cells
-    assert (
-        grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == grid.num_vertices
-    )
+    assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == grid.num_vertices
     assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == grid.num_edges
 
 
@@ -308,15 +298,9 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
     dataset = netCDF4.Dataset(file, "r")
     grid_file = GridFile(dataset)
 
-    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(
-        CellDim
-    )
-    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(
-        EdgeDim
-    )
-    assert grid_file.dimension(
-        GridFile.DimensionName.VERTEX_NAME
-    ) == grid_savepoint.num(VertexDim)
+    assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(CellDim)
+    assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(EdgeDim)
+    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(VertexDim)
 
 
 @pytest.mark.with_netcdf
@@ -326,18 +310,10 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
     grid = SimpleGrid()
     grid_parser = GridFile(data)
 
-    assert np.allclose(
-        grid_parser.int_field(GridFile.OffsetName.C2E), grid.connectivities[C2EDim]
-    )
-    assert np.allclose(
-        grid_parser.int_field(GridFile.OffsetName.E2C), grid.connectivities[E2CDim]
-    )
-    assert np.allclose(
-        grid_parser.int_field(GridFile.OffsetName.V2E), grid.connectivities[V2EDim]
-    )
-    assert np.allclose(
-        grid_parser.int_field(GridFile.OffsetName.V2C), grid.connectivities[V2CDim]
-    )
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), grid.connectivities[C2EDim])
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.E2C), grid.connectivities[E2CDim])
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2E), grid.connectivities[V2EDim])
+    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), grid.connectivities[V2CDim])
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
