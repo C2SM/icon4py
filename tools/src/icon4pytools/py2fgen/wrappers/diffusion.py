@@ -38,6 +38,7 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
+    KHalfDim,
     V2EDim,
     VertexDim,
 )
@@ -53,9 +54,9 @@ DIFFUSION: Diffusion = Diffusion()
 
 
 def diffusion_init(
-    vct_a: Field[[KDim], float64],
+    vct_a: Field[[KHalfDim], float64],
     theta_ref_mc: Field[[CellDim, KDim], float64],
-    wgtfac_c: Field[[CellDim, KDim], float64],
+    wgtfac_c: Field[[CellDim, KHalfDim], float64],
     e_bln_c_s: Field[[CellDim, C2EDim], float64],
     geofac_div: Field[[CellDim, C2EDim], float64],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float64],
@@ -205,15 +206,15 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: Field[[CellDim, KDim], float64],
+    w: Field[[CellDim, KHalfDim], float64],
     vn: Field[[EdgeDim, KDim], float64],
     exner: Field[[CellDim, KDim], float64],
     theta_v: Field[[CellDim, KDim], float64],
     rho: Field[[CellDim, KDim], float64],
-    hdef_ic: Field[[CellDim, KDim], float64],
-    div_ic: Field[[CellDim, KDim], float64],
-    dwdx: Field[[CellDim, KDim], float64],
-    dwdy: Field[[CellDim, KDim], float64],
+    hdef_ic: Field[[CellDim, KHalfDim], float64],
+    div_ic: Field[[CellDim, KHalfDim], float64],
+    dwdx: Field[[CellDim, KHalfDim], float64],
+    dwdy: Field[[CellDim, KHalfDim], float64],
     dtime: float64,
 ):
     # prognostic and diagnostic variables

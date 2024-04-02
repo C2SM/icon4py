@@ -48,7 +48,12 @@ class FuncParameter(Node):
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.is_array = True if len(self.dimensions) >= 1 else False
-        self.gtdims = [dimension.value + "Dim" for dimension in self.dimensions]
+        # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
+        # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
+        # side. So before generating the python wrapper code, we replace occurences of KHalfDim with KDim
+        self.gtdims = [
+            dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
+        ]
 
 
 class Func(Node):
@@ -190,7 +195,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
 # necessary imports
 from {{ plugin_name }} import ffi
 import numpy as np
-import cupy as cp
+{% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -198,6 +203,7 @@ from gt4py.next import as_field
 from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
+
 
 # embedded module imports
 {% for stmt in imports -%}
@@ -212,6 +218,8 @@ logging.basicConfig(filename='py2f_cffi.log',
                     level=logging.DEBUG,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
+
+{% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
 # We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
 grid = SimpleGrid()
@@ -231,7 +239,7 @@ from {{ module_name }} import {{ func.name }}
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
 {%- for arg in func.args -%}
-{{ arg.name }}: {{ arg.py_type_hint }}{% if not loop.last or func.global_size_args %}, {% endif %}
+{{ arg.name }}: {{ arg.py_type_hint | replace("KHalfDim","KDim") }}{% if not loop.last or func.global_size_args %}, {% endif %}
 {%- endfor %}
 {%- for arg in func.global_size_args -%}
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
