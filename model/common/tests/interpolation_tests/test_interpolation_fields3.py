@@ -44,7 +44,7 @@ from icon4py.model.common.interpolation.interpolation_fields3 import (
     compute_ddxn_z_half_e,
     compute_ddxnt_z_full,
     compute_cells_aw_verts,
-    cells2verts_scalar,
+    compute_cells2verts_scalar,
     compute_ddxt_z_half_e,
 )
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
@@ -94,7 +94,9 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
     dual_area = grid_savepoint.v_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
+    tangent_orientation = grid_savepoint.tangent_orientation().asnumpy()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths().asnumpy()
+    owner_mask = grid_savepoint.v_owner_mask()
     ddxt_z_full_ref = metrics_savepoint.ddxt_z_full().asnumpy()
     e2c = icon_grid.connectivities[E2CDim]
     v2c = icon_grid.connectivities[V2CDim]
@@ -116,27 +118,35 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
+    third_boundary_layer_start_index_edge = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+    )
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
         edge_cell_length,
+        owner_mask,
         e2c,
         v2c,
         v2e,
         e2v,
+        second_boundary_layer_start_index_vertex,
         second_boundary_layer_end_index_vertex,
     )
-    z_ifv = cells2verts_scalar(z_ifc, cells_aw_verts, v2c)
+    cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
+    assert np.allclose(cells_aw_verts, cells_aw_verts_ref)
+
+    z_ifv = compute_cells2verts_scalar(z_ifc, cells_aw_verts, v2c, second_boundary_layer_start_index_vertex)
     ddxt_z_half_e = compute_ddxt_z_half_e(
         z_ifv,
-        inv_dual_edge_length,
+        inv_primal_edge_length,
+        tangent_orientation,
         e2v,
-        second_boundary_layer_start_index_vertex,
+        third_boundary_layer_start_index_edge,
     )
     ddxt_z_full = compute_ddxnt_z_full(
         ddxt_z_half_e,
     )
 
-    print(ddxt_z_full_ref)
-    print(ddxt_z_full)
     assert np.allclose(ddxt_z_full, ddxt_z_full_ref)

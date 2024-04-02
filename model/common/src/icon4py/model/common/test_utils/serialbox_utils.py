@@ -217,6 +217,9 @@ class IconGridSavepoint(IconSavepoint):
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
 
+    def v_owner_mask(self):
+        return self._get_field("v_owner_mask", VertexDim, dtype=bool)
+
     def c_owner_mask(self):
         return self._get_field("c_owner_mask", CellDim, dtype=bool)
 
