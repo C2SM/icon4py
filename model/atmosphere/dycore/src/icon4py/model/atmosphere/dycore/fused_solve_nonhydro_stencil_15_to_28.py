@@ -167,26 +167,26 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     #     (z_rho_e, z_theta_v_e),
     # ) if limited_area else (z_rho_e, z_theta_v_e)
 
-    # z_rho_e = (
-    #     where(
-    #         (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
-    #         _set_zero_e_k(),
-    #         z_rho_e,
-    #     )
-    #     if limited_area
-    #     else z_rho_e
-    # )
-    #
-    # z_theta_v_e = (
-    #     where(
-    #         (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
-    #         _set_zero_e_k(),
-    #         z_theta_v_e,
-    #     )
-    #     if limited_area
-    #     else z_theta_v_e
-    # )
-    #
+    z_rho_e = (
+        where(
+            (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+            _set_zero_e_k(),
+            z_rho_e,
+        )
+        if limited_area
+        else z_rho_e
+    )
+
+    z_theta_v_e = (
+        where(
+            (horizontal_lower_4 <= horz_idx < horizontal_upper_4),
+            _set_zero_e_k(),
+            z_theta_v_e,
+        )
+        if limited_area
+        else z_theta_v_e
+    )
+
     # (z_rho_e, z_theta_v_e) = where(
     #     (horizontal_lower_1 <= horz_idx < horizontal_upper_1),
     #     _compute_horizontal_advection_of_rho_and_theta(
@@ -218,20 +218,20 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
     #     ),
     #     z_gradh_exner,
     # )
-    #
-    # z_gradh_exner = where(
-    #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
-    #     & (nflatlev < vert_idx < nflat_gradp + int32(1)),
-    #     _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
-    #         inv_dual_edge_length=inv_dual_edge_length,
-    #         z_exner_ex_pr=z_exner_ex_pr,
-    #         ddxn_z_full=ddxn_z_full,
-    #         c_lin_e=c_lin_e,
-    #         z_dexner_dz_c_1=z_dexner_dz_c_1,
-    #     ),
-    #     z_gradh_exner,
-    # )
-    #
+
+    z_gradh_exner = where(
+        (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
+        & (nflatlev < vert_idx < nflat_gradp + int32(1)),
+        _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
+            inv_dual_edge_length=inv_dual_edge_length,
+            z_exner_ex_pr=z_exner_ex_pr,
+            ddxn_z_full=ddxn_z_full,
+            c_lin_e=c_lin_e,
+            z_dexner_dz_c_1=z_dexner_dz_c_1,
+        ),
+        z_gradh_exner,
+    )
+
     # z_gradh_exner = where(
     #     (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
     #     & (nflat_gradp + int32(1) <= vert_idx),
