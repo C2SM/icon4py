@@ -924,7 +924,7 @@ def test_get_start_end_index_for_global_grid(
     "grid_file, global_num_cells",
     [
         (R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
-        (MCH_GRID_FILE, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
     ],
 )
 def test_grid_level_and_root(grid_file, global_num_cells):
