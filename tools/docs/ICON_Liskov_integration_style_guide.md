@@ -19,17 +19,17 @@ The code should look as clean and concise as possible. Also it should be similar
 - `!$DSL INSERT` one empty line before and after, unless the inserted code is part of an `ACC` data region, or a function call.
 - `!$DSL START CREATE` after the `!$ACC CREATE` block, no empty line before and one empty line after.
 
-## Content of DSL statements
+## Content of DSL statements:
 
 - In `!$DSL START STENCIL` and `!$DSL START FUSED STENCIL`:
-  - each argument (`name` included) should appear on a new line and aligned with the beginning of the first argument (generally `name`);
-  - any equal sign `=` should be preceeded and followed by a single space;
-  - the opening and closing round bracket should be followed and preceeded by a single space, respectively. Ignore this if the statement is on a single line.
+    - each argument (`name` included) should appear on a new line and aligned with the beginning of the first argument (generally `name`);
+    - any equal sign `=` should be preceeded and followed by a single space;
+    - the opening and closing round bracket should be followed and preceeded by a single space, respectively. Ignore this if the statement is on a single line.
 - In `!$DSL DECLARE`:
-  - each argument (`type` included) should appear on a new line and aligned with the beginning of the first argument;
-  - any equal sign `=` should be preceeded and followed by a single space;
-  - any comma `,` should be followed by a single space, but no space should be added before;
-  - the opening and closing round bracket should be followed and preceeded by a single space, respectively. Ignore this if the statement is on a single line.
+    - each argument (`type` included) should appear on a new line and aligned with the beginning of the first argument;
+    - any equal sign `=` should be preceeded and followed by a single space;
+    - any comma `,` should be followed by a single space, but no space should be added before;
+    - the opening and closing round bracket should be followed and preceeded by a single space, respectively. Ignore this if the statement is on a single line.
 
 ## Example
 
