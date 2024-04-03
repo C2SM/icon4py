@@ -13,8 +13,10 @@
 
 # Assuming this code is in a module called icon4py_config.py
 import dataclasses
+import importlib
 import os
 from enum import Enum
+from pathlib import Path
 
 import numpy as np
 from gt4py.next.program_processors.runners.gtfn import (
@@ -44,7 +46,23 @@ class Icon4PyConfig:
 
     @property
     def ICON_GRID_LOC(self):
-        return os.environ.get("ICON_GRID_LOC", "../../../../testdata")
+        env_path = os.environ.get("ICON_GRID_LOC")
+        if env_path is not None:
+            return env_path
+
+        test_folder = "testdata"
+        module_spec = importlib.util.find_spec("icon4pytools")
+
+        if module_spec and module_spec.origin:
+            # following namespace package conventions the root is three levels down
+            repo_root = Path(module_spec.origin).parents[3]
+            return os.path.join(repo_root, test_folder)
+        else:
+            raise FileNotFoundError(
+                "The `icon4pytools` package could not be found. Ensure the package is installed "
+                "and accessible. Alternatively, set the 'ICON_GRID_LOC' environment variable "
+                "explicitly to specify the location."
+            )
 
     @property
     def GRID_FILENAME(self):
