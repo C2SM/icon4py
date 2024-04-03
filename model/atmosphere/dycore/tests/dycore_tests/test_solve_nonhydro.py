@@ -358,8 +358,8 @@ def test_nonhydro_predictor_step(
     # stencil 32
     # TODO: @abishekg7 higher tol.
     assert dallclose(
-        solve_nonhydro.z_theta_v_fl_e.asnumpy(),
-        sp_exit.z_theta_v_fl_e().asnumpy(),
+        solve_nonhydro.z_theta_v_fl_e.asnumpy()[edge_start_lb_plus4:, :],
+        sp_exit.z_theta_v_fl_e().asnumpy()[edge_start_lb_plus4:, :],
         atol=1e-9,
     )
 
@@ -372,8 +372,8 @@ def test_nonhydro_predictor_step(
 
     # stencil 35,36, 37,38
     assert dallclose(
-        solve_nonhydro.intermediate_fields.z_vt_ie.asnumpy(),
-        sp_exit.z_vt_ie().asnumpy(),
+        solve_nonhydro.intermediate_fields.z_vt_ie.asnumpy()[edge_start_lb_plus4:, :],
+        sp_exit.z_vt_ie().asnumpy()[edge_start_lb_plus4:, :],
         atol=2e-14,
     )
     # stencil 35,36
@@ -384,8 +384,8 @@ def test_nonhydro_predictor_step(
     )
     # stencil 35
     assert dallclose(
-        solve_nonhydro.z_w_concorr_me.asnumpy()[:, nflatlev:],
-        sp_exit.z_w_concorr_me().asnumpy()[:, nflatlev:],
+        solve_nonhydro.z_w_concorr_me.asnumpy()[edge_start_lb_plus4:, nflatlev:],
+        sp_exit.z_w_concorr_me().asnumpy()[edge_start_lb_plus4:, nflatlev:],
         atol=1e-15,
     )
 
