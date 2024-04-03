@@ -221,7 +221,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_predictor(
 
     z_gradh_exner = where(
         (horizontal_lower_0 <= horz_idx < horizontal_upper_0)
-        & (nflatlev < vert_idx < nflat_gradp + int32(1)),
+        & (nflatlev < vert_idx < (nflat_gradp + int32(1))),
         _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=z_exner_ex_pr,
@@ -383,7 +383,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
             ),
             vn,
         )
-        if (divdamp_order == int32(24) & (scal_divdamp_o2 > 1.0e-6))
+        if ((divdamp_order == int32(24)) & (scal_divdamp_o2 > 1.0e-6))
         else vn
     )
 
