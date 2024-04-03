@@ -20,6 +20,10 @@ from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
+from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
+    set_cell_kdim_field_to_zero_wp,
+)
+
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
@@ -135,8 +139,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate_indices,
     _calculate_divdamp_fields,
     compute_z_raylfac,
-    set_zero_c_k,
-    set_zero_e_k,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
@@ -243,7 +245,6 @@ class NonHydrostaticConfig:
         rayleigh_type: int = 2,
         rayleigh_coeff: float = 0.05,
         divdamp_order: int = 24,  # the ICON default is 4,
-        idiv_method: int = 1,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
         divdamp_type: int = 3,
@@ -327,9 +328,6 @@ class NonHydrostaticConfig:
         #: IAU weight for dynamics fields
         self.iau_wgt_dyn: float = iau_wgt_dyn
 
-        #: from mo_dynamics_nml.f90
-        self.idiv_method: int = idiv_method
-
         self._validate()
 
     def _validate(self):
@@ -343,9 +341,6 @@ class NonHydrostaticConfig:
 
         if self.itime_scheme != 4:
             raise NotImplementedError("itime_scheme can only be 4")
-
-        if self.idiv_method != 1:
-            raise NotImplementedError("idiv_method can only be 1")
 
         if self.divdamp_order != 24:
             raise NotImplementedError("divdamp_order can only be 24")
@@ -708,6 +703,9 @@ class SolveNonhydro:
         start_edge_lb_plus4 = self.grid.get_start_index(
             EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
+        start_edge_local_minus2 = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+        )
         end_edge_local_minus2 = self.grid.get_end_index(
             EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
         )
@@ -891,50 +889,26 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
         if self.config.iadv_rhotheta <= 2:
-            tmp_0_0 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
-            offset = 2 if self.config.idiv_method == 1 else 3
-            tmp_0_1 = self.grid.get_end_index(
-                EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - offset
-            )
-
-            set_zero_e_k(
-                field=z_fields.z_rho_e,
-                horizontal_start=tmp_0_0,
-                horizontal_end=tmp_0_1,
+            set_two_edge_kdim_fields_to_zero_wp(
+                edge_kdim_field_to_zero_wp_1=z_fields.z_rho_e,
+                edge_kdim_field_to_zero_wp_2=z_fields.z_theta_v_e,
+                horizontal_start=start_edge_local_minus2,
+                horizontal_end=end_edge_local_minus2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-
-            set_zero_e_k(
-                field=z_fields.z_theta_v_e,
-                horizontal_start=tmp_0_0,
-                horizontal_end=tmp_0_1,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
             # initialize also nest boundary points with zero
             if self.grid.limited_area:
-                set_zero_e_k(
-                    field=z_fields.z_rho_e,
+                set_two_edge_kdim_fields_to_zero_wp(
+                    edge_kdim_field_to_zero_wp_1=z_fields.z_rho_e,
+                    edge_kdim_field_to_zero_wp_2=z_fields.z_theta_v_e,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_local_minus1,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-
-                set_zero_e_k(
-                    field=z_fields.z_theta_v_e,
-                    horizontal_start=start_edge_lb,
-                    horizontal_end=end_edge_local_minus1,
-                    vertical_start=0,
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-
             if self.config.iadv_rhotheta == 2:
                 # Compute upwind-biased values for rho and theta starting from centered differences
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
@@ -1103,20 +1077,19 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        if self.config.idiv_method == 1:
-            compute_mass_flux(
-                z_rho_e=z_fields.z_rho_e,
-                z_vn_avg=self.z_vn_avg,
-                ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
-                z_theta_v_e=z_fields.z_theta_v_e,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                horizontal_start=start_edge_lb_plus4,
-                horizontal_end=end_edge_local_minus2,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
+        compute_mass_flux(
+            z_rho_e=z_fields.z_rho_e,
+            z_vn_avg=self.z_vn_avg,
+            ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
+            z_theta_v_e=z_fields.z_theta_v_e,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            horizontal_start=start_edge_lb_plus4,
+            horizontal_end=end_edge_local_minus2,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
 
         nhsolve_prog.predictor_stencils_35_36(
             vn=prognostic_state[nnew].vn,
@@ -1172,19 +1145,21 @@ class SolveNonhydro:
             },
         )
 
-        if self.config.idiv_method == 1:
-            compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=self.interpolation_state.geofac_div,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                z_flxdiv_mass=self.z_flxdiv_mass,
-                z_flxdiv_theta=self.z_flxdiv_theta,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=self.interpolation_state.geofac_div,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={
+                "C2E": self.grid.get_offset_provider("C2E"),
+                "C2CE": self.grid.get_offset_provider("C2CE"),
+            },
+        )
 
         nhsolve_prog.stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
@@ -1642,15 +1617,41 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        if self.config.idiv_method == 1:
-            log.debug("corrector: start stencil 32")
-            compute_mass_flux(
-                z_rho_e=z_fields.z_rho_e,
+        log.debug("corrector: start stencil 32")
+        compute_mass_flux(
+            z_rho_e=z_fields.z_rho_e,
+            z_vn_avg=self.z_vn_avg,
+            ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
+            z_theta_v_e=z_fields.z_theta_v_e,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            horizontal_start=start_edge_lb_plus4,
+            horizontal_end=end_edge_local_minus2,  # TODO: (halungge) this is actually the second halo line
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+
+        if lprep_adv:  # Preparations for tracer advection
+            log.debug("corrector: doing prep advection")
+            if lclean_mflx:
+                log.debug("corrector: start stencil 33")
+                set_two_edge_kdim_fields_to_zero_wp(
+                    edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
+                    edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
+                    horizontal_start=start_edge_lb,
+                    horizontal_end=end_edge_end,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider={},
+                )
+            log.debug(f"corrector: start stencil 34")
+            accumulate_prep_adv_fields(
                 z_vn_avg=self.z_vn_avg,
-                ddqz_z_full_e=self.metric_state_nonhydro.ddqz_z_full_e,
-                z_theta_v_e=z_fields.z_theta_v_e,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
+                vn_traj=prep_adv.vn_traj,
+                mass_flx_me=prep_adv.mass_flx_me,
+                r_nsubsteps=r_nsubsteps,
                 horizontal_start=start_edge_lb_plus4,
                 horizontal_end=end_edge_local_minus2,
                 vertical_start=0,
@@ -1658,34 +1659,6 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            if lprep_adv:  # Preparations for tracer advection
-                log.debug("corrector: doing prep advection")
-                if lclean_mflx:
-                    log.debug("corrector: start stencil 33")
-                    set_two_edge_kdim_fields_to_zero_wp(
-                        edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
-                        edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
-                        horizontal_start=start_edge_lb,
-                        horizontal_end=end_edge_end,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider={},
-                    )
-                log.debug(f"corrector: start stencil 34")
-                accumulate_prep_adv_fields(
-                    z_vn_avg=self.z_vn_avg,
-                    mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                    vn_traj=prep_adv.vn_traj,
-                    mass_flx_me=prep_adv.mass_flx_me,
-                    r_nsubsteps=r_nsubsteps,
-                    horizontal_start=start_edge_lb_plus4,
-                    horizontal_end=end_edge_local_minus2,
-                    vertical_start=0,
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-
-        if self.config.idiv_method == 1:
             # verified for e-9
             log.debug(f"corrector: start stencile 41")
             compute_divergence_of_fluxes_of_rho_and_theta(
@@ -1912,7 +1885,7 @@ class SolveNonhydro:
             r_nsubsteps=r_nsubsteps,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=0,
+            vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
@@ -1933,8 +1906,8 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                set_zero_c_k(
-                    field=prep_adv.mass_flx_ic,
+                set_cell_kdim_field_to_zero_wp(
+                    field_to_zero_wp=prep_adv.mass_flx_ic,
                     horizontal_start=start_cell_lb,
                     horizontal_end=end_cell_nudging,
                     vertical_start=0,
