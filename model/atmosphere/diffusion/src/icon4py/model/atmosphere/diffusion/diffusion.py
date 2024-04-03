@@ -391,6 +391,8 @@ class Diffusion:
         self.cell_params: Optional[CellParams] = None
         self._horizontal_start_index_w_diffusion: int32 = 0
 
+        self.offset_provider_koff = {"Koff": KDim}
+
         # backend
         self.stencil_init_diffusion_local_fields_for_regular_timestep = (
             init_diffusion_local_fields_for_regular_timestep.with_backend(backend)
@@ -429,8 +431,6 @@ class Diffusion:
         )
         self.stencil_update_theta_and_exner = update_theta_and_exner.with_backend(backend)
 
-        self.offset_provider = None
-
     def init(
         self,
         grid: IconGrid,
@@ -467,35 +467,6 @@ class Diffusion:
         self.cell_params = cell_params
 
         self._allocate_temporary_fields()
-
-        self.offset_provider_koff = {"Koff": KDim}
-        self.offset_provider_v2e = {"V2E": self.grid.get_offset_provider("V2E")}
-        self.offset_provider_e2c2v_e2ecv = {
-            "E2C2V": self.grid.get_offset_provider("E2C2V"),
-            "E2ECV": self.grid.get_offset_provider("E2ECV"),
-        }
-        self.offset_provider_c2e_c2ce_koff = {
-            "C2E": self.grid.get_offset_provider("C2E"),
-            "C2CE": self.grid.get_offset_provider("C2CE"),
-            "Koff": KDim,
-        }
-        self.offset_provider_c2e2co = {
-            "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-        }
-        self.offset_provider_e2c_c2e2c = {
-            "E2C": self.grid.get_offset_provider("E2C"),
-            "C2E2C": self.grid.get_offset_provider("C2E2C"),
-        }
-        self.offset_provider_c2e_e2c_c2ce = {
-            "C2E": self.grid.get_offset_provider("C2E"),
-            "E2C": self.grid.get_offset_provider("E2C"),
-            "C2CE": self.grid.get_offset_provider("C2CE"),
-        }
-        self.offset_provider_c2cec_c2e2c_koff = {
-            "C2CEC": self.grid.get_offset_provider("C2CEC"),
-            "C2E2C": self.grid.get_offset_provider("C2E2C"),
-            "Koff": KDim,
-        }
 
         def _get_start_index_for_w_diffusion() -> int32:
             return self.grid.get_start_index(
@@ -715,7 +686,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider=self.offset_provider_v2e,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
 
@@ -746,7 +717,7 @@ class Diffusion:
             horizontal_end=edge_end_local_minus2,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider=self.offset_provider_e2c2v_e2ecv,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
@@ -769,7 +740,7 @@ class Diffusion:
                 horizontal_end=cell_end_local,
                 vertical_start=1,
                 vertical_end=klevels,
-                offset_provider=self.offset_provider_c2e_c2ce_koff,
+                offset_provider=self.grid.offset_providers,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -793,7 +764,7 @@ class Diffusion:
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider=self.offset_provider_v2e,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
 
@@ -825,7 +796,7 @@ class Diffusion:
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider=self.offset_provider_e2c2v_e2ecv,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
@@ -859,7 +830,7 @@ class Diffusion:
             horizontal_end=cell_end_halo,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider=self.offset_provider_c2e2co,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
@@ -878,7 +849,7 @@ class Diffusion:
             horizontal_end=edge_end_halo,
             vertical_start=(klevels - 2),
             vertical_end=klevels,
-            offset_provider=self.offset_provider_e2c_c2e2c,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
@@ -894,7 +865,7 @@ class Diffusion:
             horizontal_end=cell_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider=self.offset_provider_c2e_e2c_c2ce,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
         log.debug(
@@ -914,7 +885,7 @@ class Diffusion:
                 horizontal_end=cell_end_local,
                 vertical_start=0,
                 vertical_end=klevels,
-                offset_provider=self.offset_provider_c2cec_c2e2c_koff,
+                offset_provider=self.grid.offset_providers,
             )
 
             log.debug(

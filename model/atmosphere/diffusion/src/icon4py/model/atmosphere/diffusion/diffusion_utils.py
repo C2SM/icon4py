@@ -13,7 +13,7 @@
 from typing import Tuple
 
 from gt4py.next import as_field
-from gt4py.next.common import Dimension, Field
+from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
@@ -94,7 +94,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED)
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
