@@ -265,11 +265,14 @@ logging.basicConfig(filename='py2f_cffi.log',
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
+logging.info(cp.show_config())
+
 # We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
 grid = SimpleGrid()
 
 from libtest import foo
 from libtest import bar
+
 
 def unpack(ptr, *sizes: int) -> NDArray:
     """
@@ -305,7 +308,8 @@ def unpack(ptr, *sizes: int) -> NDArray:
     )
     return arr
 
-def unpack_gpu(ptr, *sizes: int) -> cp.ndarray:
+
+def unpack_gpu(ptr, *sizes: int):
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,
@@ -379,6 +383,7 @@ def foo_wrapper(one: int32, two: Field[CellDim, KDim], float64], n_Cell: int32, 
     except Exception as e:
         logging.exception(f"A Python error occurred: {e}")
         return 1
+
     return 0
 
 @ffi.def_extern()
@@ -395,11 +400,8 @@ def bar_wrapper(one: Field[CellDim, KDim], float64], two: int32, n_Cell: int32, 
     except Exception as e:
         logging.exception(f"A Python error occurred: {e}")
         return 1
+
     return 0
-
-
-
-
     '''
     assert compare_ignore_whitespace(interface, expected)
 

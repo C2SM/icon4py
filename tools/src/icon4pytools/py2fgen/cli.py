@@ -48,7 +48,7 @@ def parse_comma_separated_list(ctx, param, value) -> list[str]:
     "--backend",
     "-b",
     type=click.Choice([e.name for e in GT4PyBackend], case_sensitive=False),
-    default="ROUNDTRIP",
+    default="CPU",
     help="Set the backend to use, thereby unpacking Fortran pointers into NumPy or CuPy arrays respectively.",
 )
 @click.option(
