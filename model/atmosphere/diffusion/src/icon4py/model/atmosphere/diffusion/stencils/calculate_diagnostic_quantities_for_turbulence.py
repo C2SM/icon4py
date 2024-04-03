@@ -41,7 +41,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     return div_ic_vp, hdef_ic_vp
 
 
-@program(backend=backend)
+@program
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],

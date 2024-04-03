@@ -37,7 +37,7 @@ def _calculate_nabla2_for_theta(
     return z_temp
 
 
-@program(backend=backend)
+@program
 def calculate_nabla2_for_theta(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],

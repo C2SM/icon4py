@@ -43,7 +43,7 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     return kh_smag_e_vp
 
 
-@program(backend=backend)
+@program
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: Field[[CellDim, KDim], wpfloat],
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],

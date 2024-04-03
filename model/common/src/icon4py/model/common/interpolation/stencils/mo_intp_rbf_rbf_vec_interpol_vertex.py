@@ -31,7 +31,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], wpfloat],
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],

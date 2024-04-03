@@ -151,7 +151,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     return kh_smag_e_vp, astype(kh_smag_ec_wp, vpfloat), z_nabla2_e_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], vpfloat],
     tangent_orientation: Field[[EdgeDim], wpfloat],
