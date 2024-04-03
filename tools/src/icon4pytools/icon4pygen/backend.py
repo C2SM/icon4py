@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import warnings
 from pathlib import Path
-from typing import Any, Iterable, List
+from typing import Any, Iterable, List, Optional
 
 from gt4py._core import definitions as core_defs
 from gt4py.next.common import Connectivity, Dimension
@@ -179,7 +179,7 @@ def generate_dace_code(
     on_gpu: bool,
     temporaries: bool,
     **kwargs: Any,
-) -> tuple[str, str]:
+) -> tuple[str, str, Optional[str]]:
     import dace  # type: ignore[import-untyped]
 
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
@@ -221,12 +221,17 @@ def generate_dace_code(
     )
 
     code_objs = sdfg.generate_code()
-    # `generate_code` produces 3 objects: 2 headers and 1 source  file
-    src_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
-    assert len(src_objs) == 1
     hdr_objs = [obj for obj in code_objs if obj.language == "h"]
     assert len(hdr_objs) == 1
-    return hdr_objs[0].clean_code, src_objs[0].clean_code
+    src_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
+    assert len(src_objs) == 1
+    # for gpu codegen, also return the cuda file
+    if on_gpu:
+        cuda_objs = [obj for obj in code_objs if obj.language == "cu" and obj.linkable]
+        assert len(cuda_objs) == 1
+        return hdr_objs[0].clean_code, src_objs[0].clean_code, cuda_objs[0].clean_code
+    else:
+        return hdr_objs[0].clean_code, src_objs[0].clean_code, None
 
 
 class DaceCodegen:
@@ -237,7 +242,7 @@ class DaceCodegen:
 
     def __call__(self, outpath: Path, on_gpu: bool, temporaries: bool) -> None:
         """Generate C++ code using the DaCe backend and write it to a file."""
-        dc_hdr, dc_src = generate_dace_code(
+        dc_hdr, dc_src, dc_cuda = generate_dace_code(
             self.stencil_info,
             self.stencil_info.offset_provider,
             on_gpu,
@@ -245,3 +250,8 @@ class DaceCodegen:
         )
         write_string(dc_hdr, outpath, f"{self.stencil_info.itir.id}_dace.h")
         write_string(dc_src, outpath, f"{self.stencil_info.itir.id}_dace.cpp")
+        if on_gpu:
+            assert dc_cuda is not None
+            write_string(dc_cuda, outpath, f"{self.stencil_info.itir.id}_dace.cu")
+        else:
+            assert dc_cuda is None

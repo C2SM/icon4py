@@ -52,13 +52,6 @@ class ModuleType(click.ParamType):
     "--dace", is_flag=True, type=bool, help="Select dace backend.", default=False
 )
 @click.option(
-    "--on_gpu",
-    is_flag=True,
-    type=bool,
-    help="Whether dace should target gpu device.",
-    default=False,
-)
-@click.option(
     "--is_global", is_flag=True, type=bool, help="Whether this is a global run."
 )
 @click.option(
@@ -89,7 +82,6 @@ def main(
     block_size: int,
     levels_per_thread: int,
     dace: bool,
-    on_gpu: bool,
     is_global: bool,
     enable_mixed_precision: bool,
     outpath: pathlib.Path,
@@ -115,8 +107,9 @@ def main(
         from icon4pytools.icon4pygen.backend import DaceCodegen
         from icon4pytools.icon4pygen.bindings.workflow import DacePyBindGen
 
+        on_gpu = True
         DaceCodegen(stencil_info)(outpath, on_gpu, temporaries)
-        DacePyBindGen(stencil_info, on_gpu)(outpath)
+        DacePyBindGen(stencil_info)(outpath)
     else:
         from icon4pytools.icon4pygen.backend import GTHeader
 

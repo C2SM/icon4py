@@ -79,10 +79,9 @@ class DacePyBindGen:
         Furthermore, we also serialise data to .csv or .vtk files in case of verification failure.
     """
 
-    def __init__(self, stencil_info: StencilInfo, on_gpu: bool) -> None:
+    def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_name = stencil_info.itir.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
-        self.on_gpu = on_gpu
 
     @staticmethod
     def _stencil_info_to_binding_type(
