@@ -93,7 +93,7 @@ def _apply_diffusion_to_vn(
     return vn
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED)
 def apply_diffusion_to_vn(
     u_vert: Field[[VertexDim, KDim], vpfloat],
     v_vert: Field[[VertexDim, KDim], vpfloat],
