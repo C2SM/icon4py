@@ -146,7 +146,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         cpd,
         iau_wgt_dyn,
         is_iau_active,
-        lhdiff_rcf,
         divdamp_fac,
         divdamp_fac_o2,
         divdamp_order,
@@ -394,7 +393,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     vn,
                 )
 
-            if lhdiff_rcf and (divdamp_order == 24 or divdamp_order == 4):
+            if (divdamp_order == 24 or divdamp_order == 4):
                 # verified for e-10
                 z_graddiv2_vn = np.where(
                     (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
@@ -406,7 +405,7 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
                     z_graddiv2_vn,
                 )
 
-            if lhdiff_rcf:
+            if True:
                 if divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                     vn = np.where(
                         (horizontal_lower <= horz_idx) & (horz_idx < horizontal_upper),
@@ -542,7 +541,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
         cpd = 1004.64
         iau_wgt_dyn = 1.0
         is_iau_active = False
-        lhdiff_rcf = True
         divdamp_fac = 0.004
         divdamp_fac_o2 = 0.032
         divdamp_order = 24
@@ -624,7 +622,6 @@ class TestFusedMoSolveNonHydroStencil15To28(StencilTest):
             cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
-            lhdiff_rcf=lhdiff_rcf,
             divdamp_fac=divdamp_fac,
             divdamp_fac_o2=divdamp_fac_o2,
             divdamp_order=divdamp_order,
