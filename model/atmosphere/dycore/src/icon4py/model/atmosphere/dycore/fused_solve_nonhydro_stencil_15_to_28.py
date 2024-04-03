@@ -322,7 +322,6 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
     cpd: wpfloat,
     iau_wgt_dyn: wpfloat,
     is_iau_active: bool,
-    lhdiff_rcf: bool,
     divdamp_fac: wpfloat,
     divdamp_fac_o2: wpfloat,
     divdamp_order: int32,
@@ -384,7 +383,7 @@ def _fused_solve_nonhydro_stencil_15_to_28_corrector(
             ),
             vn,
         )
-        if (lhdiff_rcf & (divdamp_order == int32(24)) & (scal_divdamp_o2 > 1.0e-6))
+        if (divdamp_order == int32(24) & (scal_divdamp_o2 > 1.0e-6))
         else vn
     )
 
@@ -491,7 +490,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     p_dthalf: wpfloat,
     grav_o_cpd: wpfloat,
     limited_area: bool,
-    lhdiff_rcf: bool,
     divdamp_order: int32,
     scal_divdamp_o2: wpfloat,
     istep: int32,
@@ -610,7 +608,6 @@ def _fused_solve_nonhydro_stencil_15_to_28(
             cpd=cpd,
             iau_wgt_dyn=iau_wgt_dyn,
             is_iau_active=is_iau_active,
-            lhdiff_rcf=lhdiff_rcf,
             divdamp_fac=divdamp_fac,
             divdamp_fac_o2=divdamp_fac_o2,
             divdamp_order=divdamp_order,
@@ -692,7 +689,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
     p_dthalf: wpfloat,
     grav_o_cpd: wpfloat,
     limited_area: bool,
-    lhdiff_rcf: bool,
     divdamp_order: int32,
     scal_divdamp_o2: wpfloat,
     istep: int32,
@@ -773,7 +769,6 @@ def fused_solve_nonhydro_stencil_15_to_28(
         p_dthalf,
         grav_o_cpd,
         limited_area,
-        lhdiff_rcf,
         divdamp_order,
         scal_divdamp_o2,
         istep,
