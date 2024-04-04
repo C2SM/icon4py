@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -33,7 +34,7 @@ def _compute_contravariant_correction(
     return astype(z_w_concorr_me_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_contravariant_correction(
     vn: Field[[EdgeDim, KDim], wpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],

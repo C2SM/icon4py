@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -40,7 +41,7 @@ def _compute_horizontal_advection_term_for_vertical_velocity(
     return astype(z_v_grad_w_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_term_for_vertical_velocity(
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
