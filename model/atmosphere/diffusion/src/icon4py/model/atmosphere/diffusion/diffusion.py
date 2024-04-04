@@ -807,12 +807,12 @@ class Diffusion:
             )
             log.debug("2nd rbf interpolation: end")
 
-        fuse()
+            # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
+            log.debug("communication rbf extrapolation of z_nable2_e - start")
+            self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
+            log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
-        log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
-        log.debug("communication rbf extrapolation of z_nable2_e - end")
+        fuse()
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
         apply_diffusion_to_vn.with_backend(backend)(

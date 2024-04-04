@@ -322,12 +322,27 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 
                 fields_desc += f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}> field_desc_{i}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
 
-            code = f'''
-                    ghex::context* m = reinterpret_cast<ghex::context*>(IN___context_ptr);
+            code = ''
+            if self.counter == 0:
+                code = f'''
+                       __context_ptr_{id(self._comm)} = IN___context_ptr;
+                       __comm_ptr_{id(self._comm)} = IN___comm_ptr;
+
+                       __pattern_CellDim_ptr_{id(self._comm)} = IN___pattern_CellDim_ptr;
+                       __pattern_VertexDim_ptr_{id(self._comm)} = IN___pattern_VertexDim_ptr;
+                       __pattern_EdgeDim_ptr_{id(self._comm)} = IN___pattern_EdgeDim_ptr;
+
+                       __domain_descriptor_CellDim_ptr_{id(self._comm)} = IN___domain_descriptor_CellDim_ptr;
+                       __domain_descriptor_VertexDim_ptr_{id(self._comm)} = IN___domain_descriptor_VertexDim_ptr;
+                       __domain_descriptor_EdgeDim_ptr_{id(self._comm)} = IN___domain_descriptor_EdgeDim_ptr;
+                       '''
+
+            code += f'''
+                    ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr_{id(self._comm)});
                     
-                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(IN___pattern_{dim.value}Dim_ptr);
-                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(IN___domain_descriptor_{dim.value}Dim_ptr);
-                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(IN___comm_ptr);
+                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim.value}Dim_ptr_{id(self._comm)});
+                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim.value}Dim_ptr_{id(self._comm)});
+                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr_{id(self._comm)});
 
                     {fields_desc}
 
@@ -363,7 +378,21 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
             if self.counter == 0:
-                tasklet.code_global = CodeBlock(code=f'ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};', language=dace.dtypes.Language.CPP)
+                code = f'''
+                        {dace.uintp.dtype} __context_ptr_{id(self._comm)};
+                        {dace.uintp.dtype} __comm_ptr_{id(self._comm)};
+
+                        {dace.uintp.dtype} __pattern_CellDim_ptr_{id(self._comm)};
+                        {dace.uintp.dtype} __pattern_VertexDim_ptr_{id(self._comm)};
+                        {dace.uintp.dtype} __pattern_EdgeDim_ptr_{id(self._comm)};
+
+                        {dace.uintp.dtype} __domain_descriptor_CellDim_ptr_{id(self._comm)};
+                        {dace.uintp.dtype} __domain_descriptor_VertexDim_ptr_{id(self._comm)};
+                        {dace.uintp.dtype} __domain_descriptor_EdgeDim_ptr_{id(self._comm)};
+
+                        ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};
+                        '''
+                tasklet.code_global = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
 
             self.return_sdfg = False # reset
             return sdfg
