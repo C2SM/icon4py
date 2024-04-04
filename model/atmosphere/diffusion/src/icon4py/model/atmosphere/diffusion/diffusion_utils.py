@@ -24,7 +24,7 @@ from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 # Choose array backend
 config = Icon4PyConfig()
-xp = config.ARRAY_NS
+xp = config.array_ns
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py

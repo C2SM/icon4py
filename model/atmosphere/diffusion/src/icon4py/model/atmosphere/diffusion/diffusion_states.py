@@ -33,7 +33,7 @@ from icon4py.model.common.dimension import (
 config = Icon4PyConfig()
 
 # Choose array backend
-xp = config.ARRAY_NS
+xp = config.array_ns
 
 
 @dataclass(frozen=True)

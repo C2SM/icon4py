@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 config = Icon4PyConfig()
 
 # Choose array backend
-xp = config.ARRAY_NS
+xp = config.array_ns
 
 
 @dataclass(frozen=True)

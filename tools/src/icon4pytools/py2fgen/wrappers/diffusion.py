@@ -25,7 +25,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.config import Icon4PyConfig
+from icon4py.model.common.config import Device, Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -104,14 +104,14 @@ def diffusion_init(
     config = Icon4PyConfig()
 
     # ICON grid
-    if config.DEVICE == "GPU":
+    if config.device == Device.GPU:
         on_gpu = True
     else:
         on_gpu = False
 
     icon_grid = _load_from_gridfile(
-        file_path=config.ICON_GRID_LOC,
-        filename=config.GRID_FILENAME,
+        file_path=config.icon_grid_loc,
+        filename=config.grid_filename,
         num_levels=num_levels,
         on_gpu=on_gpu,
     )

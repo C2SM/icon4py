@@ -33,7 +33,7 @@ from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_ru
 
 # Choose array backend
 config = Icon4PyConfig()
-xp = config.ARRAY_NS
+xp = config.array_ns
 
 
 # todo(samkellerhals): turn on and off using a marker/option

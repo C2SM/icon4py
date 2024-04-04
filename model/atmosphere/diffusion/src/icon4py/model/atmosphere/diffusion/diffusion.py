@@ -85,8 +85,8 @@ log = logging.getLogger(__name__)
 config = Icon4PyConfig()
 
 # array namespace and backend
-xp = config.ARRAY_NS
-backend = config.GT4PY_RUNNER
+xp = config.array_ns
+backend = config.gt4py_runner
 
 
 class DiffusionType(int, Enum):
