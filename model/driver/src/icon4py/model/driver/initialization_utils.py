@@ -114,6 +114,51 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
+def model_initialization_urban(
+    icon_grid: IconGrid,
+    cell_param: CellParams,
+    edge_param: EdgeParams,
+    path: Path,
+    fname_prefix: str,
+    rank=0,
+):
+    """
+    Initialize the urban model.
+    Read prognostic and diagnostic state from serialized data.
+
+    Args:
+        icon_grid (IconGrid): The ICON grid.
+        cell_param (CellParams): The cell parameters.
+        edge_param (EdgeParams): The edge parameters.
+        path (Path): The path to the serialized input data.
+        fname_prefix (str): The prefix for the file names.
+        rank (int, optional): The rank of the current compute node. Defaults to 0.
+
+    Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
+        The data_provider is returned such that further timesteps of diagnostics and prognostics
+        can be read from within the dummy timeloop
+    """
+    log.warning("URBAN experiment using default initialization.")
+    (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        divdamp_fac_o2,
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    ) = model_initialization_serialbox(icon_grid, path, rank)
+
+    return (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        divdamp_fac_o2,
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    )
+
 def model_initialization_jabw(
     icon_grid: IconGrid,
     cell_param: CellParams,
@@ -499,6 +544,17 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
+
+    elif experiment_name == "urban":
+        (
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prep_adv,
+            divdamp_fac_o2,
+            diagnostic_state,
+            prognostic_state_now,
+            prognostic_state_next,
+        ) = model_initialization_urban(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
 
     else:
         (

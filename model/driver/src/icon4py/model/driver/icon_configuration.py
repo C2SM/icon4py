@@ -90,7 +90,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
+            zdiffu_t=False,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coeff=0.075,
         )
@@ -134,16 +134,38 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             NonHydrostaticConfig(),
         )
 
+    def _urban_config():
+        icon_run_config = IconRunConfig(
+            dtime=4.0,
+            start_date=datetime(1, 1, 1, 0, 0, 0),
+            end_date  =datetime(1, 1, 1, 0, 1, 0),
+            apply_initial_stabilization=False, # default True
+            #n_substeps=5, # default 5
+        )
+        output_config = IconOutputConfig(
+            output_time_interval=timedelta(seconds=4),
+            output_file_time_interval=timedelta(seconds=4),
+            output_path=Path("./urban_output/"),
+        )
+        diffusion_config = _default_diffusion_config()
+        nonhydro_config = NonHydrostaticConfig()
+        return (
+            icon_run_config,
+            output_config,
+            diffusion_config,
+            nonhydro_config,
+        )
+
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
             dtime=300.0,
-            end_date=datetime(1, 1, 1, 3, 0, 0),
+            end_date=datetime(1, 1, 1, 1, 0, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
         )
         output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=3600),
-            output_file_time_interval=timedelta(seconds=3600),
+            output_time_interval=timedelta(seconds=600),
+            output_file_time_interval=timedelta(seconds=600),
             output_path=Path("./"),
         )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
@@ -169,6 +191,13 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             diffusion_config,
             nonhydro_config,
         ) = _Jablownoski_Williamson_config()
+    elif experiment == "urban":
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _urban_config()
     else:
         log.warning("Experiment name is not specified, default configuration is used.")
         (

@@ -125,3 +125,5 @@ venv.bak/
 
 ### Others ###
 .obsidian
+*ser_data*
+data_output_*.nc
