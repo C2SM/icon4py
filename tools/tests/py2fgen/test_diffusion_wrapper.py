@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-from gt4py.next import np_as_located_field
+from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import (
@@ -119,83 +119,45 @@ def test_diffusion_wrapper_py():
     mask_hdiff = mask_hdiff < 0.5
 
     # input data - gt4py fields
-    theta_ref_mc = np_as_located_field(CellDim, KDim)(theta_ref_mc)
-    wgtfac_c = np_as_located_field(CellDim, KDim)(wgtfac_c)
-    vct_a = np_as_located_field(KDim)(vct_a)
-    e_bln_c_s = np_as_located_field(CellDim, C2EDim)(e_bln_c_s)
-    geofac_div = np_as_located_field(CellDim, C2EDim)(geofac_div)
-    geofac_grg_x = np_as_located_field(CellDim, C2E2CODim)(geofac_grg_x)
-    geofac_grg_y = np_as_located_field(CellDim, C2E2CODim)(geofac_grg_y)
-    geofac_n2s = np_as_located_field(CellDim, C2E2CODim)(geofac_n2s)
-    nudgecoeff_e = np_as_located_field(EdgeDim)(nudgecoeff_e)
-    rbf_coeff_1 = np_as_located_field(VertexDim, V2EDim)(rbf_coeff_1)
-    rbf_coeff_2 = np_as_located_field(VertexDim, V2EDim)(rbf_coeff_2)
-    dwdx = np_as_located_field(CellDim, KDim)(dwdx)
-    dwdy = np_as_located_field(CellDim, KDim)(dwdy)
-    hdef_ic = np_as_located_field(CellDim, KDim)(hdef_ic)
-    div_ic = np_as_located_field(CellDim, KDim)(div_ic)
-    mask_hdiff = np_as_located_field(CellDim, KDim)(mask_hdiff)
-    zd_diffcoef = np_as_located_field(CellDim, KDim)(zd_diffcoef)
-    zd_vertoffset = np_as_located_field(CellDim, C2E2CDim, KDim)(zd_vertoffset)
-    zd_intcoef = np_as_located_field(CellDim, C2E2CDim, KDim)(zd_intcoef)
-    w = np_as_located_field(CellDim, KDim)(w)
-    vn = np_as_located_field(EdgeDim, KDim)(vn)
-    exner = np_as_located_field(CellDim, KDim)(exner)
-    theta_v = np_as_located_field(CellDim, KDim)(theta_v)
-    rho = np_as_located_field(CellDim, KDim)(rho)
-    dual_normal_cell_x = np_as_located_field(
-        EdgeDim,
-        E2CDim,
-    )(dual_normal_cell_x)
-    dual_normal_cell_y = np_as_located_field(
-        EdgeDim,
-        E2CDim,
-    )(dual_normal_cell_y)
-    dual_normal_vert_x = np_as_located_field(
-        EdgeDim,
-        E2C2VDim,
-    )(dual_normal_vert_x)
-    dual_normal_vert_y = np_as_located_field(
-        EdgeDim,
-        E2C2VDim,
-    )(dual_normal_vert_y)
-    primal_normal_cell_x = np_as_located_field(
-        EdgeDim,
-        E2CDim,
-    )(primal_normal_cell_x)
-    primal_normal_cell_y = np_as_located_field(
-        EdgeDim,
-        E2CDim,
-    )(primal_normal_cell_y)
-    primal_normal_vert_x = np_as_located_field(
-        EdgeDim,
-        E2C2VDim,
-    )(primal_normal_vert_x)
-    primal_normal_vert_y = np_as_located_field(
-        EdgeDim,
-        E2C2VDim,
-    )(primal_normal_vert_y)
-    tangent_orientation = np_as_located_field(
-        EdgeDim,
-    )(tangent_orientation)
-    inverse_primal_edge_lengths = np_as_located_field(
-        EdgeDim,
-    )(inverse_primal_edge_lengths)
-    inv_dual_edge_length = np_as_located_field(
-        EdgeDim,
-    )(inv_dual_edge_length)
-    inv_vert_vert_length = np_as_located_field(
-        EdgeDim,
-    )(inv_vert_vert_length)
-    edge_areas = np_as_located_field(
-        EdgeDim,
-    )(edge_areas)
-    f_e = np_as_located_field(
-        EdgeDim,
-    )(f_e)
-    cell_areas = np_as_located_field(
-        CellDim,
-    )(cell_areas)
+    theta_ref_mc = as_field((CellDim, KDim), theta_ref_mc)
+    wgtfac_c = as_field((CellDim, KDim), wgtfac_c)
+    vct_a = as_field((KDim,), vct_a)
+    e_bln_c_s = as_field((CellDim, C2EDim), e_bln_c_s)
+    geofac_div = as_field((CellDim, C2EDim), geofac_div)
+    geofac_grg_x = as_field((CellDim, C2E2CODim), geofac_grg_x)
+    geofac_grg_y = as_field((CellDim, C2E2CODim), geofac_grg_y)
+    geofac_n2s = as_field((CellDim, C2E2CODim), geofac_n2s)
+    nudgecoeff_e = as_field((EdgeDim,), nudgecoeff_e)
+    rbf_coeff_1 = as_field((VertexDim, V2EDim), rbf_coeff_1)
+    rbf_coeff_2 = as_field((VertexDim, V2EDim), rbf_coeff_2)
+    dwdx = as_field((CellDim, KDim), dwdx)
+    dwdy = as_field((CellDim, KDim), dwdy)
+    hdef_ic = as_field((CellDim, KDim), hdef_ic)
+    div_ic = as_field((CellDim, KDim), div_ic)
+    mask_hdiff = as_field((CellDim, KDim), mask_hdiff)
+    zd_diffcoef = as_field((CellDim, KDim), zd_diffcoef)
+    zd_vertoffset = as_field((CellDim, C2E2CDim, KDim), zd_vertoffset)
+    zd_intcoef = as_field((CellDim, C2E2CDim, KDim), zd_intcoef)
+    w = as_field((CellDim, KDim), w)
+    vn = as_field((EdgeDim, KDim), vn)
+    exner = as_field((CellDim, KDim), exner)
+    theta_v = as_field((CellDim, KDim), theta_v)
+    rho = as_field((CellDim, KDim), rho)
+    dual_normal_cell_x = as_field((EdgeDim, E2CDim), dual_normal_cell_x)
+    dual_normal_cell_y = as_field((EdgeDim, E2CDim), dual_normal_cell_y)
+    dual_normal_vert_x = as_field((EdgeDim, E2C2VDim), dual_normal_vert_x)
+    dual_normal_vert_y = as_field((EdgeDim, E2C2VDim), dual_normal_vert_y)
+    primal_normal_cell_x = as_field((EdgeDim, E2CDim), primal_normal_cell_x)
+    primal_normal_cell_y = as_field((EdgeDim, E2CDim), primal_normal_cell_y)
+    primal_normal_vert_x = as_field((EdgeDim, E2C2VDim), primal_normal_vert_x)
+    primal_normal_vert_y = as_field((EdgeDim, E2C2VDim), primal_normal_vert_y)
+    tangent_orientation = as_field((EdgeDim,), tangent_orientation)
+    inverse_primal_edge_lengths = as_field((EdgeDim,), inverse_primal_edge_lengths)
+    inv_dual_edge_length = as_field((EdgeDim,), inv_dual_edge_length)
+    inv_vert_vert_length = as_field((EdgeDim,), inv_vert_vert_length)
+    edge_areas = as_field((EdgeDim,), edge_areas)
+    f_e = as_field((EdgeDim,), f_e)
+    cell_areas = as_field((CellDim,), cell_areas)
 
     diffusion_init(
         vct_a=vct_a,
