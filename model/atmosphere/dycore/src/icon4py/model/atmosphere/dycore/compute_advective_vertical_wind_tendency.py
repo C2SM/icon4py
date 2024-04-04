@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -38,7 +39,7 @@ def _compute_advective_vertical_wind_tendency(
     return astype(ddt_w_adv_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_advective_vertical_wind_tendency(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],
