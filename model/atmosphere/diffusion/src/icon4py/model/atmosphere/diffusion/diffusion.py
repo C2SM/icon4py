@@ -155,7 +155,6 @@ class DiffusionConfig:
         zdiffu_t: bool = True,
         thslp_zdiffu: float = 0.025,
         thhgtd_zdiffu: float = 200.0,
-        hdiff_rcf: bool = True,
         velocity_boundary_diffusion_denom: float = 200.0,
         temperature_boundary_diffusion_denom: float = 135.0,
         max_nudging_coeff: float = 0.02,
@@ -223,10 +222,6 @@ class DiffusionConfig:
         #       (constant!) one or the dynamical one. In the latter case it should be removed from
         #       DiffusionConfig and init()
         self.ndyn_substeps: int = n_substeps
-
-        #: If True, compute horizontal diffusion only at the large time step
-        #: Called 'lhdiff_rcf' in mo_nonhydrostatic_nml.f90
-        self.lhdiff_rcf: bool = hdiff_rcf
 
         # namelist mo_gridref_nml.f90
 
@@ -449,11 +444,7 @@ class Diffusion:
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
         self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
-        self.fac_bdydiff_v: float = (
-            math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
-            if config.lhdiff_rcf
-            else 1.0 / config.velocity_boundary_diffusion_denominator
-        )
+        self.fac_bdydiff_v: float = math.sqrt(config.substep_as_float) / config.velocity_boundary_diffusion_denominator
 
         self.smag_offset: float = 0.25 * params.K4 * config.substep_as_float
         self.diff_multfac_w: float = min(1.0 / 48.0, params.K4W * config.substep_as_float)
@@ -569,15 +560,13 @@ class Diffusion:
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
         )
-        if not self.config.lhdiff_rcf:
-            self._sync_cell_fields(prognostic_state)
 
     def _sync_cell_fields(self, prognostic_state):
         """
         Communicate theta_v, exner and w.
 
         communication only done in original code if the following condition applies:
-        IF ( .NOT. lhdiff_rcf .OR. linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
+        IF ( linit .OR. (iforcing /= inwp .AND. iforcing /= iaes) ) THEN
         """
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
         self._exchange.exchange_and_wait(

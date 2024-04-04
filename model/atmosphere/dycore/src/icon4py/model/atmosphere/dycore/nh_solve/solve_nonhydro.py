@@ -249,7 +249,6 @@ class NonHydrostaticConfig:
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
         divdamp_type: int = 3,
-        lhdiff_rcf: bool = True,
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
@@ -277,10 +276,6 @@ class NonHydrostaticConfig:
         #: number of dynamics substeps per fast-physics timestep
         self.ndyn_substeps_var = ndyn_substeps_var
 
-        #: reduced calling frequency also for horizontal diffusion
-        #: TODO (magdalena) to be removed, see discussion between Anurag and Ong Chia Rui
-        self.lhdiff_rcf: bool = lhdiff_rcf
-
         #: type of Rayleigh damping
         self.rayleigh_type: int = rayleigh_type
         # used for calculation of rayleigh_w, rayleigh_vn in mo_vertical_grid.f90
@@ -300,7 +295,7 @@ class NonHydrostaticConfig:
         #: off-centering of velocity advection in corrector step
         self.veladv_offctr: float = veladv_offctr
 
-        #: scaling factor for divergence damping (used only if lhdiff_rcf = true)
+        #: scaling factor for divergence damping
         self.divdamp_fac: float = divdamp_fac
         self.divdamp_fac2: float = divdamp_fac2
         self.divdamp_fac3: float = divdamp_fac3
@@ -1342,7 +1337,7 @@ class SolveNonhydro:
         )
 
         # compute dw/dz for divergence damping term
-        if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
+        if self.config.divdamp_type >= 3:
             compute_dwdz_for_divergence_damping.with_backend(backend)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
@@ -1387,7 +1382,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
+        if self.config.divdamp_type >= 3:
             compute_dwdz_for_divergence_damping.with_backend(backend)(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
@@ -1568,9 +1563,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if self.config.lhdiff_rcf and (
-            self.config.divdamp_order == 24 or self.config.divdamp_order == 4
-        ):
+        if self.config.divdamp_order == 24 or self.config.divdamp_order == 4:
             # verified for e-10
             log.debug(f"corrector start stencil 25")
             compute_graddiv2_of_vn.with_backend(backend)(
@@ -1586,48 +1579,47 @@ class SolveNonhydro:
                 },
             )
 
-        if self.config.lhdiff_rcf:
-            if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
-                log.debug(f"corrector: start stencil 26")
-                apply_2nd_order_divergence_damping.with_backend(backend)(
-                    z_graddiv_vn=z_fields.z_graddiv_vn,
+        if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
+            log.debug(f"corrector: start stencil 26")
+            apply_2nd_order_divergence_damping.with_backend(backend)(
+                z_graddiv_vn=z_fields.z_graddiv_vn,
+                vn=prognostic_state[nnew].vn,
+                scal_divdamp_o2=scal_divdamp_o2,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+
+        # TODO: this does not get accessed in FORTRAN
+        if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
+            if self.grid.limited_area:
+                log.debug("corrector: start stencil 27")
+                apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)(
+                    scal_divdamp=self.scal_divdamp,
+                    bdy_divdamp=self._bdy_divdamp,
+                    nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                    z_graddiv2_vn=self.z_graddiv2_vn,
                     vn=prognostic_state[nnew].vn,
-                    scal_divdamp_o2=scal_divdamp_o2,
                     horizontal_start=start_edge_nudging_plus1,
                     horizontal_end=end_edge_local,
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-
-            # TODO: this does not get accessed in FORTRAN
-            if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
-                if self.grid.limited_area:
-                    log.debug("corrector: start stencil 27")
-                    apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)(
-                        scal_divdamp=self.scal_divdamp,
-                        bdy_divdamp=self._bdy_divdamp,
-                        nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
-                        z_graddiv2_vn=self.z_graddiv2_vn,
-                        vn=prognostic_state[nnew].vn,
-                        horizontal_start=start_edge_nudging_plus1,
-                        horizontal_end=end_edge_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider={},
-                    )
-                else:
-                    log.debug("corrector start stencil 4th order divdamp")
-                    apply_4th_order_divergence_damping.with_backend(backend)(
-                        scal_divdamp=self.scal_divdamp,
-                        z_graddiv2_vn=self.z_graddiv2_vn,
-                        vn=prognostic_state[nnew].vn,
-                        horizontal_start=start_edge_nudging_plus1,
-                        horizontal_end=end_edge_local,
-                        vertical_start=0,
-                        vertical_end=self.grid.num_levels,
-                        offset_provider={},
-                    )
+            else:
+                log.debug("corrector start stencil 4th order divdamp")
+                apply_4th_order_divergence_damping.with_backend(backend)(
+                    scal_divdamp=self.scal_divdamp,
+                    z_graddiv2_vn=self.z_graddiv2_vn,
+                    vn=prognostic_state[nnew].vn,
+                    horizontal_start=start_edge_nudging_plus1,
+                    horizontal_end=end_edge_local,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider={},
+                )
 
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
