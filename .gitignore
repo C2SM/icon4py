@@ -127,3 +127,4 @@ venv.bak/
 .obsidian
 *ser_data*
 data_output_*.nc
+dummy_dycore_driver_*.log
