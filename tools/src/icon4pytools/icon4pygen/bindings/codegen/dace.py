@@ -10,12 +10,17 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import collections
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Sequence, Union, Optional
 
 from gt4py import eve
-from gt4py.eve.codegen import JinjaTemplate as as_jinja, Node, TemplatedGenerator, format_source
+from gt4py.eve.codegen import (
+    JinjaTemplate as as_jinja,
+    Node,
+    TemplatedGenerator,
+    format_source,
+)
 
 from icon4pytools.icon4pygen.bindings.codegen.header import (
     CppFreeFunc,
@@ -26,7 +31,9 @@ from icon4pytools.icon4pygen.bindings.codegen.header import (
     run_func_declaration,
     run_verify_func_declaration,
 )
-from icon4pytools.icon4pygen.bindings.codegen.render.offset import GpuTriMeshOffsetRenderer
+from icon4pytools.icon4pygen.bindings.codegen.render.offset import (
+    GpuTriMeshOffsetRenderer,
+)
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
 from icon4pytools.icon4pygen.bindings.utils import write_string
 
@@ -35,7 +42,6 @@ class CppDefGenerator(TemplatedGenerator):
     CppDefTemplate = as_jinja(
         """\
         {{ includes }}
-        {{ utility_functions }}
         {{ stencil_class }}
         extern "C" {
         {{ run_func }}
@@ -49,7 +55,8 @@ class CppDefGenerator(TemplatedGenerator):
 
     IncludeStatements = as_jinja(
         """\
-        #include <gridtools/fn/backend/gpu.hpp>
+        #include <chrono>
+        #include <dace/dace.h>
 
         #include "cuda_utils.hpp"
         #include "cuda_verify.hpp"
@@ -57,36 +64,9 @@ class CppDefGenerator(TemplatedGenerator):
         #include "to_vtk.h"
         #include "unstructured_interface.hpp"
         #include "verification_metrics.hpp"
-        #include \"{{ funcname }}.hpp\"
-        #include <chrono>
-        """
-    )
 
-    UtilityFunctions = as_jinja(
-        """\
-        template <int N> struct neighbor_table_fortran {
-          const int *raw_ptr_fortran;
-          const int nproma;
-          __device__ friend inline constexpr gridtools::array<int, N>
-          neighbor_table_neighbors(neighbor_table_fortran const &table, int index) {
-            gridtools::array<int, N> ret{};
-            for (int i = 0; i < N; i++) {
-              ret[i] = table.raw_ptr_fortran[index + table.nproma * i];
-            }
-            return ret;
-          }
-        };
-
-        template <int N> struct neighbor_table_strided {
-          const int nproma;
-          __device__ friend inline constexpr gridtools::array<int, N>
-          neighbor_table_neighbors(neighbor_table_strided const &table, int index) {
-            gridtools::array<int, N> ret{};
-            for (int i = 0; i < N; i++) {
-              ret[i] = index + table.nproma * i;
-            }
-            return ret;
-          }
+        struct {{funcname}}_state_t {
+            dace::cuda::Context *gpu_context;
         };
         """
     )
@@ -217,47 +197,32 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
     StenClassRunFun = as_jinja(
-        """
-      void run(const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) {
+      """
+      void run({%- for arg in _this_node.domain_args -%}
+        const int {{arg.cpp_arg_name()}}{%- if not loop.last -%}, {%- endif -%}
+      {%- endfor -%}) {
       if (!is_setup_) {
-          printf("{{stencil_name}} has not been set up! make sure setup() is called before run!\\n");
-          return;
+        printf("{{ stencil_name }} has not been set up! make sure setup() is called before run!\\n");
+        return;
       }
-      fn_backend_t cuda_backend{};
-      cuda_backend.stream = stream_;
-      {% for connection in _this_node.sparse_connections -%}
-        neighbor_table_fortran<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.raw_ptr_fortran = mesh_.{{connection.renderer.render_lowercase_shorthand()}}Table, .nproma = mesh_.Nproma};
-      {% endfor -%}
-      {%- for connection in _this_node.strided_connections -%}
-        neighbor_table_strided<{{connection.get_num_neighbors()}}> {{connection.renderer.render_lowercase_shorthand()}}_ptr{.nproma = mesh_.Nproma};
-      {% endfor -%}
-      auto connectivities = gridtools::hymap::keys<
-      {%- for connection in _this_node.all_connections -%}
-        generated::{{connection.renderer.render_uppercase_shorthand()}}_t{%- if not loop.last -%}, {%- endif -%}
-      {%- endfor -%}>::make_values(
-      {%- for connection in _this_node.all_connections -%}
-        {{connection.renderer.render_lowercase_shorthand()}}_ptr{%- if not loop.last -%}, {%- endif -%}
-      {% endfor -%});
 
-      int numCells = mesh_.NumCells;
-      int numEdges = mesh_.NumEdges;
-      int numVertices = mesh_.NumVertices;
+      dace::cuda::Context __dace_context(1, 1);
+      __dace_context.streams[0] = stream_;
+      DACE_GPU_CHECK(cudaEventCreateWithFlags(&__dace_context.events[0], cudaEventDisableTiming));
 
-      generated::{{stencil_name}}(connectivities)(cuda_backend,
-      {%- for field in _this_node.all_fields -%}
-        {%- if field.is_sparse() -%}
-          {{field.name}}_sid_comp,
-        {%- elif field.rank() == 0 -%}
-          {{field.name}}_gp,
-        {%- else -%}
-          {{field.name}}_sid,
-        {%- endif -%}
-      {%- endfor -%}
-      horizontalStart, horizontalEnd, verticalStart, verticalEnd, numCells, numEdges, numVertices);
+      {{ stencil_name }}_state_t handle{.gpu_context = &__dace_context};
+
+      __dace_runkernel_tasklet_toplevel_map_0_0_1(&handle
+      {%- for data_descr in _this_node.sorted_data_descriptors -%}
+        , {{ data_descr.cpp_arg_name() }}
+      {%- endfor -%},
+      {{ ", ".join(_this_node.sorted_symbols) }});
       #ifndef NDEBUG
         gpuErrchk(cudaPeekAtLastError());
         gpuErrchk(cudaDeviceSynchronize());
       #endif
+
+        DACE_GPU_CHECK(cudaEventDestroy(__dace_context.events[0]));
       }
       """
     )
@@ -448,16 +413,55 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
 
+class Scalar:
+    name: str
+    var_name: str
+
+    def __init__(self, name: str, var_name: str):
+        self.name = name
+        self.var_name = var_name
+
+    def sdfg_arg_name(self) -> str:
+        return self.name
+
+    def cpp_arg_name(self) -> str:
+        return self.var_name
+
+
+class DataDescriptor:
+    data_descr: Union[Field, Offset]
+
+    def __init__(self, data_descr: Field | Offset):
+        self.data_descr = data_descr
+
+    def sdfg_arg_name(self) -> str:
+        if isinstance(self.data_descr, Field):
+            return self.data_descr.name
+        # for offset data arrays
+        return f"__connectivity_{self.data_descr.renderer.render_uppercase_shorthand()}"
+
+    def cpp_arg_name(self) -> str:
+        if isinstance(self.data_descr, Field):
+            return f"{self.data_descr.name}_"
+        # for offset data arrays
+        return f"mesh_.{self.data_descr.renderer.render_lowercase_shorthand()}Table"
+
+    def strides(self) -> Optional[str]:
+        if isinstance(self.data_descr, Field):
+            strides_str = self.data_descr.renderer.render_strides(exclude_sparse_dim=False)
+            if strides_str == "1":
+                return None
+            return strides_str
+        # for offset data arrays
+        return "1, mesh_.Nproma"
+
+
 class CppFunc(Node):
     funcname: str
 
 
 class IncludeStatements(Node):
     funcname: str
-
-
-class UtilityFunctions(Node):
-    ...
 
 
 class GpuTriMesh(Node):
@@ -468,13 +472,9 @@ class GpuTriMesh(Node):
 
 class StenClassRunFun(Node):
     stencil_name: str
-    all_fields: Sequence[Field]
-    dense_fields: Sequence[Field]
-    sparse_fields: Sequence[Field]
-    compound_fields: Sequence[Field]
-    sparse_connections: Sequence[Offset]
-    strided_connections: Sequence[Offset]
-    all_connections: Sequence[Offset]
+    domain_args: Sequence[Scalar]
+    sorted_data_descriptors: Sequence[DataDescriptor]
+    sorted_symbols: Sequence[str]
 
 
 class PublicUtilities(Node):
@@ -554,7 +554,6 @@ class CppDefTemplate(Node):
     offsets: Sequence[Offset]
 
     includes: IncludeStatements = eve.datamodels.field(init=False)
-    utility_functions: UtilityFunctions = eve.datamodels.field(init=False)
     stencil_class: StencilClass = eve.datamodels.field(init=False)
     run_func: RunFunc = eve.datamodels.field(init=False)
     verify_func: VerifyFunc = eve.datamodels.field(init=False)
@@ -573,8 +572,12 @@ class CppDefTemplate(Node):
         ]
         sparse_fields = [field for field in self.fields if field.is_sparse()]
         compound_fields = [field for field in self.fields if field.is_compound()]
-        sparse_offsets = [offset for offset in self.offsets if not offset.is_compound_location()]
-        strided_offsets = [offset for offset in self.offsets if offset.is_compound_location()]
+        sparse_offsets = [
+            offset for offset in self.offsets if not offset.is_compound_location()
+        ]
+        strided_offsets = [
+            offset for offset in self.offsets if offset.is_compound_location()
+        ]
         all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
@@ -590,13 +593,33 @@ class CppDefTemplate(Node):
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         fields, offsets = self._get_field_data()
+        data_descriptors = set(
+            DataDescriptor(x) for x in [*fields["all_fields"], *self.offsets]
+        )
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
+        domain_args = [
+            Scalar("vertical_start", "verticalStart"),
+            Scalar("vertical_end", "verticalEnd"),
+            Scalar("horizontal_start", "horizontalStart"),
+            Scalar("horizontal_end", "horizontalEnd"),
+        ]
+
+        symbol_map:dict[str, Optional[str]] = {}
+        symbol_map.update({
+            arg.sdfg_arg_name(): arg.cpp_arg_name()
+            for arg in domain_args
+        })
+        symbol_map.update({
+            data_descr.sdfg_arg_name(): data_descr.strides()
+            for data_descr in data_descriptors
+        })
+
+        def key_data_descr(x: DataDescriptor | str) -> str:
+            return x.sdfg_arg_name()
 
         self.includes = IncludeStatements(
             funcname=self.stencil_name,
         )
-
-        self.utility_functions = UtilityFunctions()
 
         self.stencil_class = StencilClass(
             funcname=self.stencil_name,
@@ -607,17 +630,19 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
-                all_fields=fields["all_fields"],
-                dense_fields=fields["dense"],
-                sparse_fields=fields["sparse"],
-                compound_fields=fields["compound"],
-                sparse_connections=offsets["sparse"],
-                strided_connections=offsets["strided"],
-                all_connections=self.offsets,
+                domain_args=domain_args,
+                sorted_data_descriptors=sorted(data_descriptors, key=key_data_descr),
+                sorted_symbols=[
+                    symbols
+                    for arg, symbols in collections.OrderedDict(sorted(symbol_map.items())).items()
+                    if symbols is not None
+                ],
             ),
             public_utilities=PublicUtilities(fields=fields["output"]),
             copy_pointers=CopyPointers(fields=self.fields),
-            private_members=PrivateMembers(fields=self.fields, out_fields=fields["output"]),
+            private_members=PrivateMembers(
+                fields=self.fields, out_fields=fields["output"]
+            ),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
             ),

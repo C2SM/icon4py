@@ -42,20 +42,24 @@ class FieldRenderer:
             tags.append("unstructured::dim::vertical")
         return ",".join(tags)
 
-    def render_sid(self) -> str:
-        """Render c++ gridtools sid for field."""
+    def render_strides(self, exclude_sparse_dim: bool = True) -> str:
         if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")
 
         # We want to compute the rank without the sparse dimension, i.e. if a field is horizontal, vertical or both.
         dense_rank = self.entity.rank() - int(self.entity.is_sparse() or self.entity.is_compound())
-        if dense_rank == 1:
+        if dense_rank == 1 and exclude_sparse_dim:
             values_str = "1"
         elif self.entity.is_compound():
             values_str = f"1, {self.entity.get_num_neighbors()} * mesh_.{self.render_stride_type()}"
         else:
             values_str = f"1, mesh_.{self.render_stride_type()}"
-        return f"gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({values_str})"
+
+        return values_str
+
+    def render_sid(self) -> str:
+        """Render c++ gridtools sid for field."""
+        return f"gridtools::hymap::keys<{self.render_dim_tags()}>::make_values({self.render_strides()})"
 
     def render_ranked_dim_string(self) -> str:
         """Render f90 ranked dimension string."""
