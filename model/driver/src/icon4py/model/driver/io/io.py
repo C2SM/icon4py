@@ -88,34 +88,51 @@ class Monitor(ABC):
 
 @dataclass(frozen=True)
 class FieldIoConfig(Config):
+    """
+    Structured config for IO of a field group.
+    
+    Field group is a number of fields that are output at the same time intervals on the same grid 
+    (can be any horizontal dimension) and vertical levels.
+    
+    TODO (halungge) add support for 
+    - different vertical levels type config (pressure, model levels, height levels?)
+    - regridding (horizontal)
+    - end time ?
+    """
     output_interval: str
     start_time: str
     filename_pattern: str
     variables: list[str]
     
+    def validate(self):
+        pass
+    
 
 @dataclass(from_dict=True)
 class IoConfig(Config):
     """
-    Structured config for IO.
-
-    TODO: (halungge) add
-    - vertical output type model levels or pressure levels
-    - interval etc per field
-    -
+    Structured and hierarchical config for IO.
+    
+    Holds some general configuration and a collection of configuraitions for each field group
     """
     base_name: str
     
     output_end_time: str
     field_configs: list[FieldIoConfig]
+    #TODO default time units and calendar?
 
     def validate(self):
-        pass
+        # TODO (halungge) add validation of this configs own fields
+        for field_config in self.field_configs:
+            field_config.validate()
+        
 
 
 class FieldGroupMonitor(Monitor):
     """
-    Chain of IO components.
+    Monitor for a group of fields.
+    
+    This monitor is responsible for storing a group of fields that are output at the same time intervals.
     """
 
     @property
@@ -125,13 +142,15 @@ class FieldGroupMonitor(Monitor):
     @property
     def time_delta(self):
         return self._time_delta
+    
+    
     def __init__(self, config: FieldIoConfig, vertical:VerticalModelParams):
         self._next_output_time = datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
         self._field_names = config.filename_pattern
         self._variables = config.variables
         self._dataset = self._init_dataset(vertical)
-        self._writer = NetCDFWriter(config.filename_pattern)
+        self._writer = XArrayNetCDFWriter(config.filename_pattern)
 
     #initalise this Monitors dataset with:
     # - global attributes
@@ -139,10 +158,18 @@ class FieldGroupMonitor(Monitor):
     # - vertical dimension
     # - horizontal dimensions
     def _init_dataset(self,vertical_grid:VerticalModelParams):
-        # dimension ordering T (ime),Z (height), lat, lon
+        """ Initialise the dataset with global attributes and dimensions.
+        
+        TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical coordinate once there is
+        terrain k-heights become [horizontal, vertical ] field
+        TODO (magdalena): dimension ordering is # dimension ordering T (ime),Z (height), lat, lon
+        TODO (magdalena): for writing a dataset it is best to use netcdf4-python directly, since it has: parallel writing, and
+        """
+        
+        
         attrs = dict(
             Conventions="CF-1.7", # TODO (halungge) check changelog? latest version is 1.11
-            title="ICON4Py output", # TODO (halungge) let user define
+            title="ICON4Py output", # TODO (halungge) let user in config 
             institution="ETH Zurich and MeteoSwiss",
             source="ICON4Py",
             history="Created by ICON4Py",
@@ -195,12 +222,17 @@ class IoMonitor(Monitor):
 
     def __init__(self, config: IoConfig, **kwargs):
         config.validate()
-        self._chains = [FieldGroupMonitor(conf) for conf in config.field_configs]
         self.config = config
-        self.kwargs = kwargs
+        
+        self._group_monitors = [FieldGroupMonitor(conf) for conf in config.field_configs]
+        
+    def store(self, state, model_time:datetime, **kwargs):    
+        for monitor in self._group_monitors:
+            monitor.store(state, model_time, **kwargs)
+        
 
 
-class NetCDFWriter:
+class XArrayNetCDFWriter:
     def __init__(self, filename, mode="a"):
         self.filename = filename
         self.mode = mode
