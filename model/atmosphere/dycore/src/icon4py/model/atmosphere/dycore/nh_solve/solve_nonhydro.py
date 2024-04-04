@@ -769,7 +769,7 @@ class SolveNonhydro:
                 horizontal_end=end_cell_halo,
                 vertical_start=max(1, self.vertical_params.nflatlev),
                 vertical_end=self.grid.num_levels + 1,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.grid.offset_providers,
             )
 
             if self.vertical_params.nflatlev == 1:
@@ -798,7 +798,7 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.grid.offset_providers,
         )
 
         # Perturbation theta at top and surface levels
@@ -814,7 +814,7 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.grid.offset_providers,
         )
 
         if self.config.igradp_method == 3:
@@ -1107,7 +1107,7 @@ class SolveNonhydro:
             horizontal_end=end_edge_local_minus2,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.grid.offset_providers,
         )
 
         if not self.l_vert_nested:
@@ -1122,7 +1122,7 @@ class SolveNonhydro:
                 horizontal_end=end_edge_local_minus2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels + 1,
-                offset_provider={"Koff": KDim},
+                offset_provider=self.grid.offset_providers,
             )
 
         nhsolve_prog.stencils_39_40(
@@ -1138,11 +1138,7 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
+            offset_provider=self.grid.offset_providers,
         )
 
         compute_divergence_of_fluxes_of_rho_and_theta(
@@ -1155,10 +1151,7 @@ class SolveNonhydro:
             horizontal_end=end_cell_local,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            },
+            offset_provider=self.grid.offset_providers,
         )
 
         nhsolve_prog.stencils_43_44_45_45b(

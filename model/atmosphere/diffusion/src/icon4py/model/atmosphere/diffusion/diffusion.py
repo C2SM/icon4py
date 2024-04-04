@@ -699,11 +699,7 @@ class Diffusion:
                 horizontal_end=cell_end_local,
                 vertical_start=1,
                 vertical_end=klevels,
-                offset_provider={
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.grid.offset_providers,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -793,9 +789,7 @@ class Diffusion:
             horizontal_end=cell_end_halo,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={
-                "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-            },
+            offset_provider=self.grid.offset_providers,
         )
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
@@ -814,10 +808,7 @@ class Diffusion:
             horizontal_end=edge_end_halo,
             vertical_start=(klevels - 2),
             vertical_end=klevels,
-            offset_provider={
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "C2E2C": self.grid.get_offset_provider("C2E2C"),
-            },
+            offset_provider=self.grid.offset_providers,
         )
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
@@ -833,11 +824,7 @@ class Diffusion:
             horizontal_end=cell_end_local,
             vertical_start=0,
             vertical_end=klevels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            },
+            offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
         log.debug(
@@ -857,11 +844,7 @@ class Diffusion:
                 horizontal_end=cell_end_local,
                 vertical_start=0,
                 vertical_end=klevels,
-                offset_provider={
-                    "C2CEC": self.grid.get_offset_provider("C2CEC"),
-                    "C2E2C": self.grid.get_offset_provider("C2E2C"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.grid.offset_providers,
             )
 
             log.debug(

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
@@ -37,7 +38,7 @@ def _calculate_nabla2_for_theta(
     return z_temp
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_for_theta(
     kh_smag_e: Field[[EdgeDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],

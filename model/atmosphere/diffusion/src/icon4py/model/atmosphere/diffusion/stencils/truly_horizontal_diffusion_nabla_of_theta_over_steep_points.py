@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
@@ -69,7 +70,7 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     return astype(z_temp_wp, vpfloat)
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],

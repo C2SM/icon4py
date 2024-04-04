@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
@@ -79,7 +80,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     return w, dwdx, dwdy
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: Field[[CellDim], wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],

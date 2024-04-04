@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
@@ -41,7 +42,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     return div_ic_vp, hdef_ic_vp
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],

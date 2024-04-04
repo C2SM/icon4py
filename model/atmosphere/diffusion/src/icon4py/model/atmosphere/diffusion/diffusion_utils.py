@@ -14,7 +14,7 @@ from typing import Tuple
 
 import numpy as np
 from gt4py.next import as_field
-from gt4py.next.common import Dimension, Field
+from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
@@ -34,7 +34,7 @@ def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim]
     return field
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
     _identity_c_k(old_f, out=new_f)
 
@@ -59,7 +59,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 

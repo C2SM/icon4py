@@ -86,7 +86,7 @@ from icon4py.model.common.model_backend import backend
 
 
 # TODO: abishekg7 move this to tests
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_test_fields(
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
@@ -129,7 +129,7 @@ def _predictor_stencils_2_3(
     return z_exner_ex_pr, exner_pr
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_2_3(
     exner_exfac: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -194,7 +194,7 @@ def _predictor_stencils_4_5_6(
     return z_exner_ic, z_dexner_dz_c_1
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_4_5_6(
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
@@ -284,7 +284,7 @@ def _predictor_stencils_7_8_9(
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_7_8_9(
     rho: Field[[CellDim, KDim], float],
     rho_ref_mc: Field[[CellDim, KDim], float],
@@ -361,7 +361,7 @@ def _predictor_stencils_11_lower_upper(
     return z_theta_v_pr_ic, theta_v_ic
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_11_lower_upper(
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
@@ -475,7 +475,7 @@ def _predictor_stencils_35_36(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_35_36(
     vn: Field[[EdgeDim, KDim], float],
     ddxn_z_full: Field[[EdgeDim, KDim], float],
@@ -513,7 +513,7 @@ def predictor_stencils_35_36(
     )
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_37_38(
     vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
@@ -574,7 +574,7 @@ def _stencils_39_40(
     return w_concorr_c
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
     e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
@@ -681,7 +681,7 @@ def _stencils_42_44_45_45b(
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_42_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
@@ -817,7 +817,7 @@ def _stencils_43_44_45_45b(
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_43_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],

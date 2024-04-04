@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
@@ -43,7 +44,7 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     return kh_smag_e_vp
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: Field[[CellDim, KDim], wpfloat],
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],

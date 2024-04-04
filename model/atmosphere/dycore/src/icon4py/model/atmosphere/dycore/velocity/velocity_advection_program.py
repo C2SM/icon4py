@@ -117,7 +117,7 @@ def fused_stencils_4_5(
     )
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
@@ -270,7 +270,7 @@ def _fused_stencil_14(
     return local_cfl_clipping, local_vcfl, local_z_w_con_c
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencil_14(
     local_z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -313,7 +313,7 @@ def _fused_stencils_16_to_17(
     return ddt_w_adv
 
 
-@program(backend=backend)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_16_to_17(
     w: Field[[CellDim, KDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],

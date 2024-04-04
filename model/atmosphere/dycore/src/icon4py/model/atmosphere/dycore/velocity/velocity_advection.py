@@ -233,7 +233,7 @@ class VelocityAdvection:
             horizontal_end=end_edge_local_minus2,
             vertical_start=self.grid.num_levels,
             vertical_end=self.grid.num_levels + 1,
-            offset_provider={"Koff": KDim},
+            offset_provider=self.grid.offset_providers,
         )
 
         if not vn_only:
@@ -333,11 +333,7 @@ class VelocityAdvection:
                 horizontal_end=end_cell_local,
                 vertical_start=1,
                 vertical_end=self.grid.num_levels,
-                offset_provider={
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                    "Koff": KDim,
-                },
+                offset_provider=self.grid.offset_providers,
             )
 
             add_extra_diffusion_for_w_con_approaching_cfl(
@@ -558,11 +554,7 @@ class VelocityAdvection:
             horizontal_end=end_cell_local,
             vertical_start=1,
             vertical_end=self.grid.num_levels,
-            offset_provider={
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            },
+            offset_provider=self.grid.offset_providers,
         )
 
         add_extra_diffusion_for_w_con_approaching_cfl(
