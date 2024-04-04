@@ -322,10 +322,10 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
                     {fields_desc}
 
-                    __state->h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args[2:]))])});
-                    { '__state->h_'+str(id(self._comm))+'.wait();' if wait else ''}
+                    h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args[2:]))])});
+                    { 'h_'+str(id(self._comm))+'.wait();' if wait else ''}
 
-                    __out = reinterpret_cast<uintptr_t>(&__state->h_{id(self._comm)});
+                    __out = reinterpret_cast<uintptr_t>(&h_{id(self._comm)});
                     '''
 
             # # Debugging
@@ -351,8 +351,9 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
             if self.counter == 0:
-                tasklet.state_fields = [f'ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};']
+                tasklet.code_global = CodeBlock(code=f'ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};', language=dace.dtypes.Language.CPP)
 
+            self.return_sdfg = False # reset
             return sdfg
         else:
             wait = args[0]
@@ -370,7 +371,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         
         sdfg.arg_names.extend(self.__sdfg_signature__()[0])
         sdfg.arg_names.extend(list(self.__sdfg_closure__().keys()))
-        
+
         self.counter += 1
         return sdfg
 
@@ -435,11 +436,12 @@ class WaitOnCommHandle(SDFGConvertible):
             communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
 
             code = f'''
-                    __state->h_{id(self.communication_object)}.wait(); //reinterpret_cast<ghex::communication_handle<{communication_handle_type}>*>(communication_handle_)->wait();
+                    h_{id(self.communication_object)}.wait(); //reinterpret_cast<ghex::communication_handle<{communication_handle_type}>*>(communication_handle_)->wait();
                     __out = communication_handle_;
                     '''
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
 
+            self.return_sdfg = False # reset
             return sdfg
         else:
             communication_handle = args[0]
