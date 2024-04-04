@@ -812,160 +812,162 @@ class Diffusion:
             self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        fuse()
+            log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
+            apply_diffusion_to_vn.with_backend(backend)(
+                u_vert=self.u_vert,
+                v_vert=self.v_vert,
+                primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
+                primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
+                z_nabla2_e=self.z_nabla2_e,
+                inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
+                inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+                area_edge=self.edge_params.edge_areas,
+                kh_smag_e=self.kh_smag_e,
+                diff_multfac_vn=diff_multfac_vn,
+                nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
+                vn=prognostic_state.vn,
+                edge=self.horizontal_edge_index,
+                nudgezone_diff=self.nudgezone_diff,
+                fac_bdydiff_v=self.fac_bdydiff_v,
+                start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
+                limited_area=self.grid.limited_area,
+                horizontal_start=edge_start_lb_plus4,
+                horizontal_end=edge_end_local,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={
+                    "E2C2V": connectivity_E2C2V,
+                    "E2ECV": connectivity_E2ECV,
+                },
+            )
+            log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
+            
+            log.debug("communication of prognistic.vn : start")
+            handle_edge_comm = self._exchange(prognostic_state.vn, dim=EdgeDim, wait=False)
 
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        apply_diffusion_to_vn.with_backend(backend)(
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
-            primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
-            z_nabla2_e=self.z_nabla2_e,
-            inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            area_edge=self.edge_params.edge_areas,
-            kh_smag_e=self.kh_smag_e,
-            diff_multfac_vn=diff_multfac_vn,
-            nudgecoeff_e=self.interpolation_state.nudgecoeff_e,
-            vn=prognostic_state.vn,
-            edge=self.horizontal_edge_index,
-            nudgezone_diff=self.nudgezone_diff,
-            fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
-            limited_area=self.grid.limited_area,
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "E2C2V": connectivity_E2C2V,
-                "E2ECV": connectivity_E2ECV,
-            },
-        )
-        log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
-        
-        log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
+            log.debug(
+                "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
+            )
+            # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
+            copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
+            apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
+                area=self.cell_params.area,
+                geofac_n2s=self.interpolation_state.geofac_n2s,
+                geofac_grg_x=self.interpolation_state.geofac_grg_x,
+                geofac_grg_y=self.interpolation_state.geofac_grg_y,
+                w_old=self.w_tmp,
+                w=prognostic_state.w,
+                type_shear=int32(self.config.shear_type.value),
+                dwdx=diagnostic_state.dwdx,
+                dwdy=diagnostic_state.dwdy,
+                diff_multfac_w=self.diff_multfac_w,
+                diff_multfac_n2w=self.diff_multfac_n2w,
+                k=self.vertical_index,
+                cell=self.horizontal_cell_index,
+                nrdmax=int32(
+                    self.vertical_params.index_of_damping_layer + 1
+                ),  # +1 since Fortran includes boundaries
+                interior_idx=int32(cell_start_interior),
+                halo_idx=int32(cell_end_local),
+                horizontal_start=self._horizontal_start_index_w_diffusion,
+                horizontal_end=cell_end_halo,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={
+                    "C2E2CO": connectivity_C2E2CO,
+                },
+            )
+            log.debug(
+                "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
+            )
 
-        log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
-        )
-        # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field.with_backend(backend)(prognostic_state.w, self.w_tmp, offset_provider={})
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_backend(backend)(
-            area=self.cell_params.area,
-            geofac_n2s=self.interpolation_state.geofac_n2s,
-            geofac_grg_x=self.interpolation_state.geofac_grg_x,
-            geofac_grg_y=self.interpolation_state.geofac_grg_y,
-            w_old=self.w_tmp,
-            w=prognostic_state.w,
-            type_shear=int32(self.config.shear_type.value),
-            dwdx=diagnostic_state.dwdx,
-            dwdy=diagnostic_state.dwdy,
-            diff_multfac_w=self.diff_multfac_w,
-            diff_multfac_n2w=self.diff_multfac_n2w,
-            k=self.vertical_index,
-            cell=self.horizontal_cell_index,
-            nrdmax=int32(
-                self.vertical_params.index_of_damping_layer + 1
-            ),  # +1 since Fortran includes boundaries
-            interior_idx=int32(cell_start_interior),
-            halo_idx=int32(cell_end_local),
-            horizontal_start=self._horizontal_start_index_w_diffusion,
-            horizontal_end=cell_end_halo,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "C2E2CO": connectivity_C2E2CO,
-            },
-        )
-        log.debug(
-            "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
-        )
-
-        log.debug(
-            "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
-        )
-        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(backend)(
-            theta_v=prognostic_state.theta_v,
-            theta_ref_mc=self.metric_state.theta_ref_mc,
-            thresh_tdiff=self.thresh_tdiff,
-            smallest_vpfloat=dbl_eps,
-            kh_smag_e=self.kh_smag_e,
-            horizontal_start=edge_start_nudging,
-            horizontal_end=edge_end_halo,
-            vertical_start=(klevels - 2),
-            vertical_end=klevels,
-            offset_provider={
-                "E2C": connectivity_E2C,
-                "C2E2C": connectivity_C2E2C,
-            },
-        )
-        log.debug(
-            "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
-        )
-
-        log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        calculate_nabla2_for_theta.with_backend(backend)(
-            kh_smag_e=self.kh_smag_e,
-            inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
-            theta_v=prognostic_state.theta_v,
-            geofac_div=self.interpolation_state.geofac_div,
-            z_temp=self.z_temp,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "C2E": connectivity_C2E,
-                "E2C": connectivity_E2C,
-                "C2CE": connectivity_C2CE,
-            },
-        )
-        log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-
-        log.debug(
-            "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
-        )
-        if self.config.apply_zdiffusion_t:
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
-                mask=self.metric_state.mask_hdiff,
-                zd_vertoffset=self.metric_state.zd_vertoffset,
-                zd_diffcoef=self.metric_state.zd_diffcoef,
-                geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
-                geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
-                vcoef=self.metric_state.zd_intcoef,
+            log.debug(
+                "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
+            )
+            calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_backend(backend)(
                 theta_v=prognostic_state.theta_v,
+                theta_ref_mc=self.metric_state.theta_ref_mc,
+                thresh_tdiff=self.thresh_tdiff,
+                smallest_vpfloat=dbl_eps,
+                kh_smag_e=self.kh_smag_e,
+                horizontal_start=edge_start_nudging,
+                horizontal_end=edge_end_halo,
+                vertical_start=(klevels - 2),
+                vertical_end=klevels,
+                offset_provider={
+                    "E2C": connectivity_E2C,
+                    "C2E2C": connectivity_C2E2C,
+                },
+            )
+            log.debug(
+                "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
+            )
+
+            log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
+            calculate_nabla2_for_theta.with_backend(backend)(
+                kh_smag_e=self.kh_smag_e,
+                inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
+                theta_v=prognostic_state.theta_v,
+                geofac_div=self.interpolation_state.geofac_div,
                 z_temp=self.z_temp,
                 horizontal_start=cell_start_nudging,
                 horizontal_end=cell_end_local,
                 vertical_start=0,
                 vertical_end=klevels,
                 offset_provider={
-                    "C2CEC": connectivity_C2CEC,
-                    "C2E2C": connectivity_C2E2C,
-                    "Koff": KDim,
+                    "C2E": connectivity_C2E,
+                    "E2C": connectivity_E2C,
+                    "C2CE": connectivity_C2CE,
                 },
             )
+            log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
 
             log.debug(
-                "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+                "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
             )
-        
-        log.debug("running stencil 16 (update_theta_and_exner): start")
-        update_theta_and_exner.with_backend(backend)(
-            z_temp=self.z_temp,
-            area=self.cell_params.area,
-            theta_v=prognostic_state.theta_v,
-            exner=prognostic_state.exner,
-            rd_o_cvd=self.rd_o_cvd,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={},
-        )
-        log.debug("running stencil 16 (update_theta_and_exner): end")
-        
-        handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
-        log.debug("communication of prognogistic.vn - end")
+            if self.config.apply_zdiffusion_t:
+                truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_backend(backend)(
+                    mask=self.metric_state.mask_hdiff,
+                    zd_vertoffset=self.metric_state.zd_vertoffset,
+                    zd_diffcoef=self.metric_state.zd_diffcoef,
+                    geofac_n2s_c=self.interpolation_state.geofac_n2s_c,
+                    geofac_n2s_nbh=self.interpolation_state.geofac_n2s_nbh,
+                    vcoef=self.metric_state.zd_intcoef,
+                    theta_v=prognostic_state.theta_v,
+                    z_temp=self.z_temp,
+                    horizontal_start=cell_start_nudging,
+                    horizontal_end=cell_end_local,
+                    vertical_start=0,
+                    vertical_end=klevels,
+                    offset_provider={
+                        "C2CEC": connectivity_C2CEC,
+                        "C2E2C": connectivity_C2E2C,
+                        "Koff": KDim,
+                    },
+                )
+
+                log.debug(
+                    "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
+                )
+            
+            log.debug("running stencil 16 (update_theta_and_exner): start")
+            update_theta_and_exner.with_backend(backend)(
+                z_temp=self.z_temp,
+                area=self.cell_params.area,
+                theta_v=prognostic_state.theta_v,
+                exner=prognostic_state.exner,
+                rd_o_cvd=self.rd_o_cvd,
+                horizontal_start=cell_start_nudging,
+                horizontal_end=cell_end_local,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={},
+            )
+            log.debug("running stencil 16 (update_theta_and_exner): end")
+            
+            dummy = wait_on_comm_handle(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
+            log.debug("communication of prognogistic.vn - end")
+
+            return dummy
+
+        fuse()
