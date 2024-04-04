@@ -672,6 +672,8 @@ class Diffusion:
                         on_gpu = False
                         dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
 
+                        dace.config.Config.set("optimizer", "automatic_simplification", value=False)
+
                         return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs,
                                     #
                                     __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
@@ -704,7 +706,7 @@ class Diffusion:
             scale_k.with_backend(backend)(
                 self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={}
             )
-        
+
             log.debug("rbf interpolation 1: start")
             mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
                 p_e_in=prognostic_state.vn,
@@ -721,98 +723,91 @@ class Diffusion:
             log.debug("rbf interpolation 1: end")
 
             log.debug("communication rbf extrapolation of vn - start")
-            communication_handle = self._exchange(False, VertexDim, self.u_vert, self.v_vert)
+            self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
             log.debug("communication rbf extrapolation of vn - end")
 
-            h1 = wait_on_comm_handle(communication_handle)
-
-            print(80*'@', communication_handle, flush=True)
-            print(80*'@', h1, flush=True)
-
-            return h1
-        
-        fuse()
-
-        log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
-        calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(
-            diff_multfac_smag=self.diff_multfac_smag,
-            tangent_orientation=self.edge_params.tangent_orientation,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            primal_normal_vert_x=self.edge_params.primal_normal_vert[0],
-            primal_normal_vert_y=self.edge_params.primal_normal_vert[1],
-            dual_normal_vert_x=self.edge_params.dual_normal_vert[0],
-            dual_normal_vert_y=self.edge_params.dual_normal_vert[1],
-            vn=prognostic_state.vn,
-            smag_limit=smag_limit,
-            kh_smag_e=self.kh_smag_e,
-            kh_smag_ec=self.kh_smag_ec,
-            z_nabla2_e=self.z_nabla2_e,
-            smag_offset=smag_offset,
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local_minus2,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={
-                "E2C2V": connectivity_E2C2V,
-                "E2ECV": connectivity_E2ECV,
-            },
-        )
-        log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-
-        if (
-            self.config.shear_type
-            >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
-        ):
-            log.debug(
-                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
-            )
-            calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
-                kh_smag_ec=self.kh_smag_ec,
-                vn=prognostic_state.vn,
-                e_bln_c_s=self.interpolation_state.e_bln_c_s,
-                geofac_div=self.interpolation_state.geofac_div,
+            log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
+            calculate_nabla2_and_smag_coefficients_for_vn.with_backend(backend)(
                 diff_multfac_smag=self.diff_multfac_smag,
-                wgtfac_c=self.metric_state.wgtfac_c,
-                div_ic=diagnostic_state.div_ic,
-                hdef_ic=diagnostic_state.hdef_ic,
-                horizontal_start=cell_start_nudging,
-                horizontal_end=cell_end_local,
-                vertical_start=1,
+                tangent_orientation=self.edge_params.tangent_orientation,
+                inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+                inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
+                u_vert=self.u_vert,
+                v_vert=self.v_vert,
+                primal_normal_vert_x=self.edge_params.primal_normal_vert[0],
+                primal_normal_vert_y=self.edge_params.primal_normal_vert[1],
+                dual_normal_vert_x=self.edge_params.dual_normal_vert[0],
+                dual_normal_vert_y=self.edge_params.dual_normal_vert[1],
+                vn=prognostic_state.vn,
+                smag_limit=smag_limit,
+                kh_smag_e=self.kh_smag_e,
+                kh_smag_ec=self.kh_smag_ec,
+                z_nabla2_e=self.z_nabla2_e,
+                smag_offset=smag_offset,
+                horizontal_start=edge_start_lb_plus4,
+                horizontal_end=edge_end_local_minus2,
+                vertical_start=0,
                 vertical_end=klevels,
                 offset_provider={
-                    "C2E": connectivity_C2E,
-                    "C2CE": connectivity_C2CE,
-                    "Koff": KDim,
+                    "E2C2V": connectivity_E2C2V,
+                    "E2ECV": connectivity_E2ECV,
                 },
             )
-            log.debug(
-                "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
+            log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
+
+            if (
+                self.config.shear_type
+                >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
+            ):
+                log.debug(
+                    "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
+                )
+                calculate_diagnostic_quantities_for_turbulence.with_backend(backend)(
+                    kh_smag_ec=self.kh_smag_ec,
+                    vn=prognostic_state.vn,
+                    e_bln_c_s=self.interpolation_state.e_bln_c_s,
+                    geofac_div=self.interpolation_state.geofac_div,
+                    diff_multfac_smag=self.diff_multfac_smag,
+                    wgtfac_c=self.metric_state.wgtfac_c,
+                    div_ic=diagnostic_state.div_ic,
+                    hdef_ic=diagnostic_state.hdef_ic,
+                    horizontal_start=cell_start_nudging,
+                    horizontal_end=cell_end_local,
+                    vertical_start=1,
+                    vertical_end=klevels,
+                    offset_provider={
+                        "C2E": connectivity_C2E,
+                        "C2CE": connectivity_C2CE,
+                        "Koff": KDim,
+                    },
+                )
+                log.debug(
+                    "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
+                )
+
+            # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
+            # TODO (magdalena) move this up and do asynchronous exchange
+            if self.config.type_vn_diffu > 1:
+                log.debug("communication rbf extrapolation of z_nable2_e - start")
+                self._exchange(self.z_nabla2_e, dim=EdgeDim, wait=True)
+                log.debug("communication rbf extrapolation of z_nable2_e - end")
+
+            log.debug("2nd rbf interpolation: start")
+            mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
+                p_e_in=self.z_nabla2_e,
+                ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
+                ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
+                p_u_out=self.u_vert,
+                p_v_out=self.v_vert,
+                horizontal_start=vertex_start_lb_plus1,
+                horizontal_end=vertex_end_local,
+                vertical_start=0,
+                vertical_end=klevels,
+                offset_provider={"V2E": connectivity_V2E},
             )
+            log.debug("2nd rbf interpolation: end")
 
-        # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
-        # TODO (magdalena) move this up and do asynchronous exchange
-        if self.config.type_vn_diffu > 1:
-            log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
-            log.debug("communication rbf extrapolation of z_nable2_e - end")
-
-        log.debug("2nd rbf interpolation: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex.with_backend(backend)(
-            p_e_in=self.z_nabla2_e,
-            ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
-            ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
-            p_u_out=self.u_vert,
-            p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
-            horizontal_end=vertex_end_local,
-            vertical_start=0,
-            vertical_end=klevels,
-            offset_provider={"V2E": connectivity_V2E},
-        )
-        log.debug("2nd rbf interpolation: end")
+        fuse()
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")

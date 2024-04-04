@@ -195,7 +195,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         pattern = unstructured.make_pattern(
             self._context,
             halo_generator,
-            [self._domain_descriptors[horizontal_dim]],
+            [self._domain_descriptors[horizontal_dim]], # for type inference only
         )
         log.debug(
             f"pattern for dim='{horizontal_dim.value}' and {self._domain_descriptor_info(self._domain_descriptors[horizontal_dim])} created"
@@ -220,21 +220,20 @@ class GHexMultiNodeExchange(SDFGConvertible):
         res.wait()
     
     def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
+        dim = kwargs.get('dim', None)
+        if not dim:
+            raise ValueError("Need to define a dimension.")
+        wait = kwargs.get('wait', True)
+        
         if self.return_sdfg:
             sdfg = dace.SDFG('_halo_exchange_')
             state = sdfg.add_state()
-
-            wait = args[0]
-            dim = args[1]
 
             if self.counter == 0:
                 for cpp_ptr_name in self.__sdfg_closure__():
                     sdfg.add_scalar(cpp_ptr_name, dtype=dace.uintp)
 
-            sdfg.add_scalar('wait', dtype=dace.bool)
-            sdfg.add_scalar('dim', dtype=dace.int64)
-
-            for arg in zip(self.__sdfg_signature__()[0][2:], args[2:]):
+            for arg in zip(self.__sdfg_signature__()[0], args):
                 buffer_name = arg[0]
                 data_descriptor = arg[1]
                 sdfg.add_array(buffer_name,
@@ -243,7 +242,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
                                storage=data_descriptor.storage,
                                strides=data_descriptor.strides)
             
-            # return communication handle
+            # return communication handle for async comm
             sdfg.add_scalar("__return", dtype=dace.uintp)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
@@ -256,17 +255,27 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
             in_connectors = {}
             out_connectors = {}
-            for i, arg in enumerate(zip(self.__sdfg_signature__()[0][2:], args[2:])):
+
+            for i, arg in enumerate(zip(self.__sdfg_signature__()[0], args)):
                 buffer_name = arg[0]
                 data_descriptor = arg[1]
 
                 buffer = state.add_read(buffer_name)
-                in_connectors[buffer_name] = dtypes.pointer(data_descriptor.dtype)
-                state.add_edge(buffer, buffer_name, tasklet, buffer_name, Memlet.from_array(buffer_name, data_descriptor))
+                in_connectors['IN_' + buffer_name] = dtypes.pointer(data_descriptor.dtype)
+                state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, Memlet.from_array(buffer_name, data_descriptor))
 
                 update = state.add_write(buffer_name)
-                out_connectors[f'OUT_buffer_{i}'] = dtypes.pointer(data_descriptor.dtype)
-                state.add_edge(tasklet, f'OUT_buffer_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
+                out_connectors['OUT_' + buffer_name] = dtypes.pointer(data_descriptor.dtype)
+                state.add_edge(tasklet, 'OUT_' + buffer_name, update, None, Memlet.from_array(buffer_name, data_descriptor))
+
+            if self.counter == 0:
+                for i, cpp_ptr_name in enumerate(self.__sdfg_closure__()):
+                    buffer_name = cpp_ptr_name
+                    data_descriptor = dace.uintp
+
+                    buffer = state.add_read(buffer_name)
+                    in_connectors['IN_' + buffer_name] = data_descriptor.dtype
+                    state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, Memlet(buffer_name, subset='0'))
 
             return_handle = state.add_write("__return")
             state.add_edge(tasklet, '__out', return_handle, None, Memlet('__return', subset='0'))
@@ -282,7 +291,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
             
             fields_desc = '\n'
-            for i, arg in enumerate(args[2:]):
+            for i, arg in enumerate(args):
                 # https://github.com/ghex-org/GHEX/blob/master/bindings/python/unstructured/field_descriptor.cpp
                 if len(arg.shape) > 2:
                     raise ValueError("field has too many dimensions")
@@ -311,18 +320,18 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 device = 'cpu' if arg.storage.value <= 5 else 'gpu'
                 field_dtype = arg.dtype.ctype
                 
-                fields_desc += f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}> field_desc_{i}{{*domain_descriptor, field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                fields_desc += f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}> field_desc_{i}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
 
             code = f'''
-                    ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr);
+                    ghex::context* m = reinterpret_cast<ghex::context*>(IN___context_ptr);
                     
-                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim.value}Dim_ptr);
-                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim.value}Dim_ptr);
-                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr);
+                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(IN___pattern_{dim.value}Dim_ptr);
+                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(IN___domain_descriptor_{dim.value}Dim_ptr);
+                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(IN___comm_ptr);
 
                     {fields_desc}
 
-                    h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args[2:]))])});
+                    h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args))])});
                     { 'h_'+str(id(self._comm))+'.wait();' if wait else ''}
 
                     __out = reinterpret_cast<uintptr_t>(&h_{id(self._comm)});
@@ -330,7 +339,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
             # # Debugging
             # field_desc_out = '\n'
-            # for i, arg in enumerate(args[2:]):
+            # for i, arg in enumerate(args):
             #     field_desc_out += f'outFile << field_desc_{i}.device_id() << ", " << field_desc_{i}.domain_id() << ", " << field_desc_{i}.domain_size() << ", " << field_desc_{i}.num_components() << std::endl;\n'
             # code += f'''
             #         std::stringstream filenameStream;
@@ -343,6 +352,9 @@ class GHexMultiNodeExchange(SDFGConvertible):
             #             outFile << domain_descriptor->domain_id() << ", " << domain_descriptor->inner_size() << ", " << domain_descriptor->size() << std::endl;
             #             {field_desc_out}
             #             outFile << __out << std::endl;
+            #             outFile << IN___context_ptr << ", " << IN___comm_ptr << std::endl;
+            #             outFile << IN___pattern_CellDim_ptr << ", " << IN___pattern_VertexDim_ptr << ", " << IN___pattern_EdgeDim_ptr << std::endl;
+            #             outFile << IN___domain_descriptor_CellDim_ptr << ", " << IN___domain_descriptor_VertexDim_ptr << ", " << IN___domain_descriptor_EdgeDim_ptr << std::endl;
             #             outFile.close();
             #         }} else {{
             #             ;
@@ -356,9 +368,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             self.return_sdfg = False # reset
             return sdfg
         else:
-            wait = args[0]
-            dim = args[1]
-            res = self.exchange(dim, *args[2:])
+            res = self.exchange(dim, *args)
             if wait:
                 res.wait()
             else:
@@ -387,7 +397,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 }
     
     def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
-        args = ['wait', 'dim']
+        args = []
         for i in range(self.max_num_of_fields_to_communicate):
             args.append(f'field_{i}')
         return (args,[])
