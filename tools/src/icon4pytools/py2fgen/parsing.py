@@ -76,7 +76,7 @@ def parse(module_name: str, functions: list[str], plugin_name: str) -> CffiPlugi
     return CffiPlugin(
         module_name=module_name,
         plugin_name=plugin_name,
-        function=parsed_functions,
+        functions=parsed_functions,
         imports=parsed_imports,
     )
 

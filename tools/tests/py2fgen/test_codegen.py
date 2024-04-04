@@ -86,7 +86,7 @@ bar = Func(
 
 def test_cheader_generation_for_single_function():
     plugin = CffiPlugin(
-        module_name="libtest", plugin_name="libtest_plugin", function=[foo], imports=["import foo"]
+        module_name="libtest", plugin_name="libtest_plugin", functions=[foo], imports=["import foo"]
     )
 
     header = CHeaderGenerator.apply(plugin)
@@ -95,7 +95,7 @@ def test_cheader_generation_for_single_function():
 
 def test_cheader_for_pointer_args():
     plugin = CffiPlugin(
-        module_name="libtest", plugin_name="libtest_plugin", function=[bar], imports=["import bar"]
+        module_name="libtest", plugin_name="libtest_plugin", functions=[bar], imports=["import bar"]
     )
 
     header = CHeaderGenerator.apply(plugin)
@@ -112,7 +112,7 @@ def dummy_plugin():
     return CffiPlugin(
         module_name="libtest",
         plugin_name="libtest_plugin",
-        function=[foo, bar],
+        functions=[foo, bar],
         imports=["import foo_module_x\nimport bar_module_y"],
     )
 

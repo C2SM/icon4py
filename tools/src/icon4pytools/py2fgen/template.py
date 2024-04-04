@@ -72,7 +72,7 @@ class CffiPlugin(Node):
     module_name: str
     plugin_name: str
     imports: list[str]
-    function: list[Func]
+    functions: list[Func]
 
 
 class PythonWrapper(CffiPlugin):
@@ -224,7 +224,7 @@ logging.basicConfig(filename='py2f_cffi.log',
 # We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
 grid = SimpleGrid()
 
-{% for func in _this_node.function %}
+{% for func in _this_node.functions %}
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
 
@@ -234,7 +234,7 @@ from {{ module_name }} import {{ func.name }}
 
 {{ int_to_bool }}
 
-{% for func in _this_node.function %}
+{% for func in _this_node.functions %}
 
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
@@ -325,7 +325,7 @@ def {{ func.name }}_wrapper(
 
 
 class CHeaderGenerator(TemplatedGenerator):
-    CffiPlugin = as_jinja("""{{'\n'.join(function)}}""")
+    CffiPlugin = as_jinja("""{{'\n'.join(functions)}}""")
 
     Func = as_jinja(
         "extern int {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
@@ -372,7 +372,7 @@ class F90Interface(Node):
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        functions = self.cffi_plugin.function
+        functions = self.cffi_plugin.functions
         self.function_declaration = [
             F90FunctionDeclaration(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
             for f in functions
@@ -390,7 +390,7 @@ module {{ _this_node.cffi_plugin.plugin_name }}
     use, intrinsic :: iso_c_binding
     implicit none
 
-    {% for func in _this_node.cffi_plugin.function %}
+    {% for func in _this_node.cffi_plugin.functions %}
     public :: {{ func.name }}
     {% endfor %}
 
