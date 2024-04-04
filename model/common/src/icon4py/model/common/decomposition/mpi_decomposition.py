@@ -195,7 +195,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         pattern = unstructured.make_pattern(
             self._context,
             halo_generator,
-            [self._domain_descriptors[horizontal_dim]], # for type inference only
+            [self._domain_descriptors[horizontal_dim]],
         )
         log.debug(
             f"pattern for dim='{horizontal_dim.value}' and {self._domain_descriptor_info(self._domain_descriptors[horizontal_dim])} created"
