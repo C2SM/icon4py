@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum, where
 
 from icon4py.model.common.dimension import C2E2C, C2E2CDim, CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -41,7 +42,7 @@ def _temporary_field_for_grid_point_cold_pools_enhancement(
     return enh_diffu_3d_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def temporary_field_for_grid_point_cold_pools_enhancement(
     theta_v: Field[[CellDim, KDim], wpfloat],
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],

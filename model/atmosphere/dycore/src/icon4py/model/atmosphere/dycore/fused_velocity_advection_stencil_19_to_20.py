@@ -33,6 +33,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -105,7 +106,7 @@ def _fused_velocity_advection_stencil_19_to_20(
     return ddt_vn_apc
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_19_to_20(
     vn: Field[[EdgeDim, KDim], wpfloat],
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],

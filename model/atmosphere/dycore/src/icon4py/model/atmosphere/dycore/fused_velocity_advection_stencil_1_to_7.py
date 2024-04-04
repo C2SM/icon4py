@@ -33,6 +33,7 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -407,7 +408,7 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     )[1]
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_1_to_7(
     vn: Field[[EdgeDim, KDim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
