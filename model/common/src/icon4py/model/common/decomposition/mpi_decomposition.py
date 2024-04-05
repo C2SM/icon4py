@@ -366,7 +366,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             # # Debugging
             # field_desc_out = '\n'
             # for i, arg in enumerate(args):
-            #     field_desc_out += f'outFile << field_desc_{i}.device_id() << ", " << field_desc_{i}.domain_id() << ", " << field_desc_{i}.domain_size() << ", " << field_desc_{i}.num_components() << std::endl;\n'
+            #     field_desc_out += f'outFile << {descr_unique_names[i]}.device_id() << ", " << {descr_unique_names[i]}.domain_id() << ", " << {descr_unique_names[i]}.domain_size() << ", " << {descr_unique_names[i]}.num_components() << std::endl;\n'
             # code += f'''
             #         std::stringstream filenameStream;
             #         filenameStream << "RANK_" << m->rank() << ".txt";
