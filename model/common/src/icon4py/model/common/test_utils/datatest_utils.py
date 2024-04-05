@@ -55,6 +55,14 @@ DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/downloa
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
+    """Get the grid root and level from the experiment name.
+
+    Reads the level and root parameters from a string in the canonical ICON gridfile format
+        RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
+
+        Args: experiment: str: The experiment name.
+        Returns: tuple[int, int]: The grid root and level.
+    """
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
         return root, level
