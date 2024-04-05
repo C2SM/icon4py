@@ -290,7 +290,9 @@ class GHexMultiNodeExchange(SDFGConvertible):
             communication_object_type = self._comm.__cpp_type__
             communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
             
+            fields_desc_glob_vars = '\n'
             fields_desc = '\n'
+            descr_unique_names = []
             for i, arg in enumerate(args):
                 # https://github.com/ghex-org/GHEX/blob/master/bindings/python/unstructured/field_descriptor.cpp
                 if len(arg.shape) > 2:
@@ -320,7 +322,16 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 device = 'cpu' if arg.storage.value <= 5 else 'gpu'
                 field_dtype = arg.dtype.ctype
                 
-                fields_desc += f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}> field_desc_{i}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                descr_unique_name = f'field_desc_{i}_{self.counter}_{id(self._comm)}'
+                descr_unique_names.append(descr_unique_name)
+                descr_type_ = f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}>"
+                if wait:
+                    # de-allocated descriptors once out-of-scope, no need for storing them in global vars
+                    fields_desc += f"{descr_type_} {descr_unique_name}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                else:
+                    # for async exchange, we need to keep the descriptors alive, until the wait
+                    fields_desc += f"{descr_unique_name} = {descr_type_}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                    fields_desc_glob_vars += f"{descr_type_} {descr_unique_name};\n"
 
             code = ''
             if self.counter == 0:
@@ -346,7 +357,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
                     {fields_desc}
 
-                    h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)(field_desc_{i})' for i in range(len(args))])});
+                    h_{id(self._comm)} = communication_object->exchange({", ".join([f'(*pattern)({descr_unique_names[i]})' for i in range(len(args))])});
                     { 'h_'+str(id(self._comm))+'.wait();' if wait else ''}
 
                     __out = reinterpret_cast<uintptr_t>(&h_{id(self._comm)});
@@ -391,8 +402,13 @@ class GHexMultiNodeExchange(SDFGConvertible):
                         {dace.uintp.dtype} __domain_descriptor_EdgeDim_ptr_{id(self._comm)};
 
                         ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};
+
+                        {fields_desc_glob_vars}
                         '''
-                tasklet.code_global = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+            else:
+                code = fields_desc_glob_vars
+            tasklet.code_global = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+            
 
             self.return_sdfg = False # reset
             return sdfg
@@ -475,7 +491,7 @@ class WaitOnCommHandle(SDFGConvertible):
             communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
 
             code = f'''
-                    h_{id(self.communication_object)}.wait(); //reinterpret_cast<ghex::communication_handle<{communication_handle_type}>*>(communication_handle_)->wait();
+                    h_{id(self.communication_object)}.wait();
                     __out = communication_handle_;
                     '''
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)

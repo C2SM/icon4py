@@ -673,6 +673,7 @@ class Diffusion:
                         dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
 
                         dace.config.Config.set("optimizer", "automatic_simplification", value=False)
+                        dace.config.Config.set("cache", value="unique")
 
                         return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs,
                                     #
