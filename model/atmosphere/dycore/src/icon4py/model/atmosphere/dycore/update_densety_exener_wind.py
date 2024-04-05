@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -41,7 +42,7 @@ def _update_densety_exener_wind(
     return rho_new_wp, exner_new_wp, w_new_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_densety_exener_wind(
     rho_now: Field[[CellDim, KDim], wpfloat],
     grf_tend_rho: Field[[CellDim, KDim], wpfloat],
