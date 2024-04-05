@@ -48,8 +48,8 @@ GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/xhooaubvGffG8Qy/download",
-    2: "https://polybox.ethz.ch/index.php/s/tEZxTk9NO390LyB/download",
-    4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
+    2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
+    4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 
