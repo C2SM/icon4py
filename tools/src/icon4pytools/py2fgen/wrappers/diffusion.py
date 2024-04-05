@@ -81,7 +81,6 @@ def diffusion_init(
     itype_sher: int,
     itype_vn_diffu: int,
     itype_t_diffu: int,
-    lhdiff_rcf: bool,
     lhdiff_w: bool,
     lhdiff_temp: bool,
     l_limited_area: bool,
@@ -192,7 +191,6 @@ def diffusion_init(
         smagorinski_scaling_factor=hdiff_smag_fac,
         n_substeps=n_dyn_substeps,
         zdiffu_t=l_zdiffu_t,
-        hdiff_rcf=lhdiff_rcf,
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coeff=nudge_max_coeff,
     )
