@@ -35,7 +35,7 @@ class PyBindGen:
     """
 
     def __init__(self, stencil_info: StencilInfo, levels_per_thread: int, block_size: int) -> None:
-        self.stencil_name = stencil_info.itir.id
+        self.stencil_name = stencil_info.fendef.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
         self.levels_per_thread = levels_per_thread
         self.block_size = block_size

@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -40,7 +41,7 @@ def _add_temporal_tendencies_to_vn(
     return vn_nnew_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_temporal_tendencies_to_vn(
     vn_nnow: Field[[EdgeDim, KDim], wpfloat],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],

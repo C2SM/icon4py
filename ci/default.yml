@@ -4,14 +4,20 @@ include:
 build:
   extends: .build_template
 
-test_model_simple_grid:
-    extends: .test_template
-    stage: test
-    script:
-      - tox -r -e run_stencil_tests -c model/ --verbose -- --backend=$BACKEND
-    parallel:
-      matrix:
-        - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+test_model_stencils:
+  extends: .test_template
+  stage: test
+  script:
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+  parallel:
+    matrix:
+    - BACKEND: [gtfn_cpu, gtfn_gpu, roundtrip]
+      GRID: [simple_grid, icon_grid]
+  rules:
+    # exclude slow test configurations
+    - if: $BACKEND == "roundtrip" && $GRID == "icon_grid"
+      when: never
+    - when: always
 
 test_tools:
   extends: .test_template
@@ -24,7 +30,8 @@ test_model_datatests:
     extends: .test_template
     stage: test
     script:
-        - tox -r -e run_model_tests -c model/ --verbose -- $COMPONENT
+        - tox -r -e run_model_tests -c model/ --verbose -- --backend=$BACKEND $COMPONENT
     parallel:
         matrix:
             - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, common/tests, driver/tests]
+              BACKEND: [gtfn_cpu]

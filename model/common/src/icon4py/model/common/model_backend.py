@@ -10,10 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from gt4py.next.program_processors.runners.gtfn import (
+    run_gtfn,
+    run_gtfn_cached,
+    run_gtfn_gpu,
+    run_gtfn_imperative,
+)
 
-from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
-    grid,
-)
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-)
+
+cached_backend = run_gtfn_cached
+compiled_backend = run_gtfn
+imperative_backend = run_gtfn_imperative
+gpu_backend = run_gtfn_gpu
+backend = cached_backend
