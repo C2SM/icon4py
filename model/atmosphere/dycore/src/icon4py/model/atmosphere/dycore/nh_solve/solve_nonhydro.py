@@ -1538,6 +1538,7 @@ class SolveNonhydro:
             apply_2nd_order_divergence_damping(
                 z_graddiv_vn=z_fields.z_graddiv_vn,
                 vn=prognostic_state[nnew].vn,
+                scal_divdamp_o2=scal_divdamp_o2,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
                 vertical_start=0,
