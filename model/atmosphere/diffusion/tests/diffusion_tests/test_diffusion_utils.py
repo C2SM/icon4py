@@ -13,7 +13,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -25,12 +24,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 )
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
-
-
-backend = run_gtfn
 
 
 def initial_diff_multfac_vn_numpy(shape, k4, hdiff_efdt_ratio):

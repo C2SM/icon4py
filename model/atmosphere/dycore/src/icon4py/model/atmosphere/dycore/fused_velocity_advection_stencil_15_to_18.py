@@ -27,6 +27,7 @@ from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity
     _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -156,7 +157,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     return (z_w_con_c_full, ddt_w_adv)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_15_to_18(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     w: Field[[CellDim, KDim], wpfloat],

@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -198,7 +199,7 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
     )[2]
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_13(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],

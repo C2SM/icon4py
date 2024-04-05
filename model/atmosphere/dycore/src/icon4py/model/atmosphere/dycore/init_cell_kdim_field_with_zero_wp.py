@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -25,9 +26,15 @@ def _init_cell_kdim_field_with_zero_wp() -> Field[[CellDim, KDim], wpfloat]:
     return broadcast(wpfloat("0.0"), (CellDim, KDim))
 
 
+<<<<<<< HEAD:model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/init_cell_kdim_field_with_zero_wp.py
 @program(grid_type=GridType.UNSTRUCTURED)
 def init_cell_kdim_field_with_zero_wp(
     field_with_zero_wp: Field[[CellDim, KDim], wpfloat],
+=======
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+def set_cell_kdim_field_to_zero_wp(
+    field_to_zero_wp: Field[[CellDim, KDim], wpfloat],
+>>>>>>> origin/main:model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/set_cell_kdim_field_to_zero_wp.py
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

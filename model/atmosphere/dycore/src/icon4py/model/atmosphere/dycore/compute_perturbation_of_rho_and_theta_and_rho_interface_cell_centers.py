@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta impor
     _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -44,7 +45,7 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     return rho_ic, z_rth_pr_1, z_rth_pr_2
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],

@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -30,7 +31,7 @@ def _init_two_cell_kdim_fields_with_zero_vp() -> (
     return _init_cell_kdim_field_with_zero_vp(), _init_cell_kdim_field_with_zero_vp()
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_two_cell_kdim_fields_with_zero_vp(
     cell_kdim_field_with_zero_vp_1: Field[[CellDim, KDim], vpfloat],
     cell_kdim_field_with_zero_vp_2: Field[[CellDim, KDim], vpfloat],

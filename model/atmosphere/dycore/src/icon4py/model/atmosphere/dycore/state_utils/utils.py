@@ -22,7 +22,9 @@ from gt4py.next.ffront.fbuiltins import (
     maximum,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
@@ -51,7 +53,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
@@ -107,6 +109,18 @@ def init_zero_c_k(
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
+@field_operator
+def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
+    tuple[
+        Field[[EdgeDim, KDim], wpfloat],
+        Field[[EdgeDim, KDim], wpfloat],
+        Field[[EdgeDim, KDim], wpfloat],
+    ]
+):
+    return (
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
     )
 
 
@@ -153,7 +167,7 @@ def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program
+@program(backend=backend)
 def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):
