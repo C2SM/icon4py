@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -34,7 +35,7 @@ def _compute_pertubation_of_rho_and_theta(
     return astype((z_rth_pr_1_wp, z_rth_pr_2_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_pertubation_of_rho_and_theta(
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],

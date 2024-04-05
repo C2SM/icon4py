@@ -18,6 +18,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 from icon4py.model.atmosphere.dycore.compute_avg_vn import _compute_avg_vn
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import _compute_tangential_wind
 from icon4py.model.common.dimension import E2C2EO, E2C2EDim, E2C2EODim, EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -39,7 +40,7 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
     return z_vn_avg_wp, z_graddiv_vn_vp, vt_vp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
