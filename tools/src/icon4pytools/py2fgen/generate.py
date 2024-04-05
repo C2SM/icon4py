@@ -61,7 +61,7 @@ def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mo
     python_wrapper = PythonWrapper(
         module_name=plugin.module_name,
         plugin_name=plugin.plugin_name,
-        function=plugin.function,
+        functions=plugin.functions,
         imports=plugin.imports,
         backend=backend,
         debug_mode=debug_mode,

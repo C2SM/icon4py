@@ -17,12 +17,12 @@ from gt4py.eve import Node, datamodels
 from gt4py.eve.codegen import JinjaTemplate as as_jinja, TemplatedGenerator
 from gt4py.next import Dimension
 from gt4py.next.type_system.type_specifications import ScalarKind
+from icon4py.model.common.config import GT4PyBackend
 
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
 )
-from icon4pytools.py2fgen.config import GT4PyBackend
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 
@@ -48,8 +48,12 @@ class FuncParameter(Node):
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
         self.is_array = True if len(self.dimensions) >= 1 else False
-        #self.gtdims = [dimension.value + "Dim" for dimension in self.dimensions]
-        self.gtdims = [dimension.value.replace('KHalf', 'K') + "Dim" for dimension in self.dimensions]
+        # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
+        # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
+        # side. So before generating the python wrapper code, we replace occurences of KHalfDim with KDim
+        self.gtdims = [
+            dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
+        ]
 
 
 class Func(Node):
@@ -68,7 +72,7 @@ class CffiPlugin(Node):
     module_name: str
     plugin_name: str
     imports: list[str]
-    function: list[Func]
+    functions: list[Func]
 
 
 class PythonWrapper(CffiPlugin):
@@ -92,7 +96,7 @@ def build_array_size_args() -> dict[str, str]:
         if isinstance(var, Dimension):
             dim_name = var_name.replace(
                 "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim
+            )  # Assumes we keep suffixing each Dimension with Dim in icon4py.common.dimension module
             size_name = f"n_{dim_name}"
             array_size_args[dim_name] = size_name
     return array_size_args
@@ -188,10 +192,10 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
-# necessary imports for generated code to work
+# necessary imports
 from {{ plugin_name }} import ffi
 import numpy as np
-import os
+{% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
@@ -201,12 +205,8 @@ from gt4py.next.program_processors.runners.roundtrip import backend as run_round
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4pytools.py2fgen.config import Icon4PyConfig
 
-config = Icon4PyConfig()
 
-if config.DEVICE == "GPU":
-    import cupy as cp
-    print(cp.show_config())
-# all other imports from the module from which the function is being wrapped
+# embedded module imports
 {% for stmt in imports -%}
 {{ stmt }}
 {% endfor %}
@@ -223,10 +223,12 @@ logging.basicConfig(level=logging.DEBUG,
 #                    format=log_format,
 #                    datefmt='%Y-%m-%d %H:%M:%S')
 
-# We need a grid to pass offset providers
+{% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
+
+# We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
 grid = SimpleGrid()
 
-{% for func in _this_node.function %}
+{% for func in _this_node.functions %}
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
 
@@ -236,7 +238,7 @@ from {{ module_name }} import {{ func.name }}
 
 {{ int_to_bool }}
 
-{% for func in _this_node.function %}
+{% for func in _this_node.functions %}
 
 {{ cffi_decorator }}
 def {{ func.name }}_wrapper(
@@ -327,7 +329,7 @@ def {{ func.name }}_wrapper(
 
 
 class CHeaderGenerator(TemplatedGenerator):
-    CffiPlugin = as_jinja("""{{'\n'.join(function)}}""")
+    CffiPlugin = as_jinja("""{{'\n'.join(functions)}}""")
 
     Func = as_jinja(
         "extern int {{ name }}_wrapper({%- for arg in args -%}{{ arg }}{% if not loop.last or global_size_args|length > 0 %}, {% endif %}{% endfor -%}{%- for sarg in global_size_args -%} int {{ sarg }}{% if not loop.last %}, {% endif %}{% endfor -%});"
@@ -374,7 +376,7 @@ class F90Interface(Node):
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        functions = self.cffi_plugin.function
+        functions = self.cffi_plugin.functions
         self.function_declaration = [
             F90FunctionDeclaration(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
             for f in functions
@@ -392,7 +394,7 @@ module {{ _this_node.cffi_plugin.plugin_name }}
     use, intrinsic :: iso_c_binding
     implicit none
 
-    {% for func in _this_node.cffi_plugin.function %}
+    {% for func in _this_node.cffi_plugin.functions %}
     public :: {{ func.name }}
     {% endfor %}
 

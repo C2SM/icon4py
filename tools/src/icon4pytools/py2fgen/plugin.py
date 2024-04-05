@@ -11,10 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import typing
 from pathlib import Path
 import os
 import cffi
-import cupy as cp  # type: ignore
 import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray
@@ -22,7 +22,10 @@ from cupy.cuda.memory import MemoryPointer, UnownedMemory
 from icon4pytools.common.logger import setup_logger
 
 
-ffi = FFI()
+if typing.TYPE_CHECKING:
+    import cupy as cp  # type: ignore
+
+ffi = FFI()  # needed for unpack and unpack_gpu functions
 
 logger = setup_logger(__name__)
 
@@ -64,7 +67,7 @@ def unpack(ptr, *sizes: int) -> NDArray:
     return arr
 
 
-def unpack_gpu(ptr, *sizes: int) -> cp.ndarray:
+def unpack_gpu(ptr, *sizes: int):
     """
     Converts a C pointer into a CuPy array to directly manipulate memory allocated in Fortran.
     This function is needed for operations that require in-place modification of GPU data,

@@ -14,18 +14,19 @@ import os
 from typing import Tuple
 
 from gt4py.next import as_field
-from gt4py.next.common import Dimension, Field
+from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
-from icon4pytools.py2fgen.config import Icon4PyConfig
 
+from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
 # Choose array backend
 config = Icon4PyConfig()
-xp = config.ARRAY_NS
+xp = config.array_ns
+backend = config.gt4py_runner
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
@@ -39,7 +40,7 @@ def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim]
     return field
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
     _identity_c_k(old_f, out=new_f)
 
@@ -54,7 +55,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
@@ -64,7 +65,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
@@ -95,7 +96,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@program
+@program(backend=backend)
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
@@ -139,7 +140,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@program
+@program(backend=backend)
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,
@@ -191,7 +192,7 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-    heights = physical_heights.ndarray
+    heights = physical_heights.asnumpy()
     buffer = xp.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
