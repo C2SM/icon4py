@@ -80,10 +80,7 @@ def run_fortran_executable(function: str):
     return subprocess.run([f"./{function}"], capture_output=True, text=True, check=True)
 
 
-# All tests of this module will be parametrized based on "backend"
-pytestmark = pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
-
-
+@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
 def test_py2fgen_compilation_and_execution_square(
     cli_runner, backend, samples_path, wrapper_module
 ):
@@ -97,6 +94,7 @@ def test_py2fgen_compilation_and_execution_square(
     )
 
 
+@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
 def test_py2fgen_compilation_and_execution_square_from_function(
     cli_runner, backend, samples_path, wrapper_module
 ):
@@ -111,6 +109,7 @@ def test_py2fgen_compilation_and_execution_square_from_function(
     )
 
 
+@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
 def test_py2fgen_compilation_and_execution_multi_return(
     cli_runner, backend, samples_path, wrapper_module
 ):
