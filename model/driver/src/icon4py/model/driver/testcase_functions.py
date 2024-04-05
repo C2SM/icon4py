@@ -129,6 +129,42 @@ def mo_hydro_adjust(
 
     return rho, exner, theta_v
 
+def mo_hydro_adjust_constant_thetav(
+    wgtfac_c: np.array,
+    ddqz_z_half: np.array,
+    exner_ref_mc: np.array,
+    d_exner_dz_ref_ic: np.array,
+    theta_ref_mc: np.array,
+    theta_ref_ic: np.array,
+    rho: np.array,
+    exner: np.array,
+    theta_v: np.array,
+    num_levels: int,
+):
+    """
+    Computes hydrostatically balanced initial condition.
+    In contrast to hydro_adjust, virtual potential temperature is kept
+    (assumed?) constant during the adjustment, leading to a simpler formula.
+    """
+    for k in range(num_levels - 2, -1, -1):
+
+        theta_v_pr_ic = (
+            wgtfac_c[:, k + 1] * (theta_v[:, k + 1] - theta_ref_mc[:, k + 1])
+            + (1.0 - wgtfac_c[:, k + 1]) * (theta_v[:, k] - theta_ref_mc[:, k])
+        )
+
+        exner[:, k] = (
+            exner[:, k+1]
+            + (exner_ref_mc[:, k] - exner_ref_mc[:, k+1])
+            - ddqz_z_half[:, k + 1] / (theta_v_pr_ic + theta_ref_ic[:, k+1])
+            * theta_v_pr_ic * d_exner_dz_ref_ic[:, k+1]
+        )
+    
+    for k in range(num_levels - 1, -1, -1):
+        rho[:, k] = exner[:, k]**CVD_O_RD * P0REF / (RD * theta_v[:, k])
+
+    return rho, exner
+
 
 def mo_diagnose_temperature_numpy(
     theta_v: np.array,
