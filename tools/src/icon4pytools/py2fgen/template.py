@@ -228,9 +228,11 @@ grid = SimpleGrid()
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
 
-{{ cffi_unpack }}
-
+{% if _this_node.backend == 'GPU' %}
 {{ cffi_unpack_gpu }}
+{% else %}
+{{ cffi_unpack }}
+{% endif %}
 
 {{ int_to_bool }}
 
