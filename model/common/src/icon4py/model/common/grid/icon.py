@@ -60,7 +60,7 @@ class IconGrid(BaseGrid):
         super().__init__()
         self.start_indices = {}
         self.end_indices = {}
-        self.global_geometry = None
+        self.global_properties = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
@@ -95,7 +95,7 @@ class IconGrid(BaseGrid):
 
     @builder
     def with_global_params(self, global_params: GlobalGridParams):
-        self.global_geometry = global_params
+        self.global_properties = global_params
 
     @property
     def num_levels(self):
@@ -113,7 +113,7 @@ class IconGrid(BaseGrid):
         If the global grid parameters are not set, it assumes that we are in a one node scenario
         and returns the local number of cells.
         """
-        return self.global_geometry.num_cells if self.global_geometry else self.num_cells
+        return self.global_properties.num_cells if self.global_properties else self.num_cells
 
     @property
     def num_vertices(self):
