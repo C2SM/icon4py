@@ -139,7 +139,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             NonHydrostaticConfig(),
         )
 
-    def _urban_config():
+    def _gauss3d_config():
         icon_run_config = IconRunConfig(
             dtime=4.0,
             start_date=datetime(1, 1, 1, 0, 0, 0),
@@ -150,7 +150,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         output_config = IconOutputConfig(
             output_time_interval=timedelta(seconds=4),
             output_file_time_interval=timedelta(seconds=4),
-            output_path=Path("./urban_output/"),
+            output_path=Path("./gauss3d_output/"),
         )
         diffusion_config = _default_diffusion_config()
         nonhydro_config = NonHydrostaticConfig()
@@ -198,13 +198,13 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             diffusion_config,
             nonhydro_config,
         ) = _Jablownoski_Williamson_config()
-    elif experiment == "urban":
+    elif experiment == "gauss3d":
         (
             model_run_config,
             model_output_config,
             diffusion_config,
             nonhydro_config,
-        ) = _urban_config()
+        ) = _gauss3d_config()
     else:
         log.warning("Experiment name is not specified, default configuration is used.")
         (

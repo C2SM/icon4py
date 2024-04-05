@@ -114,7 +114,7 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-def model_initialization_urban(
+def model_initialization_gauss3d(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
@@ -123,8 +123,7 @@ def model_initialization_urban(
     rank=0,
 ):
     """
-    Initialize the urban model.
-    Read prognostic and diagnostic state from serialized data.
+    Initialize the Gauss3D test case.
 
     Args:
         icon_grid (IconGrid): The ICON grid.
@@ -138,7 +137,7 @@ def model_initialization_urban(
         The data_provider is returned such that further timesteps of diagnostics and prognostics
         can be read from within the dummy timeloop
     """
-    log.warning("URBAN experiment using default initialization.")
+    log.warning("Initializing Gauss3D test case.")
     (
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
@@ -553,7 +552,7 @@ def read_initial_state(
             prognostic_state_next,
         ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
 
-    elif experiment_name == "urban":
+    elif experiment_name == "gauss3d":
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
@@ -562,7 +561,7 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_urban(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
+        ) = model_initialization_gauss3d(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
 
     else:
         (
@@ -727,7 +726,7 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
-        if experiment_name == "jabw":
+        if experiment_name in ["jabw", "gauss3d"]:
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=metrics_savepoint.ddqz_z_full(),
                 rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
