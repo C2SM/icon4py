@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
@@ -23,10 +22,8 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
-
-
-backend = run_gtfn
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):

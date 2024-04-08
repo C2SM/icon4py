@@ -23,6 +23,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -52,7 +53,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
@@ -115,7 +116,7 @@ def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program
+@program(backend=backend)
 def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):
