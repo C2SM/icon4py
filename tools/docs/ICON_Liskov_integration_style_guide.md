@@ -146,7 +146,7 @@ DO je = i_startidx, i_endidx
         !$ACC END PARALLEL LOOP
         !$DSL END STENCIL(name = temporary_fields_for_turbulence_diagnostics)
 
-        !$DSL START STENCIL( name = calculate_diagnostics_for_turbulence; 
+        !$DSL START STENCIL( name = calculate_diagnostics_for_turbulence;
         !$DSL                div = div; &
         !$DSL                kh_c = kh_c; &
         !$DSL                wgtfac_c = p_nh_metrics%wgtfac_c(:,:,1); &
