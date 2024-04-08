@@ -15,6 +15,7 @@ from gt4py.next import Field, field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
 
 from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common.model_backend import backend
 
 
 @field_operator
@@ -47,7 +48,7 @@ def _en_smag_fac_for_zero_nshift(
     return enh_smag_fac
 
 
-@program
+@program(backend=backend)
 def en_smag_fac_for_zero_nshift(
     vect_a: Field[[KDim], float],
     hdiff_smag_fac: float,

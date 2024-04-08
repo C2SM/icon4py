@@ -25,7 +25,8 @@ from icon4py.model.common.metrics.metric_fields import (
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     dallclose,
-    is_otf,
+    is_python,
+    is_roundtrip,
     random_field,
     zero_field,
 )
@@ -65,7 +66,7 @@ class TestComputeZMc(StencilTest):
 
 
 def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
-    if not is_otf(backend):
+    if is_python(backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
@@ -100,8 +101,8 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
 
 
 def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
-    if not is_otf(backend):
-        pytest.skip("skipping: unsupported backend")
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
     ddqz_z_full = zero_field(icon_grid, CellDim, KDim)
