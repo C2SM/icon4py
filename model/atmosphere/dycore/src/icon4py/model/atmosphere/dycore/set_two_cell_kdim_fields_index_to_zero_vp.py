@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -43,7 +44,7 @@ def _set_two_cell_kdim_fields_index_to_zero_vp(
     return field_index_to_zero_1, field_index_to_zero_2
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_two_cell_kdim_fields_index_to_zero_vp(
     field_index_to_zero_1: Field[[CellDim, KDim], vpfloat],
     field_index_to_zero_2: Field[[CellDim, KDim], vpfloat],
