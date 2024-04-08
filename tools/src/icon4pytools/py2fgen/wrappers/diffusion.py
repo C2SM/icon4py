@@ -216,6 +216,7 @@ def diffusion_run(
     dwdx: Field[[CellDim, KHalfDim], float64],
     dwdy: Field[[CellDim, KHalfDim], float64],
     dtime: float64,
+    linit: bool,
 ):
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
@@ -233,13 +234,13 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    print("Running diffusion...")
-
-    start_time = time.time()
-
-    DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
-
-    end_time = time.time()
-
-    print("Done running diffusion.")
-    print(f"Diffusion run time: {end_time - start_time:.2f} seconds")
+    if linit:
+        DIFFUSION.initial_run(
+            diagnostic_state,
+            prognostic_state,
+            dtime,
+        )
+    else:
+        DIFFUSION.run(
+            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
+        )

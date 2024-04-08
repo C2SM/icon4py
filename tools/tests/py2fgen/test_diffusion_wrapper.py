@@ -220,4 +220,5 @@ def test_diffusion_wrapper_py():
         dwdx=dwdx,
         dwdy=dwdy,
         dtime=dtime,
+        linit=False,
     )
