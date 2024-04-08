@@ -82,7 +82,8 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 import dace
 from dace.transformation.auto import auto_optimize as autoopt
 from gt4py.next.program_processors.runners.dace import run_dace_cpu 
-from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange, WaitOnCommHandle
+from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
+from icon4py.model.common.decomposition import definitions, mpi_decomposition
 try:
     import ghex
 except ImportError:
@@ -659,7 +660,7 @@ class Diffusion:
         connectivity_E2C = self.grid.get_offset_provider("E2C")
         connectivity_C2E2C = self.grid.get_offset_provider("C2E2C")
         connectivity_C2CEC = self.grid.get_offset_provider("C2CEC")
-        wait_on_comm_handle = WaitOnCommHandle(self._exchange._comm if isinstance(self._exchange, GHexMultiNodeExchange) else None)
+        wait_on_comm_handle = mpi_decomposition.WaitOnCommHandle(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else definitions.WaitOnCommHandle()
 
         def dace_jit(fuse_func):
             def wrapper(*args, **kwargs):
@@ -679,7 +680,7 @@ class Diffusion:
                                     #
                                     __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                     __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    #                    
+                                    #
                                     __pattern_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                     __pattern_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                     __pattern_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,

@@ -167,14 +167,38 @@ class SingleNodeExchange(SDFGConvertible):
         return 1
 
     def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
+        dim = kwargs.get('dim', None)
+        wait = kwargs.get('wait', True)
+
         if self.return_sdfg:
             sdfg = dace.SDFG('_halo_exchange_')
-            sdfg.add_state()
+            state = sdfg.add_state()
+
+            # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
+            sdfg.add_scalar(name='__return', dtype=dace.uintp)
+
+            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
+                                              inputs=None,
+                                              outputs=None,
+                                              code='__out = 1234;',
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=False,)
+            state.add_node(tasklet)
+
+            ret = state.add_write('__return')
+            state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
+            out_connectors = {}
+            out_connectors['__out'] = dace.uintp
+            tasklet.out_connectors = out_connectors
+
+            self.return_sdfg = False # reset
             return sdfg
         else:
-            res = self.exchange(self.dim, *args)
-            if self.wait:
+            res = self.exchange(dim, *args)
+            if wait:
                 res.wait()
+            else:
+                return res
 
     def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
         self.return_sdfg = True
@@ -183,13 +207,52 @@ class SingleNodeExchange(SDFGConvertible):
     
     def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         return {}
-    
-    def prep_halo(self, dim: Dimension, num_fields: int, wait: bool = True):
-        self.dim = dim
-        self.num_fields = num_fields
-        self.wait = wait
-        return self
 
+    def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
+        return ([],[])
+
+
+@dataclass
+class WaitOnCommHandle(SDFGConvertible):
+    communication_object: ... = None
+    return_sdfg : bool = False
+
+    def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
+        if self.return_sdfg:
+            sdfg = dace.SDFG('_halo_exchange_wait_')
+            state = sdfg.add_state()
+
+            # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
+            sdfg.add_scalar(name='__return', dtype=dace.uintp)
+
+            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_wait_',
+                                              inputs=None,
+                                              outputs=None,
+                                              code='__out = 1234;',
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=False,)
+            state.add_node(tasklet)
+
+            ret = state.add_write('__return')
+            state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
+            out_connectors = {}
+            out_connectors['__out'] = dace.uintp
+            tasklet.out_connectors = out_connectors
+
+            self.return_sdfg = False # reset
+            return sdfg
+        else:
+            args[0].wait()
+
+    def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
+        self.return_sdfg = True
+        sdfg = self.__call__(*args, **kwargs)
+        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
+        return sdfg
+
+    def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+        return {}
+    
     def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
         return ([],[])
 
