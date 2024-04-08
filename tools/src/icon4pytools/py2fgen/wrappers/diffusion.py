@@ -11,7 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-import time
+
+"""
+Wrapper module for diffusion granule.
+
+Module contains a diffusion_init and diffusion_run function that follow the architecture of
+Fortran granule interfaces:
+- all arguments needed from external sources are passed.
+- passing of scalar types or fields of simple types
+"""
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
@@ -149,6 +157,7 @@ def diffusion_init(
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
+        hdiff_w_efdt_ratio=hdiff_efdt_ratio,
     )
 
     diffusion_params = DiffusionParams(config)
@@ -182,12 +191,6 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
-
-    # initialisation
-    print("Initialising diffusion...")
-
-    start_time = time.time()
-
     DIFFUSION.init(
         grid=icon_grid,
         config=config,
@@ -198,11 +201,6 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
     )
-
-    end_time = time.time()
-
-    print("Done running initialising diffusion.")
-    print(f"Diffusion initialisation time: {end_time - start_time:.2f} seconds")
 
 
 def diffusion_run(
