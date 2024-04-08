@@ -72,7 +72,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
     edge_cell_length = grid_savepoint.edge_cell_length()
     owner_mask = grid_savepoint.e_owner_mask()
     c_lin_e_ref = interpolation_savepoint.c_lin_e()
-    lateral_boundary = icon_grid.get_start_index(
+    horizontal_start = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
@@ -80,7 +80,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
         edge_cell_length.asnumpy(),
         inv_dual_edge_length.asnumpy(),
         owner_mask.asnumpy(),
-        lateral_boundary,
+        horizontal_start,
     )
 
     assert np.allclose(c_lin_e, c_lin_e_ref.asnumpy())
@@ -134,25 +134,20 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
-    C2E_ = icon_grid.connectivities[C2EDim]
-    E2C_ = icon_grid.connectivities[E2CDim]
-    C2E2C_ = icon_grid.connectivities[C2E2CDim]
-    lateral_boundary = np.arange(2)
-    lateral_boundary[0] = icon_grid.get_start_index(
+    c2e = icon_grid.connectivities[C2EDim]
+    e2c = icon_grid.connectivities[E2CDim]
+    c2e2c = icon_grid.connectivities[C2E2CDim]
+    horizontal_start = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
-    )
-    lateral_boundary[1] = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
     geofac_n2s = compute_geofac_n2s(
         dual_edge_length.asnumpy(),
         geofac_div.asnumpy(),
-        C2E_,
-        E2C_,
-        C2E2C_,
-        lateral_boundary[0],
+        c2e,
+        e2c,
+        c2e2c,
+        horizontal_start,
     )
     assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
 
@@ -165,34 +160,29 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     c_lin_e = interpolation_savepoint.c_lin_e()
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask()
-    C2E_ = icon_grid.connectivities[C2EDim]
-    E2C_ = icon_grid.connectivities[E2CDim]
-    C2E2C_ = icon_grid.connectivities[C2E2CDim]
-    lateral_boundary = np.arange(2)
-    lateral_boundary[0] = icon_grid.get_start_index(
+    c2e = icon_grid.connectivities[C2EDim]
+    e2c = icon_grid.connectivities[E2CDim]
+    c2e2c = icon_grid.connectivities[C2E2CDim]
+    horizontal_start = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
-    )
-    lateral_boundary[1] = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
     primal_normal_ec = compute_primal_normal_ec(
         primal_normal_cell_x,
         primal_normal_cell_y,
         owner_mask,
-        C2E_,
-        E2C_,
-        lateral_boundary[0],
+        c2e,
+        e2c,
+        horizontal_start,
     )
     geofac_grg = compute_geofac_grg(
         primal_normal_ec,
         geofac_div.asnumpy(),
         c_lin_e.asnumpy(),
-        C2E_,
-        E2C_,
-        C2E2C_,
-        lateral_boundary[0],
+        c2e,
+        e2c,
+        c2e2c,
+        horizontal_start,
     )
     assert np.allclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy())
     assert np.allclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy())
@@ -204,27 +194,22 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
     owner_mask = grid_savepoint.c_owner_mask()
-    C2E_ = icon_grid.connectivities[C2EDim]
-    E2C_ = icon_grid.connectivities[E2CDim]
-    C2E2C_ = icon_grid.connectivities[C2E2CDim]
-    E2C2E_ = icon_grid.connectivities[E2C2EDim]
-    lateral_boundary = np.arange(2)
-    lateral_boundary[0] = icon_grid.get_start_index(
+    c2e = icon_grid.connectivities[C2EDim]
+    e2c = icon_grid.connectivities[E2CDim]
+    c2e2c = icon_grid.connectivities[C2E2CDim]
+    e2c2e = icon_grid.connectivities[E2C2EDim]
+    horizontal_start = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
-    lateral_boundary[1] = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
     )
     geofac_grdiv = compute_geofac_grdiv(
         geofac_div.asnumpy(),
         inv_dual_edge_length.asnumpy(),
         owner_mask,
-        C2E_,
-        E2C_,
-        E2C2E_,
-        lateral_boundary[0],
+        c2e,
+        e2c,
+        e2c2e,
+        horizontal_start,
     )
     assert np.allclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
@@ -235,17 +220,16 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    C2E2C = icon_grid.connectivities[C2E2CDim]
-    lateral_boundary = np.arange(3)
-    lateral_boundary[0] = icon_grid.get_start_index(
+    c2e2c = icon_grid.connectivities[C2E2CDim]
+    horizontal_start = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
     )
-    lateral_boundary[1] = icon_grid.get_end_index(
+    horizontal_end = icon_grid.get_end_index(
         CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+        HorizontalMarkerIndex.end(CellDim),
     )
-    lateral_boundary[2] = icon_grid.get_start_index(
+    horizontal_start_p2 = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
     )
@@ -254,22 +238,22 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     c_bln_avg = compute_c_bln_avg(
         divavg_cntrwgt,
         owner_mask,
-        C2E2C,
+        c2e2c,
         lat,
         lon,
-        lateral_boundary[0],
-        lateral_boundary[1],
+        horizontal_start,
+        horizontal_end,
     )
     c_bln_avg = compute_mass_conservation_c_bln_avg(
         c_bln_avg,
         divavg_cntrwgt,
         owner_mask,
-        C2E2C,
+        c2e2c,
         cell_areas,
         1000,
-        lateral_boundary[0],
-        lateral_boundary[1],
-        lateral_boundary[2],
+        horizontal_start,
+        horizontal_end,
+        horizontal_start_p2,
     )
     assert np.allclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 
@@ -286,53 +270,29 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     primal_cart_normal = np.transpose(
         np.stack((primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z))
     )
-    E2C = icon_grid.connectivities[E2CDim]
-    C2E = icon_grid.connectivities[C2EDim]
-    C2E2C = icon_grid.connectivities[C2E2CDim]
-    E2C2E = icon_grid.connectivities[E2C2EDim]
-    lateral_boundary_edges = np.arange(4)
-    lateral_boundary_edges[0] = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
-    lateral_boundary_edges[1] = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
-    )
-    lateral_boundary_edges[2] = icon_grid.get_start_index(
+    e2c = icon_grid.connectivities[E2CDim]
+    c2e = icon_grid.connectivities[C2EDim]
+    c2e2c = icon_grid.connectivities[C2E2CDim]
+    e2c2e = icon_grid.connectivities[E2C2EDim]
+    horizontal_start_p3 = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
     )
-    lateral_boundary_edges[3] = icon_grid.get_start_index(
+    horizontal_start_p4 = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
-    )
-    lateral_boundary_cells = np.arange(3)
-    lateral_boundary_cells[0] = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
-    )
-    lateral_boundary_cells[1] = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
-    )
-    lateral_boundary_cells[2] = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
     )
     e_flx_avg = compute_e_flx_avg(
         c_bln_avg,
         geofac_div,
         owner_mask,
         primal_cart_normal,
-        E2C,
-        C2E,
-        C2E2C,
-        E2C2E,
-        lateral_boundary_cells[1],
-        lateral_boundary_edges[1],
-        lateral_boundary_edges[2],
-        lateral_boundary_edges[3],
+        e2c,
+        c2e,
+        c2e2c,
+        e2c2e,
+        horizontal_start_p3,
+        horizontal_start_p4,
     )
     assert np.allclose(e_flx_avg, e_flx_avg_ref)
 
@@ -344,30 +304,29 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
     owner_mask = grid_savepoint.v_owner_mask().asnumpy()
-    V2E = icon_grid.connectivities[V2EDim]
-    E2V = icon_grid.connectivities[E2VDim]
-    V2C = icon_grid.connectivities[V2CDim]
-    E2C = icon_grid.connectivities[E2CDim]
-    lateral_boundary_verts = np.arange(2)
-    lateral_boundary_verts[0] = icon_grid.get_start_index(
+    v2e = icon_grid.connectivities[V2EDim]
+    e2v = icon_grid.connectivities[E2VDim]
+    v2c = icon_grid.connectivities[V2CDim]
+    e2c = icon_grid.connectivities[E2CDim]
+    horizontal_start = icon_grid.get_start_index(
         VertexDim,
         HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
     )
-    lateral_boundary_verts[1] = icon_grid.get_end_index(
+    horizontal_end = icon_grid.get_end_index(
         VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
+        HorizontalMarkerIndex.end(VertexDim),
     )
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
         edge_cell_length,
         owner_mask,
-        V2E,
-        E2V,
-        V2C,
-        E2C,
-        lateral_boundary_verts[0],
-        lateral_boundary_verts[1],
+        v2e,
+        e2v,
+        v2c,
+        e2c,
+        horizontal_start,
+        horizontal_end,
     )
     assert np.allclose(cells_aw_verts, cells_aw_verts_ref)
 
@@ -376,28 +335,23 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
 def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    C2E = icon_grid.connectivities[C2EDim]
+    c2e = icon_grid.connectivities[C2EDim]
     cells_lat = grid_savepoint.cell_center_lat().asnumpy()
     cells_lon = grid_savepoint.cell_center_lon().asnumpy()
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
     edges_lon = grid_savepoint.edges_center_lon().asnumpy()
-    lateral_boundary_cells = np.arange(2)
-    lateral_boundary_cells[0] = icon_grid.get_start_index(
+    horizontal_end = icon_grid.get_end_index(
         CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
-    )
-    lateral_boundary_cells[1] = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+        HorizontalMarkerIndex.end(CellDim),
     )
     e_bln_c_s = compute_e_bln_c_s(
         owner_mask,
-        C2E,
+        c2e,
         cells_lat,
         cells_lon,
         edges_lat,
         edges_lon,
-        lateral_boundary_cells[1],
+        horizontal_end,
     )
     assert np.allclose(e_bln_c_s, e_bln_c_s_ref)
 
@@ -418,17 +372,16 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
     verts_lon = grid_savepoint.verts_vertex_lon().asnumpy()
     verts_lat = grid_savepoint.verts_vertex_lat().asnumpy()
-    E2C = icon_grid.connectivities[E2CDim]
-    E2V = icon_grid.connectivities[E2VDim]
-    E2C2E = icon_grid.connectivities[E2C2EDim]
-    lateral_boundary_edges = np.arange(2)
-    lateral_boundary_edges[0] = icon_grid.get_start_index(
+    e2c = icon_grid.connectivities[E2CDim]
+    e2v = icon_grid.connectivities[E2VDim]
+    e2c2e = icon_grid.connectivities[E2C2EDim]
+    horizontal_start = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
-    lateral_boundary_edges[1] = icon_grid.get_end_index(
+    horizontal_end = icon_grid.get_end_index(
         EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+        HorizontalMarkerIndex.end(EdgeDim),
     )
     pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
         sphere_radius,
@@ -443,11 +396,11 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
         verts_lon,
         verts_lat,
         owner_mask,
-        E2C,
-        E2V,
-        E2C2E,
-        lateral_boundary_edges[0],
-        lateral_boundary_edges[1],
+        e2c,
+        e2v,
+        e2c2e,
+        horizontal_start,
+        horizontal_end,
     )
     assert np.allclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref)
     assert np.allclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref)

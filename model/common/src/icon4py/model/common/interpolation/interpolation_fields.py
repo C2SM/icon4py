@@ -497,15 +497,13 @@ def compute_e_flx_avg(
     c2e: np.array,
     c2e2c: np.array,
     e2c2e: np.array,
-    second_boundary_layer_end_index_cells: np.int32,
-    second_boundary_layer_end_index_edges: np.int32,
-    third_boundary_layer_end_index_edges: np.int32,
-    fifth_boundary_layer_end_index_edges: np.int32,
+    horizontal_start_p3: np.int32,
+    horizontal_start_p4: np.int32,
 ) -> np.array:
-    e_flx_avg = np.zeros([second_boundary_layer_end_index_edges, 5])
+    e_flx_avg = np.zeros([e2c.shape[0], 5])
     llb = 0
-    index = np.arange(llb, second_boundary_layer_end_index_cells)
-    inv_neighbor_id = -np.ones([second_boundary_layer_end_index_cells - llb, 3], dtype=int)
+    index = np.arange(llb, c2e.shape[0])
+    inv_neighbor_id = -np.ones([c2e.shape[0] - llb, 3], dtype=int)
     for i in range(3):
         for j in range(3):
             inv_neighbor_id[:, j] = np.where(
@@ -514,8 +512,8 @@ def compute_e_flx_avg(
                 inv_neighbor_id[:, j],
             )
 
-    llb = third_boundary_layer_end_index_edges
-    index = np.arange(llb, second_boundary_layer_end_index_edges)
+    llb = horizontal_start_p3
+    index = np.arange(llb, e2c.shape[0])
     for j in range(3):
         for i in range(2):
             e_flx_avg[llb:, i + 1] = np.where(
@@ -541,7 +539,7 @@ def compute_e_flx_avg(
                 e_flx_avg[llb:, i + 3],
             )
 
-    iie = -np.ones([second_boundary_layer_end_index_edges, 4], dtype=int)
+    iie = -np.ones([e2c.shape[0], 4], dtype=int)
     iie[:, 0] = np.where(e2c[e2c2e[:, 0], 0] == e2c[:, 0], 2, -1)
     iie[:, 0] = np.where(
         np.logical_and(e2c[e2c2e[:, 0], 1] == e2c[:, 0], iie[:, 0] != 2), 4, iie[:, 0]
@@ -562,8 +560,8 @@ def compute_e_flx_avg(
         np.logical_and(e2c[e2c2e[:, 3], 1] == e2c[:, 1], iie[:, 3] != 1), 3, iie[:, 3]
     )
 
-    llb = fifth_boundary_layer_end_index_edges
-    index = np.arange(llb, second_boundary_layer_end_index_edges)
+    llb = horizontal_start_p4
+    index = np.arange(llb, e2c.shape[0])
     for i in range(3):
         e_flx_avg[llb:, 0] = np.where(
             owner_mask[llb:],
