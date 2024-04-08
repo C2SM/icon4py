@@ -93,13 +93,11 @@ def main(
     from icon4pytools.icon4pygen.metadata import get_stencil_info, import_definition
 
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
-    fencil_def = import_definition(fencil)
-    # TODO(tehrengruber): In some cases connectivities with missing neighbors can be used with
-    #  skip_values=False as all neighbors exist for the subdomains they are used on. One example
-    #  is the E2C connectivity where everywhere except for the boundary a cell neighbors exists.
-    #  Since we are currently allocating temporaries everywhere the neighbor does not neccesarily
-    #  exist anymore. Until we have a better solution we just set skip_values to true
-    #  unconditionally when using temporaries.
-    stencil_info = get_stencil_info(fencil_def, is_global=is_global, force_skip_values=temporaries)
+    program = import_definition(fencil)
+    stencil_info = get_stencil_info(program, is_global)
     GTHeader(stencil_info)(outpath, imperative, temporaries)
     PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+
+if __name__ == "__main__":
+    main()

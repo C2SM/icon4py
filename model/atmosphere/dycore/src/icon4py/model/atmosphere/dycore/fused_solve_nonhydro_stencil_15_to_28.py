@@ -67,6 +67,7 @@ from icon4py.model.common.dimension import (
     KDim,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.model_backend import backend
 
 
 @gtx.field_operator
@@ -627,7 +628,7 @@ def _fused_solve_nonhydro_stencil_15_to_28(
     return z_rho_e, z_theta_v_e, z_gradh_exner, vn, z_graddiv_vn
 
 
-@gtx.program(grid_type=GridType.UNSTRUCTURED)
+@gtx.program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_solve_nonhydro_stencil_15_to_28(
     geofac_grg_x: gtx.Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[[CellDim, C2E2CODim], wpfloat],

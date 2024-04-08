@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -32,7 +33,7 @@ def _compute_mass_flux(
     return mass_fl_e_wp, z_theta_v_fl_e_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_mass_flux(
     z_rho_e: Field[[EdgeDim, KDim], wpfloat],
     z_vn_avg: Field[[EdgeDim, KDim], wpfloat],

@@ -14,7 +14,6 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
-#import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -37,16 +36,19 @@ def backend(request):
     return request.param
 
 
-def is_otf(backend) -> bool:
+def is_python(backend) -> bool:
     # want to exclude python backends:
     #   - cannot run on embedded: because of slicing
     #   - roundtrip is very slow on large grid
-    if hasattr(backend, "executor"):
-        if isinstance(
-            backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
-        ):
-            return True
-    return False
+    return is_embedded(backend) or is_roundtrip(backend)
+
+
+def is_embedded(backend) -> bool:
+    return backend is None
+
+
+def is_roundtrip(backend) -> bool:
+    return backend.__name__ == "roundtrip" if backend else False
 
 
 def _shape(

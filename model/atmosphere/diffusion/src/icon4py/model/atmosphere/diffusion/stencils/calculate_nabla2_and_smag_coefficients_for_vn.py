@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, maximum, minimum, sqrt
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -150,7 +151,7 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     return kh_smag_e_vp, astype(kh_smag_ec_wp, vpfloat), z_nabla2_e_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], vpfloat],
     tangent_orientation: Field[[EdgeDim], wpfloat],
