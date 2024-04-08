@@ -65,16 +65,22 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
 
 
 @mark.parametrize(
-    "directive",
+    "stencil, directive",
     [
-        "!$DSL START STENCIL( name = foo ; x = bar )\n!$DSL END STENCIL(name = foo)",
-        "!$DSL START FUSED STENCIL( name = foo ; x = bar )\n!$DSL END FUSED STENCIL(name = foo)",
+        (
+            SINGLE_STENCIL,
+            "!$DSL START STENCIL( name = foo ; x = bar )\n!$DSL END STENCIL(name = foo)",
+        ),
+        (
+            SINGLE_STENCIL,
+            "!$DSL START FUSED STENCIL( name = foo ; x = bar )\n!$DSL END FUSED STENCIL(name = foo)",
+        ),
     ],
 )
 def test_directive_semantics_validation_unbalanced_stencil_directives_allow_whitespaces_in_name_arg(
-    make_f90_tmpfile, directive
+    make_f90_tmpfile, stencil, directive
 ):
-    fpath = make_f90_tmpfile(directive)
+    fpath = make_f90_tmpfile(stencil + directive)
     opath = fpath.with_suffix(".gen")
     directives = scan_for_directives(fpath)
     parser = DirectivesParser(fpath, opath)
