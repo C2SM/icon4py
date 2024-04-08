@@ -676,7 +676,7 @@ class Diffusion:
                         dace.config.Config.set("optimizer", "automatic_simplification", value=False)
                         dace.config.Config.set("cache", value="unique")
 
-                        return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False)(fuse_func)(*args, **kwargs,
+                        return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)(*args, **kwargs,
                                     #
                                     __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                     __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
