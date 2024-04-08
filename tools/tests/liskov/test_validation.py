@@ -68,11 +68,11 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
     "stencil, directive",
     [
         (
-            SINGLE_STENCIL,
+            SINGLE_STENCIL_WITH_COMMENTS,
             "!$DSL START STENCIL( name = foo ; x = bar )\n!$DSL END STENCIL(name = foo)",
         ),
         (
-            SINGLE_STENCIL,
+            SINGLE_STENCIL_WITH_COMMENTS,
             "!$DSL START FUSED STENCIL( name = foo ; x = bar )\n!$DSL END FUSED STENCIL(name = foo)",
         ),
     ],
