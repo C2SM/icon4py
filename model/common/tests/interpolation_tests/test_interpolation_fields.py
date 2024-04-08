@@ -153,7 +153,6 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
         E2C_,
         C2E2C_,
         lateral_boundary[0],
-        lateral_boundary[1],
     )
     assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
 
@@ -185,7 +184,6 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         C2E_,
         E2C_,
         lateral_boundary[0],
-        lateral_boundary[1],
     )
     geofac_grg = compute_geofac_grg(
         primal_normal_ec,
@@ -195,7 +193,6 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         E2C_,
         C2E2C_,
         lateral_boundary[0],
-        lateral_boundary[1],
     )
     assert np.allclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy())
     assert np.allclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy())
@@ -226,10 +223,8 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
         owner_mask,
         C2E_,
         E2C_,
-        C2E2C_,
         E2C2E_,
         lateral_boundary[0],
-        lateral_boundary[1],
     )
     assert np.allclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
@@ -270,8 +265,6 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         divavg_cntrwgt,
         owner_mask,
         C2E2C,
-        lat,
-        lon,
         cell_areas,
         1000,
         lateral_boundary[0],

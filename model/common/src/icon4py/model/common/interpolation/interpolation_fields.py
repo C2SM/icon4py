@@ -35,7 +35,7 @@ def compute_c_lin_e(
     edge_cell_length: np.array,
     inv_dual_edge_length: np.array,
     owner_mask: np.array,
-    second_boundary_layer_start_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
     """
     Compute E2C average inverse distance.
@@ -51,7 +51,7 @@ def compute_c_lin_e(
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
     c_lin_e = np.transpose(np.vstack((c_lin_e_, (1.0 - c_lin_e_))))
-    c_lin_e[0:second_boundary_layer_start_index, :] = 0.0
+    c_lin_e[0:horizontal_start, :] = 0.0
     mask = np.transpose(np.tile(owner_mask, (2, 1)))
     return np.where(mask, c_lin_e, 0.0)
 
@@ -63,15 +63,15 @@ def compute_geofac_div(
     area: Field[[CellDim], float],
 ) -> Field[[CellDim, C2EDim], float]:
     """
-    Compute geofac_div.
+    Compute geometrical factor for divergence.
 
     Args:
         primal_edge_length:
         edge_orientation:
         area:
     """
-    geofac_div_ = primal_edge_length(C2E) * edge_orientation / area
-    return geofac_div_
+    geofac_div = primal_edge_length(C2E) * edge_orientation / area
+    return geofac_div
 
 
 @field_operator
@@ -82,7 +82,7 @@ def compute_geofac_rot(
     owner_mask: Field[[VertexDim], bool],
 ) -> Field[[VertexDim, V2EDim], float]:
     """
-    Compute geofac_rot.
+    Compute geometrical factor for curl.
 
     Args:
         dual_edge_length:
@@ -90,8 +90,8 @@ def compute_geofac_rot(
         dual_area:
         owner_mask:
     """
-    geofac_rot_ = where(owner_mask, dual_edge_length(V2E) * edge_orientation / dual_area, 0.0)
-    return geofac_rot_
+    geofac_rot = where(owner_mask, dual_edge_length(V2E) * edge_orientation / dual_area, 0.0)
+    return geofac_rot
 
 
 def compute_geofac_n2s(
@@ -100,8 +100,7 @@ def compute_geofac_n2s(
     c2e: np.array,
     e2c: np.array,
     c2e2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
     """
     Compute geofac_n2s.
@@ -113,17 +112,16 @@ def compute_geofac_n2s(
         c2e:
         e2c:
         c2e2c:
-        second_boundary_layer_start_index:
-        second_boundary_layer_end_index:
+        horizontal_start:
     """
-    llb = second_boundary_layer_start_index
-    geofac_n2s = np.zeros([second_boundary_layer_end_index, 4])
+    llb = horizontal_start
+    geofac_n2s = np.zeros([c2e.shape[0], 4])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(second_boundary_layer_end_index),
-                np.arange(second_boundary_layer_end_index),
-                np.arange(second_boundary_layer_end_index),
+                np.arange(c2e.shape[0]),
+                np.arange(c2e.shape[0]),
+                np.arange(c2e.shape[0]),
             )
         )
     )
@@ -152,17 +150,16 @@ def compute_primal_normal_ec(
     owner_mask: np.array,
     c2e: np.array,
     e2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
-    llb = second_boundary_layer_start_index
-    primal_normal_ec = np.zeros([second_boundary_layer_end_index, 3, 2])
+    llb = horizontal_start
+    primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(second_boundary_layer_end_index),
-                np.arange(second_boundary_layer_end_index),
-                np.arange(second_boundary_layer_end_index),
+                np.arange(c2e.shape[0]),
+                np.arange(c2e.shape[0]),
+                np.arange(c2e.shape[0]),
             )
         )
     )
@@ -184,11 +181,10 @@ def compute_geofac_grg(
     c2e: np.array,
     e2c: np.array,
     c2e2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
     """
-    Compute geofac_grg.
+    Compute geometrical factor for Green-Gauss gradient.
 
     Args:
         geofac_grg:
@@ -198,17 +194,16 @@ def compute_geofac_grg(
         c2e:
         e2c:
         c2e2c:
-        second_boundary_layer_start_index:
-        second_boundary_layer_end_index:
+        horizontal_start:
     """
-    llb = second_boundary_layer_start_index
-    geofac_grg = np.zeros([second_boundary_layer_end_index, 4, 2])
+    llb = horizontal_start
+    geofac_grg = np.zeros([c2e.shape[0], 4, 2])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(second_boundary_layer_end_index),
-                np.arange(second_boundary_layer_end_index),
-                np.arange(second_boundary_layer_end_index),
+                np.arange(c2e.shape[0]),
+                np.arange(c2e.shape[0]),
+                np.arange(c2e.shape[0]),
             )
         )
     )
@@ -239,13 +234,11 @@ def compute_geofac_grdiv(
     owner_mask: np.array,
     c2e: np.array,
     e2c: np.array,
-    c2e2c: np.array,
     e2c2e: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
     """
-    Compute geofac_grdiv.
+    Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
         geofac_grdiv:
@@ -255,12 +248,11 @@ def compute_geofac_grdiv(
         c2e:
         e2c:
         c2e2c:
-        second_boundary_layer_start_index:
-        second_boundary_layer_end_index:
+        horizontal_start:
     """
-    llb = second_boundary_layer_start_index
-    geofac_grdiv = np.zeros([second_boundary_layer_end_index, 5])
-    index = np.arange(llb, second_boundary_layer_end_index)
+    llb = horizontal_start
+    geofac_grdiv = np.zeros([e2c.shape[0], 5])
+    index = np.arange(llb, e2c.shape[0])
     for j in range(3):
         mask = np.where(c2e[e2c[llb:, 1], j] == index, owner_mask[llb:], False)
         geofac_grdiv[llb:, 0] = np.where(mask, geofac_div[e2c[llb:, 1], j], geofac_grdiv[llb:, 0])
@@ -311,17 +303,17 @@ def weighting_factors(
     yloc: np.array,
     xloc: np.array,
     wgt_loc: np.double,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
+    horizontal_end: np.int32,
 ) -> np.array:
 
-    llb = second_boundary_layer_start_index
+    llb = horizontal_start
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    x = np.zeros([3, second_boundary_layer_end_index - llb])
-    y = np.zeros([3, second_boundary_layer_end_index - llb])
-    wgt = np.zeros([3, second_boundary_layer_end_index - llb])
+    x = np.zeros([3, horizontal_end - llb])
+    y = np.zeros([3, horizontal_end - llb])
+    wgt = np.zeros([3, horizontal_end - llb])
 
     for i in range(3):
         (ytemp[i], xtemp[i]) = rotate_latlon(ytemp[i], xtemp[i], pollat, pollon)
@@ -366,29 +358,28 @@ def compute_c_bln_avg(
     c2e2c: np.array,
     lat: np.array,
     lon: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
+    horizontal_end: np.int32,
 ) -> np.array:
     """
-    Compute c_bln_avg.
+    Compute bilinear cell average weight.
 
-    calculate_bilinear_cellavg_wgt
     Args:
         divavg_cntrwgt:
         owner_mask:
         c2e2c:
         lat:
         lon:
-        second_boundary_layer_start_index:
-        second_boundary_layer_end_index:
+        horizontal_start:
+        horizontal_end:
     """
-    llb = second_boundary_layer_start_index
-    c_bln_avg = np.zeros([second_boundary_layer_end_index, 4])
+    llb = horizontal_start
+    c_bln_avg = np.zeros([horizontal_end, 4])
     wgt_loc = divavg_cntrwgt
     yloc = lat[llb:]
     xloc = lon[llb:]
-    ytemp = np.zeros([3, second_boundary_layer_end_index - llb])
-    xtemp = np.zeros([3, second_boundary_layer_end_index - llb])
+    ytemp = np.zeros([3, horizontal_end - llb])
+    xtemp = np.zeros([3, horizontal_end - llb])
 
     for i in range(3):
         ytemp[i] = lat[c2e2c[llb:, i]]
@@ -400,8 +391,8 @@ def compute_c_bln_avg(
         yloc,
         xloc,
         wgt_loc,
-        second_boundary_layer_start_index,
-        second_boundary_layer_end_index,
+        horizontal_start,
+        horizontal_end,
     )
 
     # Store results in ptr_patch%cells%avg_wgt
@@ -417,8 +408,6 @@ def compute_mass_conservation_c_bln_avg(
     divavg_cntrwgt: np.array,
     owner_mask: np.array,
     c2e2c: np.array,
-    lat: np.array,
-    lon: np.array,
     cell_areas: np.array,
     niter: np.array,
     second_boundary_layer_start_index: np.int32,
@@ -426,7 +415,11 @@ def compute_mass_conservation_c_bln_avg(
     third_boundary_layer_start_index: np.int32,
 ) -> np.array:
     """
-    Compute c_bln_avg.
+    Compute the weighting coefficients for cell averaging with variable interpolation factors.
+
+    The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+
+    and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients are not aliased into a checkerboard pattern between upward- and downward directed cells. The third condition is sum(w(i)) = 1., and the weight of the local point is 0.5.
 
     calculate_mass_conservation_bilinear_cellavg_wgt
     Args:
@@ -442,7 +435,7 @@ def compute_mass_conservation_c_bln_avg(
         second_boundary_layer_end_index:
         third_boundary_layer_start_index:
 
-    in this routine halo cell exchanges (sync) are missing
+    in this function halo cell exchanges (sync) are missing
     """
     llb = second_boundary_layer_start_index
     llb2 = third_boundary_layer_start_index
