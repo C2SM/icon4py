@@ -25,7 +25,6 @@ def _apply_nabla2_to_vn_in_lateral_boundary(
     vn: Field[[EdgeDim, KDim], wpfloat],
     fac_bdydiff_v: wpfloat,
 ) -> Field[[EdgeDim, KDim], wpfloat]:
-    """Formerly known as mo_nh_diffusion_stencil_06."""
     vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
     return vn_wp
 
