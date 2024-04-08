@@ -42,6 +42,29 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
     )
 
 
+def jw_diffusion_config(ndyn_substeps):
+    """Create DiffusionConfig matching EXCLAIM_APE_R04B02.
+
+    Set values to the ones used in the  EXCLAIM_APE_R04B02 experiment where they differ
+    from the default.
+    """
+    return DiffusionConfig(
+        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w=True,
+        hdiff_vn=True,
+        hdiff_temp=False,
+        n_substeps=ndyn_substeps,
+        hdiff_rcf=True,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=10.0,
+        hdiff_w_efdt_ratio=15.0,
+        smagorinski_scaling_factor=0.025,
+        zdiffu_t=True,
+        velocity_boundary_diffusion_denom=200.0,
+        max_nudging_coeff=0.075,
+    )
+
 def r04b09_diffusion_config(
     ndyn_substeps,  # imported `ndyn_substeps` fixture
 ) -> DiffusionConfig:
@@ -75,6 +98,8 @@ def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
         return r04b09_diffusion_config(ndyn_substeps)
     elif name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_diffusion_config(ndyn_substeps)
+    elif name.lower() in "jabw_r02b04":
+        return jw_diffusion_config(ndyn_substeps)
 
 
 def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
@@ -99,17 +124,29 @@ def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
     )
 
 
+def jw_nonhydrostatic_config(ndyn_substeps):
+    """Create configuration for EXCLAIM APE experiment."""
+    return NonHydrostaticConfig(
+        ndyn_substeps_var=ndyn_substeps,
+        max_nudging_coeff=0.02,
+        divdamp_fac=0.0025,
+        lhdiff_rcf=True,
+    )
+
 def construct_nonhydrostatic_config(name: str, ndyn_substeps: int = 5):
     if name.lower() in "mch_ch_r04b09_dsl":
         return mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps)
     elif name.lower() in "exclaim_ape_r02b04":
         return exclaim_ape_nonhydrostatic_config(ndyn_substeps)
+    elif name.lower() in "jabw_r02b04":
+        return jw_nonhydrostatic_config(ndyn_substeps)
 
 
 def mch_ch_r04b09_dsl_iconrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
+    damping_height: float,
     ndyn_substeps: int,
 ) -> IconRunConfig:
     """
@@ -136,6 +173,7 @@ def mch_ch_r04b09_dsl_iconrun_config(
             int(date_exit[14:16]),
             int(date_exit[17:19]),
         ),
+        damping_height=damping_height,
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=diffusion_linit_init,
     )
@@ -145,6 +183,7 @@ def exclaim_ape_iconrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
+    damping_height: float,
     ndyn_substeps: int,
 ) -> IconRunConfig:
     """
@@ -171,19 +210,58 @@ def exclaim_ape_iconrun_config(
             int(date_exit[14:16]),
             int(date_exit[17:19]),
         ),
+        damping_height=damping_height,
+        n_substeps=ndyn_substeps,
+        apply_initial_stabilization=diffusion_linit_init,
+    )
+
+
+def jw_iconrun_config(
+    date_init: str,
+    date_exit: str,
+    diffusion_linit_init: bool,
+    damping_height: float,
+    ndyn_substeps: int,
+) -> IconRunConfig:
+    """
+    Create IconRunConfig matching MCH_CH_r04b09_dsl.
+
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
+    """
+    return IconRunConfig(
+        dtime=300.0,
+        start_date=datetime(
+            int(date_init[0:4]),
+            int(date_init[5:7]),
+            int(date_init[8:10]),
+            int(date_init[11:13]),
+            int(date_init[14:16]),
+            int(date_init[17:19]),
+        ),
+        end_date=datetime(
+            int(date_exit[0:4]),
+            int(date_exit[5:7]),
+            int(date_exit[8:10]),
+            int(date_exit[11:13]),
+            int(date_exit[14:16]),
+            int(date_exit[17:19]),
+        ),
+        damping_height=damping_height,
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=diffusion_linit_init,
     )
 
 
 def construct_iconrun_config(
-    name: str,
-    date_init: str,
-    date_exit: str,
-    diffusion_linit_init: bool,
-    ndyn_substeps: int = 5
+    name: str, date_init: str, date_exit: str, diffusion_linit_init: bool, damping_height: float, ndyn_substeps: int = 5
 ):
     if name.lower() in "mch_ch_r04b09_dsl":
-        return mch_ch_r04b09_dsl_iconrun_config(date_init,date_exit,diffusion_linit_init,ndyn_substeps)
+        return mch_ch_r04b09_dsl_iconrun_config(
+            date_init, date_exit, diffusion_linit_init, damping_height, ndyn_substeps
+        )
     elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_iconrun_config(date_init,date_exit,diffusion_linit_init,ndyn_substeps)
+        return exclaim_ape_iconrun_config(date_init, date_exit, diffusion_linit_init, damping_height, ndyn_substeps)
+
+    elif name.lower() in "jabw_r02b04":
+        return jw_iconrun_config(date_init, date_exit, diffusion_linit_init, damping_height, ndyn_substeps)

@@ -15,7 +15,7 @@ from dataclasses import dataclass
 
 from gt4py.next.common import Field
 
-from icon4py.model.common.dimension import CellDim, KDim, C2E2C2EDim, VertexDim
+from icon4py.model.common.dimension import C2E2C2EDim, CellDim, KDim, VertexDim
 
 
 @dataclass
@@ -27,17 +27,18 @@ class DiagnosticState:
     """
 
     pressure: Field[[CellDim, KDim], float]
-    pressure_ifc: Field[[CellDim, KDim], float] # has the same K dimension size with full-level variables because surface pressure is defined separately
+    pressure_ifc: Field[
+        [CellDim, KDim], float
+    ]  # has the same K dimension size with full-level variables because surface pressure is defined separately
     temperature: Field[[CellDim, KDim], float]
     pressure_sfc: Field[[CellDim], float]
     u: Field[[CellDim, KDim], float]
     v: Field[[CellDim, KDim], float]
 
+
 @dataclass
 class DiagnosticMetricState:
-    """Class that contains the diagnostic metric state for computing the diagnostic state.
-
-    """
+    """Class that contains the diagnostic metric state for computing the diagnostic state."""
 
     ddqz_z_full: Field[[CellDim, KDim], float]
     rbf_vec_coeff_c1: Field[[CellDim, C2E2C2EDim], float]

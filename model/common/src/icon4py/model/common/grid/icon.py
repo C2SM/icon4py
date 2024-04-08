@@ -17,9 +17,9 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
-    C2E2C2EDim,
     C2EDim,
     C2VDim,
     CECDim,
@@ -35,8 +35,8 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
-    V2CDim,
     V2C2VDim,
+    V2CDim,
     V2EDim,
     VertexDim,
 )

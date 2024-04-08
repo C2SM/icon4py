@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
+
 import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
@@ -62,9 +63,6 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-from gt4py.next.program_processors.runners import gtfn
-from gt4py.next.otf.compilation.build_systems import cmake
-#from gt4py.next.otf.compilation.cache import Strategy
 
 log = logging.getLogger(__name__)
 
@@ -72,19 +70,7 @@ log = logging.getLogger(__name__)
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
-'''
-compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
-    name="run_gtfn_cached_cmake_release",
-    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
-        compilation=gtfn.compiler.Compiler(
-            cache_strategy=Strategy.PERSISTENT,
-            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
-        )),
-    hash_function=gtfn.compilation_hash),
-)
-'''
-backend = cached_backend #compiler_cached_release_backend
-#
+backend = cached_backend
 
 
 class VelocityAdvection:
@@ -109,62 +95,78 @@ class VelocityAdvection:
         self.scalfac_exdiff: float = 0.05
         self._allocate_local_fields()
 
-        self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
-        self.stencil_mo_math_divrot_rot_vertex_ri_dsl = mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)
+        self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
+        )
+        self.stencil_mo_math_divrot_rot_vertex_ri_dsl = (
+            mo_math_divrot_rot_vertex_ri_dsl.with_backend(backend)
+        )
         self.stencil_compute_tangential_wind = compute_tangential_wind.with_backend(backend)
-        self.stencil_interpolate_vn_to_ie_and_compute_ekin_on_edges = interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(backend)
+        self.stencil_interpolate_vn_to_ie_and_compute_ekin_on_edges = (
+            interpolate_vn_to_ie_and_compute_ekin_on_edges.with_backend(backend)
+        )
         self.stencil_interpolate_vt_to_ie = interpolate_vt_to_ie.with_backend(backend)
         self.stencil_4_5 = velocity_prog.fused_stencils_4_5.with_backend(backend)
         self.stencil_extrapolate_at_top = velocity_prog.extrapolate_at_top.with_backend(backend)
-        self.stencil_compute_horizontal_advection_term_for_vertical_velocity = compute_horizontal_advection_term_for_vertical_velocity.with_backend(backend)
+        self.stencil_compute_horizontal_advection_term_for_vertical_velocity = (
+            compute_horizontal_advection_term_for_vertical_velocity.with_backend(backend)
+        )
         self.stencil_interpolate_to_cell_center = interpolate_to_cell_center.with_backend(backend)
         self.stencil_9_10 = velocity_prog.fused_stencils_9_10.with_backend(backend)
         self.stencil_11_to_13 = velocity_prog.fused_stencils_11_to_13.with_backend(backend)
         self.stencil_14 = velocity_prog.fused_stencil_14.with_backend(backend)
-        self.stencil_interpolate_contravatiant_vertical_verlocity_to_full_levels = interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)
+        self.stencil_interpolate_contravatiant_vertical_verlocity_to_full_levels = (
+            interpolate_contravatiant_vertical_verlocity_to_full_levels.with_backend(backend)
+        )
         self.stencil_16_to_17 = velocity_prog.fused_stencils_16_to_17.with_backend(backend)
-        self.stencil_add_extra_diffusion_for_w_con_approaching_cfl = add_extra_diffusion_for_w_con_approaching_cfl.with_backend(backend)
-        self.stencil_compute_advective_normal_wind_tendency = compute_advective_normal_wind_tendency.with_backend(backend)
-        self.stencil_add_extra_diffusion_for_wn_approaching_cfl = add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)
+        self.stencil_add_extra_diffusion_for_w_con_approaching_cfl = (
+            add_extra_diffusion_for_w_con_approaching_cfl.with_backend(backend)
+        )
+        self.stencil_compute_advective_normal_wind_tendency = (
+            compute_advective_normal_wind_tendency.with_backend(backend)
+        )
+        self.stencil_add_extra_diffusion_for_wn_approaching_cfl = (
+            add_extra_diffusion_for_wn_approaching_cfl.with_backend(backend)
+        )
 
         self.offset_provider_v2c = {
-                    "V2C": self.grid.get_offset_provider("V2C"),
-                }
+            "V2C": self.grid.get_offset_provider("V2C"),
+        }
         self.offset_provider_koff = {"Koff": KDim}
         self.offset_provider_v2e = {
-                "V2E": self.grid.get_offset_provider("V2E"),
-            }
+            "V2E": self.grid.get_offset_provider("V2E"),
+        }
         self.offset_provider_e2c2e = {
-                "E2C2E": self.grid.get_offset_provider("E2C2E"),
-            }
+            "E2C2E": self.grid.get_offset_provider("E2C2E"),
+        }
         self.offset_provider_e2c_e2v = {
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                    "E2V": self.grid.get_offset_provider("E2V"),
-                }
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "E2V": self.grid.get_offset_provider("E2V"),
+        }
         self.offset_provider_c2e_c2ce = {
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-            }
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+        }
         self.offset_provider_c2e_c2ce_koff = {
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            }
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+            "Koff": KDim,
+        }
         self.offset_provider_c2e2co = {
-                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-                }
+            "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+        }
         self.offset_provider_e2c_e2v_e2ec_koff = {
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "E2V": self.grid.get_offset_provider("E2V"),
-                "E2EC": self.grid.get_offset_provider("E2EC"),
-                "Koff": KDim,
-            }
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "E2V": self.grid.get_offset_provider("E2V"),
+            "E2EC": self.grid.get_offset_provider("E2EC"),
+            "Koff": KDim,
+        }
         self.offset_provider_e2c_e2v_e2c2eo_koff = {
-                "E2C": self.grid.get_offset_provider("E2C"),
-                "E2V": self.grid.get_offset_provider("E2V"),
-                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                "Koff": KDim,
-            }
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "E2V": self.grid.get_offset_provider("E2V"),
+            "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+            "Koff": KDim,
+        }
 
         self._initialized = True
 
@@ -235,9 +237,7 @@ class VelocityAdvection:
             CellDim, HorizontalMarkerIndex.local(CellDim) - 1
         )
 
-        log.info(
-            f"predictor run velocity advection"
-        )
+        log.info("predictor run velocity advection")
         if not vn_only:
             self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,

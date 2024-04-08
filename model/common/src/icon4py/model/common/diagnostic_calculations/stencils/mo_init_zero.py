@@ -13,42 +13,39 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, broadcast
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat
 
+
 @field_operator
-def _mo_init_ddt_cell_zero(
-) -> tuple[
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat]
-]:
+def _mo_init_ddt_cell_zero() -> (
+    tuple[
+        Field[[CellDim, KDim], vpfloat],
+        Field[[CellDim, KDim], vpfloat],
+        Field[[CellDim, KDim], vpfloat],
+    ]
+):
     ddt_exner_phy = broadcast(0.0, (CellDim, KDim))
     ddt_w_adv_ntl1 = broadcast(0.0, (CellDim, KDim))
     ddt_w_adv_ntl2 = broadcast(0.0, (CellDim, KDim))
-    return (
-        ddt_exner_phy,
-        ddt_w_adv_ntl1,
-        ddt_w_adv_ntl2
-    )
+    return (ddt_exner_phy, ddt_w_adv_ntl1, ddt_w_adv_ntl2)
+
 
 @field_operator
-def _mo_init_ddt_edge_zero(
-) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat]
-]:
+def _mo_init_ddt_edge_zero() -> (
+    tuple[
+        Field[[EdgeDim, KDim], vpfloat],
+        Field[[EdgeDim, KDim], vpfloat],
+        Field[[EdgeDim, KDim], vpfloat],
+    ]
+):
     ddt_vn_phy = broadcast(0.0, (EdgeDim, KDim))
     ddt_vn_apc_ntl1 = broadcast(0.0, (EdgeDim, KDim))
     ddt_vn_apc_ntl2 = broadcast(0.0, (EdgeDim, KDim))
-    return (
-        ddt_vn_phy,
-        ddt_vn_apc_ntl1,
-        ddt_vn_apc_ntl2
-    )
+    return (ddt_vn_phy, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2)
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_init_ddt_cell_zero(
@@ -61,16 +58,13 @@ def mo_init_ddt_cell_zero(
     vertical_end: int32,
 ):
     _mo_init_ddt_cell_zero(
-        out=(
-            ddt_exner_phy,
-            ddt_w_adv_ntl1,
-            ddt_w_adv_ntl2
-        ),
+        out=(ddt_exner_phy, ddt_w_adv_ntl1, ddt_w_adv_ntl2),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )
+
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_init_ddt_edge_zero(
@@ -83,11 +77,7 @@ def mo_init_ddt_edge_zero(
     vertical_end: int32,
 ):
     _mo_init_ddt_edge_zero(
-        out=(
-            ddt_vn_phy,
-            ddt_vn_apc_ntl1,
-            ddt_vn_apc_ntl2
-        ),
+        out=(ddt_vn_phy, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

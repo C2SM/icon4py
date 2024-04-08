@@ -11,55 +11,43 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from pathlib import Path
 import os
 
 import numpy as np
 import pytest
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
-from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
+from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import (
+    mo_diagnose_pressure_sfc,
+    mo_diagnose_temperature,
+)
+from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
+from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import (
+    mo_init_ddt_cell_zero,
+    mo_init_ddt_edge_zero,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import (
+    mo_rbf_vec_interpol_cell,
+)
+from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.driver.initialization_utils import model_initialization_jabw
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import mo_init_ddt_cell_zero, mo_init_ddt_edge_zero
-from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import mo_diagnose_temperature, mo_diagnose_pressure_sfc, mo_diagnose_pressure
-from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import mo_rbf_vec_interpol_cell
-from icon4py.model.common.constants import CPD_O_RD, P0REF, GRAV_O_RD
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
-from gt4py.next.program_processors.runners import gtfn
-from gt4py.next.otf.compilation.build_systems import cmake
-#from gt4py.next.otf.compilation.cache import Strategy
+
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
-'''
-compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
-    name="run_gtfn_cached_cmake_release",
-    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
-        compilation=gtfn.compiler.Compiler(
-            cache_strategy=Strategy.PERSISTENT,
-            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
-        )),
-    hash_function=gtfn.compilation_hash),
-)
-'''
-backend = compiler_cached_backend#compiler_cached_release_backend
+backend = compiler_cached_backend
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-"experiment, experiment_name, fname_prefix, rank, debug",
+    "experiment, experiment_name, fname_prefix, rank, debug",
     [
-        (
-            JABW_EXPERIMENT,
-            "jabw",
-            "icon_pydycore",
-            0,
-            False
-        ),
+        (JABW_EXPERIMENT, "jabw", "icon_pydycore", 0, False),
     ],
 )
 def test_diagnostic_calculations_in_jabw(
@@ -71,9 +59,8 @@ def test_diagnostic_calculations_in_jabw(
     data_provider,
     grid_savepoint,
     icon_grid,
-    debug
+    debug,
 ):
-
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
 
@@ -84,14 +71,9 @@ def test_diagnostic_calculations_in_jabw(
         divdamp_fac_o2,
         diagnostic_state,
         prognostic_state_now,
-        prognostic_state_next
+        prognostic_state_next,
     ) = model_initialization_jabw(
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        datapath,
-        fname_prefix,
-        rank
+        icon_grid, cell_geometry, edge_geometry, datapath, fname_prefix, rank
     )
 
     mo_init_exner_pr.with_backend(backend)(
@@ -102,7 +84,7 @@ def test_diagnostic_calculations_in_jabw(
         icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
         0,
         icon_grid.num_levels,
-        offset_provider={}
+        offset_provider={},
     )
 
     mo_diagnose_temperature.with_backend(backend)(
@@ -113,12 +95,14 @@ def test_diagnostic_calculations_in_jabw(
         icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
         0,
         icon_grid.num_levels,
-        offset_provider={}
+        offset_provider={},
     )
 
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
     ref_u = _allocate(CellDim, KDim, grid=icon_grid)
     ref_v = _allocate(CellDim, KDim, grid=icon_grid)
@@ -142,9 +126,15 @@ def test_diagnostic_calculations_in_jabw(
     temperature_nlev_minus1 = diagnostic_state.temperature[:, icon_grid.num_levels - 2]
     temperature_nlev_minus2 = diagnostic_state.temperature[:, icon_grid.num_levels - 3]
     # TODO (Chia Rui): ddqz_z_full is constant, move slicing to initialization
-    ddqz_z_full_nlev = data_provider.from_metrics_savepoint().ddqz_z_full()[:, icon_grid.num_levels - 1]
-    ddqz_z_full_nlev_minus1 = data_provider.from_metrics_savepoint().ddqz_z_full()[:, icon_grid.num_levels - 2]
-    ddqz_z_full_nlev_minus2 = data_provider.from_metrics_savepoint().ddqz_z_full()[:, icon_grid.num_levels - 3]
+    ddqz_z_full_nlev = data_provider.from_metrics_savepoint().ddqz_z_full()[
+        :, icon_grid.num_levels - 1
+    ]
+    ddqz_z_full_nlev_minus1 = data_provider.from_metrics_savepoint().ddqz_z_full()[
+        :, icon_grid.num_levels - 2
+    ]
+    ddqz_z_full_nlev_minus2 = data_provider.from_metrics_savepoint().ddqz_z_full()[
+        :, icon_grid.num_levels - 3
+    ]
     mo_diagnose_pressure_sfc.with_backend(backend)(
         exner_nlev_minus2,
         temperature_nlev,
@@ -159,11 +149,11 @@ def test_diagnostic_calculations_in_jabw(
         GRAV_O_RD,
         icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
         icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-        offset_provider={}
+        offset_provider={},
     )
 
     # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
-    '''
+    """
     mo_diagnose_pressure.with_backend(backend)(
         data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.temperature,
@@ -176,7 +166,7 @@ def test_diagnostic_calculations_in_jabw(
         icon_grid.num_levels,
         offset_provider={}
     )
-    '''
+    """
 
     if debug:
         script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -210,9 +200,7 @@ def test_diagnostic_calculations_in_jabw(
                     for i in range(cell_size):
                         f.write("{0:7d}".format(i))
                         f.write(
-                            " {0:.20e} {1:.20e} {2:.20e} ".format(
-                                difference[i], ref[i], predict[i]
-                            )
+                            " {0:.20e} {1:.20e} {2:.20e} ".format(difference[i], ref[i], predict[i])
                         )
                         f.write("\n")
 
@@ -294,55 +282,43 @@ def test_diagnostic_calculations_in_jabw(
             "exner_pr",
         )
 
-        #printing(
-        #    data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
-        #    diagnostic_state.pressure.asnumpy(),
-        #    "pressure1",
-        #)
-
     assert dallclose(
-        data_provider.from_savepoint_jabw_first_output().u().asnumpy(),
-        diagnostic_state.u.asnumpy()
+        data_provider.from_savepoint_jabw_first_output().u().asnumpy(), diagnostic_state.u.asnumpy()
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().v().asnumpy(),
         diagnostic_state.v.asnumpy(),
-        atol=1.e-13
+        atol=1.0e-13,
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().temperature().asnumpy(),
-        diagnostic_state.temperature.asnumpy()
+        diagnostic_state.temperature.asnumpy(),
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().pressure_sfc().asnumpy(),
-        diagnostic_state.pressure_sfc.asnumpy()
+        diagnostic_state.pressure_sfc.asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_first_output().u().asnumpy(),
-        ref_u.asnumpy()
+        data_provider.from_savepoint_jabw_first_output().u().asnumpy(), ref_u.asnumpy()
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().v().asnumpy(),
         ref_v.asnumpy(),
-        atol=1.e-13
+        atol=1.0e-13,
     )
 
     assert dallclose(
         data_provider.from_savepoint_jabw_first_output().exner_pr().asnumpy(),
         solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
-        atol=3.e-15
+        atol=3.0e-15,
     )
 
-    # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
-    # assert dallclose(
-    #    data_provider.from_savepoint_jabw_first_output().pressure().asnumpy(),
-    #    diagnostic_state.pressure.asnumpy()
-    # )
+    # TODO (Chia Rui): to compare pressure
 
     ddt_exner_phy = _allocate(CellDim, KDim, grid=icon_grid)
     ddt_vn_phy = _allocate(EdgeDim, KDim, grid=icon_grid)
@@ -359,7 +335,7 @@ def test_diagnostic_calculations_in_jabw(
         icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim)),
         0,
         icon_grid.num_levels,
-        offset_provider={}
+        offset_provider={},
     )
 
     mo_init_ddt_cell_zero.with_backend(backend)(
@@ -369,8 +345,8 @@ def test_diagnostic_calculations_in_jabw(
         icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
         icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
         0,
-        icon_grid.num_levels+1,
-        offset_provider={}
+        icon_grid.num_levels + 1,
+        offset_provider={},
     )
 
     assert dallclose(

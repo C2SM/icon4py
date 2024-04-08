@@ -12,12 +12,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
 import numpy as np
-
+from gt4py.next import as_field
+from gt4py.next.common import Field
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -31,14 +32,35 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
+from icon4py.model.common.constants import (
+    CPD_O_RD,
+    CVD_O_RD,
+    EARTH_ANGULAR_VELOCITY,
+    EARTH_RADIUS,
+    GRAV,
+    MATH_PI,
+    MATH_PI_2,
+    P0REF,
+    RD,
+    RD_O_CPD,
+)
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim, KDim, V2C2VDim, E2C2VDim, E2CDim, CEDim, C2E2C2EDim, C2E2CDim, C2EDim, C2E
+from icon4py.model.common.dimension import (
+    C2E2C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+    VertexDim,
+)
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
+from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
@@ -47,38 +69,15 @@ from icon4py.model.driver.serialbox_helpers import (
 from icon4py.model.driver.testcase_functions import (
     mo_cells2edges_scalar_numpy,
     mo_hydro_adjust,
-    mo_u2vn_jabw_numpy,
     mo_rbf_vec_interpol_cell_numpy,
+    mo_u2vn_jabw_numpy,
 )
-from icon4py.model.common.test_utils import serialbox_utils as sb
-from icon4py.model.common.constants import GRAV, RD, EARTH_RADIUS, EARTH_ANGULAR_VELOCITY, MATH_PI, MATH_PI_2, RD_O_CPD, CPD_O_RD, P0REF, CVD_O_RD, GRAV_O_RD
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 
-from gt4py.next import as_field
-from gt4py.next.common import Field
-
-import sys
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
-from gt4py.next.program_processors.runners import gtfn
-from gt4py.next.otf.compilation.build_systems import cmake
-#from gt4py.next.otf.compilation.cache import Strategy
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
 compiler_gpu_backend = run_gtfn_gpu
-
-'''
-compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
-    name="run_gtfn_cached_cmake_release",
-    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
-        compilation=gtfn.compiler.Compiler(
-            cache_strategy=Strategy.PERSISTENT,
-            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
-        )),
-    hash_function=gtfn.compilation_hash),
-)
-'''
-backend = compiler_cached_backend #compiler_cached_release_backend
+backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -114,23 +113,24 @@ def read_icon_grid(
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
+
 def model_initialization_jabw(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
     path: Path,
     fname_prefix: str,
-    rank=0
+    rank=0,
 ):
     data_provider = sb.IconSerialDataProvider(
         fname_prefix, str(path.absolute()), False, mpi_rank=rank
     )
     cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
-    grid_idx_edge_start_plus1 = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1)
-    grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
+    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+    )
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
-    ddqz_z_full = data_provider.from_metrics_savepoint().ddqz_z_full().asnumpy()
     theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
     theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().asnumpy()
     exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().asnumpy()
@@ -138,7 +138,6 @@ def model_initialization_jabw(
     geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
 
     cell_lat = cell_param.cell_center_lat.asnumpy()
-    cell_lon = cell_param.cell_center_lon.asnumpy()
     edge_lat = edge_param.edge_center[0].asnumpy()
     edge_lon = edge_param.edge_center[1].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
@@ -151,20 +150,20 @@ def model_initialization_jabw(
     num_levels = icon_grid.num_levels
 
     p_sfc = 100000.0
-    jw_up = 0.0 # if doing baroclinic wave test, please set it to a nonzero value
+    jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
     jw_u0 = 35.0
-    jw_temp0 = 288.
+    jw_temp0 = 288.0
     # DEFINED PARAMETERS for jablonowski williamson:
     eta_0 = 0.252
-    eta_t = 0.2    # tropopause
+    eta_t = 0.2  # tropopause
     gamma = 0.005  # temperature elapse rate (K/m)
     dtemp = 4.8e5  # empirical temperature difference (K)
     # for baroclinic wave test
-    lonC = MATH_PI / 9.0 # longitude of the perturb centre
-    latC = 2.0 * lonC    # latitude of the perturb centre
+    lonC = MATH_PI / 9.0  # longitude of the perturb centre
+    latC = 2.0 * lonC  # latitude of the perturb centre
     ps_o_p0ref = p_sfc / P0REF
 
-    w_numpy = np.zeros((cell_size, num_levels+1), dtype=float)
+    w_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
     exner_numpy = np.zeros((cell_size, num_levels), dtype=float)
     rho_numpy = np.zeros((cell_size, num_levels), dtype=float)
     temperature_numpy = np.zeros((cell_size, num_levels), dtype=float)
@@ -177,33 +176,57 @@ def model_initialization_jabw(
 
     sin_lat = np.sin(cell_lat)
     cos_lat = np.cos(cell_lat)
-    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat ** 6) * (cos_lat ** 2 + 1.0/ 3.0)
-    fac2 = (8.0/ 5.0 * (cos_lat ** 3) * (sin_lat ** 2 + 2.0/ 3.0) - 0.25 * MATH_PI) * EARTH_RADIUS * EARTH_ANGULAR_VELOCITY
+    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
+    fac2 = (
+        (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * MATH_PI)
+        * EARTH_RADIUS
+        * EARTH_ANGULAR_VELOCITY
+    )
     lapse_rate = RD * gamma / GRAV
-    for k_index in range(num_levels-1,-1,-1):
-        eta_old = np.full(cell_size,fill_value=1.0e-7, dtype=float)
-        log.info(f'In Newton iteration, k = {k_index}')
+    for k_index in range(num_levels - 1, -1, -1):
+        eta_old = np.full(cell_size, fill_value=1.0e-7, dtype=float)
+        log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
-        for newton_iter_index in range(100):
+        for _ in range(100):
             eta_v_numpy[:, k_index] = (eta_old - eta_0) * MATH_PI_2
             cos_etav = np.cos(eta_v_numpy[:, k_index])
             sin_etav = np.sin(eta_v_numpy[:, k_index])
 
-            temperature_avg = jw_temp0 * (eta_old ** lapse_rate)
-            geopot_avg = jw_temp0 * GRAV / gamma * (1.0 - eta_old ** lapse_rate)
+            temperature_avg = jw_temp0 * (eta_old**lapse_rate)
+            geopot_avg = jw_temp0 * GRAV / gamma * (1.0 - eta_old**lapse_rate)
             temperature_avg = np.where(
-                eta_old < eta_t,
-                temperature_avg + dtemp * ((eta_t - eta_old) ** 5),
-                temperature_avg
+                eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
             )
             geopot_avg = np.where(
                 eta_old < eta_t,
-                geopot_avg - RD * dtemp * ((np.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t ** 5) - 5.0 * (eta_t ** 4) * eta_old + 5.0 * (eta_t ** 3) * (eta_old ** 2) - 10.0 / 3.0 * (eta_t ** 2) * (eta_old ** 3) + 1.25 * eta_t * (eta_old ** 4) - 0.2 * (eta_old ** 5)),
                 geopot_avg
+                - RD
+                * dtemp
+                * (
+                    (np.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                    - 5.0 * (eta_t**4) * eta_old
+                    + 5.0 * (eta_t**3) * (eta_old**2)
+                    - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
+                    + 1.25 * eta_t * (eta_old**4)
+                    - 0.2 * (eta_old**5)
+                ),
+                geopot_avg,
             )
 
-            geopot_jw = geopot_avg + jw_u0 * (cos_etav ** 1.5) * (fac1 * jw_u0 * (cos_etav ** 1.5) + fac2)
-            temperature_jw = temperature_avg + 0.75 * eta_old * MATH_PI * jw_u0 / RD * sin_etav * np.sqrt(cos_etav) * (2.0 * jw_u0 * fac1 * (cos_etav ** 1.5) + fac2)
+            geopot_jw = geopot_avg + jw_u0 * (cos_etav**1.5) * (
+                fac1 * jw_u0 * (cos_etav**1.5) + fac2
+            )
+            temperature_jw = (
+                temperature_avg
+                + 0.75
+                * eta_old
+                * MATH_PI
+                * jw_u0
+                / RD
+                * sin_etav
+                * np.sqrt(cos_etav)
+                * (2.0 * jw_u0 * fac1 * (cos_etav**1.5) + fac2)
+            )
             newton_function = geopot_jw - geopot[:, k_index]
             newton_function_prime = -RD / eta_old * temperature_jw
             eta_old = eta_old - newton_function / newton_function_prime
@@ -213,19 +236,21 @@ def model_initialization_jabw(
         # Use analytic expressions at all model level
         exner_numpy[:, k_index] = (eta_old * ps_o_p0ref) ** RD_O_CPD
         theta_v_numpy[:, k_index] = temperature_jw / exner_numpy[:, k_index]
-        rho_numpy[:, k_index] = exner_numpy[:, k_index] ** CVD_O_RD * P0REF / RD / theta_v_numpy[:, k_index]
+        rho_numpy[:, k_index] = (
+            exner_numpy[:, k_index] ** CVD_O_RD * P0REF / RD / theta_v_numpy[:, k_index]
+        )
         # initialize diagnose pressure and temperature variables
         pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** CPD_O_RD
         temperature_numpy[:, k_index] = temperature_jw
 
-    log.info(f'Newton iteration completed!')
+    log.info("Newton iteration completed!")
     eta_v_e_numpy = mo_cells2edges_scalar_numpy(
         icon_grid,
         cells2edges_coeff,
         eta_v_numpy,
         mask_array_edge_start_plus1_to_edge_end,
     )
-    log.info(f'Cell-to-edge computation completed.')
+    log.info("Cell-to-edge computation completed.")
 
     vn_numpy = mo_u2vn_jabw_numpy(
         jw_u0,
@@ -238,7 +263,7 @@ def model_initialization_jabw(
         eta_v_e_numpy,
         mask_array_edge_start_plus1_to_edge_end,
     )
-    log.info(f'U2vn computation completed.')
+    log.info("U2vn computation completed.")
 
     rho_numpy, exner_numpy, theta_v_numpy = mo_hydro_adjust(
         wgtfac_c,
@@ -252,7 +277,7 @@ def model_initialization_jabw(
         theta_v_numpy,
         num_levels,
     )
-    log.info(f'Hydrostatic adjustment computation completed.')
+    log.info("Hydrostatic adjustment computation completed.")
 
     vn = as_field((EdgeDim, KDim), vn_numpy)
     w = as_field((CellDim, KDim), w_numpy)
@@ -263,10 +288,18 @@ def model_initialization_jabw(
     theta_v = as_field((CellDim, KDim), theta_v_numpy)
     pressure_ifc = as_field((CellDim, KDim), np.zeros((cell_size, num_levels), dtype=float))
 
+    vn_next = as_field((EdgeDim, KDim), vn_numpy)
+    w_next = as_field((CellDim, KDim), w_numpy)
+    exner_next = as_field((CellDim, KDim), exner_numpy)
+    rho_next = as_field((CellDim, KDim), rho_numpy)
+    theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
+
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1)
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
     u_numpy, v_numpy = mo_rbf_vec_interpol_cell_numpy(
         vn_numpy,
@@ -282,11 +315,9 @@ def model_initialization_jabw(
     u = as_field((CellDim, KDim), u_numpy)
     v = as_field((CellDim, KDim), v_numpy)
 
-    log.info(f'U, V computation completed.')
+    log.info("U, V computation completed.")
 
     # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment
-    # temperature_numpy = mo_diagnose_temperature_numpy(theta_v_numpy,exner_numpy)
-    # pressure_sfc_numpy = mo_diagnose_pressure_sfc_numpy(exner_numpy,temperature_numpy,ddqz_z_full,num_levels)
 
     diagnostic_state = DiagnosticState(
         pressure=pressure,
@@ -305,18 +336,18 @@ def model_initialization_jabw(
         exner=exner,
     )
     prognostic_state_next = PrognosticState(
-        w=w,
-        vn=vn,
-        theta_v=theta_v,
-        rho=rho,
-        exner=exner,
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
     )
 
     diffusion_diagnostic_state = DiffusionDiagnosticState(
         hdef_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         div_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         dwdx=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        dwdy=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True)
+        dwdy=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
     )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
@@ -348,7 +379,7 @@ def model_initialization_jabw(
         mass_flx_ic=_allocate(CellDim, KDim, grid=icon_grid),
         vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
-    log.info(f'Initialization completed.')
+    log.info("Initialization completed.")
 
     return (
         diffusion_diagnostic_state,
@@ -357,22 +388,21 @@ def model_initialization_jabw(
         0.0,
         diagnostic_state,
         prognostic_state_now,
-        prognostic_state_next
+        prognostic_state_next,
     )
 
-def model_initialization_serialbox(
-    icon_grid: IconGrid, path: Path, rank=0
-):
+
+def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
     """
-        Read prognostic and diagnostic state from serialized data.
+    Read prognostic and diagnostic state from serialized data.
 
-        Args:
-            path: path to the serialized input data
-            rank: mpi rank of the current compute node
+    Args:
+        path: path to the serialized input data
+        rank: mpi rank of the current compute node
 
-        Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
-            The data_provider is returned such that further timesteps of diagnostics and prognostics
-            can be read from within the dummy timeloop
+    Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
+        The data_provider is returned such that further timesteps of diagnostics and prognostics
+        can be read from within the dummy timeloop
 
     """
 
@@ -389,7 +419,9 @@ def model_initialization_serialbox(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        diffusion_init_savepoint, False
+    )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
@@ -447,6 +479,7 @@ def model_initialization_serialbox(
         prognostic_state_next,
     )
 
+
 def read_initial_state(
     experiment_name: str,
     fname_prefix: str,
@@ -464,9 +497,7 @@ def read_initial_state(
     PrognosticState,
     PrognosticState,
 ]:
-
-    if experiment_name == 'jabw':
-
+    if experiment_name == "jabw":
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
@@ -475,17 +506,9 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_jabw(
-            icon_grid,
-            cell_param,
-            edge_param,
-            path,
-            fname_prefix,
-            rank
-        )
+        ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
 
     else:
-
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
@@ -506,8 +529,9 @@ def read_initial_state(
         prognostic_state_next,
     )
 
+
 def read_geometry_fields(
-    fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    fname_prefix: str, path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
@@ -527,7 +551,7 @@ def read_geometry_fields(
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
             vct_a=sp.vct_a(),
-            rayleigh_damping_height=12500,
+            rayleigh_damping_height=damping_height,
             nflatlev=sp.nflatlev(),
             nflat_gradp=sp.nflat_gradp(),
         )
@@ -543,18 +567,24 @@ def read_decomp_info(
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            fname_prefix, str(path.absolute()), True, procs_props.rank
-        )
+        sp = sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), True, procs_props.rank)
         return sp.from_savepoint_grid().construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_static_fields(
-    experiment_name: str, fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    experiment_name: str,
+    fname_prefix: str,
+    path: Path,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[
-    DiffusionMetricState, DiffusionInterpolationState, MetricStateNonHydro, InterpolationState, DiagnosticMetricState
+    DiffusionMetricState,
+    DiffusionInterpolationState,
+    MetricStateNonHydro,
+    InterpolationState,
+    DiagnosticMetricState,
 ]:
     """
     Read fields for metric and interpolation state.
@@ -641,7 +671,7 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
-        if experiment_name == 'jabw':
+        if experiment_name == "jabw":
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=metrics_savepoint.ddqz_z_full(),
                 rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
@@ -666,7 +696,7 @@ def read_static_fields(
                 v_lon=_allocate(VertexDim, grid=icon_grid, dtype=float),
                 e_lat=_allocate(EdgeDim, grid=icon_grid, dtype=float),
                 e_lon=_allocate(EdgeDim, grid=icon_grid, dtype=float),
-                vct_a=_allocate(KDim,grid=icon_grid,is_halfdim=True,dtype=float),
+                vct_a=_allocate(KDim, grid=icon_grid, is_halfdim=True, dtype=float),
             )
 
         return (

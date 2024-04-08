@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from pathlib import Path
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
@@ -31,6 +31,8 @@ class IconRunConfig:
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
 
+    damping_height: float = 12500.0
+
     """ndyn_substeps in ICON"""
     # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
     n_substeps: int = 5
@@ -38,12 +40,15 @@ class IconRunConfig:
     """linit_dyn in ICON"""
     apply_initial_stabilization: bool = True  # False if in restart mode
 
+    run_testcase: bool = False
+
 
 @dataclass(frozen=True)
 class IconOutputConfig:
     output_time_interval: timedelta = timedelta(minutes=1)
     output_file_time_interval: timedelta = timedelta(minutes=1)
     output_path: Path = Path("./")
+
 
 @dataclass
 class IconConfig:
@@ -90,7 +95,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
             zdiffu_t=True,
-            velocity_boundary_diffusion_denom=150.0,
+            velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.075,
         )
 
@@ -103,12 +108,17 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
-            divdamp_fac = 0.0025,
+            divdamp_fac=0.0025,
             lhdiff_rcf=True,
         )
 
     def _default_config():
-        return _default_run_config(), _default_output_config(), _default_diffusion_config(), NonHydrostaticConfig()
+        return (
+            _default_run_config(),
+            _default_output_config(),
+            _default_diffusion_config(),
+            NonHydrostaticConfig(),
+        )
 
     def _mch_ch_r04b09_config():
         return (
@@ -116,6 +126,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
                 dtime=10.0,
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
+                damping_height=12500.0,
                 n_substeps=2,
                 apply_initial_stabilization=True,
             ),
@@ -131,13 +142,15 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
             dtime=300.0,
-            end_date=datetime(1, 1, 1, 0, 10, 0),
-            apply_initial_stabilization=False,
+            end_date=datetime(1, 3, 8, 0, 0, 0),
+            damping_height=45000.0,
+            apply_initial_stabilization=True,
+            run_testcase=True,
             n_substeps=5,
         )
         output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=300),
-            output_file_time_interval=timedelta(seconds=300),
+            output_time_interval=timedelta(seconds=14400),
+            output_file_time_interval=timedelta(seconds=14400),
             output_path=Path("./"),
         )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
@@ -150,12 +163,27 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     if experiment == "mch_ch_r04b09_dsl":
-        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _mch_ch_r04b09_config()
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _mch_ch_r04b09_config()
     elif experiment == "jabw":
-        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _Jablownoski_Williamson_config()
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _Jablownoski_Williamson_config()
     else:
         log.warning("Experiment name is not specified, default configuration is used.")
-        (model_run_config, model_output_config, diffusion_config, nonhydro_config) = _default_config()
+        (
+            model_run_config,
+            model_output_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _default_config()
     return IconConfig(
         run_config=model_run_config,
         output_config=model_output_config,

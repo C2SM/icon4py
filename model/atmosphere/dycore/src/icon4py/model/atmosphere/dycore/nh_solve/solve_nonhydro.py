@@ -169,25 +169,10 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-from gt4py.next.program_processors.runners import gtfn
-from gt4py.next.otf.compilation.build_systems import cmake
-#from gt4py.next.otf.compilation.cache import Strategy
-
 
 compiler_backend = run_gtfn
 compiler_cached_backend = run_gtfn_cached
-'''
-compiler_cached_release_backend = gtfn.otf_compile_executor.CachedOTFCompileExecutor(
-    name="run_gtfn_cached_cmake_release",
-    otf_workflow=gtfn.workflow.CachedStep(step=gtfn.run_gtfn.executor.otf_workflow.replace(
-        compilation=gtfn.compiler.Compiler(
-            cache_strategy=Strategy.PERSISTENT,
-            builder_factory=cmake.CMakeFactory(cmake_build_type=cmake.BuildType.RELEASE)
-        )),
-    hash_function=gtfn.compilation_hash),
-)
-'''
-backend = compiler_cached_backend #compiler_cached_release_backend
+backend = compiler_cached_backend
 # flake8: noqa
 log = logging.getLogger(__name__)
 
@@ -427,55 +412,131 @@ class SolveNonhydro:
         self.stencil_compute_exner_from_rhotheta = compute_exner_from_rhotheta.with_backend(backend)
         self.stencil_update_theta_v = update_theta_v.with_backend(backend)
         self.stencil_compute_z_raylfac = compute_z_raylfac.with_backend(backend)
-        self.stencil_set_two_cell_kdim_fields_to_zero_vp = set_two_cell_kdim_fields_to_zero_vp.with_backend(backend)
-        self.stencil_predictor_stencils_2_3 = nhsolve_prog.predictor_stencils_2_3.with_backend(backend)
-        self.stencil_predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(backend)
-        self.stencil_predictor_stencils_7_8_9 = nhsolve_prog.predictor_stencils_7_8_9.with_backend(backend)
-        self.stencil_predictor_stencils_11_lower_upper = nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)
-        self.stencil_compute_approx_of_2nd_vertical_derivative_of_exner = compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(backend)
-        self.stencil_compute_pertubation_of_rho_and_theta = compute_pertubation_of_rho_and_theta.with_backend(backend)
-        self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
-        self.stencil_mo_math_gradients_grad_green_gauss_cell_dsl = mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(backend)
+        self.stencil_set_two_cell_kdim_fields_to_zero_vp = (
+            set_two_cell_kdim_fields_to_zero_vp.with_backend(backend)
+        )
+        self.stencil_predictor_stencils_2_3 = nhsolve_prog.predictor_stencils_2_3.with_backend(
+            backend
+        )
+        self.stencil_predictor_stencils_4_5_6 = nhsolve_prog.predictor_stencils_4_5_6.with_backend(
+            backend
+        )
+        self.stencil_predictor_stencils_7_8_9 = nhsolve_prog.predictor_stencils_7_8_9.with_backend(
+            backend
+        )
+        self.stencil_predictor_stencils_11_lower_upper = (
+            nhsolve_prog.predictor_stencils_11_lower_upper.with_backend(backend)
+        )
+        self.stencil_compute_approx_of_2nd_vertical_derivative_of_exner = (
+            compute_approx_of_2nd_vertical_derivative_of_exner.with_backend(backend)
+        )
+        self.stencil_compute_pertubation_of_rho_and_theta = (
+            compute_pertubation_of_rho_and_theta.with_backend(backend)
+        )
+        self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = (
+            mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl.with_backend(backend)
+        )
+        self.stencil_mo_math_gradients_grad_green_gauss_cell_dsl = (
+            mo_math_gradients_grad_green_gauss_cell_dsl.with_backend(backend)
+        )
         self.stencil_set_zero_e_k = set_zero_e_k.with_backend(backend)
         self.stencil_set_zero_c_k = set_zero_c_k.with_backend(backend)
-        self.stencil_set_two_cell_kdim_fields_to_zero_wp = set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)
-        self.stencil_compute_horizontal_advection_of_rho_and_theta = nhsolve_prog.compute_horizontal_advection_of_rho_and_theta.with_backend(backend)
-        self.stencil_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(backend)
-        self.stencil_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(backend)
-        self.stencil_compute_horizontal_gradient_of_extner_pressure_for_multiple_levels = compute_horizontal_gradient_of_extner_pressure_for_multiple_levels.with_backend(backend)
-        self.stencil_compute_hydrostatic_correction_term = compute_hydrostatic_correction_term.with_backend(backend)
-        self.stencil_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(backend)
-        self.stencil_add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(backend)
-        self.stencil_compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(backend)
-        self.stencil_compute_avg_vn_and_graddiv_vn_and_vt = compute_avg_vn_and_graddiv_vn_and_vt.with_backend(backend)
-        self.stencil_predictor_stencils_35_36 = nhsolve_prog.predictor_stencils_35_36.with_backend(backend)
-        self.stencil_predictor_stencils_37_38 = nhsolve_prog.predictor_stencils_37_38.with_backend(backend)
+        self.stencil_set_two_cell_kdim_fields_to_zero_wp = (
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)
+        )
+        self.stencil_compute_horizontal_advection_of_rho_and_theta = (
+            nhsolve_prog.compute_horizontal_advection_of_rho_and_theta.with_backend(backend)
+        )
+        self.stencil_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = (
+            compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates.with_backend(backend)
+        )
+        self.stencil_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = (
+            compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates.with_backend(
+                backend
+            )
+        )
+        self.stencil_compute_horizontal_gradient_of_extner_pressure_for_multiple_levels = (
+            compute_horizontal_gradient_of_extner_pressure_for_multiple_levels.with_backend(backend)
+        )
+        self.stencil_compute_hydrostatic_correction_term = (
+            compute_hydrostatic_correction_term.with_backend(backend)
+        )
+        self.stencil_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = (
+            apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure.with_backend(
+                backend
+            )
+        )
+        self.stencil_add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(
+            backend
+        )
+        self.stencil_compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
+            backend
+        )
+        self.stencil_compute_avg_vn_and_graddiv_vn_and_vt = (
+            compute_avg_vn_and_graddiv_vn_and_vt.with_backend(backend)
+        )
+        self.stencil_predictor_stencils_35_36 = nhsolve_prog.predictor_stencils_35_36.with_backend(
+            backend
+        )
+        self.stencil_predictor_stencils_37_38 = nhsolve_prog.predictor_stencils_37_38.with_backend(
+            backend
+        )
         self.stencil_39_40 = nhsolve_prog.stencils_39_40.with_backend(backend)
         self.stencil_43_44_45_45b = nhsolve_prog.stencils_43_44_45_45b.with_backend(backend)
-        self.stencil_set_two_cell_kdim_fields_to_zero_wp = set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)
+        self.stencil_set_two_cell_kdim_fields_to_zero_wp = (
+            set_two_cell_kdim_fields_to_zero_wp.with_backend(backend)
+        )
         self.stencil_47_48_49 = nhsolve_prog.stencils_47_48_49.with_backend(backend)
-        self.stencil_add_analysis_increments_from_data_assimilation = add_analysis_increments_from_data_assimilation.with_backend(backend)
-        self.stencil_compute_dwdz_for_divergence_damping = compute_dwdz_for_divergence_damping.with_backend(backend)
+        self.stencil_add_analysis_increments_from_data_assimilation = (
+            add_analysis_increments_from_data_assimilation.with_backend(backend)
+        )
+        self.stencil_compute_dwdz_for_divergence_damping = (
+            compute_dwdz_for_divergence_damping.with_backend(backend)
+        )
         self.stencil_copy_cell_kdim_field_to_vp = copy_cell_kdim_field_to_vp.with_backend(backend)
         self.stencil_61_62 = nhsolve_prog.stencils_61_62.with_backend(backend)
         self.stencil_42_44_45_45b = nhsolve_prog.stencils_42_44_45_45b.with_backend(backend)
         self.stencil_calculate_divdamp_fields = _calculate_divdamp_fields.with_backend(backend)
-        self.stencil_compute_rho_virtual_potential_temperatures_and_pressure_gradient = compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(backend)
-        self.stencil_add_vertical_wind_derivative_to_divergence_damping = add_vertical_wind_derivative_to_divergence_damping.with_backend(backend)
-        self.stencil_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(backend)
+        self.stencil_compute_rho_virtual_potential_temperatures_and_pressure_gradient = (
+            compute_rho_virtual_potential_temperatures_and_pressure_gradient.with_backend(backend)
+        )
+        self.stencil_add_vertical_wind_derivative_to_divergence_damping = (
+            add_vertical_wind_derivative_to_divergence_damping.with_backend(backend)
+        )
+        self.stencil_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels = (
+            add_temporal_tendencies_to_vn_by_interpolating_between_time_levels.with_backend(backend)
+        )
         self.stencil_compute_graddiv2_of_vn = compute_graddiv2_of_vn.with_backend(backend)
-        self.stencil_apply_2nd_order_divergence_damping = apply_2nd_order_divergence_damping.with_backend(backend)
-        self.stencil_apply_weighted_2nd_and_4th_order_divergence_damping = apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)
-        self.stencil_apply_4th_order_divergence_damping = apply_4th_order_divergence_damping.with_backend(backend)
+        self.stencil_apply_2nd_order_divergence_damping = (
+            apply_2nd_order_divergence_damping.with_backend(backend)
+        )
+        self.stencil_apply_weighted_2nd_and_4th_order_divergence_damping = (
+            apply_weighted_2nd_and_4th_order_divergence_damping.with_backend(backend)
+        )
+        self.stencil_apply_4th_order_divergence_damping = (
+            apply_4th_order_divergence_damping.with_backend(backend)
+        )
         self.stencil_compute_avg_vn = compute_avg_vn.with_backend(backend)
         self.stencil_compute_mass_flux = compute_mass_flux.with_backend(backend)
-        self.stencil_set_two_edge_kdim_fields_to_zero_wp = set_two_edge_kdim_fields_to_zero_wp.with_backend(backend)
+        self.stencil_set_two_edge_kdim_fields_to_zero_wp = (
+            set_two_edge_kdim_fields_to_zero_wp.with_backend(backend)
+        )
         self.stencil_accumulate_prep_adv_fields = accumulate_prep_adv_fields.with_backend(backend)
-        self.stencil_compute_divergence_of_fluxes_of_rho_and_theta = compute_divergence_of_fluxes_of_rho_and_theta.with_backend(backend)
-        self.stencil_solve_tridiagonal_matrix_for_w_forward_sweep = solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)
-        self.stencil_solve_tridiagonal_matrix_for_w_back_substitution = solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)
-        self.stencil_apply_rayleigh_damping_mechanism = apply_rayleigh_damping_mechanism.with_backend(backend)
-        self.stencil_compute_results_for_thermodynamic_variables = compute_results_for_thermodynamic_variables.with_backend(backend)
+        self.stencil_compute_divergence_of_fluxes_of_rho_and_theta = (
+            compute_divergence_of_fluxes_of_rho_and_theta.with_backend(backend)
+        )
+        self.stencil_solve_tridiagonal_matrix_for_w_forward_sweep = (
+            solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(backend)
+        )
+        self.stencil_solve_tridiagonal_matrix_for_w_back_substitution = (
+            solve_tridiagonal_matrix_for_w_back_substitution.with_backend(backend)
+        )
+        self.stencil_apply_rayleigh_damping_mechanism = (
+            apply_rayleigh_damping_mechanism.with_backend(backend)
+        )
+        self.stencil_compute_results_for_thermodynamic_variables = (
+            compute_results_for_thermodynamic_variables.with_backend(backend)
+        )
         self.stencil_update_mass_volume_flux = update_mass_volume_flux.with_backend(backend)
         self.stencil_update_mass_flux_weighted = update_mass_flux_weighted.with_backend(backend)
 
@@ -538,36 +599,36 @@ class SolveNonhydro:
             "V2C": self.grid.get_offset_provider("V2C"),
         }
         self.offset_provider_c2e2co = {
-                    "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
-                }
+            "C2E2CO": self.grid.get_offset_provider("C2E2CO"),
+        }
         self.offset_provider_e2c_e2ec = {
-                        "E2C": self.grid.get_offset_provider("E2C"),
-                        "E2EC": self.grid.get_offset_provider("E2EC"),
-                    }
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "E2EC": self.grid.get_offset_provider("E2EC"),
+        }
         self.offset_provider_e2c = {
-                "E2C": self.grid.get_offset_provider("E2C"),
-            }
+            "E2C": self.grid.get_offset_provider("E2C"),
+        }
         self.offset_provider_e2c_e2ec_koff = {
-                    "E2C": self.grid.get_offset_provider("E2C"),
-                    "E2EC": self.grid.get_offset_provider("E2EC"),
-                    "Koff": KDim,
-                }
+            "E2C": self.grid.get_offset_provider("E2C"),
+            "E2EC": self.grid.get_offset_provider("E2EC"),
+            "Koff": KDim,
+        }
         self.offset_provider_e2c2eo_e2c2e = {
-                "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                "E2C2E": self.grid.get_offset_provider("E2C2E"),
-            }
+            "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+            "E2C2E": self.grid.get_offset_provider("E2C2E"),
+        }
         self.offset_provider_c2e_c2ce_koff = {
-                "C2E": self.grid.get_offset_provider("C2E"),
-                "C2CE": self.grid.get_offset_provider("C2CE"),
-                "Koff": KDim,
-            }
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+            "Koff": KDim,
+        }
         self.offset_provider_c2e_c2ce = {
-                    "C2E": self.grid.get_offset_provider("C2E"),
-                    "C2CE": self.grid.get_offset_provider("C2CE"),
-                }
+            "C2E": self.grid.get_offset_provider("C2E"),
+            "C2CE": self.grid.get_offset_provider("C2CE"),
+        }
         self.offset_provider_e2c2eo = {
-                    "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
-                }
+            "E2C2EO": self.grid.get_offset_provider("E2C2EO"),
+        }
 
         self.stencil_en_smag_fac_for_zero_nshift(
             self.vertical_params.vct_a,
@@ -582,7 +643,6 @@ class SolveNonhydro:
             self.enh_divdamp_fac,
             offset_provider=self.offset_provider_koff,
         )
-
 
         self.p_test_run = True
         self._initialized = True
@@ -2084,4 +2144,3 @@ class SolveNonhydro:
                 prognostic_state[nnew].exner,
                 prognostic_state[nnew].w,
             )
-

@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, C2E2C2EDim
+from icon4py.model.common.dimension import C2E2C2EDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import (
     mo_rbf_vec_interpol_cell,
 )
