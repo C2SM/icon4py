@@ -80,7 +80,7 @@ class DacePyBindGen:
     """
 
     def __init__(self, stencil_info: StencilInfo) -> None:
-        self.stencil_name = stencil_info.itir.id
+        self.stencil_name = stencil_info.fendef.id
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
 
     @staticmethod

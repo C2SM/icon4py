@@ -183,9 +183,9 @@ def generate_dace_code(
     import dace  # type: ignore[import-untyped]
 
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
-    check_for_domain_bounds(stencil_info.itir)
+    check_for_domain_bounds(stencil_info.fendef)
 
-    transformed_fencil = transform_and_configure_fencil(stencil_info.itir)
+    transformed_fencil = transform_and_configure_fencil(stencil_info.fendef)
 
     translation = dace_workflow.DaCeTranslator(
         auto_optimize=True,
@@ -202,14 +202,14 @@ def generate_dace_code(
             },
         )
 
-    params = [str(p.id) for p in stencil_info.itir.params]
+    params = [str(p.id) for p in stencil_info.fendef.params]
     arg_types = [
         stencil_info.fields[pname].field.type
         if pname in stencil_info.fields
         else ts.ScalarType(kind=tt.get_scalar_kind(p.dtype))
         if p.dtype is not None
         else ts.ScalarType(kind=ts.ScalarKind.INT32)
-        for p, pname in zip(stencil_info.itir.params, params, strict=False)
+        for p, pname in zip(stencil_info.fendef.params, params, strict=False)
     ]
 
     sdfg = translation.generate_sdfg(
@@ -249,7 +249,7 @@ class DaceCodegen:
             temporaries,
         )
         if on_gpu:
-            write_string(dc_cuda, outpath, f"{self.stencil_info.itir.id}_dace.cu")
+            write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
         else:
-            write_string(dc_hdr, outpath, f"{self.stencil_info.itir.id}_dace.h")
-            write_string(dc_src, outpath, f"{self.stencil_info.itir.id}_dace.cpp")
+            write_string(dc_hdr, outpath, f"{self.stencil_info.fendef.id}_dace.h")
+            write_string(dc_src, outpath, f"{self.stencil_info.fendef.id}_dace.cpp")
