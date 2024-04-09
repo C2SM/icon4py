@@ -48,12 +48,8 @@ class ModuleType(click.ParamType):
 @click.argument("fencil", type=ModuleType())
 @click.argument("block_size", type=int, default=128)
 @click.argument("levels_per_thread", type=int, default=4)
-@click.option(
-    "--dace", is_flag=True, type=bool, help="Select dace backend.", default=False
-)
-@click.option(
-    "--is_global", is_flag=True, type=bool, help="Whether this is a global run."
-)
+@click.option("--dace", is_flag=True, type=bool, help="Select dace backend.", default=False)
+@click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
 @click.option(
     "--enable-mixed-precision",
     is_flag=True,
@@ -115,7 +111,3 @@ def main(
 
         GTHeader(stencil_info)(outpath, imperative, temporaries)
         PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
-
-
-if __name__ == "__main__":
-    main()

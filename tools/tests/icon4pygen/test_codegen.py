@@ -130,14 +130,16 @@ def check_code_was_generated(stencil_name: str) -> None:
     ("stencil_module", "stencil_name"),
     dycore_fencils() + interpolation_fencils() + diffusion_fencils(),
 )
-@pytest.mark.parametrize("flags", [()], ids=["normal"])
+@pytest.mark.parametrize("flags", [(), ("--dace",)], ids=["gtfn", "dace"])
 def test_codegen(cli, stencil_module, stencil_name, flags) -> None:
     module_path = get_stencil_module_path(stencil_module, stencil_name)
     with cli.isolated_filesystem():
+        print(*flags)
         cli_args = [module_path, BLOCK_SIZE, LEVELS_PER_THREAD, OUTPATH, *flags]
         result = cli.invoke(main, cli_args)
         assert result.exit_code == 0
-        check_code_was_generated(stencil_name)
+        if "--dace" not in flags:
+            check_code_was_generated(stencil_name)
 
 
 def test_invalid_module_path(cli) -> None:

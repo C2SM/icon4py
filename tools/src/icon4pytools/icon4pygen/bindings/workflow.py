@@ -14,7 +14,9 @@
 from pathlib import Path
 
 from icon4pytools.icon4pygen.bindings.codegen.cpp import generate_cpp_definition
-from icon4pytools.icon4pygen.bindings.codegen.dace import generate_cpp_definition as generate_dace_cpp_definition
+from icon4pytools.icon4pygen.bindings.codegen.dace import (
+    generate_cpp_definition as generate_dace_cpp_definition,
+)
 from icon4pytools.icon4pygen.bindings.codegen.f90 import generate_f90_file
 from icon4pytools.icon4pygen.bindings.codegen.header import generate_cpp_header
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
@@ -46,9 +48,7 @@ class PyBindGen:
         stencil_info: StencilInfo,
     ) -> tuple[list[Field], list[Offset]]:
         chains = stencil_info.connectivity_chains
-        binding_fields = [
-            Field(name, info) for name, info in stencil_info.fields.items()
-        ]
+        binding_fields = [Field(name, info) for name, info in stencil_info.fields.items()]
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 
@@ -88,9 +88,7 @@ class DacePyBindGen:
         stencil_info: StencilInfo,
     ) -> tuple[list[Field], list[Offset]]:
         chains = stencil_info.connectivity_chains
-        binding_fields = [
-            Field(name, info) for name, info in stencil_info.fields.items()
-        ]
+        binding_fields = [Field(name, info) for name, info in stencil_info.fields.items()]
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 

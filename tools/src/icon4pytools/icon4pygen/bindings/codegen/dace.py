@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import collections
 from pathlib import Path
-from typing import Any, Sequence, Union, Optional
+from typing import Any, Optional, Sequence, Union
 
 from gt4py import eve
 from gt4py.eve.codegen import (
@@ -35,6 +35,7 @@ from icon4pytools.icon4pygen.bindings.codegen.render.offset import (
     GpuTriMeshOffsetRenderer,
 )
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
+from icon4pytools.icon4pygen.bindings.exceptions import BindingsRenderingException
 from icon4pytools.icon4pygen.bindings.utils import write_string
 
 
@@ -197,7 +198,7 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
     StenClassRunFun = as_jinja(
-      """
+        """
       void run({%- for arg in _this_node.domain_args -%}
         const int {{arg.cpp_arg_name()}}{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}) {
@@ -448,10 +449,15 @@ class DataDescriptor:
 
     def strides(self) -> Optional[str]:
         if isinstance(self.data_descr, Field):
-            strides_str = self.data_descr.renderer.render_strides(exclude_sparse_dim=False)
+            try:
+                strides_str = self.data_descr.renderer.render_strides(exclude_sparse_dim=False)
+            except BindingsRenderingException:
+                strides_str = "1"
+
             if strides_str == "1":
                 return None
             return strides_str
+
         # for offset data arrays
         return "1, mesh_.Nproma"
 
@@ -572,12 +578,8 @@ class CppDefTemplate(Node):
         ]
         sparse_fields = [field for field in self.fields if field.is_sparse()]
         compound_fields = [field for field in self.fields if field.is_compound()]
-        sparse_offsets = [
-            offset for offset in self.offsets if not offset.is_compound_location()
-        ]
-        strided_offsets = [
-            offset for offset in self.offsets if offset.is_compound_location()
-        ]
+        sparse_offsets = [offset for offset in self.offsets if not offset.is_compound_location()]
+        strided_offsets = [offset for offset in self.offsets if offset.is_compound_location()]
         all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
@@ -593,9 +595,7 @@ class CppDefTemplate(Node):
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         fields, offsets = self._get_field_data()
-        data_descriptors = set(
-            DataDescriptor(x) for x in [*fields["all_fields"], *self.offsets]
-        )
+        data_descriptors = set(DataDescriptor(x) for x in [*fields["all_fields"], *self.offsets])
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
         domain_args = [
             Scalar("vertical_start", "verticalStart"),
@@ -604,18 +604,14 @@ class CppDefTemplate(Node):
             Scalar("horizontal_end", "horizontalEnd"),
         ]
 
-        symbol_map:dict[str, Optional[str]] = {}
-        symbol_map.update({
-            arg.sdfg_arg_name(): arg.cpp_arg_name()
-            for arg in domain_args
-        })
-        symbol_map.update({
-            data_descr.sdfg_arg_name(): data_descr.strides()
-            for data_descr in data_descriptors
-        })
+        symbol_map: dict[str, Optional[str]] = {}
+        symbol_map.update({arg.sdfg_arg_name(): arg.cpp_arg_name() for arg in domain_args})
+        symbol_map.update(
+            {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in data_descriptors}
+        )
 
         def key_data_descr(x: DataDescriptor | str) -> str:
-            return x.sdfg_arg_name()
+            return x.sdfg_arg_name() if isinstance(x, DataDescriptor) else x
 
         self.includes = IncludeStatements(
             funcname=self.stencil_name,
@@ -640,9 +636,7 @@ class CppDefTemplate(Node):
             ),
             public_utilities=PublicUtilities(fields=fields["output"]),
             copy_pointers=CopyPointers(fields=self.fields),
-            private_members=PrivateMembers(
-                fields=self.fields, out_fields=fields["output"]
-            ),
+            private_members=PrivateMembers(fields=self.fields, out_fields=fields["output"]),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
             ),
