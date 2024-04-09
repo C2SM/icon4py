@@ -15,6 +15,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -27,7 +28,7 @@ def _compute_airmass(
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_airmass(
     rho_in: Field[[CellDim, KDim], wpfloat],
     ddqz_z_full_in: Field[[CellDim, KDim], wpfloat],

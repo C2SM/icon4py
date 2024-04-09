@@ -21,6 +21,7 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_l
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -44,7 +45,7 @@ def _fused_solve_nonhydro_stencil_39_40(
     return w_concorr_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
