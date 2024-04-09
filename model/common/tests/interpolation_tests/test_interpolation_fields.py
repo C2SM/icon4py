@@ -46,12 +46,12 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_cells_aw_verts,
     compute_e_bln_c_s,
     compute_e_flx_avg,
+    compute_force_mass_conservation_to_c_bln_avg,
     compute_geofac_div,
     compute_geofac_grdiv,
     compute_geofac_grg,
     compute_geofac_n2s,
     compute_geofac_rot,
-    compute_force_mass_conservation_to_c_bln_avg,
     compute_pos_on_tplane_e_x_y,
     compute_primal_normal_ec,
 )
@@ -196,7 +196,6 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     owner_mask = grid_savepoint.c_owner_mask()
     c2e = icon_grid.connectivities[C2EDim]
     e2c = icon_grid.connectivities[E2CDim]
-    c2e2c = icon_grid.connectivities[C2E2CDim]
     e2c2e = icon_grid.connectivities[E2C2EDim]
     horizontal_start = icon_grid.get_start_index(
         EdgeDim,
