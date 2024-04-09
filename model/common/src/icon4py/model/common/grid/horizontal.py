@@ -72,23 +72,6 @@ _LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
 _END_VERTICES: Final[int] = 0
 
 
-class RefinCtrlLevel:
-    _boundary_nudging_start: ClassVar = {
-        EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
-        CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
-    }
-
-    @classmethod
-    def boundary_nudging_start(cls, dim: Dimension) -> int:
-        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
-        try:
-            return cls._boundary_nudging_start[dim]
-        except KeyError as err:
-            raise ValueError(
-                f"nudging start level only exists for {CellDim} and {EdgeDim}"
-            ) from err
-
-
 class HorizontalMarkerIndex:
     """
     Handles constants indexing into the start_index and end_index fields.
@@ -383,8 +366,22 @@ def cell_2_edge_interpolation(
         in_field,
         coeff,
         out=out_field,
-        domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
+
+
+class RefinCtrlLevel:
+    _boundary_nudging_start: ClassVar = {
+        EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
+        CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
+    }
+
+    @classmethod
+    def boundary_nudging_start(cls, dim: Dimension) -> int:
+        """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
+        try:
+            return cls._boundary_nudging_start[dim]
+        except KeyError as err:
+            raise ValueError(
+                f"nudging start level only exists for {CellDim} and {EdgeDim}"
+            ) from err
