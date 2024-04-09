@@ -260,8 +260,7 @@ import logging
 
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 
-logging.basicConfig(filename='py2f_cffi.log',
-                    level=logging.DEBUG,
+logging.basicConfig(level=logging.DEBUG,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
@@ -272,42 +271,6 @@ grid = SimpleGrid()
 
 from libtest import foo
 from libtest import bar
-
-
-def unpack(ptr, *sizes: int) -> NDArray:
-    """
-    Converts a C pointer into a NumPy array to directly manipulate memory allocated in Fortran.
-    This function is needed for operations requiring in-place modification of CPU data, enabling
-    changes made in Python to reflect immediately in the original Fortran memory space.
-
-    Args:
-        ptr (CData): A CFFI pointer to the beginning of the data array in CPU memory. This pointer
-                     should reference a contiguous block of memory whose total size matches the product
-                     of the specified dimensions.
-        *sizes (int): Variable length argument list specifying the dimensions of the array.
-                      These sizes determine the shape of the resulting NumPy array.
-
-    Returns:
-        np.ndarray: A NumPy array that provides a direct view of the data pointed to by `ptr`.
-                    This array shares the underlying data with the original Fortran code, allowing
-                    modifications made through the array to affect the original data.
-    """
-    length = np.prod(sizes)
-    c_type = ffi.getctype(ffi.typeof(ptr).item)
-
-    # Map C data types to NumPy dtypes
-    dtype_map: dict[str, np.dtype] = {
-        "int": np.dtype(np.int32),
-        "double": np.dtype(np.float64),
-    }
-    dtype = dtype_map.get(c_type, np.dtype(c_type))
-
-    # Create a NumPy array from the buffer, specifying the Fortran order
-    arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
-        sizes, order="F"
-    )
-    return arr
-
 
 def unpack_gpu(ptr, *sizes: int):
     """
