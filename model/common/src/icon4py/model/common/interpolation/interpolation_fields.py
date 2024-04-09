@@ -304,7 +304,6 @@ def weighting_factors(
     xloc: np.array,
     wgt_loc: np.double,
 ) -> np.array:
-
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
@@ -446,7 +445,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
-#TODO: in this function halo cell exchanges (sync) are missing, here for inv_neighbor_id, but also within the iteration for several variables
+    # TODO: in this function halo cell exchanges (sync) are missing, here for inv_neighbor_id, but also within the iteration for several variables
     for iteration in range(niter):
         wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(
             c_bln_avg[c2e2c[llb:], inv_neighbor_id[llb:] + 1] * cell_areas[c2e2c[llb:]], axis=1
@@ -763,25 +762,37 @@ def compute_pos_on_tplane_e_x_y(
     pos_on_tplane_e[llb:, 0, 0] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n1[0, llb:] * primal_normal_v1[llb:] + xyloc_plane_n1[1, llb:] * primal_normal_v2[llb:]),
+        * (
+            xyloc_plane_n1[0, llb:] * primal_normal_v1[llb:]
+            + xyloc_plane_n1[1, llb:] * primal_normal_v2[llb:]
+        ),
         pos_on_tplane_e[llb:, 0, 0],
     )
     pos_on_tplane_e[llb:, 0, 1] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n1[0, llb:] * dual_normal_v1[llb:] + xyloc_plane_n1[1, llb:] * dual_normal_v2[llb:]),
+        * (
+            xyloc_plane_n1[0, llb:] * dual_normal_v1[llb:]
+            + xyloc_plane_n1[1, llb:] * dual_normal_v2[llb:]
+        ),
         pos_on_tplane_e[llb:, 0, 1],
     )
     pos_on_tplane_e[llb:, 1, 0] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n2[0, llb:] * primal_normal_v1[llb:] + xyloc_plane_n2[1, llb:] * primal_normal_v2[llb:]),
+        * (
+            xyloc_plane_n2[0, llb:] * primal_normal_v1[llb:]
+            + xyloc_plane_n2[1, llb:] * primal_normal_v2[llb:]
+        ),
         pos_on_tplane_e[llb:, 1, 0],
     )
     pos_on_tplane_e[llb:, 1, 1] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n2[0, llb:] * dual_normal_v1[llb:] + xyloc_plane_n2[1, llb:] * dual_normal_v2[llb:]),
+        * (
+            xyloc_plane_n2[0, llb:] * dual_normal_v1[llb:]
+            + xyloc_plane_n2[1, llb:] * dual_normal_v2[llb:]
+        ),
         pos_on_tplane_e[llb:, 1, 1],
     )
 
