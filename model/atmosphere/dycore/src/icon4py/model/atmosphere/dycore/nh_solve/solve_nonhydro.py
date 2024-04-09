@@ -20,9 +20,6 @@ from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
-    set_cell_kdim_field_to_zero_wp,
-)
 
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
@@ -1205,7 +1202,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            init_two_cell_kdim_fields_with_zero_wp(
+            init_two_edge_kdim_fields_with_zero_wp(
                 cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1645,7 +1642,7 @@ class SolveNonhydro:
             log.debug("corrector: doing prep advection")
             if lclean_mflx:
                 log.debug("corrector: start stencil 33")
-                set_two_edge_kdim_fields_to_zero_wp(
+                init_two_edge_kdim_fields_to_zero_wp(
                     edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
                     edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
                     horizontal_start=start_edge_lb,
