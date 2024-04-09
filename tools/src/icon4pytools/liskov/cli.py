@@ -58,13 +58,19 @@ def main(ctx: click.Context) -> None:
 @click.option(
     "--fused/--unfused",
     "-f/-u",
-    default=True,
+    default=False,
     help="Adds fused or unfused stencils.",
 )
 @click.option(
     "--optional-modules-to-enable",
     callback=split_comma,
     help="Specify a list of comma-separated optional DSL modules to enable.",
+)
+@click.option(
+    "--verification/--substitution",
+    "-v/-s",
+    default=False,
+    help="Adds verification runs and checks.",
 )
 @click.argument(
     "input_path",
@@ -78,6 +84,7 @@ def integrate(
     input_path: pathlib.Path,
     output_path: pathlib.Path,
     fused: bool,
+    verification: bool,
     profile: bool,
     metadatagen: bool,
     optional_modules_to_enable: Optional[tuple[str]],
@@ -93,6 +100,7 @@ def integrate(
         mode,
         iface_gt4py,
         profile=profile,
+        verification=verification,
         metadatagen=metadatagen,
     )
 
