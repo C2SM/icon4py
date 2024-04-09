@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -154,7 +155,12 @@ def diffusion_init(
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
         n_substeps=ndyn_substeps,
+        shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
     diffusion_params = DiffusionParams(config)
@@ -224,6 +230,7 @@ def diffusion_run(
     dwdx: Field[[CellDim, KHalfDim], float64],
     dwdy: Field[[CellDim, KHalfDim], float64],
     dtime: float64,
+    linit: bool,
 ):
     # prognostic and diagnostic variables
     prognostic_state = PrognosticState(
@@ -245,7 +252,12 @@ def diffusion_run(
 
     start_time = time.time()
 
-    DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
+    if linit:
+        print("Diffusion initial_run")
+        DIFFUSION.initial_run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
+    else:
+        print("Diffusion regular run")
+        DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
 
     end_time = time.time()
 

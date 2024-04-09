@@ -203,7 +203,6 @@ from gt4py.next import as_field
 from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4pytools.py2fgen.config import Icon4PyConfig
 
 
 # embedded module imports

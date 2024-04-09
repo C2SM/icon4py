@@ -18,7 +18,9 @@ import sys
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
-
+#from numpy import max, min
+#from gt4py.next.ffront.fbuiltins import maximum, minimum
+import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
@@ -57,6 +59,9 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 )
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
+)
+from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import (
+    calculate_nabla4,
 )
 from icon4py.model.common.constants import (
     CPD,
@@ -463,6 +468,10 @@ class Diffusion:
             offset_provider={"Koff": KDim},
         )
 
+        log.debug("after init_diffusion_local_fields_for_regular_timestep:")
+        log.debug("diff_multfac_vn max: %s min: %s",np.max(self.diff_multfac_vn.ndarray),np.min(self.diff_multfac_vn.ndarray))
+        log.debug("smag_limit max: %s min: %s",np.max(self.smag_limit.ndarray),np.min(self.smag_limit.ndarray))
+        log.debug("enh_smag_fac max: %s min: %s",np.max(self.enh_smag_fac.ndarray),np.min(self.enh_smag_fac.ndarray))
         # TODO (magdalena) port to gt4py?
         self.diff_multfac_n2w = init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
@@ -472,6 +481,8 @@ class Diffusion:
         )
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
+        log.debug("diff_multfac_n2w max: %s min: %s",np.max(self.diff_multfac_n2w.ndarray),np.min(self.diff_multfac_n2w.ndarray))
+        log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
     @property
     def initialized(self):
@@ -494,6 +505,7 @@ class Diffusion:
         self.kh_smag_e = _allocate(EdgeDim, KDim)
         self.kh_smag_ec = _allocate(EdgeDim, KDim)
         self.z_nabla2_e = _allocate(EdgeDim, KDim)
+        self.z_nabla4_e2 = _allocate(EdgeDim, KDim)
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
         # TODO(Magdalena): this is KHalfDim
@@ -531,6 +543,11 @@ class Diffusion:
             smag_limit,
             offset_provider={},
         )
+        log.debug("after setup_fields_for_initial_step:")
+        log.debug("diff_multfac_vn max: %s min: %s",np.max(diff_multfac_vn.ndarray),np.min(diff_multfac_vn.ndarray))
+        log.debug("smag_limit max: %s min: %s",np.max(smag_limit.ndarray),np.min(smag_limit.ndarray))
+        log.debug("enh_smag_fac max: %s min: %s",np.max(self.enh_smag_fac.ndarray),np.min(self.enh_smag_fac.ndarray))
+        log.debug("diff_multfac_n2w max: %s min: %s",np.max(self.diff_multfac_n2w.ndarray),np.min(self.diff_multfac_n2w.ndarray))
         self._do_diffusion_step(
             diagnostic_state,
             prognostic_state,
@@ -637,6 +654,8 @@ class Diffusion:
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
+        log.debug("rbf_coeff_1 max: %s min: %s",np.max(self.interpolation_state.rbf_coeff_1.ndarray[vertex_start_lb_plus1:vertex_end_local,:]),np.min(self.interpolation_state.rbf_coeff_1.ndarray[vertex_start_lb_plus1:vertex_end_local,:]))
+        log.debug("rbf_coeff_2 max: %s min: %s",np.max(self.interpolation_state.rbf_coeff_2.ndarray[vertex_start_lb_plus1:vertex_end_local,:]),np.min(self.interpolation_state.rbf_coeff_2.ndarray[vertex_start_lb_plus1:vertex_end_local,:]))
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -650,6 +669,8 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
+        log.debug("u_vert max: %s min: %s",np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
+        log.debug("v_vert max: %s min: %s",np.max(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
@@ -681,6 +702,8 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
+        log.debug("kh_smag_e max: %s min: %s",np.max(self.kh_smag_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]),np.min(self.kh_smag_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]))
+        log.debug("z_nabla2_e max: %s min: %s",np.max(self.z_nabla2_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]),np.min(self.z_nabla2_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]))
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
@@ -706,6 +729,8 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
+            log.debug("div_ic max: %s min: %s",np.max(diagnostic_state.div_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]),np.min(diagnostic_state.div_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]))
+            log.debug("hdef_ic max: %s min: %s",np.max(diagnostic_state.hdef_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]),np.min(diagnostic_state.hdef_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]))
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
         # TODO (magdalena) move this up and do asynchronous exchange
@@ -728,11 +753,31 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
+        log.debug("u_vert max: %s min: %s",np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
+        log.debug("v_vert max: %s min: %s",np.max(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of z_nable2_e - end")
+
+        calculate_nabla4(
+            u_vert=self.u_vert,
+            v_vert=self.v_vert,
+            primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
+            primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
+            z_nabla2_e=self.z_nabla2_e,
+            inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
+            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
+            z_nabla4_e2 =  self.z_nabla4_e2,
+            horizontal_start = edge_start_lb_plus4,
+            horizontal_end = edge_end_local,
+            vertical_start = 0,
+            vertical_end = klevels,
+            offset_provider=self.offset_provider_e2c2v_e2ecv,
+        )
+
+        log.debug("z_nabla4_e2 max: %s min: %s",np.max(self.z_nabla4_e2.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]),np.min(self.z_nabla4_e2.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]))
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
         apply_diffusion_to_vn(
@@ -760,6 +805,7 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
+        log.debug("vn max: %s min: %s",np.max(prognostic_state.vn.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]),np.min(prognostic_state.vn.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]))
         log.debug("communication of prognistic.vn : start")
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
