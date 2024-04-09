@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -27,7 +28,7 @@ def _calculate_nabla2_for_w(
     return astype(z_nabla2_c_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_for_w(
     w: Field[[CellDim, KDim], wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],

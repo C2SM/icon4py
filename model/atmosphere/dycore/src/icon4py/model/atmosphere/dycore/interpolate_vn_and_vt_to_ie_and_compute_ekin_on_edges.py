@@ -20,6 +20,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
 )
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import _interpolate_vt_to_ie
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -41,7 +42,7 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     return vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
