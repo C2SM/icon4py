@@ -23,6 +23,15 @@ from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
+def mo_solve_nonhydro_stencil_46_numpy(
+    grid, cell_kdim_field_to_zero_wp_1: np.array, cell_kdim_field_to_zero_wp_2: np.array
+) -> tuple[np.array, np.array]:
+    cell_kdim_field_to_zero_wp_1 = np.zeros_like(cell_kdim_field_to_zero_wp_1)
+    cell_kdim_field_to_zero_wp_2 = np.zeros_like(cell_kdim_field_to_zero_wp_2)
+    return cell_kdim_field_to_zero_wp_1=cell_kdim_field_to_zero_wp_1,
+        cell_kdim_field_to_zero_wp_2=cell_kdim_field_to_zero_wp_2
+
+
 class TestMoSolveNonhydroStencil46(StencilTest):
     PROGRAM = set_two_cell_kdim_fields_to_zero_wp
     OUTPUTS = ("cell_kdim_field_to_zero_wp_1", "cell_kdim_field_to_zero_wp_2")
