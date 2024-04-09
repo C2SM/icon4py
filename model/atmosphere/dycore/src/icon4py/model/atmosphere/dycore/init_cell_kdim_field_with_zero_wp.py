@@ -26,15 +26,9 @@ def _init_cell_kdim_field_with_zero_wp() -> Field[[CellDim, KDim], wpfloat]:
     return broadcast(wpfloat("0.0"), (CellDim, KDim))
 
 
-<<<<<<< HEAD:model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/init_cell_kdim_field_with_zero_wp.py
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_cell_kdim_field_with_zero_wp(
     field_with_zero_wp: Field[[CellDim, KDim], wpfloat],
-=======
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def set_cell_kdim_field_to_zero_wp(
-    field_to_zero_wp: Field[[CellDim, KDim], wpfloat],
->>>>>>> origin/main:model/atmosphere/dycore/src/icon4py/model/atmosphere/dycore/set_cell_kdim_field_to_zero_wp.py
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
