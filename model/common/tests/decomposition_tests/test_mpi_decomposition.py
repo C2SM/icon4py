@@ -18,7 +18,8 @@ from icon4py.model.common.test_utils.helpers import constant_field
 
 
 try:
-    import mpi4py  # noqa: F401 # test for optional dependency
+    import mpi4py  # test for optional dependency
+    import mpi4py.MPI
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
@@ -175,6 +176,7 @@ def test_domain_descriptor_id_are_globally_unique(
 
 @pytest.mark.mpi
 @pytest.mark.datatest
+@pytest.mark.parametrize("processor_props", [True], indirect=True)
 def test_decomposition_info_matches_gridsize(
     caplog,
     download_ser_data,  # noqa: F811 #fixture
@@ -218,9 +220,8 @@ def test_create_single_node_runtime_without_mpi(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
 ):
-    props = processor_props
-    exchange = create_exchange(props, decomposition_info)
 
+    exchange = create_exchange(processor_props, decomposition_info)
     assert isinstance(exchange, SingleNodeExchange)
 
 
@@ -235,7 +236,7 @@ def test_exchange_on_dummy_data(
     dimension,
 ):
     exchange = create_exchange(processor_props, decomposition_info)
-    grid = grid_savepoint.construct_icon_grid()
+    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
 
     number = processor_props.rank + 10.0
     input_field = constant_field(

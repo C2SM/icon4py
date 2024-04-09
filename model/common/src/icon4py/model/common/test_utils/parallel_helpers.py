@@ -13,8 +13,11 @@
 
 import pytest
 
-from icon4py.model.common.decomposition.definitions import ProcessProperties, get_runtype
-from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
+from icon4py.model.common.decomposition.definitions import (
+    ProcessProperties,
+    get_processor_properties,
+    get_runtype,
+)
 
 
 def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
@@ -24,5 +27,5 @@ def check_comm_size(props: ProcessProperties, sizes=(1, 2, 4)):
 
 @pytest.fixture(scope="session")
 def processor_props(request):
-    runtype = get_runtype(with_mpi=True)
-    yield get_multinode_properties(runtype)
+    runtype = get_runtype(with_mpi=request.param)
+    yield get_processor_properties(runtype)
