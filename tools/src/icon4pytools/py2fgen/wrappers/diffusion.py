@@ -27,6 +27,7 @@ from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
     DiffusionParams,
+    TurbulenceShearForcingType,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -158,6 +159,11 @@ def diffusion_init(
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
         hdiff_w_efdt_ratio=hdiff_efdt_ratio,
+        thslp_zdiffu=0.02,
+        thhgtd_zdiffu=125.0,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
+        shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
     diffusion_params = DiffusionParams(config)
