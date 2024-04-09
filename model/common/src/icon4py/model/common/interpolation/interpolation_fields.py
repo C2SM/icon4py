@@ -44,7 +44,7 @@ def compute_c_lin_e(
         edge_cell_length: numpy array, representing a Field[[EdgeDim, E2CDim], float]
         inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[[EdgeDim], float]
         owner_mask: numpy array, representing a Field[[EdgeDim], bool]boolean field, True for all edges owned by this compute node
-        second_boundary_layer_start_index: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
+        horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
     Returns: c_lin_e: numpy array  representing Field[[EdgeDim, E2CDim], float]
 
@@ -303,17 +303,14 @@ def weighting_factors(
     yloc: np.array,
     xloc: np.array,
     wgt_loc: np.double,
-    horizontal_start: np.int32,
-    horizontal_end: np.int32,
 ) -> np.array:
 
-    llb = horizontal_start
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    x = np.zeros([3, horizontal_end - llb])
-    y = np.zeros([3, horizontal_end - llb])
-    wgt = np.zeros([3, horizontal_end - llb])
+    x = np.zeros([3, ytemp.shape[1]])
+    y = np.zeros([3, ytemp.shape[1]])
+    wgt = np.zeros([3, ytemp.shape[1]])
 
     for i in range(3):
         (ytemp[i], xtemp[i]) = rotate_latlon(ytemp[i], xtemp[i], pollat, pollon)
@@ -359,7 +356,6 @@ def compute_c_bln_avg(
     lat: np.array,
     lon: np.array,
     horizontal_start: np.int32,
-    horizontal_end: np.int32,
 ) -> np.array:
     """
     Compute bilinear cell average weight.
@@ -374,25 +370,25 @@ def compute_c_bln_avg(
         horizontal_end:
     """
     llb = horizontal_start
-    c_bln_avg = np.zeros([horizontal_end, 4])
+    c_bln_avg = np.zeros([c2e2c.shape[0], 4])
     wgt_loc = divavg_cntrwgt
-    yloc = lat[llb:]
-    xloc = lon[llb:]
-    ytemp = np.zeros([3, horizontal_end - llb])
-    xtemp = np.zeros([3, horizontal_end - llb])
+    yloc = np.zeros(c2e2c.shape[0])
+    xloc = np.zeros(c2e2c.shape[0])
+    yloc[llb:] = lat[llb:]
+    xloc[llb:] = lon[llb:]
+    ytemp = np.zeros([3, c2e2c.shape[0]])
+    xtemp = np.zeros([3, c2e2c.shape[0]])
 
     for i in range(3):
-        ytemp[i] = lat[c2e2c[llb:, i]]
-        xtemp[i] = lon[c2e2c[llb:, i]]
+        ytemp[i, llb:] = lat[c2e2c[llb:, i]]
+        xtemp[i, llb:] = lon[c2e2c[llb:, i]]
 
     wgt = weighting_factors(
-        ytemp,
-        xtemp,
-        yloc,
-        xloc,
+        ytemp[:, llb:],
+        xtemp[:, llb:],
+        yloc[llb:],
+        xloc[llb:],
         wgt_loc,
-        horizontal_start,
-        horizontal_end,
     )
 
     # Store results in ptr_patch%cells%avg_wgt
@@ -403,16 +399,15 @@ def compute_c_bln_avg(
     return c_bln_avg
 
 
-def compute_mass_conservation_c_bln_avg(
+def compute_force_mass_conservation_to_c_bln_avg(
     c_bln_avg: np.array,
     divavg_cntrwgt: np.array,
     owner_mask: np.array,
     c2e2c: np.array,
     cell_areas: np.array,
     niter: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
-    third_boundary_layer_start_index: np.int32,
+    horizontal_start: np.int32,
+    horizontal_start_p3: np.int32,
 ) -> np.array:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
@@ -421,7 +416,7 @@ def compute_mass_conservation_c_bln_avg(
 
     and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients are not aliased into a checkerboard pattern between upward- and downward directed cells. The third condition is sum(w(i)) = 1., and the weight of the local point is 0.5.
 
-    calculate_mass_conservation_bilinear_cellavg_wgt
+    force_mass_conservation_to_bilinear_cellavg_wgt
     Args:
         c_bln_avg: bilinear cellavg wgt
         divavg_cntrwgt:
@@ -431,31 +426,30 @@ def compute_mass_conservation_c_bln_avg(
         lon:
         cell_areas:
         niter: number of iterations until convergence is assumed
-        second_boundary_layer_start_index:
-        second_boundary_layer_end_index:
-        third_boundary_layer_start_index:
+        horizontal_start:
+        horizontal_start_p3:
 
-    in this function halo cell exchanges (sync) are missing
     """
-    llb = second_boundary_layer_start_index
-    llb2 = third_boundary_layer_start_index
-    index = np.arange(llb, second_boundary_layer_end_index)
+    llb = horizontal_start
+    llb2 = horizontal_start_p3
+    index = np.arange(llb, c2e2c.shape[0])
 
-    inv_neighbor_id = -np.ones([second_boundary_layer_end_index - llb, 3], dtype=int)
+    inv_neighbor_id = -np.ones([c2e2c.shape[0], 3], dtype=int)
     for i in range(3):
         for j in range(3):
-            inv_neighbor_id[:, j] = np.where(
+            inv_neighbor_id[llb:, j] = np.where(
                 np.logical_and(c2e2c[c2e2c[llb:, j], i] == index, c2e2c[llb:, j] >= 0),
                 i,
-                inv_neighbor_id[:, j],
+                inv_neighbor_id[llb:, j],
             )
 
     relax_coeff = 0.46
     maxwgt_loc = divavg_cntrwgt + 0.003
     minwgt_loc = divavg_cntrwgt - 0.003
+#TODO: in this function halo cell exchanges (sync) are missing, here for inv_neighbor_id, but also within the iteration for several variables
     for iteration in range(niter):
         wgt_loc_sum = c_bln_avg[llb:, 0] * cell_areas[llb:] + np.sum(
-            c_bln_avg[c2e2c[llb:], inv_neighbor_id + 1] * cell_areas[c2e2c[llb:]], axis=1
+            c_bln_avg[c2e2c[llb:], inv_neighbor_id[llb:] + 1] * cell_areas[c2e2c[llb:]], axis=1
         )
         resid = wgt_loc_sum[llb2 - llb :] / cell_areas[llb2:] - 1.0
         if iteration < niter - 1:
@@ -621,11 +615,10 @@ def compute_cells_aw_verts(
     e2v: np.array,
     v2c: np.array,
     e2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
-    llb = second_boundary_layer_start_index
-    cells_aw_verts = np.zeros([second_boundary_layer_end_index, 6])
+    llb = horizontal_start
+    cells_aw_verts = np.zeros([v2e.shape[0], 6])
     for i in range(2):
         for je in range(6):
             for jc in range(6):
@@ -634,7 +627,7 @@ def compute_cells_aw_verts(
                     owner_mask[llb:],
                     False,
                 )
-                index = np.arange(llb, second_boundary_layer_end_index)
+                index = np.arange(llb, v2e.shape[0])
                 idx_ve = np.where(e2v[v2e[llb:, je], 0] == index, 0, 1)
                 cells_aw_verts[llb:, jc] = np.where(
                     mask,
@@ -655,14 +648,13 @@ def compute_e_bln_c_s(
     cells_lon: np.array,
     edges_lat: np.array,
     edges_lon: np.array,
-    second_boundary_layer_end_index: np.int32,
 ) -> np.array:
     llb = 0
-    e_bln_c_s = np.zeros([second_boundary_layer_end_index, 3])
+    e_bln_c_s = np.zeros([c2e.shape[0], 3])
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
-    ytemp = np.zeros([3, second_boundary_layer_end_index])
-    xtemp = np.zeros([3, second_boundary_layer_end_index])
+    ytemp = np.zeros([3, c2e.shape[0]])
+    xtemp = np.zeros([3, c2e.shape[0]])
 
     for i in range(3):
         ytemp[i] = edges_lat[c2e[llb:, i]]
@@ -674,8 +666,6 @@ def compute_e_bln_c_s(
         yloc,
         xloc,
         0.0,
-        0,
-        second_boundary_layer_end_index,
     )
 
     # Store results in ptr_patch%cells%e_bln_c_s
@@ -733,66 +723,65 @@ def compute_pos_on_tplane_e_x_y(
     e2c: np.array,
     e2v: np.array,
     e2c2e: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
 ) -> np.array:
-    llb = second_boundary_layer_start_index
-    pos_on_tplane_e = np.zeros([second_boundary_layer_end_index, 8, 2])
+    llb = horizontal_start
+    pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
     #     get geographical coordinates of edge midpoint
     #     get line and block indices of neighbour cells
     #     get geographical coordinates of first cell center
     #     projection first cell center into local \lambda-\Phi-system
     #     get geographical coordinates of second cell center
     #     projection second cell center into local \lambda-\Phi-system
-    xyloc_plane_n1 = np.zeros([2, second_boundary_layer_end_index - llb])
-    xyloc_plane_n2 = np.zeros([2, second_boundary_layer_end_index - llb])
-    xyloc_plane_n1[0], xyloc_plane_n1[1] = gnomonic_proj(
+    xyloc_plane_n1 = np.zeros([2, e2c.shape[0]])
+    xyloc_plane_n2 = np.zeros([2, e2c.shape[0]])
+    xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 0]], cells_lat[e2c[llb:, 0]]
     )
-    xyloc_plane_n2[0], xyloc_plane_n2[1] = gnomonic_proj(
+    xyloc_plane_n2[0, llb:], xyloc_plane_n2[1, llb:] = gnomonic_proj(
         edges_lon[llb:], edges_lat[llb:], cells_lon[e2c[llb:, 1]], cells_lat[e2c[llb:, 1]]
     )
 
-    xyloc_quad = np.zeros([4, 2, second_boundary_layer_end_index - llb])
-    xyloc_plane_quad = np.zeros([4, 2, second_boundary_layer_end_index - llb])
+    xyloc_quad = np.zeros([4, 2, e2c.shape[0]])
+    xyloc_plane_quad = np.zeros([4, 2, e2c.shape[0]])
     for ne in range(4):
-        xyloc_quad[ne, 0] = edges_lon[e2c2e[llb:, ne]]
-        xyloc_quad[ne, 1] = edges_lat[e2c2e[llb:, ne]]
-        xyloc_plane_quad[ne, 0], xyloc_plane_quad[ne, 1] = gnomonic_proj(
-            edges_lon[llb:], edges_lat[llb:], xyloc_quad[ne, 0], xyloc_quad[ne, 1]
+        xyloc_quad[ne, 0, llb:] = edges_lon[e2c2e[llb:, ne]]
+        xyloc_quad[ne, 1, llb:] = edges_lat[e2c2e[llb:, ne]]
+        xyloc_plane_quad[ne, 0, llb:], xyloc_plane_quad[ne, 1, llb:] = gnomonic_proj(
+            edges_lon[llb:], edges_lat[llb:], xyloc_quad[ne, 0, llb:], xyloc_quad[ne, 1, llb:]
         )
 
-    xyloc_ve = np.zeros([2, 2, second_boundary_layer_end_index - llb])
-    xyloc_plane_ve = np.zeros([2, 2, second_boundary_layer_end_index - llb])
+    xyloc_ve = np.zeros([2, 2, e2c.shape[0]])
+    xyloc_plane_ve = np.zeros([2, 2, e2c.shape[0]])
     for nv in range(2):
-        xyloc_ve[nv, 0] = vertex_lon[e2v[llb:, nv]]
-        xyloc_ve[nv, 1] = vertex_lat[e2v[llb:, nv]]
-        xyloc_plane_ve[nv, 0], xyloc_plane_ve[nv, 1] = gnomonic_proj(
-            edges_lon[llb:], edges_lat[llb:], xyloc_ve[nv, 0], xyloc_ve[nv, 1]
+        xyloc_ve[nv, 0, llb:] = vertex_lon[e2v[llb:, nv]]
+        xyloc_ve[nv, 1, llb:] = vertex_lat[e2v[llb:, nv]]
+        xyloc_plane_ve[nv, 0, llb:], xyloc_plane_ve[nv, 1, llb:] = gnomonic_proj(
+            edges_lon[llb:], edges_lat[llb:], xyloc_ve[nv, 0, llb:], xyloc_ve[nv, 1, llb:]
         )
 
     pos_on_tplane_e[llb:, 0, 0] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n1[0] * primal_normal_v1[llb:] + xyloc_plane_n1[1] * primal_normal_v2[llb:]),
+        * (xyloc_plane_n1[0, llb:] * primal_normal_v1[llb:] + xyloc_plane_n1[1, llb:] * primal_normal_v2[llb:]),
         pos_on_tplane_e[llb:, 0, 0],
     )
     pos_on_tplane_e[llb:, 0, 1] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n1[0] * dual_normal_v1[llb:] + xyloc_plane_n1[1] * dual_normal_v2[llb:]),
+        * (xyloc_plane_n1[0, llb:] * dual_normal_v1[llb:] + xyloc_plane_n1[1, llb:] * dual_normal_v2[llb:]),
         pos_on_tplane_e[llb:, 0, 1],
     )
     pos_on_tplane_e[llb:, 1, 0] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n2[0] * primal_normal_v1[llb:] + xyloc_plane_n2[1] * primal_normal_v2[llb:]),
+        * (xyloc_plane_n2[0, llb:] * primal_normal_v1[llb:] + xyloc_plane_n2[1, llb:] * primal_normal_v2[llb:]),
         pos_on_tplane_e[llb:, 1, 0],
     )
     pos_on_tplane_e[llb:, 1, 1] = np.where(
         owner_mask[llb:],
         grid_sphere_radius
-        * (xyloc_plane_n2[0] * dual_normal_v1[llb:] + xyloc_plane_n2[1] * dual_normal_v2[llb:]),
+        * (xyloc_plane_n2[0, llb:] * dual_normal_v1[llb:] + xyloc_plane_n2[1, llb:] * dual_normal_v2[llb:]),
         pos_on_tplane_e[llb:, 1, 1],
     )
 
@@ -801,8 +790,8 @@ def compute_pos_on_tplane_e_x_y(
             owner_mask[llb:],
             grid_sphere_radius
             * (
-                xyloc_plane_quad[ne, 0] * primal_normal_v1[llb:]
-                + xyloc_plane_quad[ne, 1] * primal_normal_v2[llb:]
+                xyloc_plane_quad[ne, 0, llb:] * primal_normal_v1[llb:]
+                + xyloc_plane_quad[ne, 1, llb:] * primal_normal_v2[llb:]
             ),
             pos_on_tplane_e[llb:, 2 + ne, 0],
         )
@@ -810,8 +799,8 @@ def compute_pos_on_tplane_e_x_y(
             owner_mask[llb:],
             grid_sphere_radius
             * (
-                xyloc_plane_quad[ne, 0] * dual_normal_v1[llb:]
-                + xyloc_plane_quad[ne, 1] * dual_normal_v2[llb:]
+                xyloc_plane_quad[ne, 0, llb:] * dual_normal_v1[llb:]
+                + xyloc_plane_quad[ne, 1, llb:] * dual_normal_v2[llb:]
             ),
             pos_on_tplane_e[llb:, 2 + ne, 1],
         )
@@ -821,8 +810,8 @@ def compute_pos_on_tplane_e_x_y(
             owner_mask[llb:],
             grid_sphere_radius
             * (
-                xyloc_plane_ve[nv, 0] * primal_normal_v1[llb:]
-                + xyloc_plane_ve[nv, 1] * primal_normal_v2[llb:]
+                xyloc_plane_ve[nv, 0, llb:] * primal_normal_v1[llb:]
+                + xyloc_plane_ve[nv, 1, llb:] * primal_normal_v2[llb:]
             ),
             pos_on_tplane_e[llb:, 6 + nv, 0],
         )
@@ -830,8 +819,8 @@ def compute_pos_on_tplane_e_x_y(
             owner_mask[llb:],
             grid_sphere_radius
             * (
-                xyloc_plane_ve[nv, 0] * dual_normal_v1[llb:]
-                + xyloc_plane_ve[nv, 1] * dual_normal_v2[llb:]
+                xyloc_plane_ve[nv, 0, llb:] * dual_normal_v1[llb:]
+                + xyloc_plane_ve[nv, 1, llb:] * dual_normal_v2[llb:]
             ),
             pos_on_tplane_e[llb:, 6 + nv, 1],
         )

@@ -51,7 +51,7 @@ from icon4py.model.common.interpolation.interpolation_fields import (
     compute_geofac_grg,
     compute_geofac_n2s,
     compute_geofac_rot,
-    compute_mass_conservation_c_bln_avg,
+    compute_force_mass_conservation_to_c_bln_avg,
     compute_pos_on_tplane_e_x_y,
     compute_primal_normal_ec,
 )
@@ -225,10 +225,6 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
     )
-    horizontal_end = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.end(CellDim),
-    )
     horizontal_start_p2 = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
@@ -242,9 +238,8 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         lat,
         lon,
         horizontal_start,
-        horizontal_end,
     )
-    c_bln_avg = compute_mass_conservation_c_bln_avg(
+    c_bln_avg = compute_force_mass_conservation_to_c_bln_avg(
         c_bln_avg,
         divavg_cntrwgt,
         owner_mask,
@@ -252,7 +247,6 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         cell_areas,
         1000,
         horizontal_start,
-        horizontal_end,
         horizontal_start_p2,
     )
     assert np.allclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
@@ -312,10 +306,6 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
         VertexDim,
         HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
     )
-    horizontal_end = icon_grid.get_end_index(
-        VertexDim,
-        HorizontalMarkerIndex.end(VertexDim),
-    )
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
@@ -326,7 +316,6 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
         v2c,
         e2c,
         horizontal_start,
-        horizontal_end,
     )
     assert np.allclose(cells_aw_verts, cells_aw_verts_ref)
 
@@ -340,10 +329,6 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
     cells_lon = grid_savepoint.cell_center_lon().asnumpy()
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
     edges_lon = grid_savepoint.edges_center_lon().asnumpy()
-    horizontal_end = icon_grid.get_end_index(
-        CellDim,
-        HorizontalMarkerIndex.end(CellDim),
-    )
     e_bln_c_s = compute_e_bln_c_s(
         owner_mask,
         c2e,
@@ -351,7 +336,6 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
         cells_lon,
         edges_lat,
         edges_lon,
-        horizontal_end,
     )
     assert np.allclose(e_bln_c_s, e_bln_c_s_ref)
 
@@ -379,10 +363,6 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
-    horizontal_end = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.end(EdgeDim),
-    )
     pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
         sphere_radius,
         primal_normal_v1,
@@ -400,7 +380,6 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
         e2v,
         e2c2e,
         horizontal_start,
-        horizontal_end,
     )
     assert np.allclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref)
     assert np.allclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref)
