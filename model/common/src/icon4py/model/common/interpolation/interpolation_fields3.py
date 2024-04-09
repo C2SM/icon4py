@@ -28,19 +28,14 @@ from gt4py.next import where
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.common.dimension import C2E, V2E, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim
+from icon4py.model.common.dimension import C2E, E2C, V2E, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim, KDim
 
+@field_operator
 def grad_fd_norm(
-    psi_c: np.array,
-    inv_dual_edge_length: np.array,
-    e2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-    nlev,
-) -> np.array:
-    llb = second_boundary_layer_start_index
-    grad_norm_psi_e = np.zeros([len(e2c[:, 0]), nlev])
-    for i in range(nlev):
-        grad_norm_psi_e[llb:, i] = (psi_c[e2c[llb:, 1], i] - psi_c[e2c[llb:, 0], i]) * inv_dual_edge_length[llb:]
+    psi_c: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
     return grad_norm_psi_e
 
 def grad_fd_tang(
@@ -57,14 +52,12 @@ def grad_fd_tang(
         grad_tang_psi_e[llb:, i] = tangent_orientation[llb:] * (psi_v[e2v[llb:, 1], i] - psi_v[e2v[llb:, 0], i]) * inv_primal_edge_length[llb:]
     return grad_tang_psi_e
 
+@field_operator
 def compute_ddxn_z_half_e(
-    z_ifc: np.array,
-    inv_dual_edge_length: np.array,
-    e2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-) -> np.array:
-    nlev = z_ifc.shape[1]
-    ddxn_z_half_e = grad_fd_norm(z_ifc, inv_dual_edge_length, e2c, second_boundary_layer_start_index, nlev)
+    z_ifc: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    ddxn_z_half_e = grad_fd_norm(z_ifc, inv_dual_edge_length)
     return ddxn_z_half_e
 
 def compute_ddxt_z_half_e(
