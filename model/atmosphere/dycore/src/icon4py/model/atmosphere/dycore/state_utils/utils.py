@@ -22,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
     maximum,
 )
 
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
@@ -109,6 +109,9 @@ def init_zero_c_k(
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
+    )
+
+
 @field_operator
 def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
     tuple[
