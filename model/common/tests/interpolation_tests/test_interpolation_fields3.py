@@ -38,6 +38,7 @@ from icon4py.model.common.dimension import (
     V2CDim,
     V2EDim,
     VertexDim,
+    KDim,
 )
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.interpolation_fields3 import (
@@ -60,31 +61,41 @@ from icon4py.model.common.test_utils.helpers import zero_field
 
 @pytest.mark.datatest
 def test_compute_ddxn_z_full_e(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):  # fixture
-    z_ifc = metrics_savepoint.z_ifc().asnumpy()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
+    z_ifc = metrics_savepoint.z_ifc()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     e2c = icon_grid.connectivities[E2CDim]
 #    edge_cell_length = grid_savepoint.edge_cell_length()
 #    owner_mask = grid_savepoint.e_owner_mask()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
-    lateral_boundary = np.arange(2)
-    lateral_boundary[0] = icon_grid.get_start_index(
+    horizontal_start = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
     )
-    lateral_boundary[1] = icon_grid.get_end_index(
+    horizontal_end = icon_grid.get_end_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
     )
-    ddxn_z_half_e = compute_ddxn_z_half_e(
+    vertical_start = 0
+    vertical_end = 66
+    ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim)
+    ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
+    compute_ddxn_z_half_e(
         z_ifc,
         inv_dual_edge_length,
-        e2c,
-        lateral_boundary[0],
+        out=ddxn_z_half_e,
+        offset_provider={"E2C" : icon_grid.get_offset_provider("E2C") },
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
+    print(ddxn_z_half_e.asnumpy().shape)
     ddxn_z_full = compute_ddxnt_z_full(
-        ddxn_z_half_e,
+        ddxn_z_half_e.asnumpy(),
     )
 
+    print(ddxn_z_full.shape)
+    print(ddxn_z_full_ref.shape)
     assert np.allclose(ddxn_z_full, ddxn_z_full_ref)
 
 
