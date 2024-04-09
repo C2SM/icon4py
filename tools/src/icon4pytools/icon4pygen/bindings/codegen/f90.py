@@ -51,6 +51,7 @@ class F90Generator(TemplatedGenerator):
         contains
 
         {{wrap_run_fun}}
+        {{wrap_run_and_verify_fun}}
         {{wrap_setup_fun}}
         end module
     """
@@ -95,10 +96,10 @@ class F90Generator(TemplatedGenerator):
         """
     )
 
-    F90WrapRunFun = as_jinja(
+    F90WrapRunAndVerifyFun = as_jinja(
         """\
         subroutine &
-        wrap_run_{{stencil_name}}( &
+        wrap_run_and_verify_{{stencil_name}}( &
         {{params}}
         )
         use, intrinsic :: iso_c_binding
@@ -117,19 +118,43 @@ class F90Generator(TemplatedGenerator):
         {{k_sizes_assignments}}
         {{conditionals}}
         !$ACC host_data use_device( &
-        {{openacc}}
+        {{host_data_run_and_verify}}
         !$ACC )
-        #ifdef __DSL_VERIFY
-            call run_and_verify_{{stencil_name}} &
-            ( &
-            {{run_ver_params}}
-            )
-        #else
-            call run_{{stencil_name}} &
-            ( &
-            {{run_params}}
-            )
-        #endif
+        call run_and_verify_{{stencil_name}} &
+        ( &
+        {{run_ver_params}}
+        )
+        !$ACC end host_data
+        end subroutine
+        """
+    )
+
+    F90WrapRunFun = as_jinja(
+        """\
+        subroutine &
+        wrap_run_{{stencil_name}}( &
+        {{params}}
+        )
+        use, intrinsic :: iso_c_binding
+        use openacc
+        {{binds}}
+        integer(c_int) :: vertical_start
+        integer(c_int) :: vertical_end
+        integer(c_int) :: horizontal_start
+        integer(c_int) :: horizontal_end
+        {{k_sizes}}
+        vertical_start = vertical_lower-1
+        vertical_end = vertical_upper
+        horizontal_start = horizontal_lower-1
+        horizontal_end = horizontal_upper
+        {{k_sizes_assignments}}
+        !$ACC host_data use_device( &
+        {{host_data_run}}
+        !$ACC )
+        call run_{{stencil_name}} &
+        ( &
+        {{run_params}}
+        )
         !$ACC end host_data
         end subroutine
         """
@@ -163,7 +188,7 @@ class F90Generator(TemplatedGenerator):
 
     F90Field = as_jinja("{{ name }}{% if suffix %}_{{ suffix }}{% endif %}")
 
-    F90OpenACCField = as_jinja("!$ACC    {{ name }}{% if suffix %}_{{ suffix }}{% endif %}")
+    F90HostDataField = as_jinja("!$ACC    {{ name }}{% if suffix %}_{{ suffix }}{% endif %}")
 
     F90TypedField = as_jinja(
         "{{ dtype }}, {% if dims %}{{ dims }},{% endif %} target {% if _this_node.optional %} , optional {% endif %}:: {{ name }}{% if suffix %}_{{ suffix }}{% endif %} "
@@ -185,7 +210,7 @@ class F90Field(eve.Node):
     suffix: str = ""
 
 
-class F90OpenACCField(F90Field):
+class F90HostDataField(F90Field):
     ...
 
 
@@ -347,7 +372,7 @@ class F90SetupFun(Node):
         self.binds = F90EntityList(fields=bind_fields)
 
 
-class F90WrapRunFun(Node):
+class F90WrapRunAndVerifyFun(Node):
     stencil_name: str
     all_fields: Sequence[Field]
     out_fields: Sequence[Field]
@@ -358,7 +383,7 @@ class F90WrapRunFun(Node):
     conditionals: F90EntityList = eve.datamodels.field(init=False)
     k_sizes: F90EntityList = eve.datamodels.field(init=False)
     k_sizes_assignments: F90EntityList = eve.datamodels.field(init=False)
-    openacc: F90EntityList = eve.datamodels.field(init=False)
+    host_data_run_and_verify: F90EntityList = eve.datamodels.field(init=False)
     tol_decls: F90EntityList = eve.datamodels.field(init=False)
     run_ver_params: F90EntityList = eve.datamodels.field(init=False)
     run_params: F90EntityList = eve.datamodels.field(init=False)
@@ -418,10 +443,10 @@ class F90WrapRunFun(Node):
             for short, long in [("rel", "RELATIVE"), ("abs", "ABSOLUTE")]
             for field in self.tol_fields
         ]
-        open_acc_fields = [
-            F90OpenACCField(name=field.name) for field in self.all_fields if field.rank() != 0
+        host_data_run_and_verify_fields = [
+            F90HostDataField(name=field.name) for field in self.all_fields if field.rank() != 0
         ] + [
-            F90OpenACCField(name=field.name, suffix="before")
+            F90HostDataField(name=field.name, suffix="before")
             for field in self.out_fields
             if field.rank() != 0
         ]
@@ -475,9 +500,89 @@ class F90WrapRunFun(Node):
         self.conditionals = F90EntityList(fields=cond_fields)
         self.k_sizes = F90EntityList(fields=k_sizes_fields)
         self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
-        self.openacc = F90EntityList(fields=open_acc_fields, line_end=", &", line_end_last=" &")
+        self.host_data_run_and_verify = F90EntityList(
+            fields=host_data_run_and_verify_fields, line_end=", &", line_end_last=" &"
+        )
         self.run_ver_params = F90EntityList(
             fields=run_ver_param_fields, line_end=", &", line_end_last=" &"
+        )
+        self.run_params = F90EntityList(fields=run_param_fields, line_end=", &", line_end_last=" &")
+
+
+class F90WrapRunFun(Node):
+    stencil_name: str
+    all_fields: Sequence[Field]
+    out_fields: Sequence[Field]
+
+    params: F90EntityList = eve.datamodels.field(init=False)
+    binds: F90EntityList = eve.datamodels.field(init=False)
+    k_sizes: F90EntityList = eve.datamodels.field(init=False)
+    k_sizes_assignments: F90EntityList = eve.datamodels.field(init=False)
+    host_data_run: F90EntityList = eve.datamodels.field(init=False)
+    run_params: F90EntityList = eve.datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        param_fields = [F90Field(name=field.name) for field in self.all_fields] + [
+            F90Field(name=name) for name in _DOMAIN_ARGS
+        ]
+        bind_fields = (
+            [
+                F90TypedField(
+                    name=field.name,
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_ranked_dim_string(),
+                )
+                for field in self.all_fields
+            ]
+            + [
+                F90TypedField(
+                    name=field.name,
+                    suffix="before",
+                    dtype=field.renderer.render_ctype("f90"),
+                    dims=field.renderer.render_ranked_dim_string(),
+                )
+                for field in self.out_fields
+            ]
+            + [
+                F90TypedField(name=name, dtype="integer(c_int)", dims="value")
+                for name in _DOMAIN_ARGS
+            ]
+        )
+        k_sizes_fields = [
+            F90TypedField(name=field.name, suffix=s, dtype="integer")
+            for s in ["k_size"]
+            for field in self.out_fields
+        ]
+        k_sizes_assignment_fields = [
+            F90Assignment(
+                left_side=f"{field.name}_k_size",
+                right_side=f"SIZE({field.name}, 2)",
+            )
+            for field in self.out_fields
+        ]
+        host_data_run_fields = [
+            F90HostDataField(name=field.name) for field in self.all_fields if field.rank() != 0
+        ]
+        run_param_fields = (
+            [F90Field(name=field.name) for field in self.all_fields]
+            + [F90Field(name=field.name, suffix="k_size") for field in self.out_fields]
+            + [
+                F90Field(name=name)
+                for name in [
+                    "vertical_start",
+                    "vertical_end",
+                    "horizontal_start",
+                    "horizontal_end",
+                ]
+            ]
+        )
+
+        self.params = F90EntityList(fields=param_fields, line_end=", &", line_end_last=" &")
+        self.binds = F90EntityList(fields=bind_fields)
+        self.k_sizes = F90EntityList(fields=k_sizes_fields)
+        self.k_sizes_assignments = F90EntityList(fields=k_sizes_assignment_fields)
+        self.host_data_run = F90EntityList(
+            fields=host_data_run_fields, line_end=", &", line_end_last=" &"
         )
         self.run_params = F90EntityList(fields=run_param_fields, line_end=", &", line_end_last=" &")
 
@@ -539,6 +644,7 @@ class F90File(Node):
     run_fun: F90RunFun = eve.datamodels.field(init=False)
     run_and_verify_fun: F90RunAndVerifyFun = eve.datamodels.field(init=False)
     setup_fun: F90SetupFun = eve.datamodels.field(init=False)
+    wrap_run_and_verify_fun: F90WrapRunAndVerifyFun = eve.datamodels.field(init=False)
     wrap_run_fun: F90WrapRunFun = eve.datamodels.field(init=False)
     wrap_setup_fun: F90WrapSetupFun = eve.datamodels.field(init=False)
 
@@ -565,11 +671,17 @@ class F90File(Node):
             out_fields=out_fields,
         )
 
-        self.wrap_run_fun = F90WrapRunFun(
+        self.wrap_run_and_verify_fun = F90WrapRunAndVerifyFun(
             stencil_name=self.stencil_name,
             all_fields=all_fields,
             out_fields=out_fields,
             tol_fields=tol_fields,
+        )
+
+        self.wrap_run_fun = F90WrapRunFun(
+            stencil_name=self.stencil_name,
+            all_fields=all_fields,
+            out_fields=out_fields,
         )
 
         self.wrap_setup_fun = F90WrapSetupFun(
