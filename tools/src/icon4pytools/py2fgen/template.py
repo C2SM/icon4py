@@ -214,8 +214,7 @@ import logging
 
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
 
-logging.basicConfig(filename='py2f_cffi.log',
-                    level=logging.DEBUG,
+logging.basicConfig(level=logging.DEBUG,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 
