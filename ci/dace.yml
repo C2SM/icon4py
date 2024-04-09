@@ -28,7 +28,7 @@ benchmark_model_stencils:
 #   - pip install dace==$DACE_VERSION
     - pip install git+https://github.com/spcl/dace.git@$DACE_VERSION
     # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
-    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --run_xfail --verbose
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
