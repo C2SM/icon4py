@@ -219,8 +219,13 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
     all_dims = set(i for j in all_field_types for i in j.dims)
 
+    if fvprog.backend:
+        fendef = fvprog.itir.program  # type: ignore
+    else:
+        fendef = fvprog.itir
+
     all_offset_labels = (
-        fvprog.itir.pre_walk_values()
+        fendef.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .if_isinstance(str)
@@ -240,10 +245,16 @@ def get_stencil_info(
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
+
+    if fvprog.backend:
+        fendef = fvprog.itir.program  # type: ignore
+    else:
+        fendef = fvprog.itir
+
     fields = _get_field_infos(fvprog)
 
     offset_provider = {}
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(fvprog.itir, fields, connectivity_chains, offset_provider)
+    return StencilInfo(fendef, fields, connectivity_chains, offset_provider)
