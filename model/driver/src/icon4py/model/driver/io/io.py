@@ -16,11 +16,11 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+import netCDF4 as nc
+import xarray as xr
 from dask.delayed import Delayed
-from xarray import DataArray, Dataset
 
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.driver.io.data import DEFAULT_CALENDAR, to_data_array
 
 
 def to_delta(value: str) -> timedelta:
@@ -150,7 +150,7 @@ class FieldGroupMonitor(Monitor):
         self._field_names = config.filename_pattern
         self._variables = config.variables
         self._dataset = self._init_dataset(vertical)
-        self._writer = XArrayNetCDFWriter(config.filename_pattern)
+        
 
     #initalise this Monitors dataset with:
     # - global attributes
@@ -178,11 +178,10 @@ class FieldGroupMonitor(Monitor):
             external_variables="",# TODO (halungge) add list of fields in ugrid file
             uuidOfHGrid="", # TODO (halungge) add uuid of the grid
         )
-        
-        time = DataArray([],name="time", attrs=dict(standard_name="time", long_name="time", units="seconds since 1970-01-01 00:00:00", calendar=DEFAULT_CALENDAR))
-        level = to_data_array(vertical_grid.vct_a, attrs=dict(standard_name="height", long_name="height", units="m"))
-        coord_vars = dict(time=time, level=level) 
-        self._dataset = Dataset(data_vars=None, coords=coord_vars, attrs=attrs)
+        df = DatasetFactory(self.config, vertical_grid, attrs)
+        self._dataset = df.initialize_dataset()
+            
+
     def _update_fetch_times(self):
         self._next_output_time = self._next_output_time + self._time_delta
 
@@ -233,15 +232,54 @@ class IoMonitor(Monitor):
 
 
 class XArrayNetCDFWriter:
+    from xarray import Dataset
     def __init__(self, filename, mode="a"):
         self.filename = filename
         self.mode = mode
         
 
-    def write(self, dataset: Dataset, immediate=True)->[Delayed|None]:
+    def write(self, dataset:Dataset, immediate=True)->[Delayed|None]:
         delayed = dataset.to_netcdf(self.filename, mode=self.mode, engine="netcdf4", format="NETCDF4", unlimited_dims=["time"], compute=immediate)
         return delayed
     def close(self):
         self.dataset.close()
         self.dataset = None
         return self.dataset
+    
+    
+class DatasetFactory:
+    def __init__(self, file_name: str, num_lev:int, global_attrs:dict):
+        self._file_name = file_name
+        self.num_lev = num_lev
+        self.attrs = global_attrs
+        self.dataset = None
+
+    def add_dimension(self, name: str, values: xr.DataArray, ):
+        self.dataset.createDimension('name', values.shape[0])
+        self.dataset.createVariable(values.attrs["short"] values.dtype, (name,))
+    def initialize_dataset(self):
+        # TODO (magdalena) (what mode do we need here?)
+        self.dataset = nc.Dataset(self._file_name, "w", format="NETCDF4")
+        self.dataset.setncatts(self.attrs)
+        ## create dimensions all except time are fixed
+        
+        self.dataset.createDimension('time', None)
+        self.dataset.createDimension('height', self.vertical.num_lev) 
+        self.dataset.createDimension('mass_level', self.vertical.num_lev)
+        self.dataset.createDimension('interface_level', self.vertical.num_lev+1)
+        # create coordinate variables
+        times = self.dataset.createVariable('times', 'f8', ('time',))
+        times.units = 'seconds since 1970-01-01 00:00:00'
+        
+        
+        # create dimensions
+        
+        # xarray : 
+        #time = DataArray([],name="time", attrs=dict(standard_name="time", long_name="time", units="seconds since 1970-01-01 00:00:00", calendar=DEFAULT_CALENDAR))
+        #height = to_data_array(vertical_grid.vct_a, attrs=dict(standard_name="height", long_name="height", units="m"))
+        #mass_levels = np.range(vertical_grid.num_levels, dtype=np.int32)
+        #half_levels = np.range(vertical_grid.num_levels+1, dtype=np.int32)
+        #interface_levels = DataArray(half_levels, attrs=dict(standard_name="model level number", long_name="model interface levels", units="1"))
+        #full_levels = DataArray(mass_levels, attrs=dict(standard_name="model_level_number", long_name="mass levels", units="1"))
+        #coord_vars = dict(time=time, mass_level=full_levels, interface_level=interface_levels, height=height) 
+        #self._dataset = Dataset(data_vars=None, coords=coord_vars, attrs=attrs)

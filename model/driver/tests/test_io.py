@@ -16,6 +16,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import float32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT
 from icon4py.model.common.test_utils.grid_utils import get_icon_grid_from_gridfile
@@ -24,7 +25,7 @@ from icon4py.model.driver.io.data import (
     PROGNOSTIC_CF_ATTRIBUTES,
     to_data_array,
 )
-from icon4py.model.driver.io.io import FieldGroupMonitor, FieldIoConfig, to_delta
+from icon4py.model.driver.io.io import DatasetFactory, FieldGroupMonitor, FieldIoConfig, to_delta
 
 
 grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
@@ -90,3 +91,16 @@ def test_io_monitor_fields_copied_on_store(grid_savepoint):
     assert False
 
 
+
+def test_initialize_dataset_factory():
+    grid = SimpleGrid()
+    heights = random_field(grid, CellDim, KDim, dtype=float32)
+    
+    vertical = VerticalModelParams(heights)
+    factory = DatasetFactory("test_output.nc", vertical, attrs={"title":"test", "institution":"EXCLAIM - ETH Zurich"})
+    dataset = factory.initialize_dataset()
+    assert dataset.title == "test"
+    assert dataset.institution == "EXCLAIM - ETH Zurich"
+    # assert file exists
+    # assert dimensions are defined
+    # assert time is unlimited
