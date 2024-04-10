@@ -101,7 +101,7 @@ def test_compute_ddxn_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
 
 @pytest.mark.datatest
 def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
-    z_ifc = metrics_savepoint.z_ifc().asnumpy()
+    z_ifc = metrics_savepoint.z_ifc()
     dual_area = grid_savepoint.v_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
@@ -113,19 +113,19 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
     v2c = icon_grid.connectivities[V2CDim]
     v2e = icon_grid.connectivities[V2EDim]
     e2v = icon_grid.connectivities[E2VDim]
-    second_boundary_layer_start_index_vertex = icon_grid.get_start_index(
+    horizontal_start_vertex = icon_grid.get_start_index(
         VertexDim,
         HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
     )
-    second_boundary_layer_end_index_vertex = icon_grid.get_end_index(
+    horizontal_end_vertex = icon_grid.get_end_index(
         VertexDim,
         HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
     )
-    second_boundary_layer_start_index_cell = icon_grid.get_start_index(
+    horizontal_start_cell = icon_grid.get_start_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
     )
-    second_boundary_layer_end_index_cell = icon_grid.get_end_index(
+    horizontal_end_cell = icon_grid.get_end_index(
         CellDim,
         HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
     )
@@ -137,6 +137,8 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim)  - 1,
     )
+    vertical_start = 0
+    vertical_end = 66
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
@@ -146,18 +148,26 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
         v2c,
         v2e,
         e2v,
-        second_boundary_layer_start_index_vertex,
-        second_boundary_layer_end_index_vertex,
+        horizontal_start_vertex,
+        horizontal_end_vertex,
     )
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
     assert np.allclose(cells_aw_verts, cells_aw_verts_ref)
 
-    z_ifv = compute_cells2verts_scalar(z_ifc, cells_aw_verts, v2c, second_boundary_layer_start_index_vertex)
-    vertical_start = 0
-    vertical_end = 66
+    z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
+    compute_cells2verts_scalar(
+        z_ifc,
+        as_field((VertexDim, V2CDim), cells_aw_verts),
+        out=z_ifv,
+        offset_provider={"V2C" : icon_grid.get_offset_provider("V2C") },
+        domain={
+            VertexDim: (horizontal_start_vertex, horizontal_end_vertex),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
     ddxt_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
     compute_ddxt_z_half_e(
-        as_field((VertexDim, KDim), z_ifv),
+        z_ifv,
         inv_primal_edge_length,
         tangent_orientation,
         out=ddxt_z_half_e,

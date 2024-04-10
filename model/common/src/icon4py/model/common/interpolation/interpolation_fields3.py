@@ -24,11 +24,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next import where
+from gt4py.next import where, neighbor_sum
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.common.dimension import C2E, E2C, V2E, E2V, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim, KDim, Koff
+from icon4py.model.common.dimension import C2E, E2C, V2E, E2V, V2C, C2EDim, CellDim, EdgeDim, V2EDim, V2CDim, VertexDim, KDim, Koff
 
 @field_operator
 def grad_fd_norm(
@@ -71,18 +71,12 @@ def compute_ddxnt_z_full(
     ddxnt_z_full = 0.5 * (z_ddxnt_z_half_e + z_ddxnt_z_half_e(Koff[1]))
     return ddxnt_z_full
 
+@field_operator
 def compute_cells2verts_scalar(
-    p_cell_in: np.array,
-    c_int: np.array,
-    v2c: np.array,
-    second_boundary_layer_start_index: np.int32,
-) -> np.array:
-    llb = second_boundary_layer_start_index
-    kdim = p_cell_in.shape[1]
-    p_vert_out = np.zeros([c_int.shape[0], kdim])
-    for j in range(kdim):
-        for i in range(6):
-            p_vert_out[llb:, j] = p_vert_out[llb:, j] + c_int[llb:, i] * p_cell_in[v2c[llb:, i], j]
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_int: Field[[VertexDim, V2CDim], float],
+) -> Field[[VertexDim, KDim], float]:
+    p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)
     return p_vert_out
 
 def compute_cells_aw_verts(
