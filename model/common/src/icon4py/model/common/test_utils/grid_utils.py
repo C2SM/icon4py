@@ -39,6 +39,7 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
             "icon_grid_0013_R02B04_R.nc",
             num_levels=GLOBAL_NUM_LEVELS,
             on_gpu=on_gpu,
+            limited_area=False,
         )
     elif experiment == REGIONAL_EXPERIMENT:
         return _load_from_gridfile(
@@ -46,12 +47,15 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
             "grid.nc",
             num_levels=MCH_CH_R04B09_LEVELS,
             on_gpu=on_gpu,
+            limited_area=True,
         )
     else:
         raise ValueError(f"Unknown experiment: {experiment}")
 
 
-def _load_from_gridfile(file_path: str, filename: str, num_levels: int, on_gpu: bool) -> IconGrid:
+def _load_from_gridfile(
+    file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
+) -> IconGrid:
     grid_file = GRIDS_PATH.joinpath(file_path, filename)
     if not grid_file.exists():
         from icon4py.model.common.test_utils.data_handling import download_and_extract
@@ -66,7 +70,7 @@ def _load_from_gridfile(file_path: str, filename: str, num_levels: int, on_gpu: 
         str(grid_file),
         VerticalGridSize(num_levels),
     )
-    gm(on_gpu=on_gpu)
+    gm(on_gpu=on_gpu, limited_area=limited_area)
     return gm.get_grid()
 
 
