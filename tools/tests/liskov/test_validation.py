@@ -65,6 +65,29 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
 
 
 @mark.parametrize(
+    "stencil, directive",
+    [
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START STENCIL( name = foo ; x = bar )\n!$DSL END STENCIL(name = foo)",
+        ),
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START FUSED STENCIL( name = foo ; x = bar )\n!$DSL END FUSED STENCIL(name = foo)",
+        ),
+    ],
+)
+def test_directive_semantics_validation_allow_whitespaces_in_name_arg(
+    make_f90_tmpfile, stencil, directive
+):
+    fpath = make_f90_tmpfile(stencil + directive)
+    opath = fpath.with_suffix(".gen")
+    directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath, opath)
+    parser(directives)
+
+
+@mark.parametrize(
     "directive",
     (
         [StartStencil("!$DSL START STENCIL(name=foo, x=bar)", 0, 0)],
