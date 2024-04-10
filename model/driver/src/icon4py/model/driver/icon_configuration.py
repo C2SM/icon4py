@@ -82,10 +82,8 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             max_nudging_coeff=0.075,
         )
 
-
     def _default_diffusion_config():
         return DiffusionConfig()
-
 
     def _default_config():
         return (
@@ -113,7 +111,6 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             mch_ch_r04b09_diffusion_config(),
             NonHydrostaticConfig(),
         )
-
 
     if experiment == "mch_ch_r04b09_dsl":
         (

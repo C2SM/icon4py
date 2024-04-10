@@ -27,8 +27,8 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -299,9 +299,7 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = TimeLoop(
-        iconrun_config, diffusion, solve_nonhydro
-    )
+    timeloop = TimeLoop(iconrun_config, diffusion, solve_nonhydro)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 

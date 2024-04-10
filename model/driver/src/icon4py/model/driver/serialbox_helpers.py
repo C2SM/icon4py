@@ -19,8 +19,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, zero_field
 from icon4py.model.common.test_utils.serialbox_utils import (
-    IconGridSavepoint,
     IconDiffusionInitSavepoint,
+    IconGridSavepoint,
     InterpolationSavepoint,
     MetricSavepoint,
 )
