@@ -20,6 +20,9 @@ from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp,
+)
 
 from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
@@ -883,42 +886,20 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
         if self.config.iadv_rhotheta <= 2:
-            tmp_0_0 = self.grid.get_start_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2)
-            offset = 2 if self.config.idiv_method == 1 else 3
-            tmp_0_1 = self.grid.get_end_index(
-                EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - offset
-            )
-
-            init_zero_e_k(
-                field=z_fields.z_rho_e,
-                horizontal_start=tmp_0_0,
-                horizontal_end=tmp_0_1,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider={},
-            )
-
-            init_zero_e_k(
-                field=z_fields.z_theta_v_e,
-                horizontal_start=tmp_0_0,
-                horizontal_end=tmp_0_1,
+            init_two_edge_kdim_fields_with_zero_wp(
+                edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
+                edge_kdim_field_with_zero_wp_2=z_fields.z_theta_v_e,
+                horizontal_start=start_edge_local_minus2,
+                horizontal_end=end_edge_local_minus2,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
             # initialize also nest boundary points with zero
             if self.grid.limited_area:
-                init_zero_e_k(
-                    field=z_fields.z_rho_e,
-                    horizontal_start=start_edge_lb,
-                    horizontal_end=end_edge_local_minus1,
-                    vertical_start=0,
-                    vertical_end=self.grid.num_levels,
-                    offset_provider={},
-                )
-
-                init_zero_e_k(
-                    field=z_fields.z_theta_v_e,
+                init_two_edge_kdim_fields_with_zero_wp(
+                    edge_kdim_field_with_zero_wp_1=z_fields.z_rho_e,
+                    edge_kdim_field_with_zero_wp_2=z_fields.z_theta_v_e,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_local_minus1,
                     vertical_start=0,
@@ -1642,9 +1623,9 @@ class SolveNonhydro:
             log.debug("corrector: doing prep advection")
             if lclean_mflx:
                 log.debug("corrector: start stencil 33")
-                init_two_edge_kdim_fields_to_zero_wp(
-                    edge_kdim_field_to_zero_wp_1=prep_adv.vn_traj,
-                    edge_kdim_field_to_zero_wp_2=prep_adv.mass_flx_me,
+                init_two_edge_kdim_fields_with_zero_wp(
+                    edge_kdim_field_with_zero_wp_1=prep_adv.vn_traj,
+                    edge_kdim_field_with_zero_wp_2=prep_adv.mass_flx_me,
                     horizontal_start=start_edge_lb,
                     horizontal_end=end_edge_end,
                     vertical_start=0,
@@ -1912,8 +1893,8 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                init_zero_c_k(
-                    field=prep_adv.mass_flx_ic,
+                init_cell_kdim_field_with_zero_wp(
+                    field_with_zero_wp=prep_adv.mass_flx_ic,
                     horizontal_start=start_cell_lb,
                     horizontal_end=end_cell_nudging,
                     vertical_start=0,
