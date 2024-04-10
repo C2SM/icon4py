@@ -77,7 +77,7 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
         ),
     ],
 )
-def test_directive_semantics_validation_unbalanced_stencil_directives_allow_whitespaces_in_name_arg(
+def test_directive_semantics_validation_allow_whitespaces_in_name_arg(
     make_f90_tmpfile, stencil, directive
 ):
     fpath = make_f90_tmpfile(stencil + directive)
