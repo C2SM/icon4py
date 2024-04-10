@@ -1,4 +1,4 @@
-# ICON4Py - ICON inspired code in Python and GT4Py
+# icon4pY - icon INSPIRED CODE IN pYTHON AND gt4Py
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -28,7 +28,7 @@ from gt4py.next import where
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.common.dimension import C2E, E2C, V2E, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim, KDim
+from icon4py.model.common.dimension import C2E, E2C, V2E, E2V, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim, KDim, Koff
 
 @field_operator
 def grad_fd_norm(
@@ -38,18 +38,13 @@ def grad_fd_norm(
     grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
     return grad_norm_psi_e
 
+@field_operator
 def grad_fd_tang(
-    psi_v: np.array,
-    inv_primal_edge_length: np.array,
-    tangent_orientation: np.array,
-    e2v: np.array,
-    third_boundary_layer_start_index: np.int32,
-    nlev,
-) -> np.array:
-    llb = third_boundary_layer_start_index
-    grad_tang_psi_e = np.zeros([e2v.shape[0], nlev])
-    for i in range(nlev):
-        grad_tang_psi_e[llb:, i] = tangent_orientation[llb:] * (psi_v[e2v[llb:, 1], i] - psi_v[e2v[llb:, 0], i]) * inv_primal_edge_length[llb:]
+    psi_v: Field[[VertexDim, KDim], float],
+    inv_primal_edge_length: Field[[EdgeDim], float],
+    tangent_orientation: Field[[EdgeDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e
 
 @field_operator
@@ -60,21 +55,20 @@ def compute_ddxn_z_half_e(
     ddxn_z_half_e = grad_fd_norm(z_ifc, inv_dual_edge_length)
     return ddxn_z_half_e
 
+@field_operator
 def compute_ddxt_z_half_e(
-    z_ifv: np.array,
-    inv_primal_edge_length: np.array,
-    tangent_orientation: np.array,
-    e2v: np.array,
-    third_boundary_layer_start_index: np.int32,
-) -> np.array:
-    nlev = z_ifv.shape[1]
-    ddxt_z_half_e = grad_fd_tang(z_ifv, inv_primal_edge_length, tangent_orientation, e2v, third_boundary_layer_start_index, nlev)
+    z_ifv: Field[[VertexDim, KDim], float],
+    inv_primal_edge_length: Field[[EdgeDim], float],
+    tangent_orientation: Field[[EdgeDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    ddxt_z_half_e = grad_fd_tang(z_ifv, inv_primal_edge_length, tangent_orientation)
     return ddxt_z_half_e
 
+@field_operator
 def compute_ddxnt_z_full(
-    z_ddxnt_z_half_e: np.array,
-) -> np.array:
-    ddxnt_z_full = 0.5 * (z_ddxnt_z_half_e[:, :z_ddxnt_z_half_e.shape[1]-1] + z_ddxnt_z_half_e[:, 1:])
+    z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    ddxnt_z_full = 0.5 * (z_ddxnt_z_half_e + z_ddxnt_z_half_e(Koff[1]))
     return ddxnt_z_full
 
 def compute_cells2verts_scalar(
