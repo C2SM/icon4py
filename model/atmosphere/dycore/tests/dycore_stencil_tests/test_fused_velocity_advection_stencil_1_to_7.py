@@ -205,7 +205,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        pytest.skip(
+        pytest.xfail(
             "Verification of z_v_grad_w currently not working, because numpy version incorrect."
         )
         if isinstance(grid, IconGrid) and grid.limited_area:

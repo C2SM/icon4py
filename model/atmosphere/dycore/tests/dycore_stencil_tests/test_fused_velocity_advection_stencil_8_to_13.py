@@ -103,7 +103,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        pytest.skip(
+        pytest.xfail(
             "Verification of w_concorr_c currently not working, because numpy version is incorrect."
         )
         z_kin_hor_e = random_field(grid, EdgeDim, KDim)
