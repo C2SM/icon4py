@@ -57,9 +57,13 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
+from icon4pytools.common.logger import setup_logger
+
+
+logger = setup_logger(__name__)
 
 # global diffusion object
-DIFFUSION: Diffusion = Diffusion()
+diffusion_granule: Diffusion = Diffusion()
 
 
 def diffusion_init(
@@ -111,9 +115,11 @@ def diffusion_init(
 ):
     # configuration
     config = Icon4PyConfig()
+    device = config.device
+    logger.info(f"Using Device = {device}")
 
     # ICON grid
-    if config.device == Device.GPU:
+    if device == Device.GPU:
         on_gpu = True
     else:
         on_gpu = False
@@ -197,7 +203,7 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
-    DIFFUSION.init(
+    diffusion_granule.init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -239,12 +245,12 @@ def diffusion_run(
     )
 
     if linit:
-        DIFFUSION.initial_run(
+        diffusion_granule.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
-        DIFFUSION.run(
+        diffusion_granule.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )

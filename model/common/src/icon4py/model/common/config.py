@@ -25,10 +25,6 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_gpu_cached,
 )
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
-from icon4pytools.common.logger import setup_logger
-
-
-logger = setup_logger(__name__)
 
 
 class Device(Enum):
@@ -105,5 +101,4 @@ class Icon4PyConfig:
             GT4PyBackend.ROUNDTRIP.name: Device.CPU,
         }
         device = device_map[self.icon4py_backend]
-        logger.info(f"Using Device = {device}")
         return device
