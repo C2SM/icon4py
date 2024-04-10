@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import numpy as np
-from gt4py.next import Field, broadcast, field_operator, int32, int64, program, where
+from gt4py.next import Field, broadcast, field_operator, int32, program, where
 
 from icon4py.model.common.dimension import KDim, Koff
 
@@ -21,10 +21,10 @@ def _compute_scalfac_dd3d(
     vct_a: Field[[KDim], float],
     divdamp_trans_start: float,
     divdamp_trans_end: float,
-    divdamp_type: int64,
+    divdamp_type: int32,
 ) -> Field[[KDim], float]:
     scalfac_dd3d = broadcast(1.0, (KDim,))
-    if divdamp_type == int64(32):
+    if divdamp_type == 32:
         zf = 0.5 * (vct_a + vct_a(Koff[1]))
         scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
         scalfac_dd3d = where(
@@ -41,7 +41,7 @@ def compute_scalfac_dd3d(
     scalfac_dd3d: Field[[KDim], float],
     divdamp_trans_start: float,
     divdamp_trans_end: float,
-    divdamp_type: int64,
+    divdamp_type: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
