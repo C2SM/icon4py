@@ -185,7 +185,7 @@ def test_run_timeloop_single_step(
         timeloop_date_init,
         timeloop_date_exit,
         timeloop_diffusion_linit_init,
-        damping_height=damping_height,
+        damping_height,
         ndyn_substeps=ndyn_substeps,
     )
 

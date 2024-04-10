@@ -37,11 +37,14 @@ class IconRunConfig:
     # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
     n_substeps: int = 5
 
-    """linit_dyn in ICON"""
-    apply_initial_stabilization: bool = True  # False if in restart mode
+    """
+    ltestcase in ICON
+        ltestcase has been renamed as apply_initial_stabilization because it is only used for extra damping for
+        initial steps in timeloop.
+    """
+    apply_initial_stabilization: bool = True
 
-    """ltestcase in ICON"""
-    run_testcase: bool = False
+    restart_mode: bool = False
 
 
 @dataclass(frozen=True)

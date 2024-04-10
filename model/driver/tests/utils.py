@@ -139,8 +139,8 @@ def mch_ch_r04b09_dsl_iconrun_config(
         ),
         damping_height=damping_height,
         n_substeps=ndyn_substeps,
-        apply_initial_stabilization=diffusion_linit_init,
-        run_testcase=False,
+        apply_initial_stabilization=True,
+        restart_mode=not diffusion_linit_init,
     )
 
 
@@ -177,8 +177,8 @@ def exclaim_ape_iconrun_config(
         ),
         damping_height=damping_height,
         n_substeps=ndyn_substeps,
-        apply_initial_stabilization=diffusion_linit_init,
-        run_testcase=True,
+        apply_initial_stabilization=False,
+        restart_mode=not diffusion_linit_init,
     )
 
 
