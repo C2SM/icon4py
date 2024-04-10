@@ -633,40 +633,7 @@ class Diffusion:
 
         wait_on_comm_handle = mpi_decomposition.WaitOnCommHandle(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else definitions.WaitOnCommHandle()
 
-        def dace_jit(fuse_func):
-            def wrapper(*args, **kwargs):
-                if backend == run_dace_cpu:
-                    with dace.config.temporary_config():
-                        dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
-                        dace.config.Config.set("compiler", "allow_view_arguments", value=True)
-                        dace.config.Config.set("frontend", "check_args", value=True)
-                        compiler_args ="-std=c++17 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
-                        on_gpu = False
-                        dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
-
-                        dace.config.Config.set("optimizer", "automatic_simplification", value=False)
-                        dace.config.Config.set("cache", value="unique")
-
-                        return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)(*args, **kwargs,
-                                    #
-                                    __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    #
-                                    __pattern_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __pattern_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __pattern_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    #
-                                    __domain_descriptor_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __domain_descriptor_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    __domain_descriptor_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                    #
-                                    **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")}
-                                )
-                else:
-                    fuse_func(*args, **kwargs)
-            return wrapper
-
-        @dace_jit
+        @dace_jit(self)
         def fuse():
             # dtime dependent: enh_smag_factor,
             scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
@@ -913,3 +880,38 @@ class Diffusion:
             return dummy
 
         fuse()
+
+def dace_jit(self):
+    def decorator(fuse_func):
+        def wrapper(*args, **kwargs):
+            if backend == run_dace_cpu:
+                with dace.config.temporary_config():
+                    dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
+                    dace.config.Config.set("compiler", "allow_view_arguments", value=True)
+                    dace.config.Config.set("frontend", "check_args", value=True)
+                    compiler_args ="-std=c++17 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
+                    on_gpu = False
+                    dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
+
+                    dace.config.Config.set("optimizer", "automatic_simplification", value=False)
+                    dace.config.Config.set("cache", value="unique")
+
+                    return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)(*args, **kwargs,
+                                #
+                                __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                #
+                                __pattern_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                __pattern_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                __pattern_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                #
+                                __domain_descriptor_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                __domain_descriptor_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                __domain_descriptor_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
+                                #
+                                **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
+                           )
+            else:
+                fuse_func(*args, **kwargs)
+        return wrapper
+    return decorator
