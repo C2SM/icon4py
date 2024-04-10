@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, GridType, field_operator, int32, program, where
+from gt4py.next import Field, GridType, broadcast, field_operator, int32, program, where
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.math.helpers import (
@@ -150,4 +150,57 @@ def compute_ddqz_z_full(
         z_ifc,
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_scalfac_dd3d(
+    vct_a: Field[[KDim], float],
+    divdamp_trans_start: float,
+    divdamp_trans_end: float,
+    divdamp_type: int32,
+) -> Field[[KDim], float]:
+    scalfac_dd3d = broadcast(1.0, (KDim,))
+    if divdamp_type == 32:
+        zf = 0.5 * (vct_a + vct_a(Koff[1]))
+        scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
+        scalfac_dd3d = where(
+            zf >= divdamp_trans_start,
+            (divdamp_trans_end - zf) / (divdamp_trans_end - divdamp_trans_start),
+            scalfac_dd3d,
+        )
+    return scalfac_dd3d
+
+
+@program
+def compute_scalfac_dd3d(
+    vct_a: Field[[KDim], float],
+    scalfac_dd3d: Field[[KDim], float],
+    divdamp_trans_start: float,
+    divdamp_trans_end: float,
+    divdamp_type: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute scalfac_dd3d.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        vct_a: Field[[KDim], float],
+        scalfac_dd3d: (output)
+        divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
+        divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
+        divdamp_type: type of divergence damping (2D or 3D divergence)
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+    _compute_scalfac_dd3d(
+        vct_a,
+        divdamp_trans_start,
+        divdamp_trans_end,
+        divdamp_type,
+        out=scalfac_dd3d,
+        domain={KDim: (vertical_start, vertical_end)},
     )

@@ -11,48 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import numpy as np
-from gt4py.next import Field, broadcast, field_operator, int32, program, where
-
-from icon4py.model.common.dimension import KDim, Koff
-
-
-@field_operator
-def _compute_scalfac_dd3d(
-    vct_a: Field[[KDim], float],
-    divdamp_trans_start: float,
-    divdamp_trans_end: float,
-    divdamp_type: int32,
-) -> Field[[KDim], float]:
-    scalfac_dd3d = broadcast(1.0, (KDim,))
-    if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(Koff[1]))
-        scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
-        scalfac_dd3d = where(
-            zf >= divdamp_trans_start,
-            (divdamp_trans_end - zf) / (divdamp_trans_end - divdamp_trans_start),
-            scalfac_dd3d,
-        )
-    return scalfac_dd3d
-
-
-@program
-def compute_scalfac_dd3d(
-    vct_a: Field[[KDim], float],
-    scalfac_dd3d: Field[[KDim], float],
-    divdamp_trans_start: float,
-    divdamp_trans_end: float,
-    divdamp_type: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _compute_scalfac_dd3d(
-        vct_a,
-        divdamp_trans_start,
-        divdamp_trans_end,
-        divdamp_type,
-        out=scalfac_dd3d,
-        domain={KDim: (vertical_start, vertical_end)},
-    )
 
 
 def compute_kstart_dd3d(

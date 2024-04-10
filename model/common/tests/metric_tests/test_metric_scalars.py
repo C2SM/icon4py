@@ -17,7 +17,8 @@ from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d, compute_scalfac_dd3d
+from icon4py.model.common.metrics.metric_fields import compute_scalfac_dd3d
+from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
     zero_field,
@@ -27,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 @pytest.mark.datatest
 def test_compute_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
-    kstart_dd3d_ref = 2  # TODO: ref value not serialized
+    kstart_dd3d_ref = 2  # metrics_savepoint.kstart_dd3d_ref # TODO: ref value not serialized
     scalfac_dd3d_full = zero_field(icon_grid, KDim)
     k_index = as_field((KDim,), np.arange(icon_grid.num_levels, dtype=int32))
     divdamp_trans_start = 12500.0
