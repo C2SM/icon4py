@@ -17,7 +17,7 @@ from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32, int64
 
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.metrics.metric_scalars import compute_scalfac_kstart_dd3d
+from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d, compute_scalfac_dd3d
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
     zero_field,
@@ -30,16 +30,13 @@ def test_compute_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
     kstart_dd3d_ref = 2  # TODO: ref value not serialized
     scalfac_dd3d_full = zero_field(icon_grid, KDim)
     k_index = as_field((KDim,), np.arange(icon_grid.num_levels, dtype=int64))
-    kstart_dd3d_k = zero_field(icon_grid, KDim, dtype=int64)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = int64(3)
 
-    compute_scalfac_kstart_dd3d.with_backend(backend=backend)(
+    compute_scalfac_dd3d.with_backend(backend=backend)(
         vct_a=grid_savepoint.vct_a(),
-        k_levels=k_index,
         scalfac_dd3d=scalfac_dd3d_full,
-        kstart_dd3d_k=kstart_dd3d_k,
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         divdamp_type=divdamp_type,
@@ -47,12 +44,12 @@ def test_compute_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
         vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
-
-    kstart_dd3d_ls = list((i for i, x in enumerate(kstart_dd3d_k.asnumpy()) if x != 2))
-    if len(kstart_dd3d_ls) > 0:
-        kstart_dd3d = kstart_dd3d_k.asnumpy()[kstart_dd3d_ls[0]]
-    else:
-        kstart_dd3d = kstart_dd3d_k.asnumpy()[0]
+    kstart_dd3d = compute_kstart_dd3d(
+        vct_a=grid_savepoint.vct_a().asnumpy(),
+        k_levels=k_index.asnumpy(),
+        divdamp_trans_end=divdamp_trans_end,
+        divdamp_type=divdamp_type,
+    )
 
     assert dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
     assert dallclose(kstart_dd3d, kstart_dd3d_ref)
