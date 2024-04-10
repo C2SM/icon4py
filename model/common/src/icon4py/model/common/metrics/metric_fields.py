@@ -155,11 +155,11 @@ def compute_ddqz_z_full(
 
 @field_operator
 def _compute_scalfac_dd3d(
-    vct_a: Field[[KDim], float],
-    divdamp_trans_start: float,
-    divdamp_trans_end: float,
+    vct_a: Field[[KDim], wpfloat],
+    divdamp_trans_start: wpfloat,
+    divdamp_trans_end: wpfloat,
     divdamp_type: int32,
-) -> Field[[KDim], float]:
+) -> Field[[KDim], wpfloat]:
     scalfac_dd3d = broadcast(1.0, (KDim,))
     if divdamp_type == 32:
         zf = 0.5 * (vct_a + vct_a(Koff[1]))
@@ -174,10 +174,10 @@ def _compute_scalfac_dd3d(
 
 @program
 def compute_scalfac_dd3d(
-    vct_a: Field[[KDim], float],
-    scalfac_dd3d: Field[[KDim], float],
-    divdamp_trans_start: float,
-    divdamp_trans_end: float,
+    vct_a: Field[[KDim], wpfloat],
+    scalfac_dd3d: Field[[KDim], wpfloat],
+    divdamp_trans_start: wpfloat,
+    divdamp_trans_end: wpfloat,
     divdamp_type: int32,
     vertical_start: int32,
     vertical_end: int32,

@@ -20,6 +20,7 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
     compute_ddqz_z_full,
     compute_ddqz_z_half,
+    compute_scalfac_dd3d,
     compute_z_mc,
 )
 from icon4py.model.common.test_utils.helpers import (
@@ -120,3 +121,25 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     )
 
     assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
+
+
+@pytest.mark.datatest
+def test_compute_scalfac_dd3(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
+    scalfac_dd3d_full = zero_field(icon_grid, KDim)
+    divdamp_trans_start = 12500.0
+    divdamp_trans_end = 17500.0
+    divdamp_type = 3
+
+    compute_scalfac_dd3d.with_backend(backend=backend)(
+        vct_a=grid_savepoint.vct_a(),
+        scalfac_dd3d=scalfac_dd3d_full,
+        divdamp_trans_start=divdamp_trans_start,
+        divdamp_trans_end=divdamp_trans_end,
+        divdamp_type=divdamp_type,
+        vertical_start=int32(0),
+        vertical_end=icon_grid.num_levels,
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    assert dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
