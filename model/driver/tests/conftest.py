@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from datetime import datetime
+from pathlib import Path
 
 import pytest
 
@@ -154,3 +155,19 @@ def timeloop_date_init():
 @pytest.fixture
 def timeloop_date_exit():
     return "2021-06-20T12:00:10.000"
+
+
+def delete_recursive(p:Path):
+    for child in p.iterdir():
+        if child.is_file():
+            child.unlink()
+        else:
+            delete_recursive(child)
+    p.rmdir()
+    
+    
+@pytest.fixture
+def path(tmp_path_factory):
+    base_path = tmp_path_factory.mktemp("icon4py_test")
+    yield base_path
+    delete_recursive(base_path)

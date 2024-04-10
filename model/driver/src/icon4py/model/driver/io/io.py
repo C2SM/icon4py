@@ -12,16 +12,22 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import abc
+import logging
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
 
 import netCDF4 as nc
 import xarray as xr
 from dask.delayed import Delayed
 
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.driver.io.xgrid import IconUGridWriter
 
+
+log = logging.getLogger(__name__)
 
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
@@ -108,18 +114,22 @@ class FieldIoConfig(Config):
         pass
     
 
-@dataclass(from_dict=True)
+@dataclass
 class IoConfig(Config):
     """
     Structured and hierarchical config for IO.
     
     Holds some general configuration and a collection of configuraitions for each field group
-    """
-    base_name: str
     
-    output_end_time: str
+    """
+    base_name: str # base name for all outputfiles
+    
+    output_end_time: str #: end time for output
+    time_units = "seconds since 1970-01-01 00:00:00"
+    calendar = "proleptic_gregorian"
+    output_path:str
     field_configs: list[FieldIoConfig]
-    #TODO default time units and calendar?
+    
 
     def validate(self):
         # TODO (halungge) add validation of this configs own fields
@@ -144,12 +154,12 @@ class FieldGroupMonitor(Monitor):
         return self._time_delta
     
     
-    def __init__(self, config: FieldIoConfig, vertical:VerticalModelParams):
+    def __init__(self, config: FieldIoConfig, vertical:VerticalGridSize, horizontal:HorizontalGridSize):
         self._next_output_time = datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
-        self._field_names = config.filename_pattern
-        self._variables = config.variables
-        self._dataset = self._init_dataset(vertical)
+        self._field_names = config.variables
+        self._file_name = config.filename_pattern
+        self._init_dataset(vertical, horizontal)
         
 
     #initalise this Monitors dataset with:
@@ -157,7 +167,7 @@ class FieldGroupMonitor(Monitor):
     # - unlimited time dimension
     # - vertical dimension
     # - horizontal dimensions
-    def _init_dataset(self,vertical_grid:VerticalModelParams):
+    def _init_dataset(self,vertical_grid:VerticalGridSize, horizontal_size:HorizontalGridSize):
         """ Initialise the dataset with global attributes and dimensions.
         
         TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical coordinate once there is
@@ -178,8 +188,9 @@ class FieldGroupMonitor(Monitor):
             external_variables="",# TODO (halungge) add list of fields in ugrid file
             uuidOfHGrid="", # TODO (halungge) add uuid of the grid
         )
-        df = DatasetFactory(self.config, vertical_grid, attrs)
-        self._dataset = df.initialize_dataset()
+        # can this be an xarray dataset?
+        df = DatasetStore(self.config, vertical_grid, horizontal_size, attrs)
+        self._dataset = df
             
 
     def _update_fetch_times(self):
@@ -187,7 +198,7 @@ class FieldGroupMonitor(Monitor):
 
     
 
-    def store(self, state, model_time:datetime, **kwargs):
+    def store(self, state:dict, model_time:datetime, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
 
 
@@ -198,9 +209,9 @@ class FieldGroupMonitor(Monitor):
         # TODO (halungge) how to handle non time matches? That is if the model time jumps over the output time
         if self._at_capture_time(model_time):
             # this should do a deep copy of the data
-            self._dataset = self._dataset.merge(state)
             state_to_store = {field: state[field] for field in self._field_names}
             self._update_fetch_times()
+            self._dataset.append(state_to_store, model_time)
             # see https: // github.com / pydata / xarray / issues / 1672  # issuecomment-685222909
             
             
@@ -214,16 +225,43 @@ class FieldGroupMonitor(Monitor):
 
 
 
+
 class IoMonitor(Monitor):
     """
     Composite Monitor for all IO Groups
     """
 
-    def __init__(self, config: IoConfig, **kwargs):
+    def __init__(self, config: IoConfig, grid_file:str):
         config.validate()
         self.config = config
-        
+        self._grid_file = grid_file
         self._group_monitors = [FieldGroupMonitor(conf) for conf in config.field_configs]
+        self._initialize_output()
+        
+        
+    def _initialize_output(self):
+        self._create_output_dir()
+        self._write_ugrid()
+        
+        
+    
+    def _create_output_dir(self):
+        path= Path(self.config.output_path)
+        try: 
+            path.mkdir(parents=True, exist_ok=False)
+            self._output_path = path
+        except OSError as error:
+            log.error(f"Output directory at {path} exists: {error}.")
+            
+        
+        
+    def _write_ugrid(self):
+        writer = IconUGridWriter(self._grid_file, self._output_path)
+        writer(validate=True)
+        
+    @property    
+    def path(self):
+        return self._output_path
         
     def store(self, state, model_time:datetime, **kwargs):    
         for monitor in self._group_monitors:
@@ -246,40 +284,73 @@ class XArrayNetCDFWriter:
         self.dataset = None
         return self.dataset
     
+    def __enter__(self):
+        pass
     
-class DatasetFactory:
-    def __init__(self, file_name: str, num_lev:int, global_attrs:dict):
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
+    
+class DatasetStore:
+    def __init__(self, file_name: str, vertical:VerticalGridSize, horizontal:HorizontalGridSize ,global_attrs:dict):
         self._file_name = file_name
-        self.num_lev = num_lev
+        self._counter = 1
+        self.num_levels = vertical.num_lev
+        self.horizontal_size = horizontal
         self.attrs = global_attrs
         self.dataset = None
+ 
+    def __getitem__(self, item):
+        return self.dataset.getncattr(item)
 
-    def add_dimension(self, name: str, values: xr.DataArray, ):
-        self.dataset.createDimension('name', values.shape[0])
-        self.dataset.createVariable(values.attrs["short"] values.dtype, (name,))
+    def add_dimension(self, name: str, values: xr.DataArray ):
+        self.dataset.createDimension(name, values.shape[0])
+        dim = self.dataset.createVariable(name,  values.dtype, (name,))
+        dim.units = values.units
+        if hasattr(values.attrs,'calendar'):
+            dim.calendar = values.calendar
+            
+        dim.long_name = values.long_name
+        dim.standard_name = values.standard_name
+        
     def initialize_dataset(self):
         # TODO (magdalena) (what mode do we need here?)
-        self.dataset = nc.Dataset(self._file_name, "w", format="NETCDF4")
+        filename = generate_name(self._file_name, self._counter)
+        self.dataset = nc.Dataset(filename, "w", format="NETCDF4")
         self.dataset.setncatts(self.attrs)
         ## create dimensions all except time are fixed
         
         self.dataset.createDimension('time', None)
-        self.dataset.createDimension('height', self.vertical.num_lev) 
-        self.dataset.createDimension('mass_level', self.vertical.num_lev)
-        self.dataset.createDimension('interface_level', self.vertical.num_lev+1)
-        # create coordinate variables
+        self.dataset.createDimension('full_level', self.num_levels) 
+        self.dataset.createDimension('interface_level', self.num_levels+1)
+        self.dataset.createDimension('cell', self.horizontal_size.num_cells)
+        self.dataset.createDimension('vertex', self.horizontal_size.num_vertices)
+        self.dataset.createDimension('edge', self.horizontal_size.num_edges)
+        # create time variables
         times = self.dataset.createVariable('times', 'f8', ('time',))
         times.units = 'seconds since 1970-01-01 00:00:00'
+        times.calendar = 'proleptic_gregorian'
+        times.standard_name = 'time'
+        times.long_name = 'time'
+        # create vertical coordinates
+        
+
+    def append(self, state:dict, model_time:datetime):
+       
+        #TODO (magdalena) add time to the dataset
+        #TODO (magdalena) add data to the dataset
+        pass
+
+    @property
+    def dims(self) -> dict:
+        return self.dataset.dimensions
+    @property
+    def variables(self) -> dict:
+        return self.dataset.variables
         
         
-        # create dimensions
-        
-        # xarray : 
-        #time = DataArray([],name="time", attrs=dict(standard_name="time", long_name="time", units="seconds since 1970-01-01 00:00:00", calendar=DEFAULT_CALENDAR))
-        #height = to_data_array(vertical_grid.vct_a, attrs=dict(standard_name="height", long_name="height", units="m"))
-        #mass_levels = np.range(vertical_grid.num_levels, dtype=np.int32)
-        #half_levels = np.range(vertical_grid.num_levels+1, dtype=np.int32)
-        #interface_levels = DataArray(half_levels, attrs=dict(standard_name="model level number", long_name="model interface levels", units="1"))
-        #full_levels = DataArray(mass_levels, attrs=dict(standard_name="model_level_number", long_name="mass levels", units="1"))
-        #coord_vars = dict(time=time, mass_level=full_levels, interface_level=interface_levels, height=height) 
-        #self._dataset = Dataset(data_vars=None, coords=coord_vars, attrs=attrs)
+def generate_name(fname:str, counter:int)->str:
+    stem = fname.split(".")[0]
+    return f"{stem}_{counter}.nc"
+    
+    

@@ -12,20 +12,25 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import contextlib
+import logging
 from pathlib import Path
+from typing import Union
 
 import uxarray
 import xarray as xa
 from gt4py.next import Dimension, DimensionKind
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.driver.io.exceptions import ValidationError
 
+
+log = logging.getLogger(__name__)
 
 MESH = "mesh"
 
 
 @contextlib.contextmanager
-def load_data_file(filename: Path) -> xa.Dataset:
+def load_data_file(filename: Union[Path|str]) -> xa.Dataset:
     ds = xa.open_dataset(filename)
     try:
         yield ds
@@ -64,7 +69,7 @@ location_mapping = {
     EdgeDim:"edge",
 }
 
-def ugrid_attributes(dim:Dimension)->dict:
+def ugrid_attributes(dim:Dimension) -> dict:
     if dim.kind == DimensionKind.HORIZONTAL:
         return dict(location=location_mapping[dim], coordinates=coordinates_mapping[dim], mesh=MESH)
     else:
@@ -84,7 +89,7 @@ class IconUGridPatch:
     """
     Patch an ICON grid file with necessary information for UGRID.
 
-    TODO: remove all the unused data.
+    TODO: (magdalena) should all the unnecessary data fields be removed.
     """
 
     def __init__(self):
@@ -137,7 +142,12 @@ class IconUGridPatch:
 
     def _validate(self, ds: xa.Dataset):
         grid = uxarray.open_grid(ds)
-        assert grid.validate()
+        try: 
+            grid.validate()
+        except RuntimeError as error:
+            log.error(f"Validation of the ugrid failed with {error}>")
+            raise ValidationError("Validation of the ugrid failed") from error
+
 
     def __call__(self, ds: xa.Dataset, validate: bool = False):
         self._remap_index_lists(ds)
@@ -155,3 +165,16 @@ def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path):
     ds.to_netcdf(
         filename,
     )
+
+
+class IconUGridWriter:
+    def __init__(self, original_filename: Union[Path, str], output_path: Union[Path, str]):
+        self.original_filename = original_filename
+        self.output_path = output_path
+
+    def __call__(self, validate: bool = False):
+        patch = IconUGridPatch()
+        with load_data_file(self.original_filename) as ds:
+            patched_ds = patch(ds, validate)
+            dump_ugrid_file(patched_ds, self.original_filename, self.output_path)
+        
