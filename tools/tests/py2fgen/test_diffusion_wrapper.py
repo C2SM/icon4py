@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
+import pytest
 from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common.dimension import (
@@ -31,7 +32,7 @@ from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_ru
 
 
 # todo(samkellerhals): turn on and off using a marker/option (required ICON_GRID_LOC)
-# @pytest.mark.skip
+@pytest.mark.skip
 def test_diffusion_wrapper_py():
     # grid parameters
     num_cells = 20480
