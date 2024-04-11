@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     interpolate_to_half_levels_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, Bounds
 from icon4py.model.common.type_alias import vpfloat
 
 
@@ -30,7 +30,6 @@ def interpolate_to_half_levels_vp_numpy(
     interpolation_to_half_levels_vp = (
         wgtfac_c * interpolant + (1.0 - wgtfac_c) * interpolant_offset_1
     )
-    interpolation_to_half_levels_vp[:, 0] = 0
 
     return interpolation_to_half_levels_vp
 
@@ -50,14 +49,14 @@ class TestMoSolveNonhydroStencil05(StencilTest):
     def input_data(self, grid):
         interpolant = random_field(grid, CellDim, KDim, dtype=vpfloat)
         wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        interpolation_to_half_levels_vp = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        interpolation_to_half_levels_vp = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             wgtfac_c=wgtfac_c,
             interpolant=interpolant,
             interpolation_to_half_levels_vp=interpolation_to_half_levels_vp,
-            horizontal_start=int32(0),
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
-            vertical_end=int32(grid.num_levels),
         )
+
+    @pytest.fixture
+    def bounds(self, grid):
+        return Bounds(0, grid.num_cells, 1, grid.num_levels)

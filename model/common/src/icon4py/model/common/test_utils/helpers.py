@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from collections import namedtuple
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
@@ -160,44 +161,46 @@ def allocate_data(backend, input_data):
     }
     return input_data
 
-
-@dataclass(frozen=True)
-class Output:
-    name: str
-    refslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
-    gtslice: tuple[slice, ...] = field(default_factory=lambda: (slice(None),))
+Bounds = namedtuple("Bounds", ["horizontal_start", "horizontal_end", "vertical_start", "vertical_end"])
 
 
-def _test_validation(self, grid, backend, input_data):
+def _test_validation(self, grid, backend, input_data, bounds):
+
+    stencil_data = allocate_data(backend, input_data)
+
+    self.PROGRAM.with_backend(backend)(
+        **stencil_data,
+        horizontal_start=bounds.horizontal_start,
+        horizontal_end=bounds.horizontal_end,
+        vertical_start=bounds.vertical_start,
+        vertical_end=bounds.vertical_end,
+        offset_provider=grid.offset_providers,
+    )
+
+    reference_data = allocate_data(backend, input_data)
+
     reference_outputs = self.reference(
         grid,
         **{
             k: v.asnumpy() if isinstance(v, gt_common.Field) else np.array(v)
-            for k, v in input_data.items()
+            for k, v in reference_data.items()
         },
     )
 
-    input_data = allocate_data(backend, input_data)
-
-    self.PROGRAM.with_backend(backend)(
-        **input_data,
-        offset_provider=grid.offset_providers,
-    )
-    for out in self.OUTPUTS:
-        name, refslice, gtslice = (
-            (out.name, out.refslice, out.gtslice)
-            if isinstance(out, Output)
-            else (out, (slice(None),), (slice(None),))
-        )
+    # To imitate the action of the gt4py stencil, we slice the reference output to only apply it in the given domain.
+    # This allows us to also verify the regions of the output fields which should not be touched by the stencil.
+    for output_field_name in self.OUTPUTS:
+        subset = (slice(bounds.horizontal_start, bounds.horizontal_end), slice(bounds.vertical_start, bounds.vertical_end),)
+        reference_data[output_field_name][subset] = reference_outputs[output_field_name][subset]
 
         assert np.allclose(
-            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
-        ), f"Validation failed for '{name}'"
+            stencil_data[output_field_name].asnumpy(), reference_data[output_field_name].asnumpy(), equal_nan=True
+        ), f"Validation failed for '{output_field_name}'"
 
 
 if pytest_benchmark:
 
-    def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, benchmark):
+    def _test_execution_benchmark(self, pytestconfig, grid, backend, input_data, bounds, benchmark):
         if pytestconfig.getoption(
             "--benchmark-disable"
         ):  # skipping as otherwise program calls are duplicated in tests.
@@ -207,6 +210,10 @@ if pytest_benchmark:
             benchmark(
                 self.PROGRAM.with_backend(backend),
                 **input_data,
+                horizontal_start=bounds.horizontal_start,
+                horizontal_end=bounds.horizontal_end,
+                vertical_start=bounds.vertical_start,
+                vertical_end=bounds.vertical_end,
                 offset_provider=grid.offset_providers,
             )
 
