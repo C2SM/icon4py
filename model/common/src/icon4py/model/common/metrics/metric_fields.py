@@ -30,7 +30,7 @@ from icon4py.model.common.math.helpers import (
     difference_k_level_down,
     difference_k_level_up,
 )
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 """
@@ -268,4 +268,33 @@ def compute_rayleigh_w(
         pi_const,
         out=rayleigh_w,
         domain={KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_coeff_dwdz(
+    ddqz_z_full: Field[[CellDim, KDim], float], z_ifc: Field[[CellDim, KDim], wpfloat]
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+    coeff1_dwdz = ddqz_z_full / ddqz_z_full(Koff[-1]) / (z_ifc(Koff[-1]) - z_ifc(Koff[1]))
+    coeff2_dwdz = ddqz_z_full(Koff[-1]) / ddqz_z_full / (z_ifc(Koff[-1]) - z_ifc(Koff[1]))
+
+    return coeff1_dwdz, coeff2_dwdz
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_coeff_dwdz(
+    ddqz_z_full: Field[[CellDim, KDim], float],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
+    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_coeff_dwdz(
+        ddqz_z_full,
+        z_ifc,
+        out=(coeff1_dwdz, coeff2_dwdz),
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
