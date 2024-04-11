@@ -17,7 +17,7 @@ from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

@@ -72,7 +72,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.config import Icon4PyConfig
+from icon4py.model.common.settings import xp
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -82,11 +82,6 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 
 # flake8: noqa
 log = logging.getLogger(__name__)
-config = Icon4PyConfig()
-
-# array namespace and backend
-xp = config.array_ns
-backend = config.gt4py_runner
 
 
 class DiffusionType(int, Enum):

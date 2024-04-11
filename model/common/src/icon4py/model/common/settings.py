@@ -15,3 +15,5 @@ from icon4py.model.common.config import Icon4PyConfig
 
 config = Icon4PyConfig()
 backend = config.gt4py_runner
+xp = config.array_ns
+device = config.device

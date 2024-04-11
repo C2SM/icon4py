@@ -17,15 +17,9 @@ from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
-from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
-
-
-# Choose array backend
-config = Icon4PyConfig()
-xp = config.array_ns
-backend = config.gt4py_runner
+from icon4py.model.common.settings import backend, xp
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
@@ -191,7 +185,7 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-    heights = xp.asarray(physical_heights.ndarray)
+    heights = physical_heights.ndarray
     buffer = xp.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0

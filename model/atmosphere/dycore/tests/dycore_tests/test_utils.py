@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
 
 

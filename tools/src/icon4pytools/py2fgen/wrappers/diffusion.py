@@ -34,7 +34,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.config import Device, Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -53,11 +52,13 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 
 
 logger = setup_logger(__name__)
@@ -113,20 +114,17 @@ def diffusion_init(
     dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
 ):
-    # configuration
-    config = Icon4PyConfig()
-    device = config.device
     logger.info(f"Using Device = {device}")
 
     # ICON grid
-    if device == Device.GPU:
+    if device.name == "GPU":
         on_gpu = True
     else:
         on_gpu = False
 
     icon_grid = _load_from_gridfile(
-        file_path=config.icon_grid_loc,
-        filename=config.grid_filename,
+        file_path=get_icon_grid_loc(),
+        filename=get_grid_filename(),
         num_levels=num_levels,
         on_gpu=on_gpu,
     )
