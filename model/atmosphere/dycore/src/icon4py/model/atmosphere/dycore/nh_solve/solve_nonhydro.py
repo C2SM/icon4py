@@ -926,6 +926,13 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        """
+        z_exner_ex_pr (0:nlev):
+            Compute the temporal extrapolation of perturbed exner function at full levels (cell center) using the time backward scheme (page 74 in icon tutorial 2023) for horizontal momentum equations.
+            Note that it has nlev+1 levels. This last level is underground and set to zero.
+        exner_pr (0:nlev-1):
+            Store perturbed exner function at full levels of current time step.
+        """
         self.stencil_predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
@@ -941,6 +948,15 @@ class SolveNonhydro:
             offset_provider={},
         )
 
+        """
+        z_exner_ic (1 or flat_lev:nlev):
+            Linearly interpolate the temporal extrapolation of perturbed exner function computed in previous stencil to half levels.
+            The ground level is based on quadratic interpolation (with hydrostatic assumption?).
+            WARNING: Its value at the model top level is not updated and assumed to be zero. It should be treated in the same way as the ground level.
+        z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
+            Vertical derivative of the temporal extrapolation of exner function at full levels is also computed (first order scheme).
+        flat_lev is the height (inclusive) above which the grid is not affected by terrain following.
+        """
         if self.config.igradp_method == 3:
             self.stencil_predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
@@ -962,6 +978,21 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
+        """
+        rho_ic & theta_v_ic (1:nlev-1):
+            Compute rho and theta_v at half levels. rho and theta_v at model top boundary and ground are not updated.
+        z_rth_pr_1 (0:nlev-1):
+            Compute perturbed rho at full levels (cell center).
+        z_rth_pr_2 (0:nlev-1):
+            Compute perturbed theta_v at full levels (cell center).
+        z_theta_v_pr_ic (1:nlev-1):
+            Compute the perturbed theta_v from z_rth_pr_2 at half levels.
+        z_th_ddz_exner_c (1:nlev-1):
+            theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz (see eq. 3.19 in icon tutorial 2023) at half levels is also computed. Its value at the model top is not updated. No ground value.
+            dpi_0/dz is d_exner_dz_ref_ic.
+            eta_impl = 0.5 + vwind_offctr
+            eta_expl = 1.0 - eta_impl
+        """
         self.stencil_predictor_stencils_7_8_9(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -987,6 +1018,13 @@ class SolveNonhydro:
             offset_provider=self.offset_provider_koff,
         )
 
+        """
+        z_theta_v_pr_ic (0, nlev):
+            Perturbed theta_v at half level at the model top is set to zero.
+            Perturbed theta_v at half level at the ground level is computed by quadratic interpolation (hydrostatic assumption?) in the same way as z_exner_ic.
+        theta_v_ic (nlev):
+            theta_v at half level at the ground level is computed by adding theta_ref_ic to z_theta_v_pr_ic.
+        """
         # Perturbation theta at top and surface levels
         self.stencil_predictor_stencils_11_lower_upper(
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
@@ -1003,6 +1041,16 @@ class SolveNonhydro:
             offset_provider=self.offset_provider_koff,
         )
 
+        """
+        z_dexner_dz_c_2 (flat_gradp:nlev-1):
+            Compute second vertical derivative of perturbed exner function at full levels (cell centers) from flat_gradp to the bottom-most level.
+            This second vertical derivative is approximated by hydrostatic approximation (see eqs. 13 and 7 in Günther et al. 2012).
+            d2pi'/dz2 = - dtheta_v'/dz /theta_v_0 dpi_0/dz - theta_v' d/dz( 1/theta_v_0 dpi_0/dz ), dpi_0/dz = -g /cpd / theta_v_0
+            z_dexner_dz_c_2 = 1/2 d2pi'/dz2
+            1/theta_v_0 dpi_0/dz is precomputed as d2dexdz2_fac1_mc.
+            d/dz( 1/theta_v_0 dpi_0/dz ) is precomputed as d2dexdz2_fac2_mc. It makes use of eq. 15 in Günther et al. 2012 for refernce state of temperature when computing dtheta_v_0/dz
+        flat_gradp is the maximum height index at which the height of the center of an edge lies within two neighboring cells.
+        """
         if self.config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
             self.stencil_compute_approx_of_2nd_vertical_derivative_of_exner(
@@ -1018,9 +1066,14 @@ class SolveNonhydro:
                 offset_provider=self.offset_provider_koff,
             )
 
+        """
+        z_rth_pr_1 (0:nlev-1):
+            Compute perturbed rho at full levels (cell center).
+        z_rth_pr_2 (0:nlev-1):
+            Compute perturbed theta_v at full levels (cell center).
+        """
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
-
         self.stencil_compute_pertubation_of_rho_and_theta(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -1058,6 +1111,16 @@ class SolveNonhydro:
                 offset_provider=self.offset_provider_v2c,
             )
         elif self.config.iadv_rhotheta == 2:
+            """
+            z_grad_rth_1 (0:nlev-1):
+                Compute x derivative of perturbed rho at full levels (cell center) using the Green theorem.
+            z_grad_rth_2 (0:nlev-1):
+                Compute y derivative of perturbed rho at full levels (cell center) using the Green theorem.
+            z_grad_rth_3 (0:nlev-1):
+                Compute x derivative of perturbed theta_v at full levels (cell center) using the Green theorem.
+            z_grad_rth_4 (0:nlev-1):
+                Compute y derivative of perturbed theta_v at full levels (cell center) using the Green theorem.
+            """
             # Compute Green-Gauss gradients for rho and theta
             self.stencil_mo_math_gradients_grad_green_gauss_cell_dsl(
                 p_grad_1_u=self.z_grad_rth_1,
@@ -1120,10 +1183,21 @@ class SolveNonhydro:
                 )
 
             if self.config.iadv_rhotheta == 2:
+                """
+                This long stencil computes rho and theta_v on edges.
+                Miura (2007) scheme is adopted. pos_on_tplane_e is the location of neighboring cell centers on (vn, vt) coordinates (normal points inwards and tangent points right-handed).
+                primal_normal_cell and dual_normal_cell are the component of the (vn, vt) vector at location of neighboring cells on (lat, lon) coordinates. vn = vn_lat <lat> + vn_lon <lon>, vt = vt_lat <lat> + vt_lon <lon>
+                The distance between back-trajectory point and the nearest cell center is computed first (d_n, d_t) = -(cell_center_n + vn dt/2, cell_center_t + vt dt/2) = d_n vn + d_t vt.
+                It is then transformed to (lat, lon) coordinates = (d_lat, d_lon) = (d_y, d_x) by d_n*vn_lat + d_t*vt_lat, d_n*vn_lon + d_t*vt_lon.
+                Then, the value at edges is simply p_at_edge = p_at_cell_center + dp/dx d_x + dp/dy d_y
+                z_rho_e:
+                    rho at edges.
+                z_theta_v_e:
+                    theta_v at edges.
+                """
                 # Compute upwind-biased values for rho and theta starting from centered differences
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
                 # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
-
                 self.stencil_compute_horizontal_advection_of_rho_and_theta(
                     p_vn=prognostic_state[nnow].vn,
                     p_vt=diagnostic_state_nh.vt,
@@ -1151,6 +1225,10 @@ class SolveNonhydro:
                     offset_provider=self.offset_provider_e2c_e2ec,
                 )
 
+        """
+        z_gradh_exner (0:flat_lev-1):
+            Compute the horizontal gradient of temporal extrapolation of perturbed exner function at full levels (cell center) by simple first order scheme at altitudes witout terrain following effect.
+        """
         # Remaining computations at edge points
         self.stencil_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
             inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
@@ -1164,9 +1242,12 @@ class SolveNonhydro:
         )
 
         if self.config.igradp_method == 3:
+            """
+            z_gradh_exner (flat_lev:flat_gradp):
+                Compute the horizontal gradient of temporal extrapolation of perturbed exner function at full levels (cell center) by simple first order scheme.
+            """
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
-
             self.stencil_compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
