@@ -214,7 +214,7 @@ grid = SimpleGrid()
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.DEBUG,
+logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
