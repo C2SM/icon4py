@@ -192,14 +192,14 @@ def model_initialization_gauss3d(
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e_numpy.shape[1], axis=1)
 
     # Define test case parameters
-    p_sfc         = 100000.0 # From JABW test case, don't know how this is computed for Gauss3D yet
-    mount_lon     = 0.0    # (0.0) # At present the mountain is at position lat=0,lon=0 (given in meters)
-    mount_lat     = 0.0    # (0.0)
-    mount_height  = 100.0  # (100)
-    mount_width   = 1000.0 # (1000)
-    nh_u0         = 9.0    # (0.0)
-    nh_t0         = 300.0  # (300.0)
-    nh_brunt_vais = 0.01   # (0.01)
+    # The topography can only be read from serialized data for now
+    # mount_lon     = 0.0    # (0.0) # At present the mountain is at position lat=0,lon=0 (given in meters)
+    # mount_lat     = 0.0    # (0.0)
+    # mount_height  = 100.0  # (100)
+    # mount_width   = 1000.0 # (1000)
+    nh_u0         = 4.0   # (almost_default = 0.0,   const_velocity = 4.0)
+    nh_t0         = 0.0   # (almost_default = 300.0, const_velocity = 0.0)
+    nh_brunt_vais = 0.0   # (almost_default = 0.01,  const_velocity = 0.0)
 
     log.warning("WARNING: topography is ignored for now.")
 
@@ -233,13 +233,6 @@ def model_initialization_gauss3d(
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    # why is this done again in fortran if rho is computed in the hydro adjustment?
-    ## # exner and theta_v are given, so rho is deduced...
-    ## p_nh_state(jg)%prog(jt)%rho(jc,jk,jb) = &
-    ## &        (p_nh_state(jg)%prog(jt)%exner(jc,jk,jb)**cvd_o_rd)*p0ref/rd &
-    ## &       /p_nh_state(jg)%prog(jt)%theta_v(jc,jk,jb)
-
-
     u = np.where(mask, nh_u0, 0.0)
     vn_numpy = u * primal_normal_x
     log.info("Wind 'computation' completed.")
@@ -259,8 +252,9 @@ def model_initialization_gauss3d(
     rho_next = as_field((CellDim, KDim), rho_numpy)
     theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
 
-    # set surface pressure to the prescribed value
-    pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
+    # set surface pressure to the prescribed value (only used for IC in JABW
+    # test case, then actually computed in the dycore)
+    pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=P0REF, dtype=float))
 
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
