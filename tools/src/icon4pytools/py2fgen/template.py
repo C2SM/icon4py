@@ -83,9 +83,11 @@ class PythonWrapper(CffiPlugin):
     cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
     int_to_bool: str = inspect.getsource(int_array_to_bool_array)
     gt4py_backend: str = datamodels.field(init=False)
+    is_gt4py_program_present: bool = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
+        self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -192,38 +194,38 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 class PythonWrapperGenerator(TemplatedGenerator):
     PythonWrapper = as_jinja(
         """\
-# necessary imports
+# imports for generated wrapper code
+import logging
 from {{ plugin_name }} import ffi
 import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
-from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next import as_field
+
+{% if _this_node.is_gt4py_program_present %}
+# necessary imports when embedding a gt4py program directly
 from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
 from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
+# We need a grid to pass offset providers to the embedded gt4py program (granules load their own grid at runtime)
+grid = SimpleGrid()
+{% endif %}
+
+# logger setup
+log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.DEBUG,
+                    format=log_format,
+                    datefmt='%Y-%m-%d %H:%M:%S')
+{% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
 # embedded module imports
 {% for stmt in imports -%}
 {{ stmt }}
 {% endfor %}
 
-import logging
-
-log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-
-logging.basicConfig(level=logging.DEBUG,
-                    format=log_format,
-                    datefmt='%Y-%m-%d %H:%M:%S')
-
-{% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
-
-# We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
-grid = SimpleGrid()
-
-{% for func in _this_node.functions %}
+# embedded function imports
+{% for func in _this_node.functions -%}
 from {{ module_name }} import {{ func.name }}
 {% endfor %}
 

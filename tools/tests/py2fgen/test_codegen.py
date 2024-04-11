@@ -240,35 +240,26 @@ end module
 def test_python_wrapper(dummy_plugin):
     interface = generate_python_wrapper(dummy_plugin, "GPU", False)
     expected = '''
-# necessary imports
+# imports for generated wrapper code
+import logging
 from libtest_plugin import ffi
 import numpy as np
 import cupy as cp
 from numpy.typing import NDArray
-from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import np_as_located_field
-from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
-from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
-from icon4py.model.common.grid.simple import SimpleGrid
+
+# logger setup
+log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
+logging.basicConfig(level=logging.DEBUG,
+                    format=log_format,
+                    datefmt='%Y-%m-%d %H:%M:%S')
+logging.info(cp.show_config())
 
 # embedded module imports
 import foo_module_x
 import bar_module_y
 
-import logging
-
-log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-
-logging.basicConfig(level=logging.DEBUG,
-                    format=log_format,
-                    datefmt='%Y-%m-%d %H:%M:%S')
-
-logging.info(cp.show_config())
-
-# We need a grid to pass offset providers (in case of granules their own grid is used, using the ICON_GRID_LOC variable)
-grid = SimpleGrid()
-
+# embedded function imports
 from libtest import foo
 from libtest import bar
 
