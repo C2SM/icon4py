@@ -16,13 +16,16 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
     compute_ddqz_z_full,
     compute_ddqz_z_half,
+    compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_z_mc,
 )
+from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     dallclose,
@@ -123,13 +126,13 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
 
 
-@pytest.mark.datatest
-def test_compute_scalfac_dd3(icon_grid, metrics_savepoint, grid_savepoint, backend):
+def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
     scalfac_dd3d_full = zero_field(icon_grid, KDim)
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
+    kstart_dd3d_ref = 1.0
 
     compute_scalfac_dd3d.with_backend(backend=backend)(
         vct_a=grid_savepoint.vct_a(),
@@ -142,4 +145,36 @@ def test_compute_scalfac_dd3(icon_grid, metrics_savepoint, grid_savepoint, backe
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
+    kstart_dd3d_full = compute_kstart_dd3d(
+        scalfac_dd3d=scalfac_dd3d_full.asnumpy(),
+    )
+
     assert dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
+    assert dallclose(kstart_dd3d_ref, kstart_dd3d_full)
+
+
+def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    import math
+
+    rayleigh_w_ref = metrics_savepoint.rayleigh_w()
+    vct_a_1 = as_field((), grid_savepoint.vct_a().asnumpy()[0])
+    rayleigh_w_full = zero_field(icon_grid, KDim, extend={KDim: 1})
+    rayleigh_type: int = 2
+    rayleigh_coeff = 5.0
+    damping_height = 12500.0
+    compute_rayleigh_w(
+        rayleigh_w=rayleigh_w_full,
+        vct_a=grid_savepoint.vct_a(),
+        vct_a_1=vct_a_1,
+        damping_height=damping_height,
+        rayleigh_type=int32(rayleigh_type),
+        rayleigh_classic=int32(constants.RAYLEIGH_CLASSIC),
+        rayleigh_klemp=int32(constants.RAYLEIGH_KLEMP),
+        rayleigh_coeff=rayleigh_coeff,
+        pi_const=math.pi,
+        vertical_start=int32(0),
+        vertical_end=grid_savepoint.nrdmax().item() + 1,
+        offset_provider={},
+    )
+
+    assert dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())

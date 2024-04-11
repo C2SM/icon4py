@@ -11,7 +11,18 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, GridType, broadcast, field_operator, int32, program, where
+from gt4py.next import (
+    Field,
+    GridType,
+    broadcast,
+    field_operator,
+    int32,
+    maximum,
+    program,
+    sin,
+    tanh,
+    where,
+)
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.math.helpers import (
@@ -202,5 +213,59 @@ def compute_scalfac_dd3d(
         divdamp_trans_end,
         divdamp_type,
         out=scalfac_dd3d,
+        domain={KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_rayleigh_w(
+    vct_a: Field[[KDim], wpfloat],
+    vct_a_1: Field[[], wpfloat],
+    damping_height: wpfloat,
+    rayleigh_type: int32,
+    rayleigh_classic: int32,
+    rayleigh_klemp: int32,
+    rayleigh_coeff: wpfloat,
+    pi_const: wpfloat,
+) -> Field[[KDim], wpfloat]:
+    rayleigh_w = broadcast(0.0, (KDim,))
+    z_sin_diff = maximum(0.0, vct_a - damping_height)
+    z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
+    if rayleigh_type == rayleigh_classic:
+        rayleigh_w = (
+            rayleigh_coeff
+            * sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height)) ** 2
+        )
+    elif rayleigh_type == rayleigh_klemp:
+        rayleigh_w = rayleigh_coeff * (
+            1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
+        )
+    return rayleigh_w
+
+
+@program
+def compute_rayleigh_w(
+    rayleigh_w: Field[[KDim], wpfloat],
+    vct_a: Field[[KDim], wpfloat],
+    vct_a_1: Field[[], wpfloat],
+    damping_height: wpfloat,
+    rayleigh_type: int32,
+    rayleigh_classic: int32,
+    rayleigh_klemp: int32,
+    rayleigh_coeff: wpfloat,
+    pi_const: wpfloat,
+    vertical_start: int32,  # 1, nrdmax(jg)
+    vertical_end: int32,
+):
+    _compute_rayleigh_w(
+        vct_a,
+        vct_a_1,
+        damping_height,
+        rayleigh_type,
+        rayleigh_classic,
+        rayleigh_klemp,
+        rayleigh_coeff,
+        pi_const,
+        out=rayleigh_w,
         domain={KDim: (vertical_start, vertical_end)},
     )

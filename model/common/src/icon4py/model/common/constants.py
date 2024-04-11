@@ -69,3 +69,6 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 #: Klemp (2008) type Rayleigh damping
 # TODO (magdalena) not a constant, move somewhere else, convert to enum
 RAYLEIGH_KLEMP: Final[int] = 2
+RAYLEIGH_CLASSIC: Final[
+    int
+] = 1  # classical Rayleigh damping, which makes use of a reference state.
