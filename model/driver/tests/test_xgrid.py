@@ -10,10 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from pathlib import Path
-
+import numpy as np
 import pytest
+from xarray import Dataset
 
 from icon4py.model.common.test_utils.datatest_utils import (
     GRIDS_PATH,
@@ -22,6 +21,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, REGIONAL_GRIDFILE
 from icon4py.model.driver.io.xgrid import (
+    FILL_VALUE,
     IconUGridPatch,
     dump_ugrid_file,
     extract_horizontal_coordinates,
@@ -52,17 +52,43 @@ def test_convert_to_ugrid(file):
   
         
 @pytest.mark.parametrize("file", grid_files())
-def test_dump_ugrid_file(file, tmpdir):
+def test_dump_ugrid_file(file, path):
     with load_data_file(file) as ds:
         patch = IconUGridPatch()
         uxds = patch(ds)
-        output_dir = Path(tmpdir).joinpath("output")
-        #output_dir = Path(__file__).parent.joinpath("output")
+        output_dir = path.joinpath("output")
         output_dir.mkdir(0o755, exist_ok=True)
         dump_ugrid_file(uxds, file, output_path=output_dir)
-        assert tmpdir.compare(file.stem +'_ugrid.nc', path='output/')
+        fname = output_dir.iterdir().__next__().name
+        assert fname == file.stem +'_ugrid.nc'
         
-        
+@pytest.mark.parametrize("file", grid_files()) 
+def test_iconugrid_patch_index_transformation(file):
+    with load_data_file(file) as ds:
+        patch = IconUGridPatch()
+        uxds = patch(ds)
+        for name in patch.index_lists:
+            assert_start_index(uxds, name)
+            assert uxds[name].dtype == "int32"
+            assert uxds[name].attrs["_FillValue"] == FILL_VALUE
+
+
+@pytest.mark.parametrize("file", grid_files())
+def test_icon_ugrid_patch_unified_shapes(file):
+    with load_data_file(file) as ds:
+        patch = IconUGridPatch()
+        uxds = patch(ds)
+        uxds.dims
+        horizontal_dims = filter(lambda x: x in ("cell", "vertex", "edge"), uxds.dims.items())
+        for name in patch.index_lists:
+            assert uxds[name].shape[0] > uxds[name].shape[1]
+            assert uxds[name].shape[0] in horizontal_dims
+
+def assert_start_index(uxds:Dataset, name:str):
+    assert uxds[name].attrs["start_index"] == 0
+    assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
+
+
 @pytest.mark.parametrize("file", grid_files())
 def test_extract_horizontal_coordinates(file):
     with load_data_file(file) as ds:
@@ -71,8 +97,8 @@ def test_extract_horizontal_coordinates(file):
         # TODO (halungge) fix data  
         #  - 'long_name', 'standard_name' of attributes fx cell center latitudes
         # - 'units' convert to degrees_north, degrees_east.. 
-        # - get the bounds
-       for k in ("cell", "edge", "vertex"):
+        # -  get the bounds
+        for k in ("cell", "edge", "vertex"):
             assert k in coords
             assert coords[k][0].shape[0] == dims[k]
             

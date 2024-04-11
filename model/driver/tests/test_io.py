@@ -131,7 +131,7 @@ def test_io_monitor_write_ugrid_file(path):
     monitor = IoMonitor(config, grid_file=grid_file)
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
-    assert is_valid(ugrid_file)
+    assert is_valid_uxgrid(ugrid_file)
 
 @pytest.mark.fail   
 @pytest.mark.datatest

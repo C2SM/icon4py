@@ -24,6 +24,8 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.driver.io.exceptions import ValidationError
 
 
+FILL_VALUE = -1
+
 log = logging.getLogger(__name__)
 
 MESH = "mesh"
@@ -78,6 +80,7 @@ def extract_bounds(ds: xa.Dataset):
     """
     Extract the bounds from the ICON grid file.
     TODO (@halungge) does it  work for decomposed grids?
+    TODO (@halungge) these are not present in the mch grid file 
     """
     return dict(
         cell=(ds["clat_vertices"], ds["clon_vertices"]),
@@ -108,9 +111,13 @@ class IconUGridPatch:
             "end_idx_e",
             "start_idx_v",
             "end_idx_v",
-            "edge_index",  # TODO (magdalena) do not exist on local grid?
-            "vertex_index",
-            "cell_index",
+            # TODO do not exist on local grid.nc of mch_ch_r04b09_dsl?
+            #"edge_index",  
+            #"vertex_index",
+            #"cell_index",
+            # only for nested grids, ignored for now
+            # "child_cell_index",
+            # "child_edge_index",
         )
 
     def _add_mesh_var(self, ds: xa.Dataset):
@@ -134,12 +141,34 @@ class IconUGridPatch:
             ),
         )
 
-    def _remap_index_lists(self, ds: xa.Dataset):
+
+
+    def _remap_index_lists(self, ds: xa.Dataset, with_zero_start_index:bool = False):
         for var in self.index_lists:
             if var in ds:
-                ds[var].attrs["start_index"] = 1
-                ds[var].attrs["_FillValue"] = -1
-
+                if with_zero_start_index:
+                    # work around for uxarray not supporting [start_index] = 1 properly
+                    ds[var].data = xa.where(ds[var].data > 0, ds[var].data - 1, FILL_VALUE)
+                    ds[var].attrs["start_index"] = 0
+                else:
+                    ds[var].attrs["start_index"] = 1
+                ds[var].attrs["_FillValue"] = FILL_VALUE
+    
+    def _unify_shapes(self, ds: xa.Dataset):
+        """ Unify the dimension order of fields in ICON grid file.
+        
+        The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension) and others the other way around. We transpose them to have all the same ordering.
+        """
+        for name in self.index_lists:
+            shp = ds[name].shape
+            if len(shp) == 2 and (shp[0] < shp[1]):
+                ds[name] = xa.DataArray(
+                    data=ds[name].data.T,
+                    dims=ds[name].dims[::-1],
+                    coords=ds[name].coords,
+                    attrs=ds[name].attrs,
+                )
+        
     def _validate(self, ds: xa.Dataset):
         grid = uxarray.open_grid(ds)
         try: 
@@ -150,20 +179,21 @@ class IconUGridPatch:
 
 
     def __call__(self, ds: xa.Dataset, validate: bool = False):
-        self._remap_index_lists(ds)
+        self._remap_index_lists(ds, with_zero_start_index=True)
+        self._unify_shapes(ds)
         self._add_mesh_var(ds)
         if validate:
             self._validate(ds)
         return ds
 
 
-# TODO (magdalena) encapsulate this thing somehow together witht the opening of the file
+# TODO (magdalena) encapsulate this thing somehow together with the opening of the file
 # like this it could be called on an unpatched dataset
 def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path):
     stem = original_filename.stem
     filename = output_path.joinpath(stem + "_ugrid.nc")
     ds.to_netcdf(
-        filename,
+        filename, format="NETCDF4", engine="netcdf4"
     )
 
 
