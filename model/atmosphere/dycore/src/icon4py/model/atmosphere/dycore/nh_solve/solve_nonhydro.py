@@ -1183,9 +1183,9 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            init_two_edge_kdim_fields_with_zero_wp(
-                edge_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
-                edge_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
+            init_two_cell_kdim_fields_with_zero_wp(
+                cell_kdim_field_with_zero_wp_1=prognostic_state[nnew].w,
+                cell_kdim_field_with_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=0,
