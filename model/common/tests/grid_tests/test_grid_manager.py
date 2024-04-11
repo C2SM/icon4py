@@ -496,6 +496,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
         grid_savepoint.c2e2c()[0 : grid.num_cells, :],
     )
 
+
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
@@ -511,7 +512,6 @@ def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
         grid.get_offset_provider("C2E2CO").table,
         serialized_grid.get_offset_provider("C2E2CO").table,
     )
-
 
 
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
