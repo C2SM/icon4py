@@ -197,11 +197,11 @@ def model_initialization_gauss3d(
     # mount_lat     = 0.0    # (0.0)
     # mount_height  = 100.0  # (100)
     # mount_width   = 1000.0 # (1000)
-    nh_u0         = 0.0   # (almost_default = 0.0,   const_velocity = 4.0)
+    nh_u0         = 4.0   # (almost_default = 0.0,   const_velocity = 4.0)
     nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
-    nh_brunt_vais = 0.01  # (almost_default = 0.01,  const_velocity = 0.0)
+    nh_brunt_vais = 0.0   # (almost_default = 0.01,  const_velocity = 0.0)
 
-    log.warning("WARNING: topography is ignored for now.")
+    log.warning("WARNING: topography can only be read from serialized data for now.")
 
     # A given Brunt Vaisala frequency and a given zonal wind.
     for k_index in range(num_levels - 1, -1, -1):
