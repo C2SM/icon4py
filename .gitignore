@@ -128,3 +128,4 @@ venv.bak/
 *ser_data*
 data_output_*.nc
 dummy_dycore_driver_*.log
+icon-exclaim-data
