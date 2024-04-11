@@ -149,7 +149,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
         output_config = IconOutputConfig(
             output_time_interval=timedelta(seconds=4),
-            output_file_time_interval=timedelta(seconds=4),
+            output_file_time_interval=timedelta(seconds=60),
             output_path=Path("./gauss3d_output/"),
         )
         diffusion_config = _default_diffusion_config()
