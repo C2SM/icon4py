@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 

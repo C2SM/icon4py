@@ -24,7 +24,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 )
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy

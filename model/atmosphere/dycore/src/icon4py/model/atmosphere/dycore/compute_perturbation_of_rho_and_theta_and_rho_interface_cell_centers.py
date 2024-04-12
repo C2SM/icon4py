@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta impor
     _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import CellDim, KDim, Koff
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
