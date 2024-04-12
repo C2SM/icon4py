@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_l
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

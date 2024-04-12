@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
     _set_cell_kdim_field_to_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 

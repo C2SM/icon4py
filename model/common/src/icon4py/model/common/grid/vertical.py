@@ -19,6 +19,7 @@ from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
@@ -49,7 +50,7 @@ class VerticalModelParams:
     nflat_gradp: Final[int32] = None
 
     def __post_init__(self):
-        vct_a_array = self.vct_a.asnumpy()
+        vct_a_array = self.vct_a.ndarray
         object.__setattr__(
             self,
             "index_of_damping_layer",
@@ -79,7 +80,7 @@ class VerticalModelParams:
     ) -> int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return int32(np.min(np.where(interface_height < top_moist_threshold)))
+        return int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
     def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
@@ -87,7 +88,7 @@ class VerticalModelParams:
         return (
             int32(0)
             if damping_height > vct_a[0]
-            else int32(np.argmax(np.where(vct_a >= damping_height)))
+            else int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
         )
 
     @property

@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
 )
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import _interpolate_vt_to_ie
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

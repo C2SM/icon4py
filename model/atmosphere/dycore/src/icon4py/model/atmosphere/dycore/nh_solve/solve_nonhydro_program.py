@@ -82,7 +82,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 
 
 # TODO: abishekg7 move this to tests

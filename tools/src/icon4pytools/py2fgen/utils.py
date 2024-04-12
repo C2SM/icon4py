@@ -10,31 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
-from enum import Enum
+import importlib
+import os
+from pathlib import Path
 
 from gt4py.next.common import Dimension
 from gt4py.next.type_system.type_specifications import FieldType, ScalarKind, ScalarType, TypeSpec
-
-
-def build_array_size_args() -> dict[str, str]:
-    array_size_args = {}
-    from icon4py.model.common import dimension
-
-    for var_name, var in vars(dimension).items():
-        if isinstance(var, Dimension):
-            dim_name = var_name.replace(
-                "Dim", ""
-            )  # Assumes we keep suffixing each Dimension with Dim
-            size_name = f"n_{dim_name}"
-            array_size_args[dim_name] = size_name
-    return array_size_args
-
-
-class Backend(Enum):
-    CPU = "run_gtfn"
-    GPU = "run_gtfn_gpu"
-    ROUNDTRIP = "run_roundtrip"
 
 
 def parse_type_spec(type_spec: TypeSpec) -> tuple[list[Dimension], ScalarKind]:
@@ -48,3 +29,34 @@ def parse_type_spec(type_spec: TypeSpec) -> tuple[list[Dimension], ScalarKind]:
 
 def flatten_and_get_unique_elts(list_of_lists: list[list[str]]) -> list[str]:
     return sorted(set(item for sublist in list_of_lists for item in sublist))
+
+
+def get_local_test_grid():
+    test_folder = "testdata"
+    module_spec = importlib.util.find_spec("icon4pytools")
+
+    if module_spec and module_spec.origin:
+        # following namespace package conventions the root is three levels down
+        repo_root = Path(module_spec.origin).parents[3]
+        return os.path.join(repo_root, test_folder)
+    else:
+        raise FileNotFoundError(
+            "The `icon4pytools` package could not be found. Ensure the package is installed "
+            "and accessible. Alternatively, set the 'ICON_GRID_LOC' environment variable "
+            "explicitly to specify the location."
+        )
+
+
+def get_icon_grid_loc():
+    env_path = os.environ.get("ICON_GRID_LOC")
+    if env_path is not None:
+        return env_path
+    else:
+        return get_local_test_grid()
+
+
+def get_grid_filename():
+    env_path = os.environ.get("ICON_GRID_NAME")
+    if env_path is not None:
+        return env_path
+    return "grid.nc"
