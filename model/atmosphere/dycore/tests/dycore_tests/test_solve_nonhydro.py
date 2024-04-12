@@ -39,7 +39,7 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,

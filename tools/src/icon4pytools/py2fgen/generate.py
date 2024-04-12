@@ -20,6 +20,7 @@ from icon4pytools.icon4pygen.bindings.utils import format_fortran_code
 from icon4pytools.py2fgen.template import (
     CffiPlugin,
     CHeaderGenerator,
+    F90Interface,
     F90InterfaceGenerator,
     PythonWrapper,
     PythonWrapperGenerator,
@@ -44,15 +45,13 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(
-    plugin: CffiPlugin, gt4py_backend: Optional[str], debug_mode: bool
-) -> str:
+def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mode: bool) -> str:
     """
     Generate Python wrapper code.
 
     Args:
         plugin: The CffiPlugin instance containing information for code generation.
-        gt4py_backend: Optional gt4py backend specification.
+        backend: Optional gt4py backend specification.
         debug_mode: Flag indicating if debug mode is enabled.
 
     Returns:
@@ -62,9 +61,9 @@ def generate_python_wrapper(
     python_wrapper = PythonWrapper(
         module_name=plugin.module_name,
         plugin_name=plugin.plugin_name,
-        function=plugin.function,
+        functions=plugin.functions,
         imports=plugin.imports,
-        gt4py_backend=gt4py_backend,
+        backend=backend,
         debug_mode=debug_mode,
     )
 
@@ -80,5 +79,5 @@ def generate_f90_interface(plugin: CffiPlugin) -> str:
         plugin: The CffiPlugin instance containing information for code generation.
     """
     logger.info("Generating Fortran interface...")
-    generated_code = F90InterfaceGenerator.apply(plugin)
+    generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
     return format_fortran_code(generated_code)

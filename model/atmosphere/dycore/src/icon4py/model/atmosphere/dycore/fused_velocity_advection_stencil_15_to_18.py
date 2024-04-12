@@ -27,7 +27,7 @@ from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocit
     _interpolate_contravatiant_vertical_verlocity_to_full_levels,
 )
 from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Tuple
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
@@ -20,13 +19,13 @@ from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend, xp
 
 
 # TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
 def zero_field(grid, *dims: Dimension, dtype=float):
     shapex = tuple(map(lambda x: grid.size[x], dims))
-    return as_field(dims, np.zeros(shapex, dtype=dtype))
+    return as_field(dims, xp.zeros(shapex, dtype=dtype))
 
 
 @field_operator
@@ -186,8 +185,8 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-    heights = physical_heights.asnumpy()
-    buffer = np.zeros(k_size)
+    heights = physical_heights.ndarray
+    buffer = xp.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
         / 12.0
