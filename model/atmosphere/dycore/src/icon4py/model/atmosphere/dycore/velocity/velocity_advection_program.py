@@ -42,7 +42,7 @@ from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
     _set_cell_kdim_field_to_zero_vp,
 )
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 
 
 @field_operator

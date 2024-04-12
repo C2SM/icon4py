@@ -18,7 +18,7 @@ from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionPar
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy

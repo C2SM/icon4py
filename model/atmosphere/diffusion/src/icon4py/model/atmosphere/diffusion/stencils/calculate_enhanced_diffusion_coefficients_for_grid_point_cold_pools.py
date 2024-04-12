@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_
     _temporary_field_for_grid_point_cold_pools_enhancement,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
