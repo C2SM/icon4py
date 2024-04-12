@@ -21,10 +21,11 @@ import xarray as xa
 from gt4py.next import Dimension, DimensionKind
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.grid.grid_manager import GridFile
 from icon4py.model.driver.io.exceptions import ValidationError
 
 
-FILL_VALUE = -1
+FILL_VALUE = GridFile.INVALID_INDEX
 
 log = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class IconUGridPatch:
                     ds[var].attrs["start_index"] = 1
                 ds[var].attrs["_FillValue"] = FILL_VALUE
     
-    def _unify_shapes(self, ds: xa.Dataset):
+    def _transpose_index_lists(self, ds: xa.Dataset):
         """ Unify the dimension order of fields in ICON grid file.
         
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension) and others the other way around. We transpose them to have all the same ordering.
@@ -180,7 +181,7 @@ class IconUGridPatch:
 
     def __call__(self, ds: xa.Dataset, validate: bool = False):
         self._remap_index_lists(ds, with_zero_start_index=True)
-        self._unify_shapes(ds)
+        self._transpose_index_lists(ds)
         self._add_mesh_var(ds)
         if validate:
             self._validate(ds)

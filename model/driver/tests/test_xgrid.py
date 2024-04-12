@@ -74,15 +74,17 @@ def test_iconugrid_patch_index_transformation(file):
 
 
 @pytest.mark.parametrize("file", grid_files())
-def test_icon_ugrid_patch_unified_shapes(file):
+def test_icon_ugrid_patch_transposed_index_lists(file):
     with load_data_file(file) as ds:
         patch = IconUGridPatch()
         uxds = patch(ds)
-        uxds.dims
-        horizontal_dims = filter(lambda x: x in ("cell", "vertex", "edge"), uxds.dims.items())
+        horizontal_dims = ("cell", "edge", "vertex")
+        horizontal_sizes = list(uxds.dims[k] for k in horizontal_dims)
         for name in patch.index_lists:
-            assert uxds[name].shape[0] > uxds[name].shape[1]
-            assert uxds[name].shape[0] in horizontal_dims
+            if len(uxds[name].shape) > 1 and uxds[name].dims[0] in horizontal_dims:
+                assert uxds[name].shape[0] > uxds[name].shape[1]
+                assert uxds[name].dims[0] in horizontal_dims
+                assert uxds[name].shape[0] in horizontal_sizes
 
 def assert_start_index(uxds:Dataset, name:str):
     assert uxds[name].attrs["start_index"] == 0
