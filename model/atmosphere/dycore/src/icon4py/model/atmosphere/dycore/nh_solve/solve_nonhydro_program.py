@@ -20,9 +20,6 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
 )
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
-    _init_cell_kdim_field_with_zero_wp,
-)
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
@@ -63,6 +60,9 @@ from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure impor
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
     _init_cell_kdim_field_with_zero_vp,
 )
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
@@ -76,7 +76,10 @@ from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_cont
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _init_zero_c_k, _init_zero_e_k
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    _broadcast_zero_to_three_edge_kdim_fields_wp,
+    _init_zero_c_k,
+)
 from icon4py.model.atmosphere.dycore.update_density_exner_wind import _update_density_exner_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim

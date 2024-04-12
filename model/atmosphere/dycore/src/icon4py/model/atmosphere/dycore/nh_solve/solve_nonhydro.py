@@ -139,8 +139,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate_indices,
     _calculate_divdamp_fields,
     compute_z_raylfac,
-    init_zero_c_k,
-    init_zero_e_k,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
