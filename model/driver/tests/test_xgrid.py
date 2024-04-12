@@ -63,14 +63,13 @@ def test_dump_ugrid_file(file, path):
         assert fname == file.stem +'_ugrid.nc'
         
 @pytest.mark.parametrize("file", grid_files()) 
-def test_iconugrid_patch_index_transformation(file):
+def test_icon_ugrid_patch_index_transformation(file):
     with load_data_file(file) as ds:
         patch = IconUGridPatch()
         uxds = patch(ds)
         for name in patch.index_lists:
             assert_start_index(uxds, name)
             assert uxds[name].dtype == "int32"
-            assert uxds[name].attrs["_FillValue"] == FILL_VALUE
 
 
 @pytest.mark.parametrize("file", grid_files())
@@ -80,11 +79,22 @@ def test_icon_ugrid_patch_transposed_index_lists(file):
         uxds = patch(ds)
         horizontal_dims = ("cell", "edge", "vertex")
         horizontal_sizes = list(uxds.dims[k] for k in horizontal_dims)
-        for name in patch.index_lists:
-            if len(uxds[name].shape) > 1 and uxds[name].dims[0] in horizontal_dims:
-                assert uxds[name].shape[0] > uxds[name].shape[1]
-                assert uxds[name].dims[0] in horizontal_dims
-                assert uxds[name].shape[0] in horizontal_sizes
+        for name in patch.connectivities:
+            assert len(uxds[name].shape) == 2
+            assert uxds[name].shape[0] > uxds[name].shape[1]
+            assert uxds[name].dims[0] in horizontal_dims
+            assert uxds[name].shape[0] in horizontal_sizes
+
+
+@pytest.mark.parametrize("file", grid_files())
+def test_icon_ugrid_patch_fill_value(file):
+    with load_data_file(file) as ds:
+        patch = IconUGridPatch()
+        uxds = patch(ds)
+        patch._set_fill_value(uxds)
+        for name in patch.connectivities:
+            assert uxds[name].attrs["_FillValue"] == FILL_VALUE
+        
 
 def assert_start_index(uxds:Dataset, name:str):
     assert uxds[name].attrs["start_index"] == 0

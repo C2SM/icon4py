@@ -96,8 +96,8 @@ class IconUGridPatch:
     TODO: (magdalena) should all the unnecessary data fields be removed.
     """
 
-    def __init__(self):
-        self.index_lists = (
+    def __init__(self):        
+        self.connectivities = (
             "edge_of_cell",  # E2C connectivity
             "vertex_of_cell",  # V2C connectivity
             "adjacent_cell_of_edge",  # C2E connectivity
@@ -106,20 +106,25 @@ class IconUGridPatch:
             "edges_of_vertex",  # E2V connectivity
             "vertices_of_vertex",  # V2E2V connectivity
             "neighbor_cell_index",  # C2E2C connectivity
+
+        )
+        self.domain_bounds = (
             "start_idx_c",  # start and end indices for refin_ctl_levels
             "end_idx_c",
             "start_idx_e",
             "end_idx_e",
             "start_idx_v",
             "end_idx_v",
-            # TODO do not exist on local grid.nc of mch_ch_r04b09_dsl?
-            #"edge_index",  
-            #"vertex_index",
-            #"cell_index",
-            # only for nested grids, ignored for now
-            # "child_cell_index",
-            # "child_edge_index",
         )
+        self.index_lists = self.connectivities + self.domain_bounds
+        # do not exist on local grid.nc of mch_ch_r04b09_dsl what do they contain?
+        # "edge_index",  
+        # "vertex_index",
+        # "cell_index",
+        # only for nested grids, ignored for now
+        # "child_cell_index",
+        # "child_edge_index",
+        
 
     def _add_mesh_var(self, ds: xa.Dataset):
         ds["mesh"] = xa.DataArray(
@@ -144,7 +149,7 @@ class IconUGridPatch:
 
 
 
-    def _remap_index_lists(self, ds: xa.Dataset, with_zero_start_index:bool = False):
+    def _patch_start_index(self, ds: xa.Dataset, with_zero_start_index:bool = False):
         for var in self.index_lists:
             if var in ds:
                 if with_zero_start_index:
@@ -153,14 +158,17 @@ class IconUGridPatch:
                     ds[var].attrs["start_index"] = 0
                 else:
                     ds[var].attrs["start_index"] = 1
-                ds[var].attrs["_FillValue"] = FILL_VALUE
+    def _set_fill_value(self, ds: xa.Dataset):
+        for var in self.connectivities:
+            if var in ds:
+                ds[var].attrs["_FillValue"] = FILL_VALUE            
     
     def _transpose_index_lists(self, ds: xa.Dataset):
         """ Unify the dimension order of fields in ICON grid file.
         
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension) and others the other way around. We transpose them to have all the same ordering.
         """
-        for name in self.index_lists:
+        for name in self.connectivities:
             shp = ds[name].shape
             if len(shp) == 2 and (shp[0] < shp[1]):
                 ds[name] = xa.DataArray(
@@ -180,7 +188,8 @@ class IconUGridPatch:
 
 
     def __call__(self, ds: xa.Dataset, validate: bool = False):
-        self._remap_index_lists(ds, with_zero_start_index=True)
+        self._patch_start_index(ds, with_zero_start_index=True)
+        self._set_fill_value(ds)
         self._transpose_index_lists(ds)
         self._add_mesh_var(ds)
         if validate:
