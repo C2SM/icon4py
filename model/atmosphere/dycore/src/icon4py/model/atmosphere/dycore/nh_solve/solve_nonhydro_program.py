@@ -103,7 +103,7 @@ def init_test_fields(
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
     _init_cell_kdim_field_with_zero_wp(
-        field_with_zero_wp=z_dwdz_dd,
+        out=z_dwdz_dd,
         domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
 
