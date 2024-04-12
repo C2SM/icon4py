@@ -22,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
     maximum,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.model_backend import backend
 from icon4py.model.common.type_alias import wpfloat
 
@@ -56,60 +56,6 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
 @program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
-
-
-@field_operator
-def _init_zero_v_k() -> Field[[VertexDim, KDim], float]:
-    return broadcast(0.0, (VertexDim, KDim))
-
-
-@program
-def init_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _init_zero_v_k(out=field)
-
-
-@field_operator
-def _init_zero_e_k() -> Field[[EdgeDim, KDim], float]:
-    return broadcast(0.0, (EdgeDim, KDim))
-
-
-@program
-def init_zero_e_k(
-    field: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _init_zero_e_k(
-        out=field,
-        domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@field_operator
-def _init_zero_c_k() -> Field[[CellDim, KDim], float]:
-    return broadcast(0.0, (CellDim, KDim))
-
-
-@program
-def init_zero_c_k(
-    field: Field[[CellDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _init_zero_c_k(
-        out=field,
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
 
 
 @field_operator
