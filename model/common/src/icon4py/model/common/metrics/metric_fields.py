@@ -194,7 +194,7 @@ def compute_scalfac_dd3d(
     vertical_end: int32,
 ):
     """
-    Compute scalfac_dd3d.
+    Compute scaling factor for 3D divergence damping terms.
 
     See mo_vertical_grid.f90
 
