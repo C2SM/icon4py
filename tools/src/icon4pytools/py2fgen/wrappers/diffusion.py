@@ -162,7 +162,6 @@ def diffusion_init(
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
-        hdiff_w_efdt_ratio=hdiff_efdt_ratio,
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
