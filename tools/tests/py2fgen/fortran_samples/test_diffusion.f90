@@ -125,6 +125,7 @@ program diffusion_simulation
    real(c_double), parameter :: hdiff_efdt_ratio = 24.0
    real(c_double), parameter :: smagorinski_scaling_factor = 0.025
    logical(c_int), parameter :: hdiff_temp = .true.
+   logical(c_int), parameter :: linit = .true.
 
    ! Declaring arrays for diffusion_init and diffusion_run
    real(c_double), dimension(:), allocatable :: vct_a
@@ -298,7 +299,7 @@ program diffusion_simulation
    end if
 
    ! Call diffusion_run
-   call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, rc)
+   call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit, rc)
 
    print *, "Python exit code = ", rc
    if (rc /= 0) then

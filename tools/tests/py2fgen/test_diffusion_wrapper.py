@@ -14,7 +14,6 @@
 import pytest
 from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
-from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -27,16 +26,12 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.settings import xp
 
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 
-# Choose array backend
-config = Icon4PyConfig()
-xp = config.array_ns
-
-
-# todo(samkellerhals): turn on and off using a marker/option
+# todo(samkellerhals): turn on and off using a marker/option (required ICON_GRID_LOC)
 @pytest.mark.skip
 def test_diffusion_wrapper_py():
     # grid parameters
@@ -220,4 +215,5 @@ def test_diffusion_wrapper_py():
         dwdx=dwdx,
         dwdy=dwdy,
         dtime=dtime,
+        linit=False,
     )

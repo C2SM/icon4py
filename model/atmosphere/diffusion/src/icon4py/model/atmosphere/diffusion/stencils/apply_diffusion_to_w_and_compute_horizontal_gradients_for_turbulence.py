@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

@@ -18,7 +18,6 @@ from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CECDim,
@@ -29,12 +28,6 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-
-
-config = Icon4PyConfig()
-
-# Choose array backend
-xp = config.array_ns
 
 
 @dataclass(frozen=True)
@@ -96,11 +89,11 @@ class DiffusionInterpolationState:
 
     @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
-        return as_field((CellDim,), data=xp.asarray(self.geofac_n2s.ndarray[:, 0]))
+        return as_field((CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
-        geofac_nbh_ar = xp.asarray(self.geofac_n2s.ndarray[:, 1:])
+        geofac_nbh_ar = self.geofac_n2s.ndarray[:, 1:]
         old_shape = geofac_nbh_ar.shape
         return as_field(
             (CECDim,),

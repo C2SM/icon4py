@@ -19,15 +19,11 @@ import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.config import Icon4PyConfig
 from icon4py.model.common.dimension import KDim
+from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
-config = Icon4PyConfig()
-
-# Choose array backend
-xp = config.array_ns
 
 # Choose array backend
 if os.environ.get("GT4PY_GPU"):
@@ -65,7 +61,7 @@ class VerticalModelParams:
     nflat_gradp: Final[int32] = None
 
     def __post_init__(self):
-        vct_a_array = xp.asarray(self.vct_a.asnumpy())
+        vct_a_array = self.vct_a.ndarray
         object.__setattr__(
             self,
             "index_of_damping_layer",

@@ -13,11 +13,9 @@
 
 # Assuming this code is in a module called icon4py_config.py
 import dataclasses
-import importlib
 import os
 from enum import Enum
 from functools import cached_property
-from pathlib import Path
 
 import numpy as np
 from gt4py.next.program_processors.runners.gtfn import (
@@ -38,42 +36,11 @@ class GT4PyBackend(Enum):
     ROUNDTRIP = "run_roundtrip"
 
 
-def get_local_test_grid():
-    test_folder = "testdata"
-    module_spec = importlib.util.find_spec("icon4pytools")
-
-    if module_spec and module_spec.origin:
-        # following namespace package conventions the root is three levels down
-        repo_root = Path(module_spec.origin).parents[3]
-        return os.path.join(repo_root, test_folder)
-    else:
-        raise FileNotFoundError(
-            "The `icon4pytools` package could not be found. Ensure the package is installed "
-            "and accessible. Alternatively, set the 'ICON_GRID_LOC' environment variable "
-            "explicitly to specify the location."
-        )
-
-
 @dataclasses.dataclass
 class Icon4PyConfig:
     @cached_property
     def icon4py_backend(self):
         return os.environ.get("ICON4PY_BACKEND", "CPU")
-
-    @cached_property
-    def icon_grid_loc(self):
-        env_path = os.environ.get("ICON_GRID_LOC")
-        if env_path is not None:
-            return env_path
-        else:
-            return get_local_test_grid()
-
-    @cached_property
-    def grid_filename(self):
-        env_path = os.environ.get("ICON_GRID_NAME")
-        if env_path is not None:
-            return env_path
-        return "grid.nc"
 
     @cached_property
     def array_ns(self):
@@ -100,4 +67,5 @@ class Icon4PyConfig:
             GT4PyBackend.GPU.name: Device.GPU,
             GT4PyBackend.ROUNDTRIP.name: Device.CPU,
         }
-        return device_map[self.icon4py_backend]
+        device = device_map[self.icon4py_backend]
+        return device

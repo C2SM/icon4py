@@ -11,7 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-import time
+
+"""
+Wrapper module for diffusion granule.
+
+Module contains a diffusion_init and diffusion_run function that follow the architecture of
+Fortran granule interfaces:
+- all arguments needed from external sources are passed.
+- passing of scalar types or fields of simple types
+"""
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
@@ -26,7 +34,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.config import Device, Icon4PyConfig
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -50,13 +57,19 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
+from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+
+
+logger = setup_logger(__name__)
 
 # global diffusion object
-DIFFUSION: Diffusion = Diffusion()
+diffusion_granule: Diffusion = Diffusion()
 
 
 def diffusion_init(
@@ -106,18 +119,17 @@ def diffusion_init(
     dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
 ):
-    # configuration
-    config = Icon4PyConfig()
+    logger.info(f"Using Device = {device}")
 
     # ICON grid
-    if config.device == Device.GPU:
+    if device.name == "GPU":
         on_gpu = True
     else:
         on_gpu = False
 
     icon_grid = _load_from_gridfile(
-        file_path=config.icon_grid_loc,
-        filename=config.grid_filename,
+        file_path=get_icon_grid_loc(),
+        filename=get_grid_filename(),
         num_levels=num_levels,
         on_gpu=on_gpu,
     )
@@ -155,11 +167,11 @@ def diffusion_init(
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
+        n_substeps=ndyn_substeps,
         thslp_zdiffu=0.02,
         thhgtd_zdiffu=125.0,
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
-        n_substeps=ndyn_substeps,
         shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
@@ -196,13 +208,7 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
-
-    # initialisation
-    print("Initialising diffusion...")
-
-    start_time = time.time()
-
-    DIFFUSION.init(
+    diffusion_granule.init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
@@ -212,11 +218,6 @@ def diffusion_init(
         edge_params=edge_params,
         cell_params=cell_params,
     )
-
-    end_time = time.time()
-
-    print("Done running initialising diffusion.")
-    print(f"Diffusion initialisation time: {end_time - start_time:.2f} seconds")
 
 
 def diffusion_run(
@@ -250,16 +251,19 @@ def diffusion_run(
 
     print("Running diffusion...")
 
-    start_time = time.time()
+
 
     if linit:
         print("Diffusion initial_run")
-        DIFFUSION.initial_run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
+        diffusion_granule.initial_run(
+            diagnostic_state,
+            prognostic_state,
+            dtime,
+        )
     else:
         print("Diffusion regular run")
-        DIFFUSION.run(prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime)
-
-    end_time = time.time()
+        diffusion_granule.run(
+            prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
+        )
 
     print("Done running diffusion.")
-    print(f"Diffusion run time: {end_time - start_time:.2f} seconds")

@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
 import subprocess
 from pathlib import Path
 
@@ -175,9 +174,7 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
 
 
 # todo: enable on CI
-@pytest.mark.skip(
-    "Requires GPU and setting the NVFORTRAN_COMPILER & ICON_GRID_LOC environment variables."
-)
+@pytest.mark.skip("Requires setting various environment variables.")
 @pytest.mark.parametrize(
     "function_name, plugin_name, test_name, backend, extra_flags",
     [
@@ -203,17 +200,14 @@ def test_py2fgen_compilation_and_execution_gpu(
         backend,
         samples_path,
         test_name,
-        os.environ[
-            "NVFORTRAN_COMPILER"
-        ],  # Ensure NVFORTRAN_COMPILER is set in your environment variables
+        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # Ensure NVFORTRAN_COMPILER is set in your environment variables
         extra_flags,
     )
 
 
 # todo: enable on CI
-@pytest.mark.skip(
-    "Requires GPU and setting the NVFORTRAN_COMPILER & ICON_GRID_LOC environment variables."
-)
+# Need to compile using nvfortran, and set CUDACXX path to nvcc cuda compiler. Also need to set ICON_GRID_LOC for path to gridfile, and ICON4PY_BACKEND to determine device at runtime.
+@pytest.mark.skip("Requires setting various environment variables.")
 @pytest.mark.parametrize(
     "backend, extra_flags",
     [("GPU", ("-acc", "-Minfo=acc"))],
@@ -230,6 +224,6 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(
         backend,
         samples_path,
         "test_diffusion",
-        os.environ["NVFORTRAN_COMPILER"],  # todo: set nvfortran location in base.yml file.
+        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # todo: set nvfortran location in base.yml file.
         extra_flags,
     )
