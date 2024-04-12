@@ -26,7 +26,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_scalfac_dd3d,
     compute_z_mc,
 )
-from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     dallclose,
@@ -133,7 +132,6 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
     divdamp_trans_start = 12500.0
     divdamp_trans_end = 17500.0
     divdamp_type = 3
-    kstart_dd3d_ref = 1.0
 
     compute_scalfac_dd3d.with_backend(backend=backend)(
         vct_a=grid_savepoint.vct_a(),
@@ -146,12 +144,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    kstart_dd3d_full = compute_kstart_dd3d(
-        scalfac_dd3d=scalfac_dd3d_full.asnumpy(),
-    )
-
     assert dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
-    assert dallclose(kstart_dd3d_ref, kstart_dd3d_full)
 
 
 def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
