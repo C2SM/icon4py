@@ -20,6 +20,9 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
 )
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
+)
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
@@ -93,20 +96,12 @@ def init_test_fields(
     indices_cells_2: int32,
     nlev: int32,
 ):
-    _init_zero_e_k(
-        out=z_rho_e,
+    _broadcast_zero_to_three_edge_kdim_fields_wp(
+        out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-    _init_zero_e_k(
-        out=z_theta_v_e,
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
-    )
-    _init_zero_e_k(
-        out=z_graddiv_vn,
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
-    )
-    _init_zero_c_k(
-        out=z_dwdz_dd,
+    _init_cell_kdim_field_with_zero_wp(
+        field_with_zero_wp=z_dwdz_dd,
         domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
 
