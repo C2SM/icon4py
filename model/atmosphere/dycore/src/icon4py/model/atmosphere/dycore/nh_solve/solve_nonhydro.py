@@ -261,7 +261,6 @@ class NonHydrostaticConfig:
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
         htop_moist_proc: float = 22500.0,
-        ltestcase: bool = False,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -315,7 +314,6 @@ class NonHydrostaticConfig:
         #: from mo_run_nml.f90
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
-        self.ltestcase = ltestcase  # TODO (magdalena) handle differently
 
         #: from mo_initicon_nml.f90/ mo_initicon_config.f90
         #: whether IAU is active at current time

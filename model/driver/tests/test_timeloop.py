@@ -190,7 +190,7 @@ def test_run_timeloop_single_step(
     )
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert iconrun_config.dtime == diffusion_dtime
+    assert iconrun_config.dtime.total_seconds() == diffusion_dtime
 
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = InterpolationState(

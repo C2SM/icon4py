@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from icon4py.model.atmosphere.diffusion.diffusion import (
     DiffusionConfig,
@@ -95,7 +95,6 @@ def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
         rayleigh_coeff=0.1,
         divdamp_order=24,
         ndyn_substeps_var=ndyn_substeps,
-        ltestcase=True,
     )
 
 
@@ -120,23 +119,9 @@ def mch_ch_r04b09_dsl_iconrun_config(
     from the default.
     """
     return IconRunConfig(
-        dtime=10.0,
-        start_date=datetime(
-            int(date_init[0:4]),
-            int(date_init[5:7]),
-            int(date_init[8:10]),
-            int(date_init[11:13]),
-            int(date_init[14:16]),
-            int(date_init[17:19]),
-        ),
-        end_date=datetime(
-            int(date_exit[0:4]),
-            int(date_exit[5:7]),
-            int(date_exit[8:10]),
-            int(date_exit[11:13]),
-            int(date_exit[14:16]),
-            int(date_exit[17:19]),
-        ),
+        dtime=timedelta(seconds=10.0),
+        start_date=datetime.fromisoformat(date_init),
+        end_date=datetime.fromisoformat(date_exit),
         damping_height=damping_height,
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=True,
@@ -152,29 +137,15 @@ def exclaim_ape_iconrun_config(
     ndyn_substeps: int,
 ) -> IconRunConfig:
     """
-    Create IconRunConfig matching MCH_CH_r04b09_dsl.
+    Create IconRunConfig matching exclaim_ape_R02B04.
 
-    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    Set values to the ones used in the exclaim_ape_R02B04 experiment where they differ
     from the default.
     """
     return IconRunConfig(
-        dtime=2.0,
-        start_date=datetime(
-            int(date_init[0:4]),
-            int(date_init[5:7]),
-            int(date_init[8:10]),
-            int(date_init[11:13]),
-            int(date_init[14:16]),
-            int(date_init[17:19]),
-        ),
-        end_date=datetime(
-            int(date_exit[0:4]),
-            int(date_exit[5:7]),
-            int(date_exit[8:10]),
-            int(date_exit[11:13]),
-            int(date_exit[14:16]),
-            int(date_exit[17:19]),
-        ),
+        dtime=timedelta(seconds=2.0),
+        start_date=datetime.fromisoformat(date_init),
+        end_date=datetime.fromisoformat(date_exit),
         damping_height=damping_height,
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=False,

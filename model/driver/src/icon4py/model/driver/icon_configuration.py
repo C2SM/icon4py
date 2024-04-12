@@ -13,7 +13,6 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from pathlib import Path
 from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
@@ -27,7 +26,7 @@ n_substeps_reduced = 2
 
 @dataclass(frozen=True)
 class IconRunConfig:
-    dtime: float = 600.0  # length of a time step [s]
+    dtime: timedelta = timedelta(seconds=600.0)  # length of a time step
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
 
@@ -47,17 +46,9 @@ class IconRunConfig:
     restart_mode: bool = False
 
 
-@dataclass(frozen=True)
-class IconOutputConfig:
-    output_time_interval: timedelta = timedelta(minutes=1)
-    output_file_time_interval: timedelta = timedelta(minutes=1)
-    output_path: Path = Path("./")
-
-
 @dataclass
 class IconConfig:
     run_config: IconRunConfig
-    output_config: IconOutputConfig
     diffusion_config: DiffusionConfig
     solve_nonhydro_config: NonHydrostaticConfig
 
@@ -65,9 +56,6 @@ class IconConfig:
 def read_config(experiment: Optional[str]) -> IconConfig:
     def _default_run_config():
         return IconRunConfig()
-
-    def _default_output_config():
-        return IconOutputConfig()
 
     def mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
@@ -91,7 +79,6 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _default_config():
         return (
             _default_run_config(),
-            _default_output_config(),
             _default_diffusion_config(),
             NonHydrostaticConfig(),
         )
@@ -99,17 +86,12 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _mch_ch_r04b09_config():
         return (
             IconRunConfig(
-                dtime=10.0,
+                dtime=timedelta(seconds=10.0),
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
                 damping_height=12500.0,
                 n_substeps=2,
                 apply_initial_stabilization=True,
-            ),
-            IconOutputConfig(
-                output_time_interval=timedelta(seconds=10),
-                output_file_time_interval=timedelta(seconds=10),
-                output_path=Path("./"),
             ),
             mch_ch_r04b09_diffusion_config(),
             NonHydrostaticConfig(),
@@ -118,7 +100,6 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     if experiment == "mch_ch_r04b09_dsl":
         (
             model_run_config,
-            model_output_config,
             diffusion_config,
             nonhydro_config,
         ) = _mch_ch_r04b09_config()
@@ -126,13 +107,11 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         log.warning("Experiment name is not specified, default configuration is used.")
         (
             model_run_config,
-            model_output_config,
             diffusion_config,
             nonhydro_config,
         ) = _default_config()
     return IconConfig(
         run_config=model_run_config,
-        output_config=model_output_config,
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
     )
