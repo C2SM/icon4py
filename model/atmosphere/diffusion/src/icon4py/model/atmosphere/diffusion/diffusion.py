@@ -70,7 +70,7 @@ from icon4py.model.common.constants import (
     dbl_eps,
 )
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, C2E2CODim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -654,8 +654,8 @@ class Diffusion:
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
-        log.debug("rbf_coeff_1 max: %s min: %s",np.max(self.interpolation_state.rbf_coeff_1.ndarray[vertex_start_lb_plus1:vertex_end_local,:]),np.min(self.interpolation_state.rbf_coeff_1.ndarray[vertex_start_lb_plus1:vertex_end_local,:]))
-        log.debug("rbf_coeff_2 max: %s min: %s",np.max(self.interpolation_state.rbf_coeff_2.ndarray[vertex_start_lb_plus1:vertex_end_local,:]),np.min(self.interpolation_state.rbf_coeff_2.ndarray[vertex_start_lb_plus1:vertex_end_local,:]))
+        #log.debug("rbf_coeff_1 max: %s min: %s",np.max(self.interpolation_state.rbf_coeff_1.ndarray[vertex_start_lb_plus1:vertex_end_local,:]),np.min(self.interpolation_state.rbf_coeff_1.ndarray[vertex_start_lb_plus1:vertex_end_local,:]))
+        #log.debug("rbf_coeff_2 max: %s min: %s",np.max(self.interpolation_state.rbf_coeff_2.ndarray[vertex_start_lb_plus1:vertex_end_local,:]),np.min(self.interpolation_state.rbf_coeff_2.ndarray[vertex_start_lb_plus1:vertex_end_local,:]))
         mo_intp_rbf_rbf_vec_interpol_vertex(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
@@ -669,8 +669,8 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
-        log.debug("u_vert max: %s min: %s",np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
-        log.debug("v_vert max: %s min: %s",np.max(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
+        #log.debug("u_vert max: %s min: %s",np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
+        #log.debug("v_vert max: %s min: %s",np.max(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
@@ -702,8 +702,8 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-        log.debug("kh_smag_e max: %s min: %s",np.max(self.kh_smag_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]),np.min(self.kh_smag_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]))
-        log.debug("z_nabla2_e max: %s min: %s",np.max(self.z_nabla2_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]),np.min(self.z_nabla2_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]))
+        #log.debug("kh_smag_e max: %s min: %s",np.max(self.kh_smag_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]),np.min(self.kh_smag_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]))
+        #log.debug("z_nabla2_e max: %s min: %s",np.max(self.z_nabla2_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]),np.min(self.z_nabla2_e.ndarray[edge_start_lb_plus4:edge_end_local_minus2,0:klevels]))
         if (
             self.config.shear_type
             >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
@@ -729,8 +729,8 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
             )
-            log.debug("div_ic max: %s min: %s",np.max(diagnostic_state.div_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]),np.min(diagnostic_state.div_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]))
-            log.debug("hdef_ic max: %s min: %s",np.max(diagnostic_state.hdef_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]),np.min(diagnostic_state.hdef_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]))
+            #log.debug("div_ic max: %s min: %s",np.max(diagnostic_state.div_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]),np.min(diagnostic_state.div_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]))
+            #log.debug("hdef_ic max: %s min: %s",np.max(diagnostic_state.hdef_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]),np.min(diagnostic_state.hdef_ic.ndarray[cell_start_nudging:cell_end_local,1:klevels]))
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
         # TODO (magdalena) move this up and do asynchronous exchange
@@ -753,31 +753,19 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
-        log.debug("u_vert max: %s min: %s",np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
-        log.debug("v_vert max: %s min: %s",np.max(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
+        #log.debug("u_vert max: %s min: %s",np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
+        #log.debug("v_vert max: %s min: %s",np.max(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]),np.min(self.v_vert.ndarray[vertex_start_lb_plus1:vertex_end_local,0:klevels]))
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
-        calculate_nabla4(
-            u_vert=self.u_vert,
-            v_vert=self.v_vert,
-            primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
-            primal_normal_vert_v2=self.edge_params.primal_normal_vert[1],
-            z_nabla2_e=self.z_nabla2_e,
-            inv_vert_vert_length=self.edge_params.inverse_vertex_vertex_lengths,
-            inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
-            z_nabla4_e2 =  self.z_nabla4_e2,
-            horizontal_start = edge_start_lb_plus4,
-            horizontal_end = edge_end_local,
-            vertical_start = 0,
-            vertical_end = klevels,
-            offset_provider=self.offset_provider_e2c2v_e2ecv,
-        )
 
-        log.debug("z_nabla4_e2 max: %s min: %s",np.max(self.z_nabla4_e2.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]),np.min(self.z_nabla4_e2.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]))
+        log.debug("self.nudgezone_diff: %s",self.nudgezone_diff)
+        #log.debug("nudgecoeff_e max: %s min: %s",np.max(self.interpolation_state.nudgecoeff_e.ndarray[0:klevels]),np.min(self.interpolation_state.nudgecoeff_e.ndarray[0:klevels]))
+        #log.debug("area_edge max: %s min: %s",np.max(self.edge_params.edge_areas.ndarray[edge_start_lb_plus4:edge_end_local]),np.min(self.edge_params.edge_areas.ndarray[edge_start_lb_plus4:edge_end_local]))
+
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
         apply_diffusion_to_vn(
@@ -805,15 +793,27 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
-        log.debug("vn max: %s min: %s",np.max(prognostic_state.vn.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]),np.min(prognostic_state.vn.ndarray[edge_start_lb_plus4:edge_end_local,0:klevels]))
+        #log.debug("vn max: %s min: %s",np.max(prognostic_state.vn.ndarray[edge_start_nudging:edge_end_local,0:klevels]),np.min(prognostic_state.vn.ndarray[edge_start_nudging:edge_end_local,0:klevels]))
+        #log.debug("vn lb max: %s min: %s",np.max(prognostic_state.vn.ndarray[2539:5388,0:klevels]),np.min(prognostic_state.vn.ndarray[2539:5388,0:klevels]))
         log.debug("communication of prognistic.vn : start")
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
+        #log.debug("pre w max: %s min: %s",np.max(prognostic_state.w.ndarray[3317:20896,0:klevels]),np.min(prognostic_state.w.ndarray[3317:20896,0:klevels]))
+        #log.debug("geofac_n2s max: %s min: %s",np.max(self.interpolation_state.geofac_n2s.ndarray[3317:20896,:]),np.min(self.interpolation_state.geofac_n2s.ndarray[3317:20896,:]))
+        #log.debug("geofac_grg_x max: %s min: %s",np.max(self.interpolation_state.geofac_grg_x.ndarray[3317:20896,:]),np.min(self.interpolation_state.geofac_grg_x.ndarray[3317:20896,:]))
+        #log.debug("pre w max: %s",prognostic_state.w.ndarray[[3316,3326,2615,3317],[1,1,1,1]])
+        #log.debug("geofac_grg_x: %s",self.interpolation_state.geofac_grg_x.ndarray[3316,0:4])
+        #log.debug("geofac_grg_y: %s",self.interpolation_state.geofac_grg_y.ndarray[3316,0:4])
+        #log.debug("geofac_grg_x: %s",self.interpolation_state.geofac_grg_x.ndarray[3317:3337,0])
+        #log.debug("geofac_grg_y: %s",self.interpolation_state.geofac_grg_y.ndarray[3317:3337,1])
+        #log.debug("grid C2E2CODim: %s",self.grid.connectivities[C2E2CODim][3316,0:4])
+        #log.debug("geofac_grg_y max: %s min: %s",np.max(self.interpolation_state.geofac_grg_y.ndarray[3317:20896,:]),np.min(self.interpolation_state.geofac_grg_y.ndarray[3317:20896,:]))
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -842,6 +842,13 @@ class Diffusion:
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
         )
+        #log.debug("dwdx: %s",diagnostic_state.dwdx.ndarray[3316:3337,1])
+        #log.debug("dwdy: %s",diagnostic_state.dwdy.ndarray[3316:3337,1])
+        log.debug("cell_start_interior :%s  cell_end_local: %s",cell_start_interior,cell_end_local)
+        log.debug("self._horizontal_start_index_w_diffusion :%s  cell_end_halo: %s",self._horizontal_start_index_w_diffusion,cell_end_halo)
+        #log.debug("dwdx: %s min: %s",np.max(diagnostic_state.dwdx.ndarray[3317:20897,0:klevels]),np.min(diagnostic_state.dwdx.ndarray[3317:20897,0:klevels]))
+        #log.debug("dwdy: %s min: %s",np.max(diagnostic_state.dwdy.ndarray[3317:20897,0:klevels]),np.min(diagnostic_state.dwdy.ndarray[3317:20897,0:klevels]))
+        #log.debug("w max: %s min: %s",np.max(prognostic_state.w.ndarray[self._horizontal_start_index_w_diffusion:cell_end_halo,0:klevels]),np.min(prognostic_state.w.ndarray[self._horizontal_start_index_w_diffusion:cell_end_halo,0:klevels]))
 
         log.debug(
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
@@ -858,6 +865,7 @@ class Diffusion:
             vertical_end=klevels,
             offset_provider=self.grid.offset_providers,
         )
+        #log.debug("kh_smag_e max: %s min: %s",np.max(self.kh_smag_e.ndarray[edge_start_nudging:edge_end_halo,klevels - 2:klevels]),np.min(self.kh_smag_e.ndarray[edge_start_nudging:edge_end_halo,klevels - 2:klevels]))
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
@@ -875,6 +883,7 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
+        #log.debug("z_temp max: %s min: %s",np.max(self.z_temp.ndarray[cell_start_nudging:cell_end_local,0:klevels]),np.min(self.z_temp.ndarray[cell_start_nudging:cell_end_local,0:klevels]))
         log.debug(
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
@@ -912,5 +921,7 @@ class Diffusion:
             offset_provider={},
         )
         log.debug("running stencil 16 (update_theta_and_exner): end")
+        #log.debug("theta_v max: %s min: %s",np.max(prognostic_state.theta_v.ndarray[cell_start_nudging:cell_end_local,0:klevels]),np.min(prognostic_state.theta_v.ndarray[cell_start_nudging:cell_end_local,0:klevels]))
+        #log.debug("exner max: %s min: %s",np.max(prognostic_state.exner.ndarray[cell_start_nudging:cell_end_local,0:klevels]),np.min(prognostic_state.exner.ndarray[cell_start_nudging:cell_end_local,0:klevels]))
         handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
         log.debug("communication of prognogistic.vn - end")

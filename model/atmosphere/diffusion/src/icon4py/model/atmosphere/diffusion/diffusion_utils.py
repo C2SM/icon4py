@@ -192,7 +192,7 @@ def init_nabla2_factor_in_upper_damping_zone(
         physcial_heights: vector of physical heights [m] of the height levels
     """
     # TODO(Magdalena): fix with as_offset in gt4py
-    heights = physical_heights.asnumpy()
+    heights = physical_heights.ndarray
     buffer = xp.zeros(k_size)
     buffer[1 : nrdmax + 1] = (
         1.0
