@@ -18,9 +18,7 @@ import sys
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
-#from numpy import max, min
-#from gt4py.next.ffront.fbuiltins import maximum, minimum
-import numpy as np
+
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32

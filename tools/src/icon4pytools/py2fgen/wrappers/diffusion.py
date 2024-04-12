@@ -40,8 +40,6 @@ from icon4py.model.common.dimension import (
     C2EDim,
     CECDim,
     CEDim,
-    CECDim,
-    C2EDim,
     CellDim,
     E2C2VDim,
     E2CDim,
@@ -134,7 +132,6 @@ def diffusion_init(
         on_gpu=on_gpu,
     )
 
-    print("0000000 Initialising diffusion...")
     # Edge geometry
     edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
@@ -178,7 +175,6 @@ def diffusion_init(
     diffusion_params = DiffusionParams(config)
 
     # vertical parameters
-    # todo: use xp
     vertical_params = VerticalModelParams(
         vct_a=vct_a,
         rayleigh_damping_height=rayleigh_damping_height,
@@ -197,7 +193,6 @@ def diffusion_init(
     )
 
     # interpolation state
-    # todo: cupy arrays instead of as_numpy? (geofac_n2s_c, geofac_n2s)
     interpolation_state = DiffusionInterpolationState(
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -249,10 +244,6 @@ def diffusion_run(
         dwdy=dwdy,
     )
 
-    print("Running diffusion...")
-
-
-
     if linit:
         print("Diffusion initial_run")
         diffusion_granule.initial_run(
@@ -265,5 +256,4 @@ def diffusion_run(
         diffusion_granule.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
-
     print("Done running diffusion.")

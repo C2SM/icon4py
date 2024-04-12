@@ -13,12 +13,10 @@
 import logging
 import typing
 from pathlib import Path
-import os
 import cffi
 import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray
-from cupy.cuda.memory import MemoryPointer, UnownedMemory
 from icon4pytools.common.logger import setup_logger
 
 
@@ -58,12 +56,10 @@ def unpack(ptr, *sizes: int) -> NDArray:
     }
     dtype = dtype_map.get(c_type, np.dtype(c_type))
 
-
     # Create a NumPy array from the buffer, specifying the Fortran order
     arr = np.frombuffer(ffi.buffer(ptr, length * ffi.sizeof(c_type)), dtype=dtype).reshape(  # type: ignore
         sizes, order="F"
     )
-
     return arr
 
 
@@ -103,17 +99,11 @@ def unpack_gpu(ptr, *sizes: int):
 
     itemsize = ffi.sizeof(c_type)
     total_size = length * itemsize
-    #total_size = length
 
     # cupy array from OpenACC device pointer
     current_device = cp.cuda.Device()
     ptr_val = int(ffi.cast("uintptr_t", ptr))
-    #print('device'+str(cp.cuda.runtime.pointerGetAttributes(ptr_val).device))
-    #print('.devicePointer:'+str(cp.cuda.runtime.pointerGetAttributes(ptr_val).devicePointer))
-    #print('hostPointer'+str(cp.cuda.runtime.pointerGetAttributes(ptr_val).hostPointer))
-    #print('test cupy address:'+str(arr.data.ptr))
-    #mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
-    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=0)
+    mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
     memptr = cp.cuda.MemoryPointer(mem, 0)
     arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
 

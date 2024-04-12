@@ -91,11 +91,11 @@ class VerticalModelParams:
     ) -> int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return int(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
+        return int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
     def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
-        return int(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
+        return int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
 
     @property
     def physical_heights(self) -> Field[[KDim], float]:
