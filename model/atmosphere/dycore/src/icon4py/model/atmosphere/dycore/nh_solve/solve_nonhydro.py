@@ -287,6 +287,7 @@ class NonHydrostaticConfig:
 
         #: type of divergence damping
         self.divdamp_type: int = divdamp_type
+        #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
         self.divdamp_trans_start: float = divdamp_trans_start
         self.divdamp_trans_end: float = divdamp_trans_end
 
