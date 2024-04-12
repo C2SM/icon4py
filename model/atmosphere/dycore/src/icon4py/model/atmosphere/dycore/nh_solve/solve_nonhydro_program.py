@@ -78,7 +78,6 @@ from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary impo
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
-    _init_zero_c_k,
 )
 from icon4py.model.atmosphere.dycore.update_density_exner_wind import _update_density_exner_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
@@ -124,7 +123,7 @@ def _predictor_stencils_2_3(
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(k_field == nlev, _init_zero_c_k(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
