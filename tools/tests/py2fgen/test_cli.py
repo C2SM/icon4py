@@ -47,7 +47,7 @@ def run_test_case(
     expected_error_code: int = 0,
 ):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function, plugin_name, "-b", backend, "-d"])
+        result = cli.invoke(main, [module, function, plugin_name, "-b", backend])
         assert result.exit_code == 0, "CLI execution failed"
 
         try:
@@ -226,4 +226,26 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(
         "test_diffusion",
         "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # todo: set nvfortran location in base.yml file.
         extra_flags,
+    )
+
+
+@pytest.mark.parametrize(
+    "backend, extra_flags",
+    [
+        ("CPU", ("-DPROFILE_SQUARE_FROM_FUNCTION",)),
+    ],
+)
+def test_py2fgen_compilation_and_profiling(
+    cli_runner, backend, samples_path, wrapper_module, extra_flags
+):
+    """Test profiling using cProfile of the generated wrapper."""
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "square_from_function,profile_enable,profile_disable",
+        "square_plugin",
+        backend,
+        samples_path,
+        "test_square",
+        extra_compiler_flags=extra_flags,
     )

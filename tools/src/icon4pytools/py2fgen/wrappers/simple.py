@@ -11,11 +11,28 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # mypy: ignore-errors
+import cProfile
+import pstats
+
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, float64, int32
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
+
+
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
 
 
 @field_operator

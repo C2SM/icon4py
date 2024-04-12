@@ -20,6 +20,8 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+import cProfile
+import pstats
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
@@ -65,6 +67,19 @@ logger = setup_logger(__name__)
 
 # global diffusion object
 diffusion_granule: Diffusion = Diffusion()
+
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
 
 
 def diffusion_init(

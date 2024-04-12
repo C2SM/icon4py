@@ -435,18 +435,21 @@ end function {{name}}_wrapper
             arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
             param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
 
+        return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
+
         return self.generic_visit(
             func,
             assumed_size_array=False,
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
             arrays=[arg for arg in func.args if arg.is_array],
+            return_code_param=return_code_param,
         )
 
     # todo(samkellerhals): Consider using unique SIZE args
     F90FunctionDefinition = as_jinja(
         """
-subroutine {{name}}({{param_names}}, &\nrc)
+subroutine {{name}}({{param_names}} {{ return_code_param }})
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
