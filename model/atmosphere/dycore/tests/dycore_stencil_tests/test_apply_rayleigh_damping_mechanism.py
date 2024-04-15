@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil54(StencilTest):
+class TestApplyRayleighDampingMechanism(StencilTest):
     PROGRAM = apply_rayleigh_damping_mechanism
     OUTPUTS = ("w",)
 

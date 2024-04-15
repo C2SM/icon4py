@@ -30,7 +30,7 @@ def compute_contravariant_correction_numpy(
     return z_w_concorr_me
 
 
-class TestMoSolveNonhydroStencil35(StencilTest):
+class TestComputeContravariantCorrection(StencilTest):
     PROGRAM = compute_contravariant_correction
     OUTPUTS = ("z_w_concorr_me",)
 

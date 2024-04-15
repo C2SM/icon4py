@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, r
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoSolveNonhydroStencil22(StencilTest):
+class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilTest):
     PROGRAM = apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure
     OUTPUTS = ("z_gradh_exner",)
 

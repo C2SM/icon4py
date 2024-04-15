@@ -15,11 +15,11 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
-    _set_cell_kdim_field_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -31,7 +31,7 @@ def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
     w_nnew_wp = w_concorr_c_wp
-    z_contr_w_fl_l_wp = _set_cell_kdim_field_to_zero_wp()
+    z_contr_w_fl_l_wp = _init_cell_kdim_field_with_zero_wp()
     return w_nnew_wp, z_contr_w_fl_l_wp
 
 

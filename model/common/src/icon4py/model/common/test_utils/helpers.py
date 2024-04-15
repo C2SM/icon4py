@@ -117,7 +117,7 @@ def constant_field(
 
 def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
@@ -131,7 +131,7 @@ def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_
 
 def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
