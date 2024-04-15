@@ -10,8 +10,8 @@ if not os.path.isfile(grid_fname):
         './icon-exclaim-data/Torus_Triangles_50000m_x_5000m_res500m.nc',
     )
 
-#uxds_ft = ux.open_dataset(grid_fname, './icon-exclaim-data/torus_exclaim_almost_default/torus_exclaim_insta_DOM01_ML_0001.nc')
-uxds_ft = ux.open_dataset(grid_fname, './icon-exclaim-data/torus_exclaim_const_velocity/torus_exclaim_insta_DOM01_ML_0001.nc')
+uxds_ft = ux.open_dataset(grid_fname, './icon-exclaim-data/torus_exclaim_almost_default/torus_exclaim_insta_DOM01_ML_0001.nc')
+#uxds_ft = ux.open_dataset(grid_fname, './icon-exclaim-data/torus_exclaim_const_velocity/torus_exclaim_insta_DOM01_ML_0001.nc')
 uxds_ft = remove_torus_boundaries(uxds_ft)
 
 uxds_py = ux.open_dataset(grid_fname, './gauss3d_output/data_output_0.nc')
@@ -19,8 +19,13 @@ uxds_py = remove_torus_boundaries(uxds_py)
 
 # comparison plot
 def sliders_plot(itime, iheight):
-    sub0 = uxds_ft['u'].isel(time=itime).isel(height=iheight).plot()
-    sub1 = uxds_py['u'].isel(time=itime).isel(height_2=iheight).plot()
+    vname='temp'
+    clim = (
+        float(uxds_ft[vname].isel(time=itime).isel(height=iheight).min()),
+        float(uxds_ft[vname].isel(time=itime).isel(height=iheight).max()),
+        )
+    sub0 = uxds_ft[vname].isel(time=itime).isel(height=iheight).plot(clim=clim)
+    sub1 = uxds_py[vname].isel(time=itime).isel(height=iheight).plot(clim=clim)
     return hv.Layout(sub0 + sub1).cols(1)
 torus = hv.DynamicMap(sliders_plot, kdims=['time', 'height'])
 hvplot = torus.redim.range(time=(0, len(uxds_ft.time)), height=(0, len(uxds_ft.height)))
