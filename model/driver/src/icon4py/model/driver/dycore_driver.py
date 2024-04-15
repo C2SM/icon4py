@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import math
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable, Optional
@@ -100,10 +101,17 @@ class OutputState:
         diagnostic_state: DiagnosticState,
     ):
         self.config: IconOutputConfig = output_config
+        self._output_date = start_date
+        self._first_date_in_this_ncfile = start_date
         # compute number of output files
         self._number_of_files = (
-            int((end_date - start_date) / self.config.output_file_time_interval) + 1
+            int(math.ceil((end_date - start_date) / self.config.output_file_time_interval))
         )
+        if self.config.output_initial_condition_as_a_separate_file:
+            self._number_of_files += 1
+            self._enforce_new_ncfile = True
+        else:
+            self._enforce_new_ncfile = False
         log.info(f"Number of files: {self._number_of_files}")
 
         # TODO (Chia Rui or others): this is only a tentative output method, use a proper netcdf output infrastructure in the future
@@ -124,8 +132,8 @@ class OutputState:
             self._nf4_basegrp[i].createDimension(
                 "vertices_3", 6
             )  # neighboring vertices of a vertex
-            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels)  # full level height
-            self._nf4_basegrp[i].createDimension("height", grid.num_levels + 1)  # half level height
+            self._nf4_basegrp[i].createDimension("height", grid.num_levels)  # full level height
+            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels + 1)  # half level height
             self._nf4_basegrp[i].createDimension("bnds", 2)  # boundary points for full level height
             self._nf4_basegrp[i].createDimension("time", None)
 
@@ -149,16 +157,16 @@ class OutputState:
             """
             times: nf4.Variable = self._nf4_basegrp[i].createVariable("time", "f8", ("time",))
             levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "height_2", "f8", ("height_2",)
-            )
-            half_levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
                 "height", "f8", ("height",)
             )
+            half_levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
+                "height_2", "f8", ("height_2",)
+            )
             self._nf4_basegrp[i].createVariable(
-                "height_2_bnds",
+                "height_bnds",
                 "f8",
                 (
-                    "height_2",
+                    "height",
                     "bnds",
                 ),
             )
@@ -236,7 +244,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -245,7 +253,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -254,7 +262,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -263,7 +271,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -272,7 +280,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -289,7 +297,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -298,7 +306,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -307,7 +315,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -316,7 +324,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -329,7 +337,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -338,7 +346,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -347,7 +355,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -356,7 +364,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -365,7 +373,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -374,7 +382,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -383,7 +391,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -393,7 +401,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                 ),
             )
             kh_smag_e = self._nf4_basegrp[i].createVariable(
@@ -401,7 +409,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -410,7 +418,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -465,8 +473,8 @@ class OutputState:
             edge_longitudes.standard_name = "longitude"
             vertex_latitudes.standard_name = "latitude"
             vertex_longitudes.standard_name = "longitude"
-            levels.standard_name = "height"
-            half_levels.standard_name = "height"
+            levels.standard_name = "full height"
+            half_levels.standard_name = "half height"
 
             times.long_name = "time"
             cell_latitudes.long_name = "center latitude"
@@ -475,8 +483,8 @@ class OutputState:
             edge_longitudes.long_name = "edge midpoint longitude"
             vertex_latitudes.long_name = "vertex latitude"
             vertex_longitudes.long_name = "vertex longitude"
-            levels.long_name = "generalized_height"
-            half_levels.long_name = "generalized_height"
+            levels.long_name = "generalized_full_height"
+            half_levels.long_name = "generalized_half_height"
 
             cell_latitudes.bounds = "clat_bnds"
             cell_longitudes.bounds = "clon_bnds"
@@ -484,7 +492,7 @@ class OutputState:
             edge_longitudes.bounds = "elon_bnds"
             vertex_latitudes.bounds = "vlon_bnds"
             vertex_longitudes.bounds = "vlat_bnds"
-            levels.bounds = "height_2_bnds"
+            levels.bounds = "height_bnds"
 
             vn.standard_name = "normal_wind"
             u.standard_name = "eastward_wind"
@@ -575,7 +583,7 @@ class OutputState:
             ddt_vn_apc_2.coordinates = "elat elon"
             theta_v_e.coordinates = "elat elon"
             ddt_vn_phy.coordinates = "elat elon"
-            diff_multfac_vn.coordinates = "height_2"
+            diff_multfac_vn.coordinates = "height"
             kh_smag_e.coordinates = "elat elon"
             nabla2_vn_e.coordinates = "elat elon"
 
@@ -658,9 +666,9 @@ class OutputState:
                 full_height[k] = 0.5 * (half_height[k] + half_height[k + 1])
                 full_height_bnds[k, 0] = half_height[k]
                 full_height_bnds[k, 1] = half_height[k + 1]
-            self._nf4_basegrp[i].variables["height_2"][:] = full_height
-            self._nf4_basegrp[i].variables["height"][:] = half_height
-            self._nf4_basegrp[i].variables["height_2_bnds"][:, :] = full_height_bnds
+            self._nf4_basegrp[i].variables["height"][:] = full_height
+            self._nf4_basegrp[i].variables["height_2"][:] = half_height
+            self._nf4_basegrp[i].variables["height_bnds"][:, :] = full_height_bnds
 
     def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams):
         # the grid details are only write to the first netCDF file to save memory
@@ -742,10 +750,10 @@ class OutputState:
             f"Writing output at {current_date} at {self._current_write_step} in file no. {self._current_file_number}"
         )
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
-        log.info(f"Times are  {times[:]}")
         times[self._current_write_step] = date2num(
             current_date, units=times.units, calendar=times.calendar
         )
+        log.info(f"Times are  {times[:]}")
         self._nf4_basegrp[self._current_file_number].variables["u"][
             self._current_write_step, :, :
         ] = diagnostic_state.u.asnumpy().transpose()
@@ -823,21 +831,22 @@ class OutputState:
         diffusion: Diffusion = None,
     ):
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
-        output_date = num2date(
-            times[self._current_write_step], units=times.units, calendar=times.calendar
-        )
-        ncfile_initial_date = num2date(times[0], units=times.units, calendar=times.calendar)
-        current_date_in_cftime = date2num(current_date, units=times.units, calendar=times.calendar)
-        current_date_in_cftime = num2date(
-            current_date_in_cftime, units=times.units, calendar=times.calendar
-        )
-        time_elapsed_since_last_output = current_date_in_cftime - output_date
-        time_elapsed_in_this_ncfile = current_date_in_cftime - ncfile_initial_date
+        #current_date_in_cftime = date2num(current_date, units=times.units, calendar=times.calendar)
+        #current_date_in_cftime = num2date(
+        #    current_date_in_cftime, units=times.units, calendar=times.calendar
+        #)
+        time_elapsed_since_last_output = current_date - self._output_date
+        time_elapsed_in_this_ncfile = current_date - self._first_date_in_this_ncfile
         log.info(
-            f"initial data: {ncfile_initial_date}, output_data: {output_date}, time elapsed: {time_elapsed_since_last_output}, time elapsed in this file: {time_elapsed_in_this_ncfile}"
+            f"first date in currect nc file: {self._first_date_in_this_ncfile}, previous output date: {self._output_date}"
+        )
+        log.info(
+            f"time elapsed since last output: {time_elapsed_since_last_output}, time elapsed in this file: {time_elapsed_in_this_ncfile}"
         )
         if time_elapsed_since_last_output >= self.config.output_time_interval:
-            if time_elapsed_in_this_ncfile >= self.config.output_file_time_interval:
+            if self._enforce_new_ncfile or time_elapsed_in_this_ncfile > self.config.output_file_time_interval:
+                self._enforce_new_ncfile = False
+                self._first_date_in_this_ncfile =  self._output_date
                 self._current_write_step = 0
                 self._current_file_number += 1
             else:
@@ -850,6 +859,7 @@ class OutputState:
                 nh_diagnostic_state=nh_diagnostic_state,
                 diffusion=diffusion,
             )
+            self._output_date = current_date
         else:
             log.info(f"SKIP writing output at {current_date} at {self._current_write_step}")
 
@@ -1109,6 +1119,7 @@ class TimeLoop:
             # put boundary condition update here
 
             timer.start()
+            '''
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -1117,6 +1128,7 @@ class TimeLoop:
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
+            '''
             timer.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
