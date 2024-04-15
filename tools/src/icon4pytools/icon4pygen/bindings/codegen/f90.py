@@ -535,15 +535,6 @@ class F90WrapRunFun(Node):
                 for field in self.all_fields
             ]
             + [
-                F90TypedField(
-                    name=field.name,
-                    suffix="before",
-                    dtype=field.renderer.render_ctype("f90"),
-                    dims=field.renderer.render_ranked_dim_string(),
-                )
-                for field in self.out_fields
-            ]
-            + [
                 F90TypedField(name=name, dtype="integer(c_int)", dims="value")
                 for name in _DOMAIN_ARGS
             ]
