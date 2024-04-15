@@ -249,8 +249,8 @@ class OutputState:
                     "ncells_2",
                 ),
             )
-            temperature = self._nf4_basegrp[i].createVariable(
-                "temperature",
+            temp = self._nf4_basegrp[i].createVariable(
+                "temp",
                 "f8",
                 (
                     "time",
@@ -318,7 +318,7 @@ class OutputState:
             u.units = "m s-1"
             v.units = "m s-1"
             w.units = "m s-1"
-            temperature.units = "K"
+            temp.units = "K"
             pressure.units = "Pa"
             pressure_sfc.units = "Pa"
             rho.units = "kg m-3"
@@ -326,7 +326,7 @@ class OutputState:
             u.param = "2.2.0"
             v.param = "3.2.0"
             w.param = "9.2.0"
-            temperature.param = "0.0.0"
+            temp.param = "0.0.0"
             pressure.param = "0.3.0"
             pressure_sfc.param = "0.3.0"
             rho.param = "10.3.0"
@@ -363,7 +363,7 @@ class OutputState:
             v.standard_name = "northward_wind"
             vn.standard_name = "wind"
             w.standard_name = "upward_air_velocity"
-            temperature.standard_name = "air_temperature"
+            temp.standard_name = "air_temperature"
             pressure.standard_name = "air_pressure"
             pressure_sfc.standard_name = "surface_air_pressure"
             rho.standard_name = "air_density"
@@ -372,7 +372,7 @@ class OutputState:
             v.long_name = "Meridional wind"
             vn.long_name = "Wind"
             w.long_name = "Vertical velocity"
-            temperature.long_name = "Temperature"
+            temp.long_name = "Temperature"
             pressure.long_name = "Pressure"
             pressure_sfc.long_name = "Surface pressure"
             rho.long_name = "Density"
@@ -381,7 +381,7 @@ class OutputState:
             v.CDI_grid_type = "unstructured"
             vn.CDI_grid_type = "unstructured"
             w.CDI_grid_type = "unstructured"
-            temperature.CDI_grid_type = "unstructured"
+            temp.CDI_grid_type = "unstructured"
             pressure.CDI_grid_type = "unstructured"
             pressure_sfc.CDI_grid_type = "unstructured"
             rho.CDI_grid_type = "unstructured"
@@ -390,7 +390,7 @@ class OutputState:
             v.number_of_grid_in_reference = 1
             vn.number_of_grid_in_reference = 1
             w.number_of_grid_in_reference = 1
-            temperature.number_of_grid_in_reference = 1
+            temp.number_of_grid_in_reference = 1
             pressure.number_of_grid_in_reference = 1
             pressure_sfc.number_of_grid_in_reference = 1
             rho.number_of_grid_in_reference = 1
@@ -399,7 +399,7 @@ class OutputState:
             v.coordinates = "clat clon"
             vn.coordinates = "elat elon"
             w.coordinates = "clat clon"
-            temperature.coordinates = "clat clon"
+            temp.coordinates = "clat clon"
             pressure.coordinates = "clat clon"
             pressure_sfc.coordinates = "clat clon"
             rho.coordinates = "clat clon"
@@ -451,7 +451,7 @@ class OutputState:
         self._nf4_basegrp[self._current_file_number].variables["v"] [self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["vn"][self._current_write_step, :, :] = prognostic_state.vn.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["w"] [self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["temperature"][self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["temp"][self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["pressure"][self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["rho"][self._current_write_step, :, :] = prognostic_state.rho.asnumpy().transpose()
