@@ -13,36 +13,42 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _interpolate_contravatiant_vertical_verlocity_to_full_levels(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
-    """Formerly know as _mo_velocity_advection_stencil_15."""
-    z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c + z_w_con_c(Koff[1]))
-    return z_w_con_c_full_vp
+def _interpolate_vt_to_interface_edges(
+    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    """Formerly known as _mo_velocity_advection_stencil_03."""
+    wgtfac_e_wp, vt_wp = astype((wgtfac_e, vt), wpfloat)
+
+    z_vt_ie_wp = astype(wgtfac_e * vt, wpfloat) + (wpfloat("1.0") - wgtfac_e_wp) * vt_wp(Koff[-1])
+
+    return astype(z_vt_ie_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def interpolate_contravatiant_vertical_verlocity_to_full_levels(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+def interpolate_vt_to_interface_edges(
+    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
+    vt: Field[[EdgeDim, KDim], vpfloat],
+    z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _interpolate_contravatiant_vertical_verlocity_to_full_levels(
-        z_w_con_c,
-        out=z_w_con_c_full,
+    _interpolate_vt_to_interface_edges(
+        wgtfac_e,
+        vt,
+        out=z_vt_ie,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
+            EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil23(StencilTest):
+class TestAddTemporalTendenciesToVnByInterpolatingBetweenTimeLevels(StencilTest):
     PROGRAM = add_temporal_tendencies_to_vn_by_interpolating_between_time_levels
     OUTPUTS = ("vn_nnew",)
 
