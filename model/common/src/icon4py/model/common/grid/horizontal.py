@@ -167,6 +167,7 @@ class EdgeParams:
         inverse_primal_edge_lengths=None,
         dual_edge_lengths=None,
         inverse_dual_edge_lengths=None,
+        vertex_vertex_lengths=None,
         inverse_vertex_vertex_lengths=None,
         primal_normal_vert_x=None,
         primal_normal_vert_y=None,
@@ -178,6 +179,10 @@ class EdgeParams:
         dual_normal_cell_y=None,
         edge_areas=None,
         f_e=None,
+        edge_center_lat=None,
+        edge_center_lon=None,
+        primal_normal_x=None,
+        primal_normal_y=None,
     ):
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
         r"""
@@ -221,6 +226,13 @@ class EdgeParams:
         """
 
         self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
+        """
+        Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
+
+        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
+        """
+
+        self.vertex_vertex_lengths: Field[[EdgeDim], float] = vertex_vertex_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
@@ -286,6 +298,16 @@ class EdgeParams:
         Coriolis parameter at cell edges
         """
 
+        self.edge_center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
+            edge_center_lat,
+            edge_center_lon,
+        )
+
+        self.primal_normal: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+            primal_normal_x,
+            primal_normal_y,
+        )
+
 
 @dataclass(frozen=True)
 class CellParams:
@@ -293,6 +315,9 @@ class CellParams:
     area: Field[[CellDim], float]
 
     mean_cell_area: float
+
+    cell_center_lat: Field[[CellDim], float]
+    cell_center_lon: Field[[CellDim], float]
 
 
 @field_operator

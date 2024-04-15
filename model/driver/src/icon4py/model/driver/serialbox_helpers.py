@@ -16,10 +16,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.dimension import CEDim
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, zero_field
 from icon4py.model.common.test_utils.serialbox_utils import (
     IconDiffusionInitSavepoint,
+    IconGridSavepoint,
     InterpolationSavepoint,
     MetricSavepoint,
 )
@@ -64,10 +66,23 @@ def construct_metric_state_for_diffusion(savepoint: MetricSavepoint) -> Diffusio
 
 def construct_diagnostics_for_diffusion(
     savepoint: IconDiffusionInitSavepoint,
+    grid_savepoint: IconGridSavepoint,
+    is_turbulence_on: bool,
 ) -> DiffusionDiagnosticState:
-    return DiffusionDiagnosticState(
-        hdef_ic=savepoint.hdef_ic(),
-        div_ic=savepoint.div_ic(),
-        dwdx=savepoint.dwdx(),
-        dwdy=savepoint.dwdy(),
-    )
+    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    dwdx = savepoint.dwdx() if savepoint.dwdx() else zero_field(grid, CellDim, KDim)
+    dwdy = savepoint.dwdy() if savepoint.dwdy() else zero_field(grid, CellDim, KDim)
+    if is_turbulence_on:
+        return DiffusionDiagnosticState(
+            hdef_ic=savepoint.hdef_ic(),
+            div_ic=savepoint.div_ic(),
+            dwdx=dwdx,
+            dwdy=dwdy,
+        )
+    else:
+        return DiffusionDiagnosticState(
+            hdef_ic=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
+            div_ic=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
+            dwdx=dwdx,
+            dwdy=dwdy,
+        )

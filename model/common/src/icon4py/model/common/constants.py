@@ -29,6 +29,8 @@ CPD = SPECIFIC_HEAT_CONSTANT_PRESSURE
 SPECIFIC_HEAT_CONSTANT_VOLUME: Final[wpfloat] = CPD - RD
 CVD: Final[wpfloat] = SPECIFIC_HEAT_CONSTANT_VOLUME
 CVD_O_RD: Final[wpfloat] = CVD / RD
+RD_O_CPD: Final[wpfloat] = RD / CPD
+CPD_O_RD: Final[wpfloat] = CPD / RD
 
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[wpfloat] = 461.51
@@ -37,6 +39,7 @@ RV: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR
 #: Av. gravitational acceleration [m/s^2]
 GRAVITATIONAL_ACCELERATION: Final[wpfloat] = 9.80665
 GRAV: Final[wpfloat] = GRAVITATIONAL_ACCELERATION
+GRAV_O_RD: Final[wpfloat] = GRAV / RD
 
 #: reference pressure for Exner function [Pa]
 REFERENCE_PRESSURE: Final[wpfloat] = 100000.0
@@ -53,6 +56,12 @@ T0SL_BG: Final[wpfloat] = SEA_LEVEL_TEMPERATURE
 #: difference between sea level temperature and asymptotic stratospheric temperature
 DELTA_TEMPERATURE: Final[wpfloat] = 75.0
 DEL_T_BG: Final[wpfloat] = DELTA_TEMPERATURE
+
+#: Earth average radius [m]
+EARTH_RADIUS: Final[wpfloat] = 6.371229e6
+
+#: Earth angular velocity [rad/s]
+EARTH_ANGULAR_VELOCITY: Final[wpfloat] = 7.29212e-5
 
 #: height scale for reference atmosphere [m], defined  in mo_vertical_grid
 #: scale height [m]
