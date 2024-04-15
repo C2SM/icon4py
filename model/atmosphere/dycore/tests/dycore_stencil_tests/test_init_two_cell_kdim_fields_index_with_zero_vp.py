@@ -16,50 +16,51 @@ import pytest as pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.set_two_cell_kdim_fields_index_to_zero_vp import (
-    set_two_cell_kdim_fields_index_to_zero_vp,
+from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_index_with_zero_vp import (
+    init_two_cell_kdim_fields_index_with_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, _shape, random_field
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoSolveNonhydroStencil01(StencilTest):
-    PROGRAM = set_two_cell_kdim_fields_index_to_zero_vp
-    OUTPUTS = ("field_index_to_zero_1", "field_index_to_zero_2")
+class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
+    PROGRAM = init_two_cell_kdim_fields_index_with_zero_vp
+    OUTPUTS = ("field_index_with_zero_1", "field_index_with_zero_2")
 
     @staticmethod
     def reference(
         grid,
-        field_index_to_zero_1: np.array,
-        field_index_to_zero_2: np.array,
+        field_index_with_zero_1: np.array,
+        field_index_with_zero_2: np.array,
         k: np.array,
         k1: int32,
         k2: int32,
         **kwargs,
     ) -> tuple[np.array]:
-        field_index_to_zero_1 = np.where(
-            k == k1, np.zeros_like(field_index_to_zero_1), field_index_to_zero_1
+        field_index_with_zero_1 = np.where(
+            k == k1, np.zeros_like(field_index_with_zero_1), field_index_with_zero_1
         )
-        field_index_to_zero_2 = np.where(
-            k == k2, np.zeros_like(field_index_to_zero_2), field_index_to_zero_2
+        field_index_with_zero_2 = np.where(
+            k == k2, np.zeros_like(field_index_with_zero_2), field_index_with_zero_2
         )
         return dict(
-            field_index_to_zero_1=field_index_to_zero_1, field_index_to_zero_2=field_index_to_zero_2
+            field_index_with_zero_1=field_index_with_zero_1,
+            field_index_with_zero_2=field_index_with_zero_2,
         )
 
     @pytest.fixture
     def input_data(self, grid):
-        field_index_to_zero_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        field_index_to_zero_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        field_index_with_zero_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        field_index_with_zero_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim)[0], dtype=int32))
         k1 = int32(1)
         k2 = int32(grid.num_levels)
 
         return dict(
-            field_index_to_zero_1=field_index_to_zero_1,
-            field_index_to_zero_2=field_index_to_zero_2,
+            field_index_with_zero_1=field_index_with_zero_1,
+            field_index_with_zero_2=field_index_with_zero_2,
             k=k,
             k1=k1,
             k2=k2,

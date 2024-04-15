@@ -50,7 +50,7 @@ def compute_horizontal_advection_term_for_vertical_velocity_numpy(
     return z_v_grad_w
 
 
-class TestMoVelocityAdvectionStencil07(StencilTest):
+class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
     PROGRAM = compute_horizontal_advection_term_for_vertical_velocity
     OUTPUTS = ("z_v_grad_w",)
 

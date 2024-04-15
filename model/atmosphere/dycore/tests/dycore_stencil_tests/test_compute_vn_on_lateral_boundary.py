@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil29(StencilTest):
+class TestComputeVnOnLateralBoundary(StencilTest):
     PROGRAM = compute_vn_on_lateral_boundary
     OUTPUTS = ("vn_new",)
 

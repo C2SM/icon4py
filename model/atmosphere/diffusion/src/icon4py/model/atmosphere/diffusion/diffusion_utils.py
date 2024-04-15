@@ -54,13 +54,13 @@ def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDi
 
 
 @field_operator
-def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
+def _init_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _set_zero_v_k(out=field)
+def init_zero_v_k(field: Field[[VertexDim, KDim], float]):
+    _init_zero_v_k(out=field)
 
 
 @field_operator

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil26(StencilTest):
+class TestApply2ndOrderDivergenceDamping(StencilTest):
     PROGRAM = apply_2nd_order_divergence_damping
     OUTPUTS = ("vn",)
 

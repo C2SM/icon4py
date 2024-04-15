@@ -15,8 +15,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
-    _compute_pertubation_of_rho_and_theta,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    _compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -39,14 +39,14 @@ def _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
 
     rho_ic = wgtfac_c_wp * rho + (wpfloat("1.0") - wgtfac_c_wp) * rho(Koff[-1])
-    z_rth_pr_1, z_rth_pr_2 = _compute_pertubation_of_rho_and_theta(
+    z_rth_pr_1, z_rth_pr_2 = _compute_perturbation_of_rho_and_theta(
         rho=rho, rho_ref_mc=rho_ref_mc, theta_v=theta_v, theta_ref_mc=theta_ref_mc
     )
     return rho_ic, z_rth_pr_1, z_rth_pr_2
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
@@ -60,7 +60,7 @@ def compute_pertubation_of_rho_and_theta_and_rho_at_ic(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
         wgtfac_c,
         rho,
         rho_ref_mc,

@@ -17,11 +17,11 @@ from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
+)
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
-    add_extra_diffusion_for_wn_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
@@ -30,14 +30,16 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_verti
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    interpolate_contravatiant_vertical_verlocity_to_full_levels,
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
+    interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
+    interpolate_vt_to_interface_edges,
+)
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -196,7 +198,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            interpolate_vt_to_ie(
+            interpolate_vt_to_interface_edges(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
@@ -310,7 +312,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravatiant_vertical_verlocity_to_full_levels(
+        interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -377,7 +379,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_wn_approaching_cfl(
+        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -532,7 +534,7 @@ class VelocityAdvection:
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravatiant_vertical_verlocity_to_full_levels(
+        interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -599,7 +601,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_wn_approaching_cfl(
+        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
