@@ -176,7 +176,7 @@ class FieldGroupMonitor(Monitor):
         TODO (magdalena): for writing a dataset it is best to use netcdf4-python directly, since it has: parallel writing, and
         """
         
-        
+        #TODO (magdalena) common parts should be constructed by IoMonitor
         attrs = dict(
             Conventions="CF-1.7", # TODO (halungge) check changelog? latest version is 1.11
             title="ICON4Py output", # TODO (halungge) let user in config 
@@ -201,7 +201,7 @@ class FieldGroupMonitor(Monitor):
     def store(self, state:dict, model_time:datetime, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
 
-
+        # TODO: this should be a Listener pattern, that copy data buffer and trigger the rest chain asynchronously
         Args:
             state: dict  model state dictionary
             time: float  model time
@@ -211,14 +211,15 @@ class FieldGroupMonitor(Monitor):
             # this should do a deep copy of the data
             state_to_store = {field: state[field] for field in self._field_names}
             self._update_fetch_times()
-            self._dataset.append(state_to_store, model_time)
+            self._append_data(state_to_store, model_time)
+            
             # see https: // github.com / pydata / xarray / issues / 1672  # issuecomment-685222909
             
             
             
-            # TODO (halungge) copy data buffer and trigger the processing chain asynchronously?
-            
-            # trigger processing chain asynchronously
+           
+    def _append_data(self, state_to_store:dict, model_time:datetime):
+        self._dataset.append(state_to_store, model_time)
 
     def _at_capture_time(self, model_time):
         return self._next_output_time == model_time
