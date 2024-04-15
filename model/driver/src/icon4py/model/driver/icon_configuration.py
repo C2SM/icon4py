@@ -142,8 +142,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _gauss3d_config():
         icon_run_config = IconRunConfig(
             dtime=4.0,
-            start_date=datetime(1, 1, 1, 0, 0, 0),
-            end_date  =datetime(1, 1, 1, 0, 1, 0),
+            end_date=datetime(1, 1, 1, 0, 1, 0),
             apply_initial_stabilization=True,
             run_testcase=True,
             n_substeps=5,
