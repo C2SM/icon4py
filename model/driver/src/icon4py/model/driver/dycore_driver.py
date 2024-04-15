@@ -119,9 +119,9 @@ class OutputState:
             self._nf4_basegrp[i].createDimension("ncells_3", grid.num_vertices)
             self._nf4_basegrp[i].createDimension("vertices", 3)  # neighboring vertices of a cell
             self._nf4_basegrp[i].createDimension("vertices_2", 4)  # neighboring vertices of an edge
-            self._nf4_basegrp[i].createDimension( "vertices_3", 6)  # neighboring vertices of a vertex
-            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels)  # full level height
-            self._nf4_basegrp[i].createDimension("height", grid.num_levels + 1)  # half level height
+            self._nf4_basegrp[i].createDimension("vertices_3", 6)  # neighboring vertices of a vertex
+            self._nf4_basegrp[i].createDimension("height", grid.num_levels)  # full level height
+            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels + 1)  # half level height
             self._nf4_basegrp[i].createDimension("bnds", 2)  # boundary points for full level height
             self._nf4_basegrp[i].createDimension("time", None)
 
@@ -143,17 +143,13 @@ class OutputState:
             grid information
             """
             times: nf4.Variable = self._nf4_basegrp[i].createVariable("time", "f8", ("time",))
-            levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "height_2", "f8", ("height_2",)
-            )
-            half_levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "height", "f8", ("height",)
-            )
+            levels: nf4.Variable = self._nf4_basegrp[i].createVariable("height", "f8", ("height",))
+            half_levels: nf4.Variable = self._nf4_basegrp[i].createVariable("height_2", "f8", ("height_2",))
             self._nf4_basegrp[i].createVariable(
-                "height_2_bnds",
+                "height_bnds",
                 "f8",
                 (
-                    "height_2",
+                    "height",
                     "bnds",
                 ),
             )
@@ -231,7 +227,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -240,7 +236,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -249,7 +245,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells_2",
                 ),
             )
@@ -258,7 +254,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -267,7 +263,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -284,7 +280,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -293,7 +289,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -342,8 +338,8 @@ class OutputState:
             edge_longitudes.standard_name = "longitude"
             vertex_latitudes.standard_name = "latitude"
             vertex_longitudes.standard_name = "longitude"
-            levels.standard_name = "height"
-            half_levels.standard_name = "height"
+            levels.standard_name = "full height"
+            half_levels.standard_name = "half height"
 
             times.long_name = "time"
             cell_latitudes.long_name = "center latitude"
@@ -352,8 +348,8 @@ class OutputState:
             edge_longitudes.long_name = "edge midpoint longitude"
             vertex_latitudes.long_name = "vertex latitude"
             vertex_longitudes.long_name = "vertex longitude"
-            levels.long_name = "generalized_height"
-            half_levels.long_name = "generalized_height"
+            levels.long_name = "generalized_full_height"
+            half_levels.long_name = "generalized_half_height"
 
             cell_latitudes.bounds = "clat_bnds"
             cell_longitudes.bounds = "clon_bnds"
@@ -361,7 +357,7 @@ class OutputState:
             edge_longitudes.bounds = "elon_bnds"
             vertex_latitudes.bounds = "vlon_bnds"
             vertex_longitudes.bounds = "vlat_bnds"
-            levels.bounds = "height_2_bnds"
+            levels.bounds = "height_bnds"
 
             u.standard_name = "eastward_wind"
             v.standard_name = "northward_wind"
@@ -435,9 +431,9 @@ class OutputState:
                 full_height[k] = 0.5 * (half_height[k] + half_height[k + 1])
                 full_height_bnds[k, 0] = half_height[k]
                 full_height_bnds[k, 1] = half_height[k + 1]
-            self._nf4_basegrp[i].variables["height_2"][:] = full_height
-            self._nf4_basegrp[i].variables["height"][:] = half_height
-            self._nf4_basegrp[i].variables["height_2_bnds"][:, :] = full_height_bnds
+            self._nf4_basegrp[i].variables["height"][:] = full_height
+            self._nf4_basegrp[i].variables["height_2"][:] = half_height
+            self._nf4_basegrp[i].variables["height_bnds"][:, :] = full_height_bnds
 
     def _write_to_netcdf(
         self,
@@ -449,16 +445,16 @@ class OutputState:
 
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
         log.info(f"Times are  {times[:]}")
-        times[self._current_write_step] = date2num( current_date, units=times.units, calendar=times.calendar)
+        times[self._current_write_step] = date2num(current_date, units=times.units, calendar=times.calendar)
 
-        self._nf4_basegrp[self._current_file_number].variables["u"] [ self._current_write_step, :, : ] = diagnostic_state.u.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["v"] [ self._current_write_step, :, : ] = diagnostic_state.v.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["vn"][ self._current_write_step, :, : ] = prognostic_state.vn.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["w"] [ self._current_write_step, :, : ] = prognostic_state.w.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["temperature"][ self._current_write_step, :, : ] = diagnostic_state.temperature.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["pressure"][ self._current_write_step, :, : ] = diagnostic_state.pressure.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][ self._current_write_step, : ] = diagnostic_state.pressure_sfc.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["rho"][ self._current_write_step, :, : ] = prognostic_state.rho.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["u"] [self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["v"] [self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["vn"][self._current_write_step, :, :] = prognostic_state.vn.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["w"] [self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["temperature"][self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["pressure"][self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["rho"][self._current_write_step, :, :] = prognostic_state.rho.asnumpy().transpose()
 
     def output_data(
         self,
