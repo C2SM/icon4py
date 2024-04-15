@@ -115,11 +115,6 @@ class OutputState:
         ]
         for i in range(self._number_of_files):
             self._nf4_basegrp[i].createDimension("ncells", grid.num_cells)
-            self._nf4_basegrp[i].createDimension("ncells_2", grid.num_edges)
-            self._nf4_basegrp[i].createDimension("ncells_3", grid.num_vertices)
-            self._nf4_basegrp[i].createDimension("vertices", 3)  # neighboring vertices of a cell
-            self._nf4_basegrp[i].createDimension("vertices_2", 4)  # neighboring vertices of an edge
-            self._nf4_basegrp[i].createDimension("vertices_3", 6)  # neighboring vertices of a vertex
             self._nf4_basegrp[i].createDimension("height", grid.num_levels)  # full level height
             self._nf4_basegrp[i].createDimension("height_2", grid.num_levels + 1)  # half level height
             self._nf4_basegrp[i].createDimension("bnds", 2)  # boundary points for full level height
@@ -153,72 +148,6 @@ class OutputState:
                     "bnds",
                 ),
             )
-            cell_latitudes: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "clat", "f8", ("ncells",)
-            )
-            cell_longitudes: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "clon", "f8", ("ncells",)
-            )
-            cell_lat_bounds: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "clat_bnds",
-                "f8",
-                (
-                    "ncells",
-                    "vertices",
-                ),
-            )
-            cell_lon_bounds: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "clon_bnds",
-                "f8",
-                (
-                    "ncells",
-                    "vertices",
-                ),
-            )
-            edge_latitudes: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "elat", "f8", ("ncells_2",)
-            )
-            edge_longitudes: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "elon", "f8", ("ncells_2",)
-            )
-            edge_lat_bounds: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "elat_bnds",
-                "f8",
-                (
-                    "ncells_2",
-                    "vertices_2",
-                ),
-            )
-            edge_lon_bounds: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "elon_bnds",
-                "f8",
-                (
-                    "ncells_2",
-                    "vertices_2",
-                ),
-            )
-            vertex_latitudes: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "vlat", "f8", ("ncells_3",)
-            )
-            vertex_longitudes: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "vlon", "f8", ("ncells_3",)
-            )
-            vertex_lat_bounds: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "vlat_bnds",
-                "f8",
-                (
-                    "ncells_3",
-                    "vertices_3",
-                ),
-            )
-            vertex_lon_bounds: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "vlon_bnds",
-                "f8",
-                (
-                    "ncells_3",
-                    "vertices_3",
-                ),
-            )
             """
             output variables
             """
@@ -238,15 +167,6 @@ class OutputState:
                     "time",
                     "height",
                     "ncells",
-                ),
-            )
-            vn = self._nf4_basegrp[i].createVariable(
-                "vn",
-                "f8",
-                (
-                    "time",
-                    "height",
-                    "ncells_2",
                 ),
             )
             temp = self._nf4_basegrp[i].createVariable(
@@ -294,19 +214,6 @@ class OutputState:
                 ),
             )
 
-            cell_latitudes.units = "radian"
-            cell_longitudes.units = "radian"
-            cell_lat_bounds.units = "radian"
-            cell_lon_bounds.units = "radian"
-            edge_latitudes.units = "radian"
-            edge_longitudes.units = "radian"
-            edge_lat_bounds.units = "radian"
-            edge_lon_bounds.units = "radian"
-            vertex_latitudes.units = "radian"
-            vertex_longitudes.units = "radian"
-            vertex_lat_bounds.units = "radian"
-            vertex_lon_bounds.units = "radian"
-
             levels.units = "m"
             half_levels.units = "m"
             levels.axis = "Z"
@@ -332,36 +239,17 @@ class OutputState:
             rho.param = "10.3.0"
 
             times.standard_name = "time"
-            cell_latitudes.standard_name = "latitude"
-            cell_longitudes.standard_name = "longitude"
-            edge_latitudes.standard_name = "latitude"
-            edge_longitudes.standard_name = "longitude"
-            vertex_latitudes.standard_name = "latitude"
-            vertex_longitudes.standard_name = "longitude"
             levels.standard_name = "full height"
             half_levels.standard_name = "half height"
 
             times.long_name = "time"
-            cell_latitudes.long_name = "center latitude"
-            cell_longitudes.long_name = "center longitude"
-            edge_latitudes.long_name = "edge midpoint latitude"
-            edge_longitudes.long_name = "edge midpoint longitude"
-            vertex_latitudes.long_name = "vertex latitude"
-            vertex_longitudes.long_name = "vertex longitude"
             levels.long_name = "generalized_full_height"
             half_levels.long_name = "generalized_half_height"
 
-            cell_latitudes.bounds = "clat_bnds"
-            cell_longitudes.bounds = "clon_bnds"
-            edge_latitudes.bounds = "elat_bnds"
-            edge_longitudes.bounds = "elon_bnds"
-            vertex_latitudes.bounds = "vlon_bnds"
-            vertex_longitudes.bounds = "vlat_bnds"
             levels.bounds = "height_bnds"
 
             u.standard_name = "eastward_wind"
             v.standard_name = "northward_wind"
-            vn.standard_name = "wind"
             w.standard_name = "upward_air_velocity"
             temp.standard_name = "air_temperature"
             pressure.standard_name = "air_pressure"
@@ -370,7 +258,6 @@ class OutputState:
 
             u.long_name = "Zonal wind"
             v.long_name = "Meridional wind"
-            vn.long_name = "Wind"
             w.long_name = "Vertical velocity"
             temp.long_name = "Temperature"
             pressure.long_name = "Pressure"
@@ -379,7 +266,6 @@ class OutputState:
 
             u.CDI_grid_type = "unstructured"
             v.CDI_grid_type = "unstructured"
-            vn.CDI_grid_type = "unstructured"
             w.CDI_grid_type = "unstructured"
             temp.CDI_grid_type = "unstructured"
             pressure.CDI_grid_type = "unstructured"
@@ -388,7 +274,6 @@ class OutputState:
 
             u.number_of_grid_in_reference = 1
             v.number_of_grid_in_reference = 1
-            vn.number_of_grid_in_reference = 1
             w.number_of_grid_in_reference = 1
             temp.number_of_grid_in_reference = 1
             pressure.number_of_grid_in_reference = 1
@@ -397,7 +282,6 @@ class OutputState:
 
             u.coordinates = "clat clon"
             v.coordinates = "clat clon"
-            vn.coordinates = "elat elon"
             w.coordinates = "clat clon"
             temp.coordinates = "clat clon"
             pressure.coordinates = "clat clon"
@@ -406,23 +290,6 @@ class OutputState:
 
     def _write_dimension(self, grid: IconGrid, diagnostic_metric_state: DiagnosticMetricState):
         for i in range(self._number_of_files):
-            self._nf4_basegrp[i].variables["clat"][ : ] = diagnostic_metric_state.cell_center_lat.asnumpy()
-            self._nf4_basegrp[i].variables["clon"][ : ] = diagnostic_metric_state.cell_center_lon.asnumpy()
-            self._nf4_basegrp[i].variables["clat_bnds"][ :, : ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[C2VDim]]
-            self._nf4_basegrp[i].variables["clon_bnds"][ :, : ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[C2VDim]]
-
-            self._nf4_basegrp[i].variables["elat"][:] = diagnostic_metric_state.e_lat.asnumpy()
-            self._nf4_basegrp[i].variables["elon"][:] = diagnostic_metric_state.e_lon.asnumpy()
-            self._nf4_basegrp[i].variables["elat_bnds"][ :, : ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[E2C2VDim]]
-            self._nf4_basegrp[i].variables["elon_bnds"][ :, : ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]]
-
-            log.info( f"E2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]].shape}")
-            log.info( f"V2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]].shape}")
-
-            self._nf4_basegrp[i].variables["vlat"][:] = diagnostic_metric_state.v_lat.asnumpy()
-            self._nf4_basegrp[i].variables["vlon"][:] = diagnostic_metric_state.v_lon.asnumpy()
-            self._nf4_basegrp[i].variables["vlat_bnds"][ :, : ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[V2C2VDim]]
-            self._nf4_basegrp[i].variables["vlon_bnds"][ :, : ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]]
 
             full_height = np.zeros(grid.num_levels, dtype=float)
             half_height = diagnostic_metric_state.vct_a.asnumpy()
@@ -447,10 +314,9 @@ class OutputState:
         log.info(f"Times are  {times[:]}")
         times[self._current_write_step] = date2num(current_date, units=times.units, calendar=times.calendar)
 
-        self._nf4_basegrp[self._current_file_number].variables["u"] [self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["v"] [self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["vn"][self._current_write_step, :, :] = prognostic_state.vn.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["w"] [self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["u"][self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["v"][self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["w"][self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["temp"][self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["pressure"][self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
