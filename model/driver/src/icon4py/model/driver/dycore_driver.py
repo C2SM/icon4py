@@ -93,8 +93,6 @@ class OutputState:
         start_date: datetime,
         end_date: datetime,
         grid: IconGrid,
-        cell_geometry: CellParams,
-        edge_geometry: EdgeParams,
         diagnostic_metric_state: DiagnosticMetricState,
         prognostic_state: PrognosticState,
         diagnostic_state: DiagnosticState,
@@ -121,9 +119,7 @@ class OutputState:
             self._nf4_basegrp[i].createDimension("ncells_3", grid.num_vertices)
             self._nf4_basegrp[i].createDimension("vertices", 3)  # neighboring vertices of a cell
             self._nf4_basegrp[i].createDimension("vertices_2", 4)  # neighboring vertices of an edge
-            self._nf4_basegrp[i].createDimension(
-                "vertices_3", 6
-            )  # neighboring vertices of a vertex
+            self._nf4_basegrp[i].createDimension( "vertices_3", 6)  # neighboring vertices of a vertex
             self._nf4_basegrp[i].createDimension("height_2", grid.num_levels)  # full level height
             self._nf4_basegrp[i].createDimension("height", grid.num_levels + 1)  # half level height
             self._nf4_basegrp[i].createDimension("bnds", 2)  # boundary points for full level height
@@ -136,7 +132,6 @@ class OutputState:
         self._write_dimension(grid, diagnostic_metric_state)
 
         self._write_to_netcdf(start_date, prognostic_state, diagnostic_state)
-        self._grid_to_netcdf(cell_geometry, edge_geometry)
 
     @property
     def current_time_step(self):
@@ -284,24 +279,6 @@ class OutputState:
                     "ncells",
                 ),
             )
-            exner = self._nf4_basegrp[i].createVariable(
-                "exner",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells",
-                ),
-            )
-            theta_v = self._nf4_basegrp[i].createVariable(
-                "theta_v",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells",
-                ),
-            )
             rho = self._nf4_basegrp[i].createVariable(
                 "rho",
                 "f8",
@@ -318,100 +295,6 @@ class OutputState:
                     "time",
                     "height",
                     "ncells",
-                ),
-            )
-
-            """
-            debugging variables
-            """
-            exner_grad = self._nf4_basegrp[i].createVariable(
-                "exner_gradient",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            graddiv_vn = self._nf4_basegrp[i].createVariable(
-                "Laplacian_vn",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            graddiv2_vn = self._nf4_basegrp[i].createVariable(
-                "Laplacian2_vn",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            ddt_vn_apc_1 = self._nf4_basegrp[i].createVariable(
-                "ddt_vn_apc_1",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            ddt_vn_apc_2 = self._nf4_basegrp[i].createVariable(
-                "ddt_vn_apc_2",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            theta_v_e = self._nf4_basegrp[i].createVariable(
-                "theta_v_e",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            ddt_vn_phy = self._nf4_basegrp[i].createVariable(
-                "ddt_vn_phy",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-
-            diff_multfac_vn = self._nf4_basegrp[i].createVariable(
-                "diff_multfac_vn",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                ),
-            )
-            kh_smag_e = self._nf4_basegrp[i].createVariable(
-                "kh_smag_e",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
-                ),
-            )
-            nabla2_vn_e = self._nf4_basegrp[i].createVariable(
-                "nabla2_vn_e",
-                "f8",
-                (
-                    "time",
-                    "height_2",
-                    "ncells_2",
                 ),
             )
 
@@ -443,8 +326,6 @@ class OutputState:
             pressure.units = "Pa"
             pressure_sfc.units = "Pa"
             rho.units = "kg m-3"
-            theta_v.units = "K"
-            exner.units = ""
 
             u.param = "2.2.0"
             v.param = "3.2.0"
@@ -453,8 +334,6 @@ class OutputState:
             pressure.param = "0.3.0"
             pressure_sfc.param = "0.3.0"
             rho.param = "10.3.0"
-            theta_v.param = "15.0.0"
-            exner.param = "26.3.0"
 
             times.standard_name = "time"
             cell_latitudes.standard_name = "latitude"
@@ -492,8 +371,6 @@ class OutputState:
             pressure.standard_name = "air_pressure"
             pressure_sfc.standard_name = "surface_air_pressure"
             rho.standard_name = "air_density"
-            theta_v.standard_name = "virtual_potential_temperature"
-            exner.standard_name = "exner_pressure"
 
             u.long_name = "Zonal wind"
             v.long_name = "Meridional wind"
@@ -503,8 +380,6 @@ class OutputState:
             pressure.long_name = "Pressure"
             pressure_sfc.long_name = "Surface pressure"
             rho.long_name = "Density"
-            theta_v.long_name = "Virtual potential temperature"
-            exner.long_name = "Exner pressure"
 
             u.CDI_grid_type = "unstructured"
             v.CDI_grid_type = "unstructured"
@@ -514,8 +389,6 @@ class OutputState:
             pressure.CDI_grid_type = "unstructured"
             pressure_sfc.CDI_grid_type = "unstructured"
             rho.CDI_grid_type = "unstructured"
-            theta_v.CDI_grid_type = "unstructured"
-            exner.CDI_grid_type = "unstructured"
 
             u.number_of_grid_in_reference = 1
             v.number_of_grid_in_reference = 1
@@ -525,8 +398,6 @@ class OutputState:
             pressure.number_of_grid_in_reference = 1
             pressure_sfc.number_of_grid_in_reference = 1
             rho.number_of_grid_in_reference = 1
-            theta_v.number_of_grid_in_reference = 1
-            exner.number_of_grid_in_reference = 1
 
             u.coordinates = "clat clon"
             v.coordinates = "clat clon"
@@ -536,113 +407,26 @@ class OutputState:
             pressure.coordinates = "clat clon"
             pressure_sfc.coordinates = "clat clon"
             rho.coordinates = "clat clon"
-            theta_v.coordinates = "clat clon"
-            exner.coordinates = "clat clon"
-
-            exner_grad.CDI_grid_type = "unstructured"
-            graddiv_vn.CDI_grid_type = "unstructured"
-            graddiv2_vn.CDI_grid_type = "unstructured"
-            ddt_vn_apc_1.CDI_grid_type = "unstructured"
-            ddt_vn_apc_2.CDI_grid_type = "unstructured"
-            theta_v_e.CDI_grid_type = "unstructured"
-            ddt_vn_phy.CDI_grid_type = "unstructured"
-            diff_multfac_vn.CDI_grid_type = "unstructured"
-            kh_smag_e.CDI_grid_type = "unstructured"
-            nabla2_vn_e.CDI_grid_type = "unstructured"
-
-            exner_grad.number_of_grid_in_reference = 1
-            graddiv_vn.number_of_grid_in_reference = 1
-            graddiv2_vn.number_of_grid_in_reference = 1
-            ddt_vn_apc_1.number_of_grid_in_reference = 1
-            ddt_vn_apc_2.number_of_grid_in_reference = 1
-            theta_v_e.number_of_grid_in_reference = 1
-            ddt_vn_phy.number_of_grid_in_reference = 1
-            diff_multfac_vn.number_of_grid_in_reference = 1
-            kh_smag_e.number_of_grid_in_reference = 1
-            nabla2_vn_e.number_of_grid_in_reference = 1
-
-            exner_grad.coordinates = "elat elon"
-            graddiv_vn.coordinates = "elat elon"
-            graddiv2_vn.coordinates = "elat elon"
-            ddt_vn_apc_1.coordinates = "elat elon"
-            ddt_vn_apc_2.coordinates = "elat elon"
-            theta_v_e.coordinates = "elat elon"
-            ddt_vn_phy.coordinates = "elat elon"
-            diff_multfac_vn.coordinates = "height_2"
-            kh_smag_e.coordinates = "elat elon"
-            nabla2_vn_e.coordinates = "elat elon"
-
-            exner_grad.units = "m-1"
-            graddiv_vn.units = "m-1 s-1"
-            graddiv2_vn.units = "m-3 s-1"
-            ddt_vn_apc_1.units = "m-1 s-2"
-            ddt_vn_apc_2.units = "m-1 s-2"
-            theta_v_e.units = "K"
-            ddt_vn_phy.units = "m-1 s-2"
-            diff_multfac_vn.units = "m-1 s"
-            kh_smag_e.units = "m-1 s"
-            nabla2_vn_e.units = "m-1 s-1"
-
-            exner_grad.standard_name = "exner_gradient"
-            graddiv_vn.standard_name = "DelDivergence_normal_velocity"
-            graddiv2_vn.standard_name = "DelDivergence2_normal_velocity"
-            ddt_vn_apc_1.standard_name = "vn_tendency_now"
-            ddt_vn_apc_2.standard_name = "vn_tendency_next"
-            theta_v_e.standard_name = "virtual_potential_temperature_at_edge"
-            ddt_vn_phy.standard_name = "vn_tendency_physics"
-            diff_multfac_vn.standard_name = "diffusion_multfac_vn"
-            kh_smag_e.standard_name = "kh_smag_vn"
-            nabla2_vn_e.standard_name = "Laplacian_normal_velocity"
-
-            exner_grad.long_name = "gradient of exner"
-            graddiv_vn.long_name = "Directional derivative of Divergence of normal velocity"
-            graddiv2_vn.long_name = "double directional derivative of Divergence of normal velocity"
-            ddt_vn_apc_1.long_name = "tendency of normal velocity now"
-            ddt_vn_apc_2.long_name = "tendency of normal velocity next"
-            theta_v_e.long_name = "virtual potential temperature at edge"
-            ddt_vn_phy.long_name = "tendency of normal velocity due to physics"
-            diff_multfac_vn.long_name = "Difussion multiplication factor for normal velocity"
-            kh_smag_e.long_name = "Fourth order Diffusion Smagorinski factor for normal velocity"
-            nabla2_vn_e.long_name = "Laplacian of normal velocity"
 
     def _write_dimension(self, grid: IconGrid, diagnostic_metric_state: DiagnosticMetricState):
         for i in range(self._number_of_files):
-            self._nf4_basegrp[i].variables["clat"][
-                :
-            ] = diagnostic_metric_state.cell_center_lat.asnumpy()
-            self._nf4_basegrp[i].variables["clon"][
-                :
-            ] = diagnostic_metric_state.cell_center_lon.asnumpy()
-            self._nf4_basegrp[i].variables["clat_bnds"][
-                :, :
-            ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[C2VDim]]
-            self._nf4_basegrp[i].variables["clon_bnds"][
-                :, :
-            ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[C2VDim]]
+            self._nf4_basegrp[i].variables["clat"][ : ] = diagnostic_metric_state.cell_center_lat.asnumpy()
+            self._nf4_basegrp[i].variables["clon"][ : ] = diagnostic_metric_state.cell_center_lon.asnumpy()
+            self._nf4_basegrp[i].variables["clat_bnds"][ :, : ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[C2VDim]]
+            self._nf4_basegrp[i].variables["clon_bnds"][ :, : ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[C2VDim]]
 
             self._nf4_basegrp[i].variables["elat"][:] = diagnostic_metric_state.e_lat.asnumpy()
             self._nf4_basegrp[i].variables["elon"][:] = diagnostic_metric_state.e_lon.asnumpy()
-            self._nf4_basegrp[i].variables["elat_bnds"][
-                :, :
-            ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[E2C2VDim]]
-            self._nf4_basegrp[i].variables["elon_bnds"][
-                :, :
-            ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]]
-            log.info(
-                f"E2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]].shape}"
-            )
-            log.info(
-                f"V2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]].shape}"
-            )
+            self._nf4_basegrp[i].variables["elat_bnds"][ :, : ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[E2C2VDim]]
+            self._nf4_basegrp[i].variables["elon_bnds"][ :, : ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]]
+
+            log.info( f"E2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]].shape}")
+            log.info( f"V2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]].shape}")
 
             self._nf4_basegrp[i].variables["vlat"][:] = diagnostic_metric_state.v_lat.asnumpy()
             self._nf4_basegrp[i].variables["vlon"][:] = diagnostic_metric_state.v_lon.asnumpy()
-            self._nf4_basegrp[i].variables["vlat_bnds"][
-                :, :
-            ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[V2C2VDim]]
-            self._nf4_basegrp[i].variables["vlon_bnds"][
-                :, :
-            ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]]
+            self._nf4_basegrp[i].variables["vlat_bnds"][ :, : ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[V2C2VDim]]
+            self._nf4_basegrp[i].variables["vlon_bnds"][ :, : ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]]
 
             full_height = np.zeros(grid.num_levels, dtype=float)
             half_height = diagnostic_metric_state.vct_a.asnumpy()
@@ -655,180 +439,43 @@ class OutputState:
             self._nf4_basegrp[i].variables["height"][:] = half_height
             self._nf4_basegrp[i].variables["height_2_bnds"][:, :] = full_height_bnds
 
-    def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams):
-        # the grid details are only write to the first netCDF file to save memory
-        cell_areas: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "cell_area", "f8", ("ncells",)
-        )
-        edge_areas: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "edge_area", "f8", ("ncells_2",)
-        )
-        primal_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "primal_edge_length", "f8", ("ncells_2",)
-        )
-        vert_vert_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "vert_vert_edge_length", "f8", ("ncells_2",)
-        )
-        dual_edge_lengths: nf4.Variable = self._nf4_basegrp[0].createVariable(
-            "dual_edge_length", "f8", ("ncells_2",)
-        )
-
-        cell_areas.units = "m2"
-        edge_areas.units = "m2"
-        primal_edge_lengths.units = "m"
-        vert_vert_edge_lengths.units = "m"
-        dual_edge_lengths.units = "m"
-
-        # TODO (Chia Rui or others): check the param for these variables?
-        cell_areas.param = "99.0.1"
-        edge_areas.param = "99.0.2"
-        primal_edge_lengths.param = "99.0.3"
-        vert_vert_edge_lengths.param = "99.0.4"
-        dual_edge_lengths.param = "99.0.5"
-
-        cell_areas.standard_name = "cell area"
-        edge_areas.standard_name = "edge area"
-        primal_edge_lengths.standard_name = "edge length"
-        vert_vert_edge_lengths.standard_name = "vertex-vertex edge length"
-        dual_edge_lengths.standard_name = "dual edge length"
-
-        cell_areas.long_name = "cell area"
-        edge_areas.long_name = "edge area"
-        primal_edge_lengths.long_name = "edge length"
-        vert_vert_edge_lengths.long_name = "vertex-vertex edge length"
-        dual_edge_lengths.long_name = "dual edge length"
-
-        cell_areas.CDI_grid_type = "unstructured"
-        edge_areas.CDI_grid_type = "unstructured"
-        primal_edge_lengths.CDI_grid_type = "unstructured"
-        vert_vert_edge_lengths.CDI_grid_type = "unstructured"
-        dual_edge_lengths.CDI_grid_type = "unstructured"
-
-        cell_areas.number_of_grid_in_reference = 1
-        edge_areas.number_of_grid_in_reference = 1
-        primal_edge_lengths.number_of_grid_in_reference = 1
-        vert_vert_edge_lengths.number_of_grid_in_reference = 1
-        dual_edge_lengths.number_of_grid_in_reference = 1
-
-        cell_areas.coordinates = "clat clon"
-        edge_areas.coordinates = "elat elon"
-        primal_edge_lengths.coordinates = "elat elon"
-        vert_vert_edge_lengths.coordinates = "elat elon"
-        dual_edge_lengths.coordinates = "elat elon"
-
-        cell_areas[:] = cell_geometry.area.asnumpy()
-        edge_areas[:] = edge_geometry.edge_areas.asnumpy()
-        primal_edge_lengths[:] = edge_geometry.primal_edge_lengths.asnumpy()
-        vert_vert_edge_lengths[:] = edge_geometry.vertex_vertex_lengths.asnumpy()
-        dual_edge_lengths[:] = edge_geometry.dual_edge_lengths.asnumpy()
-
     def _write_to_netcdf(
         self,
         current_date: datetime,
         prognostic_state: PrognosticState,
         diagnostic_state: DiagnosticState,
-        solve_nonhydro: SolveNonhydro = None,
-        nh_diagnostic_state: DiagnosticStateNonHydro = None,
-        diffusion: Diffusion = None,
     ):
-        log.info(
-            f"Writing output at {current_date} at {self._current_write_step} in file no. {self._current_file_number}"
-        )
+        log.info( f"Writing output at {current_date} at {self._current_write_step} in file no. {self._current_file_number}")
+
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
         log.info(f"Times are  {times[:]}")
-        times[self._current_write_step] = date2num(
-            current_date, units=times.units, calendar=times.calendar
-        )
-        self._nf4_basegrp[self._current_file_number].variables["u"][
-            self._current_write_step, :, :
-        ] = diagnostic_state.u.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["v"][
-            self._current_write_step, :, :
-        ] = diagnostic_state.v.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["vn"][
-            self._current_write_step, :, :
-        ] = prognostic_state.vn.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["w"][
-            self._current_write_step, :, :
-        ] = prognostic_state.w.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["temperature"][
-            self._current_write_step, :, :
-        ] = diagnostic_state.temperature.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["pressure"][
-            self._current_write_step, :, :
-        ] = diagnostic_state.pressure.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][
-            self._current_write_step, :
-        ] = diagnostic_state.pressure_sfc.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["rho"][
-            self._current_write_step, :, :
-        ] = prognostic_state.rho.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["exner"][
-            self._current_write_step, :, :
-        ] = prognostic_state.exner.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["theta_v"][
-            self._current_write_step, :, :
-        ] = prognostic_state.theta_v.asnumpy().transpose()
+        times[self._current_write_step] = date2num( current_date, units=times.units, calendar=times.calendar)
 
-        if solve_nonhydro is not None:
-            self._nf4_basegrp[self._current_file_number].variables["exner_gradient"][
-                self._current_write_step, :, :
-            ] = solve_nonhydro.intermediate_fields.z_gradh_exner.asnumpy().transpose()
-            self._nf4_basegrp[self._current_file_number].variables["Laplacian_vn"][
-                self._current_write_step, :, :
-            ] = solve_nonhydro.intermediate_fields.z_graddiv_vn.asnumpy().transpose()
-            self._nf4_basegrp[self._current_file_number].variables["Laplacian2_vn"][
-                self._current_write_step, :, :
-            ] = solve_nonhydro.z_graddiv2_vn.asnumpy().transpose()
-            self._nf4_basegrp[self._current_file_number].variables["theta_v_e"][
-                self._current_write_step, :, :
-            ] = solve_nonhydro.intermediate_fields.z_theta_v_e.asnumpy().transpose()
-
-        if nh_diagnostic_state is not None:
-            self._nf4_basegrp[self._current_file_number].variables["ddt_vn_apc_1"][
-                self._current_write_step, :, :
-            ] = nh_diagnostic_state.ddt_vn_apc_ntl1.asnumpy().transpose()
-            self._nf4_basegrp[self._current_file_number].variables["ddt_vn_apc_2"][
-                self._current_write_step, :, :
-            ] = nh_diagnostic_state.ddt_vn_apc_ntl2.asnumpy().transpose()
-            self._nf4_basegrp[self._current_file_number].variables["ddt_vn_phy"][
-                self._current_write_step, :, :
-            ] = nh_diagnostic_state.ddt_vn_phy.asnumpy().transpose()
-
-        if diffusion is not None:
-            self._nf4_basegrp[self._current_file_number].variables["diff_multfac_vn"][
-                self._current_write_step, :
-            ] = diffusion.diff_multfac_vn.asnumpy()
-            self._nf4_basegrp[self._current_file_number].variables["kh_smag_e"][
-                self._current_write_step, :, :
-            ] = diffusion.kh_smag_e.asnumpy().transpose()
-            self._nf4_basegrp[self._current_file_number].variables["nabla2_vn_e"][
-                self._current_write_step, :, :
-            ] = diffusion.z_nabla2_e.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["u"] [ self._current_write_step, :, : ] = diagnostic_state.u.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["v"] [ self._current_write_step, :, : ] = diagnostic_state.v.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["vn"][ self._current_write_step, :, : ] = prognostic_state.vn.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["w"] [ self._current_write_step, :, : ] = prognostic_state.w.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["temperature"][ self._current_write_step, :, : ] = diagnostic_state.temperature.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["pressure"][ self._current_write_step, :, : ] = diagnostic_state.pressure.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][ self._current_write_step, : ] = diagnostic_state.pressure_sfc.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["rho"][ self._current_write_step, :, : ] = prognostic_state.rho.asnumpy().transpose()
 
     def output_data(
         self,
         current_date: datetime,
         prognostic_state: PrognosticState,
         diagnostic_state: DiagnosticState,
-        solve_nonhydro: SolveNonhydro = None,
-        nh_diagnostic_state: DiagnosticStateNonHydro = None,
-        diffusion: Diffusion = None,
     ):
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
-        output_date = num2date(
-            times[self._current_write_step], units=times.units, calendar=times.calendar
-        )
+        output_date = num2date( times[self._current_write_step], units=times.units, calendar=times.calendar)
         ncfile_initial_date = num2date(times[0], units=times.units, calendar=times.calendar)
         current_date_in_cftime = date2num(current_date, units=times.units, calendar=times.calendar)
-        current_date_in_cftime = num2date(
-            current_date_in_cftime, units=times.units, calendar=times.calendar
-        )
+        current_date_in_cftime = num2date(current_date_in_cftime, units=times.units, calendar=times.calendar)
         time_elapsed_since_last_output = current_date_in_cftime - output_date
         time_elapsed_in_this_ncfile = current_date_in_cftime - ncfile_initial_date
-        log.info(
-            f"initial data: {ncfile_initial_date}, output_data: {output_date}, time elapsed: {time_elapsed_since_last_output}, time elapsed in this file: {time_elapsed_in_this_ncfile}"
-        )
+
+        log.info( f"initial data: {ncfile_initial_date}, output_data: {output_date}, time elapsed: {time_elapsed_since_last_output}, time elapsed in this file: {time_elapsed_in_this_ncfile}")
+
         if time_elapsed_since_last_output >= self.config.output_time_interval:
             if time_elapsed_in_this_ncfile >= self.config.output_file_time_interval:
                 self._current_write_step = 0
@@ -839,9 +486,6 @@ class OutputState:
                 current_date,
                 prognostic_state,
                 diagnostic_state,
-                solve_nonhydro=solve_nonhydro,
-                nh_diagnostic_state=nh_diagnostic_state,
-                diffusion=diffusion,
             )
         else:
             log.info(f"SKIP writing output at {current_date} at {self._current_write_step}")
@@ -1125,9 +769,6 @@ class TimeLoop:
                     self._simulation_date,
                     prognostic_state_list[self._now],
                     diagnostic_state,
-                    solve_nonhydro=self.solve_nonhydro,
-                    nh_diagnostic_state=solve_nonhydro_diagnostic_state,
-                    diffusion=self.diffusion,
                 )
 
         timer.summary(True)
@@ -1387,8 +1028,6 @@ def initialize(
         config.run_config.start_date,
         config.run_config.end_date,
         icon_grid,
-        cell_geometry,
-        edge_geometry,
         diagnostic_metric_state,
         prognostic_state_list[0],
         diagnostic_state,
