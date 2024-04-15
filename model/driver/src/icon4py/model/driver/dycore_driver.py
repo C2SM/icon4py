@@ -1145,6 +1145,9 @@ class TimeLoop:
         diagnostic_state: DiagnosticState,
         prognostic_state_list: list[PrognosticState],
     ):
+        log.info(f"LEARNING: {self.solve_nonhydro.interpolation_state.e_bln_c_s.asnumpy().shape}")
+        for i in range(self.solve_nonhydro.interpolation_state.e_bln_c_s.asnumpy().shape[0]):
+            log.info(f"LEARNING: {i} {self.solve_nonhydro.interpolation_state.e_bln_c_s.asnumpy()[i]}")
         ##### TESTING SPEED
         test_vn = prognostic_state_list[self._now].vn
         test_u = diagnostic_state.u

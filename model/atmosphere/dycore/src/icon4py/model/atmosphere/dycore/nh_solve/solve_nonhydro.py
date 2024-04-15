@@ -1227,7 +1227,7 @@ class SolveNonhydro:
 
         """
         z_gradh_exner (0:flat_lev-1):
-            Compute the horizontal gradient of temporal extrapolation of perturbed exner function at full levels (cell center) by simple first order scheme at altitudes witout terrain following effect.
+            Compute the horizontal gradient of temporal extrapolation of perturbed exner function at full levels (edge center) by simple first order scheme at altitudes witout terrain following effect.
         """
         # Remaining computations at edge points
         self.stencil_compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
@@ -1244,7 +1244,10 @@ class SolveNonhydro:
         if self.config.igradp_method == 3:
             """
             z_gradh_exner (flat_lev:flat_gradp):
-                Compute the horizontal gradient of temporal extrapolation of perturbed exner function at full levels (cell center) by simple first order scheme.
+                Compute the horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center) by simple first order scheme.
+                By coordinate transformation (x, y, z) <-> (x, y, eta), dpi/dn |z = dpi/dn |s + dh/dn |s dpi/dz
+                dpi/dz is previously computed z_dexner_dz_c_1.
+                dh/dn | s is ddxn_z_full, it is the horizontal gradient across neighboring cells at constant eta at full levels.
             """
             # horizontal gradient of Exner pressure, including metric correction
             # horizontal gradient of Exner pressure, Taylor-expansion-based reconstruction
@@ -1262,6 +1265,18 @@ class SolveNonhydro:
                 offset_provider=self.offset_provider_e2c,
             )
 
+            """
+            z_gradh_exner (flat_gradp+1:nlev-1):
+                Compute the horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center) when the height of neighboring cells is at another k level.
+                See eq. 8 in Günther et al. 2012.
+                dpi/dn |z = (pi_1 - pi_0 + dpi_1/dz_1 dz_1 - dpi_0/dz_0 dz_0 + d^2pi_1/dz_1^2 dz_1^2/2 - d^2pi_0/dz_0^2 dz_0^2/2) / length
+                dpi_0/dz_0 or dpi_1/dz_1 is z_dexner_dz_c_1 computed previously.
+                d^2pi_0/dz_0^2 / 2 or d^2pi_1/dz_1^2 / 2  is z_dexner_dz_c_2 computed previously.
+                dz is zdiff_gradp.
+                neighboring cell k index is vertoffset_gradp.
+                Note that the vertoffset_gradp and zdiff_gradp are recomputed for edges which have an neighboring underground cell center in mo_vertical_grid.f90.
+                It is explained more in next stencil for computation of hydrostatic correction.
+            """
             self.stencil_compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
                 z_exner_ex_pr=self.z_exner_ex_pr,
@@ -1276,6 +1291,15 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.offset_provider_e2c_e2ec_koff,
             )
+        """
+        z_hydro_corr (nlev-1):
+            z_hydro_corr = g/(cpd theta_v^2) dtheta_v/dn (h_k - h_k*)
+            Compute the hydrostatic correction term (see the last term in eq. 10 or 9 in Günther et al. 2012) at full levels (edge center).
+            This is only computed for the last or bottom most level because all edge centers which have a neighboring cell center inside terrain
+            beyond a certain limit (see last paragraph for discussion on page 3724) use the same correction term at k* level in eq. 10 in Günther
+            et al. 2012.
+            Note that the vertoffset_gradp and zdiff_gradp are recomputed for those special edges in mo_vertical_grid.f90.
+        """
         # compute hydrostatically approximated correction term that replaces downward extrapolation
         if self.config.igradp_method == 3:
             self.stencil_compute_hydrostatic_correction_term(
@@ -1298,6 +1322,11 @@ class SolveNonhydro:
         hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
 
         if self.config.igradp_method == 3:
+            """
+            z_gradh_exner (0:nlev-1):
+                Apply the dydrostatic correction term to horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center)
+                when neighboring cells are underground beyond a certain limit.
+            """
             self.stencil_apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
                 ipeidx_dsl=self.metric_state_nonhydro.ipeidx_dsl,
                 pg_exdist=self.metric_state_nonhydro.pg_exdist,
@@ -1310,6 +1339,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        """
+        vn (0:nlev-1):
+            Add the advection and pressure gradient terms to update the normal velocity.
+        """
         self.stencil_add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
