@@ -1,0 +1,8 @@
+{
+    "terminal.integrated.env.linux": {
+        "VSCODE_ICON4PY": "yes",
+    },
+    "terminal.integrated.env.osx": {
+        "VSCODE_ICON4PY": "yes",
+    },
+}

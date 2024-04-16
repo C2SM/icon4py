@@ -109,8 +109,8 @@ venv.bak/
 # Pycharm project settings
 .idea/
 
-# VSCode project settings
-.vscode/
+# # VSCode project settings
+# .vscode/
 
 # SublimeText project settings
 *.sublime-project
