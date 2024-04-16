@@ -66,10 +66,10 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_metric_state_for_diffusion,
 )
 from icon4py.model.driver.testcase_functions import (
-    mo_cells2edges_scalar_numpy,
-    mo_hydro_adjust,
-    mo_rbf_vec_interpol_cell_numpy,
-    mo_u2vn_jabw_numpy,
+    interpolation_cells2edges_scalar_numpy,
+    hydrostatic_adjustment_numpy,
+    interpolation_rbf_edges2cells_vector_numpy,
+    zonal2normalwind_jabw_numpy,
 )
 
 
@@ -89,6 +89,11 @@ log = logging.getLogger(__name__)
 class SerializationType(str, Enum):
     SB = "serialbox"
     NC = "netcdf"
+
+
+class TestcaseType(str, Enum):
+    """Jablonowski-Williamson test"""
+    JABW = "jabw"
 
 
 def read_icon_grid(
@@ -124,10 +129,7 @@ def model_initialization_jabw(
     data_provider = sb.IconSerialDataProvider(
         fname_prefix, str(path.absolute()), False, mpi_rank=rank
     )
-    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
-    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
-    )
+
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
     theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
@@ -141,12 +143,16 @@ def model_initialization_jabw(
     edge_lon = edge_param.edge_center[1].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
 
-    rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
-    rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
+    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
+    rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
+    rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
     cell_size = cell_lat.size
     edge_size = edge_lat.size
     num_levels = icon_grid.num_levels
+    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+    )
 
     p_sfc = 100000.0
     jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
@@ -243,7 +249,7 @@ def model_initialization_jabw(
         temperature_numpy[:, k_index] = temperature_jw
 
     log.info("Newton iteration completed!")
-    eta_v_e_numpy = mo_cells2edges_scalar_numpy(
+    eta_v_e_numpy = interpolation_cells2edges_scalar_numpy(
         icon_grid,
         cells2edges_coeff,
         eta_v_numpy,
@@ -251,7 +257,7 @@ def model_initialization_jabw(
     )
     log.info("Cell-to-edge computation completed.")
 
-    vn_numpy = mo_u2vn_jabw_numpy(
+    vn_numpy = zonal2normalwind_jabw_numpy(
         jw_u0,
         jw_up,
         latC,
@@ -264,7 +270,7 @@ def model_initialization_jabw(
     )
     log.info("U2vn computation completed.")
 
-    rho_numpy, exner_numpy, theta_v_numpy = mo_hydro_adjust(
+    rho_numpy, exner_numpy, theta_v_numpy = hydrostatic_adjustment_numpy(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
@@ -300,10 +306,10 @@ def model_initialization_jabw(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
-    u_numpy, v_numpy = mo_rbf_vec_interpol_cell_numpy(
+    u_numpy, v_numpy = interpolation_rbf_edges2cells_vector_numpy(
         vn_numpy,
-        rbv_vec_coeff_c1.asnumpy(),
-        rbv_vec_coeff_c2.asnumpy(),
+        rbf_vec_coeff_c1.asnumpy(),
+        rbf_vec_coeff_c2.asnumpy(),
         icon_grid.connectivities[C2E2C2EDim],
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
@@ -315,8 +321,6 @@ def model_initialization_jabw(
     v = as_field((CellDim, KDim), v_numpy)
 
     log.info("U, V computation completed.")
-
-    # TODO (Chia Rui): check whether it is better to diagnose pressure and temperature again after hydrostatic adjustment
 
     diagnostic_state = DiagnosticState(
         pressure=pressure,
@@ -687,8 +691,8 @@ def read_static_fields(
             # ddqz_z_full is not in serialized data for mch_ch_r04b09_dsl and exclaim_ape_R02B04
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
-                rbv_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
-                rbv_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+                rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+                rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
                 cell_center_lat=_allocate(CellDim, grid=icon_grid, dtype=float),
                 cell_center_lon=_allocate(CellDim, grid=icon_grid, dtype=float),
                 v_lat=_allocate(VertexDim, grid=icon_grid, dtype=float),
