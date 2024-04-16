@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import math
+
 import numpy as np
 import pytest
 from gt4py.next import as_field
@@ -127,6 +129,7 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
 
 
+# TODO: convert this to a stenciltest once it is possible to have only KDim in domain
 def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
     scalfac_dd3d_full = zero_field(icon_grid, KDim)
@@ -148,9 +151,8 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
     assert dallclose(scalfac_dd3d_ref.asnumpy(), scalfac_dd3d_full.asnumpy())
 
 
+# TODO: convert this to a stenciltest once it is possible to have only KDim in domain
 def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
-    import math
-
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = as_field((), grid_savepoint.vct_a().asnumpy()[0])
     rayleigh_w_full = zero_field(icon_grid, KDim, extend={KDim: 1})

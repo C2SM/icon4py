@@ -107,7 +107,7 @@ def compute_ddqz_z_half(
         z_mc: geometric height on full levels
         k: vertical dimension index
         nlev: total number of levels
-        ddqz_z_half: (output)
+        ddqz_z_half: (output) functional determinant of the metrics (is positive), half levels
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -150,8 +150,8 @@ def compute_ddqz_z_full(
 
     Args:
         z_ifc: geometric height on half levels
-        ddqz_z_full: (output)
-        inv_ddqz_z_full: (output)
+        ddqz_z_full: (output) functional determinant of the metrics (is positive), full levels
+        inv_ddqz_z_full: (output) inverse layer thickness (for runtime optimization)
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
         vertical_start: vertical start index
@@ -201,7 +201,7 @@ def compute_scalfac_dd3d(
 
     Args:
         vct_a: Field[[KDim], float],
-        scalfac_dd3d: (output)
+        scalfac_dd3d: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_type: type of divergence damping (2D or 3D divergence)
@@ -258,6 +258,24 @@ def compute_rayleigh_w(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute rayleigh_w factor.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        rayleigh_w: (output) Rayleigh damping
+        vct_a: Field[[KDim], float]
+        vct_a_1: 1D of vct_a
+        damping_height: height at which w-damping and sponge layer start
+        rayleigh_type: type of Rayleigh damping (1: CLASSIC, 2: Klemp (2008))
+        rayleigh_classic: classical Rayleigh damping, which makes use of a reference state.
+        rayleigh_klemp: Klemp (2008) type Rayleigh damping
+        rayleigh_coeff: Rayleigh damping coefficient in w-equation
+        pi_const: pi constant
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
     _compute_rayleigh_w(
         vct_a,
         vct_a_1,
@@ -293,6 +311,22 @@ def compute_coeff_dwdz(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute coeff1_dwdz and coeff2_dwdz factors.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        ddqz_z_full: functional determinant of the metrics (is positive), full levels
+        z_ifc: geometric height of half levels
+        coeff1_dwdz: coefficient for second-order acurate dw/dz term
+        coeff2_dwdz: coefficient for second-order acurate dw/dz term
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+
     _compute_coeff_dwdz(
         ddqz_z_full,
         z_ifc,
@@ -346,6 +380,29 @@ def compute_d2dexdz2_fac_mc(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute d2dexdz2_fac1_mc and d2dexdz2_fac2_mc factors.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        theta_ref_mc: reference Potential temperature, full level mass points
+        inv_ddqz_z_full: inverse layer thickness (for runtime optimization)
+        exner_ref_mc: reference Exner pressure, full level mass points
+        z_mc: geometric height defined on full levels
+        d2dexdz2_fac1_mc: (output) first vertical derivative of reference Exner pressure, full level mass points, divided by theta_ref
+        d2dexdz2_fac2_mc: (output) vertical derivative of d_exner_dz/theta_ref, full level mass points
+        cpd: Specific heat at constant pressure [J/K/kg]
+        grav: avergae gravitational acceleratio
+        del_t_bg: difference between sea level temperature and asymptotic stratospheric temperature
+        h_scal_bg: height scale for reference atmosphere [m]
+        igradp_method: method for computing the horizontal presure gradient
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+
     _compute_d2dexdz2_fac_mc(
         theta_ref_mc,
         inv_ddqz_z_full,
