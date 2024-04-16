@@ -42,14 +42,18 @@ def test_nrdmax_calculation(max_h, damping, delta, grid_savepoint):
     "experiment, damping_height", [("mch_ch_r04b09_dsl", 12500.0), ("exclaim_ape_R02B04", 50000.0)]
 )
 def test_nrdmax_calculation_from_icon_input(grid_savepoint, experiment, damping_height):
-    vct_a = grid_savepoint.vct_a().asnumpy()
+    a = grid_savepoint.vct_a()
     nrdmax = grid_savepoint.nrdmax()
-    index_of_damping_layer = VerticalModelParams._determine_damping_height_index(
-        vct_a, damping_height
+    vertical_params = VerticalModelParams(
+        rayleigh_damping_height=damping_height,
+        vct_a=a,
+        nflat_gradp=grid_savepoint.nflat_gradp,
+        nflatlev=grid_savepoint.nflatlev(),
     )
-    assert nrdmax == index_of_damping_layer
-    assert vct_a[nrdmax] > damping_height
-    assert vct_a[nrdmax + 1] < damping_height
+    assert nrdmax == vertical_params.index_of_damping_layer
+    a_array = a.asnumpy()
+    assert a_array[nrdmax] > damping_height
+    assert a_array[nrdmax + 1] < damping_height
 
 
 @pytest.mark.datatest
