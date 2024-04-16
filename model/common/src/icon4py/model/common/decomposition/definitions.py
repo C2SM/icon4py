@@ -174,8 +174,8 @@ class SingleNodeExchange(SDFGConvertible):
             sdfg = dace.SDFG('_halo_exchange_')
             state = sdfg.add_state()
 
-            # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-            sdfg.add_scalar(name='__return', dtype=dace.uintp)
+            # Dummy return: preserve same interface with non-DaCe version
+            sdfg.add_scalar(name='__return', dtype=dace.int32)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
                                               inputs=None,
@@ -187,9 +187,7 @@ class SingleNodeExchange(SDFGConvertible):
 
             ret = state.add_write('__return')
             state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
-            out_connectors = {}
-            out_connectors['__out'] = dace.uintp
-            tasklet.out_connectors = out_connectors
+            tasklet.out_connectors = {'__out':dace.int32}
 
             self.return_sdfg = False # reset
             return sdfg
@@ -213,8 +211,7 @@ class SingleNodeExchange(SDFGConvertible):
 
 
 @dataclass
-class WaitOnCommHandle(SDFGConvertible):
-    communication_object: ... = None
+class WaitOnComm(SDFGConvertible):
     return_sdfg : bool = False
 
     def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
@@ -223,7 +220,7 @@ class WaitOnCommHandle(SDFGConvertible):
             state = sdfg.add_state()
 
             # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-            sdfg.add_scalar(name='__return', dtype=dace.uintp)
+            sdfg.add_scalar(name='__return', dtype=dace.int32)
 
             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_wait_',
                                               inputs=None,
@@ -235,9 +232,7 @@ class WaitOnCommHandle(SDFGConvertible):
 
             ret = state.add_write('__return')
             state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
-            out_connectors = {}
-            out_connectors['__out'] = dace.uintp
-            tasklet.out_connectors = out_connectors
+            tasklet.out_connectors = {'__out':dace.int32}
 
             self.return_sdfg = False # reset
             return sdfg
@@ -247,7 +242,6 @@ class WaitOnCommHandle(SDFGConvertible):
     def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
         self.return_sdfg = True
         sdfg = self.__call__(*args, **kwargs)
-        sdfg.arg_names.extend(self.__sdfg_signature__()[0])
         return sdfg
 
     def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:

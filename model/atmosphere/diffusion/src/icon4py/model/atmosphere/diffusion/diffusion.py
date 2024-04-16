@@ -631,7 +631,7 @@ class Diffusion:
             VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
 
-        wait_on_comm_handle = mpi_decomposition.WaitOnCommHandle(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else definitions.WaitOnCommHandle()
+        wait_on_comm_handle = mpi_decomposition.WaitOnComm(self._exchange) if isinstance(self._exchange, GHexMultiNodeExchange) else definitions.WaitOnComm()
 
         @dace_jit(self)
         def fuse():
