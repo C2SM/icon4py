@@ -22,10 +22,10 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostat
 from icon4py.model.driver.icon_configuration import IconRunConfig
 
 
-
 # TODO (Chia Rui): The diffusion and solve_nonhydro configs are duplication of the same functions in
 #                  diffusion_test/utils.py and dycore_tests/utils.py. Remove the duplication when
 #                  architecture for configuration is set up.
+
 
 def exclaim_ape_diffusion_config(ndyn_substeps):
     """Create DiffusionConfig matching EXCLAIM_APE_R04B02.
