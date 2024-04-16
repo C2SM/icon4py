@@ -36,11 +36,11 @@ from icon4py.model.driver.io.data import (
     to_data_array,
 )
 from icon4py.model.driver.io.io import (
-    DatasetStore,
     FieldGroupMonitor,
     FieldIoConfig,
     IoConfig,
     IoMonitor,
+    NetcdfWriter,
     filter_by_standard_name,
     generate_name,
     to_delta,
@@ -185,7 +185,7 @@ def initialize_dataset(test_path, random_name):
     vertical = VerticalGridSize(grid.num_levels)
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) +"/"+ random_name + ".nc"
-    dataset = DatasetStore(fname, vertical, horizontal,
+    dataset = NetcdfWriter(fname, vertical, horizontal,
                            global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"})
     dataset.initialize_dataset()
     return dataset, grid

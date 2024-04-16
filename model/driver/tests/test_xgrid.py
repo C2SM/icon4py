@@ -52,11 +52,11 @@ def test_convert_to_ugrid(file):
   
         
 @pytest.mark.parametrize("file", grid_files())
-def test_dump_ugrid_file(file, path):
+def test_dump_ugrid_file(file, test_path):
     with load_data_file(file) as ds:
         patch = IconUGridPatch()
         uxds = patch(ds)
-        output_dir = path.joinpath("output")
+        output_dir = test_path.joinpath("output")
         output_dir.mkdir(0o755, exist_ok=True)
         dump_ugrid_file(uxds, file, output_path=output_dir)
         fname = output_dir.iterdir().__next__().name

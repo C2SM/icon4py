@@ -21,6 +21,7 @@ from typing import Sequence
 
 import netCDF4 as nc
 import numpy as np
+import xarray
 import xarray as xr
 from cftime import date2num
 from dask.delayed import Delayed
@@ -252,7 +253,7 @@ class FieldGroupMonitor(Monitor):
         
         #TODO (magdalena) common parts should be constructed by IoMonitor
         
-        df = DatasetStore(self._file_name, vertical_grid, horizontal_size, self._global_attrs)
+        df = NetcdfWriter(self._file_name, vertical_grid, horizontal_size, self._global_attrs)
         df.initialize_dataset()
         self._dataset = df
             
@@ -293,29 +294,9 @@ class FieldGroupMonitor(Monitor):
 
 
 
-class XArrayNetCDFWriter:
-    from xarray import Dataset
-    def __init__(self, filename, mode="a"):
-        self.filename = filename
-        self.mode = mode
-        
 
-    def write(self, dataset:Dataset, immediate=True)->[Delayed|None]:
-        delayed = dataset.to_netcdf(self.filename, mode=self.mode, engine="netcdf4", format="NETCDF4", unlimited_dims=["time"], compute=immediate)
-        return delayed
-    def close(self):
-        self.dataset.close()
-        self.dataset = None
-        return self.dataset
     
-    def __enter__(self):
-        pass
-    
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        self.close()
-        return False
-    
-class DatasetStore:
+class NetcdfWriter:
     def __init__(self, file_name: str, vertical:VerticalGridSize, horizontal:HorizontalGridSize ,global_attrs:dict):
         self._file_name = file_name
         self._counter = 1
@@ -372,7 +353,7 @@ class DatasetStore:
         
         # TODO (magdalena) add vct_a as vertical coordinate?
 
-    def append(self, state_to_append:dict, model_time:datetime):
+    def append(self, state_to_append:dict[str, xarray.DataArray], model_time:datetime):
        
         #TODO (magdalena) add data to the dataset
         #3. if yes find location of the time variable
@@ -382,6 +363,7 @@ class DatasetStore:
         time[time_pos] = date2num(model_time, units=time.units, calendar=time.calendar)
         for k, new_slice in state_to_append.items():
             standard_name = new_slice.standard_name
+            
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
@@ -421,15 +403,36 @@ class DatasetStore:
     def variables(self) -> dict:
         return self.dataset.variables
 
-    def _to_canonical_dim_order(self, dims):
+    def _to_canonical_dim_order(self, dims:tuple[str,...]):
         """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order.
         
         
         """
         pass
 
-            
-            
+
+class XArrayNetCDFWriter:
+    from xarray import Dataset
+    def __init__(self, filename, mode="a"):
+        self.filename = filename
+        self.mode = mode
+
+    def write(self, dataset: Dataset, immediate=True) -> [Delayed | None]:
+        delayed = dataset.to_netcdf(self.filename, mode=self.mode, engine="netcdf4",
+                                    format="NETCDF4", unlimited_dims=["time"], compute=immediate)
+        return delayed
+
+    def close(self):
+        self.dataset.close()
+        self.dataset = None
+        return self.dataset
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()
+        return False
 
 
 def generate_name(fname:str, counter:int)->str:
