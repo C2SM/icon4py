@@ -17,7 +17,7 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Final
+from typing import Sequence
 
 import netCDF4 as nc
 import numpy as np
@@ -27,14 +27,18 @@ from dask.delayed import Delayed
 
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.driver.io.xgrid import IconUGridWriter
+from icon4py.model.driver.io.cf_utils import (
+    COARDS_T_POS,
+    DEFAULT_CALENDAR,
+    DEFAULT_TIME_UNIT,
+    INTERFACE_LEVEL_NAME,
+    LEVEL_NAME,
+)
+from icon4py.model.driver.io.xgrid import IconUGridWriter, load_data_file
 
 
 log = logging.getLogger(__name__)
 
-COARDS_T_POS:Final[int] = 0
-COARDS_Z_POS:Final[int] = 1
-HORIZONTAL_POS:Final[int] = 2
 
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
@@ -108,41 +112,91 @@ class FieldIoConfig(Config):
     (can be any horizontal dimension) and vertical levels.
     
     TODO (halungge) add support for 
-    - different vertical levels type config (pressure, model levels, height levels?)
-    - regridding (horizontal)
     - end time ?
     """
     output_interval: str
     start_time: str
     filename_pattern: str
     variables: list[str]
+    title="ICON4Py Simulation"
+    comment="ICON inspired code in Python and GT4Py"
     
     def validate(self):
-        pass
-    
+        assert self.output_interval, "Output interval is not set."
+        assert self.start_time, "Start time is not set."
+        assert self.filename_pattern, "Filename pattern is not set."
+        assert self.variables, "No variables provided for output."
 
-@dataclass
+
+
+
+
+@dataclass(frozen=True)
 class IoConfig(Config):
     """
     Structured and hierarchical config for IO.
-    
+
     Holds some general configuration and a collection of configuraitions for each field group
-    
+
     """
-    base_name: str # base name for all outputfiles
-    
-    output_end_time: str #: end time for output
-    time_units = "seconds since 1970-01-01 00:00:00"
-    calendar = "proleptic_gregorian"
-    output_path:str
-    field_configs: list[FieldIoConfig]
-    
+    output_path: str = './output/'
+    base_name: str = 'icon4py_output_'
+    field_configs: Sequence[FieldIoConfig] = ()
+
+    time_units = DEFAULT_TIME_UNIT
+    calendar = DEFAULT_CALENDAR
 
     def validate(self):
-        # TODO (halungge) add validation of this configs own fields
-        for field_config in self.field_configs:
-            field_config.validate()
-        
+        if not self.field_configs:
+            log.warning("No field configurations provided for output")
+        else:
+            for field_config in self.field_configs:
+                field_config.validate()
+
+class IoMonitor(Monitor):
+    """
+    Composite Monitor for all IO Groups
+    """
+
+    def __init__(self, config: IoConfig, vertical_size: VerticalGridSize, horizontal_size:HorizontalGridSize, 
+                 grid_file_name: str, grid_id:str):
+        config.validate()
+        self.config = config
+        self._grid_file = grid_file_name
+        self._group_monitors = [FieldGroupMonitor(conf,vertical=vertical_size, horizontal=horizontal_size, grid_id=grid_id) for conf in
+                                config.field_configs]
+        self._initialize_output()
+
+    def _read_grid_attrs(self) -> dict:
+        with load_data_file(self._grid_file) as ds:
+            return ds.attrs
+
+    def _initialize_output(self):
+        self._create_output_dir()
+        self._write_ugrid()
+
+    def _create_output_dir(self):
+        path = Path(self.config.output_path)
+        try:
+            path.mkdir(parents=True, exist_ok=False, mode=0o777)
+            self._output_path = path
+        except OSError as error:
+            log.error(f"Output directory at {path} exists: {error}.")
+
+    def _write_ugrid(self):
+        writer = IconUGridWriter(self._grid_file, self._output_path)
+        writer(validate=True)
+
+    @property
+    def path(self):
+        return self._output_path
+
+    def store(self, state, model_time: datetime, **kwargs):
+        for monitor in self._group_monitors:
+            monitor.store(state, model_time, **kwargs)
+
+
+
 
 
 class FieldGroupMonitor(Monitor):
@@ -161,20 +215,33 @@ class FieldGroupMonitor(Monitor):
         return self._time_delta
     
     
-    def __init__(self, config: FieldIoConfig, vertical:VerticalGridSize, horizontal:HorizontalGridSize):
+    def __init__(self, config: FieldIoConfig, vertical:VerticalGridSize, horizontal:HorizontalGridSize, grid_id:str):
+
+        self._global_attrs = dict(
+            Conventions="CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
+            title=config.title,
+            comment=config.comment,
+            institution="ETH Zurich and MeteoSwiss",
+            source="ICON4Py",
+            history="Created by ICON4Py",
+            references="https://icon4py.github.io",
+            external_variables="",  # TODO (halungge) add list of fields in ugrid file
+            uuidOfHGrid=grid_id,  
+        )
         self._next_output_time = datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
         self._field_names = config.variables
         self._file_name = config.filename_pattern
         self._init_dataset(vertical, horizontal)
         
+        
 
-    #initalise this Monitors dataset with:
+    #initialise this Monitors dataset with:
     # - global attributes
-    # - unlimited time dimension
-    # - vertical dimension
+    # - unlimited time dimension -> time
+    # - vertical dimension(s)
     # - horizontal dimensions
-    def _init_dataset(self,vertical_grid:VerticalGridSize, horizontal_size:HorizontalGridSize):
+    def _init_dataset(self, vertical_grid:VerticalGridSize, horizontal_size:HorizontalGridSize):
         """ Initialise the dataset with global attributes and dimensions.
         
         TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical coordinate once there is
@@ -184,18 +251,8 @@ class FieldGroupMonitor(Monitor):
         """
         
         #TODO (magdalena) common parts should be constructed by IoMonitor
-        attrs = dict(
-            Conventions="CF-1.7", # TODO (halungge) check changelog? latest version is 1.11
-            title="ICON4Py output", # TODO (halungge) let user in config 
-            institution="ETH Zurich and MeteoSwiss",
-            source="ICON4Py",
-            history="Created by ICON4Py",
-            references="https://icon4py.github.io",
-            comment="ICON inspired code in Python and GT4Py",
-            external_variables="",# TODO (halungge) add list of fields in ugrid file
-            uuidOfHGrid="", # TODO (halungge) add uuid of the grid
-        )
-        df = DatasetStore(self._file_name, vertical_grid, horizontal_size, attrs)
+        
+        df = DatasetStore(self._file_name, vertical_grid, horizontal_size, self._global_attrs)
         df.initialize_dataset()
         self._dataset = df
             
@@ -233,47 +290,7 @@ class FieldGroupMonitor(Monitor):
 
 
 
-class IoMonitor(Monitor):
-    """
-    Composite Monitor for all IO Groups
-    """
 
-    def __init__(self, config: IoConfig, grid_file:str):
-        config.validate()
-        self.config = config
-        self._grid_file = grid_file
-        self._group_monitors = [FieldGroupMonitor(conf) for conf in config.field_configs]
-        self._initialize_output()
-        
-        
-    def _initialize_output(self):
-        self._create_output_dir()
-        self._write_ugrid()
-        
-        
-    
-    def _create_output_dir(self):
-        path= Path(self.config.output_path)
-        try: 
-            path.mkdir(parents=True, exist_ok=False)
-            self._output_path = path
-        except OSError as error:
-            log.error(f"Output directory at {path} exists: {error}.")
-            
-        
-        
-    def _write_ugrid(self):
-        writer = IconUGridWriter(self._grid_file, self._output_path)
-        writer(validate=True)
-        
-    @property    
-    def path(self):
-        return self._output_path
-        
-    def store(self, state, model_time:datetime, **kwargs):    
-        for monitor in self._group_monitors:
-            monitor.store(state, model_time, **kwargs)
-        
 
 
 class XArrayNetCDFWriter:
@@ -321,7 +338,8 @@ class DatasetStore:
         dim.standard_name = values.standard_name
         
     def initialize_dataset(self):
-        # TODO (magdalena) (what mode do we need here?)
+        # TODO (magdalena) (what mode do we need `a` or `w`? 
+        #  TODO properly closing file
         filename = generate_name(self._file_name, self._counter)
         self.dataset = nc.Dataset(filename, "w", format="NETCDF4")
         self.dataset.setncatts(self.attrs)
@@ -335,21 +353,21 @@ class DatasetStore:
         self.dataset.createDimension('edge', self.horizontal_size.num_edges)
         # create time variables
         times = self.dataset.createVariable('times', 'f8', ('time',))
-        times.units = 'seconds since 1970-01-01 00:00:00'
-        times.calendar = 'proleptic_gregorian'
+        times.units = DEFAULT_TIME_UNIT
+        times.calendar = DEFAULT_CALENDAR
         times.standard_name = 'time'
         times.long_name = 'time'
         # create vertical coordinates:
         levels = self.dataset.createVariable('levels', np.int32, ('level',))
         levels.units = '1'
         levels.long_name = 'model full levels'
-        levels.standard_name = 'levels'
+        levels.standard_name = LEVEL_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
         
-        interface_levels = self.dataset.createVariable('interface_level', np.int32, ('interface_level',))
+        interface_levels = self.dataset.createVariable('interface_levels', np.int32, ('interface_level',))
         interface_levels.units = '1'
-        interface_levels.long_name = 'model interface level'
-        interface_levels.standard_name = 'interface_level'
+        interface_levels.long_name = 'model interface levels'
+        interface_levels.standard_name = INTERFACE_LEVEL_NAME
         interface_levels[:] = np.arange(self.num_levels+1, dtype=np.int32)
         
         # TODO (magdalena) add vct_a as vertical coordinate?
@@ -387,7 +405,7 @@ class DatasetStore:
                 # we can acutally assume fixed index ordering here, input arrays should re shaped to canonical order
                 
                 right = (slice(None),) * (len(dims) - 1)
-                expand_slice = (slice(shape[COARDS_T_POS] - 1, shape[COARDS_T_POS]), )
+                expand_slice = (slice(shape[COARDS_T_POS] - 1, shape[COARDS_T_POS]),)
                 slices = expand_slice + right
                 self.dataset.variables[var_name][slices] = new_slice.data
                 #self.append_data(k, v, time_pos)

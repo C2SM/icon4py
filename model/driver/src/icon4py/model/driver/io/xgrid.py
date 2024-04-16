@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
 import contextlib
 import logging
 from pathlib import Path
@@ -32,15 +31,6 @@ log = logging.getLogger(__name__)
 MESH = "mesh"
 
 
-@contextlib.contextmanager
-def load_data_file(filename: Union[Path|str]) -> xa.Dataset:
-    ds = xa.open_dataset(filename)
-    try:
-        yield ds
-    finally:
-        ds.close()
-
-
 def extract_horizontal_coordinates(ds: xa.Dataset):
     """
     Extract the coordinates from the ICON grid file.
@@ -54,7 +44,7 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
 
 
 dimension_mapping = {
-    CellDim:"cell",
+    CellDim: "cell",
     KDim: "level",
     EdgeDim:"edge",
     VertexDim:"vertex"
@@ -217,4 +207,12 @@ class IconUGridWriter:
         with load_data_file(self.original_filename) as ds:
             patched_ds = patch(ds, validate)
             dump_ugrid_file(patched_ds, self.original_filename, self.output_path)
-        
+
+
+@contextlib.contextmanager
+def load_data_file(filename: Union[Path|str]) -> xa.Dataset:
+    ds = xa.open_dataset(filename)
+    try:
+        yield ds
+    finally:
+        ds.close()

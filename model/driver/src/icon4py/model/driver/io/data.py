@@ -10,13 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import xarray as xa
 from gt4py.next.common import Dimension, DimensionKind
 
 from icon4py.model.driver.io.xgrid import dimension_mapping, ugrid_attributes
 
-
-DEFAULT_CALENDAR = "proleptic_gregorian"
 
 ### CF attributes of the prognostic variables
 PROGNOSTIC_CF_ATTRIBUTES = dict(
@@ -65,8 +64,6 @@ def _is_horizontal(dim:Dimension):
 class OutputFile:
     def __init__(self, filename: str, grid_ds: xa.Dataset):
         self.filename = filename
-        self.grid = grid_ds    
-        
-        
-        
-    
+        self.grid = grid_ds
+
+

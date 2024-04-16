@@ -30,6 +30,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, get_icon_grid_from_gridfile
 from icon4py.model.common.test_utils.helpers import random_field
+from icon4py.model.driver.io.cf_utils import INTERFACE_LEVEL_NAME, LEVEL_NAME
 from icon4py.model.driver.io.data import (
     PROGNOSTIC_CF_ATTRIBUTES,
     to_data_array,
@@ -100,20 +101,22 @@ def is_valid_uxgrid(file: Union[Path, str]) -> bool:
     except RuntimeError:
         return False
 
+
+
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(base_name="test_", field_configs=[], output_end_time="2023-01-01T00:00:00", output_path= path_name)
-    
-    monitor = IoMonitor(config, grid_file=grid_file)
+    config = IoConfig(base_name="test_", field_configs=[], output_path= path_name)
+    monitor = IoMonitor(config, VerticalGridSize(10), SimpleGrid().config.horizontal_config,
+                        grid_file, "simple_grid")
     assert monitor.path.exists()
     assert monitor.path.is_dir()
 
     
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(base_name="test_", field_configs=[], output_end_time="2023-01-01T00:00:00",
-                      output_path=path_name)
-    monitor = IoMonitor(config, grid_file=grid_file)
+    config = IoConfig(base_name="test_", field_configs=[],output_path=path_name)
+    monitor = IoMonitor(config, VerticalGridSize(10), SimpleGrid().config.horizontal_config,
+                        grid_file, "simple_grid")
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
     assert is_valid_uxgrid(ugrid_file)
@@ -146,7 +149,7 @@ def test_fieldgroup_monitor_output_time_updates_upon_store():
     step_time = datetime.fromisoformat(config.start_time)
     vertical_size = VerticalGridSize(10)
     horizontal_size = SimpleGrid().config.horizontal_config
-    io_system = FieldGroupMonitor(config,vertical=vertical_size, horizontal=horizontal_size)
+    io_system = FieldGroupMonitor(config,vertical=vertical_size, horizontal=horizontal_size, grid_id="simple_grid")
     assert io_system.next_output_time == datetime.fromisoformat(config.start_time)
     
     io_system.store(model_state, step_time)
@@ -204,18 +207,18 @@ def test_initialize_datastore_vertical_model_levels(test_path, random_name):
     assert vertical.units == "1"
     assert vertical.dimensions == ("level",)
     assert vertical.long_name == "model full levels"
-    assert vertical.standard_name == "levels"
+    assert vertical.standard_name == LEVEL_NAME
     assert vertical.datatype == np.int32
     assert len(vertical) == grid.num_levels
     assert np.all(vertical == np.arange(grid.num_levels))
 
 def test_initialize_datastore_interface_levels(test_path, random_name):
     dataset, grid = initialize_dataset(test_path, random_name)
-    interface_levels = dataset.variables["interface_level"]
+    interface_levels = dataset.variables["interface_levels"]
     assert interface_levels.units == "1"
     assert interface_levels.datatype == np.int32
-    assert interface_levels.long_name == "model interface level"
-    assert interface_levels.standard_name == "interface_level"
+    assert interface_levels.long_name == "model interface levels"
+    assert interface_levels.standard_name == INTERFACE_LEVEL_NAME
     assert len(interface_levels) == grid.num_levels + 1
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
