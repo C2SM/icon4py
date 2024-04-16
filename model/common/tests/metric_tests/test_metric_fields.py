@@ -20,6 +20,7 @@ from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
+    compute_d2dexdz2_fac_mc,
     compute_ddqz_z_full,
     compute_ddqz_z_half,
     compute_rayleigh_w,
@@ -198,3 +199,51 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 
     assert dallclose(coeff1_dwdz_full.asnumpy(), coeff1_dwdz_ref.asnumpy())
     assert dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
+
+
+def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
+    z_ifc = metrics_savepoint.z_ifc()
+    z_mc = zero_field(icon_grid, CellDim, KDim)
+    compute_z_mc.with_backend(backend)(
+        z_ifc,
+        z_mc,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=int32(0),
+        vertical_end=int32(icon_grid.num_levels),
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    d2dexdz2_fac1_mc_ref = metrics_savepoint.d2dexdz2_fac1_mc()
+    d2dexdz2_fac2_mc_ref = metrics_savepoint.d2dexdz2_fac2_mc()
+
+    d2dexdz2_fac1_mc_full = zero_field(icon_grid, CellDim, KDim)
+    d2dexdz2_fac2_mc_full = zero_field(icon_grid, CellDim, KDim)
+    cpd = constants.CPD
+    grav = constants.GRAV
+    del_t_bg = constants.DEL_T_BG
+    h_scal_bg = constants._H_SCAL_BG
+
+    compute_d2dexdz2_fac_mc.with_backend(backend=backend)(
+        theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+        inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+        exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+        z_mc=z_mc,
+        d2dexdz2_fac1_mc=d2dexdz2_fac1_mc_full,
+        d2dexdz2_fac2_mc=d2dexdz2_fac2_mc_full,
+        cpd=cpd,
+        grav=grav,
+        del_t_bg=del_t_bg,
+        h_scal_bg=h_scal_bg,
+        igradp_method=int32(3),
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=int32(0),
+        vertical_end=int32(icon_grid.num_levels),
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    assert dallclose(d2dexdz2_fac1_mc_full.asnumpy(), d2dexdz2_fac1_mc_ref.asnumpy())
+    assert dallclose(d2dexdz2_fac2_mc_full.asnumpy(), d2dexdz2_fac2_mc_ref.asnumpy())

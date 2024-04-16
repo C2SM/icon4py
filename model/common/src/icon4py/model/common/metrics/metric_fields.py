@@ -15,6 +15,7 @@ from gt4py.next import (
     Field,
     GridType,
     broadcast,
+    exp,
     field_operator,
     int32,
     maximum,
@@ -254,7 +255,7 @@ def compute_rayleigh_w(
     rayleigh_klemp: int32,
     rayleigh_coeff: wpfloat,
     pi_const: wpfloat,
-    vertical_start: int32,  # 1, nrdmax(jg)
+    vertical_start: int32,
     vertical_end: int32,
 ):
     _compute_rayleigh_w(
@@ -296,5 +297,67 @@ def compute_coeff_dwdz(
         ddqz_z_full,
         z_ifc,
         out=(coeff1_dwdz, coeff2_dwdz),
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_d2dexdz2_fac_mc(
+    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    z_mc: Field[[CellDim, KDim], wpfloat],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
+    cpd: float,
+    grav: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    igradp_method: int32,
+) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+    if igradp_method <= int32(3):
+        d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
+        d2dexdz2_fac2_mc = (
+            2.0
+            * grav
+            / (cpd * theta_ref_mc**3)
+            * (grav / cpd - del_t_bg / h_scal_bg * exp(-z_mc / h_scal_bg))
+            / exner_ref_mc
+        )
+
+    return d2dexdz2_fac1_mc, d2dexdz2_fac2_mc
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_d2dexdz2_fac_mc(
+    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    z_mc: Field[[CellDim, KDim], wpfloat],
+    d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
+    d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
+    cpd: float,
+    grav: wpfloat,
+    del_t_bg: wpfloat,
+    h_scal_bg: wpfloat,
+    igradp_method: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_d2dexdz2_fac_mc(
+        theta_ref_mc,
+        inv_ddqz_z_full,
+        exner_ref_mc,
+        z_mc,
+        d2dexdz2_fac1_mc,
+        d2dexdz2_fac2_mc,
+        cpd,
+        grav,
+        del_t_bg,
+        h_scal_bg,
+        igradp_method,
+        out=(d2dexdz2_fac1_mc, d2dexdz2_fac2_mc),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
