@@ -60,6 +60,7 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 
+from model.common.src.icon4py.model.common.test_utils.grid_utils import construct_icon_grid
 
 logger = setup_logger(__name__)
 
@@ -113,6 +114,21 @@ def diffusion_init(
     primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
+    limited_area: bool,
+    num_cells: int32,
+    num_edges: int32,
+    num_vertices: int32,
+    cells_start_index: int32,
+    cells_end_index: int32,
+    vertex_start_index: int32,
+    vertex_end_index: int32,
+    edge_start_index: int32,
+    edge_end_index: int32,
+    c2e: Field[[CellDim, C2EDim], int32],
+    c2e2c: Field[[CellDim, C2E2CDim], int32],
+    v2e: Field[[VertexDim, V2EDim], int32],
+    e2c2v: Field[[EdgeDim, E2C2VDim], int32],
+    e2c: Field[[EdgeDim, E2CDim], int32],
 ):
     logger.info(f"Using Device = {device}")
 
@@ -122,13 +138,20 @@ def diffusion_init(
     else:
         on_gpu = False
 
-    icon_grid = _load_from_gridfile(
-        file_path=get_icon_grid_loc(),
-        filename=get_grid_filename(),
-        num_levels=num_levels,
-        on_gpu=on_gpu,
-        limited_area=True,
-    )
+    # icon_grid = _load_from_gridfile(
+    #     file_path=get_icon_grid_loc(),
+    #     filename=get_grid_filename(),
+    #     num_levels=num_levels,
+    #     on_gpu=on_gpu,
+    #     limited_area=True,
+    # )
+    icon_grid = construct_icon_grid(
+        cells_start_index, cells_end_index,
+        vertex_start_index, vertex_end_index,
+        edge_start_index, edge_end_index,
+        num_cells, num_edges, num_vertices, num_levels,
+        c2e, c2e2c, v2e, e2c2v, e2c,
+        limited_area,on_gpu)
 
     # Edge geometry
     edge_params = EdgeParams(

@@ -17,6 +17,23 @@ import pytest
 from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.base import GridConfig
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
+from icon4py.model.common.dimension import (
+    EdgeDim,
+    KDim,
+    VertexDim,
+    CellDim,
+    E2C2VDim,
+    V2EDim,
+    C2E2CODim,
+    C2E2CDim,
+    E2CDim,
+    C2EDim,
+    CECDim,
+    CEDim,
+    ECVDim,
+)
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRID_URIS,
@@ -24,6 +41,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
     R02B04_GLOBAL,
     REGIONAL_EXPERIMENT,
 )
+import numpy as np
 
 
 GLOBAL_NUM_LEVELS = 80
@@ -72,6 +90,60 @@ def _load_from_gridfile(
     )
     gm(on_gpu=on_gpu, limited_area=limited_area)
     return gm.get_grid()
+
+
+def construct_icon_grid(cells_start_index, cells_end_index,
+                        vertex_start_index, vertex_end_index,
+                        edge_start_index, edge_end_index,
+                        num_cells, num_edges, num_vertices, num_levels,
+                        c2e, c2e2c, v2e, e2c2v, e2c,
+                        limited_area: bool,
+                        on_gpu: bool) -> IconGrid:
+
+    config = GridConfig(
+        horizontal_config=HorizontalGridSize(
+            num_vertices=num_vertices,
+            num_cells=num_cells,
+            num_edges=num_edges,
+        ),
+        vertical_config=VerticalGridSize(num_lev=num_levels),
+        limited_area=limited_area,
+        on_gpu=on_gpu,
+    )
+
+    c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
+
+    grid = (
+        IconGrid()
+        .with_config(config)
+        .with_start_end_indices(VertexDim, vertex_start_index, vertex_end_index)
+        .with_start_end_indices(EdgeDim, edge_start_index, edge_end_index)
+        .with_start_end_indices(CellDim, cells_start_index, cells_end_index)
+        .with_connectivities(
+            {
+                C2EDim: c2e,
+                E2CDim: e2c,
+                C2E2CDim: c2e2c,
+                C2E2CODim: c2e2c0,
+            }
+        )
+        .with_connectivities(
+            {
+                V2EDim: v2e,
+                E2C2VDim: e2c2v,
+            }
+        )
+    )
+
+    grid.update_size_connectivities(
+        {
+            ECVDim: grid.size[EdgeDim] * grid.size[E2C2VDim],
+            CEDim: grid.size[CellDim] * grid.size[C2EDim],
+            CECDim: grid.size[CellDim] * grid.size[C2E2CDim],
+        }
+    )
+
+    return grid
 
 
 @pytest.fixture
