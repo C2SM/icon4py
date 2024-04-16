@@ -20,7 +20,7 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-
+import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.diffusion.diffusion import (
@@ -141,13 +141,21 @@ def diffusion_init(
     else:
         on_gpu = False
 
-    # icon_grid = _load_from_gridfile(
-    #     file_path=get_icon_grid_loc(),
-    #     filename=get_grid_filename(),
-    #     num_levels=num_levels,
-    #     on_gpu=on_gpu,
-    #     limited_area=True,
-    # )
+    icon_grid2 = _load_from_gridfile(
+        file_path=get_icon_grid_loc(),
+        filename=get_grid_filename(),
+        num_levels=num_levels,
+        on_gpu=on_gpu,
+        limited_area=limited_area,
+    )
+
+    cells_start_index = np.subtract(cells_start_index,1)
+    cells_end_index = np.subtract(cells_end_index, 1)
+    vertex_start_index = np.subtract(vertex_start_index, 1)
+    vertex_end_index = np.subtract(vertex_end_index, 1)
+    edge_start_index = np.subtract(edge_start_index, 1)
+    edge_end_index = np.subtract(edge_end_index, 1)
+
     icon_grid = construct_icon_grid(
         cells_start_index, cells_end_index,
         vertex_start_index, vertex_end_index,
