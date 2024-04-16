@@ -38,6 +38,7 @@ except ImportError:
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
+from icon4py.model.common.decomposition.definitions import DecompositionInfo as di
 
 import sys
 import site
@@ -47,6 +48,7 @@ from dace.frontend.python.common import SDFGConvertible
 from dace.memlet import Memlet
 from dace import dtypes
 from dace.properties import CodeBlock
+import numpy as np
 
 
 if TYPE_CHECKING:
@@ -55,6 +57,14 @@ if TYPE_CHECKING:
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
+
+
+def as_dace_type(np_dtype):
+    if np_dtype == np.int32:
+        return dace.int32
+    elif np_dtype == np.int64:
+        return dace.int64
+    raise ValueError(f"'{np_dtype}' not supported.")
 
 
 def init_mpi():
@@ -230,8 +240,15 @@ class GHexMultiNodeExchange(SDFGConvertible):
             state = sdfg.add_state()
 
             if self.counter == 0:
-                for cpp_ptr_name in self.__sdfg_closure__():
-                    sdfg.add_scalar(cpp_ptr_name, dtype=dace.uintp)
+                for buffer_name in self.__sdfg_closure__():
+                    if '__gids_' in buffer_name or '__lids_' in buffer_name:
+                        data_descriptor = dace.data.Array(dtype=as_dace_type(self.__sdfg_closure__()[buffer_name].dtype), 
+                                                          shape=self.__sdfg_closure__()[buffer_name].shape)
+                        sdfg.add_array(buffer_name,
+                                       data_descriptor.shape,
+                                       data_descriptor.dtype)
+                    else:
+                        sdfg.add_scalar(buffer_name, dtype=dace.uintp)
 
             for arg in zip(self.__sdfg_signature__()[0], args):
                 buffer_name = arg[0]
@@ -269,13 +286,18 @@ class GHexMultiNodeExchange(SDFGConvertible):
                 state.add_edge(tasklet, 'OUT_' + buffer_name, update, None, Memlet.from_array(buffer_name, data_descriptor))
 
             if self.counter == 0:
-                for i, cpp_ptr_name in enumerate(self.__sdfg_closure__()):
-                    buffer_name = cpp_ptr_name
-                    data_descriptor = dace.uintp
-
+                for i, buffer_name in enumerate(self.__sdfg_closure__()):
                     buffer = state.add_read(buffer_name)
-                    in_connectors['IN_' + buffer_name] = data_descriptor.dtype
-                    state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, Memlet(buffer_name, subset='0'))
+                    if 'gids' in buffer_name or 'lids' in buffer_name:
+                        data_descriptor = dace.data.Array(dtype=as_dace_type(self.__sdfg_closure__()[buffer_name].dtype), 
+                                                          shape=self.__sdfg_closure__()[buffer_name].shape)
+                        in_connectors['IN_' + buffer_name] = dtypes.pointer(data_descriptor.dtype)
+                        memlet_ = Memlet.from_array(buffer_name, data_descriptor)
+                    else:
+                        data_descriptor = dace.uintp
+                        in_connectors['IN_' + buffer_name] = data_descriptor.dtype
+                        memlet_ =  Memlet(buffer_name, subset='0')
+                    state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, memlet_)
 
             return_handle = state.add_write("__return")
             state.add_edge(tasklet, '__out', return_handle, None, Memlet('__return', subset='0'))
@@ -335,17 +357,22 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
             code = ''
             if self.counter == 0:
+                __pattern = ''
+                __domain_descriptor = ''
+                __gids = ''
+                for dim_ in (CellDim, VertexDim, EdgeDim):
+                    __pattern += f"__pattern_{dim_.value}Dim_ptr_{id(self._comm)} = IN___pattern_{dim_.value}Dim_ptr;\n"
+                    __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{id(self._comm)} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
+
+                    for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO):
+                        __gids += f"__gids_{ind.name}_{dim_.value}_{id(self._comm)} = IN___gids_{ind.name}_{dim_.value};\n"
+                    
                 code = f'''
                        __context_ptr_{id(self._comm)} = IN___context_ptr;
                        __comm_ptr_{id(self._comm)} = IN___comm_ptr;
-
-                       __pattern_CellDim_ptr_{id(self._comm)} = IN___pattern_CellDim_ptr;
-                       __pattern_VertexDim_ptr_{id(self._comm)} = IN___pattern_VertexDim_ptr;
-                       __pattern_EdgeDim_ptr_{id(self._comm)} = IN___pattern_EdgeDim_ptr;
-
-                       __domain_descriptor_CellDim_ptr_{id(self._comm)} = IN___domain_descriptor_CellDim_ptr;
-                       __domain_descriptor_VertexDim_ptr_{id(self._comm)} = IN___domain_descriptor_VertexDim_ptr;
-                       __domain_descriptor_EdgeDim_ptr_{id(self._comm)} = IN___domain_descriptor_EdgeDim_ptr;
+                       {__pattern}
+                       {__domain_descriptor}
+                       {__gids}
                        '''
 
             code += f'''
@@ -389,21 +416,24 @@ class GHexMultiNodeExchange(SDFGConvertible):
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
             if self.counter == 0:
+                __pattern = ''
+                __domain_descriptor = ''
+                __gids = ''
+                for dim_ in (CellDim, VertexDim, EdgeDim):
+                    __pattern += f"{dace.uintp.dtype} __pattern_{dim_.value}Dim_ptr_{id(self._comm)};\n"
+                    __domain_descriptor += f"{dace.uintp.dtype} __domain_descriptor_{dim_.value}Dim_ptr_{id(self._comm)};\n"
+
+                    for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO):
+                        __gids += f"int* __gids_{ind.name}_{dim_.value}_{id(self._comm)};\n"
+                
                 code = f'''
                         {dace.uintp.dtype} __context_ptr_{id(self._comm)};
                         {dace.uintp.dtype} __comm_ptr_{id(self._comm)};
-
-                        {dace.uintp.dtype} __pattern_CellDim_ptr_{id(self._comm)};
-                        {dace.uintp.dtype} __pattern_VertexDim_ptr_{id(self._comm)};
-                        {dace.uintp.dtype} __pattern_EdgeDim_ptr_{id(self._comm)};
-
-                        {dace.uintp.dtype} __domain_descriptor_CellDim_ptr_{id(self._comm)};
-                        {dace.uintp.dtype} __domain_descriptor_VertexDim_ptr_{id(self._comm)};
-                        {dace.uintp.dtype} __domain_descriptor_EdgeDim_ptr_{id(self._comm)};
-
-                        ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};
-
+                        {__pattern}
+                        {__domain_descriptor}
+                        {__gids}
                         {fields_desc_glob_vars}
+                        ghex::communication_handle<{communication_handle_type}> h_{id(self._comm)};
                         '''
             else:
                 code = fields_desc_glob_vars
@@ -433,12 +463,10 @@ class GHexMultiNodeExchange(SDFGConvertible):
     def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         return {'__context_ptr':ghex.expose_cpp_ptr(self._context),
                 '__comm_ptr':ghex.expose_cpp_ptr(self._comm),
-                '__pattern_CellDim_ptr':ghex.expose_cpp_ptr(self._patterns[CellDim]),
-                '__pattern_VertexDim_ptr':ghex.expose_cpp_ptr(self._patterns[VertexDim]),
-                '__pattern_EdgeDim_ptr':ghex.expose_cpp_ptr(self._patterns[EdgeDim]),
-                '__domain_descriptor_CellDim_ptr':ghex.expose_cpp_ptr(self._domain_descriptors[CellDim]),
-                '__domain_descriptor_VertexDim_ptr':ghex.expose_cpp_ptr(self._domain_descriptors[VertexDim]),
-                '__domain_descriptor_EdgeDim_ptr':ghex.expose_cpp_ptr(self._domain_descriptors[EdgeDim]),
+                **{f"__pattern_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._patterns[dim]) for dim in (CellDim, VertexDim, EdgeDim)},
+                **{f"__domain_descriptor_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._domain_descriptors[dim]) for dim in (CellDim, VertexDim, EdgeDim)},
+                #
+                **{f"__gids_{ind.name}_{dim.value}":self._decomposition_info.global_index(dim, ind) for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
                 }
     
     def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:

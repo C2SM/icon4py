@@ -896,20 +896,17 @@ def dace_jit(self):
                     dace.config.Config.set("optimizer", "automatic_simplification", value=False)
                     dace.config.Config.set("cache", value="unique")
 
+                    from icon4py.model.common.decomposition.definitions import DecompositionInfo as di
                     return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)(*args, **kwargs,
-                                #
+                                # GHEX C++ ptrs
                                 __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
                                 __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                #
-                                __pattern_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                __pattern_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                __pattern_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._patterns[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                #
-                                __domain_descriptor_CellDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[CellDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                __domain_descriptor_VertexDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[VertexDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                __domain_descriptor_EdgeDim_ptr=ghex.expose_cpp_ptr(self._exchange._domain_descriptors[EdgeDim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                #
+                                **{f"__pattern_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._patterns[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None for dim in (CellDim, VertexDim, EdgeDim)},
+                                **{f"__domain_descriptor_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._domain_descriptors[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None for dim in (CellDim, VertexDim, EdgeDim)},
+                                # offset providers
                                 **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
+                                #
+                                **{f"__gids_{ind.name}_{dim.value}":self._exchange._decomposition_info.global_index(dim, ind) for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
                            )
             else:
                 fuse_func(*args, **kwargs)
