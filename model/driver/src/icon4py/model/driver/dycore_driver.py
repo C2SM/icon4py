@@ -422,6 +422,53 @@ class OutputState:
                     "ncells_2",
                 ),
             )
+            intermediate_predictor_theta_v_e = self._nf4_basegrp[i].createVariable(
+                "intermediate_predictor_theta_v_e",
+                "f8",
+                (
+                    "time",
+                    "height",
+                    "ncells_2",
+                ),
+            )
+            intermediate_predictor_gradh_exner = self._nf4_basegrp[i].createVariable(
+                "intermediate_predictor_gradh_exner",
+                "f8",
+                (
+                    "time",
+                    "height",
+                    "ncells_2",
+                ),
+            )
+            intermediate_predictor_ddt_vn_apc_ntl1 = self._nf4_basegrp[i].createVariable(
+                "intermediate_predictor_ddt_vn_apc_ntl1",
+                "f8",
+                (
+                    "time",
+                    "height",
+                    "ncells_2",
+                ),
+            )
+            intermediate_predictor_theta_v_e.units = "K"
+            intermediate_predictor_theta_v_e.standard_name = "predictor_theta_v"
+            intermediate_predictor_theta_v_e.long_name = "theta_v in predictor step"
+            intermediate_predictor_theta_v_e.CDI_grid_type = "unstructured"
+            intermediate_predictor_theta_v_e.number_of_grid_in_reference = 1
+            intermediate_predictor_theta_v_e.coordinates = "elat elon"
+
+            intermediate_predictor_gradh_exner.units = "m-1"
+            intermediate_predictor_gradh_exner.standard_name = "predictor_exner_gradient"
+            intermediate_predictor_gradh_exner.long_name = "exner_gradient in predictor step"
+            intermediate_predictor_gradh_exner.CDI_grid_type = "unstructured"
+            intermediate_predictor_gradh_exner.number_of_grid_in_reference = 1
+            intermediate_predictor_gradh_exner.coordinates = "elat elon"
+
+            intermediate_predictor_ddt_vn_apc_ntl1.units = "m-1 s-2"
+            intermediate_predictor_ddt_vn_apc_ntl1.standard_name = "predictor_vn_tendency"
+            intermediate_predictor_ddt_vn_apc_ntl1.long_name = "vn_tendency in predictor step"
+            intermediate_predictor_ddt_vn_apc_ntl1.CDI_grid_type = "unstructured"
+            intermediate_predictor_ddt_vn_apc_ntl1.number_of_grid_in_reference = 1
+            intermediate_predictor_ddt_vn_apc_ntl1.coordinates = "elat elon"
 
             cell_latitudes.units = "radian"
             cell_longitudes.units = "radian"
@@ -799,6 +846,16 @@ class OutputState:
                 self._current_write_step, :, :
             ] = solve_nonhydro.intermediate_fields.z_theta_v_e.asnumpy().transpose()
 
+            self._nf4_basegrp[self._current_file_number].variables["intermediate_predictor_theta_v_e"][
+                self._current_write_step, :, :
+            ] = solve_nonhydro.output_intermediate_fields.output_predictor_theta_v_e.asnumpy().transpose()
+            self._nf4_basegrp[self._current_file_number].variables["intermediate_predictor_gradh_exner"][
+                self._current_write_step, :, :
+            ] = solve_nonhydro.output_intermediate_fields.output_predictor_gradh_exner.asnumpy().transpose()
+            self._nf4_basegrp[self._current_file_number].variables["intermediate_predictor_ddt_vn_apc_ntl1"][
+                self._current_write_step, :, :
+            ] = solve_nonhydro.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1.asnumpy().transpose()
+
         if nh_diagnostic_state is not None:
             self._nf4_basegrp[self._current_file_number].variables["ddt_vn_apc_1"][
                 self._current_write_step, :, :
@@ -846,7 +903,7 @@ class OutputState:
         if time_elapsed_since_last_output >= self.config.output_time_interval:
             if self._enforce_new_ncfile or time_elapsed_in_this_ncfile > self.config.output_file_time_interval:
                 self._enforce_new_ncfile = False
-                self._first_date_in_this_ncfile =  self._output_date
+                self._first_date_in_this_ncfile = self._output_date
                 self._current_write_step = 0
                 self._current_file_number += 1
             else:
@@ -1119,7 +1176,6 @@ class TimeLoop:
             # put boundary condition update here
 
             timer.start()
-            '''
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -1128,7 +1184,6 @@ class TimeLoop:
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
-            '''
             timer.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)

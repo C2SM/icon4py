@@ -142,18 +142,18 @@ def read_config(experiment: Optional[str]) -> IconConfig:
 
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=300.0,
-            end_date=datetime(1, 1, 1, 0, 30, 0),
+            dtime=60.0,
+            end_date=datetime(1, 1, 1, 0, 1, 0),
             damping_height=45000.0,
             apply_initial_stabilization=True,
             run_testcase=True,
             n_substeps=5,
         )
         output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=300),
-            output_file_time_interval=timedelta(seconds=1800),
+            output_time_interval=timedelta(seconds=60),
+            output_file_time_interval=timedelta(seconds=60),
             output_path=Path("./"),
-            output_initial_condition_as_a_separate_file=False,
+            output_initial_condition_as_a_separate_file=True,
         )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
         nonhydro_config = jabw_nonhydro_config(icon_run_config.n_substeps)

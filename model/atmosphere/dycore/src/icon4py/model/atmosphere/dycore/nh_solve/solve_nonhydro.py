@@ -126,6 +126,12 @@ from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substit
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
+from icon4py.model.atmosphere.dycore.copy_cell_kdim_field import (
+    copy_cell_kdim_field,
+)
+from icon4py.model.atmosphere.dycore.copy_edge_kdim_field import (
+    copy_edge_kdim_field,
+)
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -228,6 +234,24 @@ class IntermediateFields:
             z_vt_ie=_allocate(EdgeDim, KDim, grid=grid),
         )
 
+
+@dataclass
+class OutputIntermediateFields:
+    """
+    For intermediate output fields
+    """
+
+    output_predictor_theta_v_e: Field[[EdgeDim, KDim], float]
+    output_predictor_gradh_exner: Field[[EdgeDim, KDim], float]
+    output_predictor_ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float]
+
+    @classmethod
+    def allocate(cls, grid: BaseGrid):
+        return OutputIntermediateFields(
+            output_predictor_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_predictor_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
+            output_predictor_ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=grid),
+        )
 
 class NonHydrostaticConfig:
     """
@@ -469,6 +493,12 @@ class SolveNonhydro:
         self.stencil_add_temporal_tendencies_to_vn = add_temporal_tendencies_to_vn.with_backend(
             backend
         )
+        self.stencil_copy_cell_kdim_field = copy_cell_kdim_field.with_backend(
+            backend
+        )
+        self.stencil_copy_edge_kdim_field = copy_edge_kdim_field.with_backend(
+            backend
+        )
         self.stencil_compute_vn_on_lateral_boundary = compute_vn_on_lateral_boundary.with_backend(
             backend
         )
@@ -680,6 +710,7 @@ class SolveNonhydro:
         self._bdy_divdamp = _allocate(KDim, grid=self.grid)
         self.scal_divdamp = _allocate(KDim, grid=self.grid)
         self.intermediate_fields = IntermediateFields.allocate(self.grid)
+        self.output_intermediate_fields = OutputIntermediateFields.allocate(self.grid)
 
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
@@ -1190,9 +1221,9 @@ class SolveNonhydro:
                 The distance between back-trajectory point and the nearest cell center is computed first (d_n, d_t) = -(cell_center_n + vn dt/2, cell_center_t + vt dt/2) = d_n vn + d_t vt.
                 It is then transformed to (lat, lon) coordinates = (d_lat, d_lon) = (d_y, d_x) by d_n*vn_lat + d_t*vt_lat, d_n*vn_lon + d_t*vt_lon.
                 Then, the value at edges is simply p_at_edge = p_at_cell_center + dp/dx d_x + dp/dy d_y
-                z_rho_e:
+                z_rho_e (0:nlev-1):
                     rho at edges.
-                z_theta_v_e:
+                z_theta_v_e (0:nlev-1):
                     theta_v at edges.
                 """
                 # Compute upwind-biased values for rho and theta starting from centered differences
@@ -1223,6 +1254,15 @@ class SolveNonhydro:
                     vertical_start=0,
                     vertical_end=self.grid.num_levels,
                     offset_provider=self.offset_provider_e2c_e2ec,
+                )
+                self.stencil_copy_edge_kdim_field(
+                    z_fields.z_theta_v_e,
+                    self.output_intermediate_fields.output_predictor_theta_v_e,
+                    horizontal_start=start_edge_lb_plus6,
+                    horizontal_end=end_edge_local_minus1,
+                    vertical_start=0,
+                    vertical_end=self.grid.num_levels,
+                    offset_provider={},
                 )
 
         """
@@ -1338,6 +1378,15 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
+        self.stencil_copy_edge_kdim_field(
+            z_fields.z_gradh_exner,
+            self.output_intermediate_fields.output_predictor_gradh_exner,
+            horizontal_start=start_edge_nudging_plus1,
+            horizontal_end=end_edge_end,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
 
         """
         vn (0:nlev-1):
@@ -1352,6 +1401,15 @@ class SolveNonhydro:
             vn_nnew=prognostic_state[nnew].vn,
             dtime=dtime,
             cpd=constants.CPD,
+            horizontal_start=start_edge_nudging_plus1,
+            horizontal_end=end_edge_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+        self.stencil_copy_edge_kdim_field(
+            diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
+            self.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
             vertical_start=0,
