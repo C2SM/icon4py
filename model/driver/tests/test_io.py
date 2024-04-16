@@ -30,7 +30,10 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, get_icon_grid_from_gridfile
 from icon4py.model.common.test_utils.helpers import random_field
-from icon4py.model.driver.io.cf_utils import INTERFACE_LEVEL_NAME, LEVEL_NAME
+from icon4py.model.driver.io.cf_utils import (
+    INTERFACE_LEVEL_NAME,
+    LEVEL_NAME,
+)
 from icon4py.model.driver.io.data import (
     PROGNOSTIC_CF_ATTRIBUTES,
     to_data_array,
@@ -43,6 +46,7 @@ from icon4py.model.driver.io.io import (
     NetcdfWriter,
     filter_by_standard_name,
     generate_name,
+    to_canonical_dim_order,
     to_delta,
 )
 
@@ -241,8 +245,6 @@ def test_append_timeslice(test_path, random_name):
     slice1   = {}
     dataset.append(slice1, time)
     assert len(dataset.variables["times"]) == 1
-    # TODO assert variable with 3 dims (time, horizontal, vertical) 
-    #  check default order in CF conventions
     time1 = time + timedelta(hours=1)
     dataset.append(slice1, time1)
     assert len(dataset.variables["times"]) == 2
@@ -264,9 +266,9 @@ def test_append_timeslice_create_new_var(test_path, random_name):
     dataset.append(model_state, time)
     assert len(dataset.variables["times"]) == 1
     assert "air_density" in dataset.variables
-    assert dataset.variables["air_density"].dimensions == ("time", "cell", "level")
-    assert dataset.variables["air_density"].shape == (1, grid.num_cells, grid.num_levels)
-    assert np.allclose(dataset.variables["air_density"][0], rho.ndarray)
+    assert dataset.variables["air_density"].dimensions == ("time", "level", "cell")
+    assert dataset.variables["air_density"].shape == (1, grid.num_levels, grid.num_cells)
+    assert np.allclose(dataset.variables["air_density"][0], rho.ndarray.T)
 
 def test_append_timeslice_existing_var(test_path, random_name):
     dataset, grid = initialize_dataset(test_path, random_name)
@@ -281,5 +283,11 @@ def test_append_timeslice_existing_var(test_path, random_name):
     dataset.append(model_state, new_time)
     
     assert len(dataset.variables["times"]) == 2
-    assert dataset.variables["air_density"].shape == (2, grid.num_cells, grid.num_levels)
-    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray)
+    assert dataset.variables["air_density"].shape == (2, grid.num_levels, grid.num_cells)
+    assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
+    
+@pytest.mark.parametrize("input", model_state.values())
+def test_to_canonical_dim_order(input):
+    input_dims = input.dims
+    output = to_canonical_dim_order(input)
+    assert output.dims == (input_dims[1], input_dims[0])

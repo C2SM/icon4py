@@ -363,7 +363,7 @@ class NetcdfWriter:
         time[time_pos] = date2num(model_time, units=time.units, calendar=time.calendar)
         for k, new_slice in state_to_append.items():
             standard_name = new_slice.standard_name
-            
+            new_slice = to_canonical_dim_order(new_slice)
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
@@ -403,14 +403,9 @@ class NetcdfWriter:
     def variables(self) -> dict:
         return self.dataset.variables
 
-    def _to_canonical_dim_order(self, dims:tuple[str,...]):
-        """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order.
-        
-        
-        """
-        pass
 
 
+#TODO (magdalena) this should be moved to a separate file
 class XArrayNetCDFWriter:
     from xarray import Dataset
     def __init__(self, filename, mode="a"):
@@ -442,3 +437,13 @@ def generate_name(fname:str, counter:int)->str:
     
 def filter_by_standard_name(model_state:dict, value:str):
     return {k:v for k,v in model_state.items() if value == v.standard_name}
+
+def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
+    """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order.
+    """
+    dims = data.dims
+    if len(dims) >= 2:
+        if dims[0] in ('cell', 'edge', 'vertex') and dims[1] in ('height', 'level', 'interface_level'):
+            return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True) 
+        else:
+            return data
