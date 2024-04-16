@@ -17,9 +17,12 @@ from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
+from typing import Final
 
 import netCDF4 as nc
+import numpy as np
 import xarray as xr
+from cftime import date2num
 from dask.delayed import Delayed
 
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
@@ -28,6 +31,10 @@ from icon4py.model.driver.io.xgrid import IconUGridWriter
 
 
 log = logging.getLogger(__name__)
+
+COARDS_T_POS:Final[int] = 0
+COARDS_Z_POS:Final[int] = 1
+HORIZONTAL_POS:Final[int] = 2
 
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
@@ -188,8 +195,8 @@ class FieldGroupMonitor(Monitor):
             external_variables="",# TODO (halungge) add list of fields in ugrid file
             uuidOfHGrid="", # TODO (halungge) add uuid of the grid
         )
-        # can this be an xarray dataset?
-        df = DatasetStore(self.config, vertical_grid, horizontal_size, attrs)
+        df = DatasetStore(self._file_name, vertical_grid, horizontal_size, attrs)
+        df.initialize_dataset()
         self._dataset = df
             
 
@@ -212,8 +219,7 @@ class FieldGroupMonitor(Monitor):
             state_to_store = {field: state[field] for field in self._field_names}
             self._update_fetch_times()
             self._append_data(state_to_store, model_time)
-            
-            # see https: // github.com / pydata / xarray / issues / 1672  # issuecomment-685222909
+            # see https://github.com/pydata/xarray/issues/1672
             
             
             
@@ -322,7 +328,7 @@ class DatasetStore:
         ## create dimensions all except time are fixed
         
         self.dataset.createDimension('time', None)
-        self.dataset.createDimension('full_level', self.num_levels) 
+        self.dataset.createDimension('level', self.num_levels) 
         self.dataset.createDimension('interface_level', self.num_levels+1)
         self.dataset.createDimension('cell', self.horizontal_size.num_cells)
         self.dataset.createDimension('vertex', self.horizontal_size.num_vertices)
@@ -333,25 +339,85 @@ class DatasetStore:
         times.calendar = 'proleptic_gregorian'
         times.standard_name = 'time'
         times.long_name = 'time'
-        # create vertical coordinates
+        # create vertical coordinates:
+        levels = self.dataset.createVariable('levels', np.int32, ('level',))
+        levels.units = '1'
+        levels.long_name = 'model full levels'
+        levels.standard_name = 'levels'
+        levels[:] = np.arange(self.num_levels, dtype=np.int32)
         
+        interface_levels = self.dataset.createVariable('interface_level', np.int32, ('interface_level',))
+        interface_levels.units = '1'
+        interface_levels.long_name = 'model interface level'
+        interface_levels.standard_name = 'interface_level'
+        interface_levels[:] = np.arange(self.num_levels+1, dtype=np.int32)
+        
+        # TODO (magdalena) add vct_a as vertical coordinate?
 
-    def append(self, state:dict, model_time:datetime):
+    def append(self, state_to_append:dict, model_time:datetime):
        
-        #TODO (magdalena) add time to the dataset
         #TODO (magdalena) add data to the dataset
-        pass
+        #3. if yes find location of the time variable
+        #4. append the data
+        time = self.dataset["times"]
+        time_pos = len(time)
+        time[time_pos] = date2num(model_time, units=time.units, calendar=time.calendar)
+        for k, new_slice in state_to_append.items():
+            standard_name = new_slice.standard_name
+            assert standard_name is not None, f"No short_name provided for {standard_name}."
+            ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
+            if not ds_var:
+                # TODO: 
+                #spatial_dims, reorder = self._to_canonical_dim_order(new_slice.dims)
+                dimensions = ('time',) + new_slice.dims
+                new_var = self.dataset.createVariable(k, new_slice.dtype, dimensions)
+                new_var[0, :] = new_slice.data
+                new_var.units = new_slice.units
+                new_var.standard_name = new_slice.standard_name
+                new_var.long_name = new_slice.long_name
+                new_var.coordinates = new_slice.coordinates
+                
+            else:
+                var_name = ds_var.get(k).name
+                dims = ds_var.get(k).dimensions
+                shape = ds_var.get(k).shape
+                assert len(new_slice.dims) == len(dims) -1 , f"Data variable dimensions do not match for {standard_name}."
 
+                # TODO (magdalena) this needs to be changed for distributed case where we write to global_index slice for the horizontal dim.
+                # we can acutally assume fixed index ordering here, input arrays should re shaped to canonical order
+                
+                right = (slice(None),) * (len(dims) - 1)
+                expand_slice = (slice(shape[COARDS_T_POS] - 1, shape[COARDS_T_POS]), )
+                slices = expand_slice + right
+                self.dataset.variables[var_name][slices] = new_slice.data
+                #self.append_data(k, v, time_pos)
+        
+        
+    def close(self):
+        self.dataset.close()
+        
     @property
     def dims(self) -> dict:
         return self.dataset.dimensions
     @property
     def variables(self) -> dict:
         return self.dataset.variables
+
+    def _to_canonical_dim_order(self, dims):
+        """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order.
         
         
+        """
+        pass
+
+            
+            
+
+
 def generate_name(fname:str, counter:int)->str:
     stem = fname.split(".")[0]
     return f"{stem}_{counter}.nc"
     
     
+def filter_by_standard_name(model_state:dict, value:str):
+    return {k:v for k,v in model_state.items() if value == v.standard_name}

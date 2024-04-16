@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import random
 from datetime import datetime
 from pathlib import Path
 
@@ -156,6 +157,9 @@ def timeloop_date_init():
 def timeloop_date_exit():
     return "2021-06-20T12:00:10.000"
 
+@pytest.fixture
+def random_name():
+    return "test"+ str(random.randint(0, 100000))
 
 def delete_recursive(p:Path):
     for child in p.iterdir():
@@ -167,7 +171,8 @@ def delete_recursive(p:Path):
     
     
 @pytest.fixture
-def path(tmp_path_factory):
-    base_path = tmp_path_factory.mktemp("icon4py_test")
+def test_path(tmp_path):
+    base_path = tmp_path.joinpath("io_tests")
+    base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
     yield base_path
     delete_recursive(base_path)

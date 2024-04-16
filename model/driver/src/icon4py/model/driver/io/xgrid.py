@@ -55,7 +55,7 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
 
 dimension_mapping = {
     CellDim:"cell",
-    KDim: "height",
+    KDim: "level",
     EdgeDim:"edge",
     VertexDim:"vertex"
 }
