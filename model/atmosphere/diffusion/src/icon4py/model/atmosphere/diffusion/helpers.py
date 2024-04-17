@@ -17,6 +17,9 @@ from typing import Any, Callable, Optional
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
+    copy_field as copy_field_orig,
+    init_diffusion_local_fields_for_regular_timestep as init_diffusion_local_fields_for_regular_timestep_orig,
+    scale_k as scale_k_orig,
     setup_fields_for_initial_step as setup_fields_for_initial_step_orig,
 )
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
@@ -99,3 +102,8 @@ truly_horizontal_diffusion_nabla_of_theta_over_steep_points = CachedProgram(
 update_theta_and_exner = CachedProgram(update_theta_and_exner_orig)
 mo_intp_rbf_rbf_vec_interpol_vertex = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig)
 setup_fields_for_initial_step = CachedProgram(setup_fields_for_initial_step_orig)
+copy_field = CachedProgram(copy_field_orig)
+init_diffusion_local_fields_for_regular_timestep = CachedProgram(
+    init_diffusion_local_fields_for_regular_timestep_orig
+)
+scale_k = CachedProgram(scale_k_orig)

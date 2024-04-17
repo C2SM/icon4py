@@ -98,6 +98,7 @@ program diffusion_simulation
    implicit none
 
    integer(c_int) :: rc
+   integer(c_int) :: n
 
    ! Constants and types
    integer(c_int), parameter :: num_cells = 20480
@@ -125,7 +126,7 @@ program diffusion_simulation
    real(c_double), parameter :: hdiff_efdt_ratio = 24.0
    real(c_double), parameter :: smagorinski_scaling_factor = 0.025
    logical(c_int), parameter :: hdiff_temp = .true.
-   logical(c_int), parameter :: linit = .true.
+   logical(c_int), parameter :: linit = .false.
 
    ! Declaring arrays for diffusion_init and diffusion_run
    real(c_double), dimension(:), allocatable :: vct_a
@@ -298,8 +299,12 @@ program diffusion_simulation
        call exit(1)
    end if
 
+   do n = 1, 60
    ! Call diffusion_run
+   call profile_enable(rc)
    call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit, rc)
+   call profile_disable(rc)
+   end do
 
    print *, "Python exit code = ", rc
    if (rc /= 0) then

@@ -165,7 +165,7 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,
         "icon4pytools.py2fgen.wrappers.diffusion",
-        "diffusion_init,diffusion_run",
+        "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
         "CPU",
         samples_path,

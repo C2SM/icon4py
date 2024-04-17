@@ -22,40 +22,30 @@ from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
 
+from icon4py.model.atmosphere.diffusion.helpers import (
+    apply_diffusion_to_vn,
+    scale_k,
+    copy_field,
+    init_diffusion_local_fields_for_regular_timestep,
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+    calculate_diagnostic_quantities_for_turbulence,
+    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+    calculate_nabla2_and_smag_coefficients_for_vn,
+    calculate_nabla2_for_theta,
+    mo_intp_rbf_rbf_vec_interpol_vertex,
+    setup_fields_for_initial_step,
+    truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
+    update_theta_and_exner,
+)
+
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    copy_field,
-    init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
-    scale_k,
-    setup_fields_for_initial_step,
     zero_field,
-)
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-    calculate_diagnostic_quantities_for_turbulence,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
-    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
-    calculate_nabla2_and_smag_coefficients_for_vn,
-)
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_theta import (
-    calculate_nabla2_for_theta,
-)
-from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
-    truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
-)
-from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
-    update_theta_and_exner,
 )
 from icon4py.model.common.constants import (
     CPD,
@@ -68,12 +58,8 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
-)
-from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import xp
-from icon4py.model.atmosphere.diffusion.helpers import *
+from icon4py.model.common.states.prognostic_state import PrognosticState
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
