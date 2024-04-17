@@ -73,6 +73,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import xp
+from icon4py.model.atmosphere.diffusion.helpers import *
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
