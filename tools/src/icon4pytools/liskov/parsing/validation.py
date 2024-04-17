@@ -122,6 +122,8 @@ class DirectiveSemanticsValidator:
                 parse.EndCreate,
                 parse.StartStencil,
                 parse.EndStencil,
+                parse.StartFusedStencil,
+                parse.EndFusedStencil,
                 parse.EndIf,
                 parse.EndProfile,
                 parse.StartProfile,
