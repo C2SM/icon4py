@@ -186,7 +186,12 @@ class TimeLoop:
             log.info(
                 f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
             )
-
+            log.info(
+                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.5e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.5e}"
+            )
+            log.info(
+                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.5e}"
+            )
             self._next_simulation_date()
 
             # update boundary condition
@@ -301,6 +306,7 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
+         diagnostic_state: initial state for global diagnostic variables
          prep_advection: fields collecting data for advection during the solve nonhydro timestep
          inital_divdamp_fac_o2: initial divergence damping factor
 
@@ -383,6 +389,7 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
+        diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
     )
@@ -392,8 +399,8 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
 @click.argument("input_path")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-@click.option("--serialization_type", default=SerializationType.SB, help="serialization type for grid info and static fields")
-@click.option("--experiment_type", default=ExperimentType.ANY, help="experiment selection")
+@click.option("--serialization_type", default="serialbox", help="serialization type for grid info and static fields")
+@click.option("--experiment_type", default="any", help="experiment selection")
 def main(input_path, run_path, mpi, serialization_type, experiment_type):
     """
     Run the driver.
@@ -416,17 +423,16 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
+    configure_logging(run_path, experiment_type, parallel_props)
     (
         timeloop,
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        z_fields,
-        nh_constants,
+        diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(Path(input_path), parallel_props, serialization_type, experiment_type)
-    configure_logging(run_path, timeloop.simulation_date, parallel_props)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
         f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
@@ -442,8 +448,6 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
         prep_adv,
-        z_fields,
-        nh_constants,
         inital_divdamp_fac_o2,
         do_prep_adv=False,
     )

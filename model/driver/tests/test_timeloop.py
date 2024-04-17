@@ -37,9 +37,7 @@ from icon4py.model.common.test_utils.helpers import (
     dallclose,
     zero_field,
 )
-from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
 from icon4py.model.driver.dycore_driver import TimeLoop
-from icon4py.model.driver.initialization_utils import model_initialization_jabw
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
@@ -47,74 +45,8 @@ from icon4py.model.driver.serialbox_helpers import (
 )
 
 
+# testing on MCH_CH_r04b09_dsl data
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "experiment, rank",
-    [
-        (JABW_EXPERIMENT, 0),
-    ],
-)
-def test_jabw_initial_condition(
-    experiment,
-    datapath,
-    rank,
-    data_provider,
-    grid_savepoint,
-    icon_grid,
-):
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-
-    (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        divdamp_fac_o2,
-        diagnostic_state,
-        prognostic_state_now,
-        prognostic_state_next,
-    ) = model_initialization_jabw(
-        icon_grid, cell_geometry, edge_geometry, datapath, rank
-    )
-
-    # note that w is not verified because we decided to force w to zero in python framework after discussion
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
-        prognostic_state_now.rho.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
-        prognostic_state_now.exner.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
-        prognostic_state_now.theta_v.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(), prognostic_state_now.vn.asnumpy()
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
-        diagnostic_state.pressure.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
-        diagnostic_state.temperature.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
-        diagnostic_state.pressure_sfc.asnumpy(),
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "debug_mode,istep_init, istep_exit, jstep_init, jstep_exit,timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [

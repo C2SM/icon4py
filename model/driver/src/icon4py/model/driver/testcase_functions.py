@@ -47,7 +47,6 @@ def interpolation_cells2edges_scalar_numpy(
     vertical_start: int,
     vertical_end: int,
 ):
-    """mask = np.repeat(np.expand_dims(mask, axis=-1), cell_scalar.shape[1], axis=1)"""
     """
     cells2edges_scalar in mo_icon_interpolation.f90
     """

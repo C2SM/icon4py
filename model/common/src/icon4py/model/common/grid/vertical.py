@@ -84,7 +84,7 @@ class VerticalModelParams:
 
     @classmethod
     def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
-        return int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
+        return (int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item()) if damping_height < vct_a[0] else 0)
 
     @property
     def physical_heights(self) -> Field[[KDim], float]:

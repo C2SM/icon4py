@@ -67,22 +67,13 @@ def construct_metric_state_for_diffusion(savepoint: MetricSavepoint) -> Diffusio
 def construct_diagnostics_for_diffusion(
     savepoint: IconDiffusionInitSavepoint,
     grid_savepoint: IconGridSavepoint,
-    is_turbulence_on: bool,
 ) -> DiffusionDiagnosticState:
     grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     dwdx = savepoint.dwdx() if savepoint.dwdx() else zero_field(grid, CellDim, KDim)
     dwdy = savepoint.dwdy() if savepoint.dwdy() else zero_field(grid, CellDim, KDim)
-    if is_turbulence_on:
-        return DiffusionDiagnosticState(
-            hdef_ic=savepoint.hdef_ic(),
-            div_ic=savepoint.div_ic(),
-            dwdx=dwdx,
-            dwdy=dwdy,
-        )
-    else:
-        return DiffusionDiagnosticState(
-            hdef_ic=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
-            div_ic=_allocate(CellDim, KDim, grid=grid, is_halfdim=True),
-            dwdx=dwdx,
-            dwdy=dwdy,
-        )
+    return DiffusionDiagnosticState(
+        hdef_ic=savepoint.hdef_ic(),
+        div_ic=savepoint.div_ic(),
+        dwdx=dwdx,
+        dwdy=dwdy,
+    )

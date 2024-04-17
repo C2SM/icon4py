@@ -51,7 +51,7 @@ class IconConfig:
 
 
 def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconConfig:
-    def mch_ch_r04b09_diffusion_config():
+    def _mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
@@ -65,6 +65,11 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             zdiffu_t=True,
             velocity_boundary_diffusion_denom=150.0,
             max_nudging_coeff=0.075,
+        )
+
+    def _mch_ch_r04b09_nonhydro_config():
+        return NonHydrostaticConfig(
+            ndyn_substeps_var=n_substeps_reduced,
         )
 
     def _jabw_diffusion_config(n_substeps: int):
@@ -100,11 +105,11 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
                 damping_height=12500.0,
-                n_substeps=2,
+                n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
             ),
-            mch_ch_r04b09_diffusion_config(),
-            NonHydrostaticConfig(),
+            _mch_ch_r04b09_diffusion_config(),
+            _mch_ch_r04b09_nonhydro_config(),
         )
 
     def _Jablownoski_Williamson_config():

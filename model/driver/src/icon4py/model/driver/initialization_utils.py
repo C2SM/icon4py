@@ -12,11 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
-from datetime import datetime
+import math
 from enum import Enum
 from pathlib import Path
 
-from gt4py.next import Field
+import numpy as np
+from gt4py.next import as_field
+from gt4py.next.common import Field
+from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -29,25 +32,55 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    ProcessProperties,
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
+from icon4py.model.common.constants import (
+    CPD_O_RD,
+    CVD_O_RD,
+    EARTH_ANGULAR_VELOCITY,
+    EARTH_RADIUS,
+    GRAV,
+    P0REF,
+    RD,
+    RD_O_CPD,
 )
+from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.dimension import (
+    C2E2C2EDim,
+    CEDim,
+    CellDim,
+    EdgeDim,
+    KDim,
+    VertexDim,
+)
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
+from icon4py.model.driver.testcase_functions import (
+    interpolation_cells2edges_scalar_numpy,
+    hydrostatic_adjustment_numpy,
+    interpolation_rbf_edges2cells_vector_numpy,
+    zonal2normalwind_jabw_numpy,
+)
+
+
+compiler_backend = run_gtfn
+compiler_cached_backend = run_gtfn_cached
+compiler_gpu_backend = run_gtfn_gpu
+backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
+INITIALIZATION_ERROR_MSG = "Only ANY (read from serialized data) and JABW are implemented for model initialization."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
@@ -56,6 +89,13 @@ log = logging.getLogger(__name__)
 class SerializationType(str, Enum):
     SB = "serialbox"
     NC = "netcdf"
+
+
+class ExperimentType(str, Enum):
+    """Jablonowski-Williamson test"""
+    JABW = "jabw"
+    """any test with initial conditions read from serialized data"""
+    ANY = "any"
 
 
 def read_icon_grid(
@@ -80,42 +120,292 @@ def read_icon_grid(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
-# TODO (Chia Rui): initialization of prognostic variables and topography of Jablonowski Williamson test
-def model_initialization():
-    # create two prognostic states, nnow and nnew?
-    # at least two prognostic states are global because they are needed in the dycore, AND possibly nesting and restart processes in the future
-    # one is enough for the JW test
-    prognostic_state_1 = PrognosticState(
-        w=None,
-        vn=None,
-        theta_v=None,
-        rho=None,
-        exner=None,
+def model_initialization_jabw(
+    icon_grid: IconGrid,
+    cell_param: CellParams,
+    edge_param: EdgeParams,
+    path: Path,
+    rank=0,
+):
+    data_provider = sb.IconSerialDataProvider(
+        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
-    prognostic_state_2 = PrognosticState(
-        w=None,
-        vn=None,
-        theta_v=None,
-        rho=None,
-        exner=None,
+
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().asnumpy()
+    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().asnumpy()
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().asnumpy()
+    geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
+
+    cell_lat = cell_param.cell_center_lat.asnumpy()
+    edge_lat = edge_param.edge_center[0].asnumpy()
+    edge_lon = edge_param.edge_center[1].asnumpy()
+    primal_normal_x = edge_param.primal_normal[0].asnumpy()
+
+    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
+    rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
+    rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
+
+    cell_size = cell_lat.size
+    num_levels = icon_grid.num_levels
+
+    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
-    return (prognostic_state_1, prognostic_state_2)
+    grid_idx_edge_end = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.end(EdgeDim)
+    )
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
+    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+
+    p_sfc = 100000.0
+    jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_u0 = 35.0
+    jw_temp0 = 288.0
+    # DEFINED PARAMETERS for jablonowski williamson:
+    eta_0 = 0.252
+    eta_t = 0.2  # tropopause
+    gamma = 0.005  # temperature elapse rate (K/m)
+    dtemp = 4.8e5  # empirical temperature difference (K)
+    # for baroclinic wave test
+    lon_perturbation_center = math.pi / 9.0  # longitude of the perturb centre
+    lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
+    ps_o_p0ref = p_sfc / P0REF
+
+    w_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
+    exner_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    rho_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    temperature_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    eta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
+
+    sin_lat = np.sin(cell_lat)
+    cos_lat = np.cos(cell_lat)
+    fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
+    fac2 = (
+        (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
+        * EARTH_RADIUS
+        * EARTH_ANGULAR_VELOCITY
+    )
+    lapse_rate = RD * gamma / GRAV
+    for k_index in range(num_levels - 1, -1, -1):
+        eta_old = np.full(cell_size, fill_value=1.0e-7, dtype=float)
+        log.info(f"In Newton iteration, k = {k_index}")
+        # Newton iteration to determine zeta
+        for _ in range(100):
+            eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+            cos_etav = np.cos(eta_v_numpy[:, k_index])
+            sin_etav = np.sin(eta_v_numpy[:, k_index])
+
+            temperature_avg = jw_temp0 * (eta_old**lapse_rate)
+            geopot_avg = jw_temp0 * GRAV / gamma * (1.0 - eta_old**lapse_rate)
+            temperature_avg = np.where(
+                eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
+            )
+            geopot_avg = np.where(
+                eta_old < eta_t,
+                geopot_avg
+                - RD
+                * dtemp
+                * (
+                    (np.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                    - 5.0 * (eta_t**4) * eta_old
+                    + 5.0 * (eta_t**3) * (eta_old**2)
+                    - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
+                    + 1.25 * eta_t * (eta_old**4)
+                    - 0.2 * (eta_old**5)
+                ),
+                geopot_avg,
+            )
+
+            geopot_jw = geopot_avg + jw_u0 * (cos_etav**1.5) * (
+                fac1 * jw_u0 * (cos_etav**1.5) + fac2
+            )
+            temperature_jw = (
+                temperature_avg
+                + 0.75
+                * eta_old
+                * math.pi
+                * jw_u0
+                / RD
+                * sin_etav
+                * np.sqrt(cos_etav)
+                * (2.0 * jw_u0 * fac1 * (cos_etav**1.5) + fac2)
+            )
+            newton_function = geopot_jw - geopot[:, k_index]
+            newton_function_prime = -RD / eta_old * temperature_jw
+            eta_old = eta_old - newton_function / newton_function_prime
+
+        # Final update for zeta_v
+        eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+        # Use analytic expressions at all model level
+        exner_numpy[:, k_index] = (eta_old * ps_o_p0ref) ** RD_O_CPD
+        theta_v_numpy[:, k_index] = temperature_jw / exner_numpy[:, k_index]
+        rho_numpy[:, k_index] = (
+            exner_numpy[:, k_index] ** CVD_O_RD * P0REF / RD / theta_v_numpy[:, k_index]
+        )
+        # initialize diagnose pressure and temperature variables
+        pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** CPD_O_RD
+        temperature_numpy[:, k_index] = temperature_jw
+
+    log.info("Newton iteration completed!")
+    eta_v_e_numpy = interpolation_cells2edges_scalar_numpy(
+        icon_grid,
+        cells2edges_coeff,
+        eta_v_numpy,
+        grid_idx_edge_start_plus1,
+        grid_idx_edge_end,
+        0,
+        num_levels,
+
+    )
+    log.info("Cell-to-edge computation completed.")
+
+    vn_numpy = zonal2normalwind_jabw_numpy(
+        icon_grid,
+        jw_u0,
+        jw_up,
+        lat_perturbation_center,
+        lon_perturbation_center,
+        edge_lat,
+        edge_lon,
+        primal_normal_x,
+        eta_v_e_numpy,
+    )
+    log.info("U2vn computation completed.")
+
+    rho_numpy, exner_numpy, theta_v_numpy = hydrostatic_adjustment_numpy(
+        wgtfac_c,
+        ddqz_z_half,
+        exner_ref_mc,
+        d_exner_dz_ref_ic,
+        theta_ref_mc,
+        theta_ref_ic,
+        rho_numpy,
+        exner_numpy,
+        theta_v_numpy,
+        num_levels,
+    )
+    log.info("Hydrostatic adjustment computation completed.")
+
+    vn = as_field((EdgeDim, KDim), vn_numpy)
+    w = as_field((CellDim, KDim), w_numpy)
+    exner = as_field((CellDim, KDim), exner_numpy)
+    rho = as_field((CellDim, KDim), rho_numpy)
+    temperature = as_field((CellDim, KDim), temperature_numpy)
+    pressure = as_field((CellDim, KDim), pressure_numpy)
+    theta_v = as_field((CellDim, KDim), theta_v_numpy)
+    pressure_ifc = as_field((CellDim, KDim), np.zeros((cell_size, num_levels), dtype=float))
+
+    vn_next = as_field((EdgeDim, KDim), vn_numpy)
+    w_next = as_field((CellDim, KDim), w_numpy)
+    exner_next = as_field((CellDim, KDim), exner_numpy)
+    rho_next = as_field((CellDim, KDim), rho_numpy)
+    theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
+
+    # set surface pressure to the prescribed value
+    pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
+
+    u_numpy, v_numpy = interpolation_rbf_edges2cells_vector_numpy(
+        vn_numpy,
+        rbf_vec_coeff_c1.asnumpy(),
+        rbf_vec_coeff_c2.asnumpy(),
+        icon_grid.connectivities[C2E2C2EDim],
+        grid_idx_cell_start_plus1,
+        grid_idx_cell_end,
+        0,
+        icon_grid.num_levels,
+    )
+
+    u = as_field((CellDim, KDim), u_numpy)
+    v = as_field((CellDim, KDim), v_numpy)
+
+    log.info("U, V computation completed.")
+
+    diagnostic_state = DiagnosticState(
+        pressure=pressure,
+        pressure_ifc=pressure_ifc,
+        temperature=temperature,
+        pressure_sfc=pressure_sfc,
+        u=u,
+        v=v,
+    )
+
+    prognostic_state_now = PrognosticState(
+        w=w,
+        vn=vn,
+        theta_v=theta_v,
+        rho=rho,
+        exner=exner,
+    )
+    prognostic_state_next = PrognosticState(
+        w=w_next,
+        vn=vn_next,
+        theta_v=theta_v_next,
+        rho=rho_next,
+        exner=exner_next,
+    )
+
+    diffusion_diagnostic_state = DiffusionDiagnosticState(
+        hdef_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        div_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdx=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        dwdy=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+    )
+    solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
+        theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        exner_pr=_allocate(CellDim, KDim, grid=icon_grid),
+        rho_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_exner_phy=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_rho=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_thv=_allocate(CellDim, KDim, grid=icon_grid),
+        grf_tend_w=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        mass_fl_e=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_phy=_allocate(EdgeDim, KDim, grid=icon_grid),
+        grf_tend_vn=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_vn_apc_ntl2=_allocate(EdgeDim, KDim, grid=icon_grid),
+        ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        vt=_allocate(EdgeDim, KDim, grid=icon_grid),
+        vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
+        w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
+        vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
+        exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=_allocate(CellDim, KDim, grid=icon_grid),
+    )
+
+    prep_adv = PrepAdvection(
+        vn_traj=_allocate(EdgeDim, KDim, grid=icon_grid),
+        mass_flx_me=_allocate(EdgeDim, KDim, grid=icon_grid),
+        mass_flx_ic=_allocate(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+    )
+    log.info("Initialization completed.")
+
+    return (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        0.0,
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    )
 
 
-def read_initial_state(
-    path: Path, rank=0
-) -> tuple[
-    DiffusionDiagnosticState,
-    DiagnosticStateNonHydro,
-    PrepAdvection,
-    Field[[KDim], float],
-    PrognosticState,
-    PrognosticState,
-]:
+def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
     """
     Read prognostic and diagnostic state from serialized data.
 
     Args:
+        icon_grid: icon grid
         path: path to the serialized input data
         rank: mpi rank of the current compute node
 
@@ -124,6 +414,7 @@ def read_initial_state(
         can be read from within the dummy timeloop
 
     """
+
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
@@ -137,7 +428,9 @@ def read_initial_state(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        diffusion_init_savepoint, data_provider.from_savepoint_grid()
+    )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
@@ -159,6 +452,16 @@ def read_initial_state(
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
+        exner_dyn_incr=None,
+    )
+
+    diagnostic_state = DiagnosticState(
+        pressure=_allocate(CellDim, KDim, grid=icon_grid),
+        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
+        temperature=_allocate(CellDim, KDim, grid=icon_grid),
+        pressure_sfc=_allocate(CellDim, grid=icon_grid),
+        u=_allocate(CellDim, KDim, grid=icon_grid),
+        v=_allocate(CellDim, KDim, grid=icon_grid),
     )
 
     prognostic_state_next = PrognosticState(
@@ -180,19 +483,72 @@ def read_initial_state(
         solve_nonhydro_diagnostic_state,
         prep_adv,
         solve_nonhydro_init_savepoint.divdamp_fac_o2(),
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    )
+
+
+def read_initial_state(
+    icon_grid: IconGrid,
+    cell_param: CellParams,
+    edge_param: EdgeParams,
+    path: Path,
+    rank=0,
+    experiment_type: ExperimentType = ExperimentType.ANY,
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+    float,
+    DiagnosticState,
+    PrognosticState,
+    PrognosticState,
+]:
+    if experiment_type == ExperimentType.JABW:
+        (
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prep_adv,
+            divdamp_fac_o2,
+            diagnostic_state,
+            prognostic_state_now,
+            prognostic_state_next,
+        ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, rank)
+    elif experiment_type == ExperimentType.ANY:
+        (
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prep_adv,
+            divdamp_fac_o2,
+            diagnostic_state,
+            prognostic_state_now,
+            prognostic_state_next,
+        ) = model_initialization_serialbox(icon_grid, path, rank)
+    else:
+        raise NotImplementedError(INITIALIZATION_ERROR_MSG)
+
+    return (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        divdamp_fac_o2,
+        diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
     )
 
 
 def read_geometry_fields(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
 
     Args:
         path: path to the serialized input data
+        damping_height: damping height for Rayleigh and divergence damping TODO (CHia Rui): Check
+        rank:
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
     Returns: a tuple containing fields describing edges, cells, vertical properties of the model
@@ -206,7 +562,7 @@ def read_geometry_fields(
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
             vct_a=sp.vct_a(),
-            rayleigh_damping_height=12500,
+            rayleigh_damping_height=damping_height,
             nflatlev=sp.nflatlev(),
             nflat_gradp=sp.nflat_gradp(),
         )
@@ -221,21 +577,23 @@ def read_decomp_info(
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), True, procs_props.rank
-        )
+        sp = sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), True, procs_props.rank)
         return sp.from_savepoint_grid().construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_static_fields(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
+    experiment_type: ExperimentType = ExperimentType.JABW,
 ) -> tuple[
     DiffusionMetricState,
     DiffusionInterpolationState,
     MetricStateNonHydro,
     InterpolationState,
+    DiagnosticMetricState,
 ]:
     """
     Read fields for metric and interpolation state.
@@ -244,6 +602,7 @@ def read_static_fields(
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        experiment_type: TODO (CHia RUi): Add description
 
     Returns:
         a tuple containing the metric_state and interpolation state,
@@ -251,7 +610,7 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        dataprovider = sb.IconSerialDataProvider(
+        data_provider = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
         icon_grid = (
@@ -260,29 +619,109 @@ def read_static_fields(
             .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
-            dataprovider.from_interpolation_savepoint()
+            data_provider.from_interpolation_savepoint()
         )
         diffusion_metric_state = construct_metric_state_for_diffusion(
-            dataprovider.from_metrics_savepoint()
+            data_provider.from_metrics_savepoint()
         )
-        solve_nonhydro_interpolation_state = (
-            dataprovider.from_interpolation_savepoint().construct_interpolation_state_for_nonhydro()
+        interpolation_savepoint = data_provider.from_interpolation_savepoint()
+        grg = interpolation_savepoint.geofac_grg()
+        solve_nonhydro_interpolation_state = InterpolationState(
+            c_lin_e=interpolation_savepoint.c_lin_e(),
+            c_intp=interpolation_savepoint.c_intp(),
+            e_flx_avg=interpolation_savepoint.e_flx_avg(),
+            geofac_grdiv=interpolation_savepoint.geofac_grdiv(),
+            geofac_rot=interpolation_savepoint.geofac_rot(),
+            pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
+            pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
+            rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
+            e_bln_c_s=as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+            rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
+            rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
+            geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+            geofac_n2s=interpolation_savepoint.geofac_n2s(),
+            geofac_grg_x=grg[0],
+            geofac_grg_y=grg[1],
+            nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
-        solve_nonhydro_metric_state = (
-            dataprovider.from_metrics_savepoint().construct_nh_metric_state(icon_grid.num_levels)
+        metrics_savepoint = data_provider.from_metrics_savepoint()
+        solve_nonhydro_metric_state = MetricStateNonHydro(
+            bdy_halo_c=metrics_savepoint.bdy_halo_c(),
+            mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
+            rayleigh_w=metrics_savepoint.rayleigh_w(),
+            exner_exfac=metrics_savepoint.exner_exfac(),
+            exner_ref_mc=metrics_savepoint.exner_ref_mc(),
+            wgtfac_c=metrics_savepoint.wgtfac_c(),
+            wgtfacq_c=metrics_savepoint.wgtfacq_c_dsl(),
+            inv_ddqz_z_full=metrics_savepoint.inv_ddqz_z_full(),
+            rho_ref_mc=metrics_savepoint.rho_ref_mc(),
+            theta_ref_mc=metrics_savepoint.theta_ref_mc(),
+            vwind_expl_wgt=metrics_savepoint.vwind_expl_wgt(),
+            d_exner_dz_ref_ic=metrics_savepoint.d_exner_dz_ref_ic(),
+            ddqz_z_half=metrics_savepoint.ddqz_z_half(),
+            theta_ref_ic=metrics_savepoint.theta_ref_ic(),
+            d2dexdz2_fac1_mc=metrics_savepoint.d2dexdz2_fac1_mc(),
+            d2dexdz2_fac2_mc=metrics_savepoint.d2dexdz2_fac2_mc(),
+            rho_ref_me=metrics_savepoint.rho_ref_me(),
+            theta_ref_me=metrics_savepoint.theta_ref_me(),
+            ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+            zdiff_gradp=metrics_savepoint.zdiff_gradp(),
+            vertoffset_gradp=metrics_savepoint.vertoffset_gradp(),
+            ipeidx_dsl=metrics_savepoint.ipeidx_dsl(),
+            pg_exdist=metrics_savepoint.pg_exdist(),
+            ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
+            ddxt_z_full=metrics_savepoint.ddxt_z_full(),
+            wgtfac_e=metrics_savepoint.wgtfac_e(),
+            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
+            vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
+            hmask_dd3d=metrics_savepoint.hmask_dd3d(),
+            scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
+            coeff1_dwdz=metrics_savepoint.coeff1_dwdz(),
+            coeff2_dwdz=metrics_savepoint.coeff2_dwdz(),
+            coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
+
+        if experiment_type == ExperimentType.JABW:
+            diagnostic_metric_state = DiagnosticMetricState(
+                ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+                rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
+                rbf_vec_coeff_c2=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(),
+                cell_center_lat=data_provider.from_savepoint_grid().cell_center_lat(),
+                cell_center_lon=data_provider.from_savepoint_grid().cell_center_lon(),
+                v_lat=data_provider.from_savepoint_grid().v_lat(),
+                v_lon=data_provider.from_savepoint_grid().v_lon(),
+                e_lat=data_provider.from_savepoint_grid().edge_center_lat(),
+                e_lon=data_provider.from_savepoint_grid().edge_center_lon(),
+                vct_a=data_provider.from_savepoint_grid().vct_a(),
+            )
+        else:
+            # ddqz_z_full is not serialized for mch_ch_r04b09_dsl and exclaim_ape_R02B04
+            diagnostic_metric_state = DiagnosticMetricState(
+                ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
+                rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+                rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+                cell_center_lat=_allocate(CellDim, grid=icon_grid, dtype=float),
+                cell_center_lon=_allocate(CellDim, grid=icon_grid, dtype=float),
+                v_lat=_allocate(VertexDim, grid=icon_grid, dtype=float),
+                v_lon=_allocate(VertexDim, grid=icon_grid, dtype=float),
+                e_lat=_allocate(EdgeDim, grid=icon_grid, dtype=float),
+                e_lon=_allocate(EdgeDim, grid=icon_grid, dtype=float),
+                vct_a=_allocate(KDim, grid=icon_grid, is_halfdim=True, dtype=float),
+            )
+
         return (
             diffusion_metric_state,
             diffusion_interpolation_state,
             solve_nonhydro_metric_state,
             solve_nonhydro_interpolation_state,
+            diagnostic_metric_state,
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def configure_logging(
-    run_path: str, start_time: datetime, processor_procs: ProcessProperties = None
+    run_path: str, experiment_name: str, processor_procs: ProcessProperties = None
 ) -> None:
     """
     Configure logging.
@@ -291,12 +730,12 @@ def configure_logging(
 
     Args:
         run_path: path to the output folder where the logfile should be stored
-        start_time: start time of the model run
+        experiment_name: name of the simulation
 
     """
     run_dir = Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
     run_dir.mkdir(exist_ok=True)
-    logfile = run_dir.joinpath(f"dummy_dycore_driver_{datetime.isoformat(start_time)}.log")
+    logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
     logging.basicConfig(
         level=logging.DEBUG,
