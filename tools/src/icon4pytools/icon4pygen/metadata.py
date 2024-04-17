@@ -252,4 +252,4 @@ def get_stencil_info(
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(fvprog.itir, fields, connectivity_chains, offset_provider)
+    return StencilInfo(fendef, fields, connectivity_chains, offset_provider)

@@ -213,7 +213,7 @@ class CppDefGenerator(TemplatedGenerator):
 
       {{ stencil_name }}_state_t handle{.gpu_context = &__dace_context};
 
-      __dace_runkernel_tasklet_toplevel_map_0_0_1(&handle
+      __dace_runkernel_{{ kernel_name }}(&handle
       {%- for data_descr in _this_node.sorted_data_descriptors -%}
         , {{ data_descr.cpp_arg_name() }}
       {%- endfor -%},
@@ -478,6 +478,7 @@ class GpuTriMesh(Node):
 
 class StenClassRunFun(Node):
     stencil_name: str
+    kernel_name: str
     domain_args: Sequence[Scalar]
     sorted_data_descriptors: Sequence[DataDescriptor]
     sorted_symbols: Sequence[str]
@@ -556,6 +557,7 @@ class FreeFunc(CppFreeFunc):
 
 class CppDefTemplate(Node):
     stencil_name: str
+    kernel_name: str
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
@@ -626,6 +628,7 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
+                kernel_name=self.kernel_name,
                 domain_args=domain_args,
                 sorted_data_descriptors=sorted(data_descriptors, key=key_data_descr),
                 sorted_symbols=[
@@ -704,12 +707,14 @@ class CppDefTemplate(Node):
 
 def generate_cpp_definition(
     stencil_name: str,
+    kernel_name: str,
     fields: Sequence[Field],
     offsets: Sequence[Offset],
     outpath: Path,
 ) -> None:
     definition = CppDefTemplate(
         stencil_name=stencil_name,
+        kernel_name=kernel_name,
         fields=fields,
         offsets=offsets,
     )

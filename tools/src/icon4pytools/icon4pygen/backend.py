@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import re
 import warnings
 from pathlib import Path
 from typing import Any, Iterable, List, Optional
@@ -233,24 +234,33 @@ def generate_dace_code(
 
 
 class DaceCodegen:
-    """Class for generating Gridtools C++ header using the DaCe backend."""
+    """Class for generating Gridtools CUDA code using the DaCe backend."""
 
     def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
-    def __call__(self, outpath: Path, on_gpu: bool, temporaries: bool) -> None:
-        """Generate C++ code using the DaCe backend and write it to a file."""
-        dc_hdr, dc_src, dc_cuda = generate_dace_code(
+    def __call__(self, outpath: Path, temporaries: bool) -> str:
+        """Generate CUDA code using the DaCe backend and write it to a file.
+
+        Returns the name of the kernel to be invoked.
+        """
+        # only support cuda codegen
+        on_gpu = True
+
+        _, _, dc_cuda = generate_dace_code(
             self.stencil_info,
             self.stencil_info.offset_provider,
             on_gpu,
             temporaries,
         )
-        if on_gpu:
-            assert dc_cuda is not None
-            write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
-        else:
-            assert dc_hdr is not None
-            write_string(dc_hdr, outpath, f"{self.stencil_info.fendef.id}_dace.h")
-            assert dc_src is not None
-            write_string(dc_src, outpath, f"{self.stencil_info.fendef.id}_dace.cpp")
+        assert dc_cuda is not None
+        write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
+
+        m = re.findall(
+            "^void __dace_runkernel_(tasklet_toplevel_map_\d+_\d+_\d+)\(", dc_cuda, re.MULTILINE
+        )
+        if len(m) != 1:
+            raise RuntimeError(
+                f"DaCe bindings only support single-kernel programs, found {len(m)}."
+            )
+        return m[0]
