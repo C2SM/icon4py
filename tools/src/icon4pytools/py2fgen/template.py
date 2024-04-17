@@ -473,7 +473,9 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
 
    rc = {{ name }}_wrapper({{ param_names_with_size_args }})
 
+   {% if arrays | length >= 1 %}
    !$acc end host_data
+   {% endif %}
 end subroutine {{name}}
     """
     )
