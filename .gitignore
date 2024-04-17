@@ -126,6 +126,7 @@ venv.bak/
 ### Others ###
 .obsidian
 *ser_data*
+gauss3d_output
 data_output_*.nc
 dummy_dycore_driver_*.log
 icon-exclaim-data
