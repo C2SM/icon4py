@@ -19,7 +19,9 @@ from icon4py.model.common.metrics.metric_scalars import compute_kstart_dd3d
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
-def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
+def test_compute_kstart_dd3d():
+     grid = SimpleGrid()
+     
     scalfac_dd3d_full = as_field(
         (KDim,),
         np.random.randint(low=0, high=3, size=icon_grid.num_levels),  # noqa: NPY002
