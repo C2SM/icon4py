@@ -459,11 +459,13 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
+   {% if arrays | length >= 1 %}
    !$ACC host_data use_device( &
    {%- for arr in arrays %}
        !$ACC {{ arr.name }}{% if not loop.last %}, &{% else %} &{% endif %}
    {%- endfor %}
    !$ACC )
+   {% endif %}
 
    {% for d in _this_node.dimension_size_declarations %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
