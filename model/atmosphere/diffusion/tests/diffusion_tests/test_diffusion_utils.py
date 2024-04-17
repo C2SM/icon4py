@@ -18,13 +18,13 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     _setup_runtime_diff_multfac_vn,
     _setup_smag_limit,
+    init_zero_v_k,
     scale_k,
-    set_zero_v_k,
     setup_fields_for_initial_step,
 )
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.helpers import random_field, zero_field
 
 from .utils import construct_config, diff_multfac_vn_numpy, smag_limit_numpy
@@ -104,10 +104,10 @@ def test_diff_multfac_vn_smag_limit_for_loop_run_with_k4_substeps(backend):
     assert np.allclose(expected_smag_limit, smag_limit.asnumpy())
 
 
-def test_set_zero_vertex_k(backend):
+def test_init_zero_vertex_k(backend):
     grid = SimpleGrid()
     f = random_field(grid, VertexDim, KDim)
-    set_zero_v_k(f, offset_provider={})
+    init_zero_v_k(f, offset_provider={})
     assert np.allclose(0.0, f.asnumpy())
 
 

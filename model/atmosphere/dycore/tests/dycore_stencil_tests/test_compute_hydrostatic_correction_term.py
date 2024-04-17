@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonHydroStencil21(StencilTest):
+class TestComputeHydrostaticCorrectionTerm(StencilTest):
     OUTPUTS = ("z_hydro_corr",)
     PROGRAM = compute_hydrostatic_correction_term
 

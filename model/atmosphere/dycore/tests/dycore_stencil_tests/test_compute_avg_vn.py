@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil31(StencilTest):
+class TestComputeAvgVn(StencilTest):
     PROGRAM = compute_avg_vn
     OUTPUTS = ("z_vn_avg",)
 
