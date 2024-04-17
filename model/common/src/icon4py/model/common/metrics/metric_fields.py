@@ -221,12 +221,12 @@ def compute_scalfac_dd3d(
 @field_operator
 def _compute_rayleigh_w(
     vct_a: Field[[KDim], wpfloat],
-    vct_a_1: Field[[], wpfloat],
     damping_height: wpfloat,
     rayleigh_type: int32,
     rayleigh_classic: int32,
     rayleigh_klemp: int32,
     rayleigh_coeff: wpfloat,
+    vct_a_1: wpfloat,
     pi_const: wpfloat,
 ) -> Field[[KDim], wpfloat]:
     rayleigh_w = broadcast(0.0, (KDim,))
@@ -248,12 +248,12 @@ def _compute_rayleigh_w(
 def compute_rayleigh_w(
     rayleigh_w: Field[[KDim], wpfloat],
     vct_a: Field[[KDim], wpfloat],
-    vct_a_1: Field[[], wpfloat],
     damping_height: wpfloat,
     rayleigh_type: int32,
     rayleigh_classic: int32,
     rayleigh_klemp: int32,
     rayleigh_coeff: wpfloat,
+    vct_a_1: wpfloat,
     pi_const: wpfloat,
     vertical_start: int32,
     vertical_end: int32,
@@ -278,12 +278,12 @@ def compute_rayleigh_w(
     """
     _compute_rayleigh_w(
         vct_a,
-        vct_a_1,
         damping_height,
         rayleigh_type,
         rayleigh_classic,
         rayleigh_klemp,
         rayleigh_coeff,
+        vct_a_1,
         pi_const,
         out=rayleigh_w,
         domain={KDim: (vertical_start, vertical_end)},

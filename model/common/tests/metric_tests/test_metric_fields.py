@@ -158,7 +158,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
 @pytest.mark.datatest
 def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
-    vct_a_1 = as_field((), grid_savepoint.vct_a().asnumpy()[0])
+    vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
     rayleigh_w_full = zero_field(icon_grid, KDim, extend={KDim: 1})
     rayleigh_type = 2
     rayleigh_coeff = 5.0
@@ -166,12 +166,12 @@ def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backen
     compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
-        vct_a_1=vct_a_1,
         damping_height=damping_height,
         rayleigh_type=rayleigh_type,
         rayleigh_classic=constants.RayleighType.RAYLEIGH_CLASSIC,
         rayleigh_klemp=constants.RayleighType.RAYLEIGH_KLEMP,
         rayleigh_coeff=rayleigh_coeff,
+        vct_a_1=vct_a_1,
         pi_const=math.pi,
         vertical_start=int32(0),
         vertical_end=grid_savepoint.nrdmax().item() + 1,
