@@ -257,7 +257,7 @@ class DaceCodegen:
         write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
 
         m = re.findall(
-            "^void __dace_runkernel_(\D+_\d+_\d+_\d+)\(", dc_cuda, re.MULTILINE
+            "^void __dace_runkernel_(.+_\d+_\d+_\d+)\(", dc_cuda, re.MULTILINE
         )
         if len(m) != 1:
             raise RuntimeError(
