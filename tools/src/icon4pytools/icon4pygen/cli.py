@@ -51,10 +51,7 @@ class ModuleType(click.ParamType):
 @click.option("--dace", is_flag=True, type=bool, help="Select dace backend.", default=False)
 @click.option("--is_global", is_flag=True, type=bool, help="Whether this is a global run.")
 @click.option(
-    "--enable-mixed-precision",
-    is_flag=True,
-    type=bool,
-    help="Enable mixed precision dycore",
+    "--enable-mixed-precision", is_flag=True, type=bool, help="Enable mixed precision dycore"
 )
 @click.argument(
     "outpath",
@@ -110,3 +107,6 @@ def main(
 
         GTHeader(stencil_info)(outpath, imperative, temporaries)
         PyBindGen(stencil_info, levels_per_thread, block_size)(outpath)
+
+if __name__ == "__main__":
+    main()

@@ -224,7 +224,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     fendef = fvprog.itir
 
     all_offset_labels = (
-        fvprog.itir.pre_walk_values()
+        fendef.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .if_isinstance(str)
