@@ -26,7 +26,9 @@ def test_compute_kstart_dd3d():
         (KDim,),
         np.random.randint(low=0, high=3, size=icon_grid.num_levels),  # noqa: NPY002
     )
-    kstart_dd3d_ref = 1.0
+       scalfac_dd3d_full = random_field(grid,  KDim, low=0.1, high=3.0, dtype=wpfloat).as_numpy()
+       scalfac_dd3d_full[0:3] = 0.0
+       kstart_dd3d_ref = 1
 
     kstart_dd3d_full = compute_kstart_dd3d(
         scalfac_dd3d=scalfac_dd3d_full.asnumpy(),
