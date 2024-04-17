@@ -256,9 +256,7 @@ class DaceCodegen:
         assert dc_cuda is not None
         write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
 
-        m = re.findall(
-            "^void __dace_runkernel_(.+_\d+_\d+_\d+)\(", dc_cuda, re.MULTILINE
-        )
+        m = re.findall("^void __dace_runkernel_(.+_\d+_\d+_\d+)\(", dc_cuda, re.MULTILINE)
         if len(m) != 1:
             raise RuntimeError(
                 f"DaCe bindings only support single-kernel programs, found {len(m)}."

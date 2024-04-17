@@ -35,7 +35,6 @@ from icon4pytools.icon4pygen.bindings.codegen.render.offset import (
     GpuTriMeshOffsetRenderer,
 )
 from icon4pytools.icon4pygen.bindings.entities import Field, Offset
-from icon4pytools.icon4pygen.bindings.exceptions import BindingsRenderingException
 from icon4pytools.icon4pygen.bindings.utils import write_string
 
 
@@ -214,7 +213,7 @@ class CppDefGenerator(TemplatedGenerator):
       {{ stencil_name }}_state_t handle{.gpu_context = &__dace_context};
 
       __dace_runkernel_{{ kernel_name }}(&handle
-      {%- for data_descr in _this_node.sorted_data_descriptors -%}
+      {%- for data_descr in _this_node.sorted_fields -%}
         , {{ data_descr.cpp_arg_name() }}
       {%- endfor -%},
       {{ ", ".join(_this_node.sorted_symbols) }});
@@ -449,10 +448,7 @@ class DataDescriptor:
 
     def strides(self) -> Optional[str]:
         if isinstance(self.data_descr, Field):
-            try:
-                strides_str = self.data_descr.renderer.render_strides(exclude_sparse_dim=False)
-            except BindingsRenderingException:
-                strides_str = "1"
+            strides_str = self.data_descr.renderer.render_strides()
 
             if strides_str == "1":
                 return None
@@ -480,7 +476,7 @@ class StenClassRunFun(Node):
     stencil_name: str
     kernel_name: str
     domain_args: Sequence[Scalar]
-    sorted_data_descriptors: Sequence[DataDescriptor]
+    sorted_fields: Sequence[DataDescriptor]
     sorted_symbols: Sequence[str]
 
 
@@ -571,6 +567,8 @@ class CppDefTemplate(Node):
 
     def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
+        scalar_fields = [field for field in self.fields if field.rank() == 0]
+        non_scalar_fields = [field for field in self.fields if field.rank() != 0]
         tolerance_fields = [field for field in output_fields if not field.is_integral()]
         # since we can vertical fields as dense fields for the purpose of this function, lets include them here
         dense_fields = [
@@ -582,7 +580,6 @@ class CppDefTemplate(Node):
         compound_fields = [field for field in self.fields if field.is_compound()]
         sparse_offsets = [offset for offset in self.offsets if not offset.is_compound_location()]
         strided_offsets = [offset for offset in self.offsets if offset.is_compound_location()]
-        all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
         fields = dict(
@@ -590,14 +587,16 @@ class CppDefTemplate(Node):
             dense=dense_fields,
             sparse=sparse_fields,
             compound=compound_fields,
-            all_fields=all_fields,
+            scalar=scalar_fields,
+            non_scalar=non_scalar_fields,
             tolerance=tolerance_fields,
         )
         return fields, offsets
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         fields, offsets = self._get_field_data()
-        data_descriptors = set(DataDescriptor(x) for x in [*fields["all_fields"], *self.offsets])
+        field_args = set(DataDescriptor(x) for x in [*fields["non_scalar"], *self.offsets])
+        scalar_args = set(DataDescriptor(x) for x in fields["scalar"])
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
         domain_args = [
             Scalar("vertical_start", "verticalStart"),
@@ -606,10 +605,11 @@ class CppDefTemplate(Node):
             Scalar("horizontal_end", "horizontalEnd"),
         ]
 
-        symbol_map: dict[str, Optional[str]] = {}
-        symbol_map.update({arg.sdfg_arg_name(): arg.cpp_arg_name() for arg in domain_args})
+        symbol_map: dict[str, Optional[str]] = {
+            arg.sdfg_arg_name(): arg.cpp_arg_name() for arg in domain_args
+        }
         symbol_map.update(
-            {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in data_descriptors}
+            {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in field_args}
         )
 
         def key_data_descr(x: DataDescriptor | str) -> str:
@@ -630,12 +630,17 @@ class CppDefTemplate(Node):
                 stencil_name=self.stencil_name,
                 kernel_name=self.kernel_name,
                 domain_args=domain_args,
-                sorted_data_descriptors=sorted(data_descriptors, key=key_data_descr),
-                sorted_symbols=[
-                    symbols
-                    for arg, symbols in collections.OrderedDict(sorted(symbol_map.items())).items()
-                    if symbols is not None
-                ],
+                sorted_fields=sorted(field_args, key=key_data_descr),
+                sorted_symbols=(
+                    [arg.cpp_arg_name() for arg in scalar_args]
+                    + [
+                        symbols
+                        for _, symbols in collections.OrderedDict(
+                            sorted(symbol_map.items())
+                        ).items()
+                        if symbols is not None
+                    ]
+                ),
             ),
             public_utilities=PublicUtilities(fields=fields["output"]),
             copy_pointers=CopyPointers(fields=self.fields),
