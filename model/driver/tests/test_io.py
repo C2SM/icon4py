@@ -67,7 +67,9 @@ def model_state(grid:BaseGrid)->dict[str, xr.DataArray]:
     rho = random_field(grid, CellDim, KDim, dtype=float32)
     exner = random_field(grid, CellDim, KDim, dtype=float32)
     theta_v = random_field(grid, CellDim, KDim, dtype=float32)
-    w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32) 
+    ## add support for interface level fields   
+    #w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32) 
+    w = random_field(grid, CellDim, KDim, extend={KDim: 0}, dtype=float32)
     return {
         "air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
          "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
@@ -138,9 +140,11 @@ def test_io_monitor_write_ugrid_file(test_path):
     
 def test_io_monitor_write_dataset(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
+    grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
+    
     config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
-    monitor = IoMonitor(config, VerticalGridSize(10), SimpleGrid().config.horizontal_config,
-                        grid_file, "simple_grid")
+    monitor = IoMonitor(config, VerticalGridSize(grid.num_levels), grid.config.horizontal_config,
+                        grid_file, grid)
 
 @pytest.mark.fail   
 @pytest.mark.datatest
