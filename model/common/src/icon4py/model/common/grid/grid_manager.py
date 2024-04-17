@@ -247,6 +247,10 @@ class GridManager:
         self._grid_id = uid
         self._grid = grid
 
+    @property
+    def grid_id(self):
+        return self._grid_id
+    
     def _read_gridfile(self, fname: str) -> Dataset:
         try:
             dataset = Dataset(self._file_name, "r", format="NETCDF4")

@@ -16,8 +16,8 @@ from typing import Union
 
 import numpy as np
 import pytest
+import uxarray as ux
 import xarray as xr
-from cftime import date2num
 from gt4py.next.ffront.fbuiltins import float32
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -34,6 +34,7 @@ from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.driver.io.cf_utils import (
     INTERFACE_LEVEL_NAME,
     LEVEL_NAME,
+    date2num,
 )
 from icon4py.model.driver.io.data import (
     PROGNOSTIC_CF_ATTRIBUTES,
@@ -157,17 +158,52 @@ def test_io_monitor_write_ugrid_file(test_path):
 
 def test_io_monitor_write_dataset(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
-
-    config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
+    grid, grid_id = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
+    state = model_state(grid)
+    configured_output_start = "2024-01-01T12:00:00"
+    field_configs = [FieldIoConfig(output_interval="HOUR", 
+                                   start_time=configured_output_start, 
+                                   filename_pattern="icon4py_dummy_output", 
+                                   variables=["air_density","exner_function"], nc_comment="Writing dummy data from icon4py for testing.")]
+    config = IoConfig(base_name="test_", field_configs=field_configs, output_path=path_name)
     monitor = IoMonitor(
-        config, VerticalGridSize(grid.num_levels), grid.config.horizontal_config, grid_file, grid
+        config, VerticalGridSize(grid.num_levels), grid.config.horizontal_config, grid_file,str(grid_id)
     )
+    start_time = datetime.fromisoformat(configured_output_start)
+    monitor.store(state, start_time)
+    time = start_time + timedelta(minutes=30)
+    monitor.store(state, time)
+    time = time + timedelta(minutes=30)    
+    monitor.store(state, time)
+    time = time + timedelta(minutes=60)
+    monitor.store(state, time)
+    monitor.close()
+    
+    assert len([f for f in monitor.path.iterdir() if f.is_file()]) == 1 + len(field_configs)
+    ugrid_file = None
+    data_files = []
+    for f in monitor.path.iterdir():
+        if f.is_file():
+            if "_ugrid.nc" in f.name:
+                ugrid_file = f.absolute()
+            else:
+                data_files.append(f.absolute())
+    
+    uxds = ux.open_dataset(ugrid_file, data_files[0])
+    # TODO assert everything is correct?
+    
+    
+   
+    
+        
+    
+    
+
 
 
 @pytest.mark.fail
 @pytest.mark.datatest
-def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint):
+def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint, test_path):
     heights = grid_savepoint.vct_a()
     config = FieldIoConfig(
         filename_pattern="_output_20220101.nc",
@@ -177,13 +213,13 @@ def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint):
     )
     vertical = VerticalModelParams(heights)
     horizontal = grid_savepoint.config.horizontal_config
-    io_system = FieldGroupMonitor(config, horizontal=horizontal, vertical=vertical)
+    io_system = FieldGroupMonitor(config, horizontal=horizontal, vertical=vertical, output_path=test_path)
     io_system.store(model_state, datetime.fromisoformat(config.start_time))
 
     assert False 
 
 
-def test_fieldgroup_monitor_output_time_updates_upon_store():
+def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
     grid = SimpleGrid()
     config = FieldIoConfig(
         start_time="2022-01-01T00:00:00",
@@ -195,7 +231,7 @@ def test_fieldgroup_monitor_output_time_updates_upon_store():
     vertical_size = VerticalGridSize(10)
     horizontal_size = SimpleGrid().config.horizontal_config
     io_system = FieldGroupMonitor(
-        config, vertical=vertical_size, horizontal=horizontal_size, grid_id="simple_grid"
+        config, vertical=vertical_size, horizontal=horizontal_size, grid_id="simple_grid", output_path=test_path
     )
     assert io_system.next_output_time == datetime.fromisoformat(config.start_time)
     state = model_state(grid)

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
+from uuid import UUID
 
 import pytest
 
@@ -36,7 +37,7 @@ MCH_CH_R04B09_LEVELS = 65
 
 
 @functools.cache
-def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGrid:
+def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> tuple[IconGrid, UUID]:
     if experiment == GLOBAL_EXPERIMENT:
         return _load_from_gridfile(
             R02B04_GLOBAL,
@@ -59,7 +60,7 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
 
 def _load_from_gridfile(
     file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
-) -> IconGrid:
+) -> tuple[IconGrid, UUID]:
     grid_file = GRIDS_PATH.joinpath(file_path, filename)
     if not grid_file.exists():
         from icon4py.model.common.test_utils.data_handling import download_and_extract
@@ -75,7 +76,7 @@ def _load_from_gridfile(
         VerticalGridSize(num_levels),
     )
     gm(on_gpu=on_gpu, limited_area=limited_area)
-    return gm.get_grid()
+    return  gm.get_grid(), gm.grid_id
 
 
 @pytest.fixture

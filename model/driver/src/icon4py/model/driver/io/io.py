@@ -121,8 +121,8 @@ class FieldIoConfig(Config):
     start_time: str
     filename_pattern: str
     variables: list[str]
-    title = "ICON4Py Simulation"
-    comment = "ICON inspired code in Python and GT4Py"
+    nc_title:str = "ICON4Py Simulation"
+    nc_comment:str = "ICON inspired code in Python and GT4Py"
 
     def validate(self):
         assert self.output_interval, "Output interval is not set."
@@ -171,13 +171,14 @@ class IoMonitor(Monitor):
         config.validate()
         self.config = config
         self._grid_file = grid_file_name
+        self._initialize_output()
         self._group_monitors = [
             FieldGroupMonitor(
-                conf, vertical=vertical_size, horizontal=horizontal_size, grid_id=grid_id
+                conf, vertical=vertical_size, horizontal=horizontal_size, grid_id=grid_id, output_path=self._output_path
             )
             for conf in config.field_configs
         ]
-        self._initialize_output()
+        
 
     def _read_grid_attrs(self) -> dict:
         with load_data_file(self._grid_file) as ds:
@@ -207,6 +208,10 @@ class IoMonitor(Monitor):
         for monitor in self._group_monitors:
             monitor.store(state, model_time, **kwargs)
 
+    def close(self):
+        for monitor in self._group_monitors:
+            monitor.close()
+
 
 class FieldGroupMonitor(Monitor):
     """
@@ -229,11 +234,12 @@ class FieldGroupMonitor(Monitor):
         vertical: VerticalGridSize,
         horizontal: HorizontalGridSize,
         grid_id: str,
+        output_path:Path = Path(__file__).parent,    
     ):
         self._global_attrs = dict(
             Conventions="CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
-            title=config.title,
-            comment=config.comment,
+            title=config.nc_title,
+            comment=config.nc_comment,
             institution="ETH Zurich and MeteoSwiss",
             source="ICON4Py",
             history="Created by ICON4Py",
@@ -241,10 +247,11 @@ class FieldGroupMonitor(Monitor):
             external_variables="",  # TODO (halungge) add list of fields in ugrid file
             uuidOfHGrid=grid_id,
         )
+        self._output_path = output_path
         self._next_output_time = datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
         self._field_names = config.variables
-        self._file_name = config.filename_pattern
+        self._file_name = output_path.joinpath(config.filename_pattern)
         self._init_dataset(vertical, horizontal)
 
     # initialise this Monitors dataset with:
@@ -262,7 +269,7 @@ class FieldGroupMonitor(Monitor):
         """
 
         # TODO (magdalena) common parts should be constructed by IoMonitor
-
+        
         df = NetcdfWriter(self._file_name, vertical_grid, horizontal_size, self._global_attrs)
         df.initialize_dataset()
         self._dataset = df
@@ -282,6 +289,8 @@ class FieldGroupMonitor(Monitor):
         if self._at_capture_time(model_time):
             # this should do a deep copy of the data
             state_to_store = {field: state[field] for field in self._field_names}
+            logging.info(f"Storing fields {state_to_store.keys()} at {model_time}")
+
             self._update_fetch_times()
             self._append_data(state_to_store, model_time)
             # see https://github.com/pydata/xarray/issues/1672
@@ -291,17 +300,19 @@ class FieldGroupMonitor(Monitor):
 
     def _at_capture_time(self, model_time):
         return self._next_output_time == model_time
-
+    
+    def close(self):
+        self._dataset.close()
 
 class NetcdfWriter:
     def __init__(
         self,
-        file_name: str,
+        file_name: Path,
         vertical: VerticalGridSize,
         horizontal: HorizontalGridSize,
         global_attrs: dict,
     ):
-        self._file_name = file_name
+        self._file_name = str(file_name)
         self._counter = 1
         self.num_levels = vertical.num_lev
         self.horizontal_size = horizontal
@@ -325,16 +336,17 @@ class NetcdfWriter:
         # TODO (magdalena) (what mode do we need `a` or `w`?
         #  TODO properly closing file
         filename = generate_name(self._file_name, self._counter)
-        self.dataset = nc.Dataset(filename, "w", format="NETCDF4")
+        self.dataset = nc.Dataset(filename, "w", format="NETCDF4", persist=True)
+        log.info(f"Creating file {filename} at {self.dataset.filepath()}")
         self.dataset.setncatts(self.attrs)
         ## create dimensions all except time are fixed
-
         self.dataset.createDimension("time", None)
         self.dataset.createDimension("level", self.num_levels)
         self.dataset.createDimension("interface_level", self.num_levels + 1)
         self.dataset.createDimension("cell", self.horizontal_size.num_cells)
         self.dataset.createDimension("vertex", self.horizontal_size.num_vertices)
         self.dataset.createDimension("edge", self.horizontal_size.num_edges)
+        log.debug(f"Creating dimensions {self.dataset.dimensions} in {filename}")
         # create time variables
         times = self.dataset.createVariable("times", "f8", ("time",))
         times.units = DEFAULT_TIME_UNIT
@@ -380,6 +392,10 @@ class NetcdfWriter:
                 new_var.standard_name = new_slice.standard_name
                 new_var.long_name = new_slice.long_name
                 new_var.coordinates = new_slice.coordinates
+                new_var.mesh = new_slice.mesh
+                new_var.location = new_slice.location
+                #new_var.bounds = new_slice.bounds
+                
 
             else:
                 var_name = ds_var.get(k).name
@@ -399,7 +415,8 @@ class NetcdfWriter:
                 # self.append_data(k, v, time_pos)
 
     def close(self):
-        self.dataset.close()
+        if self.dataset is not None:
+            self.dataset.close()
 
     @property
     def dims(self) -> dict:
