@@ -124,7 +124,7 @@ def _make_copy_declaration(f: Field) -> CopyDeclaration:
     truncated_association = f.association[:-offset]
 
     if n_association_dims > f.dims:
-        rh_idx = f"{lh_idx}," + ",".join(association_dims[f.dims:])
+        rh_idx = f"{lh_idx}," + ",".join(association_dims[f.dims :])
     else:
         rh_idx = f"{lh_idx}"
 
