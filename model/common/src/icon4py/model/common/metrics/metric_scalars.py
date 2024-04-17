@@ -14,4 +14,4 @@ import numpy as np
 
 
 def compute_kstart_dd3d(scalfac_dd3d: np.array) -> int:
-    return np.min(scalfac_dd3d[np.where(scalfac_dd3d > 0)])
+    return np.min(np.where(scalfac_dd3d > 0.0))
