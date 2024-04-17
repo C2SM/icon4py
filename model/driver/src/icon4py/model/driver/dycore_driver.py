@@ -36,13 +36,15 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
-from icon4py.model.driver.io_utils import (
+from icon4py.model.driver.initialization_utils import (
     configure_logging,
     read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
     read_static_fields,
+    SerializationType,
+    ExperimentType,
 )
 
 
@@ -279,7 +281,7 @@ class TimeLoop:
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
-def initialize(file_path: Path, props: ProcessProperties):
+def initialize(file_path: Path, props: ProcessProperties, serialization_type: SerializationType, experiment_type: ExperimentType):
     """
     Inititalize the driver run.
 
@@ -304,24 +306,24 @@ def initialize(file_path: Path, props: ProcessProperties):
 
     """
     log.info("initialize parallel runtime")
-    experiment_name = "mch_ch_r04b09_dsl"
-    log.info(f"reading configuration: experiment {experiment_name}")
-    config = read_config(experiment_name)
+    log.info(f"reading configuration: experiment {experiment_type}")
+    config = read_config(experiment_type)
 
-    decomp_info = read_decomp_info(file_path, props)
+    decomp_info = read_decomp_info(file_path, props, serialization_type)
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(file_path, rank=props.rank)
+    icon_grid = read_icon_grid(file_path, rank=props.rank, ser_type=serialization_type)
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        file_path, rank=props.rank
+        file_path, damping_height=config.run_config.damping_height, rank=props.rank, ser_type=serialization_type
     )
     (
         diffusion_metric_state,
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-    ) = read_static_fields(file_path)
+        diagnostic_metric_state,
+    ) = read_static_fields(file_path, rank=props.rank, ser_type=serialization_type, experiment_type=experiment_type)
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -358,9 +360,17 @@ def initialize(file_path: Path, props: ProcessProperties):
         solve_nonhydro_diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
+        diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = read_initial_state(file_path, rank=props.rank)
+    ) = read_initial_state(
+        icon_grid,
+        cell_geometry,
+        edge_geometry,
+        file_path,
+        rank=props.rank,
+        experiment_type=experiment_type
+    )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
     timeloop = TimeLoop(
@@ -382,7 +392,9 @@ def initialize(file_path: Path, props: ProcessProperties):
 @click.argument("input_path")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-def main(input_path, run_path, mpi):
+@click.option("--serialization_type", default=SerializationType.SB, help="serialization type for grid info and static fields")
+@click.option("--experiment_type", default=ExperimentType.ANY, help="experiment selection")
+def main(input_path, run_path, mpi, serialization_type, experiment_type):
     """
     Run the driver.
 
@@ -413,7 +425,7 @@ def main(input_path, run_path, mpi):
         nh_constants,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(Path(input_path), parallel_props)
+    ) = initialize(Path(input_path), parallel_props, serialization_type, experiment_type)
     configure_logging(run_path, timeloop.simulation_date, parallel_props)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

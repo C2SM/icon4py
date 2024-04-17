@@ -80,7 +80,7 @@ backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
-INITIALIZATION_ERROR_MSG = "Only SB and JABW are implemented for model initialization."
+INITIALIZATION_ERROR_MSG = "Only ANY (read from serialized data) and JABW are implemented for model initialization."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
@@ -91,13 +91,15 @@ class SerializationType(str, Enum):
     NC = "netcdf"
 
 
-class TestcaseType(str, Enum):
+class ExperimentType(str, Enum):
     """Jablonowski-Williamson test"""
     JABW = "jabw"
+    """any test with initial conditions read from serialized data"""
+    ANY = "any"
 
 
 def read_icon_grid(
-    fname_prefix: str, path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> IconGrid:
     """
     Read icon grid.
@@ -110,7 +112,7 @@ def read_icon_grid(
     """
     if ser_type == SerializationType.SB:
         return (
-            sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
             .construct_icon_grid(on_gpu=False)
         )
@@ -123,11 +125,10 @@ def model_initialization_jabw(
     cell_param: CellParams,
     edge_param: EdgeParams,
     path: Path,
-    fname_prefix: str,
     rank=0,
 ):
     data_provider = sb.IconSerialDataProvider(
-        fname_prefix, str(path.absolute()), False, mpi_rank=rank
+        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
     wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
@@ -148,11 +149,18 @@ def model_initialization_jabw(
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
     cell_size = cell_lat.size
-    edge_size = edge_lat.size
     num_levels = icon_grid.num_levels
+
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
+    grid_idx_edge_end = icon_grid.get_end_index(
+        EdgeDim, HorizontalMarkerIndex.end(EdgeDim)
+    )
+    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
+    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
     p_sfc = 100000.0
     jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
@@ -164,8 +172,8 @@ def model_initialization_jabw(
     gamma = 0.005  # temperature elapse rate (K/m)
     dtemp = 4.8e5  # empirical temperature difference (K)
     # for baroclinic wave test
-    lonC = math.pi / 9.0  # longitude of the perturb centre
-    latC = 2.0 * lonC  # latitude of the perturb centre
+    lon_perturbation_center = math.pi / 9.0  # longitude of the perturb centre
+    lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
     ps_o_p0ref = p_sfc / P0REF
 
     w_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
@@ -175,9 +183,6 @@ def model_initialization_jabw(
     pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
     theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
     eta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
-
-    mask_array_edge_start_plus1_to_edge_end = np.ones(edge_size, dtype=bool)
-    mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
 
     sin_lat = np.sin(cell_lat)
     cos_lat = np.cos(cell_lat)
@@ -193,7 +198,7 @@ def model_initialization_jabw(
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
-            eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi**2
+            eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
             cos_etav = np.cos(eta_v_numpy[:, k_index])
             sin_etav = np.sin(eta_v_numpy[:, k_index])
 
@@ -237,7 +242,7 @@ def model_initialization_jabw(
             eta_old = eta_old - newton_function / newton_function_prime
 
         # Final update for zeta_v
-        eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi**2
+        eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
         # Use analytic expressions at all model level
         exner_numpy[:, k_index] = (eta_old * ps_o_p0ref) ** RD_O_CPD
         theta_v_numpy[:, k_index] = temperature_jw / exner_numpy[:, k_index]
@@ -253,20 +258,24 @@ def model_initialization_jabw(
         icon_grid,
         cells2edges_coeff,
         eta_v_numpy,
-        mask_array_edge_start_plus1_to_edge_end,
+        grid_idx_edge_start_plus1,
+        grid_idx_edge_end,
+        0,
+        num_levels,
+
     )
     log.info("Cell-to-edge computation completed.")
 
     vn_numpy = zonal2normalwind_jabw_numpy(
+        icon_grid,
         jw_u0,
         jw_up,
-        latC,
-        lonC,
+        lat_perturbation_center,
+        lon_perturbation_center,
         edge_lat,
         edge_lon,
         primal_normal_x,
         eta_v_e_numpy,
-        mask_array_edge_start_plus1_to_edge_end,
     )
     log.info("U2vn computation completed.")
 
@@ -302,10 +311,6 @@ def model_initialization_jabw(
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
-    )
-    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
     u_numpy, v_numpy = interpolation_rbf_edges2cells_vector_numpy(
         vn_numpy,
         rbf_vec_coeff_c1.asnumpy(),
@@ -400,6 +405,7 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
     Read prognostic and diagnostic state from serialized data.
 
     Args:
+        icon_grid: icon grid
         path: path to the serialized input data
         rank: mpi rank of the current compute node
 
@@ -484,13 +490,12 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
 
 
 def read_initial_state(
-    experiment_name: str,
-    fname_prefix: str,
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
     path: Path,
     rank=0,
+    experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
@@ -500,7 +505,7 @@ def read_initial_state(
     PrognosticState,
     PrognosticState,
 ]:
-    if experiment_name == "jabw":
+    if experiment_type == ExperimentType.JABW:
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
@@ -509,9 +514,8 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, fname_prefix, rank)
-
-    else:
+        ) = model_initialization_jabw(icon_grid, cell_param, edge_param, path, rank)
+    elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,
             solve_nonhydro_diagnostic_state,
@@ -521,6 +525,8 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = model_initialization_serialbox(icon_grid, path, rank)
+    else:
+        raise NotImplementedError(INITIALIZATION_ERROR_MSG)
 
     return (
         diffusion_diagnostic_state,
@@ -534,13 +540,15 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    fname_prefix: str, path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
 
     Args:
         path: path to the serialized input data
+        damping_height: damping height for Rayleigh and divergence damping TODO (CHia Rui): Check
+        rank:
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
     Returns: a tuple containing fields describing edges, cells, vertical properties of the model
@@ -548,7 +556,7 @@ def read_geometry_fields(
     """
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
-            fname_prefix, str(path.absolute()), False, mpi_rank=rank
+            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         ).from_savepoint_grid()
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
@@ -564,24 +572,22 @@ def read_geometry_fields(
 
 
 def read_decomp_info(
-    fname_prefix: str,
     path: Path,
     procs_props: ProcessProperties,
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), True, procs_props.rank)
+        sp = sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), True, procs_props.rank)
         return sp.from_savepoint_grid().construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_static_fields(
-    experiment_name: str,
-    fname_prefix: str,
     path: Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
+    experiment_type: ExperimentType = ExperimentType.JABW,
 ) -> tuple[
     DiffusionMetricState,
     DiffusionInterpolationState,
@@ -596,6 +602,7 @@ def read_static_fields(
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        experiment_type: TODO (CHia RUi): Add description
 
     Returns:
         a tuple containing the metric_state and interpolation state,
@@ -604,10 +611,10 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         data_provider = sb.IconSerialDataProvider(
-            fname_prefix, str(path.absolute()), False, mpi_rank=rank
+            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
         )
         icon_grid = (
-            sb.IconSerialDataProvider(fname_prefix, str(path.absolute()), False, mpi_rank=rank)
+            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid()
             .construct_icon_grid(on_gpu=False)
         )
@@ -674,7 +681,7 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
-        if experiment_name == "jabw":
+        if experiment_type == ExperimentType.JABW:
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=metrics_savepoint.ddqz_z_full(),
                 rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
@@ -688,7 +695,7 @@ def read_static_fields(
                 vct_a=data_provider.from_savepoint_grid().vct_a(),
             )
         else:
-            # ddqz_z_full is not in serialized data for mch_ch_r04b09_dsl and exclaim_ape_R02B04
+            # ddqz_z_full is not serialized for mch_ch_r04b09_dsl and exclaim_ape_R02B04
             diagnostic_metric_state = DiagnosticMetricState(
                 ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
                 rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
