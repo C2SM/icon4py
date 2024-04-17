@@ -192,16 +192,39 @@ def model_initialization_gauss3d(
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e_numpy.shape[1], axis=1)
 
     # Define test case parameters
+    enr = 0
     # The topography can only be read from serialized data for now
     # mount_lon     = 0.0    # (0.0) # At present the mountain is at position lat=0,lon=0 (given in meters)
     # mount_lat     = 0.0    # (0.0)
     # mount_height  = 100.0  # (100)
     # mount_width   = 1000.0 # (1000)
-    nh_u0         = 0.0   # (almost_default = 0.0,   const_velocity = 4.0)
-    nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
-    nh_brunt_vais = 0.01  # (almost_default = 0.01,  const_velocity = 0.0)
+    if enr == 0:
+        ename = 'almost_default'
+        nh_u0         = 0.0   # (almost_default = 0.0,   const_velocity = 4.0)
+        nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
+        nh_brunt_vais = 0.01  # (almost_default = 0.01,  const_velocity = 0.0)
+    elif enr == 1:
+        ename = 'const_velocity'
+        nh_u0         = 4.0   # (almost_default = 0.0,   const_velocity = 4.0)
+        nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
+        nh_brunt_vais = 0.0   # (almost_default = 0.01,  const_velocity = 0.0)
+    else:
+        raise NotImplementedError('Selected wrong experiment name')
 
-    log.warning("WARNING: topography can only be read from serialized data for now.")
+    # take care of directories
+    import os
+    try:
+        os.remove('gauss3d_output')
+    except:
+        log.warning("Missing gauss3d_output link.")
+    try:
+        os.remove('ser_data')
+    except:
+        log.warning("Missing ser_data link.")
+    os.symlink('gauss3d_output.'+ename, 'gauss3d_output')
+    os.symlink('icon-exclaim-data/torus_exclaim_'+ename+'/ser_data', 'ser_data')
+
+    log.warning("Topography can only be read from serialized data for now.")
 
     # A given Brunt Vaisala frequency and a given zonal wind.
     for k_index in range(num_levels - 1, -1, -1):
@@ -217,7 +240,7 @@ def model_initialization_gauss3d(
         exner_numpy[:, num_levels-1] = 1.0 - geopot[:, num_levels-1] / CPD / nh_t0
     log.info("Vertical computations completed.")
 
-    # Compute hydrostatically balanced exner, by integrating the (discretized!) 
+    # Compute hydrostatically balanced exner, by integrating the (discretized!)
     # 3rd equation of motion under the assumption thetav=const.
     rho_numpy, exner_numpy = mo_hydro_adjust_constant_thetav(
         wgtfac_c,
