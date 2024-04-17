@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -36,8 +37,8 @@ from icon4py.model.common.test_utils.helpers import (
     zero_field,
 )
 
-from .test_add_extra_diffusion_for_wn_approaching_cfl import (
-    add_extra_diffusion_for_wn_approaching_cfl_numpy,
+from .test_add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy,
 )
 from .test_compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency_numpy,
@@ -97,7 +98,7 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
         condition = (np.maximum(2, nrdmax - 2) <= k) & (k < nlev - 3)
 
-        ddt_vn_apc_extra_diffu = add_extra_diffusion_for_wn_approaching_cfl_numpy(
+        ddt_vn_apc_extra_diffu = add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
             grid,
             levelmask,
             c_lin_e,
@@ -121,6 +122,11 @@ class TestFusedVelocityAdvectionStencil19To20(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if isinstance(grid, IconGrid) and grid.limited_area:
+            pytest.xfail(
+                "Execution domain needs to be restricted or boundary taken into account in stencil."
+            )
+
         z_kin_hor_e = random_field(grid, EdgeDim, KDim)
         coeff_gradekin = random_field(grid, EdgeDim, E2CDim)
         coeff_gradekin_new = as_1D_sparse_field(coeff_gradekin, ECDim)

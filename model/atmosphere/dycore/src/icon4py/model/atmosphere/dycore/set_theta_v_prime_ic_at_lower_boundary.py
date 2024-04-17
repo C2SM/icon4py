@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
 from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -32,7 +33,7 @@ def _set_theta_v_prime_ic_at_lower_boundary(
     return z_theta_v_pr_ic_vp, astype(theta_v_ic_vp, wpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_theta_v_prime_ic_at_lower_boundary(
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
     z_rth_pr: Field[[CellDim, KDim], vpfloat],

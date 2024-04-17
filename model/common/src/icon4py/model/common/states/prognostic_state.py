@@ -36,4 +36,4 @@ class PrognosticState:
 
     @property
     def w_1(self) -> Field[[CellDim], float]:
-        return as_field((CellDim,), self.w.asnumpy()[:, 0])
+        return as_field((CellDim,), self.w.ndarray[:, 0])

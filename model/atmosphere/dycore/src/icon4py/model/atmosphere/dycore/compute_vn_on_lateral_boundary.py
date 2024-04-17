@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -30,7 +31,7 @@ def _compute_vn_on_lateral_boundary(
     return vn_new_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_vn_on_lateral_boundary(
     grf_tend_vn: Field[[EdgeDim, KDim], wpfloat],
     vn_now: Field[[EdgeDim, KDim], wpfloat],

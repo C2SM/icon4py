@@ -88,7 +88,7 @@ class DiffusionInterpolationState:
 
     @functools.cached_property
     def geofac_n2s_c(self) -> Field[[CellDim], float]:
-        return as_field((CellDim,), data=self.geofac_n2s.asnumpy()[:, 0])
+        return as_field((CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property
     def geofac_n2s_nbh(self) -> Field[[CECDim], float]:
