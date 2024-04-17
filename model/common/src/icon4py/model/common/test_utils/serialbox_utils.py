@@ -518,9 +518,6 @@ class MetricSavepoint(IconSavepoint):
     def scalfac_dd3d(self):
         return self._get_field("scalfac_dd3d", KDim)
 
-    def kstart_dd3d_ref(self):
-        return self.serializer.read("kstart_dd3d_ref", self.savepoint)[0]
-
     def theta_ref_ic(self):
         return self._get_field("theta_ref_ic", CellDim, KDim)
 
