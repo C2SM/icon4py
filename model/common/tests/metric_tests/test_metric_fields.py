@@ -72,6 +72,7 @@ class TestComputeZMc(StencilTest):
         )
 
 
+@pytest.mark.datatest
 def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     if is_python(backend):
         pytest.skip("skipping: unsupported backend")
@@ -107,6 +108,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
+@pytest.mark.datatest
 def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
@@ -130,6 +132,7 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
 
 
 # TODO: convert this to a stenciltest once it is possible to have only KDim in domain
+@pytest.mark.datatest
 def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
     scalfac_dd3d_full = zero_field(icon_grid, KDim)
@@ -152,6 +155,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
 
 
 # TODO: convert this to a stenciltest once it is possible to have only KDim in domain
+@pytest.mark.datatest
 def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = as_field((), grid_savepoint.vct_a().asnumpy()[0])
@@ -177,6 +181,7 @@ def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backen
     assert dallclose(rayleigh_w_full.asnumpy(), rayleigh_w_ref.asnumpy())
 
 
+@pytest.mark.datatest
 def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
@@ -203,6 +208,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
     assert dallclose(coeff2_dwdz_full.asnumpy(), coeff2_dwdz_ref.asnumpy())
 
 
+@pytest.mark.datatest
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
