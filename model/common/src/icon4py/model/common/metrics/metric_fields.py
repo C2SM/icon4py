@@ -174,7 +174,7 @@ def _compute_scalfac_dd3d(
 ) -> Field[[KDim], wpfloat]:
     scalfac_dd3d = broadcast(1.0, (KDim,))
     if divdamp_type == 32:
-        zf = 0.5 * (vct_a + vct_a(Koff[1]))
+        zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
         scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
         scalfac_dd3d = where(
             zf >= divdamp_trans_start,
