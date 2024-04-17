@@ -377,6 +377,7 @@ class SimpleGrid(BaseGrid):
     def __init__(self):
         """Instantiate a SimpleGrid used for testing purposes."""
         super().__init__()
+        
         self._configure()
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
@@ -422,6 +423,9 @@ class SimpleGrid(BaseGrid):
     @property
     def num_levels(self) -> int:
         return self.config.num_levels
+    @property
+    def id(self) -> str:
+        return __class__.__name__
 
     def _has_skip_values(self, dimension: Dimension) -> bool:
         return False

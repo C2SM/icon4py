@@ -69,6 +69,11 @@ class BaseGrid(ABC):
 
     @property
     @abstractmethod
+    def id(self) -> str:
+        pass
+    
+    @property
+    @abstractmethod
     def num_cells(self) -> int:
         pass
 

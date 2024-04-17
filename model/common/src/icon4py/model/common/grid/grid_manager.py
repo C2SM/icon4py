@@ -425,7 +425,7 @@ class GridManager:
                 ECDim: icon_grid.size[EdgeDim] * icon_grid.size[E2CDim],
             }
         )
-
+        icon_grid.id = self._grid_id
         return icon_grid
 
     @staticmethod
