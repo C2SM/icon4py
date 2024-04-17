@@ -239,10 +239,12 @@ class GridManager:
         self._config = config
         self._grid: Optional[IconGrid] = None
         self._file_name = grid_file
+        self._grid_id = None
 
     def __call__(self, on_gpu: bool = False):
         dataset = self._read_gridfile(self._file_name)
-        _, grid = self._constuct_grid(dataset, on_gpu=on_gpu)
+        uid, grid = self._constuct_grid(dataset, on_gpu=on_gpu)
+        self._grid_id = uid
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> Dataset:
