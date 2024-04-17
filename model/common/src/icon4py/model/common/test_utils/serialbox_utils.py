@@ -1253,23 +1253,6 @@ class IconJabwInitSavepoint(IconSavepoint):
         return self.serializer.read("lonC", self.savepoint)[0]
 
 
-class IconJabwIntermediateSavepoint(IconSavepoint):
-    def exner(self):
-        return self._get_field("exner_intermediate", CellDim, KDim)
-
-    def rho(self):
-        return self._get_field("rho_intermediate", CellDim, KDim)
-
-    def theta_v(self):
-        return self._get_field("theta_v_intermediate", CellDim, KDim)
-
-    def pressure(self):
-        return self._get_field("pressure_intermediate", CellDim, KDim)
-
-    def temperature(self):
-        return self._get_field("temperature_intermediate", CellDim, KDim)
-
-
 class IconJabwFinalSavepoint(IconSavepoint):
     def exner(self):
         return self._get_field("exner_final", CellDim, KDim)
@@ -1297,41 +1280,6 @@ class IconJabwFinalSavepoint(IconSavepoint):
 
     def eta_v_e(self):
         return self._get_field("zeta_v_e_final", EdgeDim, KDim)
-
-
-class IconJabwFirstOutputSavepoint(IconSavepoint):
-    def pressure(self):
-        return self._get_field("output_diag_pres", CellDim, KDim)
-
-    def temperature(self):
-        return self._get_field("output_diag_temperature", CellDim, KDim)
-
-    def u(self):
-        return self._get_field("output_diag_u", CellDim, KDim)
-
-    def v(self):
-        return self._get_field("output_diag_v", CellDim, KDim)
-
-    def exner(self):
-        return self._get_field("output_diag_exner", CellDim, KDim)
-
-    def pressure_sfc(self):
-        return self._get_field("output_diag_pressure_sfc", CellDim)
-
-    def exner_pr(self):
-        return self._get_field("output_diag_exner_pr", CellDim, KDim)
-
-    def ddt_vn_apc_pc(self, ntnd):
-        return self._get_field_component("output_diag_ddt_vn_apc_pc", ntnd, (EdgeDim, KDim))
-
-    def ddt_w_adv_pc(self, ntnd):
-        return self._get_field_component("output_diag_ddt_w_adv_ntl", ntnd, (CellDim, KDim))
-
-    def ddt_exner_phy(self):
-        return self._get_field("output_diag_ddt_exner_phy", CellDim, KDim)
-
-    def ddt_vn_phy(self):
-        return self._get_field("output_diag_ddt_vn_phy", EdgeDim, KDim)
 
 
 class IconSerialDataProvider:
@@ -1457,14 +1405,6 @@ class IconSerialDataProvider:
         savepoint = self.serializer.savepoint["icon-jabw-init"].id[1].as_savepoint()
         return IconJabwInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_jabw_intermediate(self) -> IconJabwIntermediateSavepoint:
-        savepoint = self.serializer.savepoint["icon-jabw-intermediate"].id[1].as_savepoint()
-        return IconJabwIntermediateSavepoint(savepoint, self.serializer, size=self.grid_size)
-
     def from_savepoint_jabw_final(self) -> IconJabwFinalSavepoint:
         savepoint = self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
         return IconJabwFinalSavepoint(savepoint, self.serializer, size=self.grid_size)
-
-    def from_savepoint_jabw_first_output(self) -> IconJabwFirstOutputSavepoint:
-        savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
-        return IconJabwFirstOutputSavepoint(savepoint, self.serializer, size=self.grid_size)
