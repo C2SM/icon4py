@@ -21,6 +21,7 @@ from cftime import date2num
 from gt4py.next.ffront.fbuiltins import float32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize, VerticalModelParams
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -51,22 +52,32 @@ from icon4py.model.driver.io.io import (
 )
 
 
+# TODO add support for interface level fields like w in the state
+
 UNLIMITED = None
 
 grid_file = GRIDS_PATH.joinpath(R02B04_GLOBAL, GLOBAL_GRIDFILE)
 global_grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
-simple_grid = SimpleGrid()
-grid = simple_grid
-rho = random_field(grid, CellDim, KDim, dtype=float32)
-exner = random_field(grid, CellDim, KDim, dtype=float32)
-theta_v = random_field(grid, CellDim, KDim, dtype=float32)
-w = random_field(grid, CellDim, KDim,extend={KDim:1}, dtype=float32)
 
-model_state = {"air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
+
+
+
+
+def model_state(grid:BaseGrid)->dict[str, xr.DataArray]:
+    rho = random_field(grid, CellDim, KDim, dtype=float32)
+    exner = random_field(grid, CellDim, KDim, dtype=float32)
+    theta_v = random_field(grid, CellDim, KDim, dtype=float32)
+    w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32) 
+    return {
+        "air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
          "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
          "theta_v": to_data_array(theta_v, PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"]),      
          "upward_air_velocity": to_data_array(w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"])}
 
+def state_values()-> xr.DataArray:
+    state = model_state(SimpleGrid())
+    for v in state.values():
+        yield v
 
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour"])
@@ -124,6 +135,12 @@ def test_io_monitor_write_ugrid_file(test_path):
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
     assert is_valid_uxgrid(ugrid_file)
+    
+def test_io_monitor_write_dataset(test_path):
+    path_name = test_path.absolute().as_posix() + "/output"
+    config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
+    monitor = IoMonitor(config, VerticalGridSize(10), SimpleGrid().config.horizontal_config,
+                        grid_file, "simple_grid")
 
 @pytest.mark.fail   
 @pytest.mark.datatest
@@ -144,6 +161,7 @@ def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint):
 
 
 def test_fieldgroup_monitor_output_time_updates_upon_store():
+    grid = SimpleGrid()
     config = FieldIoConfig(
         start_time="2022-01-01T00:00:00",
         filename_pattern="{base_name}_{time}.nc",
@@ -155,18 +173,18 @@ def test_fieldgroup_monitor_output_time_updates_upon_store():
     horizontal_size = SimpleGrid().config.horizontal_config
     io_system = FieldGroupMonitor(config,vertical=vertical_size, horizontal=horizontal_size, grid_id="simple_grid")
     assert io_system.next_output_time == datetime.fromisoformat(config.start_time)
-    
-    io_system.store(model_state, step_time)
+    state = model_state(grid)
+    io_system.store(state, step_time)
     assert io_system.next_output_time == datetime.fromisoformat("2022-01-01T01:00:00")
 
     step_time = datetime.fromisoformat("2022-01-01T01:10:00")
-    io_system.store(model_state, step_time)
+    io_system.store(state, step_time)
     assert io_system.next_output_time == datetime.fromisoformat("2022-01-01T01:00:00")
     # TODO (magdalena) how to deal with non time matches? That is if the model time jumps over the output time
 
 
-def test_initialize_datastore_creates_dimensions(test_path, random_name ):
-    dataset, grid = initialize_dataset(test_path, random_name)
+def test_initialize_writer_create_dimensions(test_path, random_name):
+    dataset, grid = initialized_writer(test_path, random_name)
 
     assert dataset["title"] == "test"
     assert dataset["institution"] == "EXCLAIM - ETH Zurich"
@@ -184,8 +202,7 @@ def test_initialize_datastore_creates_dimensions(test_path, random_name ):
     #assert dataset.variables["times"].ncattrs["calendar"] is not None
 
 
-def initialize_dataset(test_path, random_name):
-    grid = SimpleGrid()
+def initialized_writer(test_path, random_name, grid = SimpleGrid()):
     vertical = VerticalGridSize(grid.num_levels)
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) +"/"+ random_name + ".nc"
@@ -195,8 +212,8 @@ def initialize_dataset(test_path, random_name):
     return dataset, grid
 
     
-def test_initialize_datastore_time_var(test_path, random_name):
-    dataset, grid = initialize_dataset(test_path, random_name)
+def test_initialize_writer_time_var(test_path, random_name):
+    dataset, _ = initialized_writer(test_path, random_name)
     time_var = dataset.variables["times"]
     assert time_var.dimensions == ("time",)
     assert time_var.units == "seconds since 1970-01-01 00:00:00"
@@ -205,8 +222,8 @@ def test_initialize_datastore_time_var(test_path, random_name):
     assert time_var.standard_name == "time"
     assert len(time_var) == 0
     
-def test_initialize_datastore_vertical_model_levels(test_path, random_name):
-    dataset, grid = initialize_dataset(test_path, random_name)
+def test_initialize_writer_vertical_model_levels(test_path, random_name):
+    dataset, grid = initialized_writer(test_path, random_name)
     vertical = dataset.variables["levels"]
     assert vertical.units == "1"
     assert vertical.dimensions == ("level",)
@@ -216,8 +233,8 @@ def test_initialize_datastore_vertical_model_levels(test_path, random_name):
     assert len(vertical) == grid.num_levels
     assert np.all(vertical == np.arange(grid.num_levels))
 
-def test_initialize_datastore_interface_levels(test_path, random_name):
-    dataset, grid = initialize_dataset(test_path, random_name)
+def test_initialize_writer_interface_levels(test_path, random_name):
+    dataset, grid = initialized_writer(test_path, random_name)
     interface_levels = dataset.variables["interface_levels"]
     assert interface_levels.units == "1"
     assert interface_levels.datatype == np.int32
@@ -230,16 +247,19 @@ def test_initialize_datastore_interface_levels(test_path, random_name):
 
 
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
-def test_filter_by_metadata(value):
-    assert filter_by_standard_name(model_state, value) == {value: model_state[value]}
+def test_filter_by_standard_name(value):
+    state = model_state(SimpleGrid())
+    assert filter_by_standard_name(state, value) == {value: state[value]}
     
-def test_filter_by_metadata_custom_name():
-    assert filter_by_standard_name(model_state, "virtual_potential_temperature") == {"theta_v": model_state["theta_v"]}
-def test_filter_by_metadata_empty():
-    assert filter_by_standard_name(model_state, "does_not_exist") == {}
+def test_filter_by_standard_name_key_differs_from_name():
+    state = model_state(SimpleGrid())
+    assert filter_by_standard_name(state, "virtual_potential_temperature") == {"theta_v": state["theta_v"]}
+def test_filter_by_standard_name_non_existing_name():
+    state = model_state(SimpleGrid())
+    assert filter_by_standard_name(state, "does_not_exist") == {}
 
 def test_append_timeslice(test_path, random_name):
-    dataset, grid = initialize_dataset(test_path, random_name)
+    dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(dataset.variables["times"]) == 0
     slice1   = {}
@@ -257,36 +277,38 @@ def test_append_timeslice(test_path, random_name):
                                                                   units=time_units, calendar=cal)))
 
 
-def test_append_timeslice_create_new_var(test_path, random_name):
-    dataset, grid = initialize_dataset(test_path, random_name)
+def test_writer_append_timeslice_create_new_var(test_path, random_name):
+    dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(dataset.variables["times"]) == 0
     assert "air_density" not in dataset.variables
-    model_state = {"air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"])}
-    dataset.append(model_state, time)
+    
+    state = dict(air_density = model_state(grid)["air_density"])
+    dataset.append(state, time)
     assert len(dataset.variables["times"]) == 1
     assert "air_density" in dataset.variables
     assert dataset.variables["air_density"].dimensions == ("time", "level", "cell")
     assert dataset.variables["air_density"].shape == (1, grid.num_levels, grid.num_cells)
-    assert np.allclose(dataset.variables["air_density"][0], rho.ndarray.T)
+    assert np.allclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 def test_append_timeslice_existing_var(test_path, random_name):
-    dataset, grid = initialize_dataset(test_path, random_name)
+    dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
-    model_state = {"air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"])}
-    dataset.append(model_state, time)
+    state = dict(air_density = model_state(grid)["air_density"])
+    dataset.append(state, time)
     assert len(dataset.variables["times"]) == 1
     assert "air_density" in dataset.variables
+    
     new_rho = random_field(grid, CellDim, KDim, dtype=float32)
-    model_state["air_density"] = to_data_array(new_rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"])
+    state["air_density"] = to_data_array(new_rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"])
     new_time = time + timedelta(hours=1)
-    dataset.append(model_state, new_time)
+    dataset.append(state, new_time)
     
     assert len(dataset.variables["times"]) == 2
     assert dataset.variables["air_density"].shape == (2, grid.num_levels, grid.num_cells)
     assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
     
-@pytest.mark.parametrize("input", model_state.values())
+@pytest.mark.parametrize("input", state_values())
 def test_to_canonical_dim_order(input):
     input_dims = input.dims
     output = to_canonical_dim_order(input)
