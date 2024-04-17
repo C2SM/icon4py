@@ -180,7 +180,7 @@ def generate_dace_code(
     on_gpu: bool,
     temporaries: bool,
     **kwargs: Any,
-) -> tuple[Optional[str], Optional[str], Optional[str]]:
+) -> tuple[str, str, Optional[str]]:
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
     check_for_domain_bounds(stencil_info.fendef)
 
@@ -228,7 +228,7 @@ def generate_dace_code(
     if on_gpu:
         cuda_objs = [obj for obj in code_objs if obj.language == "cu" and obj.linkable]
         assert len(cuda_objs) == 1
-        return None, None, cuda_objs[0].clean_code
+        return hdr_objs[0].clean_code, src_objs[0].clean_code, cuda_objs[0].clean_code
     else:
         return hdr_objs[0].clean_code, src_objs[0].clean_code, None
 
@@ -247,12 +247,16 @@ class DaceCodegen:
         # only support cuda codegen
         on_gpu = True
 
-        _, _, dc_cuda = generate_dace_code(
+        dc_hdr, dc_src, dc_cuda = generate_dace_code(
             self.stencil_info,
             self.stencil_info.offset_provider,
             on_gpu,
             temporaries,
         )
+
+        write_string(dc_hdr, outpath, f"{self.stencil_info.fendef.id}_dace.h")
+        write_string(dc_src, outpath, f"{self.stencil_info.fendef.id}_dace.cpp")
+
         assert dc_cuda is not None
         write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
 
