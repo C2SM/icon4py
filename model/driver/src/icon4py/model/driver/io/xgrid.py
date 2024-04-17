@@ -43,41 +43,40 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
     )
 
 
-dimension_mapping = {
-    CellDim: "cell",
-    KDim: "level",
-    EdgeDim:"edge",
-    VertexDim:"vertex"
-}
+dimension_mapping = {CellDim: "cell", KDim: "level", EdgeDim: "edge", VertexDim: "vertex"}
 
-coordinates_mapping={
+coordinates_mapping = {
     CellDim: "clon clat",
     VertexDim: "vlon vlat",
     EdgeDim: "elon elat",
 }
 
 location_mapping = {
-    CellDim:"face",
-    VertexDim:"node",
-    EdgeDim:"edge",
+    CellDim: "face",
+    VertexDim: "node",
+    EdgeDim: "edge",
 }
 
-def ugrid_attributes(dim:Dimension) -> dict:
+
+def ugrid_attributes(dim: Dimension) -> dict:
     if dim.kind == DimensionKind.HORIZONTAL:
         return dict(location=location_mapping[dim], coordinates=coordinates_mapping[dim], mesh=MESH)
     else:
         return {}
+
+
 def extract_bounds(ds: xa.Dataset):
     """
     Extract the bounds from the ICON grid file.
     TODO (@halungge) does it  work for decomposed grids?
-    TODO (@halungge) these are not present in the mch grid file 
+    TODO (@halungge) these are not present in the mch grid file
     """
     return dict(
         cell=(ds["clat_vertices"], ds["clon_vertices"]),
         vertex=(ds["vlat_vertices"], ds["vlon_vertices"]),
         edge=(ds["elat_vertices"], ds["elon_vertices"]),
     )
+
 
 class IconUGridPatch:
     """
@@ -86,7 +85,7 @@ class IconUGridPatch:
     TODO: (magdalena) should all the unnecessary data fields be removed.
     """
 
-    def __init__(self):        
+    def __init__(self):
         self.connectivities = (
             "edge_of_cell",  # E2C connectivity
             "vertex_of_cell",  # V2C connectivity
@@ -96,7 +95,6 @@ class IconUGridPatch:
             "edges_of_vertex",  # E2V connectivity
             "vertices_of_vertex",  # V2E2V connectivity
             "neighbor_cell_index",  # C2E2C connectivity
-
         )
         self.domain_bounds = (
             "start_idx_c",  # start and end indices for refin_ctl_levels
@@ -108,13 +106,12 @@ class IconUGridPatch:
         )
         self.index_lists = self.connectivities + self.domain_bounds
         # do not exist on local grid.nc of mch_ch_r04b09_dsl what do they contain?
-        # "edge_index",  
+        # "edge_index",
         # "vertex_index",
         # "cell_index",
         # only for nested grids, ignored for now
         # "child_cell_index",
         # "child_edge_index",
-        
 
     def _add_mesh_var(self, ds: xa.Dataset):
         ds["mesh"] = xa.DataArray(
@@ -133,13 +130,11 @@ class IconUGridPatch:
                 face_face_connectivity="neighbor_cell_index",
                 edge_face_connectivity="adjacent_cell_of_edge",
                 node_dimension="vertex",
-                # boundary_node_connectivity="",
+                # TODO boundary_node_connectivity ?
             ),
         )
 
-
-
-    def _patch_start_index(self, ds: xa.Dataset, with_zero_start_index:bool = False):
+    def _patch_start_index(self, ds: xa.Dataset, with_zero_start_index: bool = False):
         for var in self.index_lists:
             if var in ds:
                 if with_zero_start_index:
@@ -148,14 +143,15 @@ class IconUGridPatch:
                     ds[var].attrs["start_index"] = 0
                 else:
                     ds[var].attrs["start_index"] = 1
+
     def _set_fill_value(self, ds: xa.Dataset):
         for var in self.connectivities:
             if var in ds:
-                ds[var].attrs["_FillValue"] = FILL_VALUE            
-    
+                ds[var].attrs["_FillValue"] = FILL_VALUE
+
     def _transpose_index_lists(self, ds: xa.Dataset):
-        """ Unify the dimension order of fields in ICON grid file.
-        
+        """Unify the dimension order of fields in ICON grid file.
+
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension) and others the other way around. We transpose them to have all the same ordering.
         """
         for name in self.connectivities:
@@ -167,15 +163,14 @@ class IconUGridPatch:
                     coords=ds[name].coords,
                     attrs=ds[name].attrs,
                 )
-        
+
     def _validate(self, ds: xa.Dataset):
         grid = uxarray.open_grid(ds)
-        try: 
+        try:
             grid.validate()
         except RuntimeError as error:
             log.error(f"Validation of the ugrid failed with {error}>")
             raise ValidationError("Validation of the ugrid failed") from error
-
 
     def __call__(self, ds: xa.Dataset, validate: bool = False):
         self._patch_start_index(ds, with_zero_start_index=True)
@@ -192,9 +187,7 @@ class IconUGridPatch:
 def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path):
     stem = original_filename.stem
     filename = output_path.joinpath(stem + "_ugrid.nc")
-    ds.to_netcdf(
-        filename, format="NETCDF4", engine="netcdf4"
-    )
+    ds.to_netcdf(filename, format="NETCDF4", engine="netcdf4")
 
 
 class IconUGridWriter:
@@ -210,7 +203,7 @@ class IconUGridWriter:
 
 
 @contextlib.contextmanager
-def load_data_file(filename: Union[Path|str]) -> xa.Dataset:
+def load_data_file(filename: Union[Path | str]) -> xa.Dataset:
     ds = xa.open_dataset(filename)
     try:
         yield ds

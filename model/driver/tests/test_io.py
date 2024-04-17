@@ -60,26 +60,28 @@ grid_file = GRIDS_PATH.joinpath(R02B04_GLOBAL, GLOBAL_GRIDFILE)
 global_grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
 
 
-
-
-
-def model_state(grid:BaseGrid)->dict[str, xr.DataArray]:
+def model_state(grid: BaseGrid) -> dict[str, xr.DataArray]:
     rho = random_field(grid, CellDim, KDim, dtype=float32)
     exner = random_field(grid, CellDim, KDim, dtype=float32)
     theta_v = random_field(grid, CellDim, KDim, dtype=float32)
-    ## add support for interface level fields   
-    #w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32) 
+    ## add support for interface level fields
+    # w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32)
     w = random_field(grid, CellDim, KDim, extend={KDim: 0}, dtype=float32)
     return {
         "air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
-         "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
-         "theta_v": to_data_array(theta_v, PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"]),      
-         "upward_air_velocity": to_data_array(w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"])}
+        "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
+        "theta_v": to_data_array(
+            theta_v, PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"]
+        ),
+        "upward_air_velocity": to_data_array(w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
+    }
 
-def state_values()-> xr.DataArray:
+
+def state_values() -> xr.DataArray:
     state = model_state(SimpleGrid())
     for v in state.values():
         yield v
+
 
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour"])
@@ -92,25 +94,30 @@ def test_to_delta_hrs(num, slot):
 @pytest.mark.parametrize("slot", ["second", "SECOND"])
 def test_to_delta_secs(num, slot):
     assert to_delta(f"{num} {slot}") == timedelta(seconds=num)
-    
+
+
 @pytest.mark.parametrize("num", [0, 2, 3, 4, 5])
 @pytest.mark.parametrize("slot", ["MINUTE", "Minute"])
 def test_to_delta_mins(num, slot):
     assert to_delta(f"{num} {slot}") == timedelta(minutes=num)
 
 
-@pytest.mark.parametrize("name, expected", [("output.nc", "output_2.nc"),
-                                            ("outxxput_20220101.xc", "outxxput_20220101_2.nc"),
-                                            ("output_20220101T000000_x",
-                                             "output_20220101T000000_x_2.nc")])
+@pytest.mark.parametrize(
+    "name, expected",
+    [
+        ("output.nc", "output_2.nc"),
+        ("outxxput_20220101.xc", "outxxput_20220101_2.nc"),
+        ("output_20220101T000000_x", "output_20220101T000000_x_2.nc"),
+    ],
+)
 def test_generate_name(name, expected):
     counter = 2
     assert expected == generate_name(name, counter)
 
 
-
 def is_valid_uxgrid(file: Union[Path, str]) -> bool:
     import uxarray as ux
+
     grid = ux.open_grid(file)
     try:
         grid.validate()
@@ -119,34 +126,46 @@ def is_valid_uxgrid(file: Union[Path, str]) -> bool:
         return False
 
 
-
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(base_name="test_", field_configs=[], output_path= path_name)
-    monitor = IoMonitor(config, VerticalGridSize(10), SimpleGrid().config.horizontal_config,
-                        grid_file, "simple_grid")
+    config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
+    monitor = IoMonitor(
+        config,
+        VerticalGridSize(10),
+        SimpleGrid().config.horizontal_config,
+        grid_file,
+        "simple_grid",
+    )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
 
-    
+
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(base_name="test_", field_configs=[],output_path=path_name)
-    monitor = IoMonitor(config, VerticalGridSize(10), SimpleGrid().config.horizontal_config,
-                        grid_file, "simple_grid")
+    config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
+    monitor = IoMonitor(
+        config,
+        VerticalGridSize(10),
+        SimpleGrid().config.horizontal_config,
+        grid_file,
+        "simple_grid",
+    )
     ugrid_file = monitor.path.iterdir().__next__().absolute()
     assert "ugrid.nc" in ugrid_file.name
     assert is_valid_uxgrid(ugrid_file)
-    
+
+
 def test_io_monitor_write_dataset(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
-    
-    config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
-    monitor = IoMonitor(config, VerticalGridSize(grid.num_levels), grid.config.horizontal_config,
-                        grid_file, grid)
 
-@pytest.mark.fail   
+    config = IoConfig(base_name="test_", field_configs=[], output_path=path_name)
+    monitor = IoMonitor(
+        config, VerticalGridSize(grid.num_levels), grid.config.horizontal_config, grid_file, grid
+    )
+
+
+@pytest.mark.fail
 @pytest.mark.datatest
 def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint):
     heights = grid_savepoint.vct_a()
@@ -160,8 +179,8 @@ def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint):
     horizontal = grid_savepoint.config.horizontal_config
     io_system = FieldGroupMonitor(config, horizontal=horizontal, vertical=vertical)
     io_system.store(model_state, datetime.fromisoformat(config.start_time))
-    #state["normal_velocity"] = 2.0
-    assert False
+
+    assert False 
 
 
 def test_fieldgroup_monitor_output_time_updates_upon_store():
@@ -175,7 +194,9 @@ def test_fieldgroup_monitor_output_time_updates_upon_store():
     step_time = datetime.fromisoformat(config.start_time)
     vertical_size = VerticalGridSize(10)
     horizontal_size = SimpleGrid().config.horizontal_config
-    io_system = FieldGroupMonitor(config,vertical=vertical_size, horizontal=horizontal_size, grid_id="simple_grid")
+    io_system = FieldGroupMonitor(
+        config, vertical=vertical_size, horizontal=horizontal_size, grid_id="simple_grid"
+    )
     assert io_system.next_output_time == datetime.fromisoformat(config.start_time)
     state = model_state(grid)
     io_system.store(state, step_time)
@@ -200,22 +221,29 @@ def test_initialize_writer_create_dimensions(test_path, random_name):
     assert dataset.dims["edge"].size == grid.num_edges
     assert dataset.dims["time"].size == 0
     # TODO assert dims["time"] is unlimited
-    
-    heights = xr.DataArray(random_field(grid, CellDim, KDim, dtype=float32), attrs={"units":"m", "long_name":"sample height levels", "short_name":"height"})
-    #assert dataset.variables["times"].ncattrs["units"] == "seconds since 1970-01-01 00:00:00"
-    #assert dataset.variables["times"].ncattrs["calendar"] is not None
+
+    heights = xr.DataArray(
+        random_field(grid, CellDim, KDim, dtype=float32),
+        attrs={"units": "m", "long_name": "sample height levels", "short_name": "height"},
+    )
+    # assert dataset.variables["times"].ncattrs["units"] == "seconds since 1970-01-01 00:00:00"
+    # assert dataset.variables["times"].ncattrs["calendar"] is not None
 
 
-def initialized_writer(test_path, random_name, grid = SimpleGrid()):
+def initialized_writer(test_path, random_name, grid=SimpleGrid()):
     vertical = VerticalGridSize(grid.num_levels)
     horizontal = grid.config.horizontal_config
-    fname = str(test_path.absolute()) +"/"+ random_name + ".nc"
-    dataset = NetcdfWriter(fname, vertical, horizontal,
-                           global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"})
+    fname = str(test_path.absolute()) + "/" + random_name + ".nc"
+    dataset = NetcdfWriter(
+        fname,
+        vertical,
+        horizontal,
+        global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
+    )
     dataset.initialize_dataset()
     return dataset, grid
 
-    
+
 def test_initialize_writer_time_var(test_path, random_name):
     dataset, _ = initialized_writer(test_path, random_name)
     time_var = dataset.variables["times"]
@@ -225,7 +253,8 @@ def test_initialize_writer_time_var(test_path, random_name):
     assert time_var.long_name == "time"
     assert time_var.standard_name == "time"
     assert len(time_var) == 0
-    
+
+
 def test_initialize_writer_vertical_model_levels(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     vertical = dataset.variables["levels"]
@@ -236,6 +265,7 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     assert vertical.datatype == np.int32
     assert len(vertical) == grid.num_levels
     assert np.all(vertical == np.arange(grid.num_levels))
+
 
 def test_initialize_writer_interface_levels(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
@@ -248,25 +278,29 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
 
-
-
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])
 def test_filter_by_standard_name(value):
     state = model_state(SimpleGrid())
     assert filter_by_standard_name(state, value) == {value: state[value]}
-    
+
+
 def test_filter_by_standard_name_key_differs_from_name():
     state = model_state(SimpleGrid())
-    assert filter_by_standard_name(state, "virtual_potential_temperature") == {"theta_v": state["theta_v"]}
+    assert filter_by_standard_name(state, "virtual_potential_temperature") == {
+        "theta_v": state["theta_v"]
+    }
+
+
 def test_filter_by_standard_name_non_existing_name():
     state = model_state(SimpleGrid())
     assert filter_by_standard_name(state, "does_not_exist") == {}
+
 
 def test_append_timeslice(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     assert len(dataset.variables["times"]) == 0
-    slice1   = {}
+    slice1 = {}
     dataset.append(slice1, time)
     assert len(dataset.variables["times"]) == 1
     time1 = time + timedelta(hours=1)
@@ -277,8 +311,10 @@ def test_append_timeslice(test_path, random_name):
     assert len(dataset.variables["times"]) == 3
     time_units = dataset.variables["times"].units
     cal = dataset.variables["times"].calendar
-    assert np.all(dataset.variables["times"][:] == np.array(date2num((time, time1, time2),
-                                                                  units=time_units, calendar=cal)))
+    assert np.all(
+        dataset.variables["times"][:]
+        == np.array(date2num((time, time1, time2), units=time_units, calendar=cal))
+    )
 
 
 def test_writer_append_timeslice_create_new_var(test_path, random_name):
@@ -286,8 +322,8 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     time = datetime.now()
     assert len(dataset.variables["times"]) == 0
     assert "air_density" not in dataset.variables
-    
-    state = dict(air_density = model_state(grid)["air_density"])
+
+    state = dict(air_density=model_state(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables["times"]) == 1
     assert "air_density" in dataset.variables
@@ -295,23 +331,25 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     assert dataset.variables["air_density"].shape == (1, grid.num_levels, grid.num_cells)
     assert np.allclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
+
 def test_append_timeslice_existing_var(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
-    state = dict(air_density = model_state(grid)["air_density"])
+    state = dict(air_density=model_state(grid)["air_density"])
     dataset.append(state, time)
     assert len(dataset.variables["times"]) == 1
     assert "air_density" in dataset.variables
-    
+
     new_rho = random_field(grid, CellDim, KDim, dtype=float32)
     state["air_density"] = to_data_array(new_rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"])
     new_time = time + timedelta(hours=1)
     dataset.append(state, new_time)
-    
+
     assert len(dataset.variables["times"]) == 2
     assert dataset.variables["air_density"].shape == (2, grid.num_levels, grid.num_cells)
     assert np.allclose(dataset.variables["air_density"][1], new_rho.ndarray.T)
-    
+
+
 @pytest.mark.parametrize("input", state_values())
 def test_to_canonical_dim_order(input):
     input_dims = input.dims

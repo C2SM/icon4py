@@ -30,10 +30,11 @@ from icon4py.model.driver.io.xgrid import (
 
 
 def grid_files():
-    files = [(R02B04_GLOBAL,GLOBAL_GRIDFILE) , (REGIONAL_EXPERIMENT, REGIONAL_GRIDFILE)]
-    
+    files = [(R02B04_GLOBAL, GLOBAL_GRIDFILE), (REGIONAL_EXPERIMENT, REGIONAL_GRIDFILE)]
+
     for ff in files:
         yield GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
+
 
 @pytest.mark.parametrize("file", grid_files())
 def test_convert_to_ugrid(file):
@@ -49,8 +50,8 @@ def test_convert_to_ugrid(file):
         assert uxds["mesh"].attrs["node_dimension"] == "vertex"
         assert uxds["mesh"].attrs["node_coordinates"] == "vlon vlat"
         assert uxds["mesh"].attrs["face_node_connectivity"] == "vertex_of_cell"
-  
-        
+
+
 @pytest.mark.parametrize("file", grid_files())
 def test_dump_ugrid_file(file, test_path):
     with load_data_file(file) as ds:
@@ -60,9 +61,10 @@ def test_dump_ugrid_file(file, test_path):
         output_dir.mkdir(0o755, exist_ok=True)
         dump_ugrid_file(uxds, file, output_path=output_dir)
         fname = output_dir.iterdir().__next__().name
-        assert fname == file.stem +'_ugrid.nc'
-        
-@pytest.mark.parametrize("file", grid_files()) 
+        assert fname == file.stem + "_ugrid.nc"
+
+
+@pytest.mark.parametrize("file", grid_files())
 def test_icon_ugrid_patch_index_transformation(file):
     with load_data_file(file) as ds:
         patch = IconUGridPatch()
@@ -94,9 +96,9 @@ def test_icon_ugrid_patch_fill_value(file):
         patch._set_fill_value(uxds)
         for name in patch.connectivities:
             assert uxds[name].attrs["_FillValue"] == FILL_VALUE
-        
 
-def assert_start_index(uxds:Dataset, name:str):
+
+def assert_start_index(uxds: Dataset, name: str):
     assert uxds[name].attrs["start_index"] == 0
     assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
 
@@ -104,13 +106,12 @@ def assert_start_index(uxds:Dataset, name:str):
 @pytest.mark.parametrize("file", grid_files())
 def test_extract_horizontal_coordinates(file):
     with load_data_file(file) as ds:
-        dims = ds.dims    
+        dims = ds.dims
         coords = extract_horizontal_coordinates(ds)
-        # TODO (halungge) fix data  
+        # TODO (halungge) fix data
         #  - 'long_name', 'standard_name' of attributes fx cell center latitudes
-        # - 'units' convert to degrees_north, degrees_east.. 
+        # - 'units' convert to degrees_north, degrees_east..
         # -  get the bounds
         for k in ("cell", "edge", "vertex"):
             assert k in coords
             assert coords[k][0].shape[0] == dims[k]
-            

@@ -43,10 +43,10 @@ log = logging.getLogger(__name__)
 
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
-    num = 1 if not vals[0].isnumeric() else int(vals[0]) 
+    num = 1 if not vals[0].isnumeric() else int(vals[0])
 
     value = vals[0].upper() if len(vals) < 2 else vals[1].upper()
-    if value== "HOUR":
+    if value == "HOUR":
         return timedelta(hours=num)
     elif value == "DAY":
         return timedelta(days=num)
@@ -104,32 +104,31 @@ class Monitor(ABC):
         """
         pass
 
+
 @dataclass(frozen=True)
 class FieldIoConfig(Config):
     """
     Structured config for IO of a field group.
-    
-    Field group is a number of fields that are output at the same time intervals on the same grid 
+
+    Field group is a number of fields that are output at the same time intervals on the same grid
     (can be any horizontal dimension) and vertical levels.
-    
-    TODO (halungge) add support for 
+
+    TODO (halungge) add support for
     - end time ?
     """
+
     output_interval: str
     start_time: str
     filename_pattern: str
     variables: list[str]
-    title="ICON4Py Simulation"
-    comment="ICON inspired code in Python and GT4Py"
-    
+    title = "ICON4Py Simulation"
+    comment = "ICON inspired code in Python and GT4Py"
+
     def validate(self):
         assert self.output_interval, "Output interval is not set."
         assert self.start_time, "Start time is not set."
         assert self.filename_pattern, "Filename pattern is not set."
         assert self.variables, "No variables provided for output."
-
-
-
 
 
 @dataclass(frozen=True)
@@ -140,8 +139,9 @@ class IoConfig(Config):
     Holds some general configuration and a collection of configuraitions for each field group
 
     """
-    output_path: str = './output/'
-    base_name: str = 'icon4py_output_'
+
+    output_path: str = "./output/"
+    base_name: str = "icon4py_output_"
     field_configs: Sequence[FieldIoConfig] = ()
 
     time_units = DEFAULT_TIME_UNIT
@@ -154,18 +154,29 @@ class IoConfig(Config):
             for field_config in self.field_configs:
                 field_config.validate()
 
+
 class IoMonitor(Monitor):
     """
     Composite Monitor for all IO Groups
     """
 
-    def __init__(self, config: IoConfig, vertical_size: VerticalGridSize, horizontal_size:HorizontalGridSize, 
-                 grid_file_name: str, grid_id:str):
+    def __init__(
+        self,
+        config: IoConfig,
+        vertical_size: VerticalGridSize,
+        horizontal_size: HorizontalGridSize,
+        grid_file_name: str,
+        grid_id: str,
+    ):
         config.validate()
         self.config = config
         self._grid_file = grid_file_name
-        self._group_monitors = [FieldGroupMonitor(conf,vertical=vertical_size, horizontal=horizontal_size, grid_id=grid_id) for conf in
-                                config.field_configs]
+        self._group_monitors = [
+            FieldGroupMonitor(
+                conf, vertical=vertical_size, horizontal=horizontal_size, grid_id=grid_id
+            )
+            for conf in config.field_configs
+        ]
         self._initialize_output()
 
     def _read_grid_attrs(self) -> dict:
@@ -197,13 +208,10 @@ class IoMonitor(Monitor):
             monitor.store(state, model_time, **kwargs)
 
 
-
-
-
 class FieldGroupMonitor(Monitor):
     """
     Monitor for a group of fields.
-    
+
     This monitor is responsible for storing a group of fields that are output at the same time intervals.
     """
 
@@ -214,10 +222,14 @@ class FieldGroupMonitor(Monitor):
     @property
     def time_delta(self):
         return self._time_delta
-    
-    
-    def __init__(self, config: FieldIoConfig, vertical:VerticalGridSize, horizontal:HorizontalGridSize, grid_id:str):
 
+    def __init__(
+        self,
+        config: FieldIoConfig,
+        vertical: VerticalGridSize,
+        horizontal: HorizontalGridSize,
+        grid_id: str,
+    ):
         self._global_attrs = dict(
             Conventions="CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
             title=config.title,
@@ -227,43 +239,38 @@ class FieldGroupMonitor(Monitor):
             history="Created by ICON4Py",
             references="https://icon4py.github.io",
             external_variables="",  # TODO (halungge) add list of fields in ugrid file
-            uuidOfHGrid=grid_id,  
+            uuidOfHGrid=grid_id,
         )
         self._next_output_time = datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
         self._field_names = config.variables
         self._file_name = config.filename_pattern
         self._init_dataset(vertical, horizontal)
-        
-        
 
-    #initialise this Monitors dataset with:
+    # initialise this Monitors dataset with:
     # - global attributes
     # - unlimited time dimension -> time
     # - vertical dimension(s)
     # - horizontal dimensions
-    def _init_dataset(self, vertical_grid:VerticalGridSize, horizontal_size:HorizontalGridSize):
-        """ Initialise the dataset with global attributes and dimensions.
-        
+    def _init_dataset(self, vertical_grid: VerticalGridSize, horizontal_size: HorizontalGridSize):
+        """Initialise the dataset with global attributes and dimensions.
+
         TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical coordinate once there is
         terrain k-heights become [horizontal, vertical ] field
         TODO (magdalena): dimension ordering is # dimension ordering T (ime),Z (height), lat, lon
         TODO (magdalena): for writing a dataset it is best to use netcdf4-python directly, since it has: parallel writing, and
         """
-        
-        #TODO (magdalena) common parts should be constructed by IoMonitor
-        
+
+        # TODO (magdalena) common parts should be constructed by IoMonitor
+
         df = NetcdfWriter(self._file_name, vertical_grid, horizontal_size, self._global_attrs)
         df.initialize_dataset()
         self._dataset = df
-            
 
     def _update_fetch_times(self):
         self._next_output_time = self._next_output_time + self._time_delta
 
-    
-
-    def store(self, state:dict, model_time:datetime, **kwargs):
+    def store(self, state: dict, model_time: datetime, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
 
         # TODO: this should be a Listener pattern, that copy data buffer and trigger the rest chain asynchronously
@@ -278,86 +285,83 @@ class FieldGroupMonitor(Monitor):
             self._update_fetch_times()
             self._append_data(state_to_store, model_time)
             # see https://github.com/pydata/xarray/issues/1672
-            
-            
-            
-           
-    def _append_data(self, state_to_store:dict, model_time:datetime):
+
+    def _append_data(self, state_to_store: dict, model_time: datetime):
         self._dataset.append(state_to_store, model_time)
 
     def _at_capture_time(self, model_time):
         return self._next_output_time == model_time
 
 
-
-
-
-
-
-
-    
 class NetcdfWriter:
-    def __init__(self, file_name: str, vertical:VerticalGridSize, horizontal:HorizontalGridSize ,global_attrs:dict):
+    def __init__(
+        self,
+        file_name: str,
+        vertical: VerticalGridSize,
+        horizontal: HorizontalGridSize,
+        global_attrs: dict,
+    ):
         self._file_name = file_name
         self._counter = 1
         self.num_levels = vertical.num_lev
         self.horizontal_size = horizontal
         self.attrs = global_attrs
         self.dataset = None
- 
+
     def __getitem__(self, item):
         return self.dataset.getncattr(item)
 
-    def add_dimension(self, name: str, values: xr.DataArray ):
+    def add_dimension(self, name: str, values: xr.DataArray):
         self.dataset.createDimension(name, values.shape[0])
-        dim = self.dataset.createVariable(name,  values.dtype, (name,))
+        dim = self.dataset.createVariable(name, values.dtype, (name,))
         dim.units = values.units
-        if hasattr(values.attrs,'calendar'):
+        if hasattr(values.attrs, "calendar"):
             dim.calendar = values.calendar
-            
+
         dim.long_name = values.long_name
         dim.standard_name = values.standard_name
-        
+
     def initialize_dataset(self):
-        # TODO (magdalena) (what mode do we need `a` or `w`? 
+        # TODO (magdalena) (what mode do we need `a` or `w`?
         #  TODO properly closing file
         filename = generate_name(self._file_name, self._counter)
         self.dataset = nc.Dataset(filename, "w", format="NETCDF4")
         self.dataset.setncatts(self.attrs)
         ## create dimensions all except time are fixed
-        
-        self.dataset.createDimension('time', None)
-        self.dataset.createDimension('level', self.num_levels) 
-        self.dataset.createDimension('interface_level', self.num_levels+1)
-        self.dataset.createDimension('cell', self.horizontal_size.num_cells)
-        self.dataset.createDimension('vertex', self.horizontal_size.num_vertices)
-        self.dataset.createDimension('edge', self.horizontal_size.num_edges)
+
+        self.dataset.createDimension("time", None)
+        self.dataset.createDimension("level", self.num_levels)
+        self.dataset.createDimension("interface_level", self.num_levels + 1)
+        self.dataset.createDimension("cell", self.horizontal_size.num_cells)
+        self.dataset.createDimension("vertex", self.horizontal_size.num_vertices)
+        self.dataset.createDimension("edge", self.horizontal_size.num_edges)
         # create time variables
-        times = self.dataset.createVariable('times', 'f8', ('time',))
+        times = self.dataset.createVariable("times", "f8", ("time",))
         times.units = DEFAULT_TIME_UNIT
         times.calendar = DEFAULT_CALENDAR
-        times.standard_name = 'time'
-        times.long_name = 'time'
+        times.standard_name = "time"
+        times.long_name = "time"
         # create vertical coordinates:
-        levels = self.dataset.createVariable('levels', np.int32, ('level',))
-        levels.units = '1'
-        levels.long_name = 'model full levels'
+        levels = self.dataset.createVariable("levels", np.int32, ("level",))
+        levels.units = "1"
+        levels.long_name = "model full levels"
         levels.standard_name = LEVEL_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
-        
-        interface_levels = self.dataset.createVariable('interface_levels', np.int32, ('interface_level',))
-        interface_levels.units = '1'
-        interface_levels.long_name = 'model interface levels'
+
+        interface_levels = self.dataset.createVariable(
+            "interface_levels", np.int32, ("interface_level",)
+        )
+        interface_levels.units = "1"
+        interface_levels.long_name = "model interface levels"
         interface_levels.standard_name = INTERFACE_LEVEL_NAME
-        interface_levels[:] = np.arange(self.num_levels+1, dtype=np.int32)
-        
+        interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
+
         # TODO (magdalena) add vct_a as vertical coordinate?
 
-    def append(self, state_to_append:dict[str, xarray.DataArray], model_time:datetime):
-       
-        #TODO (magdalena) add data to the dataset
-        #3. if yes find location of the time variable
-        #4. append the data
+    def append(self, state_to_append: dict[str, xarray.DataArray], model_time: datetime):
+        # TODO (magdalena) add data to the dataset
+        # 3. if yes find location of the time variable
+        # 4. append the data
         time = self.dataset["times"]
         time_pos = len(time)
         time[time_pos] = date2num(model_time, units=time.units, calendar=time.calendar)
@@ -367,54 +371,62 @@ class NetcdfWriter:
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
-                # TODO: 
-                #spatial_dims, reorder = self._to_canonical_dim_order(new_slice.dims)
-                dimensions = ('time',) + new_slice.dims
+                # TODO:
+                # spatial_dims, reorder = self._to_canonical_dim_order(new_slice.dims)
+                dimensions = ("time",) + new_slice.dims
                 new_var = self.dataset.createVariable(k, new_slice.dtype, dimensions)
                 new_var[0, :] = new_slice.data
                 new_var.units = new_slice.units
                 new_var.standard_name = new_slice.standard_name
                 new_var.long_name = new_slice.long_name
                 new_var.coordinates = new_slice.coordinates
-                
+
             else:
                 var_name = ds_var.get(k).name
                 dims = ds_var.get(k).dimensions
                 shape = ds_var.get(k).shape
-                assert len(new_slice.dims) == len(dims) -1 , f"Data variable dimensions do not match for {standard_name}."
+                assert (
+                    len(new_slice.dims) == len(dims) - 1
+                ), f"Data variable dimensions do not match for {standard_name}."
 
                 # TODO (magdalena) this needs to be changed for distributed case where we write to global_index slice for the horizontal dim.
                 # we can acutally assume fixed index ordering here, input arrays should re shaped to canonical order
-                
+
                 right = (slice(None),) * (len(dims) - 1)
                 expand_slice = (slice(shape[COARDS_T_POS] - 1, shape[COARDS_T_POS]),)
                 slices = expand_slice + right
                 self.dataset.variables[var_name][slices] = new_slice.data
-                #self.append_data(k, v, time_pos)
-        
-        
+                # self.append_data(k, v, time_pos)
+
     def close(self):
         self.dataset.close()
-        
+
     @property
     def dims(self) -> dict:
         return self.dataset.dimensions
+
     @property
     def variables(self) -> dict:
         return self.dataset.variables
 
 
-
-#TODO (magdalena) this should be moved to a separate file
+# TODO (magdalena) this should be moved to a separate file
 class XArrayNetCDFWriter:
     from xarray import Dataset
+
     def __init__(self, filename, mode="a"):
         self.filename = filename
         self.mode = mode
 
     def write(self, dataset: Dataset, immediate=True) -> [Delayed | None]:
-        delayed = dataset.to_netcdf(self.filename, mode=self.mode, engine="netcdf4",
-                                    format="NETCDF4", unlimited_dims=["time"], compute=immediate)
+        delayed = dataset.to_netcdf(
+            self.filename,
+            mode=self.mode,
+            engine="netcdf4",
+            format="NETCDF4",
+            unlimited_dims=["time"],
+            compute=immediate,
+        )
         return delayed
 
     def close(self):
@@ -430,20 +442,24 @@ class XArrayNetCDFWriter:
         return False
 
 
-def generate_name(fname:str, counter:int)->str:
+def generate_name(fname: str, counter: int) -> str:
     stem = fname.split(".")[0]
     return f"{stem}_{counter}.nc"
-    
-    
-def filter_by_standard_name(model_state:dict, value:str):
-    return {k:v for k,v in model_state.items() if value == v.standard_name}
+
+
+def filter_by_standard_name(model_state: dict, value: str):
+    return {k: v for k, v in model_state.items() if value == v.standard_name}
+
 
 def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
-    """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order.
-    """
+    """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order."""
     dims = data.dims
     if len(dims) >= 2:
-        if dims[0] in ('cell', 'edge', 'vertex') and dims[1] in ('height', 'level', 'interface_level'):
-            return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True) 
+        if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
+            "height",
+            "level",
+            "interface_level",
+        ):
+            return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True)
         else:
             return data
