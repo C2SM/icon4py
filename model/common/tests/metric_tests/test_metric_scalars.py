@@ -29,4 +29,4 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
     kstart_dd3d_full = compute_kstart_dd3d(
         scalfac_dd3d=scalfac_dd3d_full.asnumpy(),
     )
-    assert dallclose(kstart_dd3d_ref, kstart_dd3d_full)
+    assert kstart_dd3d_ref ==  kstart_dd3d_full
