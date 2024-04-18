@@ -62,8 +62,14 @@ from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
-
+from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.test_utils.grid_utils import construct_icon_grid
+
+from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fixture
+    check_comm_size,
+    processor_props,
+)
 
 logger = setup_logger(__name__)
 
@@ -132,6 +138,12 @@ def diffusion_init(
     v2e: Field[[VertexDim, V2EDim], int32],
     e2c2v: Field[[EdgeDim, E2C2VDim], int32],
     e2c: Field[[EdgeDim, E2CDim], int32],
+    c_owner_mask: Field[[CellDim], bool],
+    e_owner_mask: Field[[EdgeDim], bool],
+    v_owner_mask: Field[[VertexDim], bool],
+    c_glb_index: Field[[CellDim], int32],
+    e_glb_index: Field[[EdgeDim], int32],
+    v_glb_index: Field[[VertexDim], int32],
 ):
     logger.info(f"Using Device = {device}")
 
@@ -191,6 +203,34 @@ def diffusion_init(
     print('icon_grid:v2e:%s',icon_grid.connectivities[V2EDim])
     print('icon_grid:e2c2v:%s',icon_grid.connectivities[E2C2VDim])
     print('icon_grid:e2c:%s',icon_grid.connectivities[E2CDim])
+
+    decomposition_info = DecompositionInfo(klevels=num_levels).with_dimension(CellDim, c_glb_index.ndarray, c_owner_mask.ndaray).with_dimension(EdgeDim, e_glb_index.ndarray, e_owner_mask.ndaray).with_dimension(VertexDim, v_glb_index.ndarray, v_owner_mask.ndaray)
+
+    check_comm_size(processor_props)
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
+        f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
+        f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
+    )
+    owned_cells = decomposition_info.owner_mask(CellDim)
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert(decomposition_info.owner_mask(EdgeDim)))}"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
+    )
+
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     # Edge geometry
     edge_params = EdgeParams(
@@ -263,6 +303,9 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
+
+    diffusion_granule.set_exchange(exchange)
+
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
