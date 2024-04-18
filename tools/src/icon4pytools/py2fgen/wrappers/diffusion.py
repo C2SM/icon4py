@@ -120,13 +120,13 @@ def diffusion_init(
     limited_area: bool,
     num_cells: int32,
     num_edges: int32,
-    num_vertices: int32,
+    num_verts: int32,
     cells_start_index: Field[[CellIndexDim], int32],
     cells_end_index: Field[[CellIndexDim], int32],
     edge_start_index: Field[[EdgeIndexDim], int32],
     edge_end_index: Field[[EdgeIndexDim], int32],
-    vertex_start_index: Field[[VertexIndexDim], int32],
-    vertex_end_index: Field[[VertexIndexDim], int32],
+    vert_start_index: Field[[VertexIndexDim], int32],
+    vert_end_index: Field[[VertexIndexDim], int32],
     c2e: Field[[CellDim, C2EDim], int32],
     c2e2c: Field[[CellDim, C2E2CDim], int32],
     v2e: Field[[VertexDim, V2EDim], int32],
@@ -146,23 +146,51 @@ def diffusion_init(
         filename=get_grid_filename(),
         num_levels=num_levels,
         on_gpu=on_gpu,
-        limited_area=limited_area,
+        limited_area=True,
     )
 
+    print('icon_grid2:cell_start:%s',icon_grid2.start_indices[CellDim])
+    print('icon_grid2:cell_end:%s',icon_grid2.end_indices[CellDim])
+    print('icon_grid2:vert_start:%s',icon_grid2.start_indices[VertexDim])
+    print('icon_grid2:vert_end:%s',icon_grid2.end_indices[VertexDim])
+    print('icon_grid2:edge_start:%s',icon_grid2.start_indices[EdgeDim])
+    print('icon_grid2:edge_end:%s',icon_grid2.end_indices[EdgeDim])
+    print('icon_grid2:c2e:%s',icon_grid2.connectivities[C2EDim])
+    print('icon_grid2:c2e2c:%s',icon_grid2.connectivities[C2E2CDim])
+    print('icon_grid2:v2e:%s',icon_grid2.connectivities[V2EDim])
+    print('icon_grid2:e2c2v:%s',icon_grid2.connectivities[E2C2VDim])
+    print('icon_grid2:e2c:%s',icon_grid2.connectivities[E2CDim])
+
     cells_start_index = np.subtract(cells_start_index,1)
-    cells_end_index = np.subtract(cells_end_index, 1)
-    vertex_start_index = np.subtract(vertex_start_index, 1)
-    vertex_end_index = np.subtract(vertex_end_index, 1)
+    vert_start_index = np.subtract(vert_start_index, 1)
+    #vert_end_index = np.subtract(vert_end_index, 1)
     edge_start_index = np.subtract(edge_start_index, 1)
-    edge_end_index = np.subtract(edge_end_index, 1)
+    #edge_end_index = np.subtract(edge_end_index, 1)
+    c2e = np.subtract(c2e, 1)
+    c2e2c = np.subtract(c2e2c, 1)
+    v2e = np.subtract(v2e, 1)
+    e2c2v = np.subtract(e2c2v, 1)
+    e2c = np.subtract(e2c, 1)
 
     icon_grid = construct_icon_grid(
-        cells_start_index, cells_end_index,
-        vertex_start_index, vertex_end_index,
-        edge_start_index, edge_end_index,
-        num_cells, num_edges, num_vertices, num_levels,
-        c2e, c2e2c, v2e, e2c2v, e2c,
-        limited_area,on_gpu)
+        cells_start_index.ndarray, cells_end_index.ndarray,
+        vert_start_index.ndarray, vert_end_index.ndarray,
+        edge_start_index.ndarray, edge_end_index.ndarray,
+        num_cells, num_edges, num_verts, num_levels,
+        c2e.ndarray, c2e2c.ndarray, v2e.ndarray,
+        e2c2v.ndarray, e2c.ndarray, True, on_gpu)
+
+    print('icon_grid:cell_start%s',icon_grid.start_indices[CellDim])
+    print('icon_grid:cell_end:%s',icon_grid.end_indices[CellDim])
+    print('icon_grid:vert_start:%s',icon_grid.start_indices[VertexDim])
+    print('icon_grid:vert_end:%s',icon_grid.end_indices[VertexDim])
+    print('icon_grid:edge_start:%s',icon_grid.start_indices[EdgeDim])
+    print('icon_grid:edge_end:%s',icon_grid.end_indices[EdgeDim])
+    print('icon_grid:c2e:%s',icon_grid.connectivities[C2EDim])
+    print('icon_grid:c2e2c:%s',icon_grid.connectivities[C2E2CDim])
+    print('icon_grid:v2e:%s',icon_grid.connectivities[V2EDim])
+    print('icon_grid:e2c2v:%s',icon_grid.connectivities[E2C2VDim])
+    print('icon_grid:e2c:%s',icon_grid.connectivities[E2CDim])
 
     # Edge geometry
     edge_params = EdgeParams(

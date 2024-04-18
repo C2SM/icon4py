@@ -100,6 +100,11 @@ def construct_icon_grid(cells_start_index, cells_end_index,
                         limited_area: bool,
                         on_gpu: bool) -> IconGrid:
 
+    print('Constructing icon grid in py')
+    print('num_cells:%s',num_cells)
+    print('num_edges:%s',num_edges)
+    print('num_vertices:%s',num_vertices)
+    print('num_levels:%s',num_levels)
     config = GridConfig(
         horizontal_config=HorizontalGridSize(
             num_vertices=num_vertices,
@@ -110,7 +115,12 @@ def construct_icon_grid(cells_start_index, cells_end_index,
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-
+    print('cells_start_index shape:%s',np.asarray(cells_start_index).shape)
+    print('c2e shape:%s',np.asarray(c2e).shape)
+    print('v2e shape:%s',np.asarray(v2e).shape)
+    print('c2e2c:%s',np.asarray(c2e2c).shape)
+    print('he:%s',np.asarray(range(c2e2c.shape[0])))
+    print('shape he:%s',np.asarray(range(c2e2c.shape[0])).shape)
     c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
 
     grid = (
