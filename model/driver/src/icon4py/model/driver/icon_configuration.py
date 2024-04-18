@@ -48,6 +48,7 @@ class IconOutputConfig:
     output_time_interval: timedelta = timedelta(minutes=1)
     output_file_time_interval: timedelta = timedelta(minutes=1)
     output_path: Path = Path("./")
+    output_initial_condition_as_a_separate_file: bool = False
 
 
 @dataclass

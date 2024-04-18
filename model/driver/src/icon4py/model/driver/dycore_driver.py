@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import math
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Callable, Optional
@@ -98,10 +99,17 @@ class OutputState:
         diagnostic_state: DiagnosticState,
     ):
         self.config: IconOutputConfig = output_config
+        self._output_date = start_date
+        self._first_date_in_this_ncfile = start_date
         # compute number of output files
         self._number_of_files = (
-            int((end_date - start_date) / self.config.output_file_time_interval) + 1
+            int(math.ceil((end_date - start_date) / self.config.output_file_time_interval))
         )
+        if self.config.output_initial_condition_as_a_separate_file:
+            self._number_of_files += 1
+            self._enforce_new_ncfile = True
+        else:
+            self._enforce_new_ncfile = False
         log.info(f"Number of files: {self._number_of_files}")
 
         # TODO (Chia Rui or others): this is only a tentative output method, use a proper netcdf output infrastructure in the future
@@ -311,8 +319,8 @@ class OutputState:
         log.info( f"Writing output at {current_date} at {self._current_write_step} in file no. {self._current_file_number}")
 
         times = self._nf4_basegrp[self._current_file_number].variables["time"]
-        log.info(f"Times are  {times[:]}")
         times[self._current_write_step] = date2num(current_date, units=times.units, calendar=times.calendar)
+        log.info(f"Times are  {times[:]}")
 
         self._nf4_basegrp[self._current_file_number].variables["u"][self._current_write_step, :, :] = diagnostic_state.u.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["v"][self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
@@ -328,18 +336,19 @@ class OutputState:
         prognostic_state: PrognosticState,
         diagnostic_state: DiagnosticState,
     ):
-        times = self._nf4_basegrp[self._current_file_number].variables["time"]
-        output_date = num2date( times[self._current_write_step], units=times.units, calendar=times.calendar)
-        ncfile_initial_date = num2date(times[0], units=times.units, calendar=times.calendar)
-        current_date_in_cftime = date2num(current_date, units=times.units, calendar=times.calendar)
-        current_date_in_cftime = num2date(current_date_in_cftime, units=times.units, calendar=times.calendar)
-        time_elapsed_since_last_output = current_date_in_cftime - output_date
-        time_elapsed_in_this_ncfile = current_date_in_cftime - ncfile_initial_date
+        time_elapsed_since_last_output = current_date - self._output_date
+        time_elapsed_in_this_ncfile = current_date - self._first_date_in_this_ncfile
+        log.info(f"first date in currect nc file: {self._first_date_in_this_ncfile}, previous output date: {self._output_date}")
+        log.info(f"time elapsed since last output: {time_elapsed_since_last_output}, time elapsed in this file: {time_elapsed_in_this_ncfile}")
 
-        log.info( f"initial data: {ncfile_initial_date}, output_data: {output_date}, time elapsed: {time_elapsed_since_last_output}, time elapsed in this file: {time_elapsed_in_this_ncfile}")
+        if time_elapsed_in_this_ncfile > self.config.output_file_time_interval:
+            log.info("CLOSING {:} / {:} ||| {:} / {:}".format(self._current_file_number+1, self._number_of_files, time_elapsed_in_this_ncfile, self.config.output_file_time_interval))
+            self._nf4_basegrp[self._current_file_number].close()
 
         if time_elapsed_since_last_output >= self.config.output_time_interval:
-            if time_elapsed_in_this_ncfile >= self.config.output_file_time_interval:
+            if self._enforce_new_ncfile or time_elapsed_in_this_ncfile > self.config.output_file_time_interval:
+                self._enforce_new_ncfile = False
+                self._first_date_in_this_ncfile =  self._output_date
                 self._current_write_step = 0
                 self._current_file_number += 1
             else:
@@ -349,6 +358,7 @@ class OutputState:
                 prognostic_state,
                 diagnostic_state,
             )
+            self._output_date = current_date
         else:
             log.info(f"SKIP writing output at {current_date} at {self._current_write_step}")
 
@@ -575,6 +585,9 @@ class TimeLoop:
 
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
+
+            self._next_simulation_date()
+
             log.info(
                 f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
             )
@@ -603,8 +616,6 @@ class TimeLoop:
                 )
             """
 
-            self._next_simulation_date()
-
             # put boundary condition update here
 
             timer.start()
@@ -632,6 +643,9 @@ class TimeLoop:
                     prognostic_state_list[self._now],
                     diagnostic_state,
                 )
+
+        log.info("CLOSING {:} / {:}".format(output_state._current_file_number+1, output_state._number_of_files))
+        output_state._nf4_basegrp[-1].close()
 
         timer.summary(True)
 
