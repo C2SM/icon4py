@@ -22,6 +22,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k as scale_k_orig,
     setup_fields_for_initial_step as setup_fields_for_initial_step_orig,
 )
+
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
     apply_diffusion_to_vn as apply_diffusion_to_vn_orig,
 )
@@ -47,7 +48,8 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner as update_theta_and_exner_orig,
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex as mo_intp_rbf_rbf_vec_interpol_vertex_orig,
+    mo_intp_rbf_rbf_vec_interpol_vertex_1 as mo_intp_rbf_rbf_vec_interpol_vertex_orig_1,
+    mo_intp_rbf_rbf_vec_interpol_vertex_2 as mo_intp_rbf_rbf_vec_interpol_vertex_orig_2,
 )
 
 
@@ -81,7 +83,7 @@ class CachedProgram:
         size_args = self._compiled_args[len(args) :]
         return self.compiled_program(*args, *size_args, offset_provider=offset_provider)
 
-
+# diffusion run stencils
 apply_diffusion_to_vn = CachedProgram(apply_diffusion_to_vn_orig)
 apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence = CachedProgram(
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence_orig
@@ -100,7 +102,13 @@ truly_horizontal_diffusion_nabla_of_theta_over_steep_points = CachedProgram(
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points_orig
 )
 update_theta_and_exner = CachedProgram(update_theta_and_exner_orig)
-mo_intp_rbf_rbf_vec_interpol_vertex = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig)
+
+mo_intp_rbf_rbf_vec_interpol_vertex_1 = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig_1)
+
+mo_intp_rbf_rbf_vec_interpol_vertex_2 = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig_2)
+
+
+# model init stencils
 setup_fields_for_initial_step = CachedProgram(setup_fields_for_initial_step_orig)
 copy_field = CachedProgram(copy_field_orig)
 init_diffusion_local_fields_for_regular_timestep = CachedProgram(
