@@ -1,11 +1,12 @@
 #!/usr/local/bin/bash -l
 
-run_twice() {
+quadruple_command() {
   cmd=$@
+  $cmd &
+  $cmd &
   $cmd &
   $cmd &
   wait
 }
 
-# Use the function
-run_twice "$@"
+quadruple_command "$@"
