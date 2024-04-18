@@ -35,7 +35,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import DecompositionInfo
+from icon4py.model.common.decomposition.definitions import DecompositionInfo, get_runtype
+from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -61,9 +62,8 @@ from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile, construct_icon_grid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-from icon4py.model.common.test_utils.parallel_helpers import (  # : F401 fixture
+from icon4py.model.common.test_utils.parallel_helpers import (
     check_comm_size,
-    processor_props,
 )
 
 from icon4pytools.common.logger import setup_logger
@@ -222,6 +222,8 @@ def diffusion_init(
         .with_dimension(VertexDim, v_glb_index.ndarray, v_owner_mask.ndarray)
     )
 
+    runtype = get_runtype(with_mpi=True)
+    processor_props = yield get_multinode_properties(runtype)
     check_comm_size(processor_props)
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
