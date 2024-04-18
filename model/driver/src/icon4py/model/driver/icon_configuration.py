@@ -12,9 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
 from dataclasses import dataclass
-from datetime import datetime, timedelta
-from pathlib import Path
-from typing import Optional
+from datetime import datetime
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig

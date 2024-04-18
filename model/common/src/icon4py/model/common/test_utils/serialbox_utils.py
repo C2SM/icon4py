@@ -40,7 +40,6 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
-    V2C2VDim,
     V2CDim,
     V2EDim,
     VertexDim,
@@ -81,14 +80,6 @@ class IconSavepoint:
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         buffer = self._reduce_to_dim_size(buffer, dimensions)
-
-        self.log.debug(f"{name} {buffer.shape}")
-        return as_field(dimensions, buffer)
-
-    def _get_reciprocal_field(self, name, *dimensions, dtype=float):
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        buffer = np.reciprocal(buffer)
 
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
@@ -153,14 +144,8 @@ class IconGridSavepoint(IconSavepoint):
     def inverse_primal_edge_lengths(self):
         return self._get_field("inv_primal_edge_length", EdgeDim)
 
-    def primal_edge_lengths(self):
-        return self._get_reciprocal_field("inv_primal_edge_length", EdgeDim)
-
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", EdgeDim)
-
-    def vert_vert_length(self):
-        return self._get_reciprocal_field("inv_vert_vert_length", EdgeDim)
 
     def primal_normal_vert_x(self):
         return self._get_field("primal_normal_vert_x", EdgeDim, E2C2VDim)
@@ -207,12 +192,6 @@ class IconGridSavepoint(IconSavepoint):
     def edge_center_lon(self):
         return self._get_field("edges_center_lon", EdgeDim)
 
-    def v_lat(self):
-        return self._get_field("v_lat", VertexDim)
-
-    def v_lon(self):
-        return self._get_field("v_lon", VertexDim)
-
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
 
@@ -221,9 +200,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
-
-    def dual_edge_length(self):
-        return self._get_reciprocal_field("inv_dual_edge_length", EdgeDim)
 
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
@@ -314,16 +290,6 @@ class IconGridSavepoint(IconSavepoint):
     def v2c(self):
         return self._get_connectivity_array("v2c", VertexDim)
 
-    def v2c2v(self):
-        if self._v2c2v() is None:
-            return np.zeros((self.sizes[VertexDim], 6), dtype=int)
-        else:
-            return self._v2c2v()
-
-    @optionally_registered
-    def _v2c2v(self):
-        return self._get_connectivity_array("v2c2v", VertexDim)
-
     def c2v(self):
         return self._get_connectivity_array("c2v", CellDim)
 
@@ -412,7 +378,6 @@ class IconGridSavepoint(IconSavepoint):
             .with_connectivities(
                 {
                     C2EDim: self.c2e(),
-                    C2VDim: self.c2v(),
                     E2CDim: self.e2c(),
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
@@ -426,7 +391,6 @@ class IconGridSavepoint(IconSavepoint):
                     E2VDim: self.e2v(),
                     V2EDim: self.v2e(),
                     V2CDim: self.v2c(),
-                    V2C2VDim: self.v2c2v(),
                     E2C2VDim: self.e2c2v(),
                     C2VDim: self.c2v(),
                 }
@@ -467,9 +431,6 @@ class IconGridSavepoint(IconSavepoint):
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
-            primal_edge_lengths=self.primal_edge_lengths(),
-            dual_edge_lengths=self.dual_edge_length(),
-            vertex_vertex_lengths=self.vert_vert_length(),
             primal_normal_vert_x=primal_normal_vert[0],
             primal_normal_vert_y=primal_normal_vert[1],
             dual_normal_vert_x=dual_normal_vert[0],
