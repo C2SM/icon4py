@@ -199,13 +199,18 @@ def model_initialization_gauss3d(
     # mount_height  = 100.0  # (100)
     # mount_width   = 1000.0 # (1000)
     if enr == 0:
-        ename = 'almost_default'
+        ename = 'mountain_default'
         nh_u0         = 0.0   # (almost_default = 0.0,   const_velocity = 4.0)
         nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
         nh_brunt_vais = 0.01  # (almost_default = 0.01,  const_velocity = 0.0)
     elif enr == 1:
-        ename = 'const_velocity'
-        nh_u0         = 4.0   # (almost_default = 0.0,   const_velocity = 4.0)
+        ename = 'seven_velocity'
+        nh_u0         = 7.0   # (almost_default = 0.0,   const_velocity = 4.0)
+        nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
+        nh_brunt_vais = 0.0   # (almost_default = 0.01,  const_velocity = 0.0)
+    elif enr == 2:
+        ename = 'zero_velocity'
+        nh_u0         = 0.0   # (almost_default = 0.0,   const_velocity = 4.0)
         nh_t0         = 300.0 # (almost_default = 300.0, const_velocity = 300.0)
         nh_brunt_vais = 0.0   # (almost_default = 0.01,  const_velocity = 0.0)
     else:
