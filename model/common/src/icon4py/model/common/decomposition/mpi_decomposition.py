@@ -143,6 +143,35 @@ class GHexMultiNodeExchange:
         self._comm = unstructured.make_co(self._context)
         log.info("communication object initialized")
 
+    def __init__(
+        self,
+        props: definitions.ProcessProperties,
+    ):
+        self._context = ghex.context(ghex.mpi_comm(props.comm), False)
+        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
+
+    def second_part(self, domain_decomposition: definitions.DecompositionInfo):
+        self._decomposition_info = domain_decomposition
+        self._domain_descriptors = {
+            CellDim: self._create_domain_descriptor(
+                CellDim,
+            ),
+            VertexDim: self._create_domain_descriptor(
+                VertexDim,
+            ),
+            EdgeDim: self._create_domain_descriptor(EdgeDim),
+        }
+        log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
+
+        self._patterns = {
+            CellDim: self._create_pattern(CellDim),
+            VertexDim: self._create_pattern(VertexDim),
+            EdgeDim: self._create_pattern(EdgeDim),
+        }
+        log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
+        self._comm = unstructured.make_co(self._context)
+        log.info("communication object initialized")
+
     def _domain_descriptor_info(self, descr):
         return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
 
@@ -225,5 +254,15 @@ def create_multinode_node_exchange(
 ) -> definitions.ExchangeRuntime:
     if props.comm_size > 1:
         return GHexMultiNodeExchange(props, decomp_info)
+    else:
+        return SingleNodeExchange()
+
+
+@definitions.create_exchange.register(MPICommProcessProperties)
+def create_multinode_node_exchange(
+    props: MPICommProcessProperties
+) -> definitions.ExchangeRuntime:
+    if props.comm_size > 1:
+        return GHexMultiNodeExchange(props)
     else:
         return SingleNodeExchange()

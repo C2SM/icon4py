@@ -35,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import DecompositionInfo, get_runtype
+from icon4py.model.common.decomposition.definitions import DecompositionInfo, MultiNodeRun
 from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -73,7 +73,9 @@ from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 logger = setup_logger(__name__)
 
 # global diffusion object
-diffusion_granule: Diffusion = Diffusion()
+processor_props = get_multinode_properties(MultiNodeRun())
+exchange = definitions.create_exchange(processor_props)
+diffusion_granule: Diffusion = Diffusion(exchange)
 
 
 def diffusion_init(
@@ -222,8 +224,6 @@ def diffusion_init(
         .with_dimension(VertexDim, v_glb_index.ndarray, v_owner_mask.ndarray)
     )
 
-    runtype = get_runtype(with_mpi=True)
-    processor_props = yield get_multinode_properties(runtype)
     check_comm_size(processor_props)
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
@@ -248,7 +248,8 @@ def diffusion_init(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    #exchange = definitions.create_exchange(processor_props, decomposition_info)
+    exchange.second_part(decomposition_info)
 
     # Edge geometry
     edge_params = EdgeParams(
@@ -322,7 +323,7 @@ def diffusion_init(
         nudgecoeff_e=nudgecoeff_e,
     )
 
-    diffusion_granule.set_exchange(exchange)
+    #diffusion_granule.set_exchange(exchange)
 
     diffusion_granule.init(
         grid=icon_grid,
