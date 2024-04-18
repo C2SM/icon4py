@@ -15,7 +15,8 @@ triggerPhrase.each {
 }
 
 def map_srun = [
-    daint: 'srun -t 03:00:00 -C gpu -A g110 -c 12 -n 1'
+    daint: 'srun -t 03:00:00 -C gpu -A g110 -c 12 -n 1',
+    balfrin: ' '
     ]
 
 pipeline {
