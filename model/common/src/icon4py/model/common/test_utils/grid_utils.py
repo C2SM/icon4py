@@ -12,28 +12,28 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
 
+import numpy as np
 import pytest
 
-from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.common.grid.base import GridConfig
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
 from icon4py.model.common.dimension import (
-    EdgeDim,
-    KDim,
-    VertexDim,
-    CellDim,
-    E2C2VDim,
-    V2EDim,
-    C2E2CODim,
     C2E2CDim,
-    E2CDim,
+    C2E2CODim,
     C2EDim,
     CECDim,
     CEDim,
+    CellDim,
+    E2C2VDim,
+    E2CDim,
     ECVDim,
+    EdgeDim,
+    V2EDim,
+    VertexDim,
 )
+from icon4py.model.common.grid.base import GridConfig
+from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
+from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRID_URIS,
@@ -41,7 +41,6 @@ from icon4py.model.common.test_utils.datatest_utils import (
     R02B04_GLOBAL,
     REGIONAL_EXPERIMENT,
 )
-import numpy as np
 
 
 GLOBAL_NUM_LEVELS = 80
@@ -92,19 +91,30 @@ def _load_from_gridfile(
     return gm.get_grid()
 
 
-def construct_icon_grid(cells_start_index, cells_end_index,
-                        vertex_start_index, vertex_end_index,
-                        edge_start_index, edge_end_index,
-                        num_cells, num_edges, num_vertices, num_levels,
-                        c2e, c2e2c, v2e, e2c2v, e2c,
-                        limited_area: bool,
-                        on_gpu: bool) -> IconGrid:
-
-    print('Constructing icon grid in py')
-    print('num_cells:%s',num_cells)
-    print('num_edges:%s',num_edges)
-    print('num_vertices:%s',num_vertices)
-    print('num_levels:%s',num_levels)
+def construct_icon_grid(
+    cells_start_index,
+    cells_end_index,
+    vertex_start_index,
+    vertex_end_index,
+    edge_start_index,
+    edge_end_index,
+    num_cells,
+    num_edges,
+    num_vertices,
+    num_levels,
+    c2e,
+    c2e2c,
+    v2e,
+    e2c2v,
+    e2c,
+    limited_area: bool,
+    on_gpu: bool,
+) -> IconGrid:
+    print("Constructing icon grid in py")
+    print("num_cells:%s", num_cells)
+    print("num_edges:%s", num_edges)
+    print("num_vertices:%s", num_vertices)
+    print("num_levels:%s", num_levels)
     config = GridConfig(
         horizontal_config=HorizontalGridSize(
             num_vertices=num_vertices,
@@ -115,12 +125,12 @@ def construct_icon_grid(cells_start_index, cells_end_index,
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-    print('cells_start_index shape:%s',np.asarray(cells_start_index).shape)
-    print('c2e shape:%s',np.asarray(c2e).shape)
-    print('v2e shape:%s',np.asarray(v2e).shape)
-    print('c2e2c:%s',np.asarray(c2e2c).shape)
-    print('he:%s',np.asarray(range(c2e2c.shape[0])))
-    print('shape he:%s',np.asarray(range(c2e2c.shape[0])).shape)
+    print("cells_start_index shape:%s", np.asarray(cells_start_index).shape)
+    print("c2e shape:%s", np.asarray(c2e).shape)
+    print("v2e shape:%s", np.asarray(v2e).shape)
+    print("c2e2c:%s", np.asarray(c2e2c).shape)
+    print("he:%s", np.asarray(range(c2e2c.shape[0])))
+    print("shape he:%s", np.asarray(range(c2e2c.shape[0])).shape)
     c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
 
     grid = (

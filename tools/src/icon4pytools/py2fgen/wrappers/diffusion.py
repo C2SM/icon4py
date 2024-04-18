@@ -34,6 +34,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -41,35 +43,32 @@ from icon4py.model.common.dimension import (
     CECDim,
     CEDim,
     CellDim,
+    CellIndexDim,
     E2C2VDim,
     E2CDim,
     ECVDim,
     EdgeDim,
+    EdgeIndexDim,
     KDim,
     KHalfDim,
     V2EDim,
     VertexDim,
-    CellIndexDim,
-    EdgeIndexDim,
     VertexIndexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.settings import device
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
+from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile, construct_icon_grid
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
-from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import DecompositionInfo
-from icon4py.model.common.test_utils.grid_utils import construct_icon_grid
-
-from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fixture
+from icon4py.model.common.test_utils.parallel_helpers import (  # : F401 fixture
     check_comm_size,
     processor_props,
 )
+
+from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+
 
 logger = setup_logger(__name__)
 
@@ -161,23 +160,23 @@ def diffusion_init(
         limited_area=True,
     )
 
-    print('icon_grid2:cell_start:%s',icon_grid2.start_indices[CellDim])
-    print('icon_grid2:cell_end:%s',icon_grid2.end_indices[CellDim])
-    print('icon_grid2:vert_start:%s',icon_grid2.start_indices[VertexDim])
-    print('icon_grid2:vert_end:%s',icon_grid2.end_indices[VertexDim])
-    print('icon_grid2:edge_start:%s',icon_grid2.start_indices[EdgeDim])
-    print('icon_grid2:edge_end:%s',icon_grid2.end_indices[EdgeDim])
-    print('icon_grid2:c2e:%s',icon_grid2.connectivities[C2EDim])
-    print('icon_grid2:c2e2c:%s',icon_grid2.connectivities[C2E2CDim])
-    print('icon_grid2:v2e:%s',icon_grid2.connectivities[V2EDim])
-    print('icon_grid2:e2c2v:%s',icon_grid2.connectivities[E2C2VDim])
-    print('icon_grid2:e2c:%s',icon_grid2.connectivities[E2CDim])
+    print("icon_grid2:cell_start:%s", icon_grid2.start_indices[CellDim])
+    print("icon_grid2:cell_end:%s", icon_grid2.end_indices[CellDim])
+    print("icon_grid2:vert_start:%s", icon_grid2.start_indices[VertexDim])
+    print("icon_grid2:vert_end:%s", icon_grid2.end_indices[VertexDim])
+    print("icon_grid2:edge_start:%s", icon_grid2.start_indices[EdgeDim])
+    print("icon_grid2:edge_end:%s", icon_grid2.end_indices[EdgeDim])
+    print("icon_grid2:c2e:%s", icon_grid2.connectivities[C2EDim])
+    print("icon_grid2:c2e2c:%s", icon_grid2.connectivities[C2E2CDim])
+    print("icon_grid2:v2e:%s", icon_grid2.connectivities[V2EDim])
+    print("icon_grid2:e2c2v:%s", icon_grid2.connectivities[E2C2VDim])
+    print("icon_grid2:e2c:%s", icon_grid2.connectivities[E2CDim])
 
-    cells_start_index = np.subtract(cells_start_index,1)
+    cells_start_index = np.subtract(cells_start_index, 1)
     vert_start_index = np.subtract(vert_start_index, 1)
-    #vert_end_index = np.subtract(vert_end_index, 1)
+    # vert_end_index = np.subtract(vert_end_index, 1)
     edge_start_index = np.subtract(edge_start_index, 1)
-    #edge_end_index = np.subtract(edge_end_index, 1)
+    # edge_end_index = np.subtract(edge_end_index, 1)
     c2e = np.subtract(c2e, 1)
     c2e2c = np.subtract(c2e2c, 1)
     v2e = np.subtract(v2e, 1)
@@ -185,26 +184,43 @@ def diffusion_init(
     e2c = np.subtract(e2c, 1)
 
     icon_grid = construct_icon_grid(
-        cells_start_index.ndarray, cells_end_index.ndarray,
-        vert_start_index.ndarray, vert_end_index.ndarray,
-        edge_start_index.ndarray, edge_end_index.ndarray,
-        num_cells, num_edges, num_verts, num_levels,
-        c2e.ndarray, c2e2c.ndarray, v2e.ndarray,
-        e2c2v.ndarray, e2c.ndarray, True, on_gpu)
+        cells_start_index.ndarray,
+        cells_end_index.ndarray,
+        vert_start_index.ndarray,
+        vert_end_index.ndarray,
+        edge_start_index.ndarray,
+        edge_end_index.ndarray,
+        num_cells,
+        num_edges,
+        num_verts,
+        num_levels,
+        c2e.ndarray,
+        c2e2c.ndarray,
+        v2e.ndarray,
+        e2c2v.ndarray,
+        e2c.ndarray,
+        True,
+        on_gpu,
+    )
 
-    print('icon_grid:cell_start%s',icon_grid.start_indices[CellDim])
-    print('icon_grid:cell_end:%s',icon_grid.end_indices[CellDim])
-    print('icon_grid:vert_start:%s',icon_grid.start_indices[VertexDim])
-    print('icon_grid:vert_end:%s',icon_grid.end_indices[VertexDim])
-    print('icon_grid:edge_start:%s',icon_grid.start_indices[EdgeDim])
-    print('icon_grid:edge_end:%s',icon_grid.end_indices[EdgeDim])
-    print('icon_grid:c2e:%s',icon_grid.connectivities[C2EDim])
-    print('icon_grid:c2e2c:%s',icon_grid.connectivities[C2E2CDim])
-    print('icon_grid:v2e:%s',icon_grid.connectivities[V2EDim])
-    print('icon_grid:e2c2v:%s',icon_grid.connectivities[E2C2VDim])
-    print('icon_grid:e2c:%s',icon_grid.connectivities[E2CDim])
+    print("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
+    print("icon_grid:cell_end:%s", icon_grid.end_indices[CellDim])
+    print("icon_grid:vert_start:%s", icon_grid.start_indices[VertexDim])
+    print("icon_grid:vert_end:%s", icon_grid.end_indices[VertexDim])
+    print("icon_grid:edge_start:%s", icon_grid.start_indices[EdgeDim])
+    print("icon_grid:edge_end:%s", icon_grid.end_indices[EdgeDim])
+    print("icon_grid:c2e:%s", icon_grid.connectivities[C2EDim])
+    print("icon_grid:c2e2c:%s", icon_grid.connectivities[C2E2CDim])
+    print("icon_grid:v2e:%s", icon_grid.connectivities[V2EDim])
+    print("icon_grid:e2c2v:%s", icon_grid.connectivities[E2C2VDim])
+    print("icon_grid:e2c:%s", icon_grid.connectivities[E2CDim])
 
-    decomposition_info = DecompositionInfo(klevels=num_levels).with_dimension(CellDim, c_glb_index.ndarray, c_owner_mask.ndaray).with_dimension(EdgeDim, e_glb_index.ndarray, e_owner_mask.ndaray).with_dimension(VertexDim, v_glb_index.ndarray, v_owner_mask.ndaray)
+    decomposition_info = (
+        DecompositionInfo(klevels=num_levels)
+        .with_dimension(CellDim, c_glb_index.ndarray, c_owner_mask.ndarray)
+        .with_dimension(EdgeDim, e_glb_index.ndarray, e_owner_mask.ndarray)
+        .with_dimension(VertexDim, v_glb_index.ndarray, v_owner_mask.ndarray)
+    )
 
     check_comm_size(processor_props)
     print(
