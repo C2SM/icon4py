@@ -20,6 +20,7 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.metric_fields import (
     compute_ddqz_z_full,
     compute_ddqz_z_half,
+    compute_vwind_expl_wgt,
     compute_z_mc,
 )
 from icon4py.model.common.test_utils.helpers import (
@@ -120,3 +121,49 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     )
 
     assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_full_ref.asnumpy())
+
+
+# @pytest.mark.datatest
+# def test_compute_vwind_impl_wgt(icon_grid, metrics_savepoint, backend):
+#     if is_roundtrip(backend):
+#         pytest.skip("skipping: slow backend")
+#
+#     z_ddxn_z_half_e
+#     z_ddxt_z_half_e
+#     dual_edge_length
+#     vwind_offctr
+#     vwind_impl_wgt_full = zero_field(icon_grid, CellDim, KDim)
+#     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
+#
+#     compute_vwind_impl_wgt.with_backend(backend)(
+#         z_ddxn_z_half_e=z_ddxn_z_half_e,
+#         z_ddxt_z_half_e=z_ddxt_z_half_e,
+#         dual_edge_length=dual_edge_length,
+#         vwind_impl_wgt=vwind_impl_wgt_full,
+#         vwind_offctr=vwind_offctr,
+#         horizontal_start=int32(0),
+#         horizontal_end=icon_grid.num_cells,
+#         offset_provider = {"C2E": icon_grid.get_offset_provider("C2E")},
+#     )
+#
+#     assert dallclose(vwind_impl_wgt_full.asnumpy(), vwind_impl_wgt_ref.asnumpy())
+
+
+@pytest.mark.datatest
+def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
+
+    vwind_expl_wgt_full = zero_field(icon_grid, CellDim)
+    vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
+    vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
+
+    compute_vwind_expl_wgt.with_backend(backend)(
+        vwind_impl_wgt=vwind_impl_wgt,
+        vwind_expl_wgt=vwind_expl_wgt_full,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+    )
+
+    assert dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
