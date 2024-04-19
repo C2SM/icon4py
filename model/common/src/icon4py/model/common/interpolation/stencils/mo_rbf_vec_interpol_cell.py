@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -30,7 +31,7 @@ def _mo_rbf_vec_interpol_cell(
     return p_u_out, p_v_out
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_rbf_vec_interpol_cell(
     p_e_in: Field[[EdgeDim, KDim], vpfloat],
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],

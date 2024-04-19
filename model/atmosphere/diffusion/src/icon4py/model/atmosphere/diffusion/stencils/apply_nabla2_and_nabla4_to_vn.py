@@ -15,6 +15,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32, maximum
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -41,7 +42,7 @@ def _apply_nabla2_and_nabla4_to_vn(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_and_nabla4_to_vn(
     area_edge: Field[[EdgeDim], wpfloat],
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],

@@ -19,6 +19,7 @@ from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
     _set_cell_kdim_field_to_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -30,7 +31,7 @@ def _set_two_cell_kdim_fields_to_zero_wp() -> (
     return _set_cell_kdim_field_to_zero_wp(), _set_cell_kdim_field_to_zero_wp()
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_two_cell_kdim_fields_to_zero_wp(
     cell_kdim_field_to_zero_wp_1: Field[[CellDim, KDim], wpfloat],
     cell_kdim_field_to_zero_wp_2: Field[[CellDim, KDim], wpfloat],
