@@ -216,6 +216,7 @@ def test_create_multi_node_runtime_with_mpi(
 
 
 @pytest.mark.parametrize("processor_props", [False], indirect=True)
+@pytest.mark.mpi_skip()
 def test_create_single_node_runtime_without_mpi(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
