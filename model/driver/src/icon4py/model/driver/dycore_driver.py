@@ -96,8 +96,9 @@ class TimeLoop:
         if not self.solve_nonhydro.initialized:
             raise Exception("nonhydro solver is not initialized before time loop")
 
-    def _not_first_step(self):
-        self._is_first_step_in_simulation = False
+    @property
+    def first_step_in_simulation(self):
+        return self._is_first_step_in_simulation
 
     def _is_last_substep(self, step_nr: int):
         return step_nr == (self.n_substeps_var - 1)
@@ -153,10 +154,10 @@ class TimeLoop:
         do_prep_adv: bool,
     ):
         log.info(
-            f"starting time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
+            f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
         log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} substep_timestep={self._substep_timestep}"
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
         # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
@@ -182,6 +183,8 @@ class TimeLoop:
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
+
+            # TODO (Chia Rui): print out max and min of some variables after discussion with Anurag
 
             self._next_simulation_date()
 
@@ -274,7 +277,7 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 self._swap()
 
-            self._not_first_step()
+            self._is_first_step_in_simulation = False
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
