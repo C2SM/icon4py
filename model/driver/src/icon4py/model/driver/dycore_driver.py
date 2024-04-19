@@ -186,8 +186,8 @@ class OutputState:
                     "ncells",
                 ),
             )
-            pressure = self._nf4_basegrp[i].createVariable(
-                "pressure",
+            pres = self._nf4_basegrp[i].createVariable(
+                "pres",
                 "f8",
                 (
                     "time",
@@ -195,11 +195,20 @@ class OutputState:
                     "ncells",
                 ),
             )
-            pressure_sfc = self._nf4_basegrp[i].createVariable(
-                "pressure_sfc",
+            pres_sfc = self._nf4_basegrp[i].createVariable(
+                "pres_sfc",
                 "f8",
                 (
                     "time",
+                    "ncells",
+                ),
+            )
+            theta_v = self._nf4_basegrp[i].createVariable(
+                "theta_v",
+                "f8",
+                (
+                    "time",
+                    "height",
                     "ncells",
                 ),
             )
@@ -234,16 +243,18 @@ class OutputState:
             v.units = "m s-1"
             w.units = "m s-1"
             temp.units = "K"
-            pressure.units = "Pa"
-            pressure_sfc.units = "Pa"
+            pres.units = "Pa"
+            pres_sfc.units = "Pa"
+            theta_v.units = "K"
             rho.units = "kg m-3"
 
             u.param = "2.2.0"
             v.param = "3.2.0"
             w.param = "9.2.0"
             temp.param = "0.0.0"
-            pressure.param = "0.3.0"
-            pressure_sfc.param = "0.3.0"
+            pres.param = "0.3.0"
+            pres_sfc.param = "0.3.0"
+            theta_v.param = "15.0.0"
             rho.param = "10.3.0"
 
             times.standard_name = "time"
@@ -260,40 +271,45 @@ class OutputState:
             v.standard_name = "northward_wind"
             w.standard_name = "upward_air_velocity"
             temp.standard_name = "air_temperature"
-            pressure.standard_name = "air_pressure"
-            pressure_sfc.standard_name = "surface_air_pressure"
+            pres.standard_name = "air_pressure"
+            pres_sfc.standard_name = "surface_air_pressure"
+            theta_v.standard_name = "virtual_potential_temperature"
             rho.standard_name = "air_density"
 
             u.long_name = "Zonal wind"
             v.long_name = "Meridional wind"
             w.long_name = "Vertical velocity"
             temp.long_name = "Temperature"
-            pressure.long_name = "Pressure"
-            pressure_sfc.long_name = "Surface pressure"
+            pres.long_name = "Pressure"
+            pres_sfc.long_name = "Surface pressure"
+            theta_v.long_name = "Virtual potential temperature"
             rho.long_name = "Density"
 
             u.CDI_grid_type = "unstructured"
             v.CDI_grid_type = "unstructured"
             w.CDI_grid_type = "unstructured"
             temp.CDI_grid_type = "unstructured"
-            pressure.CDI_grid_type = "unstructured"
-            pressure_sfc.CDI_grid_type = "unstructured"
+            pres.CDI_grid_type = "unstructured"
+            pres_sfc.CDI_grid_type = "unstructured"
+            theta_v.CDI_grid_type = "unstructured"
             rho.CDI_grid_type = "unstructured"
 
             u.number_of_grid_in_reference = 1
             v.number_of_grid_in_reference = 1
             w.number_of_grid_in_reference = 1
             temp.number_of_grid_in_reference = 1
-            pressure.number_of_grid_in_reference = 1
-            pressure_sfc.number_of_grid_in_reference = 1
+            pres.number_of_grid_in_reference = 1
+            pres_sfc.number_of_grid_in_reference = 1
+            theta_v.number_of_grid_in_reference = 1
             rho.number_of_grid_in_reference = 1
 
             u.coordinates = "clat clon"
             v.coordinates = "clat clon"
             w.coordinates = "clat clon"
             temp.coordinates = "clat clon"
-            pressure.coordinates = "clat clon"
-            pressure_sfc.coordinates = "clat clon"
+            pres.coordinates = "clat clon"
+            pres_sfc.coordinates = "clat clon"
+            theta_v.coordinates = "clat clon"
             rho.coordinates = "clat clon"
 
     def _write_dimension(self, grid: IconGrid, diagnostic_metric_state: DiagnosticMetricState):
@@ -326,8 +342,9 @@ class OutputState:
         self._nf4_basegrp[self._current_file_number].variables["v"][self._current_write_step, :, :] = diagnostic_state.v.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["w"][self._current_write_step, :, :] = prognostic_state.w.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["temp"][self._current_write_step, :, :] = diagnostic_state.temperature.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["pressure"][self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
-        self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["pres"][self._current_write_step, :, :] = diagnostic_state.pressure.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["pres_sfc"][self._current_write_step, :] = diagnostic_state.pressure_sfc.asnumpy().transpose()
+        self._nf4_basegrp[self._current_file_number].variables["theta_v"][self._current_write_step, :, :] = prognostic_state.theta_v.asnumpy().transpose()
         self._nf4_basegrp[self._current_file_number].variables["rho"][self._current_write_step, :, :] = prognostic_state.rho.asnumpy().transpose()
 
     def output_data(
