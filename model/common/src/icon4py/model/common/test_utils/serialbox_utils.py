@@ -61,7 +61,6 @@ class IconSavepoint:
         self.log = logging.getLogger((__name__))
 
     def optionally_registered(*dims):
-        
         def decorator(func):
             @functools.wraps(func)
             def wrapper(self, *args, **kwargs):
@@ -69,14 +68,17 @@ class IconSavepoint:
                     name = func.__name__
                     return func(self, *args, **kwargs)
                 except serialbox.SerialboxError:
-                    log.warning(f"{name}: field not registered in savepoint {self.savepoint.metainfo}")
+                    log.warning(
+                        f"{name}: field not registered in savepoint {self.savepoint.metainfo}"
+                    )
                     if dims:
                         shp = tuple(self.sizes[d] for d in dims)
                         return as_field(dims, np.zeros(shp))
-                    else: 
+                    else:
                         return None
 
             return wrapper
+
         return decorator
 
     def log_meta_info(self):
