@@ -240,9 +240,9 @@ class GridManager:
         self._grid: Optional[IconGrid] = None
         self._file_name = grid_file
 
-    def __call__(self, on_gpu: bool = False):
+    def __call__(self, on_gpu: bool = False, limited_area=True):
         dataset = self._read_gridfile(self._file_name)
-        _, grid = self._constuct_grid(dataset, on_gpu=on_gpu)
+        _, grid = self._constuct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> Dataset:
@@ -326,9 +326,11 @@ class GridManager:
             self._log.error(msg)
             raise IconGridError(msg) from err
 
-    def _constuct_grid(self, dataset: Dataset, on_gpu: bool) -> tuple[UUID, IconGrid]:
+    def _constuct_grid(
+        self, dataset: Dataset, on_gpu: bool, limited_area: bool
+    ) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
-        return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu)
+        return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
 
     def get_size(self, dim: Dimension):
         if dim == VertexDim:
@@ -354,7 +356,7 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_grid_dataset(self, dataset: Dataset, on_gpu: bool) -> IconGrid:
+    def _from_grid_dataset(self, dataset: Dataset, on_gpu: bool, limited_area=True) -> IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
@@ -371,13 +373,13 @@ class GridManager:
 
         e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
         e2c2e = self._construct_diamond_edges(e2c, c2e)
-        e2c2e0 = np.column_stack((e2c2e, np.asarray(range(e2c2e.shape[0]))))
+        e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
-        c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+        c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
         (
             start_indices,
             end_indices,
@@ -386,7 +388,10 @@ class GridManager:
         ) = self._read_grid_refinement_information(dataset)
 
         config = GridConfig(
-            horizontal_config=grid_size, vertical_config=self._config, on_gpu=on_gpu
+            horizontal_config=grid_size,
+            vertical_config=self._config,
+            on_gpu=on_gpu,
+            limited_area=limited_area,
         )
         icon_grid = (
             IconGrid()

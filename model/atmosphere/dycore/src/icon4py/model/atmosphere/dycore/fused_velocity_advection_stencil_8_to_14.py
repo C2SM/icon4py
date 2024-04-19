@@ -21,14 +21,15 @@ from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cel
 from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
     _correct_contravariant_vertical_velocity,
 )
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -90,7 +91,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     z_w_con_c = where(
         k < nlevp1,
         _copy_cell_kdim_field_to_vp(w),
-        _set_cell_kdim_field_to_zero_vp(),
+        _init_cell_kdim_field_with_zero_vp(),
     )
 
     z_w_con_c = where(
@@ -109,7 +110,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     return z_ekinh, cfl_clipping, pre_levelmask, vcfl, z_w_con_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_14(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],

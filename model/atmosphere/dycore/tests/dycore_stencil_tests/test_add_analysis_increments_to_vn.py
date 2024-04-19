@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil28(StencilTest):
+class TestAddAnalysisIncrementsToVn(StencilTest):
     PROGRAM = add_analysis_increments_to_vn
     OUTPUTS = ("vn",)
 

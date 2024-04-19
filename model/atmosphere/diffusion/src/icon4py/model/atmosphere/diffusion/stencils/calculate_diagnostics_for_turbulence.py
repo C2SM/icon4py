@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -36,7 +37,7 @@ def _calculate_diagnostics_for_turbulence(
     return astype((div_ic_wp, hdef_ic_wp), vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_diagnostics_for_turbulence(
     div: Field[[CellDim, KDim], vpfloat],
     kh_c: Field[[CellDim, KDim], vpfloat],

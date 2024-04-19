@@ -14,7 +14,6 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
-import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -37,16 +36,19 @@ def backend(request):
     return request.param
 
 
-def is_otf(backend) -> bool:
+def is_python(backend) -> bool:
     # want to exclude python backends:
     #   - cannot run on embedded: because of slicing
     #   - roundtrip is very slow on large grid
-    if hasattr(backend, "executor"):
-        if isinstance(
-            backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
-        ):
-            return True
-    return False
+    return is_embedded(backend) or is_roundtrip(backend)
+
+
+def is_embedded(backend) -> bool:
+    return backend is None
+
+
+def is_roundtrip(backend) -> bool:
+    return backend.__name__ == "roundtrip" if backend else False
 
 
 def _shape(
@@ -115,7 +117,7 @@ def constant_field(
 
 def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
@@ -129,7 +131,7 @@ def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_
 
 def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
