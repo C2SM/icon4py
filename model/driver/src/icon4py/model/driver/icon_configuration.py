@@ -41,6 +41,7 @@ class IconRunConfig:
 
     run_testcase: bool = False
 
+
 @dataclass
 class IconConfig:
     run_config: IconRunConfig
@@ -134,7 +135,9 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             nonhydro_config,
         ) = _Jablownoski_Williamson_config()
     else:
-        log.warning("Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used.")
+        log.warning(
+            "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."
+        )
         (
             model_run_config,
             diffusion_config,

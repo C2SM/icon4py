@@ -37,14 +37,14 @@ from icon4py.model.common.decomposition.definitions import (
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.initialization_utils import (
+    ExperimentType,
+    SerializationType,
     configure_logging,
     read_decomp_info,
     read_geometry_fields,
     read_icon_grid,
     read_initial_state,
     read_static_fields,
-    SerializationType,
-    ExperimentType,
 )
 
 
@@ -286,7 +286,12 @@ class TimeLoop:
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
-def initialize(file_path: Path, props: ProcessProperties, serialization_type: SerializationType, experiment_type: ExperimentType):
+def initialize(
+    file_path: Path,
+    props: ProcessProperties,
+    serialization_type: SerializationType,
+    experiment_type: ExperimentType,
+):
     """
     Inititalize the driver run.
 
@@ -321,7 +326,10 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
     icon_grid = read_icon_grid(file_path, rank=props.rank, ser_type=serialization_type)
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        file_path, damping_height=config.run_config.damping_height, rank=props.rank, ser_type=serialization_type
+        file_path,
+        damping_height=config.run_config.damping_height,
+        rank=props.rank,
+        ser_type=serialization_type,
     )
     (
         diffusion_metric_state,
@@ -329,7 +337,9 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
-    ) = read_static_fields(file_path, rank=props.rank, ser_type=serialization_type, experiment_type=experiment_type)
+    ) = read_static_fields(
+        file_path, rank=props.rank, ser_type=serialization_type, experiment_type=experiment_type
+    )
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -375,7 +385,7 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
         edge_geometry,
         file_path,
         rank=props.rank,
-        experiment_type=experiment_type
+        experiment_type=experiment_type,
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
@@ -399,7 +409,11 @@ def initialize(file_path: Path, props: ProcessProperties, serialization_type: Se
 @click.argument("input_path")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-@click.option("--serialization_type", default="serialbox", help="serialization type for grid info and static fields")
+@click.option(
+    "--serialization_type",
+    default="serialbox",
+    help="serialization type for grid info and static fields",
+)
 @click.option("--experiment_type", default="any", help="experiment selection")
 def main(input_path, run_path, mpi, serialization_type, experiment_type):
     """

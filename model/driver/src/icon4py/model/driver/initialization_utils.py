@@ -66,8 +66,8 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_metric_state_for_diffusion,
 )
 from icon4py.model.driver.testcase_functions import (
-    interpolation_cells2edges_scalar_numpy,
     hydrostatic_adjustment_numpy,
+    interpolation_cells2edges_scalar_numpy,
     interpolation_rbf_edges2cells_vector_numpy,
     zonal2normalwind_jabw_numpy,
 )
@@ -80,7 +80,9 @@ backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
-INITIALIZATION_ERROR_MSG = "Only ANY (read from serialized data) and JABW are implemented for model initialization."
+INITIALIZATION_ERROR_MSG = (
+    "Only ANY (read from serialized data) and JABW are implemented for model initialization."
+)
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
@@ -93,6 +95,7 @@ class SerializationType(str, Enum):
 
 class ExperimentType(str, Enum):
     """Jablonowski-Williamson test"""
+
     JABW = "jabw"
     """any test with initial conditions read from serialized data"""
     ANY = "any"
@@ -154,9 +157,7 @@ def model_initialization_jabw(
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
-    grid_idx_edge_end = icon_grid.get_end_index(
-        EdgeDim, HorizontalMarkerIndex.end(EdgeDim)
-    )
+    grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
@@ -262,7 +263,6 @@ def model_initialization_jabw(
         grid_idx_edge_end,
         0,
         num_levels,
-
     )
     log.info("Cell-to-edge computation completed.")
 
@@ -577,7 +577,9 @@ def read_decomp_info(
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), True, procs_props.rank)
+        sp = sb.IconSerialDataProvider(
+            "icon_pydycore", str(path.absolute()), True, procs_props.rank
+        )
         return sp.from_savepoint_grid().construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)

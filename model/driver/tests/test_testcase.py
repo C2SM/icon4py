@@ -13,10 +13,10 @@
 
 import pytest
 
+from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
 )
-from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
 from icon4py.model.driver.initialization_utils import model_initialization_jabw
 
 
@@ -47,9 +47,7 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = model_initialization_jabw(
-        icon_grid, cell_geometry, edge_geometry, datapath, rank
-    )
+    ) = model_initialization_jabw(icon_grid, cell_geometry, edge_geometry, datapath, rank)
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
     assert dallclose(

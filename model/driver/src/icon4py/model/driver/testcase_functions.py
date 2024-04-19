@@ -14,9 +14,9 @@
 import numpy as np
 
 from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD
-from icon4py.model.common.dimension import EdgeDim, E2CDim
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.dimension import E2CDim, EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.grid.icon import IconGrid
 
 
 def interpolation_rbf_edges2cells_vector_numpy(
@@ -50,7 +50,9 @@ def interpolation_cells2edges_scalar_numpy(
     """
     cells2edges_scalar in mo_icon_interpolation.f90
     """
-    assert horizontal_start_index != HorizontalMarkerIndex.lateral_boundary(EdgeDim), "boundary edges cannot be obtained because there is only one neighboring cell"
+    assert horizontal_start_index != HorizontalMarkerIndex.lateral_boundary(
+        EdgeDim
+    ), "boundary edges cannot be obtained because there is only one neighboring cell"
     mask = np.zeros((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
     mask[horizontal_start_index:horizontal_end_index, vertical_start:vertical_end] = True
     e2c = icon_grid.connectivities[E2CDim]
@@ -74,7 +76,9 @@ def zonal2normalwind_jabw_numpy(
 ):
     """mask = np.repeat(np.expand_dims(mask, axis=-1), eta_v_e.shape[1], axis=1)"""
     mask = np.ones((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
-    mask[0:icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :] = False
+    mask[
+        0 : icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :
+    ] = False
     edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
     edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
@@ -88,7 +92,9 @@ def zonal2normalwind_jabw_numpy(
                 -10.0
                 * np.arccos(
                     np.sin(lat_perturbation_center) * np.sin(edge_lat)
-                    + np.cos(lat_perturbation_center) * np.cos(edge_lat) * np.cos(edge_lon - lon_perturbation_center)
+                    + np.cos(lat_perturbation_center)
+                    * np.cos(edge_lat)
+                    * np.cos(edge_lon - lon_perturbation_center)
                 )
                 ** 2
             ),
