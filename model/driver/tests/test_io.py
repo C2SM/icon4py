@@ -32,6 +32,8 @@ from icon4py.model.common.test_utils.datatest_utils import (
 from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, get_icon_grid_from_gridfile
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.driver.io.cf_utils import (
+    DEFAULT_CALENDAR,
+    DEFAULT_TIME_UNIT,
     INTERFACE_LEVEL_NAME,
     LEVEL_NAME,
     date2num,
@@ -65,16 +67,14 @@ def model_state(grid: BaseGrid) -> dict[str, xr.DataArray]:
     rho = random_field(grid, CellDim, KDim, dtype=float32)
     exner = random_field(grid, CellDim, KDim, dtype=float32)
     theta_v = random_field(grid, CellDim, KDim, dtype=float32)
-    ## add support for interface level fields
-    # w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32)
-    w = random_field(grid, CellDim, KDim, extend={KDim: 0}, dtype=float32)
+    w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32)
     return {
         "air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
         "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
         "theta_v": to_data_array(
-            theta_v, PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"]
+            theta_v, PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"], is_on_interface=False
         ),
-        "upward_air_velocity": to_data_array(w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"]),
+        "upward_air_velocity": to_data_array(w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"], is_on_interface=True),
     }
 
 
@@ -164,7 +164,8 @@ def test_io_monitor_write_dataset(test_path):
     field_configs = [FieldIoConfig(output_interval="HOUR", 
                                    start_time=configured_output_start, 
                                    filename_pattern="icon4py_dummy_output", 
-                                   variables=["air_density","exner_function"], nc_comment="Writing dummy data from icon4py for testing.")]
+                                   variables=["air_density","exner_function", "upward_air_velocity"], 
+                                   nc_comment="Writing dummy data from icon4py for testing.")]
     config = IoConfig(base_name="test_", field_configs=field_configs, output_path=path_name)
     monitor = IoMonitor(
         config, VerticalGridSize(grid.num_levels), grid.config.horizontal_config, grid_file,str(grid_id)
@@ -180,28 +181,28 @@ def test_io_monitor_write_dataset(test_path):
     monitor.close()
     
     assert len([f for f in monitor.path.iterdir() if f.is_file()]) == 1 + len(field_configs)
+    uxds = read_back_as_uxarray(monitor.path.iterdir())
+    assert uxds["air_density"].shape == (3, grid.num_levels, grid.num_cells)
+    assert uxds["dimensionless_exner_function"].shape == (3, grid.num_levels, grid.num_cells)
+    assert uxds["upward_air_velocity"].shape == (3, grid.num_levels + 1, grid.num_cells)
+    
+
+
+def read_back_as_uxarray(path: Path):
     ugrid_file = None
     data_files = []
-    for f in monitor.path.iterdir():
+    for f in path:
         if f.is_file():
             if "_ugrid.nc" in f.name:
                 ugrid_file = f.absolute()
             else:
                 data_files.append(f.absolute())
-    
     uxds = ux.open_dataset(ugrid_file, data_files[0])
-    # TODO assert everything is correct?
-    
-    
-   
-    
-        
-    
-    
+    return uxds
 
 
 
-@pytest.mark.fail
+@pytest.mark.xfail
 @pytest.mark.datatest
 def test_fieldgroup_monitor_fields_copied_on_store(grid_savepoint, test_path):
     heights = grid_savepoint.vct_a()
@@ -244,7 +245,7 @@ def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
     # TODO (magdalena) how to deal with non time matches? That is if the model time jumps over the output time
 
 
-def test_initialize_writer_create_dimensions(test_path, random_name):
+def test_initialize_writer_create_dimensions(test_path, random_name, ):
     dataset, grid = initialized_writer(test_path, random_name)
 
     assert dataset["title"] == "test"
@@ -256,14 +257,14 @@ def test_initialize_writer_create_dimensions(test_path, random_name):
     assert dataset.dims["vertex"].size == grid.num_vertices
     assert dataset.dims["edge"].size == grid.num_edges
     assert dataset.dims["time"].size == 0
-    # TODO assert dims["time"] is unlimited
-
+    assert dataset.dims["time"].isunlimited
+    
     heights = xr.DataArray(
         random_field(grid, CellDim, KDim, dtype=float32),
         attrs={"units": "m", "long_name": "sample height levels", "short_name": "height"},
     )
-    # assert dataset.variables["times"].ncattrs["units"] == "seconds since 1970-01-01 00:00:00"
-    # assert dataset.variables["times"].ncattrs["calendar"] is not None
+    assert dataset.variables["times"].units == DEFAULT_TIME_UNIT
+    assert dataset.variables["times"].calendar == DEFAULT_CALENDAR
 
 
 def initialized_writer(test_path, random_name, grid=SimpleGrid()):

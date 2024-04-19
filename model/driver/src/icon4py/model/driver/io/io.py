@@ -26,6 +26,10 @@ import xarray as xr
 from cftime import date2num
 from dask.delayed import Delayed
 
+from icon4py.model.common.decomposition.definitions import (
+    ProcessProperties,
+    SingleNodeProcessProperties,
+)
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.driver.io.cf_utils import (
@@ -305,22 +309,25 @@ class FieldGroupMonitor(Monitor):
         self._dataset.close()
 
 class NetcdfWriter:
+    def __getitem__(self, item):
+        return self.dataset.getncattr(item)
+
     def __init__(
         self,
         file_name: Path,
         vertical: VerticalGridSize,
         horizontal: HorizontalGridSize,
+        
         global_attrs: dict,
+        process_properties: ProcessProperties = SingleNodeProcessProperties(),    
     ):
         self._file_name = str(file_name)
+        self._process_properties = process_properties
         self._counter = 1
         self.num_levels = vertical.num_lev
         self.horizontal_size = horizontal
         self.attrs = global_attrs
         self.dataset = None
-
-    def __getitem__(self, item):
-        return self.dataset.getncattr(item)
 
     def add_dimension(self, name: str, values: xr.DataArray):
         self.dataset.createDimension(name, values.shape[0])
@@ -336,7 +343,7 @@ class NetcdfWriter:
         # TODO (magdalena) (what mode do we need `a` or `w`?
         #  TODO properly closing file
         filename = generate_name(self._file_name, self._counter)
-        self.dataset = nc.Dataset(filename, "w", format="NETCDF4", persist=True)
+        self.dataset = nc.Dataset(filename, "w", format="NETCDF4", persist=True, parallel=self._process_properties.comm_size > 1, comm=self._process_properties.comm)
         log.info(f"Creating file {filename} at {self.dataset.filepath()}")
         self.dataset.setncatts(self.attrs)
         ## create dimensions all except time are fixed

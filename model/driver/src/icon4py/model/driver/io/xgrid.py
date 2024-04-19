@@ -19,7 +19,7 @@ import uxarray
 import xarray as xa
 from gt4py.next import Dimension, DimensionKind
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.grid_manager import GridFile
 from icon4py.model.driver.io.exceptions import ValidationError
 
@@ -43,7 +43,16 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
     )
 
 
-dimension_mapping = {CellDim: "cell", KDim: "level", EdgeDim: "edge", VertexDim: "vertex"}
+def dimension_mapping(dim:Dimension, is_on_interface: bool)-> str:
+    assert dim.kind in (DimensionKind.HORIZONTAL, DimensionKind.VERTICAL), "only horizontal and vertical dimensions are supported."
+    if dim.kind == DimensionKind.VERTICAL:
+        return "interface_level" if is_on_interface else "level"
+    else:
+        return horizontal_dimension_mapping[dim]
+    
+
+horizontal_dimension_mapping = {
+    CellDim: "cell", EdgeDim: "edge", VertexDim: "vertex"}
 
 coordinates_mapping = {
     CellDim: "clon clat",
@@ -69,7 +78,6 @@ def extract_bounds(ds: xa.Dataset):
     """
     Extract the bounds from the ICON grid file.
     TODO (@halungge) does it  work for decomposed grids?
-    TODO (@halungge) these are not present in the mch grid file
     """
     return dict(
         cell=(ds["clat_vertices"], ds["clon_vertices"]),
@@ -96,7 +104,7 @@ class IconUGridPatch:
             "vertices_of_vertex",  # V2E2V connectivity
             "neighbor_cell_index",  # C2E2C connectivity
         )
-        self.domain_bounds = (
+        self.horizontal_domain_borders = (
             "start_idx_c",  # start and end indices for refin_ctl_levels
             "end_idx_c",
             "start_idx_e",
@@ -104,7 +112,7 @@ class IconUGridPatch:
             "start_idx_v",
             "end_idx_v",
         )
-        self.index_lists = self.connectivities + self.domain_bounds
+        self.index_lists = self.connectivities + self.horizontal_domain_borders
         # do not exist on local grid.nc of mch_ch_r04b09_dsl what do they contain?
         # "edge_index",
         # "vertex_index",

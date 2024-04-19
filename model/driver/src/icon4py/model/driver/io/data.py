@@ -12,7 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import xarray as xa
-from gt4py.next.common import Dimension, DimensionKind
+from gt4py._core.definitions import ScalarT
+from gt4py.next.common import Dimension, DimensionKind, Dims, DimsT, Field
 
 from icon4py.model.driver.io.xgrid import dimension_mapping, ugrid_attributes
 
@@ -71,11 +72,15 @@ DIAGNOSTIC_CF_ATTRIBUTES = dict(
 )
 
 
-# TODO (halungge): add typing for the field, build from already attributed field
-def to_data_array(field, attrs: dict = {}) -> xa.DataArray:
-    """Convert a gt4py field to a xarray dataarray"""
-    dims = tuple(dimension_mapping[d] for d in field.domain.dims)
-    horizontal_dim = list(filter(lambda d: _is_horizontal(d), field.domain.dims))[0]
+def to_data_array(field:Field[Dims[DimsT], ScalarT], attrs={}, is_on_interface:bool = False) -> xa.DataArray:
+    """Convert a gt4py field to a xarray dataarray.
+    
+    Args: field: gt4py field, 
+        attrs: (optional) dictionary of metadata attributes to be added to the dataarray, empty by default.    
+        is_on_interface: (optional) boolean flag indicating if the 2d field is defined on the interface, False by default.
+    """
+    dims = tuple(dimension_mapping(d, is_on_interface) for d in field.domain.dims)
+    horizontal_dim = next(filter(lambda d: _is_horizontal(d), field.domain.dims))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)
     attrs.update(uxgrid_attrs)
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
