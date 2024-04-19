@@ -28,7 +28,7 @@ from gt4py.next import where, neighbor_sum
 from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 
-from icon4py.model.common.dimension import C2E, E2C, V2E, E2V, V2C, C2EDim, CellDim, EdgeDim, V2EDim, V2CDim, VertexDim, KDim, Koff
+from icon4py.model.common.dimension import C2E, E2C, V2E, E2V, V2C, C2EDim, CellDim, E2CDim, EdgeDim, V2EDim, V2CDim, VertexDim, KDim, Koff
 
 @field_operator
 def grad_fd_norm(
@@ -103,3 +103,20 @@ def compute_cells_aw_verts(
             for k in range (6):
                 cells_aw_verts[llb:, k] = np.where(np.logical_and(owner_mask[:], e2c[v2e[llb:, j], i] == v2c[llb:, k]), cells_aw_verts[llb:, k] + 0.5 / dual_area[llb:] * edge_vert_length[v2e[llb:, j], idx_ve[llb:, j]] * edge_cell_length[v2e[llb:, j], i], cells_aw_verts[llb:, k])
     return cells_aw_verts
+
+#@field_operator
+#def compute_cells_aw_verts_new(
+#    dual_area: Field[VertexDim, float],
+#    edge_vert_length: Field[[EdgeDim, V2CDim], float],
+#    edge_cell_length: Field[[EdgeDim, E2CDim], float],
+#) -> Field[[VertexDim, V2CDim], float]:
+#    cells_aw_verts = 0.5 * neighbor_sum(where(E2C(V2E) == V2C, neighbor_sum(edge_vert_length(V2E) * edge_cell_length(V2E) / dual_area, axis=V2EDim), 0.0), axis=E2CDim)
+#    return cells_aw_verts
+
+@field_operator
+def compute_cells2edges_scalar(
+    inv_p_cell_in: Field[[CellDim, KDim], float],
+    c_int: Field[[EdgeDim, E2CDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    p_vert_out = neighbor_sum(c_int / inv_p_cell_in(E2C), axis=E2CDim)
+    return p_vert_out

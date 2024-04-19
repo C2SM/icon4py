@@ -48,6 +48,7 @@ from icon4py.model.common.interpolation.interpolation_fields3 import (
     compute_cells_aw_verts,
     compute_cells2verts_scalar,
     compute_ddxt_z_half_e,
+    compute_cells2edges_scalar,
 )
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
@@ -185,3 +186,53 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
     )
 
     assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
+
+@pytest.mark.datatest
+def test_compute_ddqz_z_full_e(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
+    inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
+    c_lin_e = interpolation_savepoint.c_lin_e()
+    e2c = icon_grid.connectivities[E2CDim]
+    v2c = icon_grid.connectivities[V2CDim]
+    v2e = icon_grid.connectivities[V2EDim]
+    e2v = icon_grid.connectivities[E2VDim]
+    horizontal_start_vertex = icon_grid.get_start_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+    )
+    horizontal_end_vertex = icon_grid.get_end_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
+    )
+    horizontal_start_cell = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    )
+    horizontal_end_cell = icon_grid.get_end_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) - 1,
+    )
+    horizontal_start_edge = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    )
+    horizontal_end_edge = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim)  - 1,
+    )
+    vertical_start = 0
+    vertical_end = 65
+    ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
+    compute_cells2edges_scalar(
+        inv_ddqz_z_full,
+        c_lin_e,
+        out=ddqz_z_full_e,
+        offset_provider={"E2C" : icon_grid.get_offset_provider("E2C") },
+        domain={
+            EdgeDim: (horizontal_start_edge, horizontal_end_edge),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+    ddqz_z_full_e_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
+    print(ddqz_z_full_e_ref)
+    print(ddqz_z_full_e.asnumpy())
+    assert np.allclose(ddqz_z_full_e.asnumpy(), ddqz_z_full_e_ref)
