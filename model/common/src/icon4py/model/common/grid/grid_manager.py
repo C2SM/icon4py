@@ -373,13 +373,13 @@ class GridManager:
 
         e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
         e2c2e = self._construct_diamond_edges(e2c, c2e)
-        e2c2e0 = np.column_stack((e2c2e, np.asarray(range(e2c2e.shape[0]))))
+        e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
         v2c = self._get_index_field(reader, GridFile.OffsetName.V2C)
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
-        c2e2c0 = np.column_stack((c2e2c, (np.asarray(range(c2e2c.shape[0])))))
+        c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
         (
             start_indices,
             end_indices,

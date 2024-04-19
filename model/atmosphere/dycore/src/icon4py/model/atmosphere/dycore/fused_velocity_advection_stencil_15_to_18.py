@@ -23,11 +23,11 @@ from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w 
 from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
     _compute_advective_vertical_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    _interpolate_contravatiant_vertical_verlocity_to_full_levels,
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
+    _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -123,7 +123,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     lvn_only: bool,
     extra_diffu: bool,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    z_w_con_c_full = _interpolate_contravatiant_vertical_verlocity_to_full_levels(z_w_con_c)
+    z_w_con_c_full = _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c)
     ddt_w_adv = (
         _fused_velocity_advection_stencil_16_to_18(
             z_w_con_c,

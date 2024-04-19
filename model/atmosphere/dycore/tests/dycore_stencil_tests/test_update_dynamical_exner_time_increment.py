@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil60(StencilTest):
+class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
     OUTPUTS = ("exner_dyn_incr",)
 

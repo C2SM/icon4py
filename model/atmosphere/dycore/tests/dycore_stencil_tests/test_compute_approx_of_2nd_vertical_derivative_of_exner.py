@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoSolveNonhydroStencil12(StencilTest):
+class TestComputeApproxOf2ndVerticalDerivativeOfExner(StencilTest):
     PROGRAM = compute_approx_of_2nd_vertical_derivative_of_exner
     OUTPUTS = ("z_dexner_dz_c_2",)
 

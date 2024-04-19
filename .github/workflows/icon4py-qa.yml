@@ -29,8 +29,7 @@ jobs:
                     **/base-requirements-dev.txt
                     **/requirements.txt
                     **/requirements-dev.txt
-            - name: Install icon4py-model packages
-              working-directory: model
+            - name: Install all icon4py namespace packages
               run: |
                   python -m pip install --upgrade pip setuptools wheel
                   python -m pip install -r ./requirements-dev.txt
