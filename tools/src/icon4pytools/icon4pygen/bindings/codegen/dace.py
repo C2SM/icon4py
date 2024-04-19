@@ -62,12 +62,9 @@ class CppDefGenerator(TemplatedGenerator):
         #include "cuda_verify.hpp"
         #include "to_json.hpp"
         #include "to_vtk.h"
+        #include \"{{ funcname }}_dace.cu\"
         #include "unstructured_interface.hpp"
         #include "verification_metrics.hpp"
-
-        struct {{funcname}}_state_t {
-            dace::cuda::Context *gpu_context;
-        };
         """
     )
 
@@ -208,7 +205,7 @@ class CppDefGenerator(TemplatedGenerator):
 
       dace::cuda::Context __dace_context(1, 1);
       __dace_context.streams[0] = stream_;
-      DACE_GPU_CHECK(cudaEventCreateWithFlags(&__dace_context.events[0], cudaEventDisableTiming));
+      cudaEventCreateWithFlags(&__dace_context.events[0], cudaEventDisableTiming);
 
       {{ stencil_name }}_state_t handle{.gpu_context = &__dace_context};
 
@@ -222,7 +219,7 @@ class CppDefGenerator(TemplatedGenerator):
         gpuErrchk(cudaDeviceSynchronize());
       #endif
 
-        DACE_GPU_CHECK(cudaEventDestroy(__dace_context.events[0]));
+        cudaEventDestroy(__dace_context.events[0]);
       }
       """
     )
