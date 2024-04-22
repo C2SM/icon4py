@@ -23,7 +23,6 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_imperative,
 )
 
-import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.velocity.helpers import (
     add_extra_diffusion_for_w_con_approaching_cfl,
     add_extra_diffusion_for_wn_approaching_cfl,

@@ -77,6 +77,9 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressu
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_extner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_extner_pressure_for_multiple_levels as compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_orig,
 )
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
+    compute_horizontal_advection_of_rho_and_theta as compute_horizontal_advection_of_rho_and_theta_orig,
+)
 from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term as compute_hydrostatic_correction_term_orig,
 )
@@ -131,11 +134,22 @@ from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
 )
 from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v as update_theta_v_orig
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
-    predictor_stencils_2_3,
-    predictor_stencils_4_5_6,
-    predictor_stencils_7_8_9,
-    predictor_stencils_11_lower_upper,
-
+    predictor_stencils_2_3 as predictor_stencils_2_3_orig,
+    predictor_stencils_4_5_6 as predictor_stencils_4_5_6_orig,
+    predictor_stencils_7_8_9 as predictor_stencils_7_8_9_orig,
+    predictor_stencils_11_lower_upper as predictor_stencils_11_lower_upper_orig,
+    predictor_stencils_35_36 as predictor_stencils_35_36_orig,
+    predictor_stencils_37_38 as predictor_stencils_37_38_orig,
+    stencils_39_40 as stencils_39_40_orig,
+    stencils_43_44_45_45b as stencils_43_44_45_45b_orig,
+    stencils_47_48_49 as stencils_47_48_49_orig,
+    stencils_61_62 as stencils_61_62_orig,
+    stencils_42_44_45_45b as stencils_42_44_45_45b_orig,
+    init_test_fields as init_test_fields_orig,
+)
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    set_zero_c_k as set_zero_c_k_orig,
+    set_zero_e_k as set_zero_e_k_orig,
 )
 
 
@@ -196,6 +210,7 @@ compute_pertubation_of_rho_and_theta = CachedProgram(compute_pertubation_of_rho_
 compute_horizontal_gradient_of_extner_pressure_for_multiple_levels = CachedProgram(compute_horizontal_gradient_of_extner_pressure_for_multiple_levels_orig)
 compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates = CachedProgram(compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates_orig)
 compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates = CachedProgram(compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_orig)
+compute_horizontal_advection_of_rho_and_theta = CachedProgram(compute_horizontal_advection_of_rho_and_theta_orig)
 compute_avg_vn_and_graddiv_vn_and_vt = CachedProgram(compute_avg_vn_and_graddiv_vn_and_vt_orig)
 compute_divergence_of_fluxes_of_rho_and_theta = CachedProgram(compute_divergence_of_fluxes_of_rho_and_theta_orig)
 copy_cell_kdim_field_to_vp = CachedProgram(copy_cell_kdim_field_to_vp_orig)
@@ -210,3 +225,17 @@ update_theta_v = CachedProgram(update_theta_v_orig)
 update_dynamical_exner_time_increment = CachedProgram(update_dynamical_exner_time_increment_orig)
 update_mass_volume_flux = CachedProgram(update_mass_volume_flux_orig)
 update_mass_flux_weighted = CachedProgram(update_mass_flux_weighted_orig)
+predictor_stencils_2_3 = CachedProgram(predictor_stencils_2_3_orig)
+predictor_stencils_4_5_6 = CachedProgram(predictor_stencils_4_5_6_orig)
+predictor_stencils_7_8_9 = CachedProgram(predictor_stencils_7_8_9_orig)
+predictor_stencils_11_lower_upper = CachedProgram(predictor_stencils_11_lower_upper_orig)
+predictor_stencils_35_36 = CachedProgram(predictor_stencils_35_36_orig)
+predictor_stencils_37_38 = CachedProgram(predictor_stencils_37_38_orig)
+stencils_39_40 = CachedProgram(stencils_39_40_orig)
+stencils_43_44_45_45b = CachedProgram(stencils_43_44_45_45b_orig)
+stencils_47_48_49 = CachedProgram(stencils_47_48_49_orig)
+stencils_61_62 = CachedProgram(stencils_61_62_orig)
+stencils_42_44_45_45b = CachedProgram(stencils_42_44_45_45b_orig)
+init_test_fields = CachedProgram(init_test_fields_orig)
+set_zero_c_k = CachedProgram(set_zero_c_k_orig)
+set_zero_e_k = CachedProgram(set_zero_e_k_orig)

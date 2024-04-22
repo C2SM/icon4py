@@ -13,7 +13,7 @@
 
 import numpy as np
 from gt4py.next import as_field
-from gt4py.next.common import Dimension, Field
+from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
     abs,
@@ -23,6 +23,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.settings import backend
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
@@ -61,7 +62,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
@@ -71,7 +72,7 @@ def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
     return broadcast(0.0, (EdgeDim, KDim))
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_zero_e_k(
     field: Field[[EdgeDim, KDim], float],
     horizontal_start: int32,
@@ -93,7 +94,7 @@ def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_zero_c_k(
     field: Field[[CellDim, KDim], float],
     horizontal_start: int32,
