@@ -15,14 +15,14 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.update_densety_exener_wind import update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.update_density_exner_wind import update_density_exner_wind
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil61(StencilTest):
-    PROGRAM = update_densety_exener_wind
+class TestUpdateDensityExnerWind(StencilTest):
+    PROGRAM = update_density_exner_wind
     OUTPUTS = ("rho_new", "exner_new", "w_new")
 
     @staticmethod

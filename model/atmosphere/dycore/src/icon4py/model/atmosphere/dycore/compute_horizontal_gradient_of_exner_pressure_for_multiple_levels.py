@@ -22,7 +22,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
+def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
@@ -60,7 +60,7 @@ def _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
+def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
@@ -73,7 +73,7 @@ def compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_horizontal_gradient_of_extner_pressure_for_multiple_levels(
+    _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         inv_dual_edge_length,
         z_exner_ex_pr,
         zdiff_gradp,

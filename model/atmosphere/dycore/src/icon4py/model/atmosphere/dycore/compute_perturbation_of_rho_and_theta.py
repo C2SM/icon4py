@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
-def _compute_pertubation_of_rho_and_theta(
+def _compute_perturbation_of_rho_and_theta(
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -36,7 +36,7 @@ def _compute_pertubation_of_rho_and_theta(
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def compute_pertubation_of_rho_and_theta(
+def compute_perturbation_of_rho_and_theta(
     rho: Field[[CellDim, KDim], wpfloat],
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
     theta_v: Field[[CellDim, KDim], wpfloat],
@@ -48,7 +48,7 @@ def compute_pertubation_of_rho_and_theta(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_pertubation_of_rho_and_theta(
+    _compute_perturbation_of_rho_and_theta(
         rho,
         rho_ref_mc,
         theta_v,
