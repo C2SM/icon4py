@@ -19,7 +19,6 @@ from pathlib import Path
 import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -71,12 +70,6 @@ from icon4py.model.driver.testcase_functions import (
     interpolation_rbf_edges2cells_vector_numpy,
     zonal2normalwind_jabw_numpy,
 )
-
-
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-compiler_gpu_backend = run_gtfn_gpu
-backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -457,7 +450,7 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
 
     diagnostic_state = DiagnosticState(
         pressure=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
+        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         temperature=_allocate(CellDim, KDim, grid=icon_grid),
         pressure_sfc=_allocate(CellDim, grid=icon_grid),
         u=_allocate(CellDim, KDim, grid=icon_grid),

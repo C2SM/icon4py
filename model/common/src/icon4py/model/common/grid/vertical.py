@@ -84,10 +84,11 @@ class VerticalModelParams:
 
     @classmethod
     def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
+        assert damping_height >= 0.0, "Damping height must be positive."
         return (
-            int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
-            if damping_height < vct_a[0]
-            else 0
+            int32(0)
+            if damping_height > vct_a[0]
+            else int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
         )
 
     @property

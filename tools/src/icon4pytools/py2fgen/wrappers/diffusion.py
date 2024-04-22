@@ -127,6 +127,7 @@ def diffusion_init(
         filename=get_grid_filename(),
         num_levels=num_levels,
         on_gpu=on_gpu,
+        limited_area=True,
     )
 
     # Edge geometry
