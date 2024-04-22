@@ -248,6 +248,8 @@ class NonHydrostaticConfig:
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
         divdamp_type: int = 3,
+        divdamp_trans_start: float = 12500.0,
+        divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
@@ -284,6 +286,9 @@ class NonHydrostaticConfig:
 
         #: type of divergence damping
         self.divdamp_type: int = divdamp_type
+        #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
+        self.divdamp_trans_start: float = divdamp_trans_start
+        self.divdamp_trans_end: float = divdamp_trans_end
 
         #: off-centering for density and potential temperature at interface levels.
         #: Specifying a negative value here reduces the amount of vertical
@@ -1255,7 +1260,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1805,7 +1810,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
             log.debug(f"corrector start stencil 54")
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
