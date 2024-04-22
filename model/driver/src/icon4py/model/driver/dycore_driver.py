@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -65,25 +65,25 @@ class TimeLoop:
         self.solve_nonhydro = solve_nonhydro
 
         self._n_time_steps: int = int(
-            (self.run_config.end_date - self.run_config.start_date)
-            / timedelta(seconds=self.run_config.dtime)
+            (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
         )
+        self.dtime_in_seconds: float = self.run_config.dtime.total_seconds()
         self._n_substeps_var: int = self.run_config.n_substeps
-        self._substep_timestep: float = float(self.run_config.dtime / self._n_substeps_var)
+        self._substep_timestep: float = float(self.dtime_in_seconds / self._n_substeps_var)
 
         self._validate_config()
 
         # current simulation date
         self._simulation_date: datetime = self.run_config.start_date
 
-        self._do_initial_stabilization: bool = self.run_config.apply_initial_stabilization
+        self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
-        self._do_initial_stabilization = self.run_config.apply_initial_stabilization
+        self._is_first_step_in_simulation = True
         self._n_substeps_var = self.run_config.n_substeps
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
@@ -96,8 +96,9 @@ class TimeLoop:
         if not self.solve_nonhydro.initialized:
             raise Exception("nonhydro solver is not initialized before time loop")
 
-    def _not_first_step(self):
-        self._do_initial_stabilization = False
+    @property
+    def first_step_in_simulation(self):
+        return self._is_first_step_in_simulation
 
     def _is_last_substep(self, step_nr: int):
         return step_nr == (self.n_substeps_var - 1)
@@ -107,11 +108,7 @@ class TimeLoop:
         return step_nr == 0
 
     def _next_simulation_date(self):
-        self._simulation_date += timedelta(seconds=self.run_config.dtime)
-
-    @property
-    def do_initial_stabilization(self):
-        return self._do_initial_stabilization
+        self._simulation_date += self.run_config.dtime
 
     @property
     def n_substeps_var(self):
@@ -157,10 +154,10 @@ class TimeLoop:
         do_prep_adv: bool,
     ):
         log.info(
-            f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+            f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
         log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
         # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
@@ -169,21 +166,25 @@ class TimeLoop:
 
         # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
-        if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization:
+        if (
+            self.diffusion.config.apply_to_horizontal_wind
+            and self.run_config.apply_initial_stabilization
+            and self._is_first_step_in_simulation
+        ):
             log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
                 prognostic_state_list[self._now],
-                self.run_config.dtime,
+                self.dtime_in_seconds,
             )
         log.info(
-            f"starting real time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+            f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
-            log.info(
-                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
-            )
+            log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
+
+            # TODO (Chia Rui): print out max and min of some variables after discussion with Anurag
 
             self._next_simulation_date()
 
@@ -217,6 +218,8 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
+        # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
+
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -227,7 +230,7 @@ class TimeLoop:
 
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
-                diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
+                diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
 
         self._swap()
@@ -249,7 +252,7 @@ class TimeLoop:
         for dyn_substep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
-                f"{self.n_substeps_var} , initial_stabilization : {self._do_initial_stabilization}, "
+                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}, "
                 f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
@@ -259,7 +262,7 @@ class TimeLoop:
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 l_recompute=do_recompute,
-                l_init=self._do_initial_stabilization,
+                l_init=self._is_first_step_in_simulation,
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
@@ -274,7 +277,7 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 self._swap()
 
-            self._not_first_step()
+            self._is_first_step_in_simulation = False
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
