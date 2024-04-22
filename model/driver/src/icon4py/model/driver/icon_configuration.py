@@ -144,6 +144,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         icon_run_config = IconRunConfig(
             dtime=4.0,
             end_date=datetime(1, 1, 1, 0, 1, 0),
+            damping_height=10000.0,
             apply_initial_stabilization=True,
             run_testcase=True,
             n_substeps=5,
