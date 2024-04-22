@@ -144,6 +144,7 @@ class BaseGrid(ABC):
             from_dim,
             to_dim,
             has_skip_values=self._has_skip_values(dim),
+            on_gpu=self.config.on_gpu,
         )
 
     def get_offset_provider(self, name):
