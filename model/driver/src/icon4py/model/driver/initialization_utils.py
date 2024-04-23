@@ -421,7 +421,7 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
     diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
-        diffusion_init_savepoint, data_provider.from_savepoint_grid()
+        diffusion_init_savepoint,
     )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),

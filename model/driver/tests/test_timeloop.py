@@ -265,7 +265,6 @@ def test_run_timeloop_single_step(
 
     diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
         timeloop_diffusion_savepoint_init,
-        grid_savepoint,
     )
 
     prep_adv = PrepAdvection(
