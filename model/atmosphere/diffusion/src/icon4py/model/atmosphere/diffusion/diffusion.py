@@ -65,7 +65,7 @@ from icon4py.model.common.constants import (
     dbl_eps,
 )
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, DimensionKind
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
@@ -76,13 +76,21 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.model_backend import backend
 
 import dace
-from gt4py.next.program_processors.runners.dace import run_dace_cpu 
+from dace import hooks, dtypes
+from dace.config import Config
+from dace.memlet import Memlet
+from dace.properties import CodeBlock
+from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
+from icon4py.model.common.decomposition.definitions import DecompositionInfo as di
 try:
     import ghex
+    import mpi4py
+    from dace.sdfg.utils import distributed_compile
 except ImportError:
     ghex = None
+    mpi4py = None
 
 
 """
@@ -655,7 +663,7 @@ class Diffusion:
 
             # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
             log.debug("communication rbf extrapolation of vn - start")
-            self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
+            #self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
             log.debug("communication rbf extrapolation of vn - end")
 
             log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -714,7 +722,7 @@ class Diffusion:
             # TODO (magdalena) move this up and do asynchronous exchange
             if self.config.type_vn_diffu > 1:
                 log.debug("communication rbf extrapolation of z_nable2_e - start")
-                self._exchange(self.z_nabla2_e, dim=EdgeDim, wait=True)
+                #self._exchange(self.z_nabla2_e, dim=EdgeDim, wait=True)
                 log.debug("communication rbf extrapolation of z_nable2_e - end")
 
             log.debug("2nd rbf interpolation: start")
@@ -734,7 +742,7 @@ class Diffusion:
 
             # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
+            #self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
             log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
@@ -765,7 +773,7 @@ class Diffusion:
             log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
             log.debug("communication of prognistic.vn : start")
-            handle_edge_comm = self._exchange(prognostic_state.vn, dim=EdgeDim, wait=False)
+            #handle_edge_comm = self._exchange(prognostic_state.vn, dim=EdgeDim, wait=False)
 
             log.debug(
                 "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -874,17 +882,30 @@ class Diffusion:
             )
             log.debug("running stencil 16 (update_theta_and_exner): end")
             
-            dummy = wait_on_comm_handle(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
+            #dummy = wait_on_comm_handle(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
             log.debug("communication of prognogistic.vn - end")
         
-            return dummy
+            #return dummy
 
         fuse()
 
 def dace_jit(self):
     def decorator(fuse_func):
         def wrapper(*args, **kwargs):
-            if backend == run_dace_cpu:
+            if backend == run_dace_cpu_noopt:
+                
+                kwargs.update({
+                                # GHEX C++ ptrs
+                                "__context_ptr":ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
+                                "__comm_ptr":ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
+                                **{f"__pattern_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._patterns[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+                                **{f"__domain_descriptor_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._domain_descriptors[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+                                # offset providers
+                                **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
+                                #
+                                **{f"__gids_{ind.name}_{dim.value}":self._exchange._decomposition_info.global_index(dim, ind) if isinstance(self._exchange, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
+                              })
+                
                 with dace.config.temporary_config():
                     dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
                     dace.config.Config.set("compiler", "allow_view_arguments", value=True)
@@ -896,18 +917,246 @@ def dace_jit(self):
                     dace.config.Config.set("optimizer", "automatic_simplification", value=False)
                     dace.config.Config.set("cache", value="unique")
 
-                    from icon4py.model.common.decomposition.definitions import DecompositionInfo as di
-                    return dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)(*args, **kwargs,
-                                # GHEX C++ ptrs
-                                __context_ptr=ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                __comm_ptr=ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else None,
-                                **{f"__pattern_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._patterns[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None for dim in (CellDim, VertexDim, EdgeDim)},
-                                **{f"__domain_descriptor_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._domain_descriptors[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else None for dim in (CellDim, VertexDim, EdgeDim)},
-                                # offset providers
-                                **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
-                                #
-                                **{f"__gids_{ind.name}_{dim.value}":self._exchange._decomposition_info.global_index(dim, ind) for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
-                           )
+                    daceP = dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)
+
+                    ################################################################################
+                    # Copy of the __call__ function of DaceProgram class
+                    # Expose the generated SDFG and modify it
+                    ################################################################################
+
+                    # Update global variables with current closure
+                    daceP.global_vars = dace.frontend.python.parser._get_locals_and_globals(daceP.f)
+
+                    # Move "self" from an argument into the closure
+                    if daceP.methodobj is not None:
+                        daceP.global_vars[daceP.objname] = daceP.methodobj
+
+                    argtypes, arg_mapping, constant_args, specified = daceP._get_type_annotations(args, kwargs)
+
+                    # Add constant arguments to globals for caching
+                    daceP.global_vars.update(constant_args)
+
+                    # Cache key
+                    cachekey = daceP._cache.make_key(argtypes, specified, daceP.closure_array_keys, daceP.closure_constant_keys,
+                                                    constant_args)
+
+                    if daceP._cache.has(cachekey):
+                        entry = daceP._cache.get(cachekey)
+                        # If the cache does not just contain a parsed SDFG
+                        if entry.compiled_sdfg is not None:
+                            kwargs.update(arg_mapping)
+                            entry.compiled_sdfg.clear_return_values()
+                            return entry.compiled_sdfg(**daceP._create_sdfg_args(entry.sdfg, args, kwargs))
+
+                    # Clear cache to enforce deletion and closure of compiled program
+                    # daceP._cache.pop()
+
+                    # Parse SDFG
+                    sdfg = daceP._parse(args, kwargs)
+
+                    if isinstance(self._exchange, GHexMultiNodeExchange):
+                        counter = 0
+                        for nested_sdfg in sdfg.all_sdfgs_recursive():
+                            if not hasattr(nested_sdfg, "GT4Py_Program_output_fields"):
+                                continue
+                            
+                            field_dims = set()
+                            for buffer_name, dims in nested_sdfg.GT4Py_Program_output_fields.items():
+                                for dim in dims:
+                                    if dim.kind == DimensionKind.HORIZONTAL:
+                                        field_dims.add(dim)
+
+                            if len(field_dims) > 1:
+                                raise ValueError("The output fields to be communicated are not defined on the same dimension kind.")
+
+                            dim = {'Cell':CellDim, 'Edge':EdgeDim, 'Vertex':VertexDim}[list(field_dims)[0].value] if len(field_dims) == 1 else None
+                            if not dim:
+                                continue
+                            wait = True
+
+                            for sdfg_state in sdfg.states():
+                                if sdfg_state.label == nested_sdfg.parent.label:
+                                    break
+                            state = sdfg.add_state_after(sdfg_state, label='_halo_exchange_')
+
+                            if counter == 0:
+                                for buffer_name in kwargs:
+                                    if '_ptr' in buffer_name:
+                                        sdfg.add_scalar(buffer_name, dtype=dace.uintp)
+                                
+                            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
+                                                            inputs=None,
+                                                            outputs=None,
+                                                            code='',
+                                                            language=dace.dtypes.Language.CPP,
+                                                            side_effects=True,)
+                            state.add_node(tasklet)
+
+                            in_connectors = {}
+                            out_connectors = {}
+
+                            global_buffer_descriptor = []
+                            for i, buffer_name in enumerate(nested_sdfg.GT4Py_Program_output_fields):
+                                data_descriptor = nested_sdfg.arrays[buffer_name]
+
+                                global_buffer_name = None
+                                for edge in sdfg_state.all_edges_recursive():
+                                    if hasattr(edge[0], "src_conn") and (edge[0].src_conn == buffer_name):
+                                        global_buffer_name = edge[0].dst.label
+                                        break
+
+                                if not global_buffer_name:
+                                    raise ValueError("Could not link the local buffer_name to the global one (coming from the closure).")
+
+                                global_buffer_descriptor.append(sdfg.arrays[global_buffer_name])
+
+                                buffer = state.add_read(global_buffer_name)
+                                in_connectors['IN_' + f'field_{i}'] = dtypes.pointer(data_descriptor.dtype)
+                                state.add_edge(buffer, None, tasklet, 'IN_' + f'field_{i}', Memlet.from_array(global_buffer_name, data_descriptor))
+
+                                update = state.add_write(global_buffer_name)
+                                out_connectors['OUT_' + f'field_{i}'] = dtypes.pointer(data_descriptor.dtype)
+                                state.add_edge(tasklet, 'OUT_' + f'field_{i}', update, None, Memlet.from_array(global_buffer_name, data_descriptor))
+
+                            if counter == 0:
+                                for buffer_name in kwargs:
+                                    if '_ptr' in buffer_name:
+                                        buffer = state.add_read(buffer_name)
+                                        data_descriptor = dace.uintp
+                                        in_connectors['IN_' + buffer_name] = data_descriptor.dtype
+                                        memlet_ =  Memlet(buffer_name, subset='0')
+                                        state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, memlet_)
+
+
+                            tasklet.in_connectors = in_connectors
+                            tasklet.out_connectors = out_connectors
+                            tasklet.environments = ['icon4py.model.common.decomposition.mpi_decomposition.DaceGHEX']
+
+                            pattern_type = self._exchange._patterns[dim].__cpp_type__
+                            domain_descriptor_type = self._exchange._domain_descriptors[dim].__cpp_type__
+                            communication_object_type = self._exchange._comm.__cpp_type__
+                            communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
+
+                            fields_desc_glob_vars = '\n'
+                            fields_desc = '\n'
+                            descr_unique_names = []
+                            for i, arg in enumerate(global_buffer_descriptor):                                
+                                # https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
+                                if len(arg.shape) > 2:
+                                    raise ValueError("field has too many dimensions")
+                                if arg.shape[0] != self._exchange._domain_descriptors[dim].size():
+                                    raise ValueError("field's first dimension must match the size of the domain")
+                                
+                                levels_first = True
+                                outer_strides = 0
+                                # DaCe strides: number of elements to jump
+                                # GHEX/NumPy strides: number of bytes to jump
+                                if len(arg.shape) == 2 and arg.strides[1] != 1:
+                                    levels_first = False
+                                    if arg.strides[0] != 1:
+                                        raise ValueError("field's strides are not compatible with GHEX")
+                                    outer_strides = arg.strides[1]
+                                elif len(arg.shape) == 2:
+                                    if arg.strides[1] != 1:
+                                        raise ValueError("field's strides are not compatible with GHEX")
+                                    outer_strides = arg.strides[0]
+                                else:
+                                    if arg.strides[0] != 1:
+                                        raise ValueError("field's strides are not compatible with GHEX")
+
+                                levels = 1 if len(arg.shape) == 1 else arg.shape[1]
+
+                                device = 'cpu' if arg.storage.value <= 5 else 'gpu'
+                                field_dtype = arg.dtype.ctype
+                                
+                                descr_unique_name = f'field_desc_{i}_{counter}_{id(self)}'
+                                descr_unique_names.append(descr_unique_name)
+                                descr_type_ = f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}>"
+                                if wait:
+                                    # de-allocated descriptors once out-of-scope, no need for storing them in global vars
+                                    fields_desc += f"{descr_type_} {descr_unique_name}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                                else:
+                                    # for async exchange, we need to keep the descriptors alive, until the wait
+                                    fields_desc += f"{descr_unique_name} = {descr_type_}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                                    fields_desc_glob_vars += f"{descr_type_} {descr_unique_name};\n"
+
+                            code = ''
+                            if counter == 0:
+                                __pattern = ''
+                                __domain_descriptor = ''
+                                for dim_ in (CellDim, VertexDim, EdgeDim):
+                                    __pattern += f"__pattern_{dim_.value}Dim_ptr_{id(self)} = IN___pattern_{dim_.value}Dim_ptr;\n"
+                                    __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{id(self)} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
+                                    
+                                code = f'''
+                                    __context_ptr_{id(self)} = IN___context_ptr;
+                                    __comm_ptr_{id(self)} = IN___comm_ptr;
+                                    {__pattern}
+                                    {__domain_descriptor}
+                                    '''
+
+                            code += f'''
+                                    ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr_{id(self)});
+                                    
+                                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim.value}Dim_ptr_{id(self)});
+                                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim.value}Dim_ptr_{id(self)});
+                                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr_{id(self)});
+
+                                    {fields_desc}
+
+                                    h_{id(self)} = communication_object->exchange({", ".join([f'(*pattern)({descr_unique_names[i]})' for i in range(len(global_buffer_descriptor))])});
+                                    { 'h_'+str(id(self))+'.wait();' if wait else ''}
+                                    '''
+
+                            tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+                            if counter == 0:
+                                __pattern = ''
+                                __domain_descriptor = ''
+                                for dim_ in (CellDim, VertexDim, EdgeDim):
+                                    __pattern += f"{dace.uintp.dtype} __pattern_{dim_.value}Dim_ptr_{id(self)};\n"
+                                    __domain_descriptor += f"{dace.uintp.dtype} __domain_descriptor_{dim_.value}Dim_ptr_{id(self)};\n"
+                                
+                                code = f'''
+                                        {dace.uintp.dtype} __context_ptr_{id(self)};
+                                        {dace.uintp.dtype} __comm_ptr_{id(self)};
+                                        {__pattern}
+                                        {__domain_descriptor}
+                                        {fields_desc_glob_vars}
+                                        ghex::communication_handle<{communication_handle_type}> h_{id(self)};
+                                        '''
+                            else:
+                                code = fields_desc_glob_vars
+                            tasklet.code_global = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+
+                            counter += 1
+
+                    # Add named arguments to the call
+                    kwargs.update(arg_mapping)
+                    sdfg_args = daceP._create_sdfg_args(sdfg, args, kwargs)
+
+                    if daceP.recreate_sdfg:
+                        # Invoke auto-optimization as necessary
+                        if Config.get_bool('optimizer', 'autooptimize') or daceP.autoopt:
+                            sdfg = daceP.auto_optimize(sdfg, symbols=sdfg_args)
+                            sdfg.simplify()
+
+                    with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg:
+                        if daceP.distributed_compilation and mpi4py:
+                            binaryobj = distributed_compile(sdfg, mpi4py.MPI.COMM_WORLD, validate=daceP.validate)
+                        else:
+                            # Compile SDFG (note: this is done after symbol inference due to shape
+                            # altering transformations such as Vectorization)
+                            binaryobj = sdfg.compile(validate=daceP.validate)
+
+                        # Recreate key and add to cache
+                        cachekey = daceP._cache.make_key(argtypes, specified, daceP.closure_array_keys, daceP.closure_constant_keys,
+                                                        constant_args)
+                        daceP._cache.add(cachekey, sdfg, binaryobj)
+
+                        # Call SDFG
+                        result = binaryobj(**sdfg_args)
+
+                    return result
             else:
                 fuse_func(*args, **kwargs)
         return wrapper

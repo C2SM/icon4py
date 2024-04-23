@@ -17,12 +17,12 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_imperative,
 )
 from gt4py.next.program_processors.runners.dace import (
-    run_dace_cpu,
-    run_dace_gpu,
+    run_dace_cpu_noopt,
+    run_dace_gpu_noopt,
 )
 
 cached_backend = run_gtfn_cached
 compiled_backend = run_gtfn
 imperative_backend = run_gtfn_imperative
 gpu_backend = run_gtfn_gpu
-backend = run_dace_cpu
+backend = run_dace_cpu_noopt

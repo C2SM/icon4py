@@ -316,7 +316,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             fields_desc = '\n'
             descr_unique_names = []
             for i, arg in enumerate(args):
-                # https://github.com/ghex-org/GHEX/blob/master/bindings/python/unstructured/field_descriptor.cpp
+                # https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
                 if len(arg.shape) > 2:
                     raise ValueError("field has too many dimensions")
                 if arg.shape[0] != self._domain_descriptors[dim].size():
