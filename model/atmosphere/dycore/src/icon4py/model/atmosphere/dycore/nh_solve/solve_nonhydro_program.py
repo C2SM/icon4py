@@ -41,11 +41,11 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_the
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
-    _compute_pertubation_of_rho_and_theta,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    _compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_at_ic import (
-    _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
+    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
 )
 from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
@@ -57,18 +57,18 @@ from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_t
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
-    _set_cell_kdim_field_to_zero_wp,
 )
 from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
     _set_lower_boundary_condition_for_w_and_contravariant_correction,
@@ -79,10 +79,10 @@ from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary impo
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _broadcast_zero_to_three_edge_kdim_fields_wp,
 )
-from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.update_density_exner_wind import _update_density_exner_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 
 
 # TODO: abishekg7 move this to tests
@@ -102,8 +102,7 @@ def init_test_fields(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-
-    _set_cell_kdim_field_to_zero_wp(
+    _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
         domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
@@ -124,7 +123,7 @@ def _predictor_stencils_2_3(
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(k_field == nlev, _set_cell_kdim_field_to_zero_wp(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
@@ -255,13 +254,13 @@ def _predictor_stencils_7_8_9(
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
         k_field == int32(0),
-        _compute_pertubation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         k_field >= int32(1),
-        _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
             wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
         ),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
@@ -351,7 +350,9 @@ def _predictor_stencils_11_lower_upper(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic)
+    z_theta_v_pr_ic = where(
+        k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic
+    )
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
@@ -675,9 +676,9 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
-    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
+    z_q = where(k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -811,8 +812,8 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
-    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_q = where(k_field == int32(0), _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -997,7 +998,7 @@ def _stencils_61_62(
 ]:
     (rho_new, exner_new, w_new) = where(
         (k_field >= int32(0)) & (k_field < nlev),
-        _update_densety_exener_wind(
+        _update_density_exner_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),

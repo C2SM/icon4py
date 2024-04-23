@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil02(StencilTest):
+class TestExtrapolateTemporallyExnerPressure(StencilTest):
     PROGRAM = extrapolate_temporally_exner_pressure
     OUTPUTS = ("z_exner_ex_pr", "exner_pr")
 

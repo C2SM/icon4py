@@ -39,7 +39,7 @@ def compute_advective_vertical_wind_tendency_numpy(
     return ddt_w_adv
 
 
-class TestMoVelocityAdvectionStencil16(StencilTest):
+class TestComputeAdvectiveVerticalWindTendency(StencilTest):
     PROGRAM = compute_advective_vertical_wind_tendency
     OUTPUTS = ("ddt_w_adv",)
 

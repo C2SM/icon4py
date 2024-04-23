@@ -35,7 +35,7 @@ def interpolate_to_half_levels_vp_numpy(
     return interpolation_to_half_levels_vp
 
 
-class TestMoSolveNonhydroStencil05(StencilTest):
+class TestInterpolateToHalfLevelsVp(StencilTest):
     PROGRAM = interpolate_to_half_levels_vp
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 

@@ -18,7 +18,6 @@ from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
@@ -73,7 +72,6 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.model_backend import backend
 
 import dace
 from dace import hooks, dtypes
@@ -92,6 +90,8 @@ except ImportError:
     ghex = None
     mpi4py = None
 
+from icon4py.model.common.settings import backend
+from icon4py.model.common.settings import xp
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -274,9 +274,6 @@ class DiffusionConfig:
             self.apply_to_temperature = False
             self.apply_to_horizontal_wind = False
             self.apply_to_vertical_wind = False
-        else:
-            self.apply_to_temperature = True
-            self.apply_to_horizontal_wind = True
 
         if self.shear_type not in (
             TurbulenceShearForcingType.VERTICAL_OF_HORIZONTAL_WIND,
@@ -491,7 +488,7 @@ class Diffusion:
 
         def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
-            return as_field((dim,), np.arange(size, dtype=int32))
+            return as_field((dim,), xp.arange(size, dtype=int32))
 
         self.diff_multfac_vn = _allocate(KDim)
 
@@ -509,7 +506,7 @@ class Diffusion:
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = as_field(
-            (CellDim, KDim), np.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+            (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
 
     def initial_run(

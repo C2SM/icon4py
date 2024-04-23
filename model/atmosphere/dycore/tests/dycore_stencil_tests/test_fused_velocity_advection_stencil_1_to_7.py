@@ -33,7 +33,7 @@ from .test_extrapolate_at_top import extrapolate_at_top_numpy
 from .test_interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges_numpy,
 )
-from .test_interpolate_vt_to_ie import interpolate_vt_to_ie_numpy
+from .test_interpolate_vt_to_interface_edges import interpolate_vt_to_interface_edges_numpy
 from .test_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_numpy,
 )
@@ -88,7 +88,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         if not lvn_only:
             z_vt_ie = np.where(
                 condition2,
-                interpolate_vt_to_ie_numpy(grid, wgtfac_e, vt),
+                interpolate_vt_to_interface_edges_numpy(grid, wgtfac_e, vt),
                 z_vt_ie,
             )
 

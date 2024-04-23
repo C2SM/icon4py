@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil34(StencilTest):
+class TestAccumulatePrepAdvFields(StencilTest):
     PROGRAM = accumulate_prep_adv_fields
     OUTPUTS = ("vn_traj", "mass_flx_me")
 
