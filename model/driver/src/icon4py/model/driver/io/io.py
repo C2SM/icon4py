@@ -100,7 +100,7 @@ class Monitor(ABC):
         return "instance of {}(Monitor)".format(self.__class__)
 
     @abc.abstractmethod
-    def store(self, state: dict, model_time:datetime, *args, **kwargs):
+    def store(self, state: dict, model_time: datetime, *args, **kwargs):
         """Store state and perform class specific actions on it.
 
 
@@ -300,11 +300,10 @@ class FieldGroupMonitor(Monitor):
     def _update_fetch_times(self):
         self._next_output_time = self._next_output_time + self._time_delta
 
-    # TODO (halungge) rename?, arguments
+    # TODO (halungge) rename?
     def store(self, state: dict, model_time: datetime, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
 
-        # TODO: this should be a Listener pattern, that copy data buffer and trigger the rest chain asynchronously
         Args:
             state: dict  model state dictionary
             time: float  model time
@@ -344,7 +343,7 @@ class NetcdfWriter:
 
     Writes a netcdf file using netcdf4-python directly. Currently, this seems to be the only way that we can
       - get support for parallel (MPI available) writing
-      - the possibility to append time slices to a variable already present in the file. (Xarray.to_netcdf does not support this)
+      - the possibility to append time slices to a variable already present in the file. (Xarray.to_netcdf does not support this https://github.com/pydata/xarray/issues/1672)
     """
 
     def __getitem__(self, item):

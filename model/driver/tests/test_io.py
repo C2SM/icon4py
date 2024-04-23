@@ -284,7 +284,6 @@ def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
     step_time = datetime.fromisoformat("2022-01-01T01:10:00")
     io_system.store(state, step_time)
     assert io_system.next_output_time == datetime.fromisoformat("2022-01-01T01:00:00")
-    
 
 
 @pytest.mark.parametrize(
@@ -363,8 +362,8 @@ def test_initialize_writer_create_dimensions(
     assert dataset.dims["edge"].size == grid.num_edges
     assert dataset.dims["time"].size == 0
     assert dataset.dims["time"].isunlimited
-    
-    heights = xr.DataArray(
+
+    heights = xr.DataArray(  # noqa
         np.range((grid.num_levels + 1) * 100.0),
         attrs={"units": "m", "long_name": "heights of sample model levels", "short_name": "height"},
     )
