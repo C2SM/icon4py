@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil32(StencilTest):
+class TestComputeMassFlux(StencilTest):
     PROGRAM = compute_mass_flux
     OUTPUTS = ("mass_fl_e", "z_theta_v_fl_e")
 

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil36(StencilTest):
+class TestInterpolateVnAndVtToIeAndComputeEkinOnEdges(StencilTest):
     PROGRAM = interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges
     OUTPUTS = ("vn_ie", "z_vt_ie", "z_kin_hor_e")
 

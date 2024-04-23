@@ -23,13 +23,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common.dimension import CEDim
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose, zero_field
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, dallclose
 from icon4py.model.common.test_utils.serialbox_utils import (
     IconDiffusionExitSavepoint,
     IconDiffusionInitSavepoint,
-    IconGridSavepoint,
     InterpolationSavepoint,
     MetricSavepoint,
 )
@@ -167,11 +166,9 @@ def construct_metric_state(savepoint: MetricSavepoint) -> DiffusionMetricState:
 
 def construct_diagnostics(
     savepoint: IconDiffusionInitSavepoint,
-    grid_savepoint: IconGridSavepoint,
 ) -> DiffusionDiagnosticState:
-    grid = grid_savepoint.construct_icon_grid(on_gpu=False)
-    dwdx = savepoint.dwdx() if savepoint.dwdx() else zero_field(grid, CellDim, KDim)
-    dwdy = savepoint.dwdy() if savepoint.dwdy() else zero_field(grid, CellDim, KDim)
+    dwdx = savepoint.dwdx()
+    dwdy = savepoint.dwdy()
     return DiffusionDiagnosticState(
         hdef_ic=savepoint.hdef_ic(),
         div_ic=savepoint.div_ic(),
