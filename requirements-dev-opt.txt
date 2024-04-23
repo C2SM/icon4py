@@ -5,7 +5,7 @@ git+https://github.com/ghex-org/GHEX.git#subdirectory=bindings/python
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
 -e ./model/atmosphere/diffusion
--e ./model/driver
+-e ./model/driver[all]
 
 # icon4pytools
 -e ./tools

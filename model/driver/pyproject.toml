@@ -35,7 +35,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-conf = ["omegaconf", "hydra-core", "pyyaml"]
+all = ["icon4py-driver[io]"]
 io = [
   "xarray[complete]",
   "uxarray",
