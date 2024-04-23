@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -27,7 +28,7 @@ def _set_two_edge_kdim_fields_to_zero_wp() -> (
     return broadcast(wpfloat("0.0"), (EdgeDim, KDim)), broadcast(wpfloat("0.0"), (EdgeDim, KDim))
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_two_edge_kdim_fields_to_zero_wp(
     edge_kdim_field_to_zero_wp_1: Field[[EdgeDim, KDim], wpfloat],
     edge_kdim_field_to_zero_wp_2: Field[[EdgeDim, KDim], wpfloat],

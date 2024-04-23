@@ -151,6 +151,8 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     set_zero_c_k as set_zero_c_k_orig,
     set_zero_e_k as set_zero_e_k_orig,
 )
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift as en_smag_fac_for_zero_nshift_orig
+from icon4py.model.atmosphere.dycore.state_utils.utils import compute_z_raylfac as compute_z_raylfac_orig
 
 
 @dataclasses.dataclass
@@ -217,6 +219,9 @@ copy_cell_kdim_field_to_vp = CachedProgram(copy_cell_kdim_field_to_vp_orig)
 mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = CachedProgram(mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_orig)
 set_two_cell_kdim_fields_to_zero_vp = CachedProgram(set_two_cell_kdim_fields_to_zero_vp_orig)
 set_two_cell_kdim_fields_to_zero_wp = CachedProgram(set_two_cell_kdim_fields_to_zero_wp_orig)
+set_two_cell_kdim_fields_to_zero_wp_1 = CachedProgram(set_two_cell_kdim_fields_to_zero_wp_orig)
+set_two_cell_kdim_fields_to_zero_wp_2 = CachedProgram(set_two_cell_kdim_fields_to_zero_wp_orig)
+set_two_cell_kdim_fields_to_zero_wp_3 = CachedProgram(set_two_cell_kdim_fields_to_zero_wp_orig)
 set_two_edge_kdim_fields_to_zero_wp = CachedProgram(set_two_edge_kdim_fields_to_zero_wp_orig)
 mo_math_gradients_grad_green_gauss_cell_dsl = CachedProgram(mo_math_gradients_grad_green_gauss_cell_dsl_orig)
 solve_tridiagonal_matrix_for_w_back_substitution = CachedProgram(solve_tridiagonal_matrix_for_w_back_substitution_orig)
@@ -239,3 +244,5 @@ stencils_42_44_45_45b = CachedProgram(stencils_42_44_45_45b_orig)
 init_test_fields = CachedProgram(init_test_fields_orig)
 set_zero_c_k = CachedProgram(set_zero_c_k_orig)
 set_zero_e_k = CachedProgram(set_zero_e_k_orig)
+en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
+compute_z_raylfac = CachedProgram(compute_z_raylfac_orig)

@@ -22,12 +22,6 @@ import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_imperative,
-    run_gtfn_gpu,
-)
 
 from icon4py.model.atmosphere.diffusion.helpers import (
     apply_diffusion_to_vn,
@@ -64,9 +58,6 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex,
-)
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
@@ -78,11 +69,6 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 
 # flake8: noqa
 log = logging.getLogger(__name__)
-
-cached_backend = run_gtfn_cached
-compiled_backend = run_gtfn
-imperative_backend = run_gtfn_imperative
-backend = cached_backend
 
 
 class DiffusionType(int, Enum):

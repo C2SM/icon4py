@@ -19,6 +19,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 
 
@@ -33,7 +34,7 @@ def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim]
     return field
 
 
-@program
+@program(backend=backend)
 def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
     _identity_c_k(old_f, out=new_f)
 
@@ -48,7 +49,7 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
@@ -58,7 +59,7 @@ def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program
+@program(backend=backend)
 def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
     _set_zero_v_k(out=field)
 
@@ -89,7 +90,7 @@ def _setup_fields_for_initial_step(
     return diff_multfac_vn, smag_limit
 
 
-@program
+@program(backend=backend)
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
@@ -133,7 +134,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@program
+@program(backend=backend)
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,

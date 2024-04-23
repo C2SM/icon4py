@@ -17,11 +17,6 @@ import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_imperative,
-)
 
 from icon4py.model.atmosphere.dycore.velocity.helpers import (
     add_extra_diffusion_for_w_con_approaching_cfl,
@@ -56,12 +51,6 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
 log = logging.getLogger(__name__)
-
-
-cached_backend = run_gtfn_cached
-compiled_backend = run_gtfn
-imperative_backend = run_gtfn_imperative
-backend = cached_backend
 
 
 class VelocityAdvection:

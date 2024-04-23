@@ -154,7 +154,7 @@ def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program
+@program(backend=backend)
 def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):

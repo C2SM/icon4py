@@ -17,7 +17,6 @@ from typing import Final, Optional
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 import icon4py.model.common.constants as constants
 from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
@@ -55,6 +54,9 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
     set_two_cell_kdim_fields_to_zero_vp,
     set_two_cell_kdim_fields_to_zero_wp,
+    set_two_cell_kdim_fields_to_zero_wp_1,
+    set_two_cell_kdim_fields_to_zero_wp_2,
+    set_two_cell_kdim_fields_to_zero_wp_3,
     set_two_edge_kdim_fields_to_zero_wp,
     solve_tridiagonal_matrix_for_w_back_substitution,
     solve_tridiagonal_matrix_for_w_forward_sweep,
@@ -76,6 +78,8 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     stencils_61_62,
     set_zero_c_k,
     set_zero_e_k,
+    en_smag_fac_for_zero_nshift,
+    compute_z_raylfac,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -87,7 +91,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
     _calculate_divdamp_fields,
-    compute_z_raylfac,
 )
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
     VelocityAdvection,
@@ -105,13 +108,9 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
 # flake8: noqa
 log = logging.getLogger(__name__)
 
@@ -1203,7 +1202,7 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
-            set_two_cell_kdim_fields_to_zero_wp(
+            set_two_cell_kdim_fields_to_zero_wp_1(
                 cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1754,7 +1753,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         if not self.l_vert_nested:
-            set_two_cell_kdim_fields_to_zero_wp(
+            set_two_cell_kdim_fields_to_zero_wp_2(
                 cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
                 horizontal_start=start_cell_nudging,
@@ -1877,7 +1876,7 @@ class SolveNonhydro:
         if lprep_adv:
             if lclean_mflx:
                 log.debug(f"corrector set prep_adv.mass_flx_ic to zero")
-                set_two_cell_kdim_fields_to_zero_wp(
+                set_two_cell_kdim_fields_to_zero_wp_3(
                     prep_adv.mass_flx_ic,
                     prep_adv.vol_flx_ic,
                     horizontal_start=start_cell_nudging,
@@ -1902,7 +1901,7 @@ class SolveNonhydro:
             offset_provider={},
         )
         if at_last_substep:
-            update_dynamical_exner_time_increment.with_backend(backend)(
+            update_dynamical_exner_time_increment(
                 exner=prognostic_state[nnew].exner,
                 ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
                 exner_dyn_incr=diagnostic_state_nh.exner_dyn_incr,

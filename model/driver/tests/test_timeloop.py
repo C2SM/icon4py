@@ -132,43 +132,8 @@ def test_jabw_initial_condition(
         diagnostic_state.pressure_sfc.asnumpy(),
     )
 
+"""
 
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, ndyn_substeps, damping_height",
-    [
-        (
-            False,
-            REGIONAL_EXPERIMENT,
-            1,
-            2,
-            0,
-            1,
-            "2021-06-20T12:00:00.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:10.000",
-            True,
-            False,
-            False,
-            12500.0,
-        ),
-        (
-            False,
-            REGIONAL_EXPERIMENT,
-            1,
-            2,
-            0,
-            1,
-            "2021-06-20T12:00:10.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            "2021-06-20T12:00:20.000",
-            False,
-            False,
-            True,
-            12500.0,
-        ),
         (
             False,
             GLOBAL_EXPERIMENT,
@@ -183,6 +148,7 @@ def test_jabw_initial_condition(
             False,
             False,
             False,
+            2,
             50000.0,
         ),
         (
@@ -199,8 +165,10 @@ def test_jabw_initial_condition(
             False,
             False,
             True,
+            2,
             50000.0,
         ),
+
         (
             False,
             JABW_EXPERIMENT,
@@ -252,6 +220,63 @@ def test_jabw_initial_condition(
             5,
             45000.0,
         ),
+        (
+            False,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:15:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:15:00.000",
+            False,
+            False,
+            False,
+            5,
+            45000.0,
+        ),
+        """
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, ndyn_substeps, damping_height",
+    [
+        (
+            False,
+            REGIONAL_EXPERIMENT,
+            1,
+            2,
+            0,
+            1,
+            "2021-06-20T12:00:00.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:10.000",
+            True,
+            False,
+            False,
+            2,
+            12500.0,
+        ),
+        (
+            False,
+            REGIONAL_EXPERIMENT,
+            1,
+            2,
+            0,
+            1,
+            "2021-06-20T12:00:10.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            "2021-06-20T12:00:20.000",
+            False,
+            False,
+            True,
+            2,
+            12500.0,
+        ),
+
     ],
 )
 def test_run_timeloop_single_step(
