@@ -129,9 +129,11 @@ class IconGrid(BaseGrid):
     @property
     def id(self):
         return self._id
+
     @id.setter
-    def id(self, value:str):
+    def id(self, value: str):
         self._id = value
+
     @property
     def n_shift(self):
         return self.config.n_shift_total if self.config else 0

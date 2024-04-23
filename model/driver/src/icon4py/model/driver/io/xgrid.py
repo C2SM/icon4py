@@ -43,16 +43,18 @@ def extract_horizontal_coordinates(ds: xa.Dataset):
     )
 
 
-def dimension_mapping(dim:Dimension, is_on_interface: bool)-> str:
-    assert dim.kind in (DimensionKind.HORIZONTAL, DimensionKind.VERTICAL), "only horizontal and vertical dimensions are supported."
+def dimension_mapping(dim: Dimension, is_on_interface: bool) -> str:
+    assert dim.kind in (
+        DimensionKind.HORIZONTAL,
+        DimensionKind.VERTICAL,
+    ), "only horizontal and vertical dimensions are supported."
     if dim.kind == DimensionKind.VERTICAL:
         return "interface_level" if is_on_interface else "level"
     else:
         return horizontal_dimension_mapping[dim]
-    
 
-horizontal_dimension_mapping = {
-    CellDim: "cell", EdgeDim: "edge", VertexDim: "vertex"}
+
+horizontal_dimension_mapping = {CellDim: "cell", EdgeDim: "edge", VertexDim: "vertex"}
 
 coordinates_mapping = {
     CellDim: "clon clat",

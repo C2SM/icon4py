@@ -76,7 +76,7 @@ def _load_from_gridfile(
         VerticalGridSize(num_levels),
     )
     gm(on_gpu=on_gpu, limited_area=limited_area)
-    return  gm.get_grid(), gm.grid_id
+    return gm.get_grid(), gm.grid_id
 
 
 @pytest.fixture

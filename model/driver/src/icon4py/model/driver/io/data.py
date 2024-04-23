@@ -72,13 +72,17 @@ DIAGNOSTIC_CF_ATTRIBUTES = dict(
 )
 
 
-def to_data_array(field:Field[Dims[DimsT], ScalarT], attrs={}, is_on_interface:bool = False) -> xa.DataArray:
+def to_data_array(
+    field: Field[Dims[DimsT], ScalarT], attrs=None, is_on_interface: bool = False
+) -> xa.DataArray:
     """Convert a gt4py field to a xarray dataarray.
-    
-    Args: field: gt4py field, 
-        attrs: (optional) dictionary of metadata attributes to be added to the dataarray, empty by default.    
+
+    Args: field: gt4py field,
+        attrs: (optional) dictionary of metadata attributes to be added to the dataarray, empty by default.
         is_on_interface: (optional) boolean flag indicating if the 2d field is defined on the interface, False by default.
     """
+    if attrs is None:
+        attrs = {}
     dims = tuple(dimension_mapping(d, is_on_interface) for d in field.domain.dims)
     horizontal_dim = next(filter(lambda d: _is_horizontal(d), field.domain.dims))
     uxgrid_attrs = ugrid_attributes(horizontal_dim)

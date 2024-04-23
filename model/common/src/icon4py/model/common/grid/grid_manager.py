@@ -250,7 +250,7 @@ class GridManager:
     @property
     def grid_id(self):
         return self._grid_id
-    
+
     def _read_gridfile(self, fname: str) -> Dataset:
         try:
             dataset = Dataset(self._file_name, "r", format="NETCDF4")
