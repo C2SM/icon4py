@@ -82,6 +82,24 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             max_nudging_coeff=0.075,
         )
 
+    def gauss3d_diffusion_config(n_substeps: int):
+        return DiffusionConfig(
+            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+            zdiffu_t=True,
+            hdiff_vn=True,
+            hdiff_temp=False,
+            hdiff_w=False,
+            n_substeps=n_substeps,
+            hdiff_rcf=True,
+            type_t_diffu=2,
+            type_vn_diffu=1,
+            hdiff_efdt_ratio=10.0,
+            hdiff_w_efdt_ratio=15.0,
+            smagorinski_scaling_factor=0.025,
+            velocity_boundary_diffusion_denom=200.0,
+            max_nudging_coeff=0.075,
+        )
+
     def jabw_diffusion_config(n_substeps: int):
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
@@ -102,6 +120,15 @@ def read_config(experiment: Optional[str]) -> IconConfig:
 
     def _default_diffusion_config():
         return DiffusionConfig()
+
+    def gauss3d_nonhydro_config(n_substeps: int):
+        return NonHydrostaticConfig(
+            igradp_method=3,
+            ndyn_substeps_var=n_substeps,
+            max_nudging_coeff=0.02,
+            divdamp_fac=0.0025,
+            lhdiff_rcf=True,
+        )
 
     def jabw_nonhydro_config(n_substeps: int):
         return NonHydrostaticConfig(
@@ -154,8 +181,8 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             output_file_time_interval=timedelta(seconds=60),
             output_path=Path("./gauss3d_output/"),
         )
-        diffusion_config = _default_diffusion_config()
-        nonhydro_config = NonHydrostaticConfig()
+        diffusion_config = gauss3d_diffusion_config(icon_run_config.n_substeps)
+        nonhydro_config = gauss3d_nonhydro_config(icon_run_config.n_substeps)
         return (
             icon_run_config,
             output_config,

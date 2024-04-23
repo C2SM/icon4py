@@ -192,7 +192,7 @@ def model_initialization_gauss3d(
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e_numpy.shape[1], axis=1)
 
     # Define test case parameters
-    enr = 1
+    enr = 0
     # The topography can only be read from serialized data for now
     # mount_lon     = 0.0    # (0.0) # At present the mountain is at position lat=0,lon=0 (given in meters)
     # mount_lat     = 0.0    # (0.0)
@@ -256,9 +256,9 @@ def model_initialization_gauss3d(
         num_levels,
     )
 
-    # theta_v_numpy_ser = data_provider.from_savepoint_nonhydro_init(1, '2033-11-22T00:00:04.000', 0).theta_v_now().asnumpy()
-    # rho_numpy_ser     = data_provider.from_savepoint_nonhydro_init(1, '2033-11-22T00:00:04.000', 0).rho_now().asnumpy()
-    # exner_numpy_ser   = data_provider.from_savepoint_nonhydro_init(1, '2033-11-22T00:00:04.000', 0).exner_now().asnumpy()
+    # theta_v_numpy_ser = data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).theta_v_now().asnumpy()
+    # rho_numpy_ser     = data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).rho_now().asnumpy()
+    # exner_numpy_ser   = data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).exner_now().asnumpy()
     # test_theta = np.allclose(theta_v_numpy, theta_v_numpy_ser, rtol=1e-12, atol=0)
     # test_rho   = np.allclose(rho_numpy,     rho_numpy_ser,     rtol=1e-12, atol=0)
     # test_exner = np.allclose(exner_numpy,   exner_numpy_ser,   rtol=1e-12, atol=0)
