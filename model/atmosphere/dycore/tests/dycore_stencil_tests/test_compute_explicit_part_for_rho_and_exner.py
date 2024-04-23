@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil48(StencilTest):
+class TestComputeExplicitPartForRhoAndExner(StencilTest):
     PROGRAM = compute_explicit_part_for_rho_and_exner
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 

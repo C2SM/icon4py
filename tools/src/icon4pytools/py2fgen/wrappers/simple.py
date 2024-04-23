@@ -78,3 +78,10 @@ def multi_return(
             KDim: (vertical_start, vertical_end),
         },
     )
+
+
+def square_error(
+    inp: Field[[CellDim, KDim], float64],
+    result: Field[[CellDim, KDim], float64],
+):
+    raise Exception("Exception foo occurred")

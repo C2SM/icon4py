@@ -18,8 +18,7 @@ from icon4py.model.common.test_utils.helpers import constant_field
 
 
 try:
-    import mpi4py  # test for optional dependency
-    import mpi4py.MPI
+    import mpi4py  # noqa: F401 # import mpi4py to check for optional mpi dependency
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
@@ -221,7 +220,6 @@ def test_create_single_node_runtime_without_mpi(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
 ):
-
     exchange = create_exchange(processor_props, decomposition_info)
     assert isinstance(exchange, SingleNodeExchange)
 

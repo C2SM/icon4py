@@ -15,7 +15,7 @@ from gt4py.next import Field, field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
 
 from icon4py.model.common.dimension import KDim, Koff
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 
 
 @field_operator

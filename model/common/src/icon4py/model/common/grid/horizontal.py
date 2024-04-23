@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import math
-from dataclasses import InitVar, dataclass, field
+from dataclasses import dataclass
 from functools import cached_property
 from typing import ClassVar, Final
 
@@ -294,32 +294,29 @@ class EdgeParams:
 class CellParams:
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
-    """
-    Interpolate a Cell Field to Edges.
+    #: Mean area of a cell [m^2]
+    mean_cell_area: float
+    length_rescale_factor: float = 1.0
 
-    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
-    where the value is set to the one valid in_field value without multiplication by coeff.
-    This essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
-    be 1 for this Edge index.
-    """
-    length_rescale_factor: float
-
-    global_num_cells: InitVar[int]
-    mean_cell_area: field(init=False) = None
-
-    def __post_init__(self, global_num_cells):
-        object.__setattr__(
-            self,
-            "mean_cell_area",
-            CellParams._compute_mean_cell_area(
-                self.length_rescale_factor * constants.EARTH_RADIUS,
-                global_num_cells,
-            ),
+    @classmethod
+    def from_global_num_cells(
+        cls,
+        area: Field[[CellDim], float],
+        global_num_cells: int,
+        length_rescale_factor: float = 1.0,
+    ):
+        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        return cls(
+            area=area, mean_cell_area=mean_cell_area, length_rescale_factor=length_rescale_factor
         )
 
     @cached_property
     def characteristic_length(self):
         return math.sqrt(self.mean_cell_area)
+
+    @cached_property
+    def mean_cell_area(self):
+        return self.mean_cell_area
 
     @staticmethod
     def _compute_mean_cell_area(radius, num_cells):
