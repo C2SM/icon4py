@@ -30,6 +30,7 @@ try:
     from ghex.unstructured import HaloGenerator
     from ghex.unstructured import make_pattern
     from ghex.unstructured import make_field_descriptor
+    from ghex import expose_cpp_ptr
     
     import mpi4py
     mpi4py.rc.initialize = False
@@ -465,10 +466,10 @@ class GHexMultiNodeExchange(SDFGConvertible):
         return sdfg
 
     def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        return {'__context_ptr':ghex.expose_cpp_ptr(self._context),
-                '__comm_ptr':ghex.expose_cpp_ptr(self._comm),
-                **{f"__pattern_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._patterns[dim]) for dim in (CellDim, VertexDim, EdgeDim)},
-                **{f"__domain_descriptor_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._domain_descriptors[dim]) for dim in (CellDim, VertexDim, EdgeDim)},
+        return {'__context_ptr':expose_cpp_ptr(self._context),
+                '__comm_ptr':expose_cpp_ptr(self._comm),
+                **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(self._patterns[dim]) for dim in (CellDim, VertexDim, EdgeDim)},
+                **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(self._domain_descriptors[dim].__wrapped__) for dim in (CellDim, VertexDim, EdgeDim)},
                 #
                 **{f"__gids_{ind.name}_{dim.value}":self._decomposition_info.global_index(dim, ind) for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
                 }
