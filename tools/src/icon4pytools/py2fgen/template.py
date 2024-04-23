@@ -196,6 +196,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
         """\
 # imports for generated wrapper code
 import logging
+import math
 from {{ plugin_name }} import ffi
 import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
