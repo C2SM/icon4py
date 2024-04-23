@@ -261,6 +261,10 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_v2e,
         )
 
+        """
+        vt (0:nlev-1):
+            Compute tangential velocity at half levels (edge center) by RBF interpolation from four neighboring edges (diamond shape) and projected to tangential direction.
+        """
         self.stencil_compute_tangential_wind(
             vn=prognostic_state.vn,
             rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
@@ -272,6 +276,12 @@ class VelocityAdvection:
             offset_provider=self.offset_provider_e2c2e,
         )
 
+        """
+        vn_ie (1:nlev-1):
+            Compute normal velocity at half levels (edge center) simply by interpolating two neighboring normal velocity at full levels.
+        z_kin_hor_e (1:nlev-1):
+            Compute the horizontal kinetic energy (vn^2 + vt^2) at full levels (edge center).
+        """
         self.stencil_interpolate_vn_to_ie_and_compute_ekin_on_edges(
             wgtfac_e=self.metric_state.wgtfac_e,
             vn=prognostic_state.vn,
@@ -343,6 +353,10 @@ class VelocityAdvection:
                 offset_provider=self.offset_provider_e2c_e2v,
             )
 
+        """
+        z_ekinh (0:nlev-1):
+            Interpolate the horizon kinetic energy (vn^2 + vt^2) at full levels from edge center (three neighboring edges) to cell center.
+        """
         self.stencil_interpolate_to_cell_center(
             interpolant=z_kin_hor_e,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,

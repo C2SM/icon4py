@@ -44,12 +44,93 @@ class IconRunConfig:
 
 
 @dataclass(frozen=True)
+class VariableAttributes:
+    units: str = ' '
+    standard_name: str = ' '
+    long_name: str = ' '
+    CDI_grid_type: str = ' '
+    param: str = ' '
+    number_of_grid_in_reference: str = ' '
+    coordinates: str = ' '
+    scope: str = ' '
+
+from abc import ABC
+from icon4py.model.common.utils import builder
+class OutputVariableList(ABC):
+    variable_name = (
+        'vn',
+        'w',
+        'rho',
+        'theta_v',
+        'exner'
+    )
+    variable_attribute = {
+        'vn': VariableAttributes(
+            units='m s-1',
+            standard_name='normal velocity',
+            long_name='normal velocity at edge center',
+            CDI_grid_type='unstructured',
+            param='0.0.0',
+            number_of_grid_in_reference='1',
+            coordinates='elat elon',
+            scope= 'prognostic',
+        ),
+        'w': VariableAttributes(
+            units='m s-1',
+            standard_name='normal velocity',
+            long_name='normal velocity at edge center',
+            CDI_grid_type='unstructured',
+            param='0.0.0',
+            number_of_grid_in_reference='1',
+            coordinates='elat elon',
+            scope='prognostic',
+        ),
+        'rho': VariableAttributes(
+            units='m s-1',
+            standard_name='normal velocity',
+            long_name='normal velocity at edge center',
+            CDI_grid_type='unstructured',
+            param='0.0.0',
+            number_of_grid_in_reference='1',
+            coordinates='elat elon',
+            scope='prognostic',
+        ),
+        'theta_v': VariableAttributes(
+            units='m s-1',
+            standard_name='normal velocity',
+            long_name='normal velocity at edge center',
+            CDI_grid_type='unstructured',
+            param='0.0.0',
+            number_of_grid_in_reference='1',
+            coordinates='elat elon',
+            scope='prognostic',
+        ),
+        'exner': VariableAttributes(
+            units='m s-1',
+            standard_name='normal velocity',
+            long_name='normal velocity at edge center',
+            CDI_grid_type='unstructured',
+            param='0.0.0',
+            number_of_grid_in_reference='1',
+            coordinates='elat elon',
+            scope='prognostic',
+        ),
+    }
+
+    @builder
+    def add_new_variable(
+        self, variable_name: str, variable_attribute: VariableAttributes
+    ):
+        self.variable_name = self.variable_name + (variable_name,)
+        self.variable_attribute[variable_name] = variable_attribute
+
+@dataclass(frozen=True)
 class IconOutputConfig:
     output_time_interval: timedelta = timedelta(minutes=1)
     output_file_time_interval: timedelta = timedelta(minutes=1)
     output_path: Path = Path("./")
     output_initial_condition_as_a_separate_file: bool = False
-
+    output_variable_list: OutputVariableList = OutputVariableList()
 
 @dataclass
 class IconConfig:
@@ -141,6 +222,34 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     def _Jablownoski_Williamson_config():
+        output_variable_list = (OutputVariableList()
+                                .add_new_variable(
+                                    'temperature',
+                                    VariableAttributes(
+                                        units='K',
+                                        standard_name='temperauture',
+                                        long_name='air temperauture',
+                                        CDI_grid_type='unstructured',
+                                        param='0.0.0',
+                                        number_of_grid_in_reference='1',
+                                        coordinates='clat clon',
+                                        scope='diagnostic',
+                                    )
+                                )
+                                .add_new_variable(
+                                    'temperature',
+                                    VariableAttributes(
+                                        units='K',
+                                        standard_name='temperauture',
+                                        long_name='air temperauture',
+                                        CDI_grid_type='unstructured',
+                                        param='0.0.0',
+                                        number_of_grid_in_reference='1',
+                                        coordinates='clat clon',
+                                        scope='diagnostic',
+                                    )
+                                )
+                                )
         icon_run_config = IconRunConfig(
             dtime=60.0,
             end_date=datetime(1, 1, 1, 0, 1, 0),

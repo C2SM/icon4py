@@ -101,6 +101,7 @@ class OutputState:
         diagnostic_state: DiagnosticState,
     ):
         self.config: IconOutputConfig = output_config
+        #self.variable_list =
         self._output_date = start_date
         self._first_date_in_this_ncfile = start_date
         # compute number of output files
@@ -149,6 +150,19 @@ class OutputState:
     @property
     def current_time_step(self):
         return self._current_write_step
+
+    """
+    def _set_variable_atrribute(self):
+        for i in range(self._number_of_files):
+            self._nf4_basegrp[i].variable[self.] =
+            nf4_variable.units =
+            nf4_variable.standard_name =
+            nf4_variable.long_name =
+            nf4_variable.CDI_grid_type =
+            nf4_variable.param =
+            nf4_variable.number_of_grid_in_reference =
+            nf4_variable.coordinates =
+    """
 
     def _create_variables(self):
         for i in range(self._number_of_files):
@@ -449,6 +463,7 @@ class OutputState:
                     "ncells_2",
                 ),
             )
+
             intermediate_predictor_theta_v_e.units = "K"
             intermediate_predictor_theta_v_e.standard_name = "predictor_theta_v"
             intermediate_predictor_theta_v_e.long_name = "theta_v in predictor step"

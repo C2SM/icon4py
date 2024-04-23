@@ -122,6 +122,8 @@ def model_initialization_jabw(
     fname_prefix: str,
     rank=0,
 ):
+    print("DEBUG::, ", icon_grid.start_indices)
+    print("DEBUG::, ", HorizontalMarkerIndex.lateral_boundary(EdgeDim))
     data_provider = sb.IconSerialDataProvider(
         fname_prefix, str(path.absolute()), False, mpi_rank=rank
     )
