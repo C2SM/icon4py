@@ -73,6 +73,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+import numpy as np
 import dace
 from dace import hooks, dtypes
 from dace.config import Config
