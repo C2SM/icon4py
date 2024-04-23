@@ -83,7 +83,7 @@ from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeEx
 from icon4py.model.common.decomposition import definitions, mpi_decomposition
 from icon4py.model.common.decomposition.definitions import DecompositionInfo as di
 try:
-    import ghex
+    from ghex import expose_cpp_ptr
     import mpi4py
     from dace.sdfg.utils import distributed_compile
 except ImportError:
@@ -893,10 +893,10 @@ def dace_jit(self):
                 
                 kwargs.update({
                                 # GHEX C++ ptrs
-                                "__context_ptr":ghex.expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
-                                "__comm_ptr":ghex.expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
-                                **{f"__pattern_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._patterns[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
-                                **{f"__domain_descriptor_{dim.value}Dim_ptr":ghex.expose_cpp_ptr(self._exchange._domain_descriptors[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+                                "__context_ptr":expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
+                                "__comm_ptr":expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
+                                **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(self._exchange._patterns[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+                                **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(self._exchange._domain_descriptors[dim].__wrapped__) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
                                 # offset providers
                                 **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
                                 #

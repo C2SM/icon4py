@@ -24,10 +24,14 @@ from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
 
 try:
-    import ghex
-    import ghex.unstructured as unstructured
+    from ghex.context import make_context
+    from ghex.unstructured import make_communication_object
+    from ghex.unstructured import DomainDescriptor
+    from ghex.unstructured import HaloGenerator
+    from ghex.unstructured import make_pattern
+    from ghex.unstructured import make_field_descriptor
+    
     import mpi4py
-
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
 
@@ -138,8 +142,8 @@ class GHexMultiNodeExchange(SDFGConvertible):
         self,
         props: definitions.ProcessProperties,
         domain_decomposition: definitions.DecompositionInfo,
-    ):
-        self._context = ghex.context(ghex.mpi_comm(props.comm), False)
+    ):  
+        self._context = make_context(props.comm, False)
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
@@ -159,7 +163,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
             EdgeDim: self._create_pattern(EdgeDim),
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = unstructured.make_co(self._context)
+        self._comm = make_communication_object(self._context)
 
         self.max_num_of_fields_to_communicate = 10 # maximum number of fields to perform halo exchange on (DaCe-related)
         self.return_sdfg = False # DaCe-related
@@ -186,7 +190,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         # first arg is the domain ID which builds up an MPI Tag.
         # if those ids are not different for all domain descriptors the system might deadlock
         # if two parallel exchanges with the same domain id are done
-        domain_desc = unstructured.domain_descriptor(
+        domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
         log.debug(
@@ -200,9 +204,9 @@ class GHexMultiNodeExchange(SDFGConvertible):
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, definitions.DecompositionInfo.EntryType.HALO
         )
-        halo_generator = unstructured.halo_generator_with_gids(global_halo_idx)
+        halo_generator = HaloGenerator.from_gids(global_halo_idx)
         log.debug(f"halo generator for dim='{horizontal_dim.value}' created")
-        pattern = unstructured.make_pattern(
+        pattern = make_pattern(
             self._context,
             halo_generator,
             [self._domain_descriptors[horizontal_dim]],
@@ -219,7 +223,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(unstructured.field_descriptor(domain_descriptor, f.asnumpy())) for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f.asnumpy())) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
         log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
