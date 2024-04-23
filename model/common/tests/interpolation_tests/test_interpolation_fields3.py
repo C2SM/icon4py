@@ -59,7 +59,10 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     ranked_data_path,
 )
 from icon4py.model.common.test_utils.helpers import zero_field
-
+from icon4py.model.common.test_utils.datatest_utils import (
+    GLOBAL_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+)
 
 @pytest.mark.datatest
 def test_compute_ddxn_z_full_e(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):  # fixture
@@ -78,7 +81,7 @@ def test_compute_ddxn_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
     )
     vertical_start = 0
-    vertical_end = 66
+    vertical_end = icon_grid.num_levels + 1
     ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
     compute_ddxn_z_half_e(
         z_ifc,
@@ -188,6 +191,7 @@ def test_compute_ddxt_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
     assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", (REGIONAL_EXPERIMENT,GLOBAL_EXPERIMENT))
 def test_compute_ddqz_z_full_e(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
     inv_ddqz_z_full = metrics_savepoint.inv_ddqz_z_full()
     c_lin_e = interpolation_savepoint.c_lin_e()
@@ -220,8 +224,9 @@ def test_compute_ddqz_z_full_e(grid_savepoint, interpolation_savepoint, icon_gri
         HorizontalMarkerIndex.lateral_boundary(EdgeDim)  - 1,
     )
     vertical_start = 0
-    vertical_end = 65
+    vertical_end = icon_grid.num_levels
     ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
+#    if icon_grid.limited_area
     compute_cells2edges_scalar(
         inv_ddqz_z_full,
         c_lin_e,
