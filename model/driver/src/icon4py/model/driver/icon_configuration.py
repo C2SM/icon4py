@@ -13,7 +13,6 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
@@ -118,7 +117,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=300.0,
+            dtime=timedelta(seconds=300.0),
             end_date=datetime(1, 1, 1, 0, 30, 0),
             damping_height=45000.0,
             apply_initial_stabilization=True,

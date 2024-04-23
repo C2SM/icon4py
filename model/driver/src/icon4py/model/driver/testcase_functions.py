@@ -143,7 +143,7 @@ def hydrostatic_adjustment_numpy(
     return rho, exner, theta_v
 
 
-# TODO (Chia Rui): Construct a proper test for these diagnostic stencils
+# TODO (Chia Rui): Construct a proper test for these diagnostic stencils?
 def diagnose_temperature_numpy(
     theta_v: np.array,
     exner: np.array,

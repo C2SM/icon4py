@@ -184,16 +184,14 @@ class TimeLoop:
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
-            log.info(
-                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
-            )
+            log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
                 f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.5e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.5e}"
             )
             log.info(
                 f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.5e}"
             )
-            # TODO (Chia Rui): print out max and min of some variables after discussion with Anurag.
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
             self._next_simulation_date()
 
@@ -416,7 +414,7 @@ def initialize(
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
 @click.option(
     "--serialization_type",
-    default=str(SerializationType.SB),#"serialbox"
+    default=str(SerializationType.SB),  # "serialbox"
     help="serialization type for grid info and static fields",
 )
 @click.option("--experiment_type", default="any", help="experiment selection")

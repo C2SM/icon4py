@@ -50,7 +50,6 @@ from icon4py.model.common.dimension import (
     CellDim,
     EdgeDim,
     KDim,
-    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
@@ -450,7 +449,7 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
 
     diagnostic_state = DiagnosticState(
         pressure=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
         temperature=_allocate(CellDim, KDim, grid=icon_grid),
         pressure_sfc=_allocate(CellDim, grid=icon_grid),
         u=_allocate(CellDim, KDim, grid=icon_grid),
@@ -681,13 +680,6 @@ def read_static_fields(
                 ddqz_z_full=metrics_savepoint.ddqz_z_full(),
                 rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
                 rbf_vec_coeff_c2=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(),
-                cell_center_lat=data_provider.from_savepoint_grid().cell_center_lat(),
-                cell_center_lon=data_provider.from_savepoint_grid().cell_center_lon(),
-                v_lat=data_provider.from_savepoint_grid().v_lat(),
-                v_lon=data_provider.from_savepoint_grid().v_lon(),
-                e_lat=data_provider.from_savepoint_grid().edge_center_lat(),
-                e_lon=data_provider.from_savepoint_grid().edge_center_lon(),
-                vct_a=data_provider.from_savepoint_grid().vct_a(),
             )
         else:
             # ddqz_z_full is not serialized for mch_ch_r04b09_dsl and exclaim_ape_R02B04
@@ -695,13 +687,6 @@ def read_static_fields(
                 ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
                 rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
                 rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
-                cell_center_lat=_allocate(CellDim, grid=icon_grid, dtype=float),
-                cell_center_lon=_allocate(CellDim, grid=icon_grid, dtype=float),
-                v_lat=_allocate(VertexDim, grid=icon_grid, dtype=float),
-                v_lon=_allocate(VertexDim, grid=icon_grid, dtype=float),
-                e_lat=_allocate(EdgeDim, grid=icon_grid, dtype=float),
-                e_lon=_allocate(EdgeDim, grid=icon_grid, dtype=float),
-                vct_a=_allocate(KDim, grid=icon_grid, is_halfdim=True, dtype=float),
             )
 
         return (
