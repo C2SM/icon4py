@@ -47,7 +47,7 @@ from icon4py.model.atmosphere.diffusion.helpers import (
     update_theta_and_exner,
     copy_field,
     mo_intp_rbf_rbf_vec_interpol_vertex_1,
-    mo_intp_rbf_rbf_vec_interpol_vertex_2
+    mo_intp_rbf_rbf_vec_interpol_vertex_2,
 )
 
 from icon4py.model.common.constants import (

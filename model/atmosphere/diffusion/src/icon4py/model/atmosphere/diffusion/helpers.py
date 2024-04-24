@@ -13,6 +13,7 @@
 
 import dataclasses
 from typing import Any, Callable, Optional
+
 import numpy as np
 from gt4py import next as gtx
 
@@ -22,7 +23,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     scale_k as scale_k_orig,
     setup_fields_for_initial_step as setup_fields_for_initial_step_orig,
 )
-
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import (
     apply_diffusion_to_vn as apply_diffusion_to_vn_orig,
 )
@@ -98,7 +98,7 @@ class CachedProgram:
 
         # Call the compiled program with all args followed by their sizes
         return self.compiled_program(*program_args, *sizes, offset_provider=offset_provider)
-        
+
 
 # diffusion run stencils
 apply_diffusion_to_vn = CachedProgram(apply_diffusion_to_vn_orig)

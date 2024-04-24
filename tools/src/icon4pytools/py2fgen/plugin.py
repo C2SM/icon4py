@@ -11,11 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import math
 import typing
 from pathlib import Path
 
 import cffi
-import math
 import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray

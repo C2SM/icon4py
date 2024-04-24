@@ -30,6 +30,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
     p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(V2E), axis=V2EDim)
     return p_u_out, p_v_out
 
+
 # We temporarility define two here for caching reasons, until we can stop passing sizes to the toolchain
 # as this stencil is used more than once in diffusion.
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -54,6 +55,7 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_1(
             KDim: (vertical_start, vertical_end),
         },
     )
+
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_intp_rbf_rbf_vec_interpol_vertex_2(
