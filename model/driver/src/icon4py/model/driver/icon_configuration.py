@@ -83,22 +83,28 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     def gauss3d_diffusion_config(n_substeps: int):
-        return DiffusionConfig(
-            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            zdiffu_t=True,
-            hdiff_vn=True,
-            hdiff_temp=False,
-            hdiff_w=False,
-            n_substeps=n_substeps,
-            hdiff_rcf=True,
-            type_t_diffu=2,
-            type_vn_diffu=1,
-            hdiff_efdt_ratio=10.0,
-            hdiff_w_efdt_ratio=15.0,
-            smagorinski_scaling_factor=0.025,
-            velocity_boundary_diffusion_denom=200.0,
-            max_nudging_coeff=0.075,
-        )
+        # return DiffusionConfig(
+        #     diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+        #     #zdiffu_t=True,
+        #     #hdiff_vn=True,
+        #     #hdiff_temp=False,
+        #     #hdiff_w=False,
+        #     #hdiff_rcf=True,
+        #     ##zdiffu_t=False,
+        #     hdiff_vn=False,
+        #     hdiff_temp=False,
+        #     hdiff_w=False,
+        #     hdiff_rcf=False,
+        #     n_substeps=n_substeps,
+        #     type_t_diffu=2,
+        #     type_vn_diffu=1,
+        #     hdiff_efdt_ratio=10.0,
+        #     hdiff_w_efdt_ratio=15.0,
+        #     smagorinski_scaling_factor=0.025,
+        #     velocity_boundary_diffusion_denom=200.0,
+        #     max_nudging_coeff=0.075,
+        # )
+        return DiffusionConfig()
 
     def jabw_diffusion_config(n_substeps: int):
         return DiffusionConfig(
@@ -171,7 +177,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         icon_run_config = IconRunConfig(
             dtime=4.0,
             end_date=datetime(1, 1, 1, 0, 1, 0),
-            damping_height=10000.0,
+            damping_height=45000.0,
             apply_initial_stabilization=True,
             run_testcase=True,
             n_substeps=5,
