@@ -47,7 +47,18 @@ def grad_fd_tang(
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e
 
-@field_operator
+@program
+def compute_ddxn_z_half_e(
+    z_ifc: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    ddxn_z_half_e: Field[[EdgeDim, KDim], float],
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32, 
+    vertical_upper: int32,
+) :
+    grad_fd_norm(z_ifc, inv_dual_edge_length, out=ddxn_z_half_e, domain={EdgeDim: (horizontal_lower, horizontal_upper), KDim: (vertical_lower, vertical_upper)})
+    
 def compute_ddxn_z_half_e(
     z_ifc: Field[[CellDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
