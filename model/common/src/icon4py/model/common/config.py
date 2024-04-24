@@ -22,7 +22,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
 )
-from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
+from gt4py.next.program_processors.runners.roundtrip import default as run_roundtrip
 
 
 class Device(Enum):
