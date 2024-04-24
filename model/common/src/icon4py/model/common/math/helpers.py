@@ -42,12 +42,12 @@ def average_ek_level_up(
     """
     Calculate the mean value of adjacent interface levels.
 
-    Computes the average of two adjacent interface levels upwards over a cell field for storage
+    Computes the average of two adjacent interface levels upwards over an edge field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[[CellDim, KDim], wpfloat]
+        half_level_field: Field[[EdgeDim, KDim], wpfloat]
 
-    Returns: Field[[CellDim, KDim], wpfloat] full level field
+    Returns: Field[[EdgeDim, KDim], wpfloat] full level field
 
     """
     return 0.5 * (half_level_field + half_level_field(Koff[1]))
