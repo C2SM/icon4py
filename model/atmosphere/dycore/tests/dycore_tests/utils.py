@@ -39,7 +39,6 @@ def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
         rayleigh_coeff=0.1,
         divdamp_order=24,
         ndyn_substeps_var=ndyn_substeps,
-        ltestcase=True,
     )
 
 

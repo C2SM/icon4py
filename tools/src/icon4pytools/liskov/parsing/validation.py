@@ -41,7 +41,7 @@ class Validator(Protocol):
 
 
 def _extract_arg_from_directive(directive: str, arg: str) -> str:
-    match = re.search(f"{arg}\s*=\s*([^\s;)]+)", directive)
+    match = re.search(rf"{arg}\s*=\s*([^\s;)]+)", directive)
     if match:
         return match.group(1)
     else:
@@ -122,6 +122,8 @@ class DirectiveSemanticsValidator:
                 parse.EndCreate,
                 parse.StartStencil,
                 parse.EndStencil,
+                parse.StartFusedStencil,
+                parse.EndFusedStencil,
                 parse.EndIf,
                 parse.EndProfile,
                 parse.StartProfile,
