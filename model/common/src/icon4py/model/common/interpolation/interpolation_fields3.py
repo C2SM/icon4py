@@ -1,4 +1,6 @@
 # icon4pY - icon INSPIRED CODE IN pYTHON AND gt4Py
+# TODO: This license is not consistent with license used in the project.
+#       Delete the inconsistent license and above line and rerun pre-commit to insert a good license.
 #
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
@@ -24,28 +26,28 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next import where, neighbor_sum
-from gt4py.next.ffront.decorator import field_operator
-from gt4py.next.ffront.fbuiltins import Field
+from gt4py.next import Field, field_operator, int32, program
 
-from icon4py.model.common.dimension import C2E, E2C, V2E, E2V, V2C, C2EDim, CellDim, E2CDim, EdgeDim, V2EDim, V2CDim, VertexDim, KDim, Koff
+from icon4py.model.common.dimension import (
+    E2V,
+    CellDim,
+    EdgeDim,
+    KDim,
+    Koff,
+    VertexDim,
+)
+from icon4py.model.common.math.helpers import grad_fd_norm
+
 
 @field_operator
-def grad_fd_norm(
-    psi_c: Field[[CellDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
-    return grad_norm_psi_e
-
-@field_operator
-def grad_fd_tang(
+def _grad_fd_tang(
     psi_v: Field[[VertexDim, KDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
     tangent_orientation: Field[[EdgeDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e
+
 
 @program
 def compute_ddxn_z_half_e(
@@ -54,41 +56,50 @@ def compute_ddxn_z_half_e(
     ddxn_z_half_e: Field[[EdgeDim, KDim], float],
     horizontal_lower: int32,
     horizontal_upper: int32,
-    vertical_lower: int32, 
+    vertical_lower: int32,
     vertical_upper: int32,
-) :
-    grad_fd_norm(z_ifc, inv_dual_edge_length, out=ddxn_z_half_e, domain={EdgeDim: (horizontal_lower, horizontal_upper), KDim: (vertical_lower, vertical_upper)})
-    
-def compute_ddxn_z_half_e(
-    z_ifc: Field[[CellDim, KDim], float],
-    inv_dual_edge_length: Field[[EdgeDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    ddxn_z_half_e = grad_fd_norm(z_ifc, inv_dual_edge_length)
-    return ddxn_z_half_e
+):
+    grad_fd_norm(
+        z_ifc,
+        inv_dual_edge_length,
+        out=ddxn_z_half_e,
+        domain={
+            EdgeDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper),
+        },
+    )
 
-@field_operator
+
+@program
 def compute_ddxt_z_half_e(
     z_ifv: Field[[VertexDim, KDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
     tangent_orientation: Field[[EdgeDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    ddxt_z_half_e = grad_fd_tang(z_ifv, inv_primal_edge_length, tangent_orientation)
-    return ddxt_z_half_e
+    ddxt_z_half_e: Field[[EdgeDim, KDim], float],
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
+):
+    _grad_fd_tang(
+        z_ifv,
+        inv_primal_edge_length,
+        tangent_orientation,
+        out=ddxt_z_half_e,
+        domain={
+            EdgeDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper),
+        },
+    )
+
 
 @field_operator
-def compute_ddxnt_z_full(
+def _compute_ddxnt_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     ddxnt_z_full = 0.5 * (z_ddxnt_z_half_e + z_ddxnt_z_half_e(Koff[1]))
     return ddxnt_z_full
 
-@field_operator
-def compute_cells2verts_scalar(
-    p_cell_in: Field[[CellDim, KDim], float],
-    c_int: Field[[VertexDim, V2CDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)
-    return p_vert_out
 
 def compute_cells_aw_verts(
     dual_area: np.array,
@@ -99,35 +110,24 @@ def compute_cells_aw_verts(
     v2c: np.array,
     v2e: np.array,
     e2v: np.array,
-    second_boundary_layer_start_index: np.int32,
-    second_boundary_layer_end_index: np.int32,
+    horizontal_start: np.int32,
+    horizontal_end: np.int32,
 ) -> np.array:
-    llb = second_boundary_layer_start_index
-    cells_aw_verts = np.zeros([second_boundary_layer_end_index, 6])
-    index = np.zeros([second_boundary_layer_end_index, 6])
-    for j in range (6):
-        index[:, j] = np.arange(second_boundary_layer_end_index)
+    llb = horizontal_start
+    cells_aw_verts = np.zeros([horizontal_end, 6])
+    index = np.repeat(np.arange(horizontal_end, dtype=float), 6).reshape(horizontal_end, 6)
     idx_ve = np.where(index == e2v[v2e, 0], 0, 1)
 
     for i in range(2):
-        for j in range (6):
-            for k in range (6):
-                cells_aw_verts[llb:, k] = np.where(np.logical_and(owner_mask[:], e2c[v2e[llb:, j], i] == v2c[llb:, k]), cells_aw_verts[llb:, k] + 0.5 / dual_area[llb:] * edge_vert_length[v2e[llb:, j], idx_ve[llb:, j]] * edge_cell_length[v2e[llb:, j], i], cells_aw_verts[llb:, k])
+        for j in range(6):
+            for k in range(6):
+                cells_aw_verts[llb:, k] = np.where(
+                    np.logical_and(owner_mask[:], e2c[v2e[llb:, j], i] == v2c[llb:, k]),
+                    cells_aw_verts[llb:, k]
+                    + 0.5
+                    / dual_area[llb:]
+                    * edge_vert_length[v2e[llb:, j], idx_ve[llb:, j]]
+                    * edge_cell_length[v2e[llb:, j], i],
+                    cells_aw_verts[llb:, k],
+                )
     return cells_aw_verts
-
-#@field_operator
-#def compute_cells_aw_verts_new(
-#    dual_area: Field[VertexDim, float],
-#    edge_vert_length: Field[[EdgeDim, V2CDim], float],
-#    edge_cell_length: Field[[EdgeDim, E2CDim], float],
-#) -> Field[[VertexDim, V2CDim], float]:
-#    cells_aw_verts = 0.5 * neighbor_sum(where(E2C(V2E) == V2C, neighbor_sum(edge_vert_length(V2E) * edge_cell_length(V2E) / dual_area, axis=V2EDim), 0.0), axis=E2CDim)
-#    return cells_aw_verts
-
-@field_operator
-def compute_cells2edges_scalar(
-    inv_p_cell_in: Field[[CellDim, KDim], float],
-    c_int: Field[[EdgeDim, E2CDim], float],
-) -> Field[[EdgeDim, KDim], float]:
-    p_vert_out = neighbor_sum(c_int / inv_p_cell_in(E2C), axis=E2CDim)
-    return p_vert_out

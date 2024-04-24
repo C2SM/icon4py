@@ -13,7 +13,7 @@
 
 from gt4py.next import Field, field_operator
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim, Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -69,3 +69,23 @@ def difference_k_level_up(
 
     """
     return half_level_field - half_level_field(Koff[1])
+
+
+@field_operator
+def grad_fd_norm(
+    psi_c: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    """
+    Calculate the gradient value of adjacent interface levels.
+
+    Computes the difference of two offseted values multiplied by a field of the offseted dimension
+    Args:
+        psi_c: Field[[CellDim, KDim], float],
+        inv_dual_edge_length: Field[[EdgeDim], float],
+
+    Returns: Field[[EdgeDim, KDim], float]
+
+    """
+    grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
+    return grad_norm_psi_e
