@@ -29,12 +29,21 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field,
-    init_diffusion_local_fields_for_regular_timestep,
+    #init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
-    scale_k,
-    setup_fields_for_initial_step,
+    #scale_k,
+    #setup_fields_for_initial_step,
     zero_field,
 )
+
+# cached program import
+from icon4py.model.atmosphere.diffusion.helpers import (
+    init_diffusion_local_fields_for_regular_timestep,
+    setup_fields_for_initial_step,
+    scale_k,
+    calculate_nabla2_and_smag_coefficients_for_vn
+)
+
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
@@ -45,9 +54,9 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities
 from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
     calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
 )
-from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
-    calculate_nabla2_and_smag_coefficients_for_vn,
-)
+# from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
+#     calculate_nabla2_and_smag_coefficients_for_vn,
+# )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_theta import (
     calculate_nabla2_for_theta,
 )
