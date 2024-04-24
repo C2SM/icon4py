@@ -27,25 +27,28 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.atmosphere.diffusion.diffusion_utils import (
+    init_nabla2_factor_in_upper_damping_zone,
+    zero_field,
+)
 
+# cached program import
 from icon4py.model.atmosphere.diffusion.helpers import (
-    apply_diffusion_to_vn,
-    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-    calculate_diagnostic_quantities_for_turbulence,
-    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
+    init_diffusion_local_fields_for_regular_timestep,
+    setup_fields_for_initial_step,
+    scale_k,
     calculate_nabla2_and_smag_coefficients_for_vn,
     calculate_nabla2_for_theta,
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
+    apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
+    apply_diffusion_to_vn,
+    calculate_diagnostic_quantities_for_turbulence,
+    calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
     update_theta_and_exner,
-    mo_intp_rbf_rbf_vec_interpol_vertex_1,
-    mo_intp_rbf_rbf_vec_interpol_vertex_2,
     copy_field,
-    scale_k,
-    init_diffusion_local_fields_for_regular_timestep,
-    setup_fields_for_initial_step
-    )
-
-from icon4py.model.atmosphere.diffusion.diffusion_utils import zero_field, init_nabla2_factor_in_upper_damping_zone
+    mo_intp_rbf_rbf_vec_interpol_vertex_1,
+    mo_intp_rbf_rbf_vec_interpol_vertex_2
+)
 
 from icon4py.model.common.constants import (
     CPD,
@@ -686,7 +689,7 @@ class Diffusion:
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex_2(
+        mo_intp_rbf_rbf_vec_interpol_vertex_1(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,

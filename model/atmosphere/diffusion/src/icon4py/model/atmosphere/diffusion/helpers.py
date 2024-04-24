@@ -13,7 +13,7 @@
 
 import dataclasses
 from typing import Any, Callable, Optional
-
+import numpy as np
 from gt4py import next as gtx
 
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -56,6 +56,7 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 @dataclasses.dataclass
 class CachedProgram:
     program: gtx.ffront.decorator.Program
+    with_domain: bool = True
     _compiled_program: Optional[Callable] = None
     _compiled_args: tuple = dataclasses.field(default_factory=tuple)
 
@@ -80,8 +81,24 @@ class CachedProgram:
                 *args, offset_provider=offset_provider, **kwargs
             )
 
-        size_args = self._compiled_args[len(args) :]
-        return self.compiled_program(*args, *size_args, offset_provider=offset_provider)
+        kwargs_as_tuples = tuple(kwargs.values())
+        program_args = list(args) + list(kwargs_as_tuples)
+
+        # Convert numpy integers in args to int
+        for i in range(len(program_args)):
+            if isinstance(program_args[i], np.integer):
+                program_args[i] = int(program_args[i])
+
+        # Append sizes of common.Field instances at the end in the order they appear
+        sizes = []
+        if not self.with_domain:
+            for arg in program_args:
+                if isinstance(arg, gtx.common.Field):
+                    sizes.extend(arg.shape)
+
+        # Call the compiled program with all args followed by their sizes
+        return self.compiled_program(*program_args, *sizes, offset_provider=offset_provider)
+        
 
 # diffusion run stencils
 apply_diffusion_to_vn = CachedProgram(apply_diffusion_to_vn_orig)
@@ -109,9 +126,9 @@ mo_intp_rbf_rbf_vec_interpol_vertex_2 = CachedProgram(mo_intp_rbf_rbf_vec_interp
 
 
 # model init stencils
-setup_fields_for_initial_step = CachedProgram(setup_fields_for_initial_step_orig)
-copy_field = CachedProgram(copy_field_orig)
+setup_fields_for_initial_step = CachedProgram(setup_fields_for_initial_step_orig, with_domain=False)
+copy_field = CachedProgram(copy_field_orig, with_domain=False)
 init_diffusion_local_fields_for_regular_timestep = CachedProgram(
-    init_diffusion_local_fields_for_regular_timestep_orig
+    init_diffusion_local_fields_for_regular_timestep_orig, with_domain=False
 )
-scale_k = CachedProgram(scale_k_orig)
+scale_k = CachedProgram(scale_k_orig, with_domain=False)
