@@ -133,7 +133,7 @@ def test_compute_ddxt_z_full_e(
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
     )
     vertical_start = 0
-    vertical_end = 66
+    vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
