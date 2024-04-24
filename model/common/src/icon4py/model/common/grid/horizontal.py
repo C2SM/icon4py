@@ -357,17 +357,17 @@ class RefinCtrlLevel:
 
 
 @field_operator
-def _compute_cells2edges_scalar(
-    inv_p_cell_in: Field[[CellDim, KDim], float],
+def _compute_cells2edges(
+    p_cell_in: Field[[CellDim, KDim], float],
     c_int: Field[[EdgeDim, E2CDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
-    p_vert_out = neighbor_sum(c_int / inv_p_cell_in(E2C), axis=E2CDim)
+    p_vert_out = neighbor_sum(c_int * p_cell_in(E2C), axis=E2CDim)
     return p_vert_out
 
 
 @program
-def compute_cells2edges_scalar(
-    inv_p_cell_in: Field[[CellDim, KDim], float],
+def compute_cells2edges(
+    p_cell_in: Field[[CellDim, KDim], float],
     c_int: Field[[EdgeDim, E2CDim], float],
     p_vert_out: Field[[EdgeDim, KDim], float],
     horizontal_start_edge: int32,
@@ -375,8 +375,8 @@ def compute_cells2edges_scalar(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_cells2edges_scalar(
-        inv_p_cell_in,
+    _compute_cells2edges(
+        p_cell_in,
         c_int,
         out=p_vert_out,
         domain={
@@ -387,7 +387,7 @@ def compute_cells2edges_scalar(
 
 
 @field_operator
-def _compute_cells2verts_scalar(
+def _compute_cells2verts(
     p_cell_in: Field[[CellDim, KDim], float],
     c_int: Field[[VertexDim, V2CDim], float],
 ) -> Field[[VertexDim, KDim], float]:

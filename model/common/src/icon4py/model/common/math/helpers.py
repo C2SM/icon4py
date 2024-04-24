@@ -13,14 +13,32 @@
 
 from gt4py.next import Field, field_operator
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def average_k_level_up(
+def average_ck_level_up(
     half_level_field: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
+    """
+    Calculate the mean value of adjacent interface levels.
+
+    Computes the average of two adjacent interface levels upwards over a cell field for storage
+    in the corresponding full levels.
+    Args:
+        half_level_field: Field[[CellDim, KDim], wpfloat]
+
+    Returns: Field[[CellDim, KDim], wpfloat] full level field
+
+    """
+    return 0.5 * (half_level_field + half_level_field(Koff[1]))
+
+
+@field_operator
+def average_ek_level_up(
+    half_level_field: Field[[EdgeDim, KDim], wpfloat],
+) -> Field[[EdgeDim, KDim], wpfloat]:
     """
     Calculate the mean value of adjacent interface levels.
 
@@ -89,3 +107,13 @@ def grad_fd_norm(
     """
     grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
     return grad_norm_psi_e
+
+
+@field_operator
+def _grad_fd_tang(
+    psi_v: Field[[VertexDim, KDim], float],
+    inv_primal_edge_length: Field[[EdgeDim], float],
+    tangent_orientation: Field[[EdgeDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
+    return grad_tang_psi_e
