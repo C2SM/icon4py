@@ -16,6 +16,8 @@ jobs:
             - uses: actions/checkout@v3
             -   name: Install system dependencies
                 run: |
+                    # TODO add again when https://github.com/orgs/community/discussions/120966 is fixed
+                    # sudo apt-get update
                     sudo apt-get install libboost-all-dev
             - name: Set up Python
               uses: actions/setup-python@v4
