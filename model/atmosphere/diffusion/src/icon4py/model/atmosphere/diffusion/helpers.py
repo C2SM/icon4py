@@ -47,10 +47,10 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner as update_theta_and_exner_orig,
 )
-# from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-#     mo_intp_rbf_rbf_vec_interpol_vertex_1 as mo_intp_rbf_rbf_vec_interpol_vertex_orig_1,
-#     mo_intp_rbf_rbf_vec_interpol_vertex_2 as mo_intp_rbf_rbf_vec_interpol_vertex_orig_2,
-# )
+from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
+    mo_intp_rbf_rbf_vec_interpol_vertex_1 as mo_intp_rbf_rbf_vec_interpol_vertex_orig_1,
+    mo_intp_rbf_rbf_vec_interpol_vertex_2 as mo_intp_rbf_rbf_vec_interpol_vertex_orig_2,
+)
 
 
 @dataclasses.dataclass
@@ -120,14 +120,14 @@ truly_horizontal_diffusion_nabla_of_theta_over_steep_points = CachedProgram(
 )
 update_theta_and_exner = CachedProgram(update_theta_and_exner_orig)
 
-# mo_intp_rbf_rbf_vec_interpol_vertex_1 = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig_1)
+mo_intp_rbf_rbf_vec_interpol_vertex_1 = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig_1)
 
-# mo_intp_rbf_rbf_vec_interpol_vertex_2 = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig_2)
+mo_intp_rbf_rbf_vec_interpol_vertex_2 = CachedProgram(mo_intp_rbf_rbf_vec_interpol_vertex_orig_2)
 
 
 # model init stencils
 setup_fields_for_initial_step = CachedProgram(setup_fields_for_initial_step_orig, with_domain=False)
-copy_field = CachedProgram(copy_field_orig)
+copy_field = CachedProgram(copy_field_orig, with_domain=False)
 init_diffusion_local_fields_for_regular_timestep = CachedProgram(
     init_diffusion_local_fields_for_regular_timestep_orig, with_domain=False
 )
