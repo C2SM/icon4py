@@ -176,7 +176,7 @@ class GHexMultiNodeExchange:
             EdgeDim: self._create_pattern(EdgeDim),
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = unstructured.make_co(self._context)
+        self._comm = make_communication_object(self._context)
         log.info("communication object initialized")
 
     def _domain_descriptor_info(self, descr):
