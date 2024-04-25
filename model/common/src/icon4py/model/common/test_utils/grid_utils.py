@@ -29,11 +29,10 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig
+
 from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRID_URIS,
@@ -115,6 +114,7 @@ def construct_icon_grid(
     print("num_edges:%s", num_edges)
     print("num_vertices:%s", num_vertices)
     print("num_levels:%s", num_levels)
+
     config = GridConfig(
         horizontal_config=HorizontalGridSize(
             num_vertices=num_vertices,
