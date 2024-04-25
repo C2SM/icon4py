@@ -25,16 +25,14 @@ from icon4py.model.common.grid.horizontal import (
     _compute_cells2verts,
     compute_cells2edges,
 )
-from icon4py.model.common.interpolation.interpolation_fields import (
-    compute_ddxnt_z_full,
-    compute_ddxt_z_half_e,
-)
+from icon4py.model.common.interpolation.interpolation_fields import compute_ddxnt_z_full
 from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
     compute_d2dexdz2_fac_mc,
     compute_ddqz_z_full,
     compute_ddqz_z_half,
     compute_ddxn_z_half_e,
+    compute_ddxt_z_half_e,
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_z_mc,

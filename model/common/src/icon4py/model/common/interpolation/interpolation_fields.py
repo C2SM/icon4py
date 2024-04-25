@@ -24,14 +24,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next import Field, int32, program
+from gt4py.next import Field, program
 
 from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
-    VertexDim,
 )
-from icon4py.model.common.math.helpers import _grad_fd_tang, average_ek_level_up
+from icon4py.model.common.math.helpers import edge_kdim
 
 
 def compute_c_lin_e(
@@ -92,30 +91,7 @@ def compute_cells_aw_verts(
 
 
 @program
-def compute_ddxt_z_half_e(
-    z_ifv: Field[[VertexDim, KDim], float],
-    inv_primal_edge_length: Field[[EdgeDim], float],
-    tangent_orientation: Field[[EdgeDim], float],
-    ddxt_z_half_e: Field[[EdgeDim, KDim], float],
-    horizontal_lower: int32,
-    horizontal_upper: int32,
-    vertical_lower: int32,
-    vertical_upper: int32,
-):
-    _grad_fd_tang(
-        z_ifv,
-        inv_primal_edge_length,
-        tangent_orientation,
-        out=ddxt_z_half_e,
-        domain={
-            EdgeDim: (horizontal_lower, horizontal_upper),
-            KDim: (vertical_lower, vertical_upper),
-        },
-    )
-
-
-@program
 def compute_ddxnt_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
 ):
-    average_ek_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
+    edge_kdim(z_ddxnt_z_half_e, out=ddxn_z_full)

@@ -25,9 +25,10 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.math.helpers import (
-    average_ck_level_up,
+    _grad_fd_tang,
+    cell_kdim,
     difference_k_level_down,
     difference_k_level_up,
     grad_fd_norm,
@@ -64,7 +65,7 @@ def compute_z_mc(
         vertical_end:int32 end index of vertical domain
 
     """
-    average_ck_level_up(
+    cell_kdim(
         z_ifc,
         out=z_mc,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
@@ -455,6 +456,29 @@ def compute_ddxn_z_half_e(
         z_ifc,
         inv_dual_edge_length,
         out=ddxn_z_half_e,
+        domain={
+            EdgeDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper),
+        },
+    )
+
+
+@program
+def compute_ddxt_z_half_e(
+    z_ifv: Field[[VertexDim, KDim], float],
+    inv_primal_edge_length: Field[[EdgeDim], float],
+    tangent_orientation: Field[[EdgeDim], float],
+    ddxt_z_half_e: Field[[EdgeDim, KDim], float],
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
+):
+    _grad_fd_tang(
+        z_ifv,
+        inv_primal_edge_length,
+        tangent_orientation,
+        out=ddxt_z_half_e,
         domain={
             EdgeDim: (horizontal_lower, horizontal_upper),
             KDim: (vertical_lower, vertical_upper),

@@ -18,7 +18,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def average_ck_level_up(
+def cell_kdim(
     half_level_field: Field[[CellDim, KDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
     """
@@ -36,7 +36,7 @@ def average_ck_level_up(
 
 
 @field_operator
-def average_ek_level_up(
+def edge_kdim(
     half_level_field: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
     """
