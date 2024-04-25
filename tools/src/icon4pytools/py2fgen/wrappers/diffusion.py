@@ -73,9 +73,11 @@ from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 logger = setup_logger(__name__)
 
 # global diffusion object
-processor_props = get_multinode_properties(MultiNodeRun())
-exchange = definitions.create_exchange(processor_props)
-diffusion_granule: Diffusion = Diffusion(exchange)
+#processor_props = get_multinode_properties(MultiNodeRun())
+#exchange = definitions.create_exchange(processor_props)
+#diffusion_granule: Diffusion = Diffusion(exchange)
+#diffusion_granule: Diffusion = Diffusion()
+diffusion_granule: Diffusion
 
 
 def diffusion_init(
@@ -153,6 +155,10 @@ def diffusion_init(
         on_gpu = True
     else:
         on_gpu = False
+
+    processor_props = get_multinode_properties(MultiNodeRun())
+    exchange = definitions.create_exchange(processor_props)
+    diffusion_granule = Diffusion(exchange)
 
     icon_grid2 = _load_from_gridfile(
         file_path=get_icon_grid_loc(),

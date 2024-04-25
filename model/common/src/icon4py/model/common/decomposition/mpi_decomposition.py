@@ -23,18 +23,18 @@ from gt4py.next import Dimension, Field
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
 
-try:
-    import ghex
-    import ghex.unstructured as unstructured
-    import mpi4py
+#try:
+import ghex
+import ghex.unstructured as unstructured
+import mpi4py
 
-    mpi4py.rc.initialize = False
-    mpi4py.rc.finalize = True
+#    mpi4py.rc.initialize = False
+#    mpi4py.rc.finalize = True
 
-except ImportError:
-    mpi4py = None
-    ghex = None
-    unstructured = None
+#except ImportError:
+#    mpi4py = None
+#    ghex = None
+#    unstructured = None
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
