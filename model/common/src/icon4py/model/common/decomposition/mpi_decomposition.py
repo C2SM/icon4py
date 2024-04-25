@@ -154,7 +154,7 @@ class GHexMultiNodeExchange:
         self,
         props: definitions.ProcessProperties,
     ):
-        self._context = ghex.context(ghex.mpi_comm(props.comm), False)
+        self._context = make_context(props.comm, False)
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
 
     def second_part(self, domain_decomposition: definitions.DecompositionInfo):
