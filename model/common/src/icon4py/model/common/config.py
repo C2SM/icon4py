@@ -18,11 +18,11 @@ from enum import Enum
 from functools import cached_property
 
 import numpy as np
+from gt4py.next import itir_python
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
 )
-from gt4py.next import itir_python
 
 
 class Device(Enum):
@@ -56,7 +56,7 @@ class Icon4PyConfig:
         backend_map = {
             GT4PyBackend.CPU.name: run_gtfn_cached,
             GT4PyBackend.GPU.name: run_gtfn_gpu_cached,
-            GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
+            GT4PyBackend.ROUNDTRIP.name: itir_python.run_roundtrip,
         }
         return backend_map[self.icon4py_backend]
 
