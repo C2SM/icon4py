@@ -27,11 +27,20 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common.dimension import C2E, CellDim, EdgeDim, KDim, Koff, ECDim, E2EC, E2CDim, E2C
+from icon4py.model.common.dimension import (
+    C2E,
+    CellDim,
+    EdgeDim,
+    KDim,
+    Koff,
+    VertexDim,
+)
 from icon4py.model.common.math.helpers import (
-    average_k_level_up,
+    _grad_fd_tang,
+    cell_kdim,
     difference_k_level_down,
     difference_k_level_up,
+    grad_fd_norm,
 )
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -65,7 +74,7 @@ def compute_z_mc(
         vertical_end:int32 end index of vertical domain
 
     """
-    average_k_level_up(
+    cell_kdim(
         z_ifc,
         out=z_mc,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
@@ -442,6 +451,50 @@ def compute_d2dexdz2_fac_mc(
     )
 
 
+@program
+def compute_ddxn_z_half_e(
+    z_ifc: Field[[CellDim, KDim], float],
+    inv_dual_edge_length: Field[[EdgeDim], float],
+    ddxn_z_half_e: Field[[EdgeDim, KDim], float],
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
+):
+    grad_fd_norm(
+        z_ifc,
+        inv_dual_edge_length,
+        out=ddxn_z_half_e,
+        domain={
+            EdgeDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper),
+        },
+    )
+
+
+@program
+def compute_ddxt_z_half_e(
+    z_ifv: Field[[VertexDim, KDim], float],
+    inv_primal_edge_length: Field[[EdgeDim], float],
+    tangent_orientation: Field[[EdgeDim], float],
+    ddxt_z_half_e: Field[[EdgeDim, KDim], float],
+    horizontal_lower: int32,
+    horizontal_upper: int32,
+    vertical_lower: int32,
+    vertical_upper: int32,
+):
+    _grad_fd_tang(
+        z_ifv,
+        inv_primal_edge_length,
+        tangent_orientation,
+        out=ddxt_z_half_e,
+        domain={
+            EdgeDim: (horizontal_lower, horizontal_upper),
+            KDim: (vertical_lower, vertical_upper),
+        },
+    )
+
+
 @field_operator
 def _compute_vwind_impl_wgt(
     z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
@@ -533,9 +586,13 @@ def compute_vwind_expl_wgt(
         domain={CellDim: (horizontal_start, horizontal_end)},
     )
 
+
 @field_operator
-def _compute_inv_ddqz_z_full(ddqz_z_full: Field[[EdgeDim, KDim], vpfloat]) -> Field[[EdgeDim, KDim], vpfloat]:
-    return 1.0/ddqz_z_full
+def _compute_inv_ddqz_z_full(
+    ddqz_z_full: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    return 1.0 / ddqz_z_full
+
 
 @program
 def compute_inv_ddqz_z_full(
@@ -549,5 +606,5 @@ def compute_inv_ddqz_z_full(
     _compute_inv_ddqz_z_full(
         ddqz_z_full=ddqz_z_full,
         out=inv_ddqz_z_full,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)}
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

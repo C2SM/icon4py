@@ -24,6 +24,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
+from gt4py.next import Field, program
+
+from icon4py.model.common.dimension import (
+    EdgeDim,
+    KDim,
+)
+from icon4py.model.common.math.helpers import edge_kdim
 
 
 def compute_c_lin_e(
@@ -49,3 +56,42 @@ def compute_c_lin_e(
     c_lin_e[0:second_boundary_layer_start_index, :] = 0.0
     mask = np.transpose(np.tile(owner_mask, (2, 1)))
     return np.where(mask, c_lin_e, 0.0)
+
+
+def compute_cells_aw_verts(
+    dual_area: np.array,
+    edge_vert_length: np.array,
+    edge_cell_length: np.array,
+    owner_mask: np.array,
+    e2c: np.array,
+    v2c: np.array,
+    v2e: np.array,
+    e2v: np.array,
+    horizontal_start: np.int32,
+    horizontal_end: np.int32,
+) -> np.array:
+    llb = horizontal_start
+    cells_aw_verts = np.zeros([horizontal_end, 6])
+    index = np.repeat(np.arange(horizontal_end, dtype=float), 6).reshape(horizontal_end, 6)
+    idx_ve = np.where(index == e2v[v2e, 0], 0, 1)
+
+    for i in range(2):
+        for j in range(6):
+            for k in range(6):
+                cells_aw_verts[llb:, k] = np.where(
+                    np.logical_and(owner_mask[:], e2c[v2e[llb:, j], i] == v2c[llb:, k]),
+                    cells_aw_verts[llb:, k]
+                    + 0.5
+                    / dual_area[llb:]
+                    * edge_vert_length[v2e[llb:, j], idx_ve[llb:, j]]
+                    * edge_cell_length[v2e[llb:, j], i],
+                    cells_aw_verts[llb:, k],
+                )
+    return cells_aw_verts
+
+
+@program
+def compute_ddxnt_z_full(
+    z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
+):
+    edge_kdim(z_ddxnt_z_half_e, out=ddxn_z_full)
