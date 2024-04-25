@@ -29,7 +29,7 @@ def _compute_theta_and_exner(
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
-    """Formelry known as _mo_solve_nonhydro_stencil_66."""
+    """Formerly known as _mo_solve_nonhydro_stencil_66."""
     theta_v_wp = where(bdy_halo_c, exner, theta_v)
     exner_wp = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
     return theta_v_wp, exner_wp

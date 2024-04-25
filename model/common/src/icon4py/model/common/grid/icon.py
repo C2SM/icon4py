@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from dataclasses import dataclass
+from functools import cached_property
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
@@ -42,12 +44,23 @@ from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
 
 
+@dataclass(frozen=True)
+class GlobalGridParams:
+    root: int
+    level: int
+
+    @cached_property
+    def num_cells(self):
+        return 20.0 * self.root**2 * 4.0**self.level
+
+
 class IconGrid(BaseGrid):
     def __init__(self):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self.start_indices = {}
         self.end_indices = {}
+        self.global_properties = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
@@ -80,6 +93,10 @@ class IconGrid(BaseGrid):
         self.start_indices[dim] = start_indices.astype(int32)
         self.end_indices[dim] = end_indices.astype(int32)
 
+    @builder
+    def with_global_params(self, global_params: GlobalGridParams):
+        self.global_properties = global_params
+
     @property
     def num_levels(self):
         return self.config.num_levels if self.config else 0
@@ -87,6 +104,16 @@ class IconGrid(BaseGrid):
     @property
     def num_cells(self):
         return self.config.num_cells if self.config else 0
+
+    @property
+    def global_num_cells(self):
+        """
+        Return the number of cells in the global grid.
+
+        If the global grid parameters are not set, it assumes that we are in a one node scenario
+        and returns the local number of cells.
+        """
+        return self.global_properties.num_cells if self.global_properties else self.num_cells
 
     @property
     def num_vertices(self):

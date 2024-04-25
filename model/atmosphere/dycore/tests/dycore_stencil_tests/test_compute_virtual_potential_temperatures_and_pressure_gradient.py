@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil09(StencilTest):
+class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
     PROGRAM = compute_virtual_potential_temperatures_and_pressure_gradient
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic", "z_th_ddz_exner_c")
 

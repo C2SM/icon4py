@@ -43,27 +43,14 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 
 log = logging.getLogger(__name__)
-
-
-def optionally_registered(func):
-    @functools.wraps(func)
-    def wrapper(self, *args, **kwargs):
-        try:
-            name = func.__name__
-            return func(self, *args, **kwargs)
-        except serialbox.SerialboxError:
-            log.warning(f"{name}: field not registered in savepoint {self.savepoint.metainfo}")
-            return None
-
-    return wrapper
 
 
 class IconSavepoint:
@@ -72,6 +59,27 @@ class IconSavepoint:
         self.serializer = ser
         self.sizes = size
         self.log = logging.getLogger((__name__))
+
+    def optionally_registered(*dims):
+        def decorator(func):
+            @functools.wraps(func)
+            def wrapper(self, *args, **kwargs):
+                try:
+                    name = func.__name__
+                    return func(self, *args, **kwargs)
+                except serialbox.SerialboxError:
+                    log.warning(
+                        f"{name}: field not registered in savepoint {self.savepoint.metainfo}"
+                    )
+                    if dims:
+                        shp = tuple(self.sizes[d] for d in dims)
+                        return as_field(dims, np.zeros(shp))
+                    else:
+                        return None
+
+            return wrapper
+
+        return decorator
 
     def log_meta_info(self):
         self.log.info(self.savepoint.metainfo)
@@ -134,6 +142,10 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int):
+        super().__init__(sp, ser, size)
+        self.global_grid_params = GlobalGridParams(root, level)
+
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -321,6 +333,7 @@ class IconGridSavepoint(IconSavepoint):
         vertex_ends = self.vertex_end_index()
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
+
         config = GridConfig(
             horizontal_config=HorizontalGridSize(
                 num_vertices=self.num(VertexDim),
@@ -338,6 +351,7 @@ class IconGridSavepoint(IconSavepoint):
         grid = (
             IconGrid()
             .with_config(config)
+            .with_global_params(self.global_grid_params)
             .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
             .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
@@ -409,7 +423,11 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> CellParams:
-        return CellParams(area=self.cell_areas(), mean_cell_area=self.mean_cell_area())
+        return CellParams.from_global_num_cells(
+            area=self.cell_areas(),
+            global_num_cells=self.global_grid_params.num_cells,
+            length_rescale_factor=1.0,
+        )
 
 
 class InterpolationSavepoint(IconSavepoint):
@@ -438,7 +456,7 @@ class InterpolationSavepoint(IconSavepoint):
             (CellDim, C2E2CODim), grg[:num_cells, :, 1]
         )
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered()
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
@@ -566,7 +584,7 @@ class MetricSavepoint(IconSavepoint):
     def ddxt_z_full(self):
         return self._get_field("ddxt_z_full", EdgeDim, KDim)
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered(CellDim, KDim)
     def mask_hdiff(self):
         return self._get_field("mask_hdiff", CellDim, KDim, dtype=bool)
 
@@ -587,11 +605,11 @@ class MetricSavepoint(IconSavepoint):
         ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered(CellDim, KDim)
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered()
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
@@ -611,7 +629,7 @@ class MetricSavepoint(IconSavepoint):
         assert old_shape[1] == sparse_size
         return as_field(target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]))
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered()
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 
@@ -629,11 +647,11 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def div_ic(self):
         return self._get_field("div_ic", CellDim, KDim)
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered(CellDim, KDim)
     def dwdx(self):
         return self._get_field("dwdx", CellDim, KDim)
 
-    @optionally_registered
+    @IconSavepoint.optionally_registered(CellDim, KDim)
     def dwdy(self):
         return self._get_field("dwdy", CellDim, KDim)
 
@@ -1139,9 +1157,11 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self) -> IconGridSavepoint:
+    def from_savepoint_grid(self, grid_root, grid_level) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
-        return IconGridSavepoint(savepoint, self.serializer, size=self.grid_size)
+        return IconGridSavepoint(
+            savepoint, self.serializer, size=self.grid_size, root=grid_root, level=grid_level
+        )
 
     def _get_icon_grid_savepoint(self):
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()

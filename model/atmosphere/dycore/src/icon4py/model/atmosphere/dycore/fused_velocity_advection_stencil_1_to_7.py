@@ -28,7 +28,9 @@ from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_t
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import _interpolate_vt_to_ie
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
+    _interpolate_vt_to_interface_edges,
+)
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -63,7 +65,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
     z_vt_ie = (
         where(
             1 <= k < nlev,
-            _interpolate_vt_to_ie(wgtfac_e, vt),
+            _interpolate_vt_to_interface_edges(wgtfac_e, vt),
             z_vt_ie,
         )
         if not lvn_only
