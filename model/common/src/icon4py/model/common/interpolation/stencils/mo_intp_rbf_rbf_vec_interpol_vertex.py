@@ -33,7 +33,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
 # We temporarility define two here for caching reasons, until we can stop passing sizes to the toolchain
 # as this stencil is used more than once in diffusion.
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def mo_intp_rbf_rbf_vec_interpol_vertex_1(
+def mo_intp_rbf_rbf_vec_interpol_vertex(
     p_e_in: Field[[EdgeDim, KDim], wpfloat],
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
     ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
@@ -55,25 +55,3 @@ def mo_intp_rbf_rbf_vec_interpol_vertex_1(
         },
     )
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def mo_intp_rbf_rbf_vec_interpol_vertex_2(
-    p_e_in: Field[[EdgeDim, KDim], wpfloat],
-    ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
-    ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
-    p_u_out: Field[[VertexDim, KDim], wpfloat],
-    p_v_out: Field[[VertexDim, KDim], wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _mo_intp_rbf_rbf_vec_interpol_vertex(
-        p_e_in,
-        ptr_coeff_1,
-        ptr_coeff_2,
-        out=(p_u_out, p_v_out),
-        domain={
-            VertexDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
