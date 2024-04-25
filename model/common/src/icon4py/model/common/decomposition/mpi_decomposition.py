@@ -100,8 +100,8 @@ class ParallelLogger(logging.Filter):
 
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
-def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
-    return _get_processor_properties(with_mpi=True)
+def get_multinode_properties(s: definitions.MultiNodeRun, comm_id: CommId = None) -> definitions.ProcessProperties:
+    return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
 @dataclass(frozen=True)

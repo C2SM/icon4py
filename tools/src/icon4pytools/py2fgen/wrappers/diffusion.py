@@ -147,6 +147,7 @@ def diffusion_init(
     c_glb_index: Field[[CellDim], int32],
     e_glb_index: Field[[EdgeDim], int32],
     v_glb_index: Field[[VertexDim], int32],
+    comm_id: int32,
 ):
     logger.info(f"Using Device = {device}")
 
@@ -156,7 +157,7 @@ def diffusion_init(
     else:
         on_gpu = False
 
-    processor_props = get_multinode_properties(MultiNodeRun())
+    processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props)
     diffusion_granule = Diffusion(exchange)
 
