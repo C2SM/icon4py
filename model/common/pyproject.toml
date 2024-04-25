@@ -30,7 +30,7 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 all = ["icon4py-common[ghex,netcdf]"]
-ghex = ["pyghex>=0.3.0", "mpi4py<=3.1.4"]
+ghex = ["ghex", "mpi4py"]
 netcdf = ["netcdf4>=1.6.0"]
 
 [project.urls]

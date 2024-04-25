@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -19,7 +19,6 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, Diffus
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     grid_savepoint,
@@ -87,23 +86,9 @@ def r04b09_iconrun_config(
     from the default.
     """
     return IconRunConfig(
-        dtime=10.0,
-        start_date=datetime(
-            int(timeloop_date_init[0:4]),
-            int(timeloop_date_init[5:7]),
-            int(timeloop_date_init[8:10]),
-            int(timeloop_date_init[11:13]),
-            int(timeloop_date_init[14:16]),
-            int(timeloop_date_init[17:19]),
-        ),
-        end_date=datetime(
-            int(timeloop_date_exit[0:4]),
-            int(timeloop_date_exit[5:7]),
-            int(timeloop_date_exit[8:10]),
-            int(timeloop_date_exit[11:13]),
-            int(timeloop_date_exit[14:16]),
-            int(timeloop_date_exit[17:19]),
-        ),
+        dtime=timedelta(seconds=10.0),
+        start_date=datetime.fromisoformat(timeloop_date_init),
+        end_date=datetime.fromisoformat(timeloop_date_exit),
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=timeloop_diffusion_linit_init,
     )

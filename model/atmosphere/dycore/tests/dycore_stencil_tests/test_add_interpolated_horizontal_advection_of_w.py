@@ -34,7 +34,7 @@ def add_interpolated_horizontal_advection_of_w_numpy(
     return ddt_w_adv
 
 
-class TestMoVelocityAdvectionStencil17(StencilTest):
+class TestAddInterpolatedHorizontalAdvectionOfW(StencilTest):
     PROGRAM = add_interpolated_horizontal_advection_of_w
     OUTPUTS = ("ddt_w_adv",)
 
