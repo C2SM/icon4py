@@ -22,7 +22,6 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     has_skip_values: bool,
     on_gpu: bool,
 ):
-
     if on_gpu:
         import cupy as xp
     else:

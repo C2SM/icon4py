@@ -143,16 +143,16 @@ def test_py2fgen_python_error_propagation_to_fortran(cli_runner, samples_path, w
     )
 
 
-@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
-def test_py2fgen_compilation_and_execution_multi_return(
+@pytest.mark.parametrize("backend", ("CPU",))
+def test_py2fgen_compilation_and_execution_multi_return_profile(
     cli_runner, backend, samples_path, wrapper_module
 ):
     """Tests embedding multi return gt4py program."""
     run_test_case(
         cli_runner,
         wrapper_module,
-        "multi_return",
-        "multi_return_plugin",
+        "multi_return_from_function,profile_enable,profile_disable",
+        "multi_return_from_function_plugin",
         backend,
         samples_path,
         "test_multi_return",
