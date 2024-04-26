@@ -51,35 +51,36 @@ def test_jabw_initial_condition(
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
         prognostic_state_now.rho.asnumpy(),
+        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
         prognostic_state_now.exner.asnumpy(),
+        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
         prognostic_state_now.theta_v.asnumpy(),
+        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(), prognostic_state_now.vn.asnumpy()
+        prognostic_state_now.vn.asnumpy(),
+        data_provider.from_savepoint_jabw_final().vn().asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
         diagnostic_state.pressure.asnumpy(),
+        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
         diagnostic_state.temperature.asnumpy(),
+        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
     )
 
     assert dallclose(
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
         diagnostic_state.pressure_sfc.asnumpy(),
+        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
     )

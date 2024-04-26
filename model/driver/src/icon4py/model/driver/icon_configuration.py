@@ -115,7 +115,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             _mch_ch_r04b09_nonhydro_config(),
         )
 
-    def _Jablownoski_Williamson_config():
+    def _jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
             end_date=datetime(1, 1, 1, 0, 30, 0),
@@ -136,7 +136,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             model_run_config,
             diffusion_config,
             nonhydro_config,
-        ) = _Jablownoski_Williamson_config()
+        ) = _jablownoski_Williamson_config()
     else:
         log.warning(
             "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."
