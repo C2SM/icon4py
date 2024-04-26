@@ -955,7 +955,7 @@ def dace_jit(self):
                     if isinstance(self._exchange, GHexMultiNodeExchange):
                         counter = 0
                         for nested_sdfg in sdfg.all_sdfgs_recursive():
-                            if not hasattr(nested_sdfg, "GT4Py_Program_output_fields"):
+                            if not hasattr(nested_sdfg, "GT4Py_Program_input_fields"):
                                 continue
                             
                             field_dims = set()
@@ -970,18 +970,65 @@ def dace_jit(self):
                             dim = {'Cell':CellDim, 'Edge':EdgeDim, 'Vertex':VertexDim}[list(field_dims)[0].value] if len(field_dims) == 1 else None
                             if not dim:
                                 continue
+                            
+                            # TODO: Work on asynchronous communication
                             wait = True
+
+                            # Gather all input fields for the all stencils below the current one
+                            input_fields = set() # global names (refer to the fused sdfg) and not local ones (nested sdfgs)
+                            cont = True
+                            for one_after_nsdfg in sdfg.all_sdfgs_recursive():
+                                if not hasattr(one_after_nsdfg, "GT4Py_Program_input_fields"):
+                                    continue
+
+                                if one_after_nsdfg is nested_sdfg:
+                                    cont = False
+                                    continue
+
+                                if cont:
+                                    continue
+                                
+                                for sdfg_state in sdfg.states():
+                                    if sdfg_state.label == one_after_nsdfg.parent.label:
+                                        break
+                                
+                                for buffer_name in one_after_nsdfg.GT4Py_Program_input_fields:
+                                    global_buffer_name = None
+                                    for edge in sdfg_state.all_edges_recursive():
+                                        # global_buffer_name [src] --> local buffer_name [dst]
+                                        if hasattr(edge[0], "dst_conn") and (edge[0].dst_conn == buffer_name):
+                                            global_buffer_name = edge[0].src.label
+                                            break
+                                    if not global_buffer_name:
+                                        raise ValueError("Could not link the local buffer_name to the global one.")
+                                    input_fields.add(global_buffer_name)
 
                             for sdfg_state in sdfg.states():
                                 if sdfg_state.label == nested_sdfg.parent.label:
                                     break
+
+                            global_buffers = {}
+                            for buffer_name in nested_sdfg.GT4Py_Program_output_fields:
+                                global_buffer_name = None
+                                for edge in sdfg_state.all_edges_recursive():
+                                    # local buffer_name [src] --> global_buffer_name [dst]
+                                    if hasattr(edge[0], "src_conn") and (edge[0].src_conn == buffer_name):
+                                        global_buffer_name = edge[0].dst.label
+                                        break
+                                if not global_buffer_name:
+                                    raise ValueError("Could not link the local buffer_name to the global one (coming from the closure).")
+                                if global_buffer_name not in input_fields and global_buffer_name != '__g_prognostic_state_vn':
+                                    # An output field that is not an input field to another nested sdfg below, does not need to be exchanged
+                                    continue
+                                global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name]
+                            
+                            if len(global_buffers) == 0:
+                                # There is no field to exchange
+                                continue
+
+                            # Start buidling the halo exchange node
                             state = sdfg.add_state_after(sdfg_state, label='_halo_exchange_')
 
-                            if counter == 0:
-                                for buffer_name in kwargs:
-                                    if '_ptr' in buffer_name:
-                                        sdfg.add_scalar(buffer_name, dtype=dace.uintp)
-                                
                             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
                                                             inputs=None,
                                                             outputs=None,
@@ -993,28 +1040,20 @@ def dace_jit(self):
                             in_connectors = {}
                             out_connectors = {}
 
-                            global_buffer_descriptor = []
-                            for i, buffer_name in enumerate(nested_sdfg.GT4Py_Program_output_fields):
-                                data_descriptor = nested_sdfg.arrays[buffer_name]
+                            if counter == 0:
+                                for buffer_name in kwargs:
+                                    if '_ptr' in buffer_name:
+                                        # Add GHEX C++ obj ptrs (just once)
+                                        sdfg.add_scalar(buffer_name, dtype=dace.uintp)
 
-                                global_buffer_name = None
-                                for edge in sdfg_state.all_edges_recursive():
-                                    if hasattr(edge[0], "src_conn") and (edge[0].src_conn == buffer_name):
-                                        global_buffer_name = edge[0].dst.label
-                                        break
-
-                                if not global_buffer_name:
-                                    raise ValueError("Could not link the local buffer_name to the global one (coming from the closure).")
-
-                                global_buffer_descriptor.append(sdfg.arrays[global_buffer_name])
-
-                                buffer = state.add_read(global_buffer_name)
+                            for i, (buffer_name, data_descriptor) in enumerate(global_buffers.items()):
+                                buffer = state.add_read(buffer_name)
                                 in_connectors['IN_' + f'field_{i}'] = dtypes.pointer(data_descriptor.dtype)
-                                state.add_edge(buffer, None, tasklet, 'IN_' + f'field_{i}', Memlet.from_array(global_buffer_name, data_descriptor))
+                                state.add_edge(buffer, None, tasklet, 'IN_' + f'field_{i}', Memlet.from_array(buffer_name, data_descriptor))
 
-                                update = state.add_write(global_buffer_name)
+                                update = state.add_write(buffer_name)
                                 out_connectors['OUT_' + f'field_{i}'] = dtypes.pointer(data_descriptor.dtype)
-                                state.add_edge(tasklet, 'OUT_' + f'field_{i}', update, None, Memlet.from_array(global_buffer_name, data_descriptor))
+                                state.add_edge(tasklet, 'OUT_' + f'field_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
 
                             if counter == 0:
                                 for buffer_name in kwargs:
@@ -1038,7 +1077,7 @@ def dace_jit(self):
                             fields_desc_glob_vars = '\n'
                             fields_desc = '\n'
                             descr_unique_names = []
-                            for i, arg in enumerate(global_buffer_descriptor):                                
+                            for i, arg in enumerate(global_buffers.values()):
                                 # https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
                                 if len(arg.shape) > 2:
                                     raise ValueError("field has too many dimensions")
@@ -1102,7 +1141,7 @@ def dace_jit(self):
 
                                     {fields_desc}
 
-                                    h_{id(self)} = communication_object->exchange({", ".join([f'(*pattern)({descr_unique_names[i]})' for i in range(len(global_buffer_descriptor))])});
+                                    h_{id(self)} = communication_object->exchange({", ".join([f'(*pattern)({descr_unique_names[i]})' for i in range(len(global_buffers))])});
                                     { 'h_'+str(id(self))+'.wait();' if wait else ''}
                                     '''
 
