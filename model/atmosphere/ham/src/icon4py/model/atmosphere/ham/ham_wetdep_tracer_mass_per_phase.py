@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -34,7 +35,7 @@ def _ham_wetdep_tracer_mass_per_phase(
     return (zxtice_tmp, zxtwat_tmp)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def ham_wetdep_tracer_mass_per_phase(
     pice            : Field[[CellDim, KDim], wpfloat],
     pxtp1c_kt       : Field[[CellDim, KDim], wpfloat],

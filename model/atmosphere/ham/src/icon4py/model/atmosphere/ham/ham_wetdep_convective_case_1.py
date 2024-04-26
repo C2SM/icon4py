@@ -15,10 +15,11 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
-    _set_cell_kdim_field_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -30,10 +31,10 @@ def _ham_wetdep_convective_case_1(
           Field[[CellDim, KDim], wpfloat]]
 ):
 
-    return (pmfu, _set_cell_kdim_field_to_zero_wp())
+    return (pmfu, _init_cell_kdim_field_with_zero_wp())
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def ham_wetdep_convective_case_1(
     pmfu            : Field[[CellDim, KDim], wpfloat],
     zmf             : Field[[CellDim, KDim], wpfloat],

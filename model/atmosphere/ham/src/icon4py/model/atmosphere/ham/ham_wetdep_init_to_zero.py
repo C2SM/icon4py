@@ -15,20 +15,21 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_wp import (
-    _set_cell_kdim_field_to_zero_wp,
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
 )
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _ham_wetdep_init_to_zero() -> Field[[CellDim, KDim], wpfloat]:
 
-    return _set_cell_kdim_field_to_zero_wp()
+    return _init_cell_kdim_field_with_zero_wp()
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def ham_wetdep_init_to_zero(
     zdxtevapic      : Field[[CellDim, KDim], wpfloat],
     zdxtevapbc      : Field[[CellDim, KDim], wpfloat],

@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -41,7 +42,7 @@ def _ham_wetdep_stratiform_case_1(
     return (pxtp1c_kt_tmp, pxtp10_kt_tmp, zmf_tmp, zxtp10_tmp)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def ham_wetdep_stratiform_case_1(
     ztmst           : wpfloat,
     paclc           : Field[[CellDim, KDim], wpfloat],

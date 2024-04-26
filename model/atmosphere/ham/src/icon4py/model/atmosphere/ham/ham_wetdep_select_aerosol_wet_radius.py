@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, astype, maximum, minimum, where, floor, log
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -45,7 +46,7 @@ def _ham_wetdep_select_aerosol_wet_radius(
     return (indexy1_phase_mode, indexy2_phase_mode)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def ham_wetdep_select_aerosol_wet_radius(
     zeps              : wpfloat,
     zrad_fac          : wpfloat,
