@@ -184,7 +184,7 @@ class EdgeParams:
         primal_normal_y=None,
     ):
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
-        r"""
+        """
         Orientation of vector product of the edge and the adjacent cell centers
              v3
             /  \
@@ -207,32 +207,35 @@ class EdgeParams:
         """
         Length of the triangle edge.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
         """
 
         self.inverse_primal_edge_lengths: Field[[EdgeDim], float] = inverse_primal_edge_lengths
         """
         Inverse of the triangle edge length: 1.0/primal_edge_length.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
         """
 
         self.dual_edge_lengths: Field[[EdgeDim], float] = dual_edge_lengths
         """
         Length of the hexagon/pentagon edge.
+        vertices of the hexagon/pentagon are cell centers and its center
+        is located at the common vertex.
+        the dual edge bisects the primal edge othorgonally.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
         """
 
         self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
         self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
-        r"""
+        """
         Inverse distance between outer vertices of adjacent cells.
 
         v1--------
@@ -245,7 +248,7 @@ class EdgeParams:
 
         inverse_vertex_vertex_length(e) = 1.0/|v2-v1|
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
         """
 
         self.primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
@@ -253,9 +256,11 @@ class EdgeParams:
             primal_normal_vert_y,
         )
         """
-        Normal of the triangle edge, projected onto the location of the vertices
+        Normal of the triangle edge, projected onto the location of the
+        four vertices of neighboring cells.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
+        and computed in ICON in mo_intp_coeffs.f90
         """
 
         self.dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
@@ -263,26 +268,44 @@ class EdgeParams:
             dual_normal_vert_y,
         )
         """
-        Tangent to the triangle edge, projected onto the location of vertices.
+        zonal (x) and meridional (y) components of vector tangent to the triangle edge,
+        projected onto the location of the four vertices of neighboring cells.
 
-         defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
+        defined in ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
+        and computed in ICON in mo_intp_coeffs.f90
         """
 
         self.primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
         )
+        """
+        zonal (x) and meridional (y) components of vector normal to the cell edge
+        projected onto the location of neighboring cell centers.
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_normal_cell
+        and computed in ICON in mo_intp_coeffs.f90
+        """
 
         self.dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
         )
+        """
+        zonal (x) and meridional (y) components of vector normal to the dual edge
+        projected onto the location of neighboring cell centers.
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%dual_normal_cell
+        and computed in ICON in mo_intp_coeffs.f90
+        """
 
         self.edge_areas: Field[[EdgeDim], float] = edge_areas
         """
-        Area of the quadrilateral (two triangles) adjacent to the edge.
+        Area of the quadrilateral whose edges are the primal edge and
+        the associated dual edge.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
+        defined in ICON in mo_model_domain.f90:t_grid_edges%area_edge
+        and computed in ICON in mo_intp_coeffs.f90
         """
 
         self.f_e: Field[[EdgeDim], float] = f_e
@@ -294,23 +317,51 @@ class EdgeParams:
             edge_center_lat,
             edge_center_lon,
         )
+        """
+        Latitude and longitude at the edge center
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%center
+        """
 
         self.primal_normal: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             primal_normal_x,
             primal_normal_y,
         )
+        """
+        zonal (x) and meridional (y) components of vector normal to the cell edge
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_normal
+        """
 
 
 @dataclass(frozen=True)
 class CellParams:
-    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
+    """
+    Area of a cell
+
+    defined in ICON in mo_model_domain.f90:t_grid_cells%area
+    """
 
     mean_cell_area: float
+    """
+    mean surface area = total surface area / numer of cells
+
+    defined in ICON in mo_grid_geometry_info.f90:t_grid_geometry_info:mean_cell_area
+    can be either computed in mo_model_domimp_patches.f90 or obtained in native grid file
+    """
 
     cell_center_lat: Field[[CellDim], float]
-    cell_center_lon: Field[[CellDim], float]
+    """
+    Latitude at the cell center. The cell center is defined to be the circumcenter
+    of an triangle.
+    """
 
+    cell_center_lon: Field[[CellDim], float]
+    """
+    Longitude at the cell center. The cell center is defined to be the circumcenter
+    of an triangle.
+    """
 
 @field_operator
 def _cell_2_edge_interpolation(
