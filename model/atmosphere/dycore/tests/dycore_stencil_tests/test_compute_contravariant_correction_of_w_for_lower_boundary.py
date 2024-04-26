@@ -49,7 +49,7 @@ def compute_contravariant_correction_of_w_for_lower_boundary_numpy(
     return w_concorr_c
 
 
-class TestMoSolveNonhydroStencil40(StencilTest):
+class TestComputeContravariantCorrectionOfWForLowerBoundary(StencilTest):
     PROGRAM = compute_contravariant_correction_of_w_for_lower_boundary
     OUTPUTS = ("w_concorr_c",)
 

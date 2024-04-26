@@ -14,11 +14,11 @@
 import numpy as np
 import pytest
 
-import icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
@@ -33,9 +33,6 @@ from .utils import (
     smag_limit_numpy,
     verify_diffusion_fields,
 )
-
-
-backend = icon4py.model.atmosphere.diffusion.diffusion.backend
 
 
 def test_diffusion_coefficients_with_hdiff_efdt_ratio(experiment):
@@ -274,7 +271,7 @@ def test_run_diffusion_single_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vertical_params = VerticalModelParams(
         vct_a=grid_savepoint.vct_a(),
@@ -328,7 +325,7 @@ def test_run_diffusion_initial_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
     vct_a = grid_savepoint.vct_a()
     vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)

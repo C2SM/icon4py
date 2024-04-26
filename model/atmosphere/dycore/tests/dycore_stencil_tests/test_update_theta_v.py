@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, r
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil68(StencilTest):
+class TestUpdateThetaV(StencilTest):
     PROGRAM = update_theta_v
     OUTPUTS = ("theta_v_new",)
 

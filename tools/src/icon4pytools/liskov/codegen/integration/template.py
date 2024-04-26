@@ -57,7 +57,7 @@ class InputFields(eve.Node):
 
 
 class OutputFields(InputFields):
-    ...
+    verification: bool
 
 
 class ToleranceFields(InputFields):
@@ -101,12 +101,76 @@ class MetadataStatementGenerator(TemplatedGenerator):
     )
 
 
+class Declaration(Assign):
+    ...
+
+
+class CopyDeclaration(Declaration):
+    lh_index: str
+    rh_index: str
+
+
+def _make_copy_declaration(f: Field) -> CopyDeclaration:
+    if f.dims is None:
+        raise UndeclaredFieldError(f"{f.variable} was not declared!")
+
+    lh_idx = render_index(f.dims)
+
+    # get length of association index
+    association_dims = get_array_dims(f.association).split(",")
+    n_association_dims = len(association_dims)
+
+    offset = len(",".join(association_dims)) + 2
+    truncated_association = f.association[:-offset]
+
+    if n_association_dims > f.dims:
+        rh_idx = f"{lh_idx}," + ",".join(association_dims[f.dims :])
+    else:
+        rh_idx = f"{lh_idx}"
+
+    lh_idx = enclose_in_parentheses(lh_idx)
+    rh_idx = enclose_in_parentheses(rh_idx)
+
+    return CopyDeclaration(
+        variable=f.variable,
+        association=truncated_association,
+        lh_index=lh_idx,
+        rh_index=rh_idx,
+    )
+
+
+class DeclareStatement(eve.Node):
+    declare_data: DeclareData
+    declarations: list[Declaration] = eve.datamodels.field(init=False)
+    verification: bool
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        self.declarations = [
+            Declaration(variable=k, association=v)
+            for k, v in self.declare_data.declarations.items()
+        ]
+
+
+class DeclareStatementGenerator(TemplatedGenerator):
+    DeclareStatement = as_jinja(
+        """
+        ! DSL INPUT / OUTPUT FIELDS
+        {%- for d in _this_node.declarations %}
+        {%- if (_this_node.verification or _this_node.declare_data.suffix!='before' ) %}
+        {{ _this_node.declare_data.ident_type }}, DIMENSION({{ d.association }}) :: {{ d.variable }}_{{ _this_node.declare_data.suffix }}
+        {%- endif -%}
+        {%- endfor %}
+        """
+    )
+
+
 class EndBasicStencilStatement(eve.Node):
     name: str = eve.datamodels.field(init=False)
     input_fields: InputFields = eve.datamodels.field(init=False)
     output_fields: OutputFields = eve.datamodels.field(init=False)
     tolerance_fields: ToleranceFields = eve.datamodels.field(init=False)
     bounds_fields: BoundsFields = eve.datamodels.field(init=False)
+    verification: bool
 
 
 class EndStencilStatement(EndBasicStencilStatement):
@@ -121,10 +185,36 @@ class EndStencilStatement(EndBasicStencilStatement):
         self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
         self.name = self.stencil_data.name
         self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
-        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out])
-        self.tolerance_fields = ToleranceFields(
-            fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
+        self.output_fields = OutputFields(
+            fields=[f for f in all_fields if f.out], verification=self.verification
         )
+        if self.verification:
+            self.tolerance_fields = ToleranceFields(
+                fields=[f for f in all_fields if f.rel_tol or f.abs_tol],
+            )
+        else:
+            self.tolerance_fields = ToleranceFields(fields=[])
+
+
+class EndFusedStencilStatement(EndBasicStencilStatement):
+    stencil_data: StartFusedStencilData
+    copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
+
+    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
+        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
+        self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
+        self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
+        self.name = self.stencil_data.name
+        self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
+        self.output_fields = OutputFields(
+            fields=[f for f in all_fields if f.out], verification=self.verification
+        )
+        if self.verification:
+            self.tolerance_fields = ToleranceFields(
+                fields=[f for f in all_fields if f.rel_tol or f.abs_tol],
+            )
+        else:
+            self.tolerance_fields = ToleranceFields(fields=[])
 
 
 class BaseEndStencilStatementGenerator(TemplatedGenerator):
@@ -158,7 +248,9 @@ class BaseEndStencilStatementGenerator(TemplatedGenerator):
         """
         {%- for field in _this_node.fields %}
             {{ field.variable }}={{ field.association }},&
-            {{ field.variable }}_before={{ field.variable }}_before{{ field.rh_index }},&
+            {%- if _this_node.verification %}
+              {{ field.variable }}_before={{ field.variable }}_before{{ field.rh_index }},&
+            {%- endif -%}
         {%- endfor %}
         """
     )
@@ -198,15 +290,21 @@ class EndStencilStatementGenerator(BaseEndStencilStatementGenerator):
         {% if _this_node.noprofile %}{% else %}call nvtxEndRange(){% endif %}
         {%- endif %}
         {% if _this_node.noendif %}{% else %}#endif{% endif %}
+        {%- if _this_node.verification %}
+        call wrap_run_and_verify_{{ name }}( &
+        {% else %} 
         call wrap_run_{{ name }}( &
+        {%- endif -%}
             {{ input_fields }}
             {{ output_fields }}
             {{ tolerance_fields }}
             {{ bounds_fields }}
 
+        {%- if _this_node.verification %}
         {%- if not _this_node.noaccenddata %}
         !$ACC END DATA
         {%- endif %}
+        {%- endif -%}
         """
     )
 
@@ -214,77 +312,23 @@ class EndStencilStatementGenerator(BaseEndStencilStatementGenerator):
 class EndFusedStencilStatementGenerator(BaseEndStencilStatementGenerator):
     EndFusedStencilStatement = as_jinja(
         """
+        {%- if _this_node.verification %}
+        call wrap_run_and_verify_{{ name }}( &
+        {% else %} 
         call wrap_run_{{ name }}( &
+        {%- endif -%}
             {{ input_fields }}
             {{ output_fields }}
             {{ tolerance_fields }}
             {{ bounds_fields }}
 
+        {%- if _this_node.verification %}
         !$ACC EXIT DATA DELETE( &
         {%- for d in _this_node.copy_declarations %}
         !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
         !$ACC      IF ( i_am_accel_node )
-        """
-    )
-
-
-class Declaration(Assign):
-    ...
-
-
-class CopyDeclaration(Declaration):
-    lh_index: str
-    rh_index: str
-
-
-def _make_copy_declaration(f: Field) -> CopyDeclaration:
-    if f.dims is None:
-        raise UndeclaredFieldError(f"{f.variable} was not declared!")
-
-    lh_idx = render_index(f.dims)
-
-    # get length of association index
-    association_dims = get_array_dims(f.association).split(",")
-    n_association_dims = len(association_dims)
-
-    offset = len(",".join(association_dims)) + 2
-    truncated_association = f.association[:-offset]
-
-    if n_association_dims > f.dims:
-        rh_idx = f"{lh_idx},{association_dims[-1]}"
-    else:
-        rh_idx = f"{lh_idx}"
-
-    lh_idx = enclose_in_parentheses(lh_idx)
-    rh_idx = enclose_in_parentheses(rh_idx)
-
-    return CopyDeclaration(
-        variable=f.variable,
-        association=truncated_association,
-        lh_index=lh_idx,
-        rh_index=rh_idx,
-    )
-
-
-class DeclareStatement(eve.Node):
-    declare_data: DeclareData
-    declarations: list[Declaration] = eve.datamodels.field(init=False)
-
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        self.declarations = [
-            Declaration(variable=k, association=v)
-            for k, v in self.declare_data.declarations.items()
-        ]
-
-
-class DeclareStatementGenerator(TemplatedGenerator):
-    DeclareStatement = as_jinja(
-        """
-        ! DSL INPUT / OUTPUT FIELDS
-        {%- for d in _this_node.declarations %}
-        {{ _this_node.declare_data.ident_type }}, DIMENSION({{ d.association }}) :: {{ d.variable }}_{{ _this_node.declare_data.suffix }}
-        {%- endfor %}
+        {%- endif %}
         """
     )
 
@@ -292,6 +336,7 @@ class DeclareStatementGenerator(TemplatedGenerator):
 class StartStencilStatement(eve.Node):
     stencil_data: StartStencilData
     profile: bool
+    verification: bool
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
@@ -303,27 +348,12 @@ class StartStencilStatement(eve.Node):
 class StartFusedStencilStatement(eve.Node):
     stencil_data: StartFusedStencilData
     copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
+    verification: bool
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
         self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
         self.acc_present = "PRESENT" if self.stencil_data.acc_present else "NONE"
-
-
-class EndFusedStencilStatement(EndBasicStencilStatement):
-    stencil_data: StartFusedStencilData
-    copy_declarations: list[CopyDeclaration] = eve.datamodels.field(init=False)
-
-    def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        all_fields = [Field(**asdict(f)) for f in self.stencil_data.fields]
-        self.copy_declarations = [_make_copy_declaration(f) for f in all_fields if f.out]
-        self.bounds_fields = BoundsFields(**asdict(self.stencil_data.bounds))
-        self.name = self.stencil_data.name
-        self.input_fields = InputFields(fields=[f for f in all_fields if f.inp])
-        self.output_fields = OutputFields(fields=[f for f in all_fields if f.out])
-        self.tolerance_fields = ToleranceFields(
-            fields=[f for f in all_fields if f.rel_tol or f.abs_tol]
-        )
 
 
 def render_index(n: int) -> str:
@@ -347,19 +377,23 @@ class StartStencilStatementGenerator(TemplatedGenerator):
     StartStencilStatement = as_jinja(
         """
 
+        {% if _this_node.verification %}
         !$ACC DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
         !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
         {%- endfor %}
         !$ACC      IF ( i_am_accel_node )
+        {% endif %}
 
         #ifdef __DSL_VERIFY
+        {%- if _this_node.verification %}
         {% if _this_node.stencil_data.copies -%}
         !$ACC KERNELS IF( i_am_accel_node ) DEFAULT({{ _this_node.acc_present }}) ASYNC(1)
         {%- for d in _this_node.copy_declarations %}
         {{ d.variable }}_before{{ d.lh_index }} = {{ d.association }}{{ d.rh_index }}
         {%- endfor %}
         !$ACC END KERNELS
+        {%- endif -%}
         {%- endif -%}
 
         {%- if _this_node.profile %}
@@ -373,6 +407,7 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
     StartFusedStencilStatement = as_jinja(
         """
 
+        {%- if _this_node.verification %}
         !$ACC ENTER DATA CREATE( &
         {%- for d in _this_node.copy_declarations %}
         !$ACC   {{ d.variable }}_before {%- if not loop.last -%}, & {% else %} ) & {%- endif -%}
@@ -386,6 +421,7 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
         {%- endfor %}
         !$ACC END KERNELS
         #endif
+        {%- endif -%}
 
         """
     )
@@ -394,6 +430,7 @@ class StartFusedStencilStatementGenerator(TemplatedGenerator):
 class ImportsStatement(eve.Node):
     stencils: list[BaseStartStencilData]
     stencil_names: list[str] = eve.datamodels.field(init=False)
+    verification: bool
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.stencil_names = sorted(set([stencil.name for stencil in self.stencils]))
@@ -401,7 +438,7 @@ class ImportsStatement(eve.Node):
 
 class ImportsStatementGenerator(TemplatedGenerator):
     ImportsStatement = as_jinja(
-        """  {% for name in stencil_names %}USE {{ name }}, ONLY: wrap_run_{{ name }}\n{% endfor %}"""
+        """  {% for name in stencil_names %}{% if _this_node.verification %}USE {{name}}, ONLY: wrap_run_and_verify_{{name}}\n{% else %}USE {{name}}, ONLY: wrap_run_{{name}}\n{% endif %}{% endfor %}"""
     )
 
 

@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil67(StencilTest):
+class TestComputeExnerFromRhotheta(StencilTest):
     PROGRAM = compute_exner_from_rhotheta
     OUTPUTS = ("theta_v", "exner")
 
