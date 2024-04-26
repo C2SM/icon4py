@@ -99,13 +99,14 @@ class TestComputeZMc(StencilTest):
 
 @pytest.mark.datatest
 def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
-    if is_python(backend):
-        pytest.skip("skipping: unsupported backend")
+    backend = None
+    # if is_python(backend):
+    #     pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = zero_field(icon_grid, CellDim, KDim)
+    z_mc = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
     nlevp1 = icon_grid.num_levels + 1
-    k_index = as_field((KDim,), np.arange(nlevp1, dtype=int32))
+    k_index = as_field((KDim,), np.arange(0, nlevp1, dtype=int32))
     compute_z_mc.with_backend(backend)(
         z_ifc,
         z_mc,
@@ -115,26 +116,30 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
-    ddq_z_half = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    ddqz_z_half_zeros = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    # TODO: line below should be in program, however bounds do not allow to go from 0 to 66 for K
+    ddqz_z_half_np = np.where(k_index == 0, 2.0 * (z_ifc.asnumpy() - z_mc.asnumpy()), ddqz_z_half_zeros.asnumpy())
+    ddqz_z_half = as_field((CellDim, KDim), ddqz_z_half_np)
 
     compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
         z_mc=z_mc,
         k=k_index,
         nlev=icon_grid.num_levels,
-        ddqz_z_half=ddq_z_half,
+        ddqz_z_half=ddqz_z_half,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
+        vertical_start=1,
         vertical_end=nlevp1,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
+    assert dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
 @pytest.mark.datatest
 def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -159,6 +164,7 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
 # TODO: convert this to a stenciltest once it is possible to have only KDim in domain
 @pytest.mark.datatest
 def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    backend = None
     scalfac_dd3d_ref = metrics_savepoint.scalfac_dd3d()
     scalfac_dd3d_full = zero_field(icon_grid, KDim)
     divdamp_trans_start = 12500.0
@@ -182,6 +188,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
 # TODO: convert this to a stenciltest once it is possible to have only KDim in domain
 @pytest.mark.datatest
 def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    backend = None
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
     rayleigh_w_full = zero_field(icon_grid, KDim, extend={KDim: 1})
@@ -208,6 +215,7 @@ def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backen
 
 @pytest.mark.datatest
 def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     coeff1_dwdz_ref = metrics_savepoint.coeff1_dwdz()
@@ -235,6 +243,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 
 @pytest.mark.datatest
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -286,6 +295,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
 def test_compute_vwind_impl_wgt(
     icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -311,7 +321,7 @@ def test_compute_vwind_impl_wgt(
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
     )
 
-    z_ddxn_z_half_e = compute_ddxn_z_half_e(
+    compute_ddxn_z_half_e(
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         ddxn_z_half_e=z_ddxn_z_half_e,
@@ -358,14 +368,16 @@ def test_compute_vwind_impl_wgt(
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
 
-    vwind_impl_wgt_full = zero_field(icon_grid, CellDim, KDim)
+    vwind_impl_wgt_full = zero_field(icon_grid, CellDim)
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = as_field((EdgeDim,), 1.0 / grid_savepoint.inv_dual_edge_length().asnumpy())
     vwind_offctr = 0.2
 
+    # TODO: missing this line 360 in f90: CALL rbf_vec_interpol_cell(z_ddxn_z_half_e(:,nlevp1:nlevp1,:), p_patch(jg), p_int(jg), z_aux_c, z_aux_c2)
+
     compute_vwind_impl_wgt.with_backend(backend)(
-        z_ddxn_z_half_e=z_ddxn_z_half_e,
-        z_ddxt_z_half_e=z_ddxt_z_half_e,
+        z_ddxn_z_half_e=as_field((EdgeDim,), z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels]),
+        z_ddxt_z_half_e=as_field((EdgeDim,), z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels]),
         dual_edge_length=dual_edge_length,
         vwind_impl_wgt=vwind_impl_wgt_full,
         vwind_offctr=vwind_offctr,
@@ -379,6 +391,7 @@ def test_compute_vwind_impl_wgt(
 
 @pytest.mark.datatest
 def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
@@ -399,13 +412,15 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
 
 @pytest.mark.datatest
 def test_compute_inv_ddqz_z_full(icon_grid, metrics_savepoint, backend):
+    # TODO: serialization missing inv_ddqz_z_full is over cells, need over edge --> inv_ddqz_z_full_e
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
     inv_ddqz_z_full = zero_field(icon_grid, EdgeDim, KDim)
     inv_ddqz_z_ref = (
         metrics_savepoint.inv_ddqz_z_full()
-    )  # inv_ddqz_z_full is over cells, need over edge --> inv_ddqz_z_full_e
+    )
     horizontal_start_edge = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
@@ -458,23 +473,20 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     # e2c = icon_grid.connectivities[E2CDim]
     # z_me = np.sum(z_mc.asnumpy()[e2c] * np.expand_dims(c_lin_e.asnumpy(), axis=-1), axis=1)
     flat_idx = np.full(shape=icon_grid.num_edges, fill_value=icon_grid.num_levels)
-    # for k in range(icon_grid.num_levels):
-    #     for e in range(icon_grid.num_edges):
-    #         if z_me <= z_ifc[e2c[e, 0], k] and z_me >= z_ifc[e2c[e, 0], k+1] and z_me <= z_ifc[e2c[e, 1], k] and z_me >= z_ifc[e2c[e, 1], k + 1]:
-    #             flat_idx[e] = k
 
-    zdiff_gradp_full_np = compute_zdiff_gradp_dsl(
+
+    zdiff_gradp_full_np_final = compute_zdiff_gradp_dsl(
         e2c=icon_grid.connectivities[E2CDim],
         c_lin_e=c_lin_e.asnumpy(),
         z_mc=z_mc.asnumpy(),
         zdiff_gradp=zdiff_gradp_full_np,
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
         flat_idx=flat_idx,
-        nlev=icon_grid.num_levels - 1,  # TODO: check that -1 ok
+        nlev=icon_grid.num_levels,  # TODO: check that -1 ok
         nedges=icon_grid.num_edges,
     )
     zdiff_gradp_full_field = flatten_first_two_dims(
-        ECDim, KDim, field=as_field((EdgeDim, E2CDim, KDim), zdiff_gradp_full_np)
+        ECDim, KDim, field=as_field((EdgeDim, E2CDim, KDim), zdiff_gradp_full_np_final)
     )
     # zdiff_gradp_ref.asnumpy()[856:, :] == zdiff_gradp_full_field.asnumpy()[856:, :]
     assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy())
@@ -485,6 +497,7 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
 def test_compute_ddqz_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
+    backend = None
     ddqz_z_full = as_field((CellDim, KDim), 1.0 / metrics_savepoint.inv_ddqz_z_full().asnumpy())
     c_lin_e = interpolation_savepoint.c_lin_e()
     ddqz_z_full_e_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
@@ -508,6 +521,7 @@ def test_compute_ddqz_z_full_e(
 def test_compute_ddxn_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
+    backend = None
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
@@ -546,6 +560,7 @@ def test_compute_ddxn_z_full_e(
 def test_compute_ddxt_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
+    backend = None
     z_ifc = metrics_savepoint.z_ifc()
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()

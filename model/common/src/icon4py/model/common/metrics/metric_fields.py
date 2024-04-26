@@ -88,15 +88,19 @@ def _compute_ddqz_z_half(
     k: Field[[KDim], int32],
     nlev: int32,
 ) -> Field[[CellDim, KDim], wpfloat]:
+    ddqz_z_half = 2.0 * (z_mc(Koff[-1]) - z_ifc)
     ddqz_z_half = where(
         (k > int32(0)) & (k < nlev),
         difference_k_level_down(z_mc),
-        where(k == 0, 2.0 * (z_ifc - z_mc), 2.0 * (z_mc(Koff[-1]) - z_ifc)),
+        ddqz_z_half
     )
+    ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), ddqz_z_half)
+
+    #ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=None)
+@program(grid_type=GridType.UNSTRUCTURED)
 def compute_ddqz_z_half(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     z_mc: Field[[CellDim, KDim], wpfloat],
@@ -456,18 +460,18 @@ def compute_ddxn_z_half_e(
     z_ifc: Field[[CellDim, KDim], float],
     inv_dual_edge_length: Field[[EdgeDim], float],
     ddxn_z_half_e: Field[[EdgeDim, KDim], float],
-    horizontal_lower: int32,
-    horizontal_upper: int32,
-    vertical_lower: int32,
-    vertical_upper: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     grad_fd_norm(
         z_ifc,
         inv_dual_edge_length,
         out=ddxn_z_half_e,
         domain={
-            EdgeDim: (horizontal_lower, horizontal_upper),
-            KDim: (vertical_lower, vertical_upper),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -502,17 +506,17 @@ def _compute_vwind_impl_wgt(
     dual_edge_length: Field[[EdgeDim], wpfloat],
     vwind_offctr: wpfloat,
 ) -> Field[[CellDim], wpfloat]:
-    z_ddx_1 = maximum(abs(z_ddxn_z_half_e(C2E[1])), abs(z_ddxt_z_half_e(C2E[1])))
-    z_ddx_2 = maximum(abs(z_ddxn_z_half_e(C2E[2])), abs(z_ddxt_z_half_e(C2E[2])))
-    z_ddx_3 = maximum(abs(z_ddxn_z_half_e(C2E[3])), abs(z_ddxt_z_half_e(C2E[3])))
+    z_ddx_1 = maximum(abs(z_ddxn_z_half_e(C2E[0])), abs(z_ddxt_z_half_e(C2E[0])))
+    z_ddx_2 = maximum(abs(z_ddxn_z_half_e(C2E[1])), abs(z_ddxt_z_half_e(C2E[1])))
+    z_ddx_3 = maximum(abs(z_ddxn_z_half_e(C2E[2])), abs(z_ddxt_z_half_e(C2E[2])))
     z_ddx_1_2 = maximum(z_ddx_1, z_ddx_2)
     z_maxslope = maximum(z_ddx_1_2, z_ddx_3)
 
     z_diff_1_2 = maximum(
+        abs(z_ddxn_z_half_e(C2E[0]) * dual_edge_length(C2E[0])),
         abs(z_ddxn_z_half_e(C2E[1]) * dual_edge_length(C2E[1])),
-        abs(z_ddxn_z_half_e(C2E[2]) * dual_edge_length(C2E[2])),
     )
-    z_diff = maximum(z_diff_1_2, abs(z_ddxn_z_half_e(C2E[3]) * dual_edge_length(C2E[3])))
+    z_diff = maximum(z_diff_1_2, abs(z_ddxn_z_half_e(C2E[2]) * dual_edge_length(C2E[2])))
     z_offctr_1 = maximum(vwind_offctr, 0.425 * z_maxslope**0.75)
     z_offctr = maximum(z_offctr_1, minimum(0.25, 2.5e-4 * (z_diff - 250.0)))
     z_offctr = minimum(maximum(vwind_offctr, 0.75), z_offctr)
