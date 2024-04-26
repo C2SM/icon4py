@@ -24,13 +24,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import numpy as np
-from gt4py.next import Field, program
-
-from icon4py.model.common.dimension import (
-    EdgeDim,
-    KDim,
-)
-from icon4py.model.common.math.helpers import edge_kdim
 
 
 def compute_c_lin_e(
@@ -88,10 +81,3 @@ def compute_cells_aw_verts(
                     cells_aw_verts[llb:, k],
                 )
     return cells_aw_verts
-
-
-@program
-def compute_ddxnt_z_full(
-    z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
-):
-    edge_kdim(z_ddxnt_z_half_e, out=ddxn_z_full)

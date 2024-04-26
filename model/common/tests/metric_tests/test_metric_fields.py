@@ -25,13 +25,13 @@ from icon4py.model.common.grid.horizontal import (
     _compute_cells2verts,
     compute_cells2edges,
 )
-from icon4py.model.common.interpolation.interpolation_fields import compute_ddxnt_z_full
 from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
     compute_d2dexdz2_fac_mc,
     compute_ddqz_z_full,
     compute_ddqz_z_half,
     compute_ddxn_z_half_e,
+    compute_ddxnt_z_full,
     compute_ddxt_z_half_e,
     compute_rayleigh_w,
     compute_scalfac_dd3d,
@@ -375,10 +375,10 @@ def test_compute_ddxt_z_full_e(
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
         ddxt_z_half_e=ddxt_z_half_e,
-        horizontal_lower=horizontal_start_edge,
-        horizontal_upper=horizontal_end_edge,
-        vertical_lower=vertical_start,
-        vertical_upper=vertical_end,
+        horizontal_start=horizontal_start_edge,
+        horizontal_end=horizontal_end_edge,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
     ddxt_z_full = zero_field(icon_grid, EdgeDim, KDim)
