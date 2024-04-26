@@ -1114,8 +1114,8 @@ def dace_jit(self):
                                     fields_desc += f"{descr_type_} {descr_unique_name}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
                                 else:
                                     # for async exchange, we need to keep the descriptors alive, until the wait
-                                    fields_desc += f"{descr_unique_name} = {descr_type_}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
-                                    fields_desc_glob_vars += f"{descr_type_} {descr_unique_name};\n"
+                                    fields_desc += f"{descr_unique_name} = std::make_unique<{descr_type_}>(*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides});\n"
+                                    fields_desc_glob_vars += f"std::unique_ptr<{descr_type_}> {descr_unique_name};\n"
 
                             code = ''
                             if counter == 0:
@@ -1141,7 +1141,7 @@ def dace_jit(self):
 
                                     {fields_desc}
 
-                                    h_{id(self)} = communication_object->exchange({", ".join([f'(*pattern)({descr_unique_names[i]})' for i in range(len(global_buffers))])});
+                                    h_{id(self)} = communication_object->exchange({", ".join([f'(*pattern)({"" if wait else "*"}{descr_unique_names[i]})' for i in range(len(global_buffers))])});
                                     { 'h_'+str(id(self))+'.wait();' if wait else ''}
                                     '''
 
