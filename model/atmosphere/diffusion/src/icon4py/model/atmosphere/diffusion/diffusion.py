@@ -1167,6 +1167,8 @@ def dace_jit(self):
 
                             counter += 1
 
+                    #sdfg.simplify(validate=False)
+
                     # Add named arguments to the call
                     kwargs.update(arg_mapping)
                     sdfg_args = daceP._create_sdfg_args(sdfg, args, kwargs)
