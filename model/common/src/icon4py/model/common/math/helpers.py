@@ -36,7 +36,7 @@ def cell_kdim(
 
 
 @field_operator
-def edge_kdim(
+def average_edge_kdim_level_up(
     half_level_field: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
     """
