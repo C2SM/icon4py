@@ -56,7 +56,7 @@ class Icon4PyConfig:
         backend_map = {
             GT4PyBackend.CPU.name: run_gtfn_cached,
             GT4PyBackend.GPU.name: run_gtfn_gpu_cached,
-            GT4PyBackend.ROUNDTRIP.name: run_roundtrip
+            GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
         }
         return backend_map[self.icon4py_backend]
 
