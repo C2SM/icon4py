@@ -151,9 +151,9 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
         output_config = IconOutputConfig(
             output_time_interval=timedelta(seconds=300),
-            output_file_time_interval=timedelta(seconds=1800),
+            output_file_time_interval=timedelta(seconds=300),
             output_path=Path("./"),
-            output_initial_condition_as_a_separate_file=False,
+            output_initial_condition_as_a_separate_file=True,
         )
         diffusion_config = jabw_diffusion_config(icon_run_config.n_substeps)
         nonhydro_config = jabw_nonhydro_config(icon_run_config.n_substeps)

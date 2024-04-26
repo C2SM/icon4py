@@ -132,8 +132,8 @@ class OutputState:
             self._nf4_basegrp[i].createDimension(
                 "vertices_3", 6
             )  # neighboring vertices of a vertex
-            self._nf4_basegrp[i].createDimension("height", grid.num_levels)  # full level height
-            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels + 1)  # half level height
+            self._nf4_basegrp[i].createDimension("height_2", grid.num_levels)  # full level height
+            self._nf4_basegrp[i].createDimension("height", grid.num_levels + 1)  # half level height
             self._nf4_basegrp[i].createDimension("bnds", 2)  # boundary points for full level height
             self._nf4_basegrp[i].createDimension("time", None)
 
@@ -157,16 +157,16 @@ class OutputState:
             """
             times: nf4.Variable = self._nf4_basegrp[i].createVariable("time", "f8", ("time",))
             levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
-                "height", "f8", ("height",)
-            )
-            half_levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
                 "height_2", "f8", ("height_2",)
             )
+            half_levels: nf4.Variable = self._nf4_basegrp[i].createVariable(
+                "height", "f8", ("height",)
+            )
             self._nf4_basegrp[i].createVariable(
-                "height_bnds",
+                "height_2_bnds",
                 "f8",
                 (
-                    "height",
+                    "height_2",
                     "bnds",
                 ),
             )
@@ -244,7 +244,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -253,7 +253,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -262,7 +262,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -271,7 +271,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -280,7 +280,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -297,7 +297,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -306,7 +306,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -315,7 +315,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells",
                 ),
             )
@@ -324,7 +324,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height_2",
+                    "height",
                     "ncells",
                 ),
             )
@@ -337,7 +337,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -346,7 +346,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -355,7 +355,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -364,7 +364,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -373,7 +373,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -382,7 +382,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -391,7 +391,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -401,7 +401,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                 ),
             )
             kh_smag_e = self._nf4_basegrp[i].createVariable(
@@ -409,7 +409,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -418,7 +418,7 @@ class OutputState:
                 "f8",
                 (
                     "time",
-                    "height",
+                    "height_2",
                     "ncells_2",
                 ),
             )
@@ -659,9 +659,9 @@ class OutputState:
                 full_height[k] = 0.5 * (half_height[k] + half_height[k + 1])
                 full_height_bnds[k, 0] = half_height[k]
                 full_height_bnds[k, 1] = half_height[k + 1]
-            self._nf4_basegrp[i].variables["height"][:] = full_height
-            self._nf4_basegrp[i].variables["height_2"][:] = half_height
-            self._nf4_basegrp[i].variables["height_bnds"][:, :] = full_height_bnds
+            self._nf4_basegrp[i].variables["height_2"][:] = full_height
+            self._nf4_basegrp[i].variables["height"][:] = half_height
+            self._nf4_basegrp[i].variables["height_2_bnds"][:, :] = full_height_bnds
 
     def _grid_to_netcdf(self, cell_geometry: CellParams, edge_geometry: EdgeParams):
         # the grid details are only write to the first netCDF file to save memory
@@ -840,6 +840,7 @@ class OutputState:
             if self._enforce_new_ncfile or time_elapsed_in_this_ncfile > self.config.output_file_time_interval:
                 self._enforce_new_ncfile = False
                 self._first_date_in_this_ncfile =  self._output_date
+                self._nf4_basegrp[self._current_file_number].close()
                 self._current_write_step = 0
                 self._current_file_number += 1
             else:
