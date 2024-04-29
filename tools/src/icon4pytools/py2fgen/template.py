@@ -205,8 +205,8 @@ from gt4py.next.iterator.embedded import np_as_located_field
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly
+from gt4py.next import itir_python as run_roundtrip
 from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
-from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
 # We need a grid to pass offset providers to the embedded gt4py program (granules load their own grid at runtime)
