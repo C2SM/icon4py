@@ -52,7 +52,7 @@ program call_multi_return_cffi_plugin
    print *, trim(str_buffer)
    print *
 
-   ! call once just we compile the code once (profiling becomes easier later)
+   ! call once just so that we compile the code once (profiling becomes easier later)
    call multi_return_from_function(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, geofac_div, z_nabla2_e, r_nsubsteps, &
                      horizontal_start, horizontal_end, vertical_start, vertical_end, rc)
 

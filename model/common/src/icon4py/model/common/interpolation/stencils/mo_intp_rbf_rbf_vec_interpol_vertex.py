@@ -55,4 +55,3 @@ def mo_intp_rbf_rbf_vec_interpol_vertex(
             KDim: (vertical_start, vertical_end),
         },
     )
-

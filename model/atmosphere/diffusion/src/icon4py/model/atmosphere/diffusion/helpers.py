@@ -16,6 +16,7 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
 
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     copy_field as copy_field_orig,
@@ -48,8 +49,9 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner as update_theta_and_exner_orig,
 )
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-    mo_intp_rbf_rbf_vec_interpol_vertex as mo_intp_rbf_rbf_vec_interpol_vertex_orig
+    mo_intp_rbf_rbf_vec_interpol_vertex as mo_intp_rbf_rbf_vec_interpol_vertex_orig,
 )
+from icon4py.model.common.settings import device
 
 
 @dataclasses.dataclass
@@ -57,11 +59,16 @@ class CachedProgram:
     program: gtx.ffront.decorator.Program
     with_domain: bool = True
     _compiled_program: Optional[Callable] = None
+    _conn_args: Any = None
     _compiled_args: tuple = dataclasses.field(default_factory=tuple)
 
     @property
     def compiled_program(self) -> Callable:
         return self._compiled_program
+
+    @property
+    def conn_args(self) -> Callable:
+        return self._conn_args
 
     def compile_the_program(
         self, *args, offset_provider: dict[str, gtx.Dimension], **kwargs: Any
@@ -79,6 +86,7 @@ class CachedProgram:
             self._compiled_program = self.compile_the_program(
                 *args, offset_provider=offset_provider, **kwargs
             )
+            self._conn_args = extract_connectivity_args(offset_provider, device)
 
         kwargs_as_tuples = tuple(kwargs.values())
         program_args = list(args) + list(kwargs_as_tuples)
@@ -95,8 +103,9 @@ class CachedProgram:
                 if isinstance(arg, gtx.common.Field):
                     sizes.extend(arg.shape)
 
-        # Call the compiled program with all args followed by their sizes
-        return self.compiled_program(*program_args, *sizes, offset_provider=offset_provider)
+        return self.compiled_program(
+            *program_args, *sizes, conn_args=self.conn_args, offset_provider=offset_provider
+        )
 
 
 # diffusion run stencils
