@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoSolveNonhydroStencil06(StencilTest):
+class TestComputeFirstVerticalDerivative(StencilTest):
     PROGRAM = compute_first_vertical_derivative
     OUTPUTS = ("z_dexner_dz_c_1",)
 

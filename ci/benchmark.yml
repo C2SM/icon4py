@@ -4,11 +4,13 @@ include:
 build:
   extends: .build_template
 
-benchmark_model_icon_grid:
+benchmark_model_stencils:
   extends: .test_template
   stage: benchmark
   script:
-    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=icon_grid_global --verbose
+    # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
   parallel:
     matrix:
       - BACKEND: [gtfn_cpu, gtfn_gpu]
+        GRID: [icon_grid, icon_grid_global]

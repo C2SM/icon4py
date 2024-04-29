@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil55(StencilTest):
+class TestComputeResultsForThermodynamicVariables(StencilTest):
     PROGRAM = compute_results_for_thermodynamic_variables
     OUTPUTS = ("rho_new", "exner_new", "theta_v_new")
 

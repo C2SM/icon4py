@@ -11,8 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from datetime import datetime, timedelta
+
 import pytest
 
+from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
@@ -38,6 +41,58 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     step_date_init,
     vn_only,
 )
+from icon4py.model.driver.icon_configuration import IconRunConfig
+
+
+# TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
+
+
+@pytest.fixture
+def r04b09_diffusion_config(
+    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
+) -> DiffusionConfig:
+    """
+    Create DiffusionConfig matching MCH_CH_r04b09_dsl.
+
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
+    """
+    return DiffusionConfig(
+        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+        hdiff_w=True,
+        hdiff_vn=True,
+        type_t_diffu=2,
+        type_vn_diffu=1,
+        hdiff_efdt_ratio=24.0,
+        hdiff_w_efdt_ratio=15.0,
+        smagorinski_scaling_factor=0.025,
+        zdiffu_t=True,
+        velocity_boundary_diffusion_denom=150.0,
+        max_nudging_coeff=0.075,
+        n_substeps=ndyn_substeps,
+    )
+
+
+@pytest.fixture
+def r04b09_iconrun_config(
+    ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
+    timeloop_date_init,
+    timeloop_date_exit,
+    timeloop_diffusion_linit_init,
+) -> IconRunConfig:
+    """
+    Create IconRunConfig matching MCH_CH_r04b09_dsl.
+
+    Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
+    from the default.
+    """
+    return IconRunConfig(
+        dtime=timedelta(seconds=10.0),
+        start_date=datetime.fromisoformat(timeloop_date_init),
+        end_date=datetime.fromisoformat(timeloop_date_exit),
+        n_substeps=ndyn_substeps,
+        apply_initial_stabilization=timeloop_diffusion_linit_init,
+    )
 
 
 @pytest.fixture

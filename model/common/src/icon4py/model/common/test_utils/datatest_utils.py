@@ -48,11 +48,11 @@ SERIALIZED_DATA_PATH = TEST_DATA_ROOT.joinpath("ser_icondata")
 GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
-    1: "https://polybox.ethz.ch/index.php/s/y2IMUx4pOQ6lyZ7/download",
+    1: "https://polybox.ethz.ch/index.php/s/xhooaubvGffG8Qy/download",
     2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
     4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
 }
-DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/uK3jtrWK90Z4kHC/download"}
+DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
 
 

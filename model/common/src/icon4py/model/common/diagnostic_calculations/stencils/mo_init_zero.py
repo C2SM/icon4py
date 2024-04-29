@@ -17,6 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -47,7 +48,7 @@ def _mo_init_ddt_edge_zero() -> (
     return (ddt_vn_phy, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_init_ddt_cell_zero(
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
@@ -66,7 +67,7 @@ def mo_init_ddt_cell_zero(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_init_ddt_edge_zero(
     ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],

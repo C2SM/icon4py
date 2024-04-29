@@ -27,7 +27,7 @@ n_substeps_reduced = 2
 
 @dataclass(frozen=True)
 class IconRunConfig:
-    dtime: float = 600.0  # length of a time step [s]
+    dtime: timedelta = timedelta(seconds=600.0)  # length of a time step
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
 
@@ -37,10 +37,14 @@ class IconRunConfig:
     # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
     n_substeps: int = 5
 
-    """linit_dyn in ICON"""
-    apply_initial_stabilization: bool = True  # False if in restart mode
+    """
+    ltestcase in ICON
+        ltestcase has been renamed as apply_initial_stabilization because it is only used for extra damping for
+        initial steps in timeloop.
+    """
+    apply_initial_stabilization: bool = True
 
-    run_testcase: bool = False
+    restart_mode: bool = False
 
 
 @dataclass(frozen=True)
@@ -89,13 +93,12 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             hdiff_vn=True,
             hdiff_temp=False,
             n_substeps=n_substeps,
-            hdiff_rcf=True,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
+            zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.075,
         )
@@ -110,7 +113,6 @@ def read_config(experiment: Optional[str]) -> IconConfig:
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             divdamp_fac=0.0025,
-            lhdiff_rcf=True,
         )
 
     def _default_config():
@@ -124,7 +126,7 @@ def read_config(experiment: Optional[str]) -> IconConfig:
     def _mch_ch_r04b09_config():
         return (
             IconRunConfig(
-                dtime=10.0,
+                dtime=timedelta(seconds=10.0),
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
                 damping_height=12500.0,
@@ -142,11 +144,10 @@ def read_config(experiment: Optional[str]) -> IconConfig:
 
     def _Jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=300.0,
+            dtime=timedelta(seconds=300.0),
             end_date=datetime(1, 1, 1, 0, 30, 0),
             damping_height=45000.0,
-            apply_initial_stabilization=True,
-            run_testcase=True,
+            apply_initial_stabilization=False,
             n_substeps=5,
         )
         output_config = IconOutputConfig(

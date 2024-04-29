@@ -14,7 +14,6 @@
 from dataclasses import dataclass, field
 from typing import ClassVar, Optional
 
-import gt4py.next.program_processors.modular_executor
 import numpy as np
 import numpy.typing as npt
 import pytest
@@ -23,7 +22,6 @@ from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
 
 from ..grid.base import BaseGrid
-from ..grid.icon import IconGrid
 from ..type_alias import wpfloat
 
 
@@ -36,6 +34,21 @@ except ModuleNotFoundError:
 @pytest.fixture
 def backend(request):
     return request.param
+
+
+def is_python(backend) -> bool:
+    # want to exclude python backends:
+    #   - cannot run on embedded: because of slicing
+    #   - roundtrip is very slow on large grid
+    return is_embedded(backend) or is_roundtrip(backend)
+
+
+def is_embedded(backend) -> bool:
+    return backend is None
+
+
+def is_roundtrip(backend) -> bool:
+    return backend.__name__ == "roundtrip" if backend else False
 
 
 def _shape(
@@ -104,7 +117,7 @@ def constant_field(
 
 def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
@@ -118,7 +131,7 @@ def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_
 
 def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
@@ -232,28 +245,6 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
-
-
-@pytest.fixture
-def uses_local_area_icon_grid_with_otf(backend, grid):
-    """Check whether we are using a compiled backend with a limited_area icon_grid.
-
-    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
-    """
-    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if grid.limited_area:
-            if isinstance(
-                backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
-            ):
-                return True
-            try:
-                from gt4py.next.program_processors.runners import dace_iterator
-
-                if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
-                    return True
-            except ImportError:
-                pass
-    return False
 
 
 def reshape(arr: np.array, shape: tuple[int, ...]):

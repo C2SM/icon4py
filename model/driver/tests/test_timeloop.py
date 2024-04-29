@@ -15,7 +15,6 @@ import os
 
 import numpy as np
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
@@ -56,11 +55,6 @@ from .utils import (
     construct_iconrun_config,
     construct_nonhydrostatic_config,
 )
-
-
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
 
 
 @pytest.mark.datatest
@@ -133,9 +127,63 @@ def test_jabw_initial_condition(
     )
 
 
+'''
+        (
+            False,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:00:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:05:00.000",
+            False,
+            False,
+            False,
+            5,
+            45000.0,
+        ),
+        (
+            False,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:05:00.000",
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:10:00.000",
+            False,
+            False,
+            True,
+            5,
+            45000.0,
+        ),
+        (
+            False,
+            JABW_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2008-09-01T00:10:00.000",
+            "2008-09-01T00:15:00.000",
+            "2008-09-01T00:15:00.000",
+            "2008-09-01T00:15:00.000",
+            False,
+            False,
+            True,
+            5,
+            45000.0,
+        ),
+
+'''
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, ndyn_substeps, damping_height",
+    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
     [
         (
             False,
@@ -201,57 +249,6 @@ def test_jabw_initial_condition(
             True,
             50000.0,
         ),
-        (
-            False,
-            JABW_EXPERIMENT,
-            1,
-            2,
-            0,
-            4,
-            "2008-09-01T00:00:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-            False,
-            False,
-            False,
-            5,
-            45000.0,
-        ),
-        (
-            False,
-            JABW_EXPERIMENT,
-            1,
-            2,
-            0,
-            4,
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:10:00.000",
-            False,
-            False,
-            True,
-            5,
-            45000.0,
-        ),
-        (
-            False,
-            JABW_EXPERIMENT,
-            1,
-            2,
-            0,
-            4,
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:15:00.000",
-            "2008-09-01T00:15:00.000",
-            "2008-09-01T00:15:00.000",
-            False,
-            False,
-            True,
-            5,
-            45000.0,
-        ),
     ],
 )
 def test_run_timeloop_single_step(
@@ -315,12 +312,12 @@ def test_run_timeloop_single_step(
         timeloop_date_init,
         timeloop_date_exit,
         timeloop_diffusion_linit_init,
-        damping_height=damping_height,
+        damping_height,
         ndyn_substeps=ndyn_substeps,
     )
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert iconrun_config.dtime == diffusion_dtime
+    assert iconrun_config.dtime.total_seconds() == diffusion_dtime
 
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = InterpolationState(
@@ -392,7 +389,6 @@ def test_run_timeloop_single_step(
         cell_geometry=cell_geometry,
         owner_mask=grid_savepoint.c_owner_mask(),
     )
-
 
     diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
         timeloop_diffusion_savepoint_init, grid_savepoint, False

@@ -18,7 +18,6 @@ from pathlib import Path
 import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached, run_gtfn_gpu
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -72,12 +71,6 @@ from icon4py.model.driver.testcase_functions import (
     mo_rbf_vec_interpol_cell_numpy,
     mo_u2vn_jabw_numpy,
 )
-
-
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-compiler_gpu_backend = run_gtfn_gpu
-backend = compiler_cached_backend
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."

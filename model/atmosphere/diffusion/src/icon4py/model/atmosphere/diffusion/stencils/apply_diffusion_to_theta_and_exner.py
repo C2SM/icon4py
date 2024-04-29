@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
 
@@ -27,6 +28,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
 from icon4py.model.common.dimension import CECDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -62,7 +64,7 @@ def _apply_diffusion_to_theta_and_exner(
     return theta_v, exner
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_theta_and_exner(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: Field[[EdgeDim], wpfloat],

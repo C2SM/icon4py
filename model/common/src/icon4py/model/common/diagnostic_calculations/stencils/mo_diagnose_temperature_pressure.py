@@ -17,7 +17,7 @@ from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, sqrt
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
-
+from icon4py.model.common.settings import backend
 
 @field_operator
 def _mo_diagnose_temperature(
@@ -80,7 +80,7 @@ def _mo_diagnose_pressure(
     return pressure, pressure_ifc
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_diagnose_temperature(
     theta_v: Field[[CellDim, KDim], vpfloat],
     exner: Field[[CellDim, KDim], vpfloat],
@@ -101,7 +101,7 @@ def mo_diagnose_temperature(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_diagnose_pressure_sfc(
     exner_nlev_minus2: Field[[CellDim], vpfloat],
     temperature_nlev: Field[[CellDim], vpfloat],
@@ -135,7 +135,7 @@ def mo_diagnose_pressure_sfc(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_diagnose_pressure(
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],

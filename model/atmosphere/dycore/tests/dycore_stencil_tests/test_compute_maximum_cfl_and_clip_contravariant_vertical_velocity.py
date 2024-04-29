@@ -51,7 +51,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity_numpy(
     return cfl_clipping, vcfl, z_w_con_c
 
 
-class TestMoVelocityAdvectionStencil14(StencilTest):
+class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
     PROGRAM = compute_maximum_cfl_and_clip_contravariant_vertical_velocity
     OUTPUTS = ("cfl_clipping", "vcfl", "z_w_con_c")
 

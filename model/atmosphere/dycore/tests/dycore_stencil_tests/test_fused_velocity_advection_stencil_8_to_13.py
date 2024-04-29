@@ -31,9 +31,9 @@ from .test_copy_cell_kdim_field_to_vp import copy_cell_kdim_field_to_vp_numpy
 from .test_correct_contravariant_vertical_velocity import (
     correct_contravariant_vertical_velocity_numpy,
 )
+from .test_init_cell_kdim_field_with_zero_vp import init_cell_kdim_field_with_zero_vp_numpy
 from .test_interpolate_to_cell_center import interpolate_to_cell_center_numpy
 from .test_interpolate_to_half_levels_vp import interpolate_to_half_levels_vp_numpy
-from .test_set_cell_kdim_field_to_zero_vp import set_cell_kdim_field_to_zero_vp_numpy
 
 
 class TestFusedVelocityAdvectionStencil8To13(StencilTest):
@@ -86,7 +86,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         z_w_con_c = np.where(
             k < nlev,
             copy_cell_kdim_field_to_vp_numpy(w),
-            set_cell_kdim_field_to_zero_vp_numpy(z_w_con_c),
+            init_cell_kdim_field_with_zero_vp_numpy(z_w_con_c),
         )
 
         z_w_con_c[:, :-1] = np.where(
@@ -103,7 +103,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        pytest.skip(
+        pytest.xfail(
             "Verification of w_concorr_c currently not working, because numpy version is incorrect."
         )
         z_kin_hor_e = random_field(grid, EdgeDim, KDim)
