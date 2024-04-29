@@ -147,22 +147,13 @@ def diffusion_init(
         edge_areas=edge_areas,
         f_e=f_e,
     )
-<<<<<<< HEAD
     # TODO (Chia Rui): check whether it is okay to set cell_center to None
     cell_params = CellParams(
-        area=cells_area,
+        area=cell_areas,
         mean_cell_area=mean_cell_area,
         cell_center_lon=None,  # type: ignore
         cell_center_lat=None,  # type: ignore
     )
-    config: DiffusionConfig = DiffusionConfig(
-        diffusion_type=DiffusionType(hdiff_order),
-        hdiff_w=lhdiff_w,
-        hdiff_temp=lhdiff_temp,
-        type_vn_diffu=itype_vn_diffu,
-        smag_3d=lsmag_3d,
-        type_t_diffu=itype_t_diffu,
-=======
 
     # cell geometry
     cell_params = CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
@@ -175,7 +166,6 @@ def diffusion_init(
         zdiffu_t=zdiffu_t,
         type_t_diffu=type_t_diffu,
         type_vn_diffu=type_vn_diffu,
->>>>>>> main
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,

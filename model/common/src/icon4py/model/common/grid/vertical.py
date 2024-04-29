@@ -14,6 +14,7 @@ import logging
 from dataclasses import dataclass, field
 from typing import Final
 
+import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 
@@ -75,14 +76,14 @@ class VerticalModelParams:
 
     @classmethod
     def _determine_kstart_moist(
-        cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
+        cls, vct_a: np.ndarray, top_moist_threshold: float, nshift_total: int = 0
     ) -> int32:
         n_levels = vct_a.shape[0]
         interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
         return int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
 
     @classmethod
-    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float):
+    def _determine_damping_height_index(cls, vct_a: np.ndarray, damping_height: float):
         assert damping_height >= 0.0, "Damping height must be positive."
         return (
             int32(0)

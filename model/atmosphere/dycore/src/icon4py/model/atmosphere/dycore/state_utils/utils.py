@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
@@ -24,12 +25,11 @@ from gt4py.next.ffront.fbuiltins import (
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.settings import xp
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
     shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return as_field((dim,), xp.arange(shapex, dtype=dtype))
+    return as_field((dim,), np.arange(shapex, dtype=dtype))
 
 
 def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
@@ -37,7 +37,7 @@ def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
     if is_halfdim:
         assert len(shapex) == 2
         shapex = (shapex[0], shapex[1] + 1)
-    return as_field(dims, xp.zeros(shapex, dtype=dtype))
+    return as_field(dims, np.zeros(shapex, dtype=dtype))
 
 
 def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):

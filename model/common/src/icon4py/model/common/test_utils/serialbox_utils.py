@@ -13,6 +13,7 @@
 import functools
 import logging
 
+import numpy as np
 import serialbox
 import serialbox as ser
 from gt4py.next import as_field
@@ -49,7 +50,6 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, Horizon
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
@@ -75,7 +75,7 @@ class IconSavepoint:
                     )
                     if dims:
                         shp = tuple(self.sizes[d] for d in dims)
-                        return as_field(dims, xp.zeros(shp))
+                        return as_field(dims, np.zeros(shp))
                     else:
                         return None
 
@@ -87,22 +87,22 @@ class IconSavepoint:
         self.log.info(self.savepoint.metainfo)
 
     def _get_field(self, name, *dimensions, dtype=float):
-        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
 
     def _get_reciprocal_field(self, name, *dimensions, dtype=float):
-        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         buffer = self._reduce_to_dim_size(buffer, dimensions)
-        buffer = xp.reciprocal(buffer)
+        buffer = np.reciprocal(buffer)
 
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
 
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[Dimension, Dimension]):
-        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
             :, :, ntnd - 1
         ]
         buffer = self._reduce_to_dim_size(buffer, dims)
@@ -271,7 +271,7 @@ class IconGridSavepoint(IconSavepoint):
     def f_e(self):
         return self._get_field("f_e", EdgeDim)
 
-    def print_connectivity_info(self, name: str, ar: xp.ndarray):
+    def print_connectivity_info(self, name: str, ar: np.ndarray):
         self.log.debug(f" connectivity {name} {ar.shape}")
 
     def c2e(self):
@@ -279,7 +279,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def _get_connectivity_array(self, name: str, target_dim: Dimension, reverse: bool = False):
         if reverse:
-            connectivity = xp.transpose(self._read_int32(name, offset=1))[
+            connectivity = np.transpose(self._read_int32(name, offset=1))[
                 : self.sizes[target_dim], :
             ]
         else:
@@ -295,7 +295,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def c2e2c2e(self):
         if self._c2e2c2e() is None:
-            return xp.zeros((self.sizes[CellDim], 9), dtype=int)
+            return np.zeros((self.sizes[CellDim], 9), dtype=int)
         else:
             return self._c2e2c2e()
 
@@ -324,7 +324,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def v2c2v(self):
         if self._v2c2v() is None:
-            return xp.zeros((self.sizes[VertexDim], 6), dtype=int)
+            return np.zeros((self.sizes[VertexDim], 6), dtype=int)
         else:
             return self._v2c2v()
 
@@ -342,7 +342,7 @@ class IconGridSavepoint(IconSavepoint):
         field_name = "refin_ctl"
         return as_field(
             (dim,),
-            xp.squeeze(
+            np.squeeze(
                 self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
             ),
         )
@@ -367,7 +367,7 @@ class IconGridSavepoint(IconSavepoint):
     def owner_mask(self, dim: Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        return xp.squeeze(mask)
+        return np.squeeze(mask)
 
     def global_index(self, dim: Dimension):
         field_name = "glb_index"
@@ -409,8 +409,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
-        e2c2e0 = xp.column_stack(((xp.asarray(range(e2c2e.shape[0]))), e2c2e))
+        c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
+        e2c2e0 = np.column_stack(((np.asarray(range(e2c2e.shape[0]))), e2c2e))
         grid = (
             IconGrid()
             .with_config(config)
@@ -523,7 +523,7 @@ class InterpolationSavepoint(IconSavepoint):
         return self._get_field("geofac_grdiv", EdgeDim, E2C2EODim)
 
     def geofac_grg(self):
-        grg = xp.squeeze(self.serializer.read("geofac_grg", self.savepoint))
+        grg = np.squeeze(self.serializer.read("geofac_grg", self.savepoint))
         num_cells = self.sizes[CellDim]
         return as_field((CellDim, C2E2CODim), grg[:num_cells, :, 0]), as_field(
             (CellDim, C2E2CODim), grg[:num_cells, :, 1]
@@ -551,19 +551,19 @@ class InterpolationSavepoint(IconSavepoint):
         return as_1D_sparse_field(field[:, 0:2], ECDim)
 
     def rbf_vec_coeff_e(self):
-        buffer = xp.squeeze(
+        buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_e", self.savepoint).astype(float)
         ).transpose()
         return as_field((EdgeDim, E2C2EDim), buffer)
 
     def rbf_vec_coeff_c1(self):
-        buffer = xp.squeeze(
+        buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
         return as_field((CellDim, C2E2C2EDim), buffer)
 
     def rbf_vec_coeff_c2(self):
-        buffer = xp.squeeze(
+        buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
         ).transpose()
         return as_field((CellDim, C2E2C2EDim), buffer)
@@ -688,9 +688,9 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_e_dsl(
         self, k_level
     ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
-        ar = xp.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
+        ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
         k = k_level - 3
-        ar = xp.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
+        ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
         return self._get_field_from_ndarray(ar, EdgeDim, KDim)
 
     @IconSavepoint.optionally_registered(CellDim, KDim)
@@ -705,16 +705,16 @@ class MetricSavepoint(IconSavepoint):
         return self._get_field("geopot", CellDim, KDim)
 
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
-        ser_input = xp.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
+        ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
         if ser_input.shape[1] != sparse_size:
-            ser_input = xp.moveaxis(ser_input, 1, -1)
+            ser_input = np.moveaxis(ser_input, 1, -1)
 
         return self._linearize_first_2dims(
             ser_input, sparse_size=sparse_size, target_dims=(CECDim, KDim)
         )
 
     def _linearize_first_2dims(
-        self, data: xp.ndarray, sparse_size: int, target_dims: tuple[Dimension, ...]
+        self, data: np.ndarray, sparse_size: int, target_dims: tuple[Dimension, ...]
     ):
         old_shape = data.shape
         assert old_shape[1] == sparse_size
@@ -725,10 +725,10 @@ class MetricSavepoint(IconSavepoint):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 
     def zd_vertidx(self):
-        return xp.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
+        return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
 
     def zd_indlist(self):
-        return xp.squeeze(self.serializer.read("zd_indlist", self.savepoint))
+        return np.squeeze(self.serializer.read("zd_indlist", self.savepoint))
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
@@ -759,16 +759,16 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("exner", CellDim, KDim)
 
     def diff_multfac_smag(self):
-        return xp.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
+        return np.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
 
     def enh_smag_fac(self):
-        return xp.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
+        return np.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
 
     def smag_limit(self):
-        return xp.squeeze(self.serializer.read("smag_limit", self.savepoint))
+        return np.squeeze(self.serializer.read("smag_limit", self.savepoint))
 
     def diff_multfac_n2w(self):
-        return xp.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
+        return np.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
 
     def nudgezone_diff(self) -> int:
         return self.serializer.read("nudgezone_diff", self.savepoint)[0]

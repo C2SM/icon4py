@@ -22,7 +22,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
 )
-#from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
+from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 
 
 class Device(Enum):
@@ -33,7 +33,7 @@ class Device(Enum):
 class GT4PyBackend(Enum):
     CPU = "run_gtfn_cached"
     GPU = "run_gtfn_gpu_cached"
-    #ROUNDTRIP = "run_roundtrip"
+    ROUNDTRIP = "run_roundtrip"
 
 
 @dataclasses.dataclass
@@ -56,7 +56,7 @@ class Icon4PyConfig:
         backend_map = {
             GT4PyBackend.CPU.name: run_gtfn_cached,
             GT4PyBackend.GPU.name: run_gtfn_gpu_cached,
-            #GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
+            GT4PyBackend.ROUNDTRIP.name: run_roundtrip,
         }
         return backend_map[self.icon4py_backend]
 
@@ -65,7 +65,7 @@ class Icon4PyConfig:
         device_map = {
             GT4PyBackend.CPU.name: Device.CPU,
             GT4PyBackend.GPU.name: Device.GPU,
-            #GT4PyBackend.ROUNDTRIP.name: Device.CPU,
+            GT4PyBackend.ROUNDTRIP.name: Device.CPU,
         }
         device = device_map[self.icon4py_backend]
         return device
