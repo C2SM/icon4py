@@ -30,7 +30,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
 )
-from icon4py.model.common.math.helpers import edge_kdim
+from icon4py.model.common.math.helpers import average_edge_kdim_level_up
 
 
 def compute_c_lin_e(
@@ -94,4 +94,4 @@ def compute_cells_aw_verts(
 def compute_ddxnt_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
 ):
-    edge_kdim(z_ddxnt_z_half_e, out=ddxn_z_full)
+    average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
