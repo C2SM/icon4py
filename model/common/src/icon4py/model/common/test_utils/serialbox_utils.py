@@ -146,6 +146,12 @@ class IconGridSavepoint(IconSavepoint):
         super().__init__(sp, ser, size)
         self.global_grid_params = GlobalGridParams(root, level)
 
+    def v_dual_area(self):
+        return self._get_field("v_dual_area", VertexDim)
+
+    def edge_vert_length(self):
+        return self._get_field("edge_vert_length", EdgeDim, E2C2VDim)
+
     def vct_a(self):
         return self._get_field("vct_a", KDim)
 
@@ -222,6 +228,9 @@ class IconGridSavepoint(IconSavepoint):
         # don't need to subtract 1, because FORTRAN slices  are inclusive [from:to] so the being
         # one off accounts for being exclusive [from:to)
         return self.serializer.read("e_end_index", self.savepoint)
+
+    def v_owner_mask(self):
+        return self._get_field("v_owner_mask", VertexDim, dtype=bool)
 
     def c_owner_mask(self):
         return self._get_field("c_owner_mask", CellDim, dtype=bool)
