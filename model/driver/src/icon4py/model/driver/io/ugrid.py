@@ -21,7 +21,6 @@ from gt4py.next import Dimension, DimensionKind
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.grid_manager import GridFile
-from icon4py.model.driver.io.exceptions import ValidationError
 
 
 FILL_VALUE = GridFile.INVALID_INDEX
@@ -115,7 +114,8 @@ class IconUGridPatch:
             "end_idx_v",
         )
         self.index_lists = self.connectivities + self.horizontal_domain_borders
-        # do not exist on local grid.nc of mch_ch_r04b09_dsl what do they contain?
+        # TODO (magdalena) do not exist on local grid (grid.nc of mch_ch_r04b09_dsl)
+        #  what do they contain?
         # "edge_index",
         # "vertex_index",
         # "cell_index",
@@ -140,7 +140,7 @@ class IconUGridPatch:
                 face_face_connectivity="neighbor_cell_index",
                 edge_face_connectivity="adjacent_cell_of_edge",
                 node_dimension="vertex",
-                # TODO boundary_node_connectivity ?
+                # TODO do we need boundary_node_connectivity ?
             ),
         )
 
@@ -162,7 +162,8 @@ class IconUGridPatch:
     def _transpose_index_lists(self, ds: xa.Dataset):
         """Unify the dimension order of fields in ICON grid file.
 
-        The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension) and others the other way around. We transpose them to have all the same ordering.
+        The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension)
+        and others the other way around. We transpose them to have all the same ordering.
         """
         for name in self.connectivities:
             shp = ds[name].shape
@@ -180,7 +181,7 @@ class IconUGridPatch:
             grid.validate()
         except RuntimeError as error:
             log.error(f"Validation of the ugrid failed with {error}>")
-            raise ValidationError("Validation of the ugrid failed") from error
+            raise UGridValidationError("Validation of the ugrid failed") from error
 
     def __call__(self, ds: xa.Dataset, validate: bool = False):
         self._patch_start_index(ds, with_zero_start_index=True)
@@ -193,7 +194,7 @@ class IconUGridPatch:
 
 
 # TODO (magdalena) encapsulate this thing somehow together with the opening of the file
-# like this it could be called on an unpatched dataset
+#                   (as is it could be called on an unpatched dataset)
 def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path):
     stem = original_filename.stem
     filename = output_path.joinpath(stem + "_ugrid.nc")
@@ -219,3 +220,7 @@ def load_data_file(filename: Union[Path | str]) -> xa.Dataset:
         yield ds
     finally:
         ds.close()
+
+
+class UGridValidationError(Exception):
+    pass

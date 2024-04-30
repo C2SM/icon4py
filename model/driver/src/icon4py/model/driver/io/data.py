@@ -15,7 +15,7 @@ import xarray as xa
 from gt4py._core.definitions import ScalarT
 from gt4py.next.common import Dimension, DimensionKind, Dims, DimsT, Field
 
-from icon4py.model.driver.io.xgrid import dimension_mapping, ugrid_attributes
+from icon4py.model.driver.io.ugrid import dimension_mapping, ugrid_attributes
 
 
 ### CF attributes of the prognostic variables

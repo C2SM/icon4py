@@ -55,10 +55,8 @@ from icon4py.model.driver.io.io import (
     to_canonical_dim_order,
     to_delta,
 )
-from icon4py.model.driver.io.xgrid import load_data_file
+from icon4py.model.driver.io.ugrid import load_data_file
 
-
-# TODO add support for interface level fields like w in the state
 
 UNLIMITED = None
 simple_grid = SimpleGrid()
@@ -363,10 +361,6 @@ def test_initialize_writer_create_dimensions(
     assert dataset.dims["time"].size == 0
     assert dataset.dims["time"].isunlimited
 
-    heights = xr.DataArray(  # noqa
-        np.range((grid.num_levels + 1) * 100.0),
-        attrs={"units": "m", "long_name": "heights of sample model levels", "short_name": "height"},
-    )
     assert dataset.variables["times"].units == DEFAULT_TIME_UNIT
     assert dataset.variables["times"].calendar == DEFAULT_CALENDAR
 
@@ -493,6 +487,6 @@ def test_append_timeslice_existing_var(test_path, random_name):
 
 @pytest.mark.parametrize("input_", state_values())
 def test_to_canonical_dim_order(input_):
-    input_dims = input.dims
-    output = to_canonical_dim_order(input)
+    input_dims = input_.dims
+    output = to_canonical_dim_order(input_)
     assert output.dims == (input_dims[1], input_dims[0])

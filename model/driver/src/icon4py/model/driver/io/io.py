@@ -41,7 +41,7 @@ from icon4py.model.driver.io.cf_utils import (
     INTERFACE_LEVEL_NAME,
     LEVEL_NAME,
 )
-from icon4py.model.driver.io.xgrid import IconUGridWriter, load_data_file
+from icon4py.model.driver.io.ugrid import IconUGridWriter, load_data_file
 
 
 log = logging.getLogger(__name__)
@@ -68,6 +68,8 @@ def to_delta(value: str) -> timedelta:
 class Config(ABC):
     """
     Base class for all config classes.
+
+    #TODO (halungge) Need to visit this, when we address configuration
     """
 
     def __str__(self):
@@ -83,10 +85,6 @@ class Config(ABC):
         """
 
         pass
-
-
-
-
 
 
 @dataclass(frozen=True)
@@ -279,7 +277,6 @@ class FieldGroupMonitor(Monitor):
     def _update_fetch_times(self):
         self._next_output_time = self._next_output_time + self._time_delta
 
-    # TODO (halungge) rename?
     def store(self, state: dict, model_time: datetime, **kwargs):
         """Pick fields from the state dictionary to be written to disk.
 

@@ -20,7 +20,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
     REGIONAL_EXPERIMENT,
 )
 from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, REGIONAL_GRIDFILE
-from icon4py.model.driver.io.xgrid import (
+from icon4py.model.driver.io.ugrid import (
     FILL_VALUE,
     IconUGridPatch,
     dump_ugrid_file,

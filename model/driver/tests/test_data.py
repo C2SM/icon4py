@@ -14,7 +14,7 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.driver.io.data import PROGNOSTIC_CF_ATTRIBUTES, to_data_array
-from icon4py.model.driver.io.xgrid import MESH
+from icon4py.model.driver.io.ugrid import MESH
 
 
 def test_data_array_has_ugrid_and_cf_attributes():
