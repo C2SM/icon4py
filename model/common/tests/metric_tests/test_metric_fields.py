@@ -492,6 +492,7 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
     assert dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
 
 
+@pytest.mark.skip
 @pytest.mark.datatest
 def test_compute_inv_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     # TODO: serialization missing inv_ddqz_z_full is over cells, need over edge --> inv_ddqz_z_full_e
