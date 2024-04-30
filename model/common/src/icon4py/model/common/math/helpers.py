@@ -11,10 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, field_operator
+from gt4py.next import Field, field_operator, program
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, Koff, VertexDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
@@ -117,3 +118,26 @@ def _grad_fd_tang(
 ) -> Field[[EdgeDim, KDim], float]:
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e
+
+
+@field_operator
+def _compute_inv_edge_k(
+    edge_k_field: Field[[EdgeDim, KDim], vpfloat],
+) -> Field[[EdgeDim, KDim], vpfloat]:
+    return 1.0 / edge_k_field
+
+
+@program
+def compute_inv_edge_k(
+    edge_k_field: Field[[EdgeDim, KDim], vpfloat],
+    inv_edge_k_field: Field[[EdgeDim, KDim], vpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_inv_edge_k(
+        edge_k_field,
+        out=inv_edge_k_field,
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
