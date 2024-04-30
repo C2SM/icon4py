@@ -61,6 +61,21 @@ program call_multi_return_cffi_plugin
    do n = 1, 1000
        call multi_return_from_function(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, geofac_div, z_nabla2_e, r_nsubsteps, &
                      horizontal_start, horizontal_end, vertical_start, vertical_end, rc)
+
+       ! print array shapes and values
+       print *, "Arrays after computation:"
+       print *, "First value of vn_traj:", vn_traj(1, 1)
+       print *, "First value of mass_flx_me:", mass_flx_me(1, 1)
+       write (str_buffer, '("Shape of z_vn_avg = ", I2, ",", I2)') size(z_vn_avg, 1), size(z_vn_avg, 2)
+       print *, trim(str_buffer)
+       write (str_buffer, '("Shape of mass_fl_e = ", I2, ",", I2)') size(mass_fl_e, 1), size(mass_fl_e, 2)
+       print *, trim(str_buffer)
+       write (str_buffer, '("Shape of vn_traj = ", I2, ",", I2)') size(vn_traj, 1), size(vn_traj, 2)
+       print *, trim(str_buffer)
+       write (str_buffer, '("Shape of mass_flx_me = ", I2, ",", I2)') size(mass_flx_me, 1), size(mass_flx_me, 2)
+       print *, trim(str_buffer)
+       print *, "passed"
+
    end do
    call profile_disable(rc)
    print *, "Python exit code = ", rc
@@ -70,29 +85,6 @@ program call_multi_return_cffi_plugin
 
    !$ACC update host(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
 
-   ! print array shapes and values before computation
-   print *, "Arrays after computation:"
-   write (str_buffer, '("Shape of z_vn_avg = ", I2, ",", I2)') size(z_vn_avg, 1), size(z_vn_avg, 2)
-   print *, trim(str_buffer)
-   write (str_buffer, '("Shape of mass_fl_e = ", I2, ",", I2)') size(mass_fl_e, 1), size(mass_fl_e, 2)
-   print *, trim(str_buffer)
-   write (str_buffer, '("Shape of vn_traj = ", I2, ",", I2)') size(vn_traj, 1), size(vn_traj, 2)
-   print *, trim(str_buffer)
-   write (str_buffer, '("Shape of mass_flx_me = ", I2, ",", I2)') size(mass_flx_me, 1), size(mass_flx_me, 2)
-   print *, trim(str_buffer)
-   print *, "passed"
-
-   ! Assert vn_traj == 12 and mass_flx_me == 22
-!   computation_correct = .true.
-!   do i = 1, edim
-!      do j = 1, kdim
-!         if (vn_traj(i, j) /= 12.0d0 .or. mass_flx_me(i, j) /= 22.0d0) then
-!            computation_correct = .false.
-!            exit
-!         end if
-!      end do
-!      if (.not. computation_correct) exit
-!   end do
 
    !$ACC end data
    !$ACC exit data delete(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
@@ -100,11 +92,4 @@ program call_multi_return_cffi_plugin
    ! deallocate arrays
    deallocate (z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
 
-!   ! Check and print the result of the assertion
-!   if (computation_correct) then
-!      print *, "passed: vn_traj and mass_flx_me have expected values."
-!   else
-!      print *, "failed: vn_traj or mass_flx_me does not have the expected values."
-!      stop 1
-!   end if
 end program call_multi_return_cffi_plugin
