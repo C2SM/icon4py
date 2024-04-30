@@ -16,6 +16,7 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.next.embedded.nd_array_field import NumPyArrayField, CuPyArrayField
 from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
 
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
@@ -54,6 +55,31 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
 from icon4py.model.common.settings import device
 
 
+def handle_numpy_integer(value):
+    return int(value)
+
+
+def handle_common_field(value, sizes):
+    sizes.extend(value.shape)
+    return value  # Return the value unmodified, but side-effect on sizes
+
+
+def handle_default(value):
+    return value  # Return the value unchanged
+
+
+type_handlers = {
+    np.integer: handle_numpy_integer,
+    NumPyArrayField: handle_common_field,
+    CuPyArrayField: handle_common_field,
+}
+
+
+def process_arg(value, sizes):
+    handler = type_handlers.get(type(value), handle_default)
+    return handler(value, sizes) if handler == handle_common_field else handler(value)
+
+
 @dataclasses.dataclass
 class CachedProgram:
     program: gtx.ffront.decorator.Program
@@ -90,21 +116,17 @@ class CachedProgram:
 
         kwargs_as_tuples = tuple(kwargs.values())
         program_args = list(args) + list(kwargs_as_tuples)
-
-        # Convert numpy integers in args to int
-        for i in range(len(program_args)):
-            if isinstance(program_args[i], np.integer):
-                program_args[i] = int(program_args[i])
-
-        # Append sizes of common.Field instances at the end in the order they appear
         sizes = []
+
+        # Convert numpy integers in args to int and handle gtx.common.Field
+        for i in range(len(program_args)):
+            program_args[i] = process_arg(program_args[i], sizes)
+
         if not self.with_domain:
-            for arg in program_args:
-                if isinstance(arg, gtx.common.Field):
-                    sizes.extend(arg.shape)
+            program_args.extend(sizes)
 
         return self.compiled_program(
-            *program_args, *sizes, conn_args=self.conn_args, offset_provider=offset_provider
+            *program_args, conn_args=self.conn_args, offset_provider=offset_provider
         )
 
 
