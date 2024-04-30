@@ -50,6 +50,9 @@ P0REF: Final[wpfloat] = REFERENCE_PRESSURE
 SEAL_LEVEL_PRESSURE: Final[wpfloat] = 101325.0
 P0SL_BG: Final[wpfloat] = SEAL_LEVEL_PRESSURE
 
+# average earth radius in [m]
+EARTH_RADIUS: Final[float] = 6.371229e6
+
 #: sea level temperature for reference atmosphere [K]
 SEA_LEVEL_TEMPERATURE: Final[wpfloat] = 288.15
 T0SL_BG: Final[wpfloat] = SEA_LEVEL_TEMPERATURE

@@ -25,6 +25,7 @@ from .datatest_utils import (
     SERIALIZED_DATA_PATH,
     create_icon_serial_data_provider,
     get_datapath_for_experiment,
+    get_global_grid_params,
     get_processor_properties_for_run,
     get_ranked_data_path,
 )
@@ -43,11 +44,6 @@ def processor_props(request):
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
     return get_ranked_data_path(SERIALIZED_DATA_PATH, processor_props)
-
-
-@pytest.fixture
-def datapath(ranked_data_path, experiment):
-    return get_datapath_for_experiment(ranked_data_path, experiment)
 
 
 @pytest.fixture
@@ -86,13 +82,15 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 
 @pytest.fixture
-def data_provider(download_ser_data, datapath, processor_props):
-    return create_icon_serial_data_provider(datapath, processor_props)
+def data_provider(download_ser_data, ranked_data_path, experiment, processor_props):
+    data_path = get_datapath_for_experiment(ranked_data_path, experiment)
+    return create_icon_serial_data_provider(data_path, processor_props)
 
 
 @pytest.fixture
-def grid_savepoint(data_provider):
-    return data_provider.from_savepoint_grid()
+def grid_savepoint(data_provider, experiment):
+    root, level = get_global_grid_params(experiment)
+    return data_provider.from_savepoint_grid(root, level)
 
 
 def is_regional(experiment_name):
@@ -100,7 +98,7 @@ def is_regional(experiment_name):
 
 
 @pytest.fixture
-def icon_grid(grid_savepoint, experiment):
+def icon_grid(grid_savepoint):
     """
     Load the icon grid from an ICON savepoint.
 
@@ -110,8 +108,11 @@ def icon_grid(grid_savepoint, experiment):
 
 
 @pytest.fixture
-def decomposition_info(data_provider):
-    return data_provider.from_savepoint_grid().construct_decomposition_info()
+def decomposition_info(data_provider, experiment):
+    root, level = get_global_grid_params(experiment)
+    return data_provider.from_savepoint_grid(
+        grid_root=root, grid_level=level
+    ).construct_decomposition_info()
 
 
 @pytest.fixture
