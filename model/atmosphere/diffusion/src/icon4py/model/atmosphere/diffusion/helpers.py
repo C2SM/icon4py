@@ -16,6 +16,7 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 from gt4py import next as gtx
+from gt4py.next.backend import ProgArgsInjector
 from gt4py.next.embedded.nd_array_field import CuPyArrayField, NumPyArrayField
 from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
 
@@ -100,8 +101,10 @@ class CachedProgram:
         self, *args, offset_provider: dict[str, gtx.Dimension], **kwargs: Any
     ) -> Callable:
         backend = self.program.backend
-        transformer = backend.transformer.replace(
-            args=args, kwargs=kwargs | {"offset_provider": offset_provider}
+        transformer = backend.transforms_prog.replace(
+            past_inject_args=ProgArgsInjector(
+                args=args, kwargs=kwargs | {"offset_provider": offset_provider}
+            )
         )
         program_call = transformer(self.program.definition_stage)
         self._compiled_args = program_call.args
@@ -125,9 +128,8 @@ class CachedProgram:
         if not self.with_domain:
             program_args.extend(sizes)
 
-        return self.compiled_program(
-            *program_args, conn_args=self.conn_args, offset_provider=offset_provider
-        )
+        # todo(samkellerhals): if we merge gt4py PR we can also pass connectivity args here conn_args=self.conn_args
+        return self.compiled_program(*program_args, offset_provider=offset_provider)
 
 
 # diffusion run stencils
