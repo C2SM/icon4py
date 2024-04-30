@@ -10,23 +10,21 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+
 import pytest
 
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
-    damping_height,
-    data_provider,
-    decomposition_info,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    processor_props,
-    ranked_data_path,
+from icon4py.model.common import constants
+from icon4py.model.common.grid.horizontal import CellParams
+from icon4py.model.common.grid.icon import GlobalGridParams
+
+
+@pytest.mark.parametrize(
+    "grid_root,grid_level,expected",
+    [
+        (2, 4, 24907282236.708576),
+        (4, 9, 6080879.45232143),
+    ],
 )
-from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
-
-
-@pytest.fixture
-def grid_file():
-    return REGIONAL_EXPERIMENT
+def test_mean_cell_area_calculation(grid_root, grid_level, expected):
+    params = GlobalGridParams(grid_root, grid_level)
+    assert expected == CellParams._compute_mean_cell_area(constants.EARTH_RADIUS, params.num_cells)
