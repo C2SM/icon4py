@@ -16,7 +16,7 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 from gt4py import next as gtx
-from gt4py.next.embedded.nd_array_field import NumPyArrayField, CuPyArrayField
+from gt4py.next.embedded.nd_array_field import CuPyArrayField, NumPyArrayField
 from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
 
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
