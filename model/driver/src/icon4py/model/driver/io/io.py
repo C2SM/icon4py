@@ -351,7 +351,6 @@ class NetcdfWriter:
         dim.standard_name = values.standard_name
 
     def initialize_dataset(self):
-        # TODO (magdalena) (what mode do we need `a` or `w`?
         self.dataset = nc.Dataset(
             self._file_name,
             "w",
