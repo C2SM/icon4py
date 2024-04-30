@@ -32,7 +32,6 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtr
 from icon4py.model.common.metrics.stencils.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     grid_savepoint,
