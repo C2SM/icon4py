@@ -93,7 +93,7 @@ def _compute_ddqz_z_half(
     return ddqz_z_half
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=None)
 def compute_ddqz_z_half(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     z_mc: Field[[CellDim, KDim], wpfloat],

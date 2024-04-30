@@ -87,7 +87,7 @@ def mo_intp_rbf_rbf_vec_interpol_cell(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_intp_rbf_rbf_vec_interpol_vertex(
+    _mo_intp_rbf_rbf_vec_interpol_cell(
         p_vn_in,
         ptr_coeff_1,
         ptr_coeff_2,
