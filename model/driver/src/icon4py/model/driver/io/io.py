@@ -26,6 +26,8 @@ import xarray as xr
 from cftime import date2num
 from dask.delayed import Delayed
 
+from icon4py.model.common.components.exceptions import InvalidConfigError
+from icon4py.model.common.components.monitor import Monitor
 from icon4py.model.common.decomposition.definitions import (
     ProcessProperties,
     SingleNodeProcessProperties,
@@ -83,31 +85,8 @@ class Config(ABC):
         pass
 
 
-class InvalidConfigError(Exception):
-    pass
 
 
-class Monitor(ABC):
-    """
-    Monitor component of the model.
-
-    Monitor is a base class for components that store or freeze state for later usage but don't modify it or return any new state objects.
-
-    Named after Sympl Monitor component: https://sympl.readthedocs.io/en/latest/monitors.html
-    """
-
-    def __str__(self):
-        return "instance of {}(Monitor)".format(self.__class__)
-
-    @abc.abstractmethod
-    def store(self, state: dict, model_time: datetime, *args, **kwargs):
-        """Store state and perform class specific actions on it.
-
-
-        Args:
-            state: dict  model state dictionary
-        """
-        pass
 
 
 @dataclass(frozen=True)
