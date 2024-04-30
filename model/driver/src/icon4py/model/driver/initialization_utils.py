@@ -65,10 +65,12 @@ from icon4py.model.driver.serialbox_helpers import (
 )
 from icon4py.model.driver.testcase_functions import (
     hydrostatic_adjustment_numpy,
-    interpolation_cells2edges_scalar_numpy,
-    interpolation_rbf_edges2cells_vector_numpy,
-    zonal2normalwind_jabw_numpy,
+    cell_2_edge_interpolation_numpy,
 )
+from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
+    edge_2_cell_vector_rbf_interpolation,
+)
+from icon4py.model.driver.jablonowski_willamson_testcase import zonalwind_2_normalwind_jabw_numpy
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -139,7 +141,7 @@ def model_initialization_jabw(
     edge_lon = edge_param.edge_center[1].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
 
-    cells2edges_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
+    cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
@@ -247,9 +249,9 @@ def model_initialization_jabw(
         temperature_numpy[:, k_index] = temperature_jw
 
     log.info("Newton iteration completed!")
-    eta_v_e_numpy = interpolation_cells2edges_scalar_numpy(
+    eta_v_e_numpy = cell_2_edge_interpolation_numpy(
         icon_grid,
-        cells2edges_coeff,
+        cell_2_edge_coeff,
         eta_v_numpy,
         grid_idx_edge_start_plus1,
         grid_idx_edge_end,
@@ -258,7 +260,7 @@ def model_initialization_jabw(
     )
     log.info("Cell-to-edge computation completed.")
 
-    vn_numpy = zonal2normalwind_jabw_numpy(
+    vn_numpy = zonalwind_2_normalwind_jabw_numpy(
         icon_grid,
         jw_u0,
         jw_up,
@@ -303,19 +305,20 @@ def model_initialization_jabw(
     # set surface pressure to the prescribed value
     pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
-    u_numpy, v_numpy = interpolation_rbf_edges2cells_vector_numpy(
-        vn_numpy,
-        rbf_vec_coeff_c1.asnumpy(),
-        rbf_vec_coeff_c2.asnumpy(),
-        icon_grid.connectivities[C2E2C2EDim],
+    u = _allocate(CellDim, KDim, grid=icon_grid)
+    v = _allocate(CellDim, KDim, grid=icon_grid)
+    edge_2_cell_vector_rbf_interpolation(
+        vn,
+        rbf_vec_coeff_c1,
+        rbf_vec_coeff_c2,
+        u,
+        v,
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
         0,
         icon_grid.num_levels,
+        offset_provider=icon_grid.offset_providers,
     )
-
-    u = as_field((CellDim, KDim), u_numpy)
-    v = as_field((CellDim, KDim), v_numpy)
 
     log.info("U, V computation completed.")
 

@@ -19,7 +19,7 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 
 
-def interpolation_rbf_edges2cells_vector_numpy(
+def edge_2_cell_vector_rbf_interpolation_numpy(
     p_e_in: np.array,
     ptr_coeff_1: np.array,
     ptr_coeff_2: np.array,
@@ -38,7 +38,7 @@ def interpolation_rbf_edges2cells_vector_numpy(
     return p_u_out, p_v_out
 
 
-def interpolation_cells2edges_scalar_numpy(
+def cell_2_edge_interpolation_numpy(
     icon_grid: IconGrid,
     cells2edges_interpolation_coeff: np.array,
     cell_scalar: np.array,
@@ -61,48 +61,6 @@ def interpolation_cells2edges_scalar_numpy(
         mask, np.sum(cell_scalar[e2c] * cells2edges_interpolation_coeff, axis=1), 0.0
     )
     return edge_scalar
-
-
-def zonal2normalwind_jabw_numpy(
-    icon_grid: IconGrid,
-    jw_u0: float,
-    jw_up: float,
-    lat_perturbation_center: float,
-    lon_perturbation_center: float,
-    edge_lat: np.array,
-    edge_lon: np.array,
-    primal_normal_x: np.array,
-    eta_v_e: np.array,
-):
-    """mask = np.repeat(np.expand_dims(mask, axis=-1), eta_v_e.shape[1], axis=1)"""
-    mask = np.ones((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
-    mask[
-        0 : icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :
-    ] = False
-    edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
-    edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
-    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
-    u = np.where(mask, jw_u0 * (np.cos(eta_v_e) ** 1.5) * (np.sin(2.0 * edge_lat) ** 2), 0.0)
-    if jw_up > 1.0e-20:
-        u = np.where(
-            mask,
-            u
-            + jw_up
-            * np.exp(
-                -10.0
-                * np.arccos(
-                    np.sin(lat_perturbation_center) * np.sin(edge_lat)
-                    + np.cos(lat_perturbation_center)
-                    * np.cos(edge_lat)
-                    * np.cos(edge_lon - lon_perturbation_center)
-                )
-                ** 2
-            ),
-            u,
-        )
-    vn = u * primal_normal_x
-
-    return vn
 
 
 def hydrostatic_adjustment_numpy(
@@ -141,49 +99,3 @@ def hydrostatic_adjustment_numpy(
         rho[:, k] = exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
 
     return rho, exner, theta_v
-
-
-# TODO (Chia Rui): Construct a proper test for these diagnostic stencils?
-def diagnose_temperature_numpy(
-    theta_v: np.array,
-    exner: np.array,
-) -> np.array:
-    temperature = theta_v * exner
-    return temperature
-
-
-def diagnose_pressure_sfc_numpy(
-    exner: np.array,
-    temperature: np.array,
-    ddqz_z_full: np.array,
-    num_levels: int,
-) -> np.array:
-    pressure_sfc = P0REF * np.exp(
-        CPD_O_RD * np.log(exner[:, num_levels - 3])
-        + GRAV_O_RD
-        * (
-            ddqz_z_full[:, num_levels - 1] / temperature[:, num_levels - 1]
-            + ddqz_z_full[:, num_levels - 2] / temperature[:, num_levels - 2]
-            + 0.5 * ddqz_z_full[:, num_levels - 3] / temperature[:, num_levels - 3]
-        )
-    )
-    return pressure_sfc
-
-
-def diagnose_pressure_numpy(
-    pressure_sfc: np.array,
-    temperature: np.array,
-    ddqz_z_full: np.array,
-    cell_size: int,
-    num_levels: int,
-) -> tuple[np.array, np.array]:
-    pressure_ifc = np.zeros((cell_size, num_levels), dtype=float)
-    pressure = np.zeros((cell_size, num_levels), dtype=float)
-    pressure_ifc[:, num_levels - 1] = pressure_sfc * np.exp(
-        -ddqz_z_full[:, num_levels - 1] / temperature[:, num_levels - 1]
-    )
-    pressure[:, num_levels - 1] = np.sqrt(pressure_ifc[:, num_levels - 1] * pressure_sfc)
-    for k in range(num_levels - 2, -1, -1):
-        pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(-ddqz_z_full[:, k] / temperature[:, k])
-        pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
-    return pressure, pressure_ifc
