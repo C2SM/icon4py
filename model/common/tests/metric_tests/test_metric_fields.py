@@ -24,7 +24,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     V2CDim,
-    VertexDim,
+    VertexDim, E2CDim, ECDim,
 )
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
@@ -47,6 +47,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_z_mc,
     compute_exner_exfac
 )
+from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -57,7 +58,7 @@ from icon4py.model.common.test_utils.helpers import (
     is_python,
     is_roundtrip,
     random_field,
-    zero_field,
+    zero_field, flatten_first_two_dims,
 )
 
 
@@ -610,6 +611,7 @@ def test_compute_exner_exfac(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
     backend = None
+    # initialize exner_exfac to field of exner_expol and check horizontal bounds
     exner_exfac = zero_field(icon_grid, CellDim, KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
@@ -625,3 +627,43 @@ def test_compute_exner_exfac(
     )
 
     assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy())
+
+@pytest.mark.datatest
+def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
+    backend = None
+    zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
+    zdiff_gradp_full = zero_field(icon_grid, EdgeDim, E2CDim, KDim)
+    zdiff_gradp_full_np = zdiff_gradp_full.asnumpy()
+    z_mc = zero_field(icon_grid, CellDim, KDim)
+    z_ifc = metrics_savepoint.z_ifc()
+    compute_z_mc.with_backend(backend)(
+        z_ifc,
+        z_mc,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=int32(0),
+        vertical_end=int32(icon_grid.num_levels),
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+    c_lin_e = interpolation_savepoint.c_lin_e()
+    horizontal_start = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+    )
+    flat_idx = np.full(shape=icon_grid.num_edges, fill_value=icon_grid.num_levels)
+
+
+    zdiff_gradp_full_np_final = compute_zdiff_gradp_dsl(
+        e2c=icon_grid.connectivities[E2CDim],
+        c_lin_e=c_lin_e.asnumpy(),
+        z_mc=z_mc.asnumpy(),
+        zdiff_gradp=zdiff_gradp_full_np,
+        z_ifc=metrics_savepoint.z_ifc().asnumpy(),
+        flat_idx=flat_idx,
+        nlev=icon_grid.num_levels,  # TODO: check that -1 ok
+        nedges=icon_grid.num_edges,
+    )
+    zdiff_gradp_full_field = flatten_first_two_dims(
+        ECDim, KDim, field=as_field((EdgeDim, E2CDim, KDim), zdiff_gradp_full_np_final)
+    )
+    # zdiff_gradp_ref.asnumpy()[856:, :] == zdiff_gradp_full_field.asnumpy()[856:, :]
+    assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy())

@@ -604,7 +604,7 @@ def _compute_exner_exfac(ddxn_z_full: Field[[EdgeDim, KDim], wpfloat], dual_edge
 
     exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp)**2, 1.0 - (0.002 * z_maxhgtd)**2)
     exner_exfac = maximum(0.0, exner_exfac)
-    exner_exfac = where(z_maxslp > 1.5, maximum(-1.0/6.0, 1.0 / 9.0 * (1.5-z_maxslp)), exner_exfac)
+    exner_exfac = where(z_maxslp > 1.5, maximum(-1.0/6.0, 1.0/9.0 * (1.5 - z_maxslp)), exner_exfac)
 
     return exner_exfac
 
