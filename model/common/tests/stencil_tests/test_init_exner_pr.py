@@ -20,7 +20,7 @@ from icon4py.model.common.diagnostic_calculations.stencils.init_exner_pr import 
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat
 
 
 class TestMoDiagInitExnerPr(StencilTest):
@@ -36,9 +36,9 @@ class TestMoDiagInitExnerPr(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner_ref = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner_pr = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        exner = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        exner_ref = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        exner_pr = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             exner=exner,

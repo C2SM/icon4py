@@ -15,31 +15,27 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, exp, int32, log
 
-from icon4py.model.common.dimension import CellDim
+from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _diagnose_surface_pressure(
-    exner_nlev_minus2: Field[[CellDim], vpfloat],
-    temperature_nlev: Field[[CellDim], vpfloat],
-    temperature_nlev_minus1: Field[[CellDim], vpfloat],
-    temperature_nlev_minus2: Field[[CellDim], vpfloat],
-    ddqz_z_full_nlev: Field[[CellDim], wpfloat],
-    ddqz_z_full_nlev_minus1: Field[[CellDim], wpfloat],
-    ddqz_z_full_nlev_minus2: Field[[CellDim], wpfloat],
+    exner: Field[[CellDim, KDim], vpfloat],
+    temperature: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
     grav_o_rd: wpfloat,
-) -> Field[[CellDim], vpfloat]:
+) -> Field[[CellDim, KDim], vpfloat]:
     pressure_sfc = p0ref * exp(
-        cpd_o_rd * log(exner_nlev_minus2)
+        cpd_o_rd * log(exner(Koff[-3]))
         + grav_o_rd
         * (
-            ddqz_z_full_nlev / temperature_nlev
-            + ddqz_z_full_nlev_minus1 / temperature_nlev_minus1
-            + 0.5 * ddqz_z_full_nlev_minus2 / temperature_nlev_minus2
+            ddqz_z_full(Koff[-1]) / temperature(Koff[-1])
+            + ddqz_z_full(Koff[-2]) / temperature(Koff[-2])
+            + 0.5 * ddqz_z_full(Koff[-3]) / temperature(Koff[-3])
         )
     )
     return pressure_sfc
@@ -47,33 +43,28 @@ def _diagnose_surface_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_surface_pressure(
-    exner_nlev_minus2: Field[[CellDim], vpfloat],
-    temperature_nlev: Field[[CellDim], vpfloat],
-    temperature_nlev_minus1: Field[[CellDim], vpfloat],
-    temperature_nlev_minus2: Field[[CellDim], vpfloat],
-    ddqz_z_full_nlev: Field[[CellDim], wpfloat],
-    ddqz_z_full_nlev_minus1: Field[[CellDim], wpfloat],
-    ddqz_z_full_nlev_minus2: Field[[CellDim], wpfloat],
-    pressure_sfc: Field[[CellDim], vpfloat],
+    exner: Field[[CellDim, KDim], vpfloat],
+    temperature: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    pressure_sfc: Field[[CellDim, KDim], vpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
     grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _diagnose_surface_pressure(
-        exner_nlev_minus2,
-        temperature_nlev,
-        temperature_nlev_minus1,
-        temperature_nlev_minus2,
-        ddqz_z_full_nlev,
-        ddqz_z_full_nlev_minus1,
-        ddqz_z_full_nlev_minus2,
+        exner,
+        temperature,
+        ddqz_z_full,
         cpd_o_rd,
         p0ref,
         grav_o_rd,
         out=pressure_sfc,
         domain={
             CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

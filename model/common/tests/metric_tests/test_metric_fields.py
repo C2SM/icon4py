@@ -23,7 +23,9 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, V2CDim, Verte
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
     _compute_cells2verts,
-    compute_cells2edges,
+)
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
+    cell_2_edge_interpolation,
 )
 from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
@@ -280,12 +282,12 @@ def test_compute_ddqz_z_full_e(
     vertical_start = 0
     vertical_end = icon_grid.num_levels
     ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
-    compute_cells2edges(
-        p_cell_in=ddqz_z_full,
-        c_int=c_lin_e,
-        p_vert_out=ddqz_z_full_e,
-        horizontal_start_edge=0,
-        horizontal_end_edge=ddqz_z_full_e.shape[0],
+    cell_2_edge_interpolation(
+        in_field=ddqz_z_full,
+        coeff=c_lin_e,
+        out_field=ddqz_z_full_e,
+        horizontal_start=0,
+        horizontal_end=ddqz_z_full_e.shape[0],
         vertical_start=vertical_start,
         vertical_end=vertical_end,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},

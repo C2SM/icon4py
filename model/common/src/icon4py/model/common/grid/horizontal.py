@@ -15,15 +15,12 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import ClassVar, Final
 
-from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import Dimension, Field, field_operator, neighbor_sum
 
 from icon4py.model.common import constants, dimension
 from icon4py.model.common.dimension import (
-    E2C,
     V2C,
     CellDim,
-    E2CDim,
     ECDim,
     ECVDim,
     EdgeDim,
@@ -31,7 +28,6 @@ from icon4py.model.common.dimension import (
     V2CDim,
     VertexDim,
 )
-from icon4py.model.common.type_alias import wpfloat
 
 
 NUM_GHOST_ROWS: Final[int] = 2
@@ -349,26 +345,32 @@ class EdgeParams:
 
 @dataclass(frozen=True)
 class CellParams:
-    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
-    area: Field[[CellDim], float]
-    #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
-    mean_cell_area: float
     #: Latitude at the cell center. The cell center is defined to be the circumcenter of an triangle.
     cell_center_lat: Field[[CellDim], float]
     #: Longitude at the cell center. The cell center is defined to be the circumcenter of an triangle.
     cell_center_lon: Field[[CellDim], float]
+    #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
+    area: Field[[CellDim], float]
+    #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
+    mean_cell_area: float
     length_rescale_factor: float = 1.0
 
     @classmethod
     def from_global_num_cells(
         cls,
+        cell_center_lat: Field[[CellDim], float],
+        cell_center_lon: Field[[CellDim], float],
         area: Field[[CellDim], float],
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
         mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
         return cls(
-            area=area, mean_cell_area=mean_cell_area, length_rescale_factor=length_rescale_factor
+            cell_center_lat=cell_center_lat,
+            cell_center_lon=cell_center_lon,
+            area=area,
+            mean_cell_area=mean_cell_area,
+            length_rescale_factor=length_rescale_factor,
         )
 
     @cached_property

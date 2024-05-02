@@ -20,7 +20,7 @@ from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature 
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat
 
 
 class TestDiagnoseTemperature(StencilTest):
@@ -36,9 +36,9 @@ class TestDiagnoseTemperature(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        temperature = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        theta_v = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        exner = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        temperature = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             theta_v=theta_v,

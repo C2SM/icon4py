@@ -15,16 +15,15 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestDiagnoseSurfacePressure(StencilTest):
+class TestDiagnosePressure(StencilTest):
     PROGRAM = diagnose_pressure
     OUTPUTS = ("pressure_sfc",)
 
@@ -36,15 +35,17 @@ class TestDiagnoseSurfacePressure(StencilTest):
         ddqz_z_full: np.array,
         **kwargs,
     ) -> dict:
-        pressure_ifc = np.zeros(temperature)
-        pressure = np.zeros(temperature)
+        pressure_ifc = np.zeros_like(temperature)
+        pressure = np.zeros_like(temperature)
         ground_level = temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = pressure_sfc * np.exp(
             -ddqz_z_full[:, ground_level] / temperature[:, ground_level]
         )
         pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * pressure_sfc)
         for k in range(ground_level - 1, -1, -1):
-            pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(-ddqz_z_full[:, k] / temperature[:, k])
+            pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(
+                -ddqz_z_full[:, k] / temperature[:, k]
+            )
             pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
 
         return dict(
@@ -55,10 +56,10 @@ class TestDiagnoseSurfacePressure(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         ddqz_z_full = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        temperature = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        pressure_sfc = random_field(grid, CellDim, dtype=wpfloat)
-        pressure = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        pressure_ifc = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        temperature = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        pressure_sfc = random_field(grid, CellDim, dtype=vpfloat)
+        pressure = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        pressure_ifc = zero_field(grid, CellDim, KDim, dtype=vpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,

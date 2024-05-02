@@ -198,6 +198,7 @@ class TimeLoop:
             # update boundary condition
 
             timer.start()
+            """
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -206,6 +207,7 @@ class TimeLoop:
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
+            """
             timer.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
@@ -414,7 +416,7 @@ def initialize(
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
 @click.option(
     "--serialization_type",
-    default=str(SerializationType.SB),  # "serialbox"
+    default="serialbox",
     help="serialization type for grid info and static fields",
 )
 @click.option("--experiment_type", default="any", help="experiment selection")

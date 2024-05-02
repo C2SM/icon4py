@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD
+from icon4py.model.common.constants import CVD_O_RD, P0REF, RD
 from icon4py.model.common.dimension import E2CDim, EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid

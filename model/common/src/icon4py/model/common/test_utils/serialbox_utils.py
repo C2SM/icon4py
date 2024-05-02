@@ -472,10 +472,10 @@ class IconGridSavepoint(IconSavepoint):
 
     def construct_cell_geometry(self) -> CellParams:
         return CellParams.from_global_num_cells(
-            area=self.cell_areas(),
-            global_num_cells=self.global_grid_params.num_cells,
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
+            area=self.cell_areas(),
+            global_num_cells=self.global_grid_params.num_cells,
             length_rescale_factor=1.0,
         )
 
@@ -1267,6 +1267,29 @@ class IconJabwFinalSavepoint(IconSavepoint):
         return self._get_field("zeta_v_e_final", EdgeDim, KDim)
 
 
+class IconJabwDiagnosticSavepoint(IconSavepoint):
+    def pressure(self):
+        return self._get_field("output_diag_pressure", CellDim, KDim)
+
+    def temperature(self):
+        return self._get_field("output_diag_temperature", CellDim, KDim)
+
+    def exner_pr(self):
+        return self._get_field("output_diag_exner_pr", CellDim, KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("output_diag_pressure_ifc", CellDim, KDim)
+
+    def pressure_sfc(self):
+        return self._get_field("output_diag_pressure_sfc", CellDim)
+
+    def zonal_Wind(self):
+        return self._get_field("output_diag_u", CellDim, KDim)
+
+    def meridional_Wind(self):
+        return self._get_field("output_diag_v", CellDim, KDim)
+
+
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
         self.rank = mpi_rank
@@ -1395,3 +1418,7 @@ class IconSerialDataProvider:
     def from_savepoint_jabw_final(self) -> IconJabwFinalSavepoint:
         savepoint = self.serializer.savepoint["icon-jabw-final"].id[1].as_savepoint()
         return IconJabwFinalSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_jabw_diagnostic(self) -> IconJabwDiagnosticSavepoint:
+        savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
+        return IconJabwDiagnosticSavepoint(savepoint, self.serializer, size=self.grid_size)

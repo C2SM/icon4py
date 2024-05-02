@@ -54,23 +54,23 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
+    edge_2_cell_vector_rbf_interpolation,
+)
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
+from icon4py.model.driver.jablonowski_willamson_testcase import zonalwind_2_normalwind_jabw_numpy
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
 from icon4py.model.driver.testcase_functions import (
-    hydrostatic_adjustment_numpy,
     cell_2_edge_interpolation_numpy,
+    hydrostatic_adjustment_numpy,
 )
-from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
-    edge_2_cell_vector_rbf_interpolation,
-)
-from icon4py.model.driver.jablonowski_willamson_testcase import zonalwind_2_normalwind_jabw_numpy
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -110,7 +110,7 @@ def read_icon_grid(
     if ser_type == SerializationType.SB:
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid()
+            .from_savepoint_grid(2, 4)
             .construct_icon_grid(on_gpu=False)
         )
     else:
@@ -294,16 +294,15 @@ def model_initialization_jabw(
     temperature = as_field((CellDim, KDim), temperature_numpy)
     pressure = as_field((CellDim, KDim), pressure_numpy)
     theta_v = as_field((CellDim, KDim), theta_v_numpy)
-    pressure_ifc = as_field((CellDim, KDim), np.zeros((cell_size, num_levels), dtype=float))
+    pressure_ifc_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
+    pressure_ifc_numpy[:, -1] = p_sfc
+    pressure_ifc = as_field((CellDim, KDim), pressure_ifc_numpy)
 
     vn_next = as_field((EdgeDim, KDim), vn_numpy)
     w_next = as_field((CellDim, KDim), w_numpy)
     exner_next = as_field((CellDim, KDim), exner_numpy)
     rho_next = as_field((CellDim, KDim), rho_numpy)
     theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
-
-    # set surface pressure to the prescribed value
-    pressure_sfc = as_field((CellDim,), np.full(cell_size, fill_value=p_sfc, dtype=float))
 
     u = _allocate(CellDim, KDim, grid=icon_grid)
     v = _allocate(CellDim, KDim, grid=icon_grid)
@@ -326,7 +325,6 @@ def model_initialization_jabw(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
         temperature=temperature,
-        pressure_sfc=pressure_sfc,
         u=u,
         v=v,
     )
@@ -552,7 +550,7 @@ def read_geometry_fields(
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        ).from_savepoint_grid()
+        ).from_savepoint_grid(2, 4)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
@@ -575,7 +573,7 @@ def read_decomp_info(
         sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), True, procs_props.rank
         )
-        return sp.from_savepoint_grid().construct_decomposition_info()
+        return sp.from_savepoint_grid(2, 4).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -612,7 +610,7 @@ def read_static_fields(
         )
         icon_grid = (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid()
+            .from_savepoint_grid(2, 4)
             .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
@@ -727,6 +725,7 @@ def configure_logging(
         filename=logfile,
     )
     console_handler = logging.StreamHandler()
+    # TODO (Chia Rui): modify here when single_dispatch is ready
     console_handler.addFilter(ParallelLogger(processor_procs))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"

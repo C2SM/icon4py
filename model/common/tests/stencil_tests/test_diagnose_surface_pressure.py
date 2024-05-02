@@ -19,9 +19,9 @@ from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
 )
-from icon4py.model.common.dimension import CellDim
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestDiagnoseSurfacePressure(StencilTest):
@@ -31,22 +31,19 @@ class TestDiagnoseSurfacePressure(StencilTest):
     @staticmethod
     def reference(
         grid,
-        exner_nlev_minus2: np.array,
-        temperature_nlev: np.array,
-        temperature_nlev_minus1: np.array,
-        temperature_nlev_minus2: np.array,
-        ddqz_z_full_nlev: np.array,
-        ddqz_z_full_nlev_minus1: np.array,
-        ddqz_z_full_nlev_minus2: np.array,
+        exner: np.array,
+        temperature: np.array,
+        ddqz_z_full: np.array,
         **kwargs,
     ) -> dict:
-        pressure_sfc = P0REF * np.exp(
-            CPD_O_RD * np.log(exner_nlev_minus2)
+        pressure_sfc = np.zeros((grid.num_cells, grid.num_levels + 1), dtype=vpfloat)
+        pressure_sfc[:, -1] = P0REF * np.exp(
+            CPD_O_RD * np.log(exner[:, -3])
             + GRAV_O_RD
             * (
-                ddqz_z_full_nlev / temperature_nlev
-                + ddqz_z_full_nlev_minus1 / temperature_nlev_minus1
-                + 0.5 * ddqz_z_full_nlev_minus2 / temperature_nlev_minus2
+                ddqz_z_full[:, -1] / temperature[:, -1]
+                + ddqz_z_full[:, -2] / temperature[:, -2]
+                + 0.5 * ddqz_z_full[:, -3] / temperature[:, -3]
             )
         )
         return dict(
@@ -55,28 +52,21 @@ class TestDiagnoseSurfacePressure(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        pressure_sfc = zero_field(grid, CellDim, dtype=wpfloat)
-
-        exner_nlev_minus2 = random_field(grid, CellDim, dtype=wpfloat)
-        temperature_nlev = random_field(grid, CellDim, dtype=wpfloat)
-        temperature_nlev_minus1 = random_field(grid, CellDim, dtype=wpfloat)
-        temperature_nlev_minus2 = random_field(grid, CellDim, dtype=wpfloat)
-        ddqz_z_full_nlev = random_field(grid, CellDim, dtype=wpfloat)
-        ddqz_z_full_nlev_minus1 = random_field(grid, CellDim, dtype=wpfloat)
-        ddqz_z_full_nlev_minus2 = random_field(grid, CellDim, dtype=wpfloat)
+        exner = random_field(grid, CellDim, KDim, low=1.0e-6, dtype=vpfloat)
+        temperature = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_full = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        pressure_sfc = zero_field(grid, CellDim, KDim, dtype=vpfloat, extend={KDim: 1})
 
         return dict(
-            exner_nlev_minus2=exner_nlev_minus2,
-            temperature_nlev=temperature_nlev,
-            temperature_nlev_minus1=temperature_nlev_minus1,
-            temperature_nlev_minus2=temperature_nlev_minus2,
-            ddqz_z_full_nlev=ddqz_z_full_nlev,
-            ddqz_z_full_nlev_minus1=ddqz_z_full_nlev_minus1,
-            ddqz_z_full_nlev_minus2=ddqz_z_full_nlev_minus2,
+            exner=exner,
+            temperature=temperature,
+            ddqz_z_full=ddqz_z_full,
             pressure_sfc=pressure_sfc,
             cpd_o_rd=CPD_O_RD,
             p0ref=P0REF,
             grav_o_rd=GRAV_O_RD,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
+            vertical_start=int32(grid.num_levels),
+            vertical_end=int32(grid.num_levels + 1),
         )
