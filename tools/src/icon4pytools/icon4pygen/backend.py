@@ -240,6 +240,9 @@ def generate_dace_code(
 
     src_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
     assert len(src_objs) == 1
+    # remove include of header file with hash string
+    hash_include_line = "#include \"../../include/hash.h\""
+    src_objs[0].code = src_objs[0].code.replace(hash_include_line, "")
 
     # for gpu codegen, also return the cuda file
     if on_gpu:
