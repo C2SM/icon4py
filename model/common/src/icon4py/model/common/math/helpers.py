@@ -121,14 +121,14 @@ def _grad_fd_tang(
 
 
 @field_operator
-def _compute_inv_edge_k(
+def _compute_inverse_edge_kdim(
     edge_k_field: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     return 1.0 / edge_k_field
 
 
 @program
-def compute_inv_edge_k(
+def compute_inverse_edge_kdim(
     edge_k_field: Field[[EdgeDim, KDim], vpfloat],
     inv_edge_k_field: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
@@ -136,7 +136,7 @@ def compute_inv_edge_k(
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _compute_inv_edge_k(
+    _compute_inverse_edge_kdim(
         edge_k_field,
         out=inv_edge_k_field,
         domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},

@@ -88,7 +88,8 @@ def _compute_ddqz_z_half(
     k: Field[[KDim], int32],
     nlev: int32,
 ):
-    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, 0.0)
+    ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
+    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
     ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
@@ -493,7 +494,7 @@ def compute_ddxt_z_half_e(
 
 
 @program
-def compute_ddxnt_z_full(
+def compute_ddxn_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
 ):
     average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
