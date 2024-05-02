@@ -88,6 +88,7 @@ def _compute_ddqz_z_half(
     k: Field[[KDim], int32],
     nlev: int32,
 ):
+    # TODO: change this to concat_where once it's merged
     ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
     ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
     ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
@@ -133,7 +134,7 @@ def compute_ddqz_z_half(
 
 
 @field_operator
-def _compute_ddqz_z_full(
+def _compute_ddqz_z_full_and_inverse(
     z_ifc: Field[[CellDim, KDim], wpfloat],
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
     ddqz_z_full = difference_k_level_up(z_ifc)
@@ -142,7 +143,7 @@ def _compute_ddqz_z_full(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_ddqz_z_full(
+def compute_ddqz_z_full_and_inverse(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], wpfloat],
@@ -167,7 +168,7 @@ def compute_ddqz_z_full(
         vertical_end: vertical end index
 
     """
-    _compute_ddqz_z_full(
+    _compute_ddqz_z_full_and_inverse(
         z_ifc,
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},

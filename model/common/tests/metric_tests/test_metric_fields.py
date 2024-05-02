@@ -31,11 +31,10 @@ from icon4py.model.common.grid.horizontal import (
     _compute_cells2verts,
     compute_cells2edges,
 )
-from icon4py.model.common.math.helpers import compute_inverse_edge_kdim
 from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
     compute_d2dexdz2_fac_mc,
-    compute_ddqz_z_full,
+    compute_ddqz_z_full_and_inverse,
     compute_ddqz_z_half,
     compute_ddxn_z_full,
     compute_ddxn_z_half_e,
@@ -130,7 +129,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
 
 
 @pytest.mark.datatest
-def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
+def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -138,7 +137,7 @@ def test_compute_ddqz_z_full(icon_grid, metrics_savepoint, backend):
     ddqz_z_full = zero_field(icon_grid, CellDim, KDim)
     inv_ddqz_z_full = zero_field(icon_grid, CellDim, KDim)
 
-    compute_ddqz_z_full.with_backend(backend)(
+    compute_ddqz_z_full_and_inverse.with_backend(backend)(
         z_ifc=z_ifc,
         ddqz_z_full=ddqz_z_full,
         inv_ddqz_z_full=inv_ddqz_z_full,
@@ -448,33 +447,6 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
     )
 
     assert dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
-
-
-@pytest.mark.skip("TODO needs to be fulfilled")
-@pytest.mark.datatest
-def test_compute_inv_ddqz_z_full(icon_grid, metrics_savepoint, backend):
-    # TODO: serialization missing inv_ddqz_z_full is over cells, need over edge --> inv_ddqz_z_full_e
-    if is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
-
-    inv_ddqz_z_full = zero_field(icon_grid, EdgeDim, KDim)
-    inv_ddqz_z_ref = metrics_savepoint.inv_ddqz_z_full()
-    horizontal_start_edge = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
-
-    compute_inverse_edge_kdim.with_backend(backend)(
-        edge_k_field=metrics_savepoint.ddqz_z_full_e(),
-        inv_edge_k_field=inv_ddqz_z_full,
-        horizontal_start=horizontal_start_edge,
-        horizontal_end=icon_grid.num_edges,
-        vertical_start=int32(0),
-        vertical_end=int32(icon_grid.num_levels),
-        offset_provider={},
-    )
-
-    assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_z_ref.asnumpy())
 
 
 @pytest.mark.datatest
