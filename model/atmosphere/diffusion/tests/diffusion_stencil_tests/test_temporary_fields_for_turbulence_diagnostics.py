@@ -46,7 +46,7 @@ class TestTemporaryFieldsForTurbulenceDiagnostics(StencilTest):
         geofac_div = np.expand_dims(geofac_div, axis=-1)
 
         if grid.config.on_gpu:
-            connectivity = grid.get_offset_provider("C2CE").table.asnumpy()
+            connectivity = grid.get_offset_provider("C2CE").table.get()
         else:
             connectivity = grid.get_offset_provider("C2CE").table
 
