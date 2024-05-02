@@ -18,6 +18,7 @@ import numpy as np
 from gt4py import next as gtx
 from gt4py.next.backend import ProgArgsInjector
 
+
 try:
     import cupy as cp
     from gt4py.next.embedded.nd_array_field import CuPyArrayField
@@ -74,6 +75,7 @@ def handle_common_field(value, sizes):
 
 def handle_default(value):
     return value  # Return the value unchanged
+
 
 if cp:
     type_handlers = {

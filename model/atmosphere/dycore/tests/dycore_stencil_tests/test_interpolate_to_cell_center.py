@@ -37,8 +37,7 @@ def interpolate_to_cell_center_numpy(
         connectivity = grid.get_offset_provider("C2CE").table
 
     interpolation = np.sum(
-        interpolant[grid.connectivities[C2EDim]]
-        * e_bln_c_s[connectivity],
+        interpolant[grid.connectivities[C2EDim]] * e_bln_c_s[connectivity],
         axis=1,
     )
     return interpolation
