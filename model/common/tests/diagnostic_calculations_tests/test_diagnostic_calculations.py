@@ -11,9 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import os
 
-import numpy as np
 import pytest
 
 from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
@@ -131,115 +129,6 @@ def test_diagnostic_calculations_in_jabw(
     """
 
     icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
-
-    if debug:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = script_dir + "/"
-
-        def printing(ref, predict, title: str):
-            with open(base_dir + "analysis_" + title + ".dat", "w") as f:
-                if len(ref.shape) == 1:
-                    cell_size = ref.shape[0]
-                    k_size = 0
-                elif len(ref.shape) == 2:
-                    cell_size = ref.shape[0]
-                    k_size = ref.shape[1]
-                else:
-                    print("Dimension is not 1 or 2, do nothing in printing for ", title)
-                    return
-                print(title, cell_size, k_size)
-                difference = np.abs(ref - predict)
-                print(np.max(difference), np.min(difference))
-                if k_size > 0:
-                    for i in range(cell_size):
-                        for k in range(k_size):
-                            f.write("{0:7d} {1:7d}".format(i, k))
-                            f.write(
-                                " {0:.20e} {1:.20e} {2:.20e} ".format(
-                                    difference[i, k], ref[i, k], predict[i, k]
-                                )
-                            )
-                            f.write("\n")
-                else:
-                    for i in range(cell_size):
-                        f.write("{0:7d}".format(i))
-                        f.write(
-                            " {0:.20e} {1:.20e} {2:.20e} ".format(difference[i], ref[i], predict[i])
-                        )
-                        f.write("\n")
-
-        printing(
-            data_provider.from_savepoint_jabw_final().rho().asnumpy(),
-            prognostic_state_now.rho.asnumpy(),
-            "rho",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_final().exner().asnumpy(),
-            prognostic_state_now.exner.asnumpy(),
-            "exner",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
-            prognostic_state_now.theta_v.asnumpy(),
-            "theta_v",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_final().vn().asnumpy(),
-            prognostic_state_now.vn.asnumpy(),
-            "vn",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_final().w().asnumpy(),
-            prognostic_state_now.w.asnumpy(),
-            "w",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
-            diagnostic_state.pressure.asnumpy(),
-            "pressure",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
-            diagnostic_state.temperature.asnumpy(),
-            "temperature",
-        )
-
-        printing(
-            data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
-            diagnostic_state.pressure_sfc.asnumpy(),
-            "pressure_sfc",
-        )
-
-        printing(
-            icon_diagnostics_output_sp.u().asnumpy(),
-            diagnostic_state.u.asnumpy(),
-            "u",
-        )
-
-        printing(
-            icon_diagnostics_output_sp.v().asnumpy(),
-            diagnostic_state.v.asnumpy(),
-            "v",
-        )
-
-        printing(
-            icon_diagnostics_output_sp.temperature().asnumpy(),
-            diagnostic_state.temperature.asnumpy(),
-            "temperature_diag",
-        )
-
-        printing(
-            icon_diagnostics_output_sp.pressure_sfc().asnumpy(),
-            diagnostic_state.pressure_sfc.asnumpy(),
-            "pressure_sfc_diag",
-        )
-
     assert dallclose(
         diagnostic_state.u.asnumpy(),
         icon_diagnostics_output_sp.zonal_Wind().asnumpy(),
