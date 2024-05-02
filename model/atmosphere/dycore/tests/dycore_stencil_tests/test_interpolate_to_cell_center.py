@@ -30,9 +30,15 @@ def interpolate_to_cell_center_numpy(
     grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+
+    if grid.config.on_gpu:
+        connectivity = grid.get_offset_provider("C2CE").table.get()
+    else:
+        connectivity = grid.get_offset_provider("C2CE").table
+
     interpolation = np.sum(
         interpolant[grid.connectivities[C2EDim]]
-        * e_bln_c_s[grid.get_offset_provider("C2CE").table],
+        * e_bln_c_s[connectivity],
         axis=1,
     )
     return interpolation
