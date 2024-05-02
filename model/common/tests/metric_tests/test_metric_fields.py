@@ -481,15 +481,17 @@ def test_compute_inv_ddqz_z_full(icon_grid, metrics_savepoint, backend):
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", (REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT))
 def test_compute_ddqz_z_full_e(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     ddqz_z_full = as_field((CellDim, KDim), 1.0 / metrics_savepoint.inv_ddqz_z_full().asnumpy())
     c_lin_e = interpolation_savepoint.c_lin_e()
     ddqz_z_full_e_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
     vertical_start = 0
     vertical_end = icon_grid.num_levels
     ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
-    compute_cells2edges(
+    compute_cells2edges.with_backend(backend)(
         p_cell_in=ddqz_z_full,
         c_int=c_lin_e,
         p_vert_out=ddqz_z_full_e,
@@ -503,7 +505,11 @@ def test_compute_ddqz_z_full_e(
 
 
 @pytest.mark.datatest
-def test_compute_ddxn_z_full(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
+def test_compute_ddxn_z_full(
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
+):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
@@ -518,7 +524,7 @@ def test_compute_ddxn_z_full(grid_savepoint, interpolation_savepoint, icon_grid,
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
-    compute_ddxn_z_half_e(
+    compute_ddxn_z_half_e.with_backend(backend)(
         z_ifc=z_ifc,
         inv_dual_edge_length=inv_dual_edge_length,
         ddxn_z_half_e=ddxn_z_half_e,
@@ -529,7 +535,7 @@ def test_compute_ddxn_z_full(grid_savepoint, interpolation_savepoint, icon_grid,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
     ddxn_z_full = zero_field(icon_grid, EdgeDim, KDim)
-    compute_ddxn_z_full(
+    compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxn_z_half_e,
         ddxn_z_full=ddxn_z_full,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
@@ -539,7 +545,11 @@ def test_compute_ddxn_z_full(grid_savepoint, interpolation_savepoint, icon_grid,
 
 
 @pytest.mark.datatest
-def test_compute_ddxt_z_full(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
+def test_compute_ddxt_z_full(
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
+):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
@@ -575,7 +585,7 @@ def test_compute_ddxt_z_full(grid_savepoint, interpolation_savepoint, icon_grid,
         },
     )
     ddxt_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
-    compute_ddxt_z_half_e(
+    compute_ddxt_z_half_e.with_backend(backend)(
         z_ifv=z_ifv,
         inv_primal_edge_length=inv_primal_edge_length,
         tangent_orientation=tangent_orientation,
@@ -587,7 +597,7 @@ def test_compute_ddxt_z_full(grid_savepoint, interpolation_savepoint, icon_grid,
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
     ddxt_z_full = zero_field(icon_grid, EdgeDim, KDim)
-    compute_ddxn_z_full(
+    compute_ddxn_z_full.with_backend(backend)(
         z_ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxt_z_full,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
