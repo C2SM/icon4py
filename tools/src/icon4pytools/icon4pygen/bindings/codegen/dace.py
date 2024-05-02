@@ -74,10 +74,6 @@ class CppDefGenerator(TemplatedGenerator):
         return mesh_;
       }
 
-      static cudaStream_t getStream() {
-        return stream_;
-      }
-
       static json *getJsonRecord() {
         return jsonRecord_;
       }
@@ -171,7 +167,6 @@ class CppDefGenerator(TemplatedGenerator):
         const GlobalGpuTriMesh *mesh, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify) {
         mesh_ = GpuTriMesh(mesh);
         is_setup_ = true;
-        stream_ = stream;
         jsonRecord_ = jsonRecord;
         mesh_info_vtk_ = mesh_info_vtk;
         verify_ = verify;
@@ -181,6 +176,7 @@ class CppDefGenerator(TemplatedGenerator):
         int verticalEnd = 0;
         int verticalEnd = 0;
         handle = __dace_init_{{ funcname }}({{ ", ".join(_this_node.sdfg_symbols) }});
+        __set_stream_{{ funcname }}(handle, stream);
         }
         """
     )
@@ -193,7 +189,6 @@ class CppDefGenerator(TemplatedGenerator):
         {%- endfor -%}
         inline static GpuTriMesh mesh_;
         inline static bool is_setup_;
-        inline static cudaStream_t stream_;
         inline static json* jsonRecord_;
         inline static MeshInfoVtk* mesh_info_vtk_;
         inline static verify* verify_;
