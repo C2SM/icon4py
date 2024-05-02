@@ -16,46 +16,46 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common.dimension import (
-    V2E,
+    C2E,
+    C2EDim,
+    CellDim,
     EdgeDim,
     KDim,
-    V2EDim,
-    VertexDim,
 )
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _mo_intp_rbf_rbf_vec_interpol_vertex(
-    p_e_in: Field[[EdgeDim, KDim], wpfloat],
-    ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
-    ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
-) -> tuple[Field[[VertexDim, KDim], wpfloat], Field[[VertexDim, KDim], wpfloat]]:
-    p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(V2E), axis=V2EDim)
-    p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(V2E), axis=V2EDim)
+def _mo_intp_rbf_rbf_vec_interpol_cell(
+    p_vn_in: Field[[EdgeDim, KDim], wpfloat],
+    ptr_coeff_1: Field[[CellDim, C2EDim], wpfloat],
+    ptr_coeff_2: Field[[CellDim, C2EDim], wpfloat],
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+    p_u_out = neighbor_sum(ptr_coeff_1 * p_vn_in(C2E), axis=C2EDim)
+    p_v_out = neighbor_sum(ptr_coeff_2 * p_vn_in(C2E), axis=C2EDim)
     return p_u_out, p_v_out
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def mo_intp_rbf_rbf_vec_interpol_vertex(
-    p_e_in: Field[[EdgeDim, KDim], wpfloat],
-    ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
-    ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
-    p_u_out: Field[[VertexDim, KDim], wpfloat],
-    p_v_out: Field[[VertexDim, KDim], wpfloat],
+def mo_intp_rbf_rbf_vec_interpol_cell(
+    p_vn_in: Field[[EdgeDim, KDim], wpfloat],
+    ptr_coeff_1: Field[[CellDim, C2EDim], wpfloat],
+    ptr_coeff_2: Field[[CellDim, C2EDim], wpfloat],
+    p_u_out: Field[[CellDim, KDim], wpfloat],
+    p_v_out: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _mo_intp_rbf_rbf_vec_interpol_vertex(
-        p_e_in,
+    _mo_intp_rbf_rbf_vec_interpol_cell(
+        p_vn_in,
         ptr_coeff_1,
         ptr_coeff_2,
         out=(p_u_out, p_v_out),
         domain={
-            VertexDim: (horizontal_start, horizontal_end),
+            CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),
         },
     )

@@ -27,12 +27,18 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim, C2E
+from icon4py.model.common.dimension import (
+    C2E,
+    CellDim,
+    EdgeDim,
+    KDim,
+    Koff,
+    VertexDim,
+)
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
     average_edge_kdim_level_up,
-    difference_k_level_down,
     difference_k_level_up,
     grad_fd_norm,
 )
@@ -81,12 +87,10 @@ def _compute_ddqz_z_half(
     z_mc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
     nlev: int32,
-) -> Field[[CellDim, KDim], wpfloat]:
-    ddqz_z_half = where(
-        (k > int32(0)) & (k < nlev),
-        difference_k_level_down(z_mc),
-        where(k == 0, 2.0 * (z_ifc - z_mc), 2.0 * (z_mc(Koff[-1]) - z_ifc)),
-    )
+):
+    ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
+    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
+    ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
 
@@ -490,10 +494,102 @@ def compute_ddxt_z_half_e(
 
 
 @program
-def compute_ddxnt_z_full(
+def compute_ddxn_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
 ):
     average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
+
+
+@field_operator
+def _compute_vwind_impl_wgt(
+    z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
+    z_ddxt_z_half_e: Field[[EdgeDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    vwind_offctr: wpfloat,
+) -> Field[[CellDim], wpfloat]:
+    z_ddx_1 = maximum(abs(z_ddxn_z_half_e(C2E[0])), abs(z_ddxt_z_half_e(C2E[0])))
+    z_ddx_2 = maximum(abs(z_ddxn_z_half_e(C2E[1])), abs(z_ddxt_z_half_e(C2E[1])))
+    z_ddx_3 = maximum(abs(z_ddxn_z_half_e(C2E[2])), abs(z_ddxt_z_half_e(C2E[2])))
+    z_ddx_1_2 = maximum(z_ddx_1, z_ddx_2)
+    z_maxslope = maximum(z_ddx_1_2, z_ddx_3)
+
+    z_diff_1_2 = maximum(
+        abs(z_ddxn_z_half_e(C2E[0]) * dual_edge_length(C2E[0])),
+        abs(z_ddxn_z_half_e(C2E[1]) * dual_edge_length(C2E[1])),
+    )
+    z_diff = maximum(z_diff_1_2, abs(z_ddxn_z_half_e(C2E[2]) * dual_edge_length(C2E[2])))
+    z_offctr_1 = maximum(vwind_offctr, 0.425 * z_maxslope ** (0.75))
+    z_offctr = maximum(z_offctr_1, minimum(0.25, 0.00025 * (z_diff - 250.0)))
+    z_offctr = minimum(maximum(vwind_offctr, 0.75), z_offctr)
+    vwind_impl_wgt = 0.5 + z_offctr
+    return vwind_impl_wgt
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_vwind_impl_wgt(
+    z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
+    z_ddxt_z_half_e: Field[[EdgeDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    vwind_offctr: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    """
+    Compute vwind_impl_wgt.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        z_ddxn_z_half_e: intermediate storage for field
+        z_ddxt_z_half_e: intermediate storage for field
+        dual_edge_length: dual_edge_length
+        vwind_impl_wgt: (output) offcentering in vertical mass flux
+        vwind_offctr: off-centering in vertical wind solver
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+
+    """
+    _compute_vwind_impl_wgt(
+        z_ddxn_z_half_e=z_ddxn_z_half_e,
+        z_ddxt_z_half_e=z_ddxt_z_half_e,
+        dual_edge_length=dual_edge_length,
+        vwind_offctr=vwind_offctr,
+        out=vwind_impl_wgt,
+        domain={CellDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@field_operator
+def _compute_vwind_expl_wgt(vwind_impl_wgt: Field[[CellDim], wpfloat]) -> Field[[CellDim], wpfloat]:
+    return 1.0 - vwind_impl_wgt
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_vwind_expl_wgt(
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    """
+    Compute vwind_expl_wgt.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        vwind_impl_wgt: offcentering in vertical mass flux
+        vwind_expl_wgt: (output) 1 - of vwind_impl_wgt
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+
+    """
+
+    _compute_vwind_expl_wgt(
+        vwind_impl_wgt=vwind_impl_wgt,
+        out=vwind_expl_wgt,
+        domain={CellDim: (horizontal_start, horizontal_end)},
+    )
 
 
 @field_operator

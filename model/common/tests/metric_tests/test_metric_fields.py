@@ -19,22 +19,31 @@ from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.dimension import (
+    CellDim,
+    EdgeDim,
+    KDim,
+    V2CDim,
+    VertexDim,
+)
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
     _compute_cells2verts,
     compute_cells2edges,
 )
+from icon4py.model.common.math.helpers import compute_inverse_edge_kdim
 from icon4py.model.common.metrics.metric_fields import (
     compute_coeff_dwdz,
     compute_d2dexdz2_fac_mc,
     compute_ddqz_z_full,
     compute_ddqz_z_half,
+    compute_ddxn_z_full,
     compute_ddxn_z_half_e,
-    compute_ddxnt_z_full,
     compute_ddxt_z_half_e,
     compute_rayleigh_w,
     compute_scalfac_dd3d,
+    compute_vwind_expl_wgt,
+    compute_vwind_impl_wgt,
     compute_z_mc,
     compute_exner_exfac
 )
@@ -91,7 +100,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = zero_field(icon_grid, CellDim, KDim)
+    z_mc = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
     nlevp1 = icon_grid.num_levels + 1
     k_index = as_field((KDim,), np.arange(nlevp1, dtype=int32))
     compute_z_mc.with_backend(backend)(
@@ -103,14 +112,14 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
-    ddq_z_half = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    ddqz_z_half = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
 
     compute_ddqz_z_half.with_backend(backend=backend)(
         z_ifc=z_ifc,
         z_mc=z_mc,
         k=k_index,
         nlev=icon_grid.num_levels,
-        ddqz_z_half=ddq_z_half,
+        ddqz_z_half=ddqz_z_half,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
@@ -118,7 +127,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert dallclose(ddq_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
+    assert dallclose(ddqz_z_half.asnumpy(), ddq_z_half_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -271,68 +280,6 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", (REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT))
-def test_compute_ddqz_z_full_e(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
-):
-    ddqz_z_full = as_field((CellDim, KDim), 1.0 / metrics_savepoint.inv_ddqz_z_full().asnumpy())
-    c_lin_e = interpolation_savepoint.c_lin_e()
-    ddqz_z_full_e_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
-    vertical_start = 0
-    vertical_end = icon_grid.num_levels
-    ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
-    compute_cells2edges(
-        p_cell_in=ddqz_z_full,
-        c_int=c_lin_e,
-        p_vert_out=ddqz_z_full_e,
-        horizontal_start_edge=0,
-        horizontal_end_edge=ddqz_z_full_e.shape[0],
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
-    assert np.allclose(ddqz_z_full_e.asnumpy(), ddqz_z_full_e_ref)
-
-
-@pytest.mark.datatest
-def test_compute_ddxn_z_full_e(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
-):
-    z_ifc = metrics_savepoint.z_ifc()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
-    horizontal_start = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
-    horizontal_end = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
-    )
-    vertical_start = 0
-    vertical_end = icon_grid.num_levels + 1
-    ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
-    compute_ddxn_z_half_e(
-        z_ifc=z_ifc,
-        inv_dual_edge_length=inv_dual_edge_length,
-        ddxn_z_half_e=ddxn_z_half_e,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
-    ddxn_z_full = zero_field(icon_grid, EdgeDim, KDim)
-    compute_ddxnt_z_full(
-        z_ddxnt_z_half_e=ddxn_z_half_e,
-        ddxn_z_full=ddxn_z_full,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
-    )
-
-    assert np.allclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref)
-
-
-@pytest.mark.datatest
 def test_compute_ddxt_z_full_e(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
 ):
@@ -383,7 +330,264 @@ def test_compute_ddxt_z_full_e(
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
     ddxt_z_full = zero_field(icon_grid, EdgeDim, KDim)
-    compute_ddxnt_z_full(
+    compute_ddxn_z_full(
+        z_ddxnt_z_half_e=ddxt_z_half_e,
+        ddxn_z_full=ddxt_z_full,
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
+
+
+@pytest.mark.datatest
+def test_compute_vwind_impl_wgt(
+    icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
+):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
+    z_ifc = metrics_savepoint.z_ifc()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    z_ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
+    horizontal_start = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    )
+    horizontal_end = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+    )
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels + 1
+
+    horizontal_start_edge = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+    )
+    horizontal_end_edge = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+    )
+
+    compute_ddxn_z_half_e(
+        z_ifc=z_ifc,
+        inv_dual_edge_length=inv_dual_edge_length,
+        ddxn_z_half_e=z_ddxn_z_half_e,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+    )
+
+    z_ddxt_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
+    z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
+
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+    horizontal_start_vertex = icon_grid.get_start_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+    )
+    horizontal_end_vertex = icon_grid.get_end_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
+    )
+    cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
+    _compute_cells2verts(
+        z_ifc,
+        as_field((VertexDim, V2CDim), cells_aw_verts),
+        out=z_ifv,
+        offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
+        domain={
+            VertexDim: (horizontal_start_vertex, horizontal_end_vertex),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+    compute_ddxt_z_half_e(
+        z_ifv=z_ifv,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
+        ddxt_z_half_e=z_ddxt_z_half_e,
+        horizontal_start=horizontal_start_edge,
+        horizontal_end=horizontal_end_edge,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
+    )
+
+    vwind_impl_wgt_full = zero_field(icon_grid, CellDim)
+    vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
+    dual_edge_length = grid_savepoint.dual_edge_length()
+    vwind_offctr = 0.2
+
+    compute_vwind_impl_wgt.with_backend(backend)(
+        z_ddxn_z_half_e=as_field((EdgeDim,), z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels]),
+        z_ddxt_z_half_e=as_field((EdgeDim,), z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels]),
+        dual_edge_length=dual_edge_length,
+        vwind_impl_wgt=vwind_impl_wgt_full,
+        vwind_offctr=vwind_offctr,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+    )
+
+    assert dallclose(vwind_impl_wgt_full.asnumpy(), vwind_impl_wgt_ref.asnumpy(), rtol=1.0)
+
+
+@pytest.mark.datatest
+def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
+    vwind_expl_wgt_full = zero_field(icon_grid, CellDim)
+    vwind_expl_wgt_ref = metrics_savepoint.vwind_expl_wgt()
+    vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
+
+    compute_vwind_expl_wgt.with_backend(backend)(
+        vwind_impl_wgt=vwind_impl_wgt,
+        vwind_expl_wgt=vwind_expl_wgt_full,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+    )
+
+    assert dallclose(vwind_expl_wgt_full.asnumpy(), vwind_expl_wgt_ref.asnumpy())
+
+
+@pytest.mark.skip("TODO needs to be fulfilled")
+@pytest.mark.datatest
+def test_compute_inv_ddqz_z_full(icon_grid, metrics_savepoint, backend):
+    # TODO: serialization missing inv_ddqz_z_full is over cells, need over edge --> inv_ddqz_z_full_e
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
+
+    inv_ddqz_z_full = zero_field(icon_grid, EdgeDim, KDim)
+    inv_ddqz_z_ref = metrics_savepoint.inv_ddqz_z_full()
+    horizontal_start_edge = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    )
+
+    compute_inverse_edge_kdim.with_backend(backend)(
+        edge_k_field=metrics_savepoint.ddqz_z_full_e(),
+        inv_edge_k_field=inv_ddqz_z_full,
+        horizontal_start=horizontal_start_edge,
+        horizontal_end=icon_grid.num_edges,
+        vertical_start=int32(0),
+        vertical_end=int32(icon_grid.num_levels),
+        offset_provider={},
+    )
+
+    assert dallclose(inv_ddqz_z_full.asnumpy(), inv_ddqz_z_ref.asnumpy())
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize("experiment", (REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT))
+def test_compute_ddqz_z_full_e(
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
+):
+    ddqz_z_full = as_field((CellDim, KDim), 1.0 / metrics_savepoint.inv_ddqz_z_full().asnumpy())
+    c_lin_e = interpolation_savepoint.c_lin_e()
+    ddqz_z_full_e_ref = metrics_savepoint.ddqz_z_full_e().asnumpy()
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels
+    ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
+    compute_cells2edges(
+        p_cell_in=ddqz_z_full,
+        c_int=c_lin_e,
+        p_vert_out=ddqz_z_full_e,
+        horizontal_start_edge=0,
+        horizontal_end_edge=ddqz_z_full_e.shape[0],
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+    )
+    assert np.allclose(ddqz_z_full_e.asnumpy(), ddqz_z_full_e_ref)
+
+
+@pytest.mark.datatest
+def test_compute_ddxn_z_full(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
+    z_ifc = metrics_savepoint.z_ifc()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
+    ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
+    horizontal_start = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+    )
+    horizontal_end = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+    )
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels + 1
+    ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
+    compute_ddxn_z_half_e(
+        z_ifc=z_ifc,
+        inv_dual_edge_length=inv_dual_edge_length,
+        ddxn_z_half_e=ddxn_z_half_e,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
+    )
+    ddxn_z_full = zero_field(icon_grid, EdgeDim, KDim)
+    compute_ddxn_z_full(
+        z_ddxnt_z_half_e=ddxn_z_half_e,
+        ddxn_z_full=ddxn_z_full,
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    assert np.allclose(ddxn_z_full.asnumpy(), ddxn_z_full_ref)
+
+
+@pytest.mark.datatest
+def test_compute_ddxt_z_full(grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint):
+    z_ifc = metrics_savepoint.z_ifc()
+    tangent_orientation = grid_savepoint.tangent_orientation()
+    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+    ddxt_z_full_ref = metrics_savepoint.ddxt_z_full().asnumpy()
+    horizontal_start_vertex = icon_grid.get_start_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+    )
+    horizontal_end_vertex = icon_grid.get_end_index(
+        VertexDim,
+        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
+    )
+    horizontal_start_edge = icon_grid.get_start_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+    )
+    horizontal_end_edge = icon_grid.get_end_index(
+        EdgeDim,
+        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
+    )
+    vertical_start = 0
+    vertical_end = icon_grid.num_levels + 1
+    cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
+    z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
+    _compute_cells2verts(
+        z_ifc,
+        as_field((VertexDim, V2CDim), cells_aw_verts),
+        out=z_ifv,
+        offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
+        domain={
+            VertexDim: (horizontal_start_vertex, horizontal_end_vertex),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+    ddxt_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
+    compute_ddxt_z_half_e(
+        z_ifv=z_ifv,
+        inv_primal_edge_length=inv_primal_edge_length,
+        tangent_orientation=tangent_orientation,
+        ddxt_z_half_e=ddxt_z_half_e,
+        horizontal_start=horizontal_start_edge,
+        horizontal_end=horizontal_end_edge,
+        vertical_start=vertical_start,
+        vertical_end=vertical_end,
+        offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
+    )
+    ddxt_z_full = zero_field(icon_grid, EdgeDim, KDim)
+    compute_ddxn_z_full(
         z_ddxnt_z_half_e=ddxt_z_half_e,
         ddxn_z_full=ddxt_z_full,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
@@ -393,11 +597,12 @@ def test_compute_ddxt_z_full_e(
 
 @pytest.mark.datatest
 def test_compute_exner_exfac(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
+    backend = None
     exner_exfac = zero_field(icon_grid, CellDim, KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
-    compute_exner_exfac(
+    compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
@@ -406,6 +611,7 @@ def test_compute_exner_exfac(
         horizontal_end=icon_grid.num_cells,
         vertical_start=int32(0),
         vertical_end=icon_grid.num_levels,
+        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    assert np.allclose(exner_exfac.asnumpy(), exner_exfac_ref)
+    assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy())
