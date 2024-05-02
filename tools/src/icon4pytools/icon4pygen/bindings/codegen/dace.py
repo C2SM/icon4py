@@ -436,11 +436,7 @@ class DataDescriptor:
 
     def strides(self) -> Optional[str]:
         if isinstance(self.data_descr, Field):
-            strides_str = self.data_descr.renderer.render_strides(exclude_sparse_dim=False)
-
-            if strides_str == "1":
-                return None
-            return strides_str
+            return self.data_descr.renderer.render_strides(use_dense_rank=False)
 
         # for offset data arrays
         return "1, mesh_.Nproma"

@@ -24,7 +24,7 @@ from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common.dimension import CellDim, EdgeDim, Koff, VertexDim
+from icon4py.model.common.dimension import CECDim, CEDim, CellDim, ECDim, ECVDim, EdgeDim, Koff, VertexDim
 
 from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.icochainsize import IcoChainSize
@@ -153,16 +153,16 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | Dimension:
+def provide_offset(offset: str, is_global: bool = False) -> tuple[DummyConnectivity | Dimension, Optional[str]]:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
-        return Koff.source
+        return Koff.source, None
     else:
         return provide_neighbor_table(offset, is_global)
 
 
-def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
+def provide_neighbor_table(chain: str, is_global: bool) -> tuple[DummyConnectivity, Optional[str]]:
     """Build an offset provider based on connectivity chain string.
 
     Connectivity strings must contain one of the following connectivity type identifiers:
@@ -175,35 +175,61 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     and pass the tokens after to the algorithm below
     """
     # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
+    compound_offset = None
     new_sparse_field = any(len(token) > 1 for token in chain.split("2")) and not chain.endswith("O")
     if new_sparse_field:
-        chain = chain.split("2")[1]
+        compound_offset = chain.split("2")[1]
     skip_values = False
     if is_global and "V" in chain:
         if chain.count("V") > 1 or not chain.endswith("V"):
             skip_values = True
     location_chain = []
     include_center = False
-    for letter in chain:
-        if letter == "C":
+    if chain[-1] == "O":
+        include_center = True
+        chain = chain.rstrip()  # remove 'O' letter at the end
+    for dim in chain.split("2"):
+        if dim == "C":
             location_chain.append(CellDim)
-        elif letter == "E":
+        elif dim == "E":
             location_chain.append(EdgeDim)
-        elif letter == "V":
+        elif dim == "V":
             location_chain.append(VertexDim)
-        elif letter == "O":
-            include_center = True
-        elif letter == "2":
+        elif dim == "CE":
+            location_chain.append(CEDim)
+        elif dim == "CEC":
+            location_chain.append(CECDim)
+        elif dim == "EC":
+            location_chain.append(ECDim)
+        elif dim == "ECV":
+            location_chain.append(ECVDim)
+        elif dim == "2":
             pass
         else:
             raise InvalidConnectivityException(location_chain)
+
+    if compound_offset:
+        new_location_chain = []
+        for dim in compound_offset:
+            if dim == "C":
+                new_location_chain.append(CellDim)
+            elif dim == "E":
+                new_location_chain.append(EdgeDim)
+            elif dim == "V":
+                new_location_chain.append(VertexDim)
+            else:
+                raise InvalidConnectivityException(location_chain)
+        max_neighbors = IcoChainSize.get(new_location_chain)
+    else:
+        max_neighbors = IcoChainSize.get(location_chain) + include_center
+
     return DummyConnectivity(
-        max_neighbors=IcoChainSize.get(location_chain) + include_center,
+        max_neighbors=max_neighbors,
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
         neighbor_axis=location_chain[-1],
         index_type=int,
-    )
+    ), compound_offset
 
 
 def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
@@ -249,6 +275,9 @@ def get_stencil_info(
 
     offset_provider = {}
     for offset in offsets:
-        offset_provider[offset] = provide_offset(offset, is_global)
+        connectivity, compound_offset = provide_offset(offset, is_global)
+        offset_provider[offset] = connectivity
+        if compound_offset:
+            offset_provider[compound_offset] = connectivity
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(fendef, fields, connectivity_chains, offset_provider)
