@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 class TestDiagnosePressure(StencilTest):
     PROGRAM = diagnose_pressure
-    OUTPUTS = ("pressure_sfc",)
+    OUTPUTS = ("pressure", "pressure_ifc")
 
     @staticmethod
     def reference(
