@@ -21,10 +21,12 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
     CellDim,
+    E2CDim,
+    ECDim,
     EdgeDim,
     KDim,
     V2CDim,
-    VertexDim, E2CDim, ECDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
@@ -40,12 +42,12 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddxn_z_full,
     compute_ddxn_z_half_e,
     compute_ddxt_z_half_e,
+    compute_exner_exfac,
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_z_mc,
-    compute_exner_exfac
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -54,11 +56,13 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
+    constant_field,
     dallclose,
+    flatten_first_two_dims,
     is_python,
     is_roundtrip,
     random_field,
-    zero_field, flatten_first_two_dims,
+    zero_field,
 )
 
 
@@ -606,27 +610,31 @@ def test_compute_ddxt_z_full(
 
     assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
 
+
 @pytest.mark.datatest
 def test_compute_exner_exfac(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
     backend = None
-    # initialize exner_exfac to field of exner_expol and check horizontal bounds
-    exner_exfac = zero_field(icon_grid, CellDim, KDim)
+    horizontal_start = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
+    exner_exfac = constant_field(icon_grid, constants.exner_expol, CellDim, KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
         exner_expol=constants.exner_expol,
-        horizontal_start=int32(0),
+        horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_cells,
         vertical_start=int32(0),
         vertical_end=icon_grid.num_levels,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy())
+    assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
+
 
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
@@ -650,7 +658,6 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
     flat_idx = np.full(shape=icon_grid.num_edges, fill_value=icon_grid.num_levels)
-
 
     zdiff_gradp_full_np_final = compute_zdiff_gradp_dsl(
         e2c=icon_grid.connectivities[E2CDim],

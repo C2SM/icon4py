@@ -593,18 +593,26 @@ def compute_vwind_expl_wgt(
 
 
 @field_operator
-def _compute_exner_exfac(ddxn_z_full: Field[[EdgeDim, KDim], wpfloat], dual_edge_length: Field[[EdgeDim], wpfloat], exner_expol: wpfloat) -> Field[[CellDim, KDim], wpfloat]:
+def _compute_exner_exfac(
+    ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    exner_expol: wpfloat,
+) -> Field[[CellDim, KDim], wpfloat]:
     z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
     z_maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
 
-    z_maxhgtd_0_1 = maximum(abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
-                        abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])))
+    z_maxhgtd_0_1 = maximum(
+        abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
+        abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])),
+    )
 
     z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
 
-    exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp)**2, 1.0 - (0.002 * z_maxhgtd)**2)
+    exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2)
     exner_exfac = maximum(0.0, exner_exfac)
-    exner_exfac = where(z_maxslp > 1.5, maximum(-1.0/6.0, 1.0/9.0 * (1.5 - z_maxslp)), exner_exfac)
+    exner_exfac = where(
+        z_maxslp > 1.5, maximum(-1.0 / 6.0, 1.0 / 9.0 * (1.5 - z_maxslp)), exner_exfac
+    )
 
     return exner_exfac
 
@@ -620,6 +628,22 @@ def compute_exner_exfac(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute exner_exfac.
+
+    Exner extrapolation reaches zero for a slope of 1/4 or a height difference of 500 m between adjacent grid points (empirically determined values). See mo_vertical_grid.f90
+
+    Args:
+        ddxn_z_full: ddxn_z_full
+        dual_edge_length: dual_edge_length
+        exner_exfac: Exner factor
+        exner_expol: Exner extrapolation factor
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+
+    """
     _compute_exner_exfac(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,

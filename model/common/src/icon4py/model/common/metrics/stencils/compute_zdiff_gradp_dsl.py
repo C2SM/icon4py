@@ -99,4 +99,3 @@ def compute_zdiff_gradp_dsl(
                         break
 
     return zdiff_gradp
-
