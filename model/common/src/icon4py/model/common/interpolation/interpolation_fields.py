@@ -29,6 +29,7 @@ from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import C2E, V2E, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 def compute_c_lin_e(
@@ -197,29 +198,30 @@ def compute_geofac_grg(
         horizontal_start:
     """
     llb = horizontal_start
-    geofac_grg = np.zeros([c2e.shape[0], 4, 2])
+    num_cells = c2e.shape[0]
+    geofac_grg = np.zeros([num_cells, c2e.shape[1] + 1, primal_normal_ec.shape[2]])
     index = np.transpose(
         np.vstack(
             (
-                np.arange(c2e.shape[0]),
-                np.arange(c2e.shape[0]),
-                np.arange(c2e.shape[0]),
+                np.arange(num_cells),
+                np.arange(num_cells),
+                np.arange(num_cells),
             )
         )
     )
-    for k in range(2):
+    for k in range(e2c.shape[1]):
         mask = e2c[c2e, k] == index
-        for i in range(2):
-            for j in range(3):
+        for i in range(primal_normal_ec.shape[2]):
+            for j in range(c2e.shape[1]):
                 geofac_grg[llb:, 0, i] = (
                     geofac_grg[llb:, 0, i]
                     + mask[llb:, j]
                     * (primal_normal_ec[:, :, i] * geofac_div * c_lin_e[c2e, k])[llb:, j]
                 )
-    for k in range(2):
+    for k in range(e2c.shape[1]):
         mask = e2c[c2e, k] == c2e2c
-        for i in range(2):
-            for j in range(3):
+        for i in range(primal_normal_ec.shape[2]):
+            for j in range(c2e.shape[1]):
                 geofac_grg[llb:, 1 + j, i] = (
                     geofac_grg[llb:, 1 + j, i]
                     + mask[llb:, j]
@@ -251,31 +253,32 @@ def compute_geofac_grdiv(
         horizontal_start:
     """
     llb = horizontal_start
-    geofac_grdiv = np.zeros([e2c.shape[0], 5])
-    index = np.arange(llb, e2c.shape[0])
-    for j in range(3):
+    num_edges = e2c.shape[0]
+    geofac_grdiv = np.zeros([num_edges, 1 + 2 * e2c.shape[1]])
+    index = np.arange(llb, num_edges)
+    for j in range(c2e.shape[1]):
         mask = np.where(c2e[e2c[llb:, 1], j] == index, owner_mask[llb:], False)
         geofac_grdiv[llb:, 0] = np.where(mask, geofac_div[e2c[llb:, 1], j], geofac_grdiv[llb:, 0])
-    for j in range(3):
+    for j in range(c2e.shape[1]):
         mask = np.where(c2e[e2c[llb:, 0], j] == index, owner_mask[llb:], False)
         geofac_grdiv[llb:, 0] = np.where(
             mask,
             (geofac_grdiv[llb:, 0] - geofac_div[e2c[llb:, 0], j]) * inv_dual_edge_length[llb:],
             geofac_grdiv[llb:, 0],
         )
-    for j in range(2):
-        for k in range(3):
+    for j in range(e2c.shape[1]):
+        for k in range(c2e.shape[1]):
             mask = c2e[e2c[llb:, 0], k] == e2c2e[llb:, j]
-            geofac_grdiv[llb:, 1 + j] = np.where(
+            geofac_grdiv[llb:, e2c.shape[1] - 1 + j] = np.where(
                 mask,
                 -geofac_div[e2c[llb:, 0], k] * inv_dual_edge_length[llb:],
-                geofac_grdiv[llb:, 1 + j],
+                geofac_grdiv[llb:, e2c.shape[1] - 1 + j],
             )
-            mask = c2e[e2c[llb:, 1], k] == e2c2e[llb:, 2 + j]
-            geofac_grdiv[llb:, 3 + j] = np.where(
+            mask = c2e[e2c[llb:, 1], k] == e2c2e[llb:, e2c.shape[1] + j]
+            geofac_grdiv[llb:, 2 * e2c.shape[1] - 1 + j] = np.where(
                 mask,
                 geofac_div[e2c[llb:, 1], k] * inv_dual_edge_length[llb:],
-                geofac_grdiv[llb:, 3 + j],
+                geofac_grdiv[llb:, 2 * e2c.shape[1] - 1 + j],
             )
     return geofac_grdiv
 
@@ -302,16 +305,16 @@ def weighting_factors(
     xtemp: np.array,
     yloc: np.array,
     xloc: np.array,
-    wgt_loc: np.double,
+    wgt_loc: wpfloat,
 ) -> np.array:
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
-    x = np.zeros([3, ytemp.shape[1]])
-    y = np.zeros([3, ytemp.shape[1]])
-    wgt = np.zeros([3, ytemp.shape[1]])
+    x = np.zeros([ytemp.shape[0], ytemp.shape[1]])
+    y = np.zeros([ytemp.shape[0], ytemp.shape[1]])
+    wgt = np.zeros([ytemp.shape[0], ytemp.shape[1]])
 
-    for i in range(3):
+    for i in range(ytemp.shape[0]):
         (ytemp[i], xtemp[i]) = rotate_latlon(ytemp[i], xtemp[i], pollat, pollon)
         y[i] = ytemp[i] - yloc
         x[i] = xtemp[i] - xloc
@@ -366,17 +369,17 @@ def compute_c_bln_avg(
         lat:
         lon:
         horizontal_start:
-        horizontal_end:
     """
     llb = horizontal_start
-    c_bln_avg = np.zeros([c2e2c.shape[0], 4])
+    num_cells = c2e2c.shape[0]
+    c_bln_avg = np.zeros([num_cells, 4])
     wgt_loc = divavg_cntrwgt
-    yloc = np.zeros(c2e2c.shape[0])
-    xloc = np.zeros(c2e2c.shape[0])
+    yloc = np.zeros(num_cells)
+    xloc = np.zeros(num_cells)
     yloc[llb:] = lat[llb:]
     xloc[llb:] = lon[llb:]
-    ytemp = np.zeros([3, c2e2c.shape[0]])
-    xtemp = np.zeros([3, c2e2c.shape[0]])
+    ytemp = np.zeros([3, num_cells])
+    xtemp = np.zeros([3, num_cells])
 
     for i in range(3):
         ytemp[i, llb:] = lat[c2e2c[llb:, i]]
@@ -390,7 +393,6 @@ def compute_c_bln_avg(
         wgt_loc,
     )
 
-    # Store results in ptr_patch%cells%avg_wgt
     c_bln_avg[llb:, 0] = np.where(owner_mask[llb:], wgt_loc, c_bln_avg[llb:, 0])
     for i in range(3):
         c_bln_avg[llb:, i + 1] = np.where(owner_mask[llb:], wgt[i], c_bln_avg[llb:, i + 1])
@@ -431,9 +433,10 @@ def compute_force_mass_conservation_to_c_bln_avg(
     """
     llb = horizontal_start
     llb2 = horizontal_start_p3
-    index = np.arange(llb, c2e2c.shape[0])
+    num_cells = c2e2c.shape[0]
+    index = np.arange(llb, num_cells)
 
-    inv_neighbor_id = -np.ones([c2e2c.shape[0], 3], dtype=int)
+    inv_neighbor_id = -np.ones([num_cells, 3], dtype=int)
     for i in range(3):
         for j in range(3):
             inv_neighbor_id[llb:, j] = np.where(
@@ -493,12 +496,12 @@ def compute_e_flx_avg(
     horizontal_start_p3: np.int32,
     horizontal_start_p4: np.int32,
 ) -> np.array:
-    e_flx_avg = np.zeros([e2c.shape[0], 5])
     llb = 0
+    e_flx_avg = np.zeros([e2c.shape[0], 5])
     index = np.arange(llb, c2e.shape[0])
     inv_neighbor_id = -np.ones([c2e.shape[0] - llb, 3], dtype=int)
-    for i in range(3):
-        for j in range(3):
+    for i in range(c2e2c.shape[1]):
+        for j in range(c2e2c.shape[1]):
             inv_neighbor_id[:, j] = np.where(
                 np.logical_and(c2e2c[c2e2c[llb:, j], i] == index, c2e2c[llb:, j] >= 0),
                 i,
@@ -507,7 +510,7 @@ def compute_e_flx_avg(
 
     llb = horizontal_start_p3
     index = np.arange(llb, e2c.shape[0])
-    for j in range(3):
+    for j in range(c2e.shape[1]):
         for i in range(2):
             e_flx_avg[llb:, i + 1] = np.where(
                 owner_mask[llb:],
@@ -555,7 +558,7 @@ def compute_e_flx_avg(
 
     llb = horizontal_start_p4
     index = np.arange(llb, e2c.shape[0])
-    for i in range(3):
+    for i in range(c2e.shape[1]):
         e_flx_avg[llb:, 0] = np.where(
             owner_mask[llb:],
             np.where(
@@ -618,9 +621,9 @@ def compute_cells_aw_verts(
 ) -> np.array:
     llb = horizontal_start
     cells_aw_verts = np.zeros([v2e.shape[0], 6])
-    for i in range(2):
-        for je in range(6):
-            for jc in range(6):
+    for i in range(e2c.shape[1]):
+        for je in range(v2e.shape[1]):
+            for jc in range(v2c.shape[1]):
                 mask = np.where(
                     np.logical_and(v2e[llb:, je] >= 0, e2c[v2e[llb:, je], i] == v2c[llb:, jc]),
                     owner_mask[llb:],
@@ -649,13 +652,14 @@ def compute_e_bln_c_s(
     edges_lon: np.array,
 ) -> np.array:
     llb = 0
-    e_bln_c_s = np.zeros([c2e.shape[0], 3])
+    num_cells = c2e.shape[0]
+    e_bln_c_s = np.zeros([num_cells, c2e.shape[1]])
     yloc = cells_lat[llb:]
     xloc = cells_lon[llb:]
-    ytemp = np.zeros([3, c2e.shape[0]])
-    xtemp = np.zeros([3, c2e.shape[0]])
+    ytemp = np.zeros([c2e.shape[1], num_cells])
+    xtemp = np.zeros([c2e.shape[1], num_cells])
 
-    for i in range(3):
+    for i in range(ytemp.shape[0]):
         ytemp[i] = edges_lat[c2e[llb:, i]]
         xtemp[i] = edges_lon[c2e[llb:, i]]
 
@@ -667,8 +671,7 @@ def compute_e_bln_c_s(
         0.0,
     )
 
-    # Store results in ptr_patch%cells%e_bln_c_s
-    for i in range(3):
+    for i in range(wgt.shape[0]):
         e_bln_c_s[llb:, i] = np.where(owner_mask[llb:], wgt[i], e_bln_c_s[llb:, i])
     return e_bln_c_s
 

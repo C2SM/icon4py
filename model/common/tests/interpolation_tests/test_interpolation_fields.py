@@ -64,6 +64,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     ranked_data_path,
 )
 from icon4py.model.common.test_utils.helpers import zero_field
+from icon4py.model.common.constants import EARTH_RADIUS
 
 
 @pytest.mark.datatest
@@ -343,7 +344,7 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
 def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_grid):
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
-    sphere_radius = grid_savepoint.sphere_radius().asnumpy()
+    sphere_radius = EARTH_RADIUS
     primal_normal_v1 = grid_savepoint.primal_normal_v1().asnumpy()
     primal_normal_v2 = grid_savepoint.primal_normal_v2().asnumpy()
     dual_normal_v1 = grid_savepoint.dual_normal_v1().asnumpy()

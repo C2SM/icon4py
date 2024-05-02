@@ -152,9 +152,6 @@ class IconGridSavepoint(IconSavepoint):
     def dual_normal_v2(self):
         return self._get_field("dual_normal_v2", EdgeDim)
 
-    def sphere_radius(self):
-        return self._get_field("grid_sphere_radius")
-
     def edges_center_lat(self):
         return self._get_field("edges_center_lat", EdgeDim)
 
