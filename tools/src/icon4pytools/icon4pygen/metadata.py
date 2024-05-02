@@ -187,7 +187,8 @@ def provide_neighbor_table(chain: str, is_global: bool) -> tuple[DummyConnectivi
     include_center = False
     if chain[-1] == "O":
         include_center = True
-        chain = chain.rstrip()  # remove 'O' letter at the end
+        chain_size = len(chain)
+        chain = chain[:chain_size-1]
     for dim in chain.split("2"):
         if dim == "C":
             location_chain.append(CellDim)
