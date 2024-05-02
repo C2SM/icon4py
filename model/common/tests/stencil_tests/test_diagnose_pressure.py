@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.common.constants import GRAV_O_RD
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
@@ -39,12 +40,12 @@ class TestDiagnosePressure(StencilTest):
         pressure = np.zeros_like(temperature)
         ground_level = temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = pressure_sfc * np.exp(
-            -ddqz_z_full[:, ground_level] / temperature[:, ground_level]
+            -GRAV_O_RD * ddqz_z_full[:, ground_level] / temperature[:, ground_level]
         )
         pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * pressure_sfc)
         for k in range(ground_level - 1, -1, -1):
             pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(
-                -ddqz_z_full[:, k] / temperature[:, k]
+                -GRAV_O_RD * ddqz_z_full[:, k] / temperature[:, k]
             )
             pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
 
@@ -67,6 +68,7 @@ class TestDiagnosePressure(StencilTest):
             pressure_sfc=pressure_sfc,
             pressure=pressure,
             pressure_ifc=pressure_ifc,
+            grav_o_rd=GRAV_O_RD,
             horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(0),

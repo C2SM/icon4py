@@ -15,6 +15,9 @@
 import pytest
 
 from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
+    diagnose_pressure,
+)
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
 )
@@ -113,20 +116,19 @@ def test_diagnostic_calculations_in_jabw(
     )
 
     # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
-    """
     diagnose_pressure(
         data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.temperature,
         diagnostic_state.pressure_sfc,
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,
+        GRAV_O_RD,
         icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
         icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
         0,
         icon_grid.num_levels,
-        offset_provider={"Koff": KDim},
+        offset_provider={},
     )
-    """
 
     icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
     assert dallclose(
@@ -150,4 +152,12 @@ def test_diagnostic_calculations_in_jabw(
         icon_diagnostics_output_sp.pressure_sfc().asnumpy(),
     )
 
-    # TODO (Chia Rui): to compare pressure
+    assert dallclose(
+        diagnostic_state.pressure_ifc.asnumpy()[:, :-1],
+        icon_diagnostics_output_sp.pressure_ifc().asnumpy()[:, :-1],
+    )
+
+    assert dallclose(
+        diagnostic_state.pressure.asnumpy(),
+        icon_diagnostics_output_sp.pressure().asnumpy(),
+    )

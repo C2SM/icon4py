@@ -20,21 +20,23 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-@scan_operator(axis=KDim, forward=False, init=(True, 0.0, 0.0))
+@scan_operator(axis=KDim, forward=False, init=(0.0, 0.0, True))
 def _scan_pressure(
-    state: tuple[bool, float, float],
-    ddqz_z_full: float,
-    temperature: float,
-    pressure_sfc: float,
+    state: tuple[vpfloat, vpfloat, bool],
+    ddqz_z_full: vpfloat,
+    temperature: vpfloat,
+    pressure_sfc: vpfloat,
+    grav_o_rd: wpfloat,
 ):
-    if state[0]:
-        pressure_first_level = pressure_sfc * exp(-ddqz_z_full / temperature)
-        pressure = sqrt(pressure_sfc * pressure_first_level)
-        return False, pressure, pressure_first_level
-    else:
-        pressure_interface = state[1] * exp(-ddqz_z_full / temperature)
-        pressure = sqrt(state[1] * pressure_interface)
-        return False, pressure, pressure_interface
+    pressure_interface = (
+        pressure_sfc * exp(-grav_o_rd * ddqz_z_full / temperature)
+        if state[2]
+        else state[1] * exp(-grav_o_rd * ddqz_z_full / temperature)
+    )
+    pressure = (
+        sqrt(pressure_sfc * pressure_interface) if state[2] else sqrt(state[1] * pressure_interface)
+    )
+    return pressure, pressure_interface, False
 
 
 @field_operator
@@ -42,8 +44,9 @@ def _diagnose_pressure(
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
+    grav_o_rd: wpfloat,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
-    redundant, pressure, pressure_ifc = _scan_pressure(ddqz_z_full, temperature, pressure_sfc)
+    pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, temperature, pressure_sfc, grav_o_rd)
     return pressure, pressure_ifc
 
 
@@ -54,6 +57,7 @@ def diagnose_pressure(
     pressure_sfc: Field[[CellDim], vpfloat],
     pressure: Field[[CellDim, KDim], vpfloat],
     pressure_ifc: Field[[CellDim, KDim], vpfloat],
+    grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -63,6 +67,16 @@ def diagnose_pressure(
         ddqz_z_full,
         temperature,
         pressure_sfc,
+        grav_o_rd,
         out=(pressure, pressure_ifc),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
+    """
+    _scan_pressure_test(
+        ddqz_z_full,
+        temperature,
+        pressure_sfc,
+        out=(pressure, pressure_ifc),
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+    """
