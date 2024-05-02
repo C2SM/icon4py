@@ -19,25 +19,6 @@ from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 
 
-def edge_2_cell_vector_rbf_interpolation_numpy(
-    p_e_in: np.array,
-    ptr_coeff_1: np.array,
-    ptr_coeff_2: np.array,
-    c2e2c2e: np.array,
-    horizontal_start: int,
-    horizontal_end: int,
-    vertical_start: int,
-    vertical_end: int,
-) -> tuple[np.array, np.array]:
-    expanded_ptr_coeff_1 = np.expand_dims(ptr_coeff_1[horizontal_start:horizontal_end, :], axis=-1)
-    expanded_ptr_coeff_2 = np.expand_dims(ptr_coeff_2[horizontal_start:horizontal_end, :], axis=-1)
-    mask = np.zeros((c2e2c2e.shape[0], p_e_in.shape[1]), dtype=bool)
-    mask[horizontal_start:horizontal_end, vertical_start:vertical_end] = True
-    p_u_out = np.where(mask, np.sum(p_e_in[c2e2c2e] * expanded_ptr_coeff_1, axis=1), 0.0)
-    p_v_out = np.where(mask, np.sum(p_e_in[c2e2c2e] * expanded_ptr_coeff_2, axis=1), 0.0)
-    return p_u_out, p_v_out
-
-
 def cell_2_edge_interpolation_numpy(
     icon_grid: IconGrid,
     cells2edges_interpolation_coeff: np.array,
