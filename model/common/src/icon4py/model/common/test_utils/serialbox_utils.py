@@ -43,9 +43,9 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalGridSize
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
@@ -142,6 +142,10 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int):
+        super().__init__(sp, ser, size)
+        self.global_grid_params = GlobalGridParams(root, level)
+
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)
 
@@ -341,6 +345,7 @@ class IconGridSavepoint(IconSavepoint):
         vertex_ends = self.vertex_end_index()
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
+
         config = GridConfig(
             horizontal_config=HorizontalGridSize(
                 num_vertices=self.num(VertexDim),
@@ -358,6 +363,7 @@ class IconGridSavepoint(IconSavepoint):
         grid = (
             IconGrid()
             .with_config(config)
+            .with_global_params(self.global_grid_params)
             .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
             .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
@@ -429,7 +435,11 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> CellParams:
-        return CellParams(area=self.cell_areas(), mean_cell_area=self.mean_cell_area())
+        return CellParams.from_global_num_cells(
+            area=self.cell_areas(),
+            global_num_cells=self.global_grid_params.num_cells,
+            length_rescale_factor=1.0,
+        )
 
 
 class InterpolationSavepoint(IconSavepoint):
@@ -1159,9 +1169,11 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self) -> IconGridSavepoint:
+    def from_savepoint_grid(self, grid_root, grid_level) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
-        return IconGridSavepoint(savepoint, self.serializer, size=self.grid_size)
+        return IconGridSavepoint(
+            savepoint, self.serializer, size=self.grid_size, root=grid_root, level=grid_level
+        )
 
     def _get_icon_grid_savepoint(self):
         savepoint = self.serializer.savepoint["icon-grid"].id[1].as_savepoint()
