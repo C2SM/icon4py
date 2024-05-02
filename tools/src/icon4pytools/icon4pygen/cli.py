@@ -100,8 +100,8 @@ def main(
         from icon4pytools.icon4pygen.backend import DaceCodegen
         from icon4pytools.icon4pygen.bindings.workflow import DacePyBindGen
 
-        kernel_name = DaceCodegen(stencil_info)(outpath, temporaries)
-        DacePyBindGen(stencil_info)(kernel_name, outpath)
+        DaceCodegen(stencil_info)(outpath, temporaries)
+        DacePyBindGen(stencil_info)(outpath)
     else:
         from icon4pytools.icon4pygen.backend import GTHeader
 

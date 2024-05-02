@@ -92,13 +92,12 @@ class DacePyBindGen:
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 
-    def __call__(self, kernel_name: str, outpath: Path) -> None:
+    def __call__(self, outpath: Path) -> None:
         check_dir_exists(outpath)
         generate_f90_file(self.stencil_name, self.fields, self.offsets, outpath)
         generate_cpp_header(self.stencil_name, self.fields, outpath)
         generate_dace_cpp_definition(
             self.stencil_name,
-            kernel_name,
             self.fields,
             self.offsets,
             outpath,

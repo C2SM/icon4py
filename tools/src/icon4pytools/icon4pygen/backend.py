@@ -259,7 +259,7 @@ class DaceCodegen:
     def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
-    def __call__(self, outpath: Path, temporaries: bool) -> str:
+    def __call__(self, outpath: Path, temporaries: bool) -> None:
         """Generate CUDA code using the DaCe backend and write it to a file.
 
         Returns the name of the kernel to be invoked.
@@ -279,10 +279,3 @@ class DaceCodegen:
 
         assert dc_cuda is not None
         write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
-
-        m = re.findall("^void __dace_runkernel_(.+_\d+_\d+_\d+)\(", dc_cuda, re.MULTILINE)
-        if len(m) != 1:
-            raise RuntimeError(
-                f"DaCe bindings only support single-kernel programs, found {len(m)}."
-            )
-        return m[0]

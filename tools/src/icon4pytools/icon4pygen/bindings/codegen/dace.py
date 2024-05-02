@@ -62,7 +62,7 @@ class CppDefGenerator(TemplatedGenerator):
         #include "cuda_verify.hpp"
         #include "to_json.hpp"
         #include "to_vtk.h"
-        #include \"{{ funcname }}_dace.cu\"
+        #include \"{{ funcname }}_dace.h\"
         #include "unstructured_interface.hpp"
         #include "verification_metrics.hpp"
         """
@@ -91,6 +91,7 @@ class CppDefGenerator(TemplatedGenerator):
       }
 
       static void free() {
+        (void)__dace_exit_{{ funcname }}(handle);
       }
       """
     )
@@ -174,6 +175,12 @@ class CppDefGenerator(TemplatedGenerator):
         jsonRecord_ = jsonRecord;
         mesh_info_vtk_ = mesh_info_vtk;
         verify_ = verify;
+
+        int horizontalEnd = 0;
+        int horizontalStart = 0;
+        int verticalEnd = 0;
+        int verticalEnd = 0;
+        handle = __dace_init_{{ funcname }}({{ ", ".join(_this_node.sdfg_symbols) }});
         }
         """
     )
@@ -190,6 +197,7 @@ class CppDefGenerator(TemplatedGenerator):
         inline static json* jsonRecord_;
         inline static MeshInfoVtk* mesh_info_vtk_;
         inline static verify* verify_;
+        {{ funcname }}Handle_t handle;
         """
     )
 
@@ -198,28 +206,16 @@ class CppDefGenerator(TemplatedGenerator):
       void run({%- for arg in _this_node.domain_args -%}
         const int {{arg.cpp_arg_name()}}{%- if not loop.last -%}, {%- endif -%}
       {%- endfor -%}) {
-      if (!is_setup_) {
-        printf("{{ stencil_name }} has not been set up! make sure setup() is called before run!\\n");
-        return;
-      }
+        if (!is_setup_) {
+            printf("{{ stencil_name }} has not been set up! make sure setup() is called before run!\\n");
+            return;
+        }
 
-      dace::cuda::Context __dace_context(1, 1);
-      __dace_context.streams[0] = stream_;
-      cudaEventCreateWithFlags(&__dace_context.events[0], cudaEventDisableTiming);
-
-      {{ stencil_name }}_state_t handle{.gpu_context = &__dace_context};
-
-      __dace_runkernel_{{ kernel_name }}(&handle
-      {%- for data_descr in _this_node.sorted_fields -%}
-        , {{ data_descr.cpp_arg_name() }}
-      {%- endfor -%},
-      {{ ", ".join(_this_node.sorted_symbols) }});
-      #ifndef NDEBUG
-        gpuErrchk(cudaPeekAtLastError());
-        gpuErrchk(cudaDeviceSynchronize());
-      #endif
-
-        cudaEventDestroy(__dace_context.events[0]);
+        __program_{{ stencil_name }}(handle
+        {%- for data_descr in _this_node.sdfg_arrays -%}
+            , {{ data_descr.cpp_arg_name() }}
+        {%- endfor -%},
+        {{ ", ".join(_this_node.sdfg_symbols) }});
       }
       """
     )
@@ -445,7 +441,7 @@ class DataDescriptor:
 
     def strides(self) -> Optional[str]:
         if isinstance(self.data_descr, Field):
-            strides_str = self.data_descr.renderer.render_strides()
+            strides_str = self.data_descr.renderer.render_strides(exclude_sparse_dim=False)
 
             if strides_str == "1":
                 return None
@@ -471,14 +467,14 @@ class GpuTriMesh(Node):
 
 class StenClassRunFun(Node):
     stencil_name: str
-    kernel_name: str
     domain_args: Sequence[Scalar]
-    sorted_fields: Sequence[DataDescriptor]
-    sorted_symbols: Sequence[str]
+    sdfg_arrays: Sequence[DataDescriptor]
+    sdfg_symbols: Sequence[str]
 
 
 class PublicUtilities(Node):
     fields: Sequence[Field]
+    funcname: str
 
 
 class CopyPointers(Node):
@@ -488,10 +484,11 @@ class CopyPointers(Node):
 class PrivateMembers(Node):
     fields: Sequence[Field]
     out_fields: Sequence[Field]
+    funcname: str
 
 
 class StencilClassSetupFunc(CppSetupFuncDeclaration):
-    ...
+    sdfg_symbols: Sequence[str]
 
 
 class StencilClass(Node):
@@ -550,7 +547,6 @@ class FreeFunc(CppFreeFunc):
 
 class CppDefTemplate(Node):
     stencil_name: str
-    kernel_name: str
     fields: Sequence[Field]
     offsets: Sequence[Offset]
 
@@ -608,7 +604,16 @@ class CppDefTemplate(Node):
         symbol_map.update(
             {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in field_args}
         )
-
+        sorted_symbols = (
+            [arg.cpp_arg_name() for arg in scalar_args]
+            + [
+                symbols
+                for _, symbols in collections.OrderedDict(
+                    sorted(symbol_map.items())
+                ).items()
+                if symbols is not None
+            ]
+        )
         def key_data_descr(x: DataDescriptor | str) -> str:
             return x.sdfg_arg_name() if isinstance(x, DataDescriptor) else x
 
@@ -625,25 +630,23 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
-                kernel_name=self.kernel_name,
                 domain_args=domain_args,
-                sorted_fields=sorted(field_args, key=key_data_descr),
-                sorted_symbols=(
-                    [arg.cpp_arg_name() for arg in scalar_args]
-                    + [
-                        symbols
-                        for _, symbols in collections.OrderedDict(
-                            sorted(symbol_map.items())
-                        ).items()
-                        if symbols is not None
-                    ]
-                ),
+                sdfg_arrays=sorted(field_args, key=key_data_descr),
+                sdfg_symbols=sorted_symbols,
             ),
-            public_utilities=PublicUtilities(fields=fields["output"]),
+            public_utilities=PublicUtilities(
+                fields=fields["output"],
+                funcname=self.stencil_name
+            ),
             copy_pointers=CopyPointers(fields=self.fields),
-            private_members=PrivateMembers(fields=self.fields, out_fields=fields["output"]),
+            private_members=PrivateMembers(
+                fields=self.fields,
+                out_fields=fields["output"],
+                funcname=self.stencil_name
+            ),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
+                sdfg_symbols=sorted_symbols
             ),
         )
 
@@ -709,14 +712,12 @@ class CppDefTemplate(Node):
 
 def generate_cpp_definition(
     stencil_name: str,
-    kernel_name: str,
     fields: Sequence[Field],
     offsets: Sequence[Offset],
     outpath: Path,
 ) -> None:
     definition = CppDefTemplate(
         stencil_name=stencil_name,
-        kernel_name=kernel_name,
         fields=fields,
         offsets=offsets,
     )
