@@ -179,6 +179,8 @@ def generate_dace_code(
     temporaries: bool,
     **kwargs: Any,
 ) -> tuple[str, str, Optional[str]]:
+    import dace
+
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
     check_for_domain_bounds(stencil_info.fendef)
 
@@ -217,11 +219,28 @@ def generate_dace_code(
         **kwargs,
     )
 
-    code_objs = sdfg.generate_code()
+    # limit cuda code generation to only use one cuda stream and expose utility function
+    # to override it
+    if on_gpu:
+        sdfg.append_global_code(
+            f"""
+        DACE_EXPORTED void __set_stream_{sdfg.name}({sdfg.name}_state_t *__state, cudaStream_t stream) {{
+            __dace_gpu_set_stream(__state, 0, stream);
+        }}"""
+        )
+    with dace.config.set_temporary("compiler", "cuda", "max_concurrent_streams", value=1):
+        code_objs = sdfg.generate_code()
+
     hdr_objs = [obj for obj in code_objs if obj.language == "h"]
     assert len(hdr_objs) == 1
+    if on_gpu:
+        # add utility function for cuda stream to header file
+        line = f'extern "C" void __set_stream_{sdfg.name}({sdfg.name}_state_t *__state, cudaStream_t stream);\n'
+        hdr_objs[0].code += line
+
     src_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
     assert len(src_objs) == 1
+
     # for gpu codegen, also return the cuda file
     if on_gpu:
         cuda_objs = [obj for obj in code_objs if obj.language == "cu" and obj.linkable]

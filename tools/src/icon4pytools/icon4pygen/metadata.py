@@ -17,7 +17,6 @@ import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
-import numpy as np
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
@@ -203,7 +202,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
         neighbor_axis=location_chain[-1],
-        index_type=np.int32,
+        index_type=int,
     )
 
 
