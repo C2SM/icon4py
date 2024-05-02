@@ -14,18 +14,20 @@
 from gt4py.next import (
     Field,
     GridType,
+    abs,
     broadcast,
     exp,
     field_operator,
     int32,
     maximum,
+    minimum,
     program,
     sin,
     tanh,
     where,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim, C2E
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
@@ -492,3 +494,43 @@ def compute_ddxnt_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
 ):
     average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
+
+
+@field_operator
+def _compute_exner_exfac(ddxn_z_full: Field[[EdgeDim, KDim], wpfloat], dual_edge_length: Field[[EdgeDim], wpfloat], exner_expol: wpfloat) -> Field[[CellDim, KDim], wpfloat]:
+    z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
+    z_maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
+
+    z_maxhgtd_0_1 = maximum(abs(ddxn_z_full(C2E[0]) * dual_edge_length(C2E[0])),
+                        abs(ddxn_z_full(C2E[1]) * dual_edge_length(C2E[1])))
+
+    z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
+
+    exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp)**2, 1.0 - (0.002 * z_maxhgtd)**2)
+    exner_exfac = maximum(0.0, exner_exfac)
+    exner_exfac = where(z_maxslp > 1.5, maximum(-1.0/6.0, 1.0 / 9.0 * (1.5-z_maxslp)), exner_exfac)
+
+    return exner_exfac
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_exner_exfac(
+    ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    exner_exfac: Field[[CellDim, KDim], wpfloat],
+    exner_expol: wpfloat,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_exner_exfac(
+        ddxn_z_full=ddxn_z_full,
+        dual_edge_length=dual_edge_length,
+        exner_expol=exner_expol,
+        out=exner_exfac,
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

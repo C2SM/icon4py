@@ -36,6 +36,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_z_mc,
+    compute_exner_exfac
 )
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -389,3 +390,22 @@ def test_compute_ddxt_z_full_e(
     )
 
     assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
+
+@pytest.mark.datatest
+def test_compute_exner_exfac(
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
+):
+    exner_exfac = zero_field(icon_grid, CellDim, KDim)
+    exner_exfac_ref = metrics_savepoint.exner_exfac()
+    compute_exner_exfac(
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        dual_edge_length=grid_savepoint.dual_edge_length(),
+        exner_exfac=exner_exfac,
+        exner_expol=constants.exner_expol,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=int32(0),
+        vertical_end=icon_grid.num_levels,
+    )
+
+    assert np.allclose(exner_exfac.asnumpy(), exner_exfac_ref)
