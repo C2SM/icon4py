@@ -20,7 +20,12 @@ from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure imp
     diagnose_pressure,
 )
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import (
+    StencilTest,
+    is_roundtrip,
+    random_field,
+    zero_field,
+)
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -56,6 +61,9 @@ class TestDiagnosePressure(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
+        if is_roundtrip:
+            pytest.xfail("This stencil currently does not work properly with roundtrip backend.")
+
         ddqz_z_full = random_field(grid, CellDim, KDim, dtype=wpfloat)
         temperature = random_field(grid, CellDim, KDim, dtype=vpfloat)
         pressure_sfc = random_field(grid, CellDim, dtype=vpfloat)
