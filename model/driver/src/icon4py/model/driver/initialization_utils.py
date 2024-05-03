@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.atmosphere.dycore.init_exner_pr import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -152,6 +153,9 @@ def model_initialization_jabw(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
     grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
+    grid_idx_cell_interior_start = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.interior(CellDim)
+    )
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
@@ -324,6 +328,19 @@ def model_initialization_jabw(
 
     log.info("U, V computation completed.")
 
+    exner_pr = _allocate(CellDim, KDim, grid=icon_grid)
+    init_exner_pr(
+        exner,
+        data_provider.from_metrics_savepoint().exner_ref_mc(),
+        exner_pr,
+        grid_idx_cell_interior_start,
+        grid_idx_cell_end,
+        0,
+        icon_grid.num_levels,
+        offset_provider={},
+    )
+    log.info("exner_pr initialization completed.")
+
     diagnostic_state = DiagnosticState(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
@@ -355,7 +372,7 @@ def model_initialization_jabw(
     )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        exner_pr=_allocate(CellDim, KDim, grid=icon_grid),
+        exner_pr=exner_pr,
         rho_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         ddt_exner_phy=_allocate(CellDim, KDim, grid=icon_grid),
         grf_tend_rho=_allocate(CellDim, KDim, grid=icon_grid),
