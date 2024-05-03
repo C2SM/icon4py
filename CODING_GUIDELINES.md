@@ -53,9 +53,9 @@ We deviate from the [Google Python Style Guide][google-style-guide] only in the 
 
 ### Error messages 
 
-TODO: should we stick to this?  Remove details...
-
-Error messages should be written as sentences, starting with a capital letter and ending with a period (avoid exclamation marks). Try to be informative without being verbose. Code objects such as 'ClassNames' and 'function_names' should be enclosed in single quotes, and so should string values used for message interpolation.
+Error messages should be written as sentences, starting with a capital letter and ending with a period (avoid exclamation marks). Try to be informative without being verbose. 
+The message should be kept to one sentence if reasonably possible.
+Code objects such as 'ClassNames' and 'function_names' should be enclosed in single quotes, and so should string values used for message interpolation.
 
 Examples:
 
@@ -75,25 +75,12 @@ The double quotes can also be dropped when presenting a sequence of values. In t
 raise ValueError(f"unexpected keyword arguments: {', '.join(set(kwarg_names} - set(expected_kwarg_names)))}.")
 ```
 
-The message should be kept to one sentence if reasonably possible. Ideally the sentence should be kept short and avoid unneccessary words. Examples:
 
-```python
-# too many sentences
-raise ValueError(f"Received an unexpeted number of arguments. Should receive 5 arguments, but got {len(args)}. Please provide the correct number of arguments.")
-# better
-raise ValueError(f"Wrong number of arguments: expected 5, got {len(args)}.")
-
-# less extreme
-raise TypeError(f"Wrong argument type. Can only accept 'int's, got '{type(arg)}' instead.")
-# but can still be improved
-raise TypeError(f"Wrong argument type: 'int' expected, got '{type(arg)}'")
-```
-
-The terseness vs. helpfulness tradeoff should be more in favor of terseness for internal error messages and more in favor of helpfulness for `DSLError` and it's subclassses, where additional sentences are encouraged if they point out likely hidden sources of the problem or common fixes.
 
 ### Docstrings
-TODO revise: we do not currently generate API documentation - what should we suggest here?   
-We generate the API documentation automatically from the docstrings using [Sphinx][sphinx] and some extensions such as [Sphinx-autodoc][sphinx-autodoc] and [Sphinx-napoleon][sphinx-napoleon]. These follow the Google Python Style Guide docstring conventions to automatically format the generated documentation. A complete overview can be found here: [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google).
+We encourage to add doc strings for if functions, classes and modules if they help the reader understand the code and
+contain information that is not obvious from the code itself. While we do not yet generate API documentation 
+from doc strings we might do so in the future using [Sphinx][sphinx] and some extensions such as [Sphinx-autodoc][sphinx-autodoc] and [Sphinx-napoleon][sphinx-napoleon]. These follow the Google Python Style Guide docstring conventions to automatically format the generated documentation. A complete overview can be found here: [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google).
 
 Sphinx supports the [reStructuredText][sphinx-rest] (reST) markup language for defining additional formatting options in the generated documentation, however section [_3.8 Comments and Docstrings_](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) of the Google Python Style Guide does not specify how to use markups in docstrings. As a result, we decided to forbid reST markup in docstrings, except for the following cases:
 
@@ -107,7 +94,7 @@ We highly encourage the [doctest][doctest] format for code examples in docstring
 In general, you should structure new Python modules in the following way:
 
 1. _shebang_ line: `#! /usr/bin/env python3` (only for **executable scripts**!).
-2. License header (see `.license_header.txt`). (added by `pre-commit` hook)
+2. License header (see `.license_header.txt`, it is added automatically by `pre-commit` hook)
 3. Module docstring.
 4. Imports, alphabetically ordered within each block (fixed automatically by `ruff-formatter`):
    1. Block of imports from the standard library.
@@ -143,15 +130,14 @@ return undeclared_symbol  # noqa: F821 [undefined-name] on purpose to trigger bl
 
 ## Testing
 
-TODO change!!
-
 Testing components is a critical part of a software development project. We follow standard practices in software development and write unit, integration, and regression tests. Note that even though [doctests][doctest] are great for documentation purposes, they lack many features and are difficult to debug. Hence, they should not be used as replacement for proper unit tests except in trivial cases.
 
 ### Test suite folder structure
+In each package tests are organized under the `tests` folder. The `tests` folder should not be a package 
+but the contained test suites may be python packages.
 
-There are separate test suites (each living in a subfolder) for the separate subpackages of icon4Py. This is so that not all subpackages have to be tested on CI all the time (see [`ci-docs`][the ci docs] for details).
-
-The `tests` folder should not be a package but the contained test suites are python packages.
+Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) 
+should only contain tests for GT4Py stencils that might be integrated into ICON.
 
 
 
