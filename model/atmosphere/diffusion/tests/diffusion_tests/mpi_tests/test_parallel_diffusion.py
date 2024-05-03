@@ -18,12 +18,14 @@ from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionCon
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
 )
 
 from ..utils import (
+    construct_config,
     construct_diagnostics,
     construct_interpolation_state,
     construct_metric_state,
@@ -56,10 +58,11 @@ def r04b09_diffusion_config(
     )
 
 @pytest.mark.mpi
+@pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
 @pytest.mark.parametrize("linit", [True, ])
 def test_parallel_diffusion(
-    r04b09_diffusion_config,
+    experiment,
     step_date_init,
     linit,
     ndyn_substeps,
@@ -75,7 +78,7 @@ def test_parallel_diffusion(
 ):
     check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment 'mch_ch_r04_b09_dsl"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment '{REGIONAL_EXPERIMENT}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -94,8 +97,8 @@ def test_parallel_diffusion(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
-
-    diffusion_params = DiffusionParams(r04b09_diffusion_config)
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
+    diffusion_params = DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
@@ -106,7 +109,7 @@ def test_parallel_diffusion(
 
     diffusion.init(
         grid=icon_grid,
-        config=r04b09_diffusion_config,
+        config=config,
         params=diffusion_params,
         vertical_params=VerticalModelParams(grid_savepoint.vct_a(), damping_height),
         metric_state=metric_state,
@@ -132,7 +135,7 @@ def test_parallel_diffusion(
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
 
     verify_diffusion_fields(
-        config=r04b09_diffusion_config,
+        config=config,
         diagnostic_state=diagnostic_state,
         prognostic_state=prognostic_state,
         diffusion_savepoint=diffusion_savepoint_exit,

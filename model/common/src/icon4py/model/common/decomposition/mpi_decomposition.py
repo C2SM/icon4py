@@ -24,15 +24,17 @@ from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 
 
 try:
-    from ghex.context import make_context
-    from ghex.unstructured import make_communication_object
-    from ghex.unstructured import DomainDescriptor
-    from ghex.unstructured import HaloGenerator
-    from ghex.unstructured import make_pattern
-    from ghex.unstructured import make_field_descriptor
-    from ghex import expose_cpp_ptr
-    
+    import ghex
     import mpi4py
+    from ghex.context import make_context
+    from ghex.unstructured import (
+        DomainDescriptor,
+        HaloGenerator,
+        make_communication_object,
+        make_field_descriptor,
+        make_pattern,
+    )
+
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
 
@@ -143,7 +145,7 @@ class GHexMultiNodeExchange(SDFGConvertible):
         self,
         props: definitions.ProcessProperties,
         domain_decomposition: definitions.DecompositionInfo,
-    ):  
+    ):
         self._context = make_context(props.comm, False)
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
