@@ -51,9 +51,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
+from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 
 
 class GridFileName(str, Enum):
@@ -81,6 +80,8 @@ class GridFile:
     class PropertyName(GridFileName):
         GRID_ID = "uuidOfHGrid"
         PARENT_GRID_ID = "uuidOfParHGrid"
+        LEVEL = "grid_level"
+        ROOT = "grid_root"
 
     class OffsetName(GridFileName):
         """Names for connectivities used in the grid file."""
@@ -367,6 +368,9 @@ class GridManager:
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
         num_vertices = reader.dimension(GridFile.DimensionName.VERTEX_NAME)
+        grid_level = dataset.getncattr(GridFile.PropertyName.LEVEL)
+        grid_root = dataset.getncattr(GridFile.PropertyName.ROOT)
+        global_params = GlobalGridParams(level=grid_level, root=grid_root)
 
         grid_size = HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
@@ -402,6 +406,7 @@ class GridManager:
         icon_grid = (
             IconGrid()
             .with_config(config)
+            .with_global_params(global_params)
             .with_connectivities(
                 {
                     C2EDim: c2e,
