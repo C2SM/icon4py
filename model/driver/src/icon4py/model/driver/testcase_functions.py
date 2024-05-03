@@ -14,34 +14,6 @@
 import numpy as np
 
 from icon4py.model.common.constants import CVD_O_RD, P0REF, RD
-from icon4py.model.common.dimension import E2CDim, EdgeDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid.icon import IconGrid
-
-
-def cell_2_edge_interpolation_numpy(
-    icon_grid: IconGrid,
-    cells2edges_interpolation_coeff: np.array,
-    cell_scalar: np.array,
-    horizontal_start_index: int,
-    horizontal_end_index: int,
-    vertical_start: int,
-    vertical_end: int,
-):
-    """
-    cells2edges_scalar in mo_icon_interpolation.f90
-    """
-    assert horizontal_start_index != HorizontalMarkerIndex.lateral_boundary(
-        EdgeDim
-    ), "boundary edges cannot be obtained because there is only one neighboring cell"
-    mask = np.zeros((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
-    mask[horizontal_start_index:horizontal_end_index, vertical_start:vertical_end] = True
-    e2c = icon_grid.connectivities[E2CDim]
-    cells2edges_interpolation_coeff = np.expand_dims(cells2edges_interpolation_coeff, axis=-1)
-    edge_scalar = np.where(
-        mask, np.sum(cell_scalar[e2c] * cells2edges_interpolation_coeff, axis=1), 0.0
-    )
-    return edge_scalar
 
 
 def hydrostatic_adjustment_numpy(

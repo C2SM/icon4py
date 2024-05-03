@@ -345,9 +345,9 @@ class EdgeParams:
 
 @dataclass(frozen=True)
 class CellParams:
-    #: Latitude at the cell center. The cell center is defined to be the circumcenter of an triangle.
+    #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
     cell_center_lat: Field[[CellDim], float]
-    #: Longitude at the cell center. The cell center is defined to be the circumcenter of an triangle.
+    #: Longitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
     cell_center_lon: Field[[CellDim], float]
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]

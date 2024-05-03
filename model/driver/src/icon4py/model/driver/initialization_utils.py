@@ -54,6 +54,9 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
+    cell_2_edge_interpolation,
+)
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
@@ -67,10 +70,7 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.driver.testcase_functions import (
-    cell_2_edge_interpolation_numpy,
-    hydrostatic_adjustment_numpy,
-)
+from icon4py.model.driver.testcase_functions import hydrostatic_adjustment_numpy
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
@@ -141,7 +141,7 @@ def model_initialization_jabw(
     edge_lon = edge_param.edge_center[1].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
 
-    cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e().asnumpy()
+    cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
@@ -247,18 +247,20 @@ def model_initialization_jabw(
         # initialize diagnose pressure and temperature variables
         pressure_numpy[:, k_index] = P0REF * exner_numpy[:, k_index] ** CPD_O_RD
         temperature_numpy[:, k_index] = temperature_jw
-
     log.info("Newton iteration completed!")
-    eta_v_e_numpy = cell_2_edge_interpolation_numpy(
-        icon_grid,
+
+    eta_v = as_field((CellDim, KDim), eta_v_numpy)
+    eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
+    cell_2_edge_interpolation(
+        eta_v,
         cell_2_edge_coeff,
-        eta_v_numpy,
+        eta_v_e,
         grid_idx_edge_start_plus1,
         grid_idx_edge_end,
         0,
         num_levels,
     )
-    log.info("Cell-to-edge computation completed.")
+    log.info("Cell-to-edge eta_v computation completed.")
 
     vn_numpy = zonalwind_2_normalwind_jabw_numpy(
         icon_grid,
@@ -269,7 +271,7 @@ def model_initialization_jabw(
         edge_lat,
         edge_lon,
         primal_normal_x,
-        eta_v_e_numpy,
+        eta_v_e.asnumpy(),
     )
     log.info("U2vn computation completed.")
 

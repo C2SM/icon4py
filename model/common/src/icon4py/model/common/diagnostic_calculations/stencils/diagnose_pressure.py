@@ -71,12 +71,3 @@ def diagnose_pressure(
         out=(pressure, pressure_ifc),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
-    """
-    _scan_pressure_test(
-        ddqz_z_full,
-        temperature,
-        pressure_sfc,
-        out=(pressure, pressure_ifc),
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
-    )
-    """

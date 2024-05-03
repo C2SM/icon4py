@@ -37,20 +37,18 @@ from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, rank, debug",
+    "experiment",
     [
-        (JABW_EXPERIMENT, 0, False),
+        JABW_EXPERIMENT,
     ],
 )
-def test_diagnostic_calculations_in_jabw(
+def test_diagnose_temperature(
     experiment,
-    ranked_data_path,
-    rank,
     data_provider,
     icon_grid,
-    debug,
 ):
     sp = data_provider.from_savepoint_jabw_final()
+    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
     prognostic_state_now = PrognosticState(
         rho=sp.rho(),
         w=None,
@@ -59,7 +57,7 @@ def test_diagnostic_calculations_in_jabw(
         theta_v=sp.theta_v(),
     )
     diagnostic_state = DiagnosticState(
-        temperature=sp.temperature(),
+        temperature=zero_field(icon_grid, CellDim, KDim, dtype=float),
         pressure=zero_field(icon_grid, CellDim, KDim, dtype=float),
         pressure_ifc=zero_field(icon_grid, CellDim, KDim, dtype=float, extend={KDim: 1}),
         u=zero_field(icon_grid, CellDim, KDim, dtype=float),
@@ -75,6 +73,41 @@ def test_diagnostic_calculations_in_jabw(
         0,
         icon_grid.num_levels,
         offset_provider={},
+    )
+
+    assert dallclose(
+        diagnostic_state.temperature.asnumpy(),
+        icon_diagnostics_output_sp.temperature().asnumpy(),
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        JABW_EXPERIMENT,
+    ],
+)
+def test_diagnose_meridional_and_zonal_winds(
+    experiment,
+    data_provider,
+    icon_grid,
+):
+    sp = data_provider.from_savepoint_jabw_final()
+    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
+    prognostic_state_now = PrognosticState(
+        rho=sp.rho(),
+        w=None,
+        vn=sp.vn(),
+        exner=sp.exner(),
+        theta_v=sp.theta_v(),
+    )
+    diagnostic_state = DiagnosticState(
+        temperature=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        pressure=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        pressure_ifc=zero_field(icon_grid, CellDim, KDim, dtype=float, extend={KDim: 1}),
+        u=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        v=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -98,6 +131,47 @@ def test_diagnostic_calculations_in_jabw(
         },
     )
 
+    assert dallclose(
+        diagnostic_state.u.asnumpy(),
+        icon_diagnostics_output_sp.zonal_Wind().asnumpy(),
+    )
+
+    assert dallclose(
+        diagnostic_state.v.asnumpy(),
+        icon_diagnostics_output_sp.meridional_Wind().asnumpy(),
+        atol=1.0e-13,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment",
+    [
+        JABW_EXPERIMENT,
+    ],
+)
+def test_diagnose_pressure(
+    experiment,
+    data_provider,
+    icon_grid,
+):
+    sp = data_provider.from_savepoint_jabw_final()
+    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
+    prognostic_state_now = PrognosticState(
+        rho=sp.rho(),
+        w=None,
+        vn=sp.vn(),
+        exner=sp.exner(),
+        theta_v=sp.theta_v(),
+    )
+    diagnostic_state = DiagnosticState(
+        temperature=sp.temperature(),
+        pressure=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        pressure_ifc=zero_field(icon_grid, CellDim, KDim, dtype=float, extend={KDim: 1}),
+        u=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        v=zero_field(icon_grid, CellDim, KDim, dtype=float),
+    )
+
     diagnose_surface_pressure(
         prognostic_state_now.exner,
         diagnostic_state.temperature,
@@ -115,7 +189,6 @@ def test_diagnostic_calculations_in_jabw(
         offset_provider={"Koff": KDim},
     )
 
-    # TODO (Chia Rui): remember to uncomment this computation when the bug in gt4py is removed
     diagnose_pressure(
         data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.temperature,
@@ -130,31 +203,14 @@ def test_diagnostic_calculations_in_jabw(
         offset_provider={},
     )
 
-    icon_diagnostics_output_sp = data_provider.from_savepoint_jabw_diagnostic()
     assert dallclose(
-        diagnostic_state.u.asnumpy(),
-        icon_diagnostics_output_sp.zonal_Wind().asnumpy(),
-    )
-
-    assert dallclose(
-        diagnostic_state.v.asnumpy(),
-        icon_diagnostics_output_sp.meridional_Wind().asnumpy(),
-        atol=1.0e-13,
-    )
-
-    assert dallclose(
-        diagnostic_state.temperature.asnumpy(),
-        icon_diagnostics_output_sp.temperature().asnumpy(),
-    )
-
-    assert dallclose(
-        diagnostic_state.pressure_ifc.asnumpy()[:, -1],
+        diagnostic_state.pressure_sfc.asnumpy(),
         icon_diagnostics_output_sp.pressure_sfc().asnumpy(),
     )
 
     assert dallclose(
-        diagnostic_state.pressure_ifc.asnumpy()[:, :-1],
-        icon_diagnostics_output_sp.pressure_ifc().asnumpy()[:, :-1],
+        diagnostic_state.pressure_ifc.asnumpy(),
+        icon_diagnostics_output_sp.pressure_ifc().asnumpy(),
     )
 
     assert dallclose(

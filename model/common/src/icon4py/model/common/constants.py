@@ -53,6 +53,9 @@ P0SL_BG: Final[wpfloat] = SEAL_LEVEL_PRESSURE
 # average earth radius in [m]
 EARTH_RADIUS: Final[float] = 6.371229e6
 
+#: Earth angular velocity [rad/s]
+EARTH_ANGULAR_VELOCITY: Final[wpfloat] = 7.29212e-5
+
 #: sea level temperature for reference atmosphere [K]
 SEA_LEVEL_TEMPERATURE: Final[wpfloat] = 288.15
 T0SL_BG: Final[wpfloat] = SEA_LEVEL_TEMPERATURE
@@ -60,12 +63,6 @@ T0SL_BG: Final[wpfloat] = SEA_LEVEL_TEMPERATURE
 #: difference between sea level temperature and asymptotic stratospheric temperature
 DELTA_TEMPERATURE: Final[wpfloat] = 75.0
 DEL_T_BG: Final[wpfloat] = DELTA_TEMPERATURE
-
-#: Earth average radius [m]
-EARTH_RADIUS: Final[wpfloat] = 6.371229e6
-
-#: Earth angular velocity [rad/s]
-EARTH_ANGULAR_VELOCITY: Final[wpfloat] = 7.29212e-5
 
 #: height scale for reference atmosphere [m], defined  in mo_vertical_grid
 #: scale height [m]
