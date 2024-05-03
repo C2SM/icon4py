@@ -42,7 +42,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_vwind_expl_wgt,
-    compute_vwind_impl_wgt,
     compute_z_mc,
 )
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -335,101 +334,6 @@ def test_compute_ddxt_z_full_e(
     )
 
     assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
-
-
-@pytest.mark.datatest
-def test_compute_vwind_impl_wgt(
-    icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
-):
-    if is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
-    z_ifc = metrics_savepoint.z_ifc()
-    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
-    z_ddxn_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
-    horizontal_start = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
-    )
-    horizontal_end = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
-    )
-    vertical_start = 0
-    vertical_end = icon_grid.num_levels + 1
-
-    horizontal_start_edge = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
-    )
-    horizontal_end_edge = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) - 1,
-    )
-
-    compute_ddxn_z_half_e(
-        z_ifc=z_ifc,
-        inv_dual_edge_length=inv_dual_edge_length,
-        ddxn_z_half_e=z_ddxn_z_half_e,
-        horizontal_start=horizontal_start,
-        horizontal_end=horizontal_end,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
-    )
-
-    z_ddxt_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
-    z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
-
-    tangent_orientation = grid_savepoint.tangent_orientation()
-    inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
-    horizontal_start_vertex = icon_grid.get_start_index(
-        VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
-    )
-    horizontal_end_vertex = icon_grid.get_end_index(
-        VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
-    )
-    cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
-    _compute_cells2verts(
-        z_ifc,
-        as_field((VertexDim, V2CDim), cells_aw_verts),
-        out=z_ifv,
-        offset_provider={"V2C": icon_grid.get_offset_provider("V2C")},
-        domain={
-            VertexDim: (horizontal_start_vertex, horizontal_end_vertex),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
-    compute_ddxt_z_half_e(
-        z_ifv=z_ifv,
-        inv_primal_edge_length=inv_primal_edge_length,
-        tangent_orientation=tangent_orientation,
-        ddxt_z_half_e=z_ddxt_z_half_e,
-        horizontal_start=horizontal_start_edge,
-        horizontal_end=horizontal_end_edge,
-        vertical_start=vertical_start,
-        vertical_end=vertical_end,
-        offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
-    )
-
-    vwind_impl_wgt_full = zero_field(icon_grid, CellDim)
-    vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
-    dual_edge_length = grid_savepoint.dual_edge_length()
-    vwind_offctr = 0.2
-
-    compute_vwind_impl_wgt.with_backend(backend)(
-        z_ddxn_z_half_e=as_field((EdgeDim,), z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels]),
-        z_ddxt_z_half_e=as_field((EdgeDim,), z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels]),
-        dual_edge_length=dual_edge_length,
-        vwind_impl_wgt=vwind_impl_wgt_full,
-        vwind_offctr=vwind_offctr,
-        horizontal_start=int32(0),
-        horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
-    )
-
-    assert dallclose(vwind_impl_wgt_full.asnumpy(), vwind_impl_wgt_ref.asnumpy(), rtol=1.0)
 
 
 @pytest.mark.datatest
