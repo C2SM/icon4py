@@ -150,34 +150,6 @@ class GHexMultiNodeExchange:
         self._comm = make_communication_object(self._context)
         log.info("communication object initialized")
 
-    def __init__(
-        self,
-        props: definitions.ProcessProperties,
-    ):
-        self._context = make_context(props.comm, False)
-        self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
-
-    def second_part(self, domain_decomposition: definitions.DecompositionInfo):
-        self._decomposition_info = domain_decomposition
-        self._domain_descriptors = {
-            CellDim: self._create_domain_descriptor(
-                CellDim,
-            ),
-            VertexDim: self._create_domain_descriptor(
-                VertexDim,
-            ),
-            EdgeDim: self._create_domain_descriptor(EdgeDim),
-        }
-        log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-
-        self._patterns = {
-            CellDim: self._create_pattern(CellDim),
-            VertexDim: self._create_pattern(VertexDim),
-            EdgeDim: self._create_pattern(EdgeDim),
-        }
-        log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
-        self._comm = make_communication_object(self._context)
-        log.info("communication object initialized")
 
     def _domain_descriptor_info(self, descr):
         return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
@@ -201,7 +173,7 @@ class GHexMultiNodeExchange:
         domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
-        log.debug(
+        log.error(
             f"domain descriptor for dim='{dim.value}' with properties {self._domain_descriptor_info(domain_desc)} created"
         )
         return domain_desc
@@ -231,15 +203,16 @@ class GHexMultiNodeExchange:
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f.asnumpy())) for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f.asnumpy()[0:domain_descriptor.size(),:])) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.info(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
+        log.error(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
     def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
+        log.error(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
 
 @dataclass
@@ -265,11 +238,11 @@ def create_multinode_node_exchange(
         return SingleNodeExchange()
 
 
-@definitions.create_exchange.register(MPICommProcessProperties)
-def create_multinode_node_exchange(
-    props: MPICommProcessProperties
-) -> definitions.ExchangeRuntime:
-    if props.comm_size > 1:
-        return GHexMultiNodeExchange(props)
-    else:
-        return SingleNodeExchange()
+#@definitions.create_exchange.register(MPICommProcessProperties)
+#def create_multinode_node_exchange(
+#    props: MPICommProcessProperties
+#) -> definitions.ExchangeRuntime:
+#    if props.comm_size > 1:
+#        return GHexMultiNodeExchange(props)
+#    else:
+#        return SingleNodeExchange()

@@ -17,10 +17,11 @@ import sys
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
-
+import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
+from icon4py.model.common.decomposition.definitions import DecompositionInfo
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -619,7 +620,23 @@ class Diffusion:
         vertex_end_local = self.grid.get_end_index(
             VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
-
+        vertex_end_halo = self.grid.get_end_index(
+            VertexDim, HorizontalMarkerIndex.halo(VertexDim)
+        )
+         
+        loc_rank=self._exchange.my_rank()
+        print("cell_start_interior for rank",loc_rank," is ..",cell_start_interior)
+        print("cell_start_nudging for rank", loc_rank, " is ..", cell_start_nudging)
+        print("cell_end_local for rank", loc_rank, " is ..", cell_end_local)
+        print("cell_end_halo for rank", loc_rank, " is ..", cell_end_halo)
+        print("edge_start_nudging_plus_one for rank", loc_rank, " is ..", edge_start_nudging_plus_one)
+        print("edge_start_lb_plus4 for rank", loc_rank, " is ..", edge_start_lb_plus4)
+        print("edge_end_local for rank", loc_rank, " is ..", edge_end_local)
+        print("edge_end_local_minus2 for rank", loc_rank, " is ..", edge_end_local_minus2)
+        print("edge_end_halo for rank", loc_rank, " is ..", edge_end_halo)
+        print("vertex_start_lb_plus1 for rank", loc_rank, " is ..", vertex_start_lb_plus1)
+        print("vertex_end_local for rank", loc_rank, " is ..", vertex_end_local)
+        print("vertex_end_halo for rank", loc_rank, " is ..", vertex_end_halo)
         # dtime dependent: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
@@ -637,11 +654,27 @@ class Diffusion:
             offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
-
+        
+        loc_ind_verts=self._exchange._decomposition_info.local_index(VertexDim,DecompositionInfo.EntryType.HALO)
+        print("loc_ind_verts rank %s", loc_rank, " loc_ind_verts: %s",loc_ind_verts," shape: %s",loc_ind_verts.shape)
+        #print("after rbf rank %s", loc_rank, " u_vert max: %s min: %s",
+        #      np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]),
+        #      np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]))
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
+        print("halo....after rbf rank %s", loc_rank, " u_vert max: %s min: %s",
+              self.u_vert.ndarray[loc_ind_verts, 0],
+              self.u_vert.ndarray[loc_ind_verts, 0])
         log.debug("communication rbf extrapolation of vn - start")
+        log.error("size of u_vert %s v_vert %s",self.u_vert.ndarray.shape, self.v_vert.ndarray.shape)
+        log.error("edge_start_lb_plus4 %s edge_end_local_minus2 %s",edge_start_lb_plus4, edge_end_local_minus2)
         self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
         log.debug("communication rbf extrapolation of vn - end")
+        #print("after exchange rank %s", loc_rank, " u_vert max: %s min: %s",
+        #      np.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]),
+        #      np.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]))
+        print("halo....after exchange rank %s", loc_rank, " u_vert max: %s min: %s",
+              self.u_vert.ndarray[loc_ind_verts, 0],
+              self.u_vert.ndarray[loc_ind_verts, 0])
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         calculate_nabla2_and_smag_coefficients_for_vn(
@@ -748,6 +781,7 @@ class Diffusion:
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
+        print(" vn shape: %s",prognostic_state.vn.ndarray.shape)
         handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
