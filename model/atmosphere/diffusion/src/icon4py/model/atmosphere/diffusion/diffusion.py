@@ -987,12 +987,14 @@ def dace_jit(self):
 
                                 if cont:
                                     continue
-                                
+
                                 for sdfg_state in sdfg.states():
                                     if sdfg_state.label == one_after_nsdfg.parent.label:
                                         break
                                 
                                 for buffer_name in one_after_nsdfg.GT4Py_Program_input_fields:
+                                    if not one_after_nsdfg.neighbor_access[buffer_name]:
+                                        continue
                                     global_buffer_name = None
                                     for edge in sdfg_state.all_edges_recursive():
                                         # global_buffer_name [src] --> local buffer_name [dst]
