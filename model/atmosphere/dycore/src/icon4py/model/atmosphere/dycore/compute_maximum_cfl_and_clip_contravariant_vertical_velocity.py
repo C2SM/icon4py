@@ -23,7 +23,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

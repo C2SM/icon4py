@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import re
 from pathlib import Path
 
 from icon4py.model.common.decomposition.definitions import get_processor_properties
@@ -47,10 +48,28 @@ GRIDS_PATH = TEST_DATA_ROOT.joinpath("grids")
 
 DATA_URIS = {
     1: "https://polybox.ethz.ch/index.php/s/xhooaubvGffG8Qy/download",
-    2: "https://polybox.ethz.ch/index.php/s/YyC5qDJWyC39y7u/download",
-    4: "https://polybox.ethz.ch/index.php/s/UIHOVJs6FVPpz9V/download",
+    2: "https://polybox.ethz.ch/index.php/s/P6F6ZbzWHI881dZ/download",
+    4: "https://polybox.ethz.ch/index.php/s/NfES3j9no15A0aX/download",
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
+
+
+def get_global_grid_params(experiment: str) -> tuple[int, int]:
+    """Get the grid root and level from the experiment name.
+
+    Reads the level and root parameters from a string in the canonical ICON gridfile format
+        RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
+
+        Args: experiment: str: The experiment name.
+        Returns: tuple[int, int]: The grid root and level.
+    """
+    try:
+        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
+        return root, level
+    except AttributeError as err:
+        raise ValueError(
+            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
+        ) from err
 
 
 def get_processor_properties_for_run(run_instance):

@@ -70,6 +70,9 @@ def integration_code_interface():
             FieldAssociationData(
                 "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=3
             ),
+            FieldAssociationData(
+                "out7", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=2
+            ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
@@ -117,6 +120,9 @@ def integration_code_interface():
             FieldAssociationData(
                 "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=3
             ),
+            FieldAssociationData(
+                "out7", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=2
+            ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
     )
@@ -159,8 +165,8 @@ def expected_end_create_source():
 @pytest.fixture
 def expected_imports_source():
     return """\
-  USE fused_stencil, ONLY: wrap_run_fused_stencil
-  USE stencil1, ONLY: wrap_run_stencil1"""
+  USE fused_stencil, ONLY: wrap_run_and_verify_fused_stencil
+  USE stencil1, ONLY: wrap_run_and_verify_stencil1"""
 
 
 @pytest.fixture
@@ -179,7 +185,8 @@ def expected_start_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
+        !$ACC   out6_before, &
+        !$ACC   out7_before ) &
         !$ACC      IF ( i_am_accel_node )
 
 #ifdef __DSL_VERIFY
@@ -190,6 +197,7 @@ def expected_start_stencil_source():
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out7_before(:, :) = p_nh%prog(nnew)%w(:, :, 1, ntnd)
         !$ACC END KERNELS
         call nvtxStartRange("stencil1")"""
 
@@ -199,7 +207,7 @@ def expected_end_stencil_source():
     return """
         call nvtxEndRange()
 #endif
-        call wrap_run_stencil1( &
+        call wrap_run_and_verify_stencil1( &
            scalar1=scalar1, &
            inp1=inp1(:, :, 1), &
            out1=out1(:, :, 1), &
@@ -214,6 +222,8 @@ def expected_end_stencil_source():
            out5_before=out5_before(:, :, 1), &
            out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
            out6_before=out6_before(:, :, 1), &
+           out7=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out7_before=out7_before(:, :), &
            out1_abs_tol=0.5, &
            out2_abs_tol=0.2, &
            vertical_lower=-1, &
@@ -233,7 +243,8 @@ def expected_start_fused_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
+        !$ACC   out6_before, &
+        !$ACC   out7_before ) &
         !$ACC      IF ( i_am_accel_node )
 
 #ifdef __DSL_VERIFY
@@ -244,6 +255,7 @@ def expected_start_fused_stencil_source():
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out7_before(:, :) = p_nh%prog(nnew)%w(:, :, 1, ntnd)
         !$ACC END KERNELS
 #endif"""
 
@@ -251,7 +263,7 @@ def expected_start_fused_stencil_source():
 @pytest.fixture
 def expected_end_fused_stencil_source():
     return """
-        call wrap_run_fused_stencil( &
+        call wrap_run_and_verify_fused_stencil( &
            scalar1=scalar1, &
            inp1=inp1(:, :, 1), &
            out1=out1(:, :, 1), &
@@ -266,6 +278,8 @@ def expected_end_fused_stencil_source():
            out5_before=out5_before(:, :, 1), &
            out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
            out6_before=out6_before(:, :, 1), &
+           out7=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out7_before=out7_before(:, :), &
            out1_abs_tol=0.5, &
            out2_abs_tol=0.2, &
            vertical_lower=-1, &
@@ -279,7 +293,8 @@ def expected_end_fused_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
+        !$ACC   out6_before, &
+        !$ACC   out7_before ) &
         !$ACC      IF ( i_am_accel_node )"""
 
 
@@ -315,7 +330,9 @@ def expected_insert_source():
 
 @pytest.fixture
 def integration_code_generator(integration_code_interface):
-    return IntegrationCodeGenerator(integration_code_interface, profile=True, metadatagen=False)
+    return IntegrationCodeGenerator(
+        integration_code_interface, profile=True, metadatagen=False, verification=True
+    )
 
 
 def test_integration_code_generation(

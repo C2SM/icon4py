@@ -137,7 +137,9 @@ def read_initial_state(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(diffusion_init_savepoint)
+    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+        diffusion_init_savepoint,
+    )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
