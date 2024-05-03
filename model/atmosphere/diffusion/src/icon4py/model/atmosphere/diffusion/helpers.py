@@ -61,6 +61,7 @@ from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
 from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
     mo_intp_rbf_rbf_vec_interpol_vertex as mo_intp_rbf_rbf_vec_interpol_vertex_orig,
 )
+from icon4py.model.common.settings import device
 
 
 def handle_numpy_integer(value):
@@ -128,7 +129,8 @@ class CachedProgram:
             self._compiled_program = self.compile_the_program(
                 *args, offset_provider=offset_provider, **kwargs
             )
-            self._conn_args = extract_connectivity_args(offset_provider)
+            # todo(samkellerhals): once gt4py PR is merged, device arg needs to be removed as it is unnecessary.
+            self._conn_args = extract_connectivity_args(offset_provider, device)
 
         kwargs_as_tuples = tuple(kwargs.values())
         program_args = list(args) + list(kwargs_as_tuples)
