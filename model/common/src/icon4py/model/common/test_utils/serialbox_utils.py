@@ -219,6 +219,9 @@ class IconGridSavepoint(IconSavepoint):
     def inv_dual_edge_length(self):
         return self._get_field("inv_dual_edge_length", EdgeDim)
 
+    def dual_edge_length(self):
+        return self._get_field("dual_edge_length", EdgeDim)
+
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
 
