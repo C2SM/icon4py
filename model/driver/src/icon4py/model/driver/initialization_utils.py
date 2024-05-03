@@ -259,6 +259,7 @@ def model_initialization_jabw(
         grid_idx_edge_end,
         0,
         num_levels,
+        offset_provider=icon_grid.offset_providers,
     )
     log.info("Cell-to-edge eta_v computation completed.")
 

@@ -21,7 +21,6 @@ from icon4py.model.driver.initialization_utils import model_initialization_jabw
 
 
 @pytest.mark.datatest
-@pytest.mark.skip
 @pytest.mark.parametrize(
     "experiment, rank",
     [
@@ -30,7 +29,7 @@ from icon4py.model.driver.initialization_utils import model_initialization_jabw
 )
 def test_jabw_initial_condition(
     experiment,
-    datapath,
+    ranked_data_path,
     rank,
     data_provider,
     grid_savepoint,
@@ -47,7 +46,13 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = model_initialization_jabw(icon_grid, cell_geometry, edge_geometry, datapath, rank)
+    ) = model_initialization_jabw(
+        icon_grid,
+        cell_geometry,
+        edge_geometry,
+        ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        rank,
+    )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
     assert dallclose(
