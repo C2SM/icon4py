@@ -26,6 +26,31 @@ log = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
+class VerticalGridConfig:
+    """
+    Contains necessary parameter to configure vertical grid.
+
+    Encapsulates namelist parameters and derived parameters.
+    Values should be read from configuration.
+    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
+    """
+    # Number of full levels.
+    num_lev: int
+    # Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells above top_height_limit_for_maximal_layer_thickness.
+    maximal_layer_thickness: float
+    # Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height above which thickness of grid cells must not exceed maximal_layer_thickness.
+    top_height_limit_for_maximal_layer_thickness: float
+    # Defined as min_lay_thckn in ICON namelist mo_sleve_nml. Thickness of lowest level grid cells.
+    lowest_layer_thickness: float = 50.0
+    # Model top height.
+    top_height: float = 23500.0
+    # Scaling factor for stretching/squeezing the model layer distribution.
+    stretch_factor: float = 1.0
+    # file name containing vct_a and vct_b table
+    file_name: str = None
+
+
+@dataclass(frozen=True)
 class VerticalGridSize:
     num_lev: int
 
@@ -41,6 +66,7 @@ class VerticalModelParams:
     """
 
     vct_a: Field[[KDim], float]
+    vct_b: Field[[KDim], float]
     rayleigh_damping_height: Final[float] = 45000.0
     htop_moist_proc: Final[float] = 22500.0
     index_of_damping_layer: Final[int32] = field(init=False)
@@ -63,6 +89,14 @@ class VerticalModelParams:
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
+
+    def __str__(self):
+        vct_a_array = self.vct_a.ndarray
+        nlev = vct_a_array.shape[0]
+        vertical_description = 'Nominal heights of coordinate half levels and layer thicknesses (m):\n'
+        for k_lev in range(nlev-1):
+            vertical_description.join(f'k, vct_a, dvct: {k_lev:4d} {vct_a_array[k_lev]:12.3f} {vct_a_array[k_lev] - vct_a_array[k_lev+1]:12.3f}\n')
+        vertical_description.join(f'k, vct_a, dvct: {nlev-1:4d} {vct_a_array[nlev-1]:12.3f} {0.0:12.3f}')
 
     @property
     def kstart_moist(self):
@@ -94,12 +128,3 @@ class VerticalModelParams:
     @property
     def physical_heights(self) -> Field[[KDim], float]:
         return self.vct_a
-
-
-class VerticalGridConfig:
-    def __init__(self, num_lev: int):
-        self._num_lev = num_lev
-
-    @property
-    def num_lev(self) -> int:
-        return self._num_lev
