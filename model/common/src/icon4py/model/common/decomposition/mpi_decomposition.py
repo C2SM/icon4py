@@ -551,7 +551,7 @@ def create_multinode_node_exchange(
 @dace.library.environment
 class DaceGHEX:
     python_site_packages = site.getsitepackages()[0]
-    ghex_path = '/Users/kotsaloc/repos/icon4py/_external_src/GHEX/build' #python_site_packages + '/ghex'
+    ghex_path = python_site_packages + '/ghex' # 'absolute_path_to/GHEX/build' [case of manual compilation]
 
     cmake_minimum_version = None
     cmake_packages = []
