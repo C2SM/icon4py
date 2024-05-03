@@ -30,6 +30,11 @@ We deviate from the [Google Python Style Guide][google-style-guide] only in the 
 - According to subsection [_2.19 Power Features_](https://google.github.io/styleguide/pyguide.html#219-power-features), direct use of _power features_ (e.g. custom metaclasses, import hacks, reflection) should be avoided, but standard library classes that internally use these power features are accepted. Following the same spirit, we allow the use of power features in infrastructure code with similar functionality and scope as the Python standard library.
 - According to subsection [_3.19.12 Imports For Typing_](https://google.github.io/styleguide/pyguide.html#31912-imports-for-typing), symbols from `typing` and `collections.abc` modules used in type annotations _"can be imported directly to keep common annotations concise and match standard typing practices"_. Following the same spirit, we allow symbols to be imported directly from third-party or internal modules when they only contain a collection of frequently used typying definitions.
 
+Further guidance and repository- or package specific guidelines can be found in the respective `docs` folders and `README.md` files.
+In particular 
+- [naming conventions for stencils](model/docs/stencil_naming_conventions.md)
+- [liskov integration style guide ](tools/docs/ICON_integration_style_guide.md)
+
 ### Common questions
 
 - `pass` vs `...` (`Ellipsis`)
@@ -140,7 +145,7 @@ Test suites in folders `stencil_tests` are generally run in integration mode wit
 should only contain tests for GT4Py stencils that might be integrated into ICON.
 
 
-
+## Further 
 
 
 <!--
