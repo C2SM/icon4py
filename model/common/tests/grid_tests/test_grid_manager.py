@@ -70,6 +70,7 @@ R02B04_GLOBAL_NUM_CELLS = 20480
 MCH_CH_04B09_NUM_VERTICES = 10663
 MCH_CH_R04B09_LOCAL_NUM_EDGES = 31558
 MCH_CH_RO4B09_LOCAL_NUM_CELLS = 20896
+MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 MCH_CH_R04B09_CELL_DOMAINS = {
@@ -113,8 +114,11 @@ MCH_CH_R04B09_EDGE_DOMAINS = {
 def simple_grid_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_GRID_NC).absolute()
     grid = SimpleGrid()
+
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
+    dataset.setncattr(GridFile.PropertyName.LEVEL, 0)
+    dataset.setncattr(GridFile.PropertyName.ROOT, 0)
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=grid.num_vertices)
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=grid.num_edges)
@@ -935,3 +939,16 @@ def test_get_start_end_index_for_global_grid(
     from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
+
+
+@pytest.mark.parametrize(
+    "grid_file, global_num_cells",
+    [
+        (R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
+        (REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+    ],
+)
+def test_grid_level_and_root(grid_file, global_num_cells):
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file, num_levels=10).get_grid()
+    assert global_num_cells == grid.global_num_cells

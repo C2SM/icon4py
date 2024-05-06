@@ -10,14 +10,27 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import math
 from dataclasses import dataclass
+from functools import cached_property
 from typing import ClassVar, Final
 
 from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common import dimension
-from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, EdgeDim, KDim
+from icon4py.model.common import constants, dimension
+from icon4py.model.common.dimension import (
+    E2C,
+    V2C,
+    CellDim,
+    E2CDim,
+    ECDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+    V2CDim,
+    VertexDim,
+)
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -291,8 +304,44 @@ class EdgeParams:
 class CellParams:
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: Field[[CellDim], float]
-
+    #: Mean area of a cell [m^2]
     mean_cell_area: float
+    length_rescale_factor: float = 1.0
+
+    @classmethod
+    def from_global_num_cells(
+        cls,
+        area: Field[[CellDim], float],
+        global_num_cells: int,
+        length_rescale_factor: float = 1.0,
+    ):
+        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        return cls(
+            area=area, mean_cell_area=mean_cell_area, length_rescale_factor=length_rescale_factor
+        )
+
+    @cached_property
+    def characteristic_length(self):
+        return math.sqrt(self.mean_cell_area)
+
+    @cached_property
+    def mean_cell_area(self):
+        return self.mean_cell_area
+
+    @staticmethod
+    def _compute_mean_cell_area(radius, num_cells):
+        """
+        Compute the mean cell area.
+
+        Computes the mean cell area by dividing the sphere by the number of cells in the
+        global grid.
+
+        Args:
+            radius: average earth radius, might be rescaled by a scaling parameter
+            num_cells: number of cells on the global grid
+        Returns: mean area of one cell [m^2]
+        """
+        return 4.0 * math.pi * radius**2 / num_cells
 
 
 @field_operator
@@ -343,3 +392,42 @@ class RefinCtrlLevel:
             raise ValueError(
                 f"nudging start level only exists for {CellDim} and {EdgeDim}"
             ) from err
+
+
+@field_operator
+def _compute_cells2edges(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_int: Field[[EdgeDim, E2CDim], float],
+) -> Field[[EdgeDim, KDim], float]:
+    p_vert_out = neighbor_sum(c_int * p_cell_in(E2C), axis=E2CDim)
+    return p_vert_out
+
+
+@program
+def compute_cells2edges(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_int: Field[[EdgeDim, E2CDim], float],
+    p_vert_out: Field[[EdgeDim, KDim], float],
+    horizontal_start_edge: int32,
+    horizontal_end_edge: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_cells2edges(
+        p_cell_in,
+        c_int,
+        out=p_vert_out,
+        domain={
+            EdgeDim: (horizontal_start_edge, horizontal_end_edge),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@field_operator
+def _compute_cells2verts(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_int: Field[[VertexDim, V2CDim], float],
+) -> Field[[VertexDim, KDim], float]:
+    p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)
+    return p_vert_out
