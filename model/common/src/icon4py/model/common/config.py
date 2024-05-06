@@ -18,11 +18,11 @@ from enum import Enum
 from functools import cached_property
 
 import numpy as np
+from gt4py.next import itir_python as run_roundtrip
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
 )
-from gt4py.next.program_processors.runners.roundtrip import default as run_roundtrip
 
 
 class Device(Enum):

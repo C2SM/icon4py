@@ -21,6 +21,7 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import numpy as np
+
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.diffusion.diffusion import (
@@ -81,6 +82,7 @@ logger = setup_logger(__name__)
 #exchange = definitions.create_exchange(processor_props)
 #diffusion_granule: Diffusion = Diffusion(exchange)
 diffusion_granule: Diffusion = Diffusion()
+
 
 
 def diffusion_init(

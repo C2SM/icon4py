@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import math
 import typing
 from pathlib import Path
 
@@ -48,7 +49,7 @@ def unpack(ptr, *sizes: int) -> NDArray:
                     This array shares the underlying data with the original Fortran code, allowing
                     modifications made through the array to affect the original data.
     """
-    length = np.prod(sizes)
+    length = math.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
 
     # Map C data types to NumPy dtypes
@@ -88,7 +89,7 @@ def unpack_gpu(ptr, *sizes: int):
     if not sizes:
         raise ValueError("Sizes must be provided to determine the array shape.")
 
-    length = np.prod(sizes)
+    length = math.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
 
     dtype_map = {

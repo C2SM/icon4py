@@ -196,6 +196,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
         """\
 # imports for generated wrapper code
 import logging
+import math
 from {{ plugin_name }} import ffi
 import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
@@ -204,8 +205,8 @@ from gt4py.next.iterator.embedded import np_as_located_field
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly
+from gt4py.next import itir_python as run_roundtrip
 from gt4py.next.program_processors.runners.gtfn import run_gtfn_cached, run_gtfn_gpu_cached
-from gt4py.next.program_processors.runners.roundtrip import backend as run_roundtrip
 from icon4py.model.common.grid.simple import SimpleGrid
 
 # We need a grid to pass offset providers to the embedded gt4py program (granules load their own grid at runtime)
@@ -435,18 +436,21 @@ end function {{name}}_wrapper
             arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
             param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
 
+        return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
+
         return self.generic_visit(
             func,
             assumed_size_array=False,
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
             arrays=[arg for arg in func.args if arg.is_array],
+            return_code_param=return_code_param,
         )
 
     # todo(samkellerhals): Consider using unique SIZE args
     F90FunctionDefinition = as_jinja(
         """
-subroutine {{name}}({{param_names}}, &\nrc)
+subroutine {{name}}({{param_names}} {{ return_code_param }})
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
@@ -456,11 +460,13 @@ subroutine {{name}}({{param_names}}, &\nrc)
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
+   {% if arrays | length >= 1 %}
    !$ACC host_data use_device( &
    {%- for arr in arrays %}
        !$ACC {{ arr.name }}{% if not loop.last %}, &{% else %} &{% endif %}
    {%- endfor %}
    !$ACC )
+   {% endif %}
 
    {% for d in _this_node.dimension_size_declarations %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
@@ -468,7 +474,9 @@ subroutine {{name}}({{param_names}}, &\nrc)
 
    rc = {{ name }}_wrapper({{ param_names_with_size_args }})
 
+   {% if arrays | length >= 1 %}
    !$acc end host_data
+   {% endif %}
 end subroutine {{name}}
     """
     )
