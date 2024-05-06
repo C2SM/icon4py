@@ -113,6 +113,11 @@ def diffusion_init(
     hdiff_efdt_ratio: float64,
     smagorinski_scaling_factor: float64,
     hdiff_temp: bool,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
+    denom_diffu_v: float,
+    nudge_max_coeff: float,
+    itype_sher: int,
     tangent_orientation: Field[[EdgeDim], float64],
     inverse_primal_edge_lengths: Field[[EdgeDim], float64],
     inv_dual_edge_length: Field[[EdgeDim], float64],
@@ -178,11 +183,11 @@ def diffusion_init(
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
-        shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        velocity_boundary_diffusion_denom=denom_diffu_v,
+        max_nudging_coeff=nudge_max_coeff,
+        shear_type=TurbulenceShearForcingType.from_integer(itype_sher),
     )
 
     diffusion_params = DiffusionParams(config)
