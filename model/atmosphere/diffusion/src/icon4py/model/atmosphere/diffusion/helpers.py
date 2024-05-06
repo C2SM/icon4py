@@ -129,7 +129,6 @@ class CachedProgram:
             self._compiled_program = self.compile_the_program(
                 *args, offset_provider=offset_provider, **kwargs
             )
-            # todo(samkellerhals): once gt4py PR is merged, device arg needs to be removed as it is unnecessary.
             self._conn_args = extract_connectivity_args(offset_provider, device)
 
         kwargs_as_tuples = tuple(kwargs.values())
