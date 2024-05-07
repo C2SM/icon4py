@@ -16,7 +16,6 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    NonHydrostaticConfig,
     NonHydrostaticParams,
     SolveNonhydro,
 )
@@ -28,7 +27,6 @@ from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,
 )
@@ -38,10 +36,14 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa : F401 fi
     processor_props,
 )
 
-
-@pytest.mark.xfail(
-    "TODO(@halungge) fails due to expectation of field allocation (vertical ~ contiguous) in ghex."
+from ..test_solve_nonhydro import create_prognostic_states
+from ..utils import (
+    construct_config,
+    construct_interpolation_state_for_nonhydro,
+    construct_nh_metric_state,
 )
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "istep_init, jstep_init, step_date_init,istep_exit, jstep_exit, step_date_exit",
@@ -55,6 +57,8 @@ def test_run_solve_nonhydro_single_step(
     jstep_exit,
     step_date_init,
     step_date_exit,
+    experiment,
+    ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
     damping_height,
@@ -91,7 +95,7 @@ def test_run_solve_nonhydro_single_step(
         f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     )
 
-    config = NonHydrostaticConfig()
+    config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
@@ -116,7 +120,6 @@ def test_run_solve_nonhydro_single_step(
     nnew = 1
     recompute = sp_v.get_metadata("recompute").get("recompute")
     linit = sp_v.get_metadata("linit").get("linit")
-    dyn_timestep = sp_v.get_metadata("dyn_timestep").get("dyn_timestep")
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
@@ -139,31 +142,20 @@ def test_run_solve_nonhydro_single_step(
         rho_incr=None,  # sp.rho_incr(),
         vn_incr=None,  # sp.vn_incr(),
         exner_incr=None,  # sp.exner_incr(),
+        exner_dyn_incr=sp.exner_dyn_incr(),
     )
-
-    prognostic_state_nnow = PrognosticState(
-        w=sp.w_now(),
-        vn=sp.vn_now(),
-        theta_v=sp.theta_v_now(),
-        rho=sp.rho_now(),
-        exner=sp.exner_now(),
-    )
-
-    prognostic_state_nnew = PrognosticState(
-        w=sp.w_new(),
-        vn=sp.vn_new(),
-        theta_v=sp.theta_v_new(),
-        rho=sp.rho_new(),
-        exner=sp.exner_new(),
-    )
-
-    interpolation_state = interpolation_savepoint.construct_interpolation_state_for_nonhydro()
-    metric_state_nonhydro = metrics_savepoint.construct_nh_metric_state(icon_grid.num_levels)
+    initial_divdamp_fac = sp.divdamp_fac_o2()
+    interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
+    metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
+    prognostic_state_ls = create_prognostic_states(sp)
+    prognostic_state_nnew = prognostic_state_ls[1]
+
     exchange = definitions.create_exchange(processor_props, decomposition_info)
+
     solve_nonhydro = SolveNonhydro(exchange)
     solve_nonhydro.init(
         grid=icon_grid,
@@ -177,7 +169,6 @@ def test_run_solve_nonhydro_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  entering : solve_nonhydro.time_step"
     )
@@ -186,20 +177,21 @@ def test_run_solve_nonhydro_single_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
-        divdamp_fac_o2=0.032,
+        divdamp_fac_o2=initial_divdamp_fac,
         dtime=dtime,
-        idyn_timestep=dyn_timestep,
         l_recompute=recompute,
         l_init=linit,
         nnew=nnew,
         nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
+        at_first_substep=jstep_init == 0,
+        at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: dycore step run ")
 
-    expected_theta_v = np.asarray(sp_step_exit.theta_v_new())
-    calculated_theta_v = np.asarray(prognostic_state_nnew.theta_v)
+    expected_theta_v = sp_step_exit.theta_v_new().asnumpy()
+    calculated_theta_v = prognostic_state_nnew.theta_v.asnumpy()
     assert dallclose(
         expected_theta_v,
         calculated_theta_v,

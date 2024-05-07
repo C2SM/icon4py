@@ -70,6 +70,9 @@ def integration_code_interface():
             FieldAssociationData(
                 "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=3
             ),
+            FieldAssociationData(
+                "out7", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=2
+            ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
         startln=1,
@@ -117,6 +120,9 @@ def integration_code_interface():
             ),
             FieldAssociationData(
                 "out6", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=3
+            ),
+            FieldAssociationData(
+                "out7", "p_nh%prog(nnew)%w(:,:,1,ntnd)", inp=False, out=True, dims=2
             ),
         ],
         bounds=BoundsData("1", "10", "-1", "-10"),
@@ -180,7 +186,8 @@ def expected_start_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
+        !$ACC   out6_before, &
+        !$ACC   out7_before ) &
         !$ACC      IF ( i_am_accel_node )
 
 #ifdef __DSL_VERIFY
@@ -191,6 +198,7 @@ def expected_start_stencil_source():
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out7_before(:, :) = p_nh%prog(nnew)%w(:, :, 1, ntnd)
         !$ACC END KERNELS
         call nvtxStartRange("stencil1")"""
 
@@ -215,6 +223,8 @@ def expected_end_stencil_source():
            out5_before=out5_before(:, :, 1), &
            out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
            out6_before=out6_before(:, :, 1), &
+           out7=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out7_before=out7_before(:, :), &
            out1_abs_tol=0.5, &
            out2_abs_tol=0.2, &
            vertical_lower=-1, &
@@ -234,7 +244,8 @@ def expected_start_fused_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
+        !$ACC   out6_before, &
+        !$ACC   out7_before ) &
         !$ACC      IF ( i_am_accel_node )
 
 #ifdef __DSL_VERIFY
@@ -245,6 +256,7 @@ def expected_start_fused_stencil_source():
         out4_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, 2)
         out5_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
         out6_before(:, :, :) = p_nh%prog(nnew)%w(:, :, :, ntnd)
+        out7_before(:, :) = p_nh%prog(nnew)%w(:, :, 1, ntnd)
         !$ACC END KERNELS
 #endif"""
 
@@ -267,6 +279,8 @@ def expected_end_fused_stencil_source():
            out5_before=out5_before(:, :, 1), &
            out6=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
            out6_before=out6_before(:, :, 1), &
+           out7=p_nh%prog(nnew)%w(:, :, 1, ntnd), &
+           out7_before=out7_before(:, :), &
            out1_abs_tol=0.5, &
            out2_abs_tol=0.2, &
            vertical_lower=-1, &
@@ -280,7 +294,8 @@ def expected_end_fused_stencil_source():
         !$ACC   out3_before, &
         !$ACC   out4_before, &
         !$ACC   out5_before, &
-        !$ACC   out6_before ) &
+        !$ACC   out6_before, &
+        !$ACC   out7_before ) &
         !$ACC      IF ( i_am_accel_node )"""
 
 

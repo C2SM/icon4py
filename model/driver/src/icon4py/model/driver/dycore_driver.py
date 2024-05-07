@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Callable
 
@@ -36,7 +36,9 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
-from icon4py.model.driver.io_utils import (
+from icon4py.model.driver.initialization_utils import (
+    ExperimentType,
+    SerializationType,
     configure_logging,
     read_decomp_info,
     read_geometry_fields,
@@ -65,25 +67,25 @@ class TimeLoop:
         self.solve_nonhydro = solve_nonhydro
 
         self._n_time_steps: int = int(
-            (self.run_config.end_date - self.run_config.start_date)
-            / timedelta(seconds=self.run_config.dtime)
+            (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
         )
+        self.dtime_in_seconds: float = self.run_config.dtime.total_seconds()
         self._n_substeps_var: int = self.run_config.n_substeps
-        self._substep_timestep: float = float(self.run_config.dtime / self._n_substeps_var)
+        self._substep_timestep: float = float(self.dtime_in_seconds / self._n_substeps_var)
 
         self._validate_config()
 
         # current simulation date
         self._simulation_date: datetime = self.run_config.start_date
 
-        self._do_initial_stabilization: bool = self.run_config.apply_initial_stabilization
+        self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
-        self._do_initial_stabilization = self.run_config.apply_initial_stabilization
+        self._is_first_step_in_simulation = True
         self._n_substeps_var = self.run_config.n_substeps
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
@@ -96,8 +98,9 @@ class TimeLoop:
         if not self.solve_nonhydro.initialized:
             raise Exception("nonhydro solver is not initialized before time loop")
 
-    def _not_first_step(self):
-        self._do_initial_stabilization = False
+    @property
+    def first_step_in_simulation(self):
+        return self._is_first_step_in_simulation
 
     def _is_last_substep(self, step_nr: int):
         return step_nr == (self.n_substeps_var - 1)
@@ -107,11 +110,7 @@ class TimeLoop:
         return step_nr == 0
 
     def _next_simulation_date(self):
-        self._simulation_date += timedelta(seconds=self.run_config.dtime)
-
-    @property
-    def do_initial_stabilization(self):
-        return self._do_initial_stabilization
+        self._simulation_date += self.run_config.dtime
 
     @property
     def n_substeps_var(self):
@@ -157,10 +156,10 @@ class TimeLoop:
         do_prep_adv: bool,
     ):
         log.info(
-            f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+            f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
         log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
         # TODO (Chia Rui): Initialize vn tendencies that are used in solve_nh and advection to zero (init_ddt_vn_diagnostics subroutine)
@@ -169,21 +168,30 @@ class TimeLoop:
 
         # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
-        if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization:
+        if (
+            self.diffusion.config.apply_to_horizontal_wind
+            and self.run_config.apply_initial_stabilization
+            and self._is_first_step_in_simulation
+        ):
             log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
                 prognostic_state_list[self._now],
-                self.run_config.dtime,
+                self.dtime_in_seconds,
             )
         log.info(
-            f"starting real time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+            f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
+            log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.5e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.5e}"
             )
+            log.info(
+                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.5e}"
+            )
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
             self._next_simulation_date()
 
@@ -217,6 +225,8 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
+        # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
+
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -227,7 +237,7 @@ class TimeLoop:
 
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
-                diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
+                diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
 
         self._swap()
@@ -249,7 +259,7 @@ class TimeLoop:
         for dyn_substep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
-                f"{self.n_substeps_var} , initial_stabilization : {self._do_initial_stabilization}, "
+                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}, "
                 f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
@@ -259,7 +269,7 @@ class TimeLoop:
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 l_recompute=do_recompute,
-                l_init=self._do_initial_stabilization,
+                l_init=self._is_first_step_in_simulation,
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
@@ -274,12 +284,17 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 self._swap()
 
-            self._not_first_step()
+            self._is_first_step_in_simulation = False
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
-def initialize(file_path: Path, props: ProcessProperties):
+def initialize(
+    file_path: Path,
+    props: ProcessProperties,
+    serialization_type: SerializationType,
+    experiment_type: ExperimentType,
+):
     """
     Inititalize the driver run.
 
@@ -299,29 +314,35 @@ def initialize(file_path: Path, props: ProcessProperties):
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
+         diagnostic_state: initial state for global diagnostic variables
          prep_advection: fields collecting data for advection during the solve nonhydro timestep
          inital_divdamp_fac_o2: initial divergence damping factor
 
     """
     log.info("initialize parallel runtime")
-    experiment_name = "mch_ch_r04b09_dsl"
-    log.info(f"reading configuration: experiment {experiment_name}")
-    config = read_config(experiment_name)
+    log.info(f"reading configuration: experiment {experiment_type}")
+    config = read_config(experiment_type)
 
-    decomp_info = read_decomp_info(file_path, props)
+    decomp_info = read_decomp_info(file_path, props, serialization_type)
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(file_path, rank=props.rank)
+    icon_grid = read_icon_grid(file_path, rank=props.rank, ser_type=serialization_type)
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        file_path, rank=props.rank
+        file_path,
+        damping_height=config.run_config.damping_height,
+        rank=props.rank,
+        ser_type=serialization_type,
     )
     (
         diffusion_metric_state,
         diffusion_interpolation_state,
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
-    ) = read_static_fields(file_path)
+        diagnostic_metric_state,
+    ) = read_static_fields(
+        file_path, rank=props.rank, ser_type=serialization_type, experiment_type=experiment_type
+    )
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -358,9 +379,17 @@ def initialize(file_path: Path, props: ProcessProperties):
         solve_nonhydro_diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
+        diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = read_initial_state(file_path, rank=props.rank)
+    ) = read_initial_state(
+        icon_grid,
+        cell_geometry,
+        edge_geometry,
+        file_path,
+        rank=props.rank,
+        experiment_type=experiment_type,
+    )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
     timeloop = TimeLoop(
@@ -373,6 +402,7 @@ def initialize(file_path: Path, props: ProcessProperties):
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
+        diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
     )
@@ -382,7 +412,13 @@ def initialize(file_path: Path, props: ProcessProperties):
 @click.argument("input_path")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
-def main(input_path, run_path, mpi):
+@click.option(
+    "--serialization_type",
+    default="serialbox",
+    help="serialization type for grid info and static fields",
+)
+@click.option("--experiment_type", default="any", help="experiment selection")
+def main(input_path, run_path, mpi, serialization_type, experiment_type):
     """
     Run the driver.
 
@@ -404,17 +440,16 @@ def main(input_path, run_path, mpi):
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
+    configure_logging(run_path, experiment_type, parallel_props)
     (
         timeloop,
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
-        z_fields,
-        nh_constants,
+        diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(Path(input_path), parallel_props)
-    configure_logging(run_path, timeloop.simulation_date, parallel_props)
+    ) = initialize(Path(input_path), parallel_props, serialization_type, experiment_type)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
         f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
@@ -430,8 +465,6 @@ def main(input_path, run_path, mpi):
         solve_nonhydro_diagnostic_state,
         prognostic_state_list,
         prep_adv,
-        z_fields,
-        nh_constants,
         inital_divdamp_fac_o2,
         do_prep_adv=False,
     )
