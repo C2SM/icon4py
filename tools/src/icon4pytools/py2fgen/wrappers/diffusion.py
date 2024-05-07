@@ -117,7 +117,7 @@ def diffusion_init(
     thhgtd_zdiffu: float,
     denom_diffu_v: float,
     nudge_max_coeff: float,
-    itype_sher: int,
+    itype_sher: int32,
     tangent_orientation: Field[[EdgeDim], float64],
     inverse_primal_edge_lengths: Field[[EdgeDim], float64],
     inv_dual_edge_length: Field[[EdgeDim], float64],
