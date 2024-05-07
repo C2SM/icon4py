@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, astype, maximum, minimum, where, floor, log
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -40,16 +40,16 @@ def _ham_wetdep_set_temperature_masks(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def ham_wetdep_set_temperature_masks(
-    cthomi           : wpfloat,
-    tmelt            : wpfloat,
-    ll_ice           : Field[[CellDim, KDim], bool],
-    ll_mxp           : Field[[CellDim, KDim], bool],
-    ll_wat           : Field[[CellDim, KDim], bool],
-    ptm1             : Field[[CellDim, KDim], wpfloat],
-    horizontal_start : int32,
-    horizontal_end   : int32,
-    vertical_start   : int32,
-    vertical_end     : int32
+    cthomi          : wpfloat,
+    tmelt           : wpfloat,
+    ll_ice          : Field[[CellDim, KDim], bool],
+    ll_mxp          : Field[[CellDim, KDim], bool],
+    ll_wat          : Field[[CellDim, KDim], bool],
+    ptm1            : Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end  : int32,
+    vertical_start  : int32,
+    vertical_end    : int32
 ):
 
     _ham_wetdep_set_temperature_masks( cthomi, tmelt, ptm1,
