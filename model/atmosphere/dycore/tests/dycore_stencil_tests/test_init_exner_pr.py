@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat
 
 
-class TestMoDiagInitExnerPr(StencilTest):
+class TestInitExnerPr(StencilTest):
     PROGRAM = init_exner_pr
     OUTPUTS = ("exner_pr",)
 
