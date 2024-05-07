@@ -33,7 +33,6 @@ variables:
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
     - python -c "import cupy"
-    - python -c "import netCDF4"
     - ls ${TEST_DATA_PATH}
   variables:
     SLURM_JOB_NUM_NODES: 1
