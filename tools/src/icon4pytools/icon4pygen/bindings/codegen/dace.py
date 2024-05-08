@@ -74,6 +74,10 @@ class CppDefGenerator(TemplatedGenerator):
         return mesh_;
       }
 
+      static cudaStream_t getStream() {
+        return stream_;
+      }
+
       static json *getJsonRecord() {
         return jsonRecord_;
       }
@@ -87,7 +91,7 @@ class CppDefGenerator(TemplatedGenerator):
       }
 
       static void free() {
-        (void)__dace_exit_{{ funcname }}(handle);
+        (void)__dace_exit_{{ funcname }}(handle_);
       }
       """
     )
@@ -167,16 +171,17 @@ class CppDefGenerator(TemplatedGenerator):
         const GlobalGpuTriMesh *mesh, cudaStream_t stream, json *jsonRecord, MeshInfoVtk *mesh_info_vtk, verify *verify) {
         mesh_ = GpuTriMesh(mesh);
         is_setup_ = true;
+        stream_ = stream;
         jsonRecord_ = jsonRecord;
         mesh_info_vtk_ = mesh_info_vtk;
         verify_ = verify;
 
-        int horizontalEnd = 0;
         int horizontalStart = 0;
+        int horizontalEnd = 0;
+        int verticalStart = 0;
         int verticalEnd = 0;
-        int verticalEnd = 0;
-        handle = __dace_init_{{ funcname }}({{ ", ".join(_this_node.sdfg_symbols) }});
-        __set_stream_{{ funcname }}(handle, stream);
+        handle_ = __dace_init_{{ funcname }}({{ ", ".join(_this_node.sdfg_symbols) }});
+        __set_stream_{{ funcname }}(handle_, stream);
         }
         """
     )
@@ -189,10 +194,11 @@ class CppDefGenerator(TemplatedGenerator):
         {%- endfor -%}
         inline static GpuTriMesh mesh_;
         inline static bool is_setup_;
+        inline static cudaStream_t stream_;
         inline static json* jsonRecord_;
         inline static MeshInfoVtk* mesh_info_vtk_;
         inline static verify* verify_;
-        {{ funcname }}Handle_t handle;
+        inline static {{ funcname }}Handle_t handle_;
         """
     )
 
@@ -206,7 +212,7 @@ class CppDefGenerator(TemplatedGenerator):
             return;
         }
 
-        __program_{{ stencil_name }}(handle
+        __program_{{ stencil_name }}(handle_
         {%- for data_descr in _this_node.sdfg_arrays -%}
             , {{ data_descr.cpp_arg_name() }}
         {%- endfor -%},

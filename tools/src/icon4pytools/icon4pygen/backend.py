@@ -235,7 +235,7 @@ def generate_dace_code(
     assert len(hdr_objs) == 1
     if on_gpu:
         # add utility function for cuda stream to header file
-        line = f'extern "C" void __set_stream_{sdfg.name}({sdfg.name}_state_t *__state, cudaStream_t stream);\n'
+        line = f'extern "C" void __set_stream_{sdfg.name}({sdfg.name}Handle_t handle, cudaStream_t stream);\n'
         hdr_objs[0].code += line
 
     src_objs = [obj for obj in code_objs if obj.language == "cpp" and obj.linkable]
