@@ -341,7 +341,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
     ) = read_static_fields(
-        file_path, rank=props.rank, ser_type=serialization_type, experiment_type=experiment_type
+        file_path,
+        rank=props.rank,
+        ser_type=serialization_type,
     )
 
     log.info("initializing diffusion")
