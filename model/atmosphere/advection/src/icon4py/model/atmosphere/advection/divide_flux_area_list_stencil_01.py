@@ -107,14 +107,12 @@ def line_intersect(
     line2_p2_lon: Field[[EdgeDim, KDim], float],
     line2_p2_lat: Field[[EdgeDim, KDim], float],
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
-
-
     # avoid division with zero
-    d1 =  line1_p2_lon - line1_p1_lon
-    d1 =  where( d1 !=float(0), d1, line1_p2_lon)
+    d1 = line1_p2_lon - line1_p1_lon
+    d1 = where(d1 != float(0), d1, line1_p2_lon)
 
-    d2 =  line2_p2_lon - line2_p1_lon
-    d2 =  where( d1 !=float(0), d1, line2_p2_lon)
+    d2 = line2_p2_lon - line2_p1_lon
+    d2 = where(d1 != float(0), d1, line2_p2_lon)
 
     m1 = (line1_p2_lat - line1_p1_lat) / d1
     m2 = (line2_p2_lat - line2_p1_lat) / d2

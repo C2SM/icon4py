@@ -110,12 +110,11 @@ def _line_intersect_numpy(
     line2_p2_lon,
     line2_p2_lat,
 ):
+    d1 = line1_p2_lon - line1_p1_lon
+    d1 = np.where(d1 != float(0), d1, line1_p2_lon)
 
-    d1 =  line1_p2_lon - line1_p1_lon
-    d1 =  np.where( d1 !=float(0), d1, line1_p2_lon)
-
-    d2 =  line2_p2_lon - line2_p1_lon
-    d2 =  np.where( d1 !=float(0), d1, line2_p2_lon)
+    d2 = line2_p2_lon - line2_p1_lon
+    d2 = np.where(d1 != float(0), d1, line2_p2_lon)
 
     m1 = (line1_p2_lat - line1_p1_lat) / d1
     m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
@@ -597,7 +596,6 @@ class TestDivideFluxAreaListStencil01(StencilTest):
         dreg_patch2_3_lon_vmask,
         dreg_patch2_3_lat_vmask,
     ):
-
         dreg_patch2_1_lon_vmask = np.where(
             mask_case2b, arrival_pts_2_lon_dsl, dreg_patch2_1_lon_vmask
         )
