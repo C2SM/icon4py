@@ -224,7 +224,8 @@ def generate_dace_code(
     if on_gpu:
         sdfg.append_global_code(
             f"""
-        DACE_EXPORTED void __set_stream_{sdfg.name}({sdfg.name}_state_t *__state, cudaStream_t stream) {{
+        DACE_EXPORTED bool __dace_gpu_set_stream({sdfg.name}_state_t *__state, int streamid, gpuStream_t stream);
+        DACE_EXPORTED void __set_stream_{sdfg.name}({sdfg.name}_state_t *__state, gpuStream_t stream) {{
             __dace_gpu_set_stream(__state, 0, stream);
         }}"""
         )
