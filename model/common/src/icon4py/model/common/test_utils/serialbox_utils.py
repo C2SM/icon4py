@@ -49,6 +49,7 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ class IconSavepoint:
                     )
                     if dims:
                         shp = tuple(self.sizes[d] for d in dims)
-                        return as_field(dims, np.zeros(shp))
+                        return as_field(dims, xp.zeros(shp))
                     else:
                         return None
 
@@ -86,14 +87,14 @@ class IconSavepoint:
         self.log.info(self.savepoint.metainfo)
 
     def _get_field(self, name, *dimensions, dtype=float):
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
 
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[Dimension, Dimension]):
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
+        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(float))[
             :, :, ntnd - 1
         ]
         buffer = self._reduce_to_dim_size(buffer, dims)
@@ -536,12 +537,14 @@ class InterpolationSavepoint(IconSavepoint):
         ).transpose()
         return as_field((EdgeDim, E2C2EDim), buffer)
 
+    @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
         return as_field((CellDim, C2E2C2EDim), buffer)
 
+    @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
@@ -580,6 +583,7 @@ class MetricSavepoint(IconSavepoint):
     def inv_ddqz_z_full(self):
         return self._get_field("inv_ddqz_z_full", CellDim, KDim)
 
+    @IconSavepoint.optionally_registered(CellDim, KDim)
     def ddqz_z_full(self):
         return self._get_field("ddqz_z_full", CellDim, KDim)
 
