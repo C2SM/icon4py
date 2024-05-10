@@ -78,6 +78,7 @@ class CffiPlugin(Node):
 class PythonWrapper(CffiPlugin):
     backend: str
     debug_mode: bool
+    experiment: str
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
     cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
@@ -85,9 +86,18 @@ class PythonWrapper(CffiPlugin):
     gt4py_backend: str = datamodels.field(init=False)
     is_gt4py_program_present: bool = datamodels.field(init=False)
 
+    def _get_uninitialised_arrays(self) -> list[str]:
+        if self.experiment == "ape_r02b04":
+            # these arrays are not initialised in this experiment and not used
+            # therefore unpacking needs to be skipped as otherwise it will trigger
+            # an error.
+            return ["mask_hdiff", "zd_diffcoef", "zd_vertoffset", "zd_intcoef"]
+        return []
+
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
+        self.uninitialised_arrays = self._get_uninitialised_arrays()
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -261,7 +271,12 @@ def {{ func.name }}_wrapper(
         msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
         logging.debug(msg)
         {% endif %}
+
+        {%- if arg.name in _this_node.uninitialised_arrays -%}
+        {{ arg.name }} = np.zeros({{ ", ".join(arg.size_args) }})
+        {%- else -%}
         {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+        {%- endif -%}
 
         {%- if arg.d_type.name == "BOOL" %}
         {{ arg.name }} = int_array_to_bool_array({{ arg.name }})

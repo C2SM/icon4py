@@ -57,6 +57,7 @@ def parse_comma_separated_list(ctx, param, value) -> list[str]:
     is_flag=True,
     help="Enable debug mode to log additional Python runtime information.",
 )
+@click.option("--experiment", "-e", default="mch_ch_r04b09", type=str)
 def main(
     module_import_path: str,
     functions: list[str],
@@ -64,6 +65,7 @@ def main(
     output_path: pathlib.Path,
     debug_mode: bool,
     backend: str,
+    experiment: str,
 ) -> None:
     """Generate C and F90 wrappers and C library for embedding a Python module in C and Fortran."""
     output_path.mkdir(exist_ok=True, parents=True)
@@ -71,7 +73,7 @@ def main(
     plugin = parse(module_import_path, functions, plugin_name)
 
     c_header = generate_c_header(plugin)
-    python_wrapper = generate_python_wrapper(plugin, backend, debug_mode)
+    python_wrapper = generate_python_wrapper(plugin, backend, debug_mode, experiment)
     f90_interface = generate_f90_interface(plugin)
 
     generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, output_path)

@@ -45,7 +45,9 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mode: bool) -> str:
+def generate_python_wrapper(
+    plugin: CffiPlugin, backend: Optional[str], debug_mode: bool, experiment: str
+) -> str:
     """
     Generate Python wrapper code.
 
@@ -65,6 +67,7 @@ def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mo
         imports=plugin.imports,
         backend=backend,
         debug_mode=debug_mode,
+        experiment=experiment,
     )
 
     generated_code = PythonWrapperGenerator.apply(python_wrapper)
