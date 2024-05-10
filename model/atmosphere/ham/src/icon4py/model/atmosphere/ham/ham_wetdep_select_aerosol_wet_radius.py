@@ -37,11 +37,11 @@ def _ham_wetdep_select_aerosol_wet_radius(
     ztmp1 = where(ll1, mr, wpfloat("1.0"))
     ztmp2 = floor(wpfloat("3.0") * (log(wpfloat("1.0e4") * ztmp1) / log(wpfloat("2.0"))) + wpfloat("1.0"))
 
-    itmp1 = astype(maximum(wpfloat("0.0"), minimum(wpfloat("60.0"), ztmp2)), int32)
-    itmp2 = astype(maximum(wpfloat("0.0"), minimum(wpfloat("60.0"), wpfloat("1.0") + ztmp2)), int32)
+    itmp1 = maximum(0, minimum(60, astype(ztmp2, int32)))
+    itmp2 = maximum(0, minimum(60, astype(ztmp2, int32) + 1))
 
-    indexy1_phase_mode = where(ll1, itmp1, int32("0"))
-    indexy2_phase_mode = where(ll1, itmp2, int32("0"))
+    indexy1_phase_mode = where(ll1, itmp1, 0)
+    indexy2_phase_mode = where(ll1, itmp2, 0)
 
     return (indexy1_phase_mode, indexy2_phase_mode)
 
