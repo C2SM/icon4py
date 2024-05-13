@@ -800,6 +800,13 @@ class SolveNonhydro:
         start_cell_halo = self.grid.get_start_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
         end_cell_end = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
         if self.grid.limited_area:
+            """
+            theta_v (0:nlev-1):
+                Update virtual temperature at full levels (cell center) at only halo cells in the boundary interpolation zone by equating it to exner.
+            exner (0:nlev-1):
+                Update exner function at full levels (cell center) at only halo cells in the boundary interpolation zone using the equation of state (see eq.3.9 in ICON tutorial 2023).
+                exner = (rd * rho * exner / p0ref) ^ (rd / cvd)
+            """
             self.stencil_compute_theta_and_exner(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
                 rho=prognostic_state_ls[nnew].rho,
@@ -814,6 +821,13 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+            """
+            theta_v (0:nlev-1):
+                Update virtual temperature at full levels (cell center) at only halo cells in the boundary interpolation zone by equating it to exner.
+            exner (0:nlev-1):
+                Update exner function at full levels (cell center) at only halo cells in the boundary interpolation zone using the equation of state (see eq.3.9 in ICON tutorial 2023).
+                exner = (rd * rho * exner / p0ref) ^ (rd / cvd)
+            """
             self.stencil_compute_exner_from_rhotheta(
                 rho=prognostic_state_ls[nnew].rho,
                 theta_v=prognostic_state_ls[nnew].theta_v,
@@ -827,6 +841,11 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        """
+        theta_v (0:nlev-1):
+            Update virtual temperature at full levels (cell center) at only halo cells in the boundary interpolation zone from the equation of state (see eqs. 3.22 and 3.23 in ICON tutorial 2023).
+            rho^{n+1} theta_v^{n+1} = rho^{n} theta_v^{n} + ( cvd * rho^{n} * theta_v^{n} ) / ( rd * pi^{n} ) ( pi^{n+1} - pi^{n} )
+        """
         self.stencil_update_theta_v(
             mask_prog_halo_c=self.metric_state_nonhydro.mask_prog_halo_c,
             rho_now=prognostic_state_ls[nnow].rho,
@@ -1011,13 +1030,13 @@ class SolveNonhydro:
 
         """
         rho_ic & theta_v_ic (1:nlev-1):
-            Compute rho and theta_v at half levels. rho and theta_v at model top boundary and ground are not updated.
+            Compute rho and virtual temperature at half levels. rho and virtual temperature at model top boundary and ground are not updated.
         z_rth_pr_1 (0:nlev-1):
             Compute perturbed rho at full levels (cell center).
         z_rth_pr_2 (0:nlev-1):
-            Compute perturbed theta_v at full levels (cell center).
+            Compute perturbed virtual temperature at full levels (cell center).
         z_theta_v_pr_ic (1:nlev-1):
-            Compute the perturbed theta_v from z_rth_pr_2 at half levels.
+            Compute the perturbed virtual temperature from z_rth_pr_2 at half levels.
         z_th_ddz_exner_c (1:nlev-1):
             theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz (see eq. 3.19 in icon tutorial 2023) at half levels (cell center) is also computed. Its value at the model top is not updated. No ground value.
             dpi_0/dz is d_exner_dz_ref_ic.
@@ -1054,7 +1073,7 @@ class SolveNonhydro:
             Perturbed theta_v at half level at the model top is set to zero.
             Perturbed theta_v at half level at the ground level is computed by quadratic interpolation (hydrostatic assumption?) in the same way as z_exner_ic.
         theta_v_ic (nlev):
-            theta_v at half level at the ground level is computed by adding theta_ref_ic to z_theta_v_pr_ic.
+            virtual temperature at half level at the ground level is computed by adding theta_ref_ic to z_theta_v_pr_ic.
         """
         # Perturbation theta at top and surface levels
         self.stencil_predictor_stencils_11_lower_upper(
@@ -1101,7 +1120,7 @@ class SolveNonhydro:
         z_rth_pr_1 (0:nlev-1):
             Compute perturbed rho at full levels (cell center), which is equal to rho - rho_ref_mc.
         z_rth_pr_2 (0:nlev-1):
-            Compute perturbed theta_v at full levels (cell center), which is equal to theta_v - theta_ref_mc.
+            Compute perturbed virtual temperature at full levels (cell center), which is equal to theta_v - theta_ref_mc.
         """
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
@@ -1121,6 +1140,10 @@ class SolveNonhydro:
 
         # Compute rho and theta at edges for horizontal flux divergence term
         if self.config.iadv_rhotheta == 1:
+            """
+            z_rho_v (0:nlev-1):
+                Compute the density at cell vertices at full levels by simple area-weighted interpolation.
+            """
             self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state[nnow].rho,
                 c_intp=self.interpolation_state.c_intp,
@@ -1131,6 +1154,10 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,  # UBOUND(p_cell_in,2)
                 offset_provider=self.offset_provider_v2c,
             )
+            """
+            z_theta_v_v (0:nlev-1):
+                Compute the virtual temperature at cell vertices at full levels by simple area-weighted interpolation.
+            """
             self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state[nnow].theta_v,
                 c_intp=self.interpolation_state.c_intp,
@@ -1144,13 +1171,13 @@ class SolveNonhydro:
         elif self.config.iadv_rhotheta == 2:
             """
             z_grad_rth_1 (0:nlev-1):
-                Compute x derivative of perturbed rho at full levels (cell center) using the Green theorem.
+                Compute x derivative of perturbed rho at full levels (cell center) using the Green theorem. See https://www.cfd-online.com/Wiki/Gradient_computation.
             z_grad_rth_2 (0:nlev-1):
-                Compute y derivative of perturbed rho at full levels (cell center) using the Green theorem.
+                Compute y derivative of perturbed rho at full levels (cell center) using the Green theorem. See https://www.cfd-online.com/Wiki/Gradient_computation.
             z_grad_rth_3 (0:nlev-1):
-                Compute x derivative of perturbed theta_v at full levels (cell center) using the Green theorem.
+                Compute x derivative of perturbed virtual temperature at full levels (cell center) using the Green theorem. See https://www.cfd-online.com/Wiki/Gradient_computation.
             z_grad_rth_4 (0:nlev-1):
-                Compute y derivative of perturbed theta_v at full levels (cell center) using the Green theorem.
+                Compute y derivative of perturbed virtual temperature at full levels (cell center) using the Green theorem. See https://www.cfd-online.com/Wiki/Gradient_computation.
             """
             # Compute Green-Gauss gradients for rho and theta
             self.stencil_mo_math_gradients_grad_green_gauss_cell_dsl(
@@ -1215,9 +1242,9 @@ class SolveNonhydro:
 
             if self.config.iadv_rhotheta == 2:
                 """
-                This long stencil computes rho and theta_v on edges.
+                This long stencil computes rho (density) and theta_v (virtual temperature) on edges.
                 Miura (2007) scheme is adopted. pos_on_tplane_e is the location of neighboring cell centers on (vn, vt) coordinates (normal points inwards and tangent points right-handed).
-                primal_normal_cell and dual_normal_cell are the component of the (vn, vt) vector at location of neighboring cells on (lat, lon) coordinates. vn = vn_lat <lat> + vn_lon <lon>, vt = vt_lat <lat> + vt_lon <lon>
+                primal_normal_cell and dual_normal_cell are the components of the (vn, vt) vector at location of neighboring cells in (lat, lon) coordinates. vn = vn_lat <lat> + vn_lon <lon>, vt = vt_lat <lat> + vt_lon <lon>
                 The distance between back-trajectory point and the nearest cell center is computed first (d_n, d_t) = -(cell_center_n + vn dt/2, cell_center_t + vt dt/2) = d_n vn + d_t vt.
                 It is then transformed to (lat, lon) coordinates = (d_lat, d_lon) = (d_y, d_x) by d_n*vn_lat + d_t*vt_lat, d_n*vn_lon + d_t*vt_lon.
                 Then, the value at edges is simply p_at_edge = p_at_cell_center + dp/dx d_x + dp/dy d_y
@@ -1532,13 +1559,11 @@ class SolveNonhydro:
         if not self.l_vert_nested:
             """
             vn_ie (0):
-                Compute normal wind at model top (edge center). It is simply set equal to normal wind at
-                ground level.
+                Compute normal wind at model top (edge center). It is simply set equal to normal wind.
             z_vt_ie (0):
-                Compute tangential wind at model top (edge center). It is simply set equal to normal wind at
-                ground level.
+                Compute tangential wind at model top (edge center). It is simply set equal to tangential wind.
             z_kin_hor_e (0):
-                Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
+                Compute the horizonal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
             vn_ie (nlev):
                 Compute normal wind at ground level (edge center) by quadratic extrapolation.
                 ---------------  z4
@@ -1622,7 +1647,7 @@ class SolveNonhydro:
 
         """
         z_w_expl (1:nlev-1):
-            Compute the explicit term in vertical equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
+            Compute the explicit term in vertical momentum equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
             z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
             advection of w = ddt_w_adv_pc
             cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
@@ -1721,7 +1746,7 @@ class SolveNonhydro:
             eta_expl = 1.0 - eta_impl = vwind_expl_wgt
             rho = rho_ic
         z_rho_expl (0:nlev-1):
-            Compute the explicit term in vertical equation at full levels (cell center). See RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            Compute the explicit term in vertical momentum equation at full levels (cell center). See RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
             z_rho_expl = rho^{n} - dt ( divergence(v^{n+1*} rho^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} ) / dz_{k} )
             eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
             eta_expl = 1.0 - eta_impl = vwind_expl_wgt
@@ -1780,7 +1805,7 @@ class SolveNonhydro:
 
         """
         w (1:nlev-1):
-            Update intermediate vertical velocity by forward sweep.
+            Update intermediate vertical velocity by forward sweep (RHS of the equation).
         z_q (1:nlev-1):
             Update intermediate upper element of tridiagonal matrix by forward sweep.
             During the forward seep, the middle element is normalized to 1.
@@ -2354,7 +2379,7 @@ class SolveNonhydro:
             log.debug(f"corrector start stencil 42 44 45 45b")
             """
             z_w_expl (1:nlev-1):
-                Compute the explicit term in vertical equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
+                Compute the explicit term in vertical momentum equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
                 z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
                 advection of w_{k} = wgt_nnow_vel advection^{n}_{k} + wgt_nnew_rth advecton^{n+1*}_{k}
                 advection^{n} is ddt_vn_apc_pc[self.ntl1], which is computed in predictor step.
@@ -2432,7 +2457,7 @@ class SolveNonhydro:
             log.debug(f"corrector start stencil 43 44 45 45b")
             """
             z_w_expl (1:nlev-1):
-                Compute the explicit term in vertical equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
+                Compute the explicit term in vertical momentum equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
                 z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
                 advection of w = ddt_w_adv_pc
                 cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
@@ -2522,7 +2547,7 @@ class SolveNonhydro:
             eta_expl = 1.0 - eta_impl = vwind_expl_wgt
             rho = rho_ic
         z_rho_expl (0:nlev-1):
-            Compute the explicit term in vertical equation at full levels (cell center). See RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            Compute the explicit term in vertical momentum equation at full levels (cell center). See RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
             z_rho_expl = rho^{n} - dt ( divergence(v^{n+1*} rho^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} ) / dz_{k} )
             eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
             eta_expl = 1.0 - eta_impl = vwind_expl_wgt
@@ -2537,7 +2562,7 @@ class SolveNonhydro:
             pi'^{n} is precomputed as exner_pr.
             dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) / dz_{k} is precomputed as z_beta.
             The divergence term on RHS of the equation for z_exber_expl is precomputed as z_flxdiv_theta.
-            The mass flux in second term on RHS of the equation for z_exner_expl is precomputed as z_contr_w_fl_l, and it is multiplied by theta_v at half levels (which is theta_v_ic) and become energy flux. i.e. z_contr_w_fl_l = vwind_expl_wgt rho^{n}_{k-1/2} w^{n}_{k-1/2}
+            The mass flux in second term on RHS of the equation for z_exner_expl is precomputed as z_contr_w_fl_l, and it is multiplied by virtual temperature at half levels (which is theta_v_ic) and become energy flux. i.e. z_contr_w_fl_l = vwind_expl_wgt rho^{n}_{k-1/2} w^{n}_{k-1/2}
             physics_tendency is represented by ddt_exner_phy.
             TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
         """
@@ -2583,7 +2608,7 @@ class SolveNonhydro:
         log.debug(f"corrector start stencil 52")
         """
         w (1:nlev-1):
-            Update intermediate vertical velocity by forward sweep.
+            Update intermediate vertical velocity by forward sweep (RHS of the equation).
         z_q (1:nlev-1):
             Update intermediate upper element of tridiagonal matrix by forward sweep.
             During the forward seep, the middle element is normalized to 1.

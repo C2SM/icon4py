@@ -242,7 +242,7 @@ class VelocityAdvection:
             """
             z_w_v (0:nlev-1):
                 Compute the vertical wind at cell vertices at half levels by simple area-weighted interpolation.
-                When itime_scheme = 4, we just use its value computed at the corrector step in the previous substep.
+                When itime_scheme = 4, we just use its value computed at the velocity advection corrector step in the previous substep.
             """
             self.stencil_mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
                 p_cell_in=prognostic_state.w,
@@ -312,6 +312,7 @@ class VelocityAdvection:
             z_vt_ie (1:nlev-1):
                 Compute tangential velocity at half levels (edge center) simply by interpolating two neighboring
                 tangential velocity at full levels.
+                When itime_scheme = 4, we just use its value computed at the solve nonhydro predictor step after the intermediate velocity is obtained in the previous substep.
             """
             self.stencil_interpolate_vt_to_ie(
                 wgtfac_e=self.metric_state.wgtfac_e,
@@ -329,11 +330,9 @@ class VelocityAdvection:
             Compute contravariant correction (due to terrain-following coordinates) to vertical wind at
             full levels (edge center). The correction is equal to vn dz/dn + vt dz/dt, where t is tangent.
         vn_ie (0):
-            Compute normal wind at model top (edge center). It is simply set equal to normal wind at
-            ground level.
+            Compute normal wind at model top (edge center). It is simply set equal to normal wind.
         z_vt_ie (0):
-            Compute tangential wind at model top (edge center). It is simply set equal to normal wind at
-            ground level.
+            Compute tangential wind at model top (edge center). It is simply set equal to tangential wind.
         z_kin_hor_e (0):
             Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
         """
@@ -407,7 +406,7 @@ class VelocityAdvection:
 
         """
         z_ekinh (0:nlev-1):
-            Interpolate the horizon kinetic energy (vn^2 + vt^2)/2 at full levels from
+            Interpolate the horizonal kinetic energy (vn^2 + vt^2)/2 at full levels from
             edge center (three neighboring edges) to cell center.
         """
         self.stencil_interpolate_to_cell_center(
@@ -757,7 +756,7 @@ class VelocityAdvection:
 
         """
         z_ekinh (0:nlev-1):
-            Interpolate the horizon kinetic energy (vn^2 + vt^2)/2 at full levels from
+            Interpolate the horizonal kinetic energy (vn^2 + vt^2)/2 at full levels from
             edge center (three neighboring edges) to cell center.
         """
         self.stencil_interpolate_to_cell_center(
