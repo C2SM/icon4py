@@ -29,12 +29,15 @@ from gt4py.next import (
 
 from icon4py.model.common.dimension import (
     C2E,
+    E2C,
     CellDim,
+    E2CDim,
     EdgeDim,
     KDim,
     Koff,
     VertexDim,
 )
+from icon4py.model.common.grid.horizontal import _compute_cells2edges
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
@@ -655,6 +658,7 @@ def compute_exner_exfac(
         },
     )
 
+
 @field_operator
 def _compute_vwind_impl_wgt(
     z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
@@ -686,14 +690,10 @@ def compute_vwind_impl_wgt(
     z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
     z_ddxt_z_half_e: Field[[EdgeDim], wpfloat],
     dual_edge_length: Field[[EdgeDim], wpfloat],
-    # vct_a: Field[[KDim], wpfloat],
-    # z_ifc: Field[[CellDim, KDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
     vwind_offctr: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
-    # vertical_start: int32,
-    # vertical_end: int32
 ):
     """
     Compute vwind_impl_wgt.
@@ -716,4 +716,195 @@ def compute_vwind_impl_wgt(
         vwind_offctr=vwind_offctr,
         out=vwind_impl_wgt,
         domain={CellDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@program
+def compute_wgtfac_e(
+    wgtfac_c: Field[[CellDim, KDim], float],
+    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    wgtfac_e: Field[[EdgeDim, KDim], float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute wgtfac_e.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        wgtfac_c: weighting factor for quadratic interpolation to surface
+        c_lin_e: interpolation field
+        wgtfac_e: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+
+    _compute_cells2edges(
+        p_cell_in=wgtfac_c,
+        c_int=c_lin_e,
+        out=wgtfac_e,
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )
+
+
+@field_operator
+def _compute_flat_idx(
+    z_me: Field[[EdgeDim, KDim], wpfloat],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    k_lev: Field[[KDim], int],
+) -> Field[[EdgeDim, KDim], int]:
+    z_ifc_e_0 = z_ifc(E2C[0])
+    z_ifc_e_k_0 = z_ifc_e_0(Koff[1])
+    z_ifc_e_1 = z_ifc(E2C[1])
+    z_ifc_e_k_1 = z_ifc_e_1(Koff[1])
+    flat_idx = where(
+        (z_me <= z_ifc_e_0) & (z_me >= z_ifc_e_k_0) & (z_me <= z_ifc_e_1) & (z_me >= z_ifc_e_k_1),
+        k_lev,
+        int(0),
+    )
+    return flat_idx
+
+
+@field_operator
+def _compute_z_aux2(
+    z_ifc: Field[[CellDim], wpfloat],
+) -> Field[[EdgeDim], wpfloat]:
+    extrapol_dist = 5.0
+    z_aux1 = maximum(z_ifc(E2C[0]), z_ifc(E2C[1]))
+    z_aux2 = z_aux1 - extrapol_dist
+
+    return z_aux2
+
+
+@field_operator
+def _compute_pg_edgeidx_vertidx(
+    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    z_aux2: Field[[EdgeDim], wpfloat],
+    e_owner_mask: Field[[EdgeDim], bool],
+    flat_idx_max: Field[[EdgeDim], int],
+    e_lev: Field[[EdgeDim], int],
+    k_lev: Field[[KDim], int],
+    pg_edgeidx: Field[[EdgeDim, KDim], int],
+    pg_vertidx: Field[[EdgeDim, KDim], int],
+) -> tuple[Field[[EdgeDim, KDim], int], Field[[EdgeDim, KDim], int]]:
+    e_lev = broadcast(e_lev, (EdgeDim, KDim))
+    k_lev = broadcast(k_lev, (EdgeDim, KDim))
+    z_mc = average_cell_kdim_level_up(z_ifc)
+    z_me = _compute_cells2edges(p_cell_in=z_mc, c_int=c_lin_e)
+    pg_edgeidx = where(
+        (k_lev >= (flat_idx_max + int(1))) & (z_me < z_aux2) & e_owner_mask, e_lev, pg_edgeidx
+    )
+    pg_vertidx = where(
+        (k_lev >= (flat_idx_max + int(1))) & (z_me < z_aux2) & e_owner_mask, k_lev, pg_vertidx
+    )
+    return pg_edgeidx, pg_vertidx
+
+
+@field_operator
+def _compute_pg_exdist_dsl(
+    z_me: Field[[EdgeDim, KDim], wpfloat],
+    z_aux2: Field[[EdgeDim], wpfloat],
+    e_owner_mask: Field[[EdgeDim], bool],
+    flat_idx_max: Field[[EdgeDim], int],
+    k_lev: Field[[KDim], int],
+    pg_exdist_dsl: Field[[EdgeDim, KDim], wpfloat],
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    k_lev = broadcast(k_lev, (EdgeDim, KDim))
+    pg_exdist_dsl = where(
+        (k_lev >= (flat_idx_max + int(1))) & (z_me < z_aux2) & e_owner_mask,
+        z_me - z_aux2,
+        pg_exdist_dsl,
+    )
+    return pg_exdist_dsl
+
+
+@program
+def compute_pg_exdist_dsl(
+    z_aux2: Field[[EdgeDim], wpfloat],
+    z_me: Field[[EdgeDim, KDim], float],
+    e_owner_mask: Field[[EdgeDim], bool],
+    flat_idx_max: Field[[EdgeDim], int],
+    k_lev: Field[[KDim], int],
+    pg_exdist_dsl: Field[[EdgeDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute pg_edgeidx_dsl.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        z_aux2: Local field
+        z_me: Local field
+        e_owner_mask: Field of booleans over edges
+        flat_idx_max: Highest vertical index (counted from top to bottom) for which the edge point lies inside the cell box of the adjacent grid points
+        k_lev: Field of K levels
+        pg_exdist_dsl: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+    _compute_pg_exdist_dsl(
+        z_me=z_me,
+        z_aux2=z_aux2,
+        e_owner_mask=e_owner_mask,
+        flat_idx_max=flat_idx_max,
+        k_lev=k_lev,
+        pg_exdist_dsl=pg_exdist_dsl,
+        out=pg_exdist_dsl,
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_pg_edgeidx_dsl(
+    pg_edgeidx: Field[[EdgeDim, KDim], int],
+    pg_vertidx: Field[[EdgeDim, KDim], int],
+) -> Field[[EdgeDim, KDim], bool]:
+    pg_edgeidx_dsl = where((pg_edgeidx > int(0)) & (pg_vertidx > int(0)), True, False)
+    return pg_edgeidx_dsl
+
+
+@program
+def compute_pg_edgeidx_dsl(
+    pg_edgeidx: Field[[EdgeDim, KDim], int],
+    pg_vertidx: Field[[EdgeDim, KDim], int],
+    pg_edgeidx_dsl: Field[[EdgeDim, KDim], bool],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute pg_edgeidx_dsl.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        pg_edgeidx: Index Edge values
+        pg_vertidx: Index K values
+        pg_edgeidx_dsl: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+    _compute_pg_edgeidx_dsl(
+        pg_edgeidx=pg_edgeidx,
+        pg_vertidx=pg_vertidx,
+        out=pg_edgeidx_dsl,
+        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
