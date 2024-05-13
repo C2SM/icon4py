@@ -111,7 +111,8 @@ def constant_field(
     grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
 ) -> gt_common.Field:
     return as_field(
-        dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
+        dims,
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
 
 
@@ -191,7 +192,9 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
+            input_data[name].asnumpy()[gtslice],
+            reference_outputs[name][refslice],
+            equal_nan=True,
         ), f"Validation failed for '{name}'"
 
 
