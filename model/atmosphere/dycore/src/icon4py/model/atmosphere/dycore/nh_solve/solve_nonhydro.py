@@ -1019,10 +1019,10 @@ class SolveNonhydro:
         z_theta_v_pr_ic (1:nlev-1):
             Compute the perturbed theta_v from z_rth_pr_2 at half levels.
         z_th_ddz_exner_c (1:nlev-1):
-            theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz (see eq. 3.19 in icon tutorial 2023) at half levels is also computed. Its value at the model top is not updated. No ground value.
+            theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz (see eq. 3.19 in icon tutorial 2023) at half levels (cell center) is also computed. Its value at the model top is not updated. No ground value.
             dpi_0/dz is d_exner_dz_ref_ic.
-            eta_impl = 0.5 + vwind_offctr
-            eta_expl = 1.0 - eta_impl
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
         """
         self.stencil_predictor_stencils_7_8_9(
             rho=prognostic_state[nnow].rho,
@@ -1099,9 +1099,9 @@ class SolveNonhydro:
 
         """
         z_rth_pr_1 (0:nlev-1):
-            Compute perturbed rho at full levels (cell center).
+            Compute perturbed rho at full levels (cell center), which is equal to rho - rho_ref_mc.
         z_rth_pr_2 (0:nlev-1):
-            Compute perturbed theta_v at full levels (cell center).
+            Compute perturbed theta_v at full levels (cell center), which is equal to theta_v - theta_ref_mc.
         """
         # Add computation of z_grad_rth (perturbation density and virtual potential temperature at main levels)
         # at outer halo points: needed for correct calculation of the upwind gradients for Miura scheme
@@ -1391,6 +1391,8 @@ class SolveNonhydro:
         """
         vn (0:nlev-1):
             Add the advection and pressure gradient terms to update the normal velocity.
+            vn = vn + dt * (advection - cpd * theta_v * dpi/dz)
+            advection is computed in velocity_advection.
         """
         self.stencil_add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state[nnow].vn,
@@ -1430,6 +1432,11 @@ class SolveNonhydro:
             )
 
         if self.grid.limited_area:
+            """
+            vn (0:nlev-1):
+                Add boundary velocity tendendy to the normal velocity.
+                vn = vn + dt * grf_tend_vn
+            """
             self.stencil_compute_vn_on_lateral_boundary(
                 grf_tend_vn=diagnostic_state_nh.grf_tend_vn,
                 vn_now=prognostic_state[nnow].vn,
@@ -1444,6 +1451,16 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
         self._exchange.exchange_and_wait(EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
+        """
+        z_vn_avg (0:nlev-1):
+            Compute the averaged normal velocity at full levels (edge center).
+            TODO (Chia Rui): Fill in details about how the coefficients are computed.
+        z_graddiv_vn (0:nlev-1):
+            Compute normal gradient of divergence at full levels (edge center).
+            z_graddiv_vn = Del(normal_direction) divergence
+        vt (0:nlev-1):
+            Compute tangential velocity by rbf interpolation at full levels (edge center).
+        """
         self.stencil_compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
@@ -1460,6 +1477,12 @@ class SolveNonhydro:
         )
 
         if self.config.idiv_method == 1:
+            """
+            z_flxdiv_mass (0:nlev-1):
+                Compute the mass flux at full levels (edge center) by multiplying density with averaged normal velocity (z_vn_avg) computed above.
+            z_flxdiv_theta (0:nlev-1):
+                Compute the energy (theta_v * mass) flux by multiplying density with averaged normal velocity (z_vn_avg) computed above.
+            """
             self.stencil_compute_mass_flux(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
@@ -1474,6 +1497,19 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        """
+        z_w_concorr_me (flat_lev:nlev-1):
+            Compute contravariant correction (due to terrain-following coordinates) to vertical wind at
+            full levels (edge center). The correction is equal to vn dz/dn + vt dz/dt, where t is tangent.
+        vn_ie (1:nlev-1):
+            Compute normal velocity at half levels (edge center) simply by interpolating two neighboring
+            normal velocity at full levels.
+        z_kin_hor_e (1:nlev-1):
+            Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at full levels (edge center).
+        z_vt_ie (1:nlev-1):
+            Compute tangential velocity at half levels (edge center) simply by interpolating two neighboring
+            tangential velocity at full levels.
+        """
         self.stencil_predictor_stencils_35_36(
             vn=prognostic_state[nnew].vn,
             ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
@@ -1494,6 +1530,28 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
+            """
+            vn_ie (0):
+                Compute normal wind at model top (edge center). It is simply set equal to normal wind at
+                ground level.
+            z_vt_ie (0):
+                Compute tangential wind at model top (edge center). It is simply set equal to normal wind at
+                ground level.
+            z_kin_hor_e (0):
+                Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
+            vn_ie (nlev):
+                Compute normal wind at ground level (edge center) by quadratic extrapolation.
+                ---------------  z4
+                       z3'
+                ---------------  z3
+                       z2'
+                ---------------  z2
+                       z1'
+                ---------------  z1 (surface)
+                ///////////////
+                The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
+                then obtained by quadratic interpolation polynomial based on these three points.
+            """
             self.stencil_predictor_stencils_37_38(
                 vn=prognostic_state[nnew].vn,
                 vt=diagnostic_state_nh.vt,
@@ -1508,6 +1566,24 @@ class SolveNonhydro:
                 offset_provider=self.offset_provider_koff,
             )
 
+        """
+        w_concorr_c (flat_lev+1:nlev-1):
+            Interpolate contravariant correction at edge center from full levels, which is
+            z_w_concorr_me computed above, to half levels using simple linear interpolation.
+        w_concorr_c (nlev):
+            Compute contravariant correction at ground level (cell center) by quadratic extrapolation. z_w_concorr_me needs to be first
+            linearly interpolated to cell center.
+            ---------------  z4
+                   z3'
+            ---------------  z3
+                   z2'
+            ---------------  z2
+                   z1'
+            ---------------  z1 (surface)
+            ///////////////
+            The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
+            then obtained by quadratic interpolation polynomial based on these three points.
+        """
         self.stencil_39_40(
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=self.z_w_concorr_me,
@@ -1525,6 +1601,12 @@ class SolveNonhydro:
         )
 
         if self.config.idiv_method == 1:
+            """
+            z_flxdiv_mass (0:nlev-1):
+                Compute the divergence of mass flux at full levels (cell center) by Gauss theorem.
+            z_flxdiv_theta (0:nlev-1):
+                Compute the divergence of energy (theta_v * mass) flux at full levels (cell center) by Gauss theorem.
+            """
             self.stencil_compute_divergence_of_fluxes_of_rho_and_theta(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -1538,6 +1620,45 @@ class SolveNonhydro:
                 offset_provider=self.offset_provider_c2e_c2ce,
             )
 
+        """
+        z_w_expl (1:nlev-1):
+            Compute the explicit term in vertical equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
+            z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
+            advection of w = ddt_w_adv_pc
+            cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+        z_contr_w_fl_l (1:nlev-1):
+            Compute the vertical mass flux at half levels (cell center). See second term on RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            z_contr_w_fl_l = rho * (-contravariant_correction + vwind_expl_wgt * w) # TODO (Chia Rui: Check why minus sign)
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            rho = rho_ic
+        z_beta (0:nlev-1):
+            Compute component of the coefficients in the tridiagonal matrix of w equation at full levels (cell center).
+            See the middle term in each square bracket of eq. 3.27 and unnumbered equation below in ICON tutorial 2023.
+            a b 0 0 0
+            c a b 0 0
+            0 c a b 0
+            0 0 c a b
+            0 0 0 c a
+            z_beta_{k} = dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) / dz_{k}
+        z_alpha (0:nlev-1):
+            Compute component of the coefficients in the tridiagonal matrix of w equation at half levels (cell center).
+            See the last term in each square bracket of eq. 3.27 and unnumbered equation below in ICON tutorial 2023.
+            z_alpha_{k-1/2} = vwind_impl_wgt rho_{k-1/2} theta_v_{k-1/2}
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            rho_{k-1/2} is precomputed as rho_ic.
+            theta_v_{k-1/2} is precomputed as theta_v_ic.
+        z_alpha (nlev):
+            Compute component of the coefficients in the tridiagonal matrix of w equation at half levels (cell center).
+            z_alpha_{k-1/2} = 0
+        z_q (0):
+            Set the intermediate result for w in tridiagonal solver during forward seep at half levels (cell center) at model top to zero.
+            Note that it also only has nlev levels because the model top w is not updated, although it is a half-level variable.
+            z_q_{k-1/2} = 0
+        """
         self.stencil_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_state[nnow].w,
@@ -1570,6 +1691,16 @@ class SolveNonhydro:
         )
 
         if not self.l_vert_nested:
+            """
+            w (0):
+                Set w at half levels (cell center) at model top to zero.
+            z_contr_w_fl_l (0):
+                Set the vertical mass flux at half levels (cell center) at model top to zero. See second term on RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+                z_contr_w_fl_l = rho * (-contravariant_correction + vwind_expl_wgt * w) # TODO (Chia Rui: Check why minus sign)
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+                rho = rho_ic
+            """
             self.stencil_set_two_cell_kdim_fields_to_zero_wp(
                 cell_kdim_field_to_zero_wp_1=prognostic_state[nnew].w,
                 cell_kdim_field_to_zero_wp_2=z_fields.z_contr_w_fl_l,
@@ -1579,6 +1710,36 @@ class SolveNonhydro:
                 vertical_end=1,
                 offset_provider={},
             )
+        """
+        w^{n+1*} (nlev):
+            Set updated w at half levels (cell center) at ground level to the contravariant correction (since we are using terrain following coordinates).
+            w_ground = contravariant_correction
+        z_contr_w_fl_l (nlev):
+            Set the vertical mass flux at half levels (cell center) at ground level to zero. See second term on RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            z_contr_w_fl_l = rho * (-contravariant_correction + vwind_expl_wgt * w) # TODO (Chia Rui: Check why minus sign)
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            rho = rho_ic
+        z_rho_expl (0:nlev-1):
+            Compute the explicit term in vertical equation at full levels (cell center). See RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            z_rho_expl = rho^{n} - dt ( divergence(v^{n+1*} rho^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} ) / dz_{k} )
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            The divergence term on RHS of the equation for z_rho_expl is precomputed as z_flxdiv_mass.
+            The mass flux in second term on RHS of the equation for z_rho_expl is precomputed as z_contr_w_fl_l. i.e. z_contr_w_fl_l = vwind_expl_wgt rho^{n}_{k-1/2} w^{n}_{k-1/2}
+            TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
+        z_exner_expl (0:nlev-1):
+            Compute the explicit term in pressure equation at full levels (cell center). See RHS of thermodynamics equation in eq. 3.21 and the second unnumbered equation below eq. 3.25 in ICON tutorial 2023.
+            z_exner_expl = pi'^{n} - dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) ( divergence(v^{n+1*} rho^{n} theta_v^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} theta_v^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} theta_v^{n}_{k+1/2} ) / dz_{k} ) + dt * physics_tendency
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            pi'^{n} is precomputed as exner_pr.
+            dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) / dz_{k} is precomputed as z_beta.
+            The divergence term on RHS of the equation for z_exber_expl is precomputed as z_flxdiv_theta.
+            The mass flux in second term on RHS of the equation for z_exner_expl is precomputed as z_contr_w_fl_l, and it is multiplied by theta_v at half levels (which is theta_v_ic) and become energy flux. i.e. z_contr_w_fl_l = vwind_expl_wgt rho^{n}_{k-1/2} w^{n}_{k-1/2}
+            physics_tendency is represented by ddt_exner_phy.
+            TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
+        """
         self.stencil_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -1617,6 +1778,13 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        """
+        w (1:nlev-1):
+            Update intermediate vertical velocity by forward sweep.
+        z_q (1:nlev-1):
+            Update intermediate upper element of tridiagonal matrix by forward sweep.
+            During the forward seep, the middle element is normalized to 1.
+        """
         self.stencil_solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -1636,6 +1804,11 @@ class SolveNonhydro:
             offset_provider=self.offset_provider_koff,
         )
 
+        """
+        w (1:nlev-1):
+            Compute the vertical velocity by backward sweep. Model top and ground level are not updated.
+            w_{k-1/2} = w_{k-1/2} + w_{k+1/2} * z_q_{k-1/2}
+        """
         self.stencil_solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
@@ -1647,6 +1820,12 @@ class SolveNonhydro:
         )
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
+            """
+            w (1:damp_nlev):
+                Compute the rayleigh damping of vertical velocity at half levels (cell center).
+                w_{k-1/2} = Rayleigh_damping_coeff w_{k-1/2} + (1 - Rayleigh_damping_coeff) w_{-1/2}, where w_{-1/2} is model top vertical velocity. It is zero.
+                Rayleigh_damping_coeff is represented by z_raylfac.
+            """
             self.stencil_apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1660,6 +1839,27 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
+        """
+        rho (0:nlev-1):
+            Update the density at full levels (cell center) from the mass conservation equation (see eq. 3.21 in ICON tutorial 2023).
+            rho^{n+1} = rho^{n} - dt ( divergence(v^{n+1*} rho^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} ) / dz_{k} ) - dt * vwind_impl_wgt ( rho^{n}_{k-1/2} w^{n+1}_{k-1/2} - rho^{n}_{k+1/2} w^{n+1}_{k+1} ) / dz_{k} )
+            rho^{n+1} = z_rho_expl - dt * vwind_impl_wgt ( rho^{n}_{k-1/2} w^{n+1}_{k-1/2} - rho^{n}_{k+1/2} w^{n+1}_{k+1} ) / dz_{k} )
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            Note that rho^{n} is used for the implicit mass flux term.
+        exner (0:nlev-1):
+            Update exner function at full levels (cell center) from the energy equation (see eq. 3.21 or 3.25 in ICON tutorial 2023).
+            z_exner_expl = pi'^{n} - dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) ( divergence(v^{n+1*} rho^{n} theta_v^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} theta_v^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} theta_v^{n}_{k+1/2} ) / dz_{k} ) + dt * physics_tendency
+            pi^{n+1} = pi_reference + z_exner_expl - dt * vwind_impl_wgt ( rd * pi^{n} ) / ( cvd * rho^{n} * theta_v^{n} ) ( rho^{n}_{k-1/2} w^{n+1}_{k-1/2} theta_v^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n+1}_{k+1} theta_v^{n}_{k+1/2} ) / dz_{k} )
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            Note that rho^{n} and theta_v^{n} are used for the implicit flux term.
+            rho^{n}_{k-1/2} theta_v^{n}_{k-1/2} is represented by z_alpha.
+            dt * vwind_impl_wgt (rd * pi^{n}) / (cvd * rho^{n} * theta_v^{n} ) / dz_{k} is represented by z_beta.
+        theta_v (0:nlev-1):
+            Update virtual potential temperature at full levels (cell center) from the equation of state (see eqs. 3.22 and 3.23 in ICON tutorial 2023).
+            rho^{n+1} theta_v^{n+1} = rho^{n} theta_v^{n} + ( cvd * rho^{n} * theta_v^{n} ) / ( rd * pi^{n} ) ( pi^{n+1} - pi^{n} )
+        """
         self.stencil_compute_results_for_thermodynamic_variables(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
@@ -1687,6 +1887,12 @@ class SolveNonhydro:
 
         # compute dw/dz for divergence damping term
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
+            """
+            z_dwdz_dd (dd3d_lev:nlev-1):
+                Compute vertical derivative of vertical velocity at full levels (cell center).
+                z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
+                contravariant_correction is precomputed by w_concorr_c at half levels.
+            """
             self.stencil_compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
@@ -1711,6 +1917,14 @@ class SolveNonhydro:
             )
 
         if self.grid.limited_area:
+            """
+            rho (0:nlev-1):
+                Add the boundary tendency to the density at full levels (cell center) for limited area simulations.
+            exner (0:nlev-1):
+                Add the boundary tendency to the exner function at full levels (cell center) for limited area simulations.
+            w (0:nlev):
+                Add the boundary tendency to the vertical velocity at full levels (cell center) for limited area simulations.
+            """
             self.stencil_61_62(
                 rho_now=prognostic_state[nnow].rho,
                 grf_tend_rho=diagnostic_state_nh.grf_tend_rho,
@@ -1732,6 +1946,12 @@ class SolveNonhydro:
             )
 
         if self.config.lhdiff_rcf and self.config.divdamp_type >= 3:
+            """
+            z_dwdz_dd (dd3d_lev:nlev-1):
+                Compute vertical derivative of vertical velocity at full levels (cell center).
+                z_dwdz_dḍ_{k} = ( w_{k-1/2} - w_{k+1/2} ) / dz_{k} - ( contravariant_correction_{k-1/2} - contravariant_correction_{k+1/2} ) / dz_{k}
+                contravariant_correction is precomputed by w_concorr_c at half levels.
+            """
             self.stencil_compute_dwdz_for_divergence_damping(
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 w=prognostic_state[nnew].w,
@@ -1846,6 +2066,32 @@ class SolveNonhydro:
             offset_provider={},
         )
         log.debug(f"corrector: start stencil 10")
+        """
+        rho_ic (1:nlev-1):
+            Compute the density at half levels (cell center) that includes the vertical mass flux term. Its value at the model top and ground level is not updated.
+            wgt_nnew_rth = 0.5 + rhotheta_offctr
+            wgt_nnow_rth = 1.0 - wgt_nnew_rth
+            rho_avg_{k} = wgt_nnow_rth rho^{n}_{k} + wgt_nnew_rth rho^{n+1*}_{k}
+            rho_{k-1/2} = vertical_weight rho_avg_{k-1} + (1 - vertical_weight) rho_avg_{k} - dt (w^{n+1*}_{k-1/2} - contravariant_correction^{n+1*}_{k-1/2} ) / dz_{k-1/2}
+        z_theta_v_pr_ic (1:nlev-1):
+            Compute the perturbed virtual temperature at half levels (cell center). Its value at the model top and ground level is not updated.
+            wgt_nnew_rth = 0.5 + rhotheta_offctr
+            wgt_nnow_rth = 1.0 - wgt_nnew_rth
+            theta_v_avg_{k} = wgt_nnow_rth theta_v^{n}_{k} + wgt_nnew_rth theta_v^{n+1*}_{k}
+            perturbed_theta_v_avg_{k} = theta_v_avg_{k} - theta_v_ref_{k}
+            z_theta_v_pr_ic{k-1/2} = vertical_weight perturbed_theta_v_avg_{k-1} + (1 - vertical_weight) perturbed_theta_v_avg_{k}
+        theta_v_ic (1:nlev-1):
+            Compute the virtual temperature at half levels (cell center) that includes the vertical flux term. Its value at the model top and ground level is not updated.
+            wgt_nnew_rth = 0.5 + rhotheta_offctr
+            wgt_nnow_rth = 1.0 - wgt_nnew_rth
+            rho_avg_{k} = wgt_nnow_rth theta_v^{n}_{k} + wgt_nnew_rth theta_v^{n+1*}_{k}
+            rho_{k-1/2} = vertical_weight theta_v_avg_{k-1} + (1 - vertical_weight) theta_v_avg_{k} - dt (w^{n+1*}_{k-1/2} - contravariant_correction^{n+1*}_{k-1/2} ) / dz_{k-1/2}
+        z_th_ddz_exner_c (1:nlev-1):
+            theta_v' dpi_0/dz + eta_expl theta_v dpi'/dz (see the last two terms on the RHS of vertical momentum equation in eq. 3.21 in icon tutorial 2023) at half levels (cell center) is also computed. Its value at the model top is not updated. No ground value.
+            z_th_ddz_exner_c_{k-1/2} = vwind_expl_wgt theta_v_ic_{k-1/2} (exner_pr_{k-1} - exner_pr_{k}) / dz_{k-1/2} + perturbed_theta_v_avg_{k} dpi0/dz_{k-1/2}
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+        """
         self.stencil_compute_rho_virtual_potential_temperatures_and_pressure_gradient(
             w=prognostic_state[nnew].w,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1874,6 +2120,11 @@ class SolveNonhydro:
         )
 
         log.debug(f"corrector: start stencil 17")
+        """
+        z_graddiv_vn (dd3d_lev:nlev-1):
+            Add vertical wind derivative to the normal gradient of divergence at full levels (edge center).
+            z_graddiv_vn_{k} = z_graddiv_vn_{k} + scalfac_dd3d_{k} d2w_{k}/dzdn
+        """
         self.stencil_add_vertical_wind_derivative_to_divergence_damping(
             hmask_dd3d=self.metric_state_nonhydro.hmask_dd3d,
             scalfac_dd3d=self.metric_state_nonhydro.scalfac_dd3d,
@@ -1889,6 +2140,16 @@ class SolveNonhydro:
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector: start stencil 23")
+            """
+            vn (0:nlev-1):
+                Update the normal wind at full levels (edge center) in the corrector step (see the horizontal momentum equaton in eq. 3.21 in ICON tutoral 2023 and the assumption below that simplifies the computation).
+                The second term on the RHS is cpd z_theta_v_e z_gradh_exner.
+                vn^{n+1}_{k} = vn^{n}_{k} - dt advection_avg_{k} - cpd theta_v dpi/dn
+                advection_avg_{k} = wgt_nnow_vel advection^{n}_{k} + wgt_nnew_rth advecton^{n+1*}_{k}
+                ddt_vn_apc_pc[self.ntl2] is computed in velocity advecton corrector step.
+                wgt_nnew_vel = 0.5 + veladv_offctr
+                wgt_nnow_vel = 1.0 - wgt_nnew_vel
+            """
             self.stencil_add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state[nnow].vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
@@ -1913,6 +2174,10 @@ class SolveNonhydro:
         ):
             # verified for e-10
             log.debug(f"corrector start stencil 25")
+            """
+            z_graddiv2_vn (0:nlev-1):
+                Compute the double laplacian of vn at full levels (edge center).
+            """
             self.stencil_compute_graddiv2_of_vn(
                 geofac_grdiv=self.interpolation_state.geofac_grdiv,
                 z_graddiv_vn=z_fields.z_graddiv_vn,
@@ -1927,6 +2192,11 @@ class SolveNonhydro:
         if self.config.lhdiff_rcf:
             if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
                 log.debug(f"corrector: start stencil 26")
+                """
+                vn (0:nlev-1):
+                    Apply the divergence damping to vn at full levels (edge center).
+                    vn = vn + scal_divdamp_o2 * Del(normal_direction) Div(vn)
+                """
                 self.stencil_apply_2nd_order_divergence_damping(
                     z_graddiv_vn=z_fields.z_graddiv_vn,
                     vn=prognostic_state[nnew].vn,
@@ -1942,6 +2212,11 @@ class SolveNonhydro:
             if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
                 if self.grid.limited_area:
                     log.debug("corrector: start stencil 27")
+                    """
+                    vn (0:nlev-1):
+                        Apply the higher order divergence damping to vn at full levels (edge center).
+                        vn = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * Del(normal_direction) Div( Del(normal_direction) Div(vn) )
+                    """
                     self.stencil_apply_weighted_2nd_and_4th_order_divergence_damping(
                         scal_divdamp=self.scal_divdamp,
                         bdy_divdamp=self._bdy_divdamp,
@@ -1956,6 +2231,11 @@ class SolveNonhydro:
                     )
                 else:
                     log.debug("corrector start stencil 4th order divdamp")
+                    """
+                    vn (0:nlev-1):
+                        Apply the higher order divergence damping to vn at full levels (edge center).
+                        vn = vn + scal_divdamp * Del(normal_direction) Div( Del(normal_direction) Div(vn) )
+                    """
                     self.stencil_apply_4th_order_divergence_damping(
                         scal_divdamp=self.scal_divdamp,
                         z_graddiv2_vn=self.z_graddiv2_vn,
@@ -1983,6 +2263,11 @@ class SolveNonhydro:
         log.debug("exchanging prognostic field 'vn'")
         self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
         log.debug("corrector: start stencil 31")
+        """
+        z_vn_avg (0:nlev-1):
+            Compute the averaged normal velocity at full levels (edge center).
+            TODO (Chia Rui): Fill in details about how the coefficients are computed.
+        """
         self.stencil_compute_avg_vn(
             e_flx_avg=self.interpolation_state.e_flx_avg,
             vn=prognostic_state[nnew].vn,
@@ -1996,6 +2281,12 @@ class SolveNonhydro:
 
         if self.config.idiv_method == 1:
             log.debug("corrector: start stencil 32")
+            """
+            z_flxdiv_mass (0:nlev-1):
+                Compute the mass flux at full levels (edge center) by multiplying density with averaged normal velocity (z_vn_avg) computed above.
+            z_flxdiv_theta (0:nlev-1):
+                Compute the energy (theta_v * mass) flux by multiplying density with averaged normal velocity (z_vn_avg) computed above.
+            """
             self.stencil_compute_mass_flux(
                 z_rho_e=z_fields.z_rho_e,
                 z_vn_avg=self.z_vn_avg,
@@ -2040,6 +2331,12 @@ class SolveNonhydro:
         if self.config.idiv_method == 1:
             # verified for e-9
             log.debug(f"corrector: start stencile 41")
+            """
+            z_flxdiv_mass (0:nlev-1):
+                Compute the divergence of mass flux at full levels (cell center) by Gauss theorem.
+            z_flxdiv_theta (0:nlev-1):
+                Compute the divergence of energy (theta_v * mass) flux at full levels (cell center) by Gauss theorem.
+            """
             self.stencil_compute_divergence_of_fluxes_of_rho_and_theta(
                 geofac_div=self.interpolation_state.geofac_div,
                 mass_fl_e=diagnostic_state_nh.mass_fl_e,
@@ -2055,6 +2352,49 @@ class SolveNonhydro:
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector start stencil 42 44 45 45b")
+            """
+            z_w_expl (1:nlev-1):
+                Compute the explicit term in vertical equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
+                z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
+                advection of w_{k} = wgt_nnow_vel advection^{n}_{k} + wgt_nnew_rth advecton^{n+1*}_{k}
+                advection^{n} is ddt_vn_apc_pc[self.ntl1], which is computed in predictor step.
+                advection^{n+1*} is ddt_vn_apc_pc[self.ntl2], which is computed in velocity advecton corrector step.
+                wgt_nnew_vel = 0.5 + veladv_offctr
+                wgt_nnow_vel = 1.0 - wgt_nnew_vel
+                cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            z_contr_w_fl_l (1:nlev-1):
+                Compute the vertical mass flux at half levels (cell center). See second term on RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+                z_contr_w_fl_l = rho * (-contravariant_correction + vwind_expl_wgt * w) # TODO (Chia Rui: Check why minus sign)
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+                rho = rho_ic
+            z_beta (0:nlev-1):
+                Compute component of the coefficients in the tridiagonal matrix of w equation at full levels (cell center).
+                See the middle term in each square bracket of eq. 3.27 and unnumbered equation below in ICON tutorial 2023.
+                a b 0 0 0
+                c a b 0 0
+                0 c a b 0
+                0 0 c a b
+                0 0 0 c a
+                z_beta_{k} = dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) / dz_{k}
+            z_alpha (0:nlev-1):
+                Compute component of the coefficients in the tridiagonal matrix of w equation at half levels (cell center).
+                See the last term in each square bracket of eq. 3.27 and unnumbered equation below in ICON tutorial 2023.
+                z_alpha_{k-1/2} = vwind_impl_wgt rho_{k-1/2} theta_v_{k-1/2}
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+                rho_{k-1/2} is precomputed as rho_ic.
+                theta_v_{k-1/2} is precomputed as theta_v_ic.
+            z_alpha (nlev):
+                Compute component of the coefficients in the tridiagonal matrix of w equation at half levels (cell center).
+                z_alpha_{k-1/2} = 0
+            z_q (0):
+                Set the intermediate result for w in tridiagonal solver during forward seep at half levels (cell center) at model top to zero.
+                Note that it also only has nlev levels because the model top w is not updated, although it is a half-level variable.
+                z_q_{k-1/2} = 0
+            """
             self.stencil_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
@@ -2090,6 +2430,45 @@ class SolveNonhydro:
             )
         else:
             log.debug(f"corrector start stencil 43 44 45 45b")
+            """
+            z_w_expl (1:nlev-1):
+                Compute the explicit term in vertical equation at half levels (cell center). See the first equation below eq. 3.25 in ICON tutorial 2023.
+                z_w_expl = advection of w + cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz @ k+1/2 level
+                advection of w = ddt_w_adv_pc
+                cpd theta' dpi0/dz + cpd theta (1 - eta_impl) dpi'/dz = cpd z_th_ddz_exner_c
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            z_contr_w_fl_l (1:nlev-1):
+                Compute the vertical mass flux at half levels (cell center). See second term on RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+                z_contr_w_fl_l = rho * (-contravariant_correction + vwind_expl_wgt * w) # TODO (Chia Rui: Check why minus sign)
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+                rho = rho_ic
+            z_beta (0:nlev-1):
+                Compute component of the coefficients in the tridiagonal matrix of w equation at full levels (cell center).
+                See the middle term in each square bracket of eq. 3.27 and unnumbered equation below in ICON tutorial 2023.
+                a b 0 0 0
+                c a b 0 0
+                0 c a b 0
+                0 0 c a b
+                0 0 0 c a
+                z_beta_{k} = dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) / dz_{k}
+            z_alpha (0:nlev-1):
+                Compute component of the coefficients in the tridiagonal matrix of w equation at half levels (cell center).
+                See the last term in each square bracket of eq. 3.27 and unnumbered equation below in ICON tutorial 2023.
+                z_alpha_{k-1/2} = vwind_impl_wgt rho_{k-1/2} theta_v_{k-1/2}
+                eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+                eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+                rho_{k-1/2} is precomputed as rho_ic.
+                theta_v_{k-1/2} is precomputed as theta_v_ic.
+            z_alpha (nlev):
+                Compute component of the coefficients in the tridiagonal matrix of w equation at half levels (cell center).
+                z_alpha_{k-1/2} = 0
+            z_q (0):
+                Set the intermediate result for w in tridiagonal solver during forward seep at half levels (cell center) at model top to zero.
+                Note that it also only has nlev levels because the model top w is not updated, although it is a half-level variable.
+                z_q_{k-1/2} = 0
+            """
             self.stencil_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
@@ -2132,6 +2511,36 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
+        """
+        w^{n+1*} (nlev):
+            Set updated w at half levels (cell center) at ground level to the contravariant correction (since we are using terrain following coordinates).
+            w_ground = contravariant_correction
+        z_contr_w_fl_l (nlev):
+            Set the vertical mass flux at half levels (cell center) at ground level to zero. See second term on RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            z_contr_w_fl_l = rho * (-contravariant_correction + vwind_expl_wgt * w) # TODO (Chia Rui: Check why minus sign)
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            rho = rho_ic
+        z_rho_expl (0:nlev-1):
+            Compute the explicit term in vertical equation at full levels (cell center). See RHS of mass conservation in eq. 3.21 in ICON tutorial 2023.
+            z_rho_expl = rho^{n} - dt ( divergence(v^{n+1*} rho^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} ) / dz_{k} )
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            The divergence term on RHS of the equation for z_rho_expl is precomputed as z_flxdiv_mass.
+            The mass flux in second term on RHS of the equation for z_rho_expl is precomputed as z_contr_w_fl_l. i.e. z_contr_w_fl_l = vwind_expl_wgt rho^{n}_{k-1/2} w^{n}_{k-1/2}
+            TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
+        z_exner_expl (0:nlev-1):
+            Compute the explicit term in pressure equation at full levels (cell center). See RHS of thermodynamics equation in eq. 3.21 and the second unnumbered equation below eq. 3.25 in ICON tutorial 2023.
+            z_exner_expl = pi'^{n} - dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) ( divergence(v^{n+1*} rho^{n} theta_v^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} theta_v^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} theta_v^{n}_{k+1/2} ) / dz_{k} ) + dt * physics_tendency
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            pi'^{n} is precomputed as exner_pr.
+            dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) / dz_{k} is precomputed as z_beta.
+            The divergence term on RHS of the equation for z_exber_expl is precomputed as z_flxdiv_theta.
+            The mass flux in second term on RHS of the equation for z_exner_expl is precomputed as z_contr_w_fl_l, and it is multiplied by theta_v at half levels (which is theta_v_ic) and become energy flux. i.e. z_contr_w_fl_l = vwind_expl_wgt rho^{n}_{k-1/2} w^{n}_{k-1/2}
+            physics_tendency is represented by ddt_exner_phy.
+            TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
+        """
         self.stencil_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -2172,6 +2581,13 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 52")
+        """
+        w (1:nlev-1):
+            Update intermediate vertical velocity by forward sweep.
+        z_q (1:nlev-1):
+            Update intermediate upper element of tridiagonal matrix by forward sweep.
+            During the forward seep, the middle element is normalized to 1.
+        """
         self.stencil_solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -2191,6 +2607,11 @@ class SolveNonhydro:
             offset_provider=self.offset_provider_koff,
         )
         log.debug(f"corrector start stencil 53")
+        """
+        w (1:nlev-1):
+            Compute the vertical velocity by backward sweep. Model top and ground level are not updated.
+            w_{k-1/2} = w_{k-1/2} + w_{k+1/2} * z_q_{k-1/2}
+        """
         self.stencil_solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
             w=prognostic_state[nnew].w,
@@ -2203,6 +2624,12 @@ class SolveNonhydro:
 
         if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
             log.debug(f"corrector start stencil 54")
+            """
+            w (1:damp_nlev):
+                Compute the rayleigh damping of vertical velocity at half levels (cell center).
+                w_{k-1/2} = Rayleigh_damping_coeff w_{k-1/2} + (1 - Rayleigh_damping_coeff) w_{-1/2}, where w_{-1/2} is model top vertical velocity. It is zero.
+                Rayleigh_damping_coeff is represented by z_raylfac.
+            """
             self.stencil_apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -2216,6 +2643,27 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 55")
+        """
+        rho (0:nlev-1):
+            Update the density at full levels (cell center) from the mass conservation equation (see eq. 3.21 in ICON tutorial 2023).
+            rho^{n+1} = rho^{n} - dt ( divergence(v^{n+1*} rho^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} ) / dz_{k} ) - dt * vwind_impl_wgt ( rho^{n}_{k-1/2} w^{n+1}_{k-1/2} - rho^{n}_{k+1/2} w^{n+1}_{k+1} ) / dz_{k} )
+            rho^{n+1} = z_rho_expl - dt * vwind_impl_wgt ( rho^{n}_{k-1/2} w^{n+1}_{k-1/2} - rho^{n}_{k+1/2} w^{n+1}_{k+1} ) / dz_{k} )
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            Note that rho^{n} is used for the implicit mass flux term.
+        exner (0:nlev-1):
+            Update exner function at full levels (cell center) from the energy equation (see eq. 3.21 or 3.25 in ICON tutorial 2023).
+            z_exner_expl = pi'^{n} - dt * rd * pi_{k} / (cvd * rho_{k} * theta_v_{k}) ( divergence(v^{n+1*} rho^{n} theta_v^{n}) + vwind_expl_wgt ( rho^{n}_{k-1/2} w^{n}_{k-1/2} theta_v^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n}_{k+1} theta_v^{n}_{k+1/2} ) / dz_{k} ) + dt * physics_tendency
+            pi^{n+1} = pi_reference + z_exner_expl - dt * vwind_impl_wgt ( rd * pi^{n} ) / ( cvd * rho^{n} * theta_v^{n} ) ( rho^{n}_{k-1/2} w^{n+1}_{k-1/2} theta_v^{n}_{k-1/2} - rho^{n}_{k+1/2} w^{n+1}_{k+1} theta_v^{n}_{k+1/2} ) / dz_{k} )
+            eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
+            eta_expl = 1.0 - eta_impl = vwind_expl_wgt
+            Note that rho^{n} and theta_v^{n} are used for the implicit flux term.
+            rho^{n}_{k-1/2} theta_v^{n}_{k-1/2} is represented by z_alpha.
+            dt * vwind_impl_wgt (rd * pi^{n}) / (cvd * rho^{n} * theta_v^{n} ) / dz_{k} is represented by z_beta.
+        theta_v (0:nlev-1):
+            Update virtual potential temperature at full levels (cell center) from the equation of state (see eqs. 3.22 and 3.23 in ICON tutorial 2023).
+            rho^{n+1} theta_v^{n+1} = rho^{n} theta_v^{n} + ( cvd * rho^{n} * theta_v^{n} ) / ( rd * pi^{n} ) ( pi^{n+1} - pi^{n} )
+        """
         self.stencil_compute_results_for_thermodynamic_variables(
             z_rho_expl=z_fields.z_rho_expl,
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
