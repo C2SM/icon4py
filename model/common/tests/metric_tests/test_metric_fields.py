@@ -48,6 +48,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddxn_z_half_e,
     compute_ddxt_z_half_e,
     compute_exner_exfac,
+    compute_hmask_dd3d,
     compute_mask_prog_halo_c,
     compute_pg_edgeidx_dsl,
     compute_pg_exdist_dsl,
@@ -893,3 +894,24 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
     )
 
     assert dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
+
+
+@pytest.mark.datatest
+def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
+    hmask_dd3d_full = zero_field(icon_grid, EdgeDim)
+    e_refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
+    horizontal_start = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    )
+    hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
+    compute_hmask_dd3d(
+        e_refin_ctrl=e_refin_ctrl,
+        hmask_dd3d=hmask_dd3d_full,
+        grf_nudge_start_e=int32(constants.grf_nudge_start_e),
+        grf_nudgezone_width=int32(constants.grf_nudgezone_width),
+        horizontal_start=horizontal_start,
+        horizontal_end=icon_grid.num_edges,
+        offset_provider={},
+    )
+
+    dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())

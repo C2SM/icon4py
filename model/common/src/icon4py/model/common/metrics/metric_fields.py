@@ -15,6 +15,7 @@ from gt4py.next import (
     Field,
     GridType,
     abs,
+    astype,
     broadcast,
     exp,
     field_operator,
@@ -915,4 +916,58 @@ def compute_bdy_halo_c(
         bdy_halo_c,
         out=bdy_halo_c,
         domain={CellDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@field_operator
+def _compute_hmask_dd3d(
+    e_refin_ctrl: Field[[EdgeDim], int32], grf_nudge_start_e: int32, grf_nudgezone_width: int32
+) -> Field[[EdgeDim], wpfloat]:
+    hmask_dd3d = (
+        1.0
+        / (astype(grf_nudgezone_width, wpfloat) - 1.0)
+        * (
+            astype(e_refin_ctrl, wpfloat)
+            - (astype(grf_nudge_start_e, wpfloat) + astype(grf_nudgezone_width, wpfloat) - 1.0)
+        )
+    )
+    hmask_dd3d = where(
+        (e_refin_ctrl <= 0) | (e_refin_ctrl >= (grf_nudge_start_e + 2 * (grf_nudgezone_width - 1))),
+        1.0,
+        hmask_dd3d,
+    )
+    hmask_dd3d = where(
+        e_refin_ctrl <= (grf_nudge_start_e + grf_nudgezone_width - 1), 0.0, hmask_dd3d
+    )
+    return hmask_dd3d
+
+
+@program
+def compute_hmask_dd3d(
+    e_refin_ctrl: Field[[EdgeDim], int32],
+    hmask_dd3d: Field[[EdgeDim], wpfloat],
+    grf_nudge_start_e: int32,
+    grf_nudgezone_width: int32,
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    """
+    Compute hmask_dd3d.
+
+    See mo_vertical_grid.f90. Horizontal mask field for 3D divergence damping term.
+
+    Args:
+        e_refin_ctrl: Edge field of refin_ctrl
+        hmask_dd3d: output
+        grf_nudge_start_e: mo_impl_constants_grf constant
+        grf_nudgezone_width: mo_impl_constants_grf constant
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+    """
+    _compute_hmask_dd3d(
+        e_refin_ctrl=e_refin_ctrl,
+        grf_nudge_start_e=grf_nudge_start_e,
+        grf_nudgezone_width=grf_nudgezone_width,
+        out=hmask_dd3d,
+        domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
