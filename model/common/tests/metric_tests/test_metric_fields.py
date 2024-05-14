@@ -32,6 +32,10 @@ from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
     _compute_cells2verts,
 )
+from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
+    _cell_2_edge_interpolation,
+)
 from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
@@ -384,12 +388,12 @@ def test_compute_ddqz_z_full_e(
     ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
     # TODO: perhaps write a program with ddqz_z_full_e name and call fieldop _cells2edges... from there
     # TODO: This way it's clear where this field is computed and we cna more easily avoid duplicates
-    compute_cells2edges.with_backend(backend)(
-        p_cell_in=ddqz_z_full,
-        c_int=c_lin_e,
-        p_vert_out=ddqz_z_full_e,
-        horizontal_start_edge=0,
-        horizontal_end_edge=ddqz_z_full_e.shape[0],
+    cell_2_edge_interpolation.with_backend(backend)(
+        in_field=ddqz_z_full,
+        coeff=c_lin_e,
+        out_field=ddqz_z_full_e,
+        horizontal_start=0,
+        horizontal_end=ddqz_z_full_e.shape[0],
         vertical_start=vertical_start,
         vertical_end=vertical_end,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
@@ -503,7 +507,8 @@ def test_compute_ddxt_z_full(
 def test_compute_exner_exfac(
     grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
-    backend = None
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     horizontal_start = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
@@ -527,7 +532,8 @@ def test_compute_exner_exfac(
 # TODO
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
-    backend = None
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     zdiff_gradp_ref = metrics_savepoint.zdiff_gradp()
     z_mc = zero_field(icon_grid, CellDim, KDim)
     z_ifc = metrics_savepoint.z_ifc()
@@ -547,9 +553,9 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
-    _compute_cells2edges(
-        p_cell_in=z_mc,
-        c_int=interpolation_savepoint.c_lin_e(),
+    _cell_2_edge_interpolation(
+        in_field=z_mc,
+        coeff=interpolation_savepoint.c_lin_e(),
         out=z_me,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
@@ -753,9 +759,9 @@ def test_compute_pg_exdist_dsl(
     average_cell_kdim_level_up(
         z_ifc, out=z_mc, offset_provider={"Koff": icon_grid.get_offset_provider("Koff")}
     )
-    _compute_cells2edges(
-        p_cell_in=z_mc,
-        c_int=interpolation_savepoint.c_lin_e(),
+    _cell_2_edge_interpolation(
+        in_field=z_mc,
+        coeff=interpolation_savepoint.c_lin_e(),
         out=z_me,
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )

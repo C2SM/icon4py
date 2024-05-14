@@ -38,7 +38,9 @@ from icon4py.model.common.dimension import (
     Koff,
     VertexDim,
 )
-from icon4py.model.common.grid.horizontal import _compute_cells2edges
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
+    _cell_2_edge_interpolation,
+)
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
@@ -685,9 +687,9 @@ def compute_wgtfac_e(
         vertical_end: vertical end index
     """
 
-    _compute_cells2edges(
-        p_cell_in=wgtfac_c,
-        c_int=c_lin_e,
+    _cell_2_edge_interpolation(
+        in_field=wgtfac_c,
+        coeff=c_lin_e,
         out=wgtfac_e,
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
@@ -740,7 +742,7 @@ def _compute_pg_edgeidx_vertidx(
     e_lev = broadcast(e_lev, (EdgeDim, KDim))
     k_lev = broadcast(k_lev, (EdgeDim, KDim))
     z_mc = average_cell_kdim_level_up(z_ifc)
-    z_me = _compute_cells2edges(p_cell_in=z_mc, c_int=c_lin_e)
+    z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     pg_edgeidx = where(
         (k_lev >= (flat_idx_max + int(1))) & (z_me < z_aux2) & e_owner_mask, e_lev, pg_edgeidx
     )
