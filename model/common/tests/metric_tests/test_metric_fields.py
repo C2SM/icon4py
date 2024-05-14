@@ -34,7 +34,7 @@ from icon4py.model.common.grid.horizontal import (
     _compute_cells2verts,
     compute_cells2edges,
 )
-from icon4py.model.common.math.helpers import average_cell_kdim_level_up, compute_inverse_edge_kdim
+from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
     _compute_pg_edgeidx_vertidx,

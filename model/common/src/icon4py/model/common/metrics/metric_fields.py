@@ -21,6 +21,7 @@ from gt4py.next import (
     field_operator,
     int32,
     maximum,
+    minimum,
     program,
     sin,
     tanh,
