@@ -134,7 +134,7 @@ class BaseGrid(ABC):
             xp = np
 
         return NeighborTableOffsetProvider(
-            xp.asarray(self.connectivities[dim]),
+            self.connectivities[dim],
             from_dim,
             to_dim,
             self.size[dim],

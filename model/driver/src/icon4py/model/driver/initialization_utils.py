@@ -156,7 +156,8 @@ def model_initialization_jabw(
     ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
     theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
     theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().ndarray
+    exner_ref_mc_xp = data_provider.from_metrics_savepoint().exner_ref_mc()
+    exner_ref_mc = exner_ref_mc_xp.ndarray
     d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
     geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 
@@ -354,7 +355,7 @@ def model_initialization_jabw(
     exner_pr = _allocate(CellDim, KDim, grid=icon_grid)
     init_exner_pr(
         exner,
-        data_provider.from_metrics_savepoint().exner_ref_mc(),
+        exner_ref_mc_xp,
         exner_pr,
         grid_idx_cell_interior_start,
         grid_idx_cell_end,
