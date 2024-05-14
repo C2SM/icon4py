@@ -16,8 +16,8 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import (
-    HorizontalMarkerIndex,
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
 from icon4py.model.common.metrics.metric_fields import compute_z_mc

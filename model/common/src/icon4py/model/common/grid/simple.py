@@ -18,6 +18,7 @@ from gt4py.next import Dimension
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -344,6 +345,29 @@ class SimpleGridData:
         ]
     )
 
+    c2e2c2e_table = np.asarray(
+        [
+            [19, 20, 0, 1, 2, 9, 4, 5, 12],  # 0c
+            [22, 23, 3, 4, 5, 12, 7, 8, 15],
+            [25, 26, 6, 7, 8, 15, 1, 2, 9],
+            [0, 1, 5, 6, 7, 2, 9, 10, 14],
+            [3, 4, 8, 0, 1, 5, 12, 13, 17],  # 4c
+            [6, 7, 2, 3, 4, 8, 15, 16, 11],
+            [1, 2, 9, 10, 11, 18, 13, 14, 21],
+            [4, 5, 12, 13, 14, 21, 16, 17, 24],
+            [7, 8, 15, 16, 17, 24, 10, 11, 18],
+            [9, 10, 14, 15, 16, 11, 18, 19, 23],  # 9c
+            [12, 13, 17, 9, 10, 14, 21, 22, 26],
+            [15, 16, 11, 12, 13, 17, 24, 25, 20],
+            [10, 11, 18, 19, 20, 0, 22, 23, 3],
+            [13, 14, 21, 22, 23, 3, 25, 26, 6],
+            [16, 17, 24, 25, 26, 6, 19, 20, 0],  # 14c
+            [18, 19, 23, 24, 25, 20, 0, 1, 5],
+            [21, 22, 26, 18, 19, 23, 3, 4, 8],
+            [24, 25, 20, 21, 22, 26, 6, 7, 2],  # 17c
+        ]
+    )
+
     c2e2c2e2c_table = np.asarray(
         [
             [15, 4, 3, 12, 14, 1, 7, 6, 2],  # 1c
@@ -390,6 +414,7 @@ class SimpleGrid(BaseGrid):
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
             "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
+            "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
             "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
             "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
             "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
@@ -447,6 +472,7 @@ class SimpleGrid(BaseGrid):
             E2C2VDim: SimpleGridData.e2c2v_table,
             V2CDim: SimpleGridData.v2c_table,
             V2EDim: SimpleGridData.v2e_table,
+            C2E2C2EDim: SimpleGridData.c2e2c2e_table,
             C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
         }
 
