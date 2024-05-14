@@ -39,7 +39,6 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import _compute_cells2edges
-
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
@@ -536,7 +535,8 @@ def compute_vwind_expl_wgt(
         out=vwind_expl_wgt,
         domain={CellDim: (horizontal_start, horizontal_end)},
     )
-    
+
+
 @field_operator
 def _compute_exner_exfac(
     ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
@@ -972,4 +972,3 @@ def compute_hmask_dd3d(
         out=hmask_dd3d,
         domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
-
