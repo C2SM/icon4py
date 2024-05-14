@@ -72,3 +72,5 @@ RAYLEIGH_KLEMP: Final[int] = 2
 
 #: average earth radius in [m]
 EARTH_RADIUS: Final[wpfloat] = 6.371229e6
+
+EXNER_EXPOL: Final[wpfloat] = 0.333
