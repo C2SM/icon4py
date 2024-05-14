@@ -25,7 +25,7 @@ def _hflx_limiter_mo_stencil_01a(
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
     z_mflx_low = 0.5 * (
         p_mass_flx_e * (p_cc(E2C[0]) + p_cc(E2C[1]))
-        - abs(p_mass_flx_e) * (p_cc(E2C[1]) - p_cc(E2C[0]))
+        # - abs(p_mass_flx_e) * (p_cc(E2C[1]) - p_cc(E2C[0]))
     )
 
     z_anti = p_mflx_tracer_h - z_mflx_low

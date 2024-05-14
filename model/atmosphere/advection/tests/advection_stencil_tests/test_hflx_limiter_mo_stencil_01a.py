@@ -37,7 +37,7 @@ class TestHflxLimiterMoStencil01a(StencilTest):
 
         z_mflx_low = 0.5 * (
             p_mass_flx_e * (p_cc_e2c[:, 0] + p_cc_e2c[:, 1])
-            - np.absolute(p_mass_flx_e) * (p_cc_e2c[:, 1] - p_cc_e2c[:, 0])
+            # - np.absolute(p_mass_flx_e) * (p_cc_e2c[:, 1] - p_cc_e2c[:, 0])
         )
 
         z_anti = p_mflx_tracer_h - z_mflx_low
