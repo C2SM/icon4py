@@ -47,6 +47,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_ddxn_z_half_e,
     compute_ddxt_z_half_e,
     compute_exner_exfac,
+    compute_mask_prog_halo_c,
     compute_pg_edgeidx_dsl,
     compute_pg_exdist_dsl,
     compute_rayleigh_w,
@@ -54,7 +55,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_wgtfac_e,
-    compute_z_mc, compute_mask_prog_halo_c,
+    compute_z_mc,
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -585,7 +586,10 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
         z_ifc=z_ifc,
         k_lev=k_lev,
         out=flat_idx,
-        domain={EdgeDim: (horizontal_start_edge, icon_grid.num_edges), KDim: (int32(0), icon_grid.num_levels)},
+        domain={
+            EdgeDim: (horizontal_start_edge, icon_grid.num_edges),
+            KDim: (int32(0), icon_grid.num_levels),
+        },
         offset_provider={
             "E2C": icon_grid.get_offset_provider("E2C"),
             "Koff": icon_grid.get_offset_provider("Koff"),
@@ -794,7 +798,10 @@ def test_compute_pg_exdist_dsl(
         z_ifc=z_ifc,
         k_lev=k_lev,
         out=flat_idx,
-        domain={EdgeDim: (horizontal_start_edge, icon_grid.num_edges), KDim: (int32(0), icon_grid.num_levels)},
+        domain={
+            EdgeDim: (horizontal_start_edge, icon_grid.num_edges),
+            KDim: (int32(0), icon_grid.num_levels),
+        },
         offset_provider={
             "E2C": icon_grid.get_offset_provider("E2C"),
             "Koff": icon_grid.get_offset_provider("Koff"),
@@ -851,24 +858,19 @@ def test_compute_pg_exdist_dsl(
     assert dallclose(pg_exdist_ref.asnumpy(), pg_exdist_dsl.asnumpy(), rtol=1.0e-9)
     assert dallclose(pg_edgeidx_dsl_ref.asnumpy(), pg_edgeidx_dsl.asnumpy())
 
+
 @pytest.mark.datatest
-def test_compute_mask_prog_halo_c(
-    metrics_savepoint, icon_grid, grid_savepoint, backend
-):
+def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backend):
     mask_prog_halo_c_full = zero_field(icon_grid, CellDim, dtype=bool)
     c_refin_ctrl = grid_savepoint.refin_ctrl(CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
-    horizontal_start = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.local(CellDim) - 1
-    )
-    horizontal_end = icon_grid.get_end_index(
-        CellDim, HorizontalMarkerIndex.local(CellDim)
-    )
+    horizontal_start = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
+    horizontal_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
     compute_mask_prog_halo_c(
         c_refin_ctrl=c_refin_ctrl,
         mask_prog_halo_c=mask_prog_halo_c_full,
         horizontal_start=horizontal_start,
         horizontal_end=horizontal_end,
-        offset_provider={}
+        offset_provider={},
     )
     assert dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())

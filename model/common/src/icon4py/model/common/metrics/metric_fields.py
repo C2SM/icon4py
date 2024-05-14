@@ -848,12 +848,14 @@ def compute_pg_edgeidx_dsl(
         domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
 
+
 @field_operator
 def _compute_mask_prog_halo_c(
     c_refin_ctrl: Field[[CellDim], int32], mask_prog_halo_c: Field[[CellDim], bool]
 ) -> Field[[CellDim], bool]:
     mask_prog_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), mask_prog_halo_c, True)
     return mask_prog_halo_c
+
 
 @program
 def compute_mask_prog_halo_c(
@@ -863,6 +865,8 @@ def compute_mask_prog_halo_c(
     horizontal_end: int32,
 ):
     _compute_mask_prog_halo_c(
-        c_refin_ctrl, mask_prog_halo_c, out=mask_prog_halo_c, domain={CellDim: (horizontal_start, horizontal_end)}
+        c_refin_ctrl,
+        mask_prog_halo_c,
+        out=mask_prog_halo_c,
+        domain={CellDim: (horizontal_start, horizontal_end)},
     )
-

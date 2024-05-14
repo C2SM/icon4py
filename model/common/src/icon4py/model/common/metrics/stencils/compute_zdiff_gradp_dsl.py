@@ -26,7 +26,9 @@ def compute_zdiff_gradp_dsl(
     nedges: int,
 ) -> np.array:
     zdiff_gradp = np.zeros_like(z_mc[e2c])
-    zdiff_gradp[horizontal_start:, :, :] = np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
+    zdiff_gradp[horizontal_start:, :, :] = (
+        np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]
+    )
 
     for je in range(horizontal_start, nedges):
         jk_start = int(flat_idx[je])
