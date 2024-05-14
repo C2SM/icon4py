@@ -864,9 +864,55 @@ def compute_mask_prog_halo_c(
     horizontal_start: int32,
     horizontal_end: int32,
 ):
+    """
+    Compute mask_prog_halo_c.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        c_refin_ctrl: Cell field of refin_ctrl
+        mask_prog_halo_c: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+    """
     _compute_mask_prog_halo_c(
         c_refin_ctrl,
         mask_prog_halo_c,
         out=mask_prog_halo_c,
+        domain={CellDim: (horizontal_start, horizontal_end)},
+    )
+
+
+@field_operator
+def _compute_bdy_halo_c(
+    c_refin_ctrl: Field[[CellDim], int32],
+    bdy_halo_c: Field[[CellDim], bool],
+) -> Field[[CellDim], bool]:
+    bdy_halo_c = where((c_refin_ctrl >= 1) & (c_refin_ctrl <= 4), True, bdy_halo_c)
+    return bdy_halo_c
+
+
+@program
+def compute_bdy_halo_c(
+    c_refin_ctrl: Field[[CellDim], int32],
+    bdy_halo_c: Field[[CellDim], bool],
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    """
+    Compute bdy_halo_c.
+
+    See mo_vertical_grid.f90. mask_prog_halo_c_dsl_low_refin in ICON
+
+    Args:
+        c_refin_ctrl: Cell field of refin_ctrl
+        bdy_halo_c: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+    """
+    _compute_bdy_halo_c(
+        c_refin_ctrl,
+        bdy_halo_c,
+        out=bdy_halo_c,
         domain={CellDim: (horizontal_start, horizontal_end)},
     )

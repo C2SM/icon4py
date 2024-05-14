@@ -39,6 +39,7 @@ from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
     _compute_pg_edgeidx_vertidx,
     _compute_z_aux2,
+    compute_bdy_halo_c,
     compute_coeff_dwdz,
     compute_d2dexdz2_fac_mc,
     compute_ddqz_z_full,
@@ -628,7 +629,6 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
 def test_compute_vwind_impl_wgt(
     icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
-    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -757,7 +757,8 @@ def test_compute_wgtfac_e(metrics_savepoint, interpolation_savepoint, icon_grid,
 def test_compute_pg_exdist_dsl(
     metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
-    backend = None
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     nlev = icon_grid.num_levels
     k_lev = as_field((KDim,), np.arange(nlev, dtype=int))
@@ -866,7 +867,7 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
     horizontal_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-    compute_mask_prog_halo_c(
+    compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
         mask_prog_halo_c=mask_prog_halo_c_full,
         horizontal_start=horizontal_start,
@@ -874,3 +875,21 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
         offset_provider={},
     )
     assert dallclose(mask_prog_halo_c_full.asnumpy(), mask_prog_halo_c_ref.asnumpy())
+
+
+@pytest.mark.datatest
+def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backend):
+    bdy_halo_c_full = zero_field(icon_grid, CellDim, dtype=bool)
+    c_refin_ctrl = grid_savepoint.refin_ctrl(CellDim)
+    bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
+    horizontal_start = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
+    horizontal_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+    compute_bdy_halo_c(
+        c_refin_ctrl=c_refin_ctrl,
+        bdy_halo_c=bdy_halo_c_full,
+        horizontal_start=horizontal_start,
+        horizontal_end=horizontal_end,
+        offset_provider={},
+    )
+
+    assert dallclose(bdy_halo_c_full.asnumpy(), bdy_halo_c_ref.asnumpy())
