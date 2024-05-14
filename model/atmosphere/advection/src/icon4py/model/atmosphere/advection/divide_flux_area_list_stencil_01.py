@@ -112,7 +112,7 @@ def line_intersect(
     d1 = where(d1 != float(0), d1, line1_p2_lon)
 
     d2 = line2_p2_lon - line2_p1_lon
-    d2 = where(d1 != float(0), d1, line2_p2_lon)
+    d2 = where(d2 != float(0), d2, line2_p2_lon)
 
     m1 = (line1_p2_lat - line1_p1_lat) / d1
     m2 = (line2_p2_lat - line2_p1_lat) / d2
