@@ -13,6 +13,8 @@
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from pathlib import Path
+from typing import Optional
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
@@ -46,9 +48,18 @@ class IconRunConfig:
     restart_mode: bool = False
 
 
+@dataclass(frozen=True)
+class IconOutputConfig:
+    output_do: bool = False
+    output_time_interval: timedelta = timedelta(minutes=1)
+    output_file_time_interval: timedelta = timedelta(minutes=1)
+    output_path: Path = Path("./")
+    output_initial_condition_as_a_separate_file: bool = False
+
 @dataclass
 class IconConfig:
     run_config: IconRunConfig
+    output_config: IconOutputConfig
     diffusion_config: DiffusionConfig
     solve_nonhydro_config: NonHydrostaticConfig
 
@@ -111,6 +122,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
             ),
+            IconOutputConfig(),
             _mch_ch_r04b09_diffusion_config(),
             _mch_ch_r04b09_nonhydro_config(),
         )
@@ -123,10 +135,17 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             apply_initial_stabilization=False,
             n_substeps=5,
         )
+        output_config = IconOutputConfig(
+            output_do=False,
+            output_time_interval=timedelta(seconds=300),
+            output_file_time_interval=timedelta(seconds=300),
+            output_path=Path("./"),
+        )
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
         jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
             icon_run_config,
+            output_config,
             jabw_diffusion_config,
             jabw_nonhydro_config,
         )
@@ -134,6 +153,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     if experiment_type == ExperimentType.JABW:
         (
             model_run_config,
+            model_output_config,
             diffusion_config,
             nonhydro_config,
         ) = _jablownoski_Williamson_config()
@@ -143,11 +163,13 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
         (
             model_run_config,
+            model_output_config,
             diffusion_config,
             nonhydro_config,
         ) = _mch_ch_r04b09_config()
     return IconConfig(
         run_config=model_run_config,
+        output_config=model_output_config,
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
     )

@@ -774,6 +774,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
+        '''
         nhsolve_prog.predictor_stencils_7_8_9(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -798,6 +799,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
+        '''
 
         # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper(
@@ -814,7 +816,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
-
+        
         if self.config.igradp_method == 3:
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
             compute_approx_of_2nd_vertical_derivative_of_exner(
@@ -1002,7 +1004,7 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
+        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
 
         if self.config.igradp_method == 3:
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(

@@ -298,7 +298,7 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = TimeLoop(iconrun_config, diffusion, solve_nonhydro)
+    timeloop = TimeLoop(iconrun_config, icon_grid, diffusion, solve_nonhydro)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
@@ -326,9 +326,35 @@ def test_run_timeloop_single_step(
 
     prognostic_state_list = [prognostic_state, prognostic_state_new]
 
+    diagnostic_state = DiagnosticState(
+        pressure=_allocate(CellDim, KDim, grid=icon_grid),
+        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
+        temperature=_allocate(CellDim, KDim, grid=icon_grid),
+        pressure_sfc=_allocate(CellDim, grid=icon_grid),
+        u=_allocate(CellDim, KDim, grid=icon_grid),
+        v=_allocate(CellDim, KDim, grid=icon_grid),
+    )
+
+    diagnostic_metric_state = DiagnosticMetricState(
+        ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
+        rbf_vec_coeff_c1=_allocate(
+            CellDim, C2E2C2EDim, grid=icon_grid, dtype=float
+        ),  # TODO: change to C2E2C2EDim
+        rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
+        v_lat=_allocate(VertexDim, grid=icon_grid),
+        v_lon=_allocate(VertexDim, grid=icon_grid),
+        e_lat=_allocate(EdgeDim, grid=icon_grid),
+        e_lon=_allocate(EdgeDim, grid=icon_grid),
+        cell_center_lat=_allocate(CellDim, grid=icon_grid),
+        cell_center_lon=_allocate(CellDim, grid=icon_grid),
+        vct_a=grid_savepoint.vct_a(),
+    )
+
     timeloop.time_integration(
         diffusion_diagnostic_state,
         nonhydro_diagnostic_state,
+        diagnostic_metric_state,
+        diagnostic_state,
         prognostic_state_list,
         prep_adv,
         sp.divdamp_fac_o2(),
