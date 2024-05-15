@@ -50,7 +50,7 @@ class FuncParameter(Node):
         self.is_array = True if len(self.dimensions) >= 1 else False
         # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
         # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
-        # side. So before generating the python wrapper code, we replace occurences of KHalfDim with KDim
+        # side. So before generating the python wrapper code, we replace occurrences of KHalfDim with KDim
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
@@ -370,19 +370,26 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
-    dimension_size_declarations: Sequence[DimensionPosition] = datamodels.field(init=False)
+    dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
+        self.dimension_positions = self.extract_dimension_positions()
 
-        dim_positions = []
+    def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
+        """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
+        dim_positions: list[DimensionPosition] = []
+        unique_size_args: set[str] = set()
         for arg in self.args:
             for index, size_arg in enumerate(arg.size_args):
-                dim_positions.append(
-                    DimensionPosition(variable=str(arg.name), size_arg=size_arg, index=index + 1)
-                )  # Use Fortran indexing
-
-        self.dimension_size_declarations = dim_positions
+                if size_arg not in unique_size_args:
+                    dim_positions.append(
+                        DimensionPosition(
+                            variable=str(arg.name), size_arg=size_arg, index=index + 1
+                        )
+                    )  # Use Fortran indexing
+                    unique_size_args.add(size_arg)
+        return dim_positions
 
 
 class F90Interface(Node):
@@ -483,7 +490,7 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    !$ACC )
    {% endif %}
 
-   {% for d in _this_node.dimension_size_declarations %}
+   {% for d in _this_node.dimension_positions %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
 
