@@ -59,7 +59,7 @@ def compute_advective_normal_wind_tendency_numpy(
     return ddt_vn_apc
 
 
-class TestMoVelocityAdvectionStencil19(StencilTest):
+class TestComputeAdvectiveNormalWindTendency(StencilTest):
     PROGRAM = compute_advective_normal_wind_tendency
     OUTPUTS = ("ddt_vn_apc",)
 

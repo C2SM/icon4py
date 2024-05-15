@@ -38,7 +38,7 @@ def interpolate_to_cell_center_numpy(
     return interpolation
 
 
-class TestMoVelocityAdvectionStencil09(StencilTest):
+class TestInterpolateToCellCenter(StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 

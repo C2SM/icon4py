@@ -32,7 +32,7 @@ def interpolate_to_surface_numpy(
     return interpolation_to_surface
 
 
-class TestMoSolveNonhydroStencil04(StencilTest):
+class TestInterpolateToSurface(StencilTest):
     PROGRAM = interpolate_to_surface
     OUTPUTS = ("interpolation_to_surface",)
 

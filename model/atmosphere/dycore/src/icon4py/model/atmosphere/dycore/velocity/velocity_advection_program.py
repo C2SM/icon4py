@@ -34,15 +34,15 @@ from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity imp
     _correct_contravariant_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -211,7 +211,7 @@ def _fused_stencils_11_to_13(
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), local_z_w_con_c)
+    local_z_w_con_c = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c)
 
     local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),
