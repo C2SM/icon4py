@@ -44,9 +44,11 @@ class FuncParameter(Node):
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
+    size_args_len: int = datamodels.field(init=False)
 
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
+        self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
         # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
         # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
@@ -273,7 +275,7 @@ def {{ func.name }}_wrapper(
         {% endif %}
 
         {%- if arg.name in _this_node.uninitialised_arrays -%}
-        {{ arg.name }} = np.zeros({{ ", ".join(arg.size_args) }})
+        {{ arg.name }} = np.ones((1,) * {{ arg.size_args_len }})
         {%- else -%}
         {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
         {%- endif -%}
