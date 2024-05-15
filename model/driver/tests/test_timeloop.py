@@ -16,6 +16,7 @@ import os
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
@@ -28,10 +29,11 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, KDim, C2E2C2EDim, VertexDim, EdgeDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -330,7 +332,6 @@ def test_run_timeloop_single_step(
         pressure=_allocate(CellDim, KDim, grid=icon_grid),
         pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
         temperature=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_sfc=_allocate(CellDim, grid=icon_grid),
         u=_allocate(CellDim, KDim, grid=icon_grid),
         v=_allocate(CellDim, KDim, grid=icon_grid),
     )

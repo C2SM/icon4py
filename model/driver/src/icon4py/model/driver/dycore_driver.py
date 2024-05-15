@@ -57,6 +57,8 @@ from icon4py.model.common.dimension import (
     KDim,
     V2C2VDim,
 )
+from icon4py.model.common.settings import xp, device
+from icon4py.model.common.config import Device
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
@@ -79,6 +81,16 @@ from icon4py.model.driver.initialization_utils import (
 
 log = logging.getLogger(__name__)
 
+
+def retract_data(input_data):
+    if device == Device.GPU:
+        return input_data.ndarray.get()
+    return input_data.ndarray
+
+def retract_data_array(input_data):
+    if device == Device.GPU:
+        return input_data.get()
+    return input_data
 
 class OutputState:
     def __init__(
@@ -610,43 +622,43 @@ class OutputState:
         for i in range(self._number_of_files):
             self._nf4_basegrp[i].variables["clat"][
                 :
-            ] = diagnostic_metric_state.cell_center_lat.ndarray.get()
+            ] = retract_data(diagnostic_metric_state.cell_center_lat)
             self._nf4_basegrp[i].variables["clon"][
                 :
-            ] = diagnostic_metric_state.cell_center_lon.ndarray.get()
+            ] = retract_data(diagnostic_metric_state.cell_center_lon)
             self._nf4_basegrp[i].variables["clat_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lat.ndarray.get()[grid.connectivities[C2VDim].get()]
+            ] = retract_data(diagnostic_metric_state.v_lat)[retract_data_array(grid.connectivities[C2VDim])]
             self._nf4_basegrp[i].variables["clon_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lon.ndarray.get()[grid.connectivities[C2VDim].get()]
+            ] = retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[C2VDim])]
 
-            self._nf4_basegrp[i].variables["elat"][:] = diagnostic_metric_state.e_lat.ndarray.get()
-            self._nf4_basegrp[i].variables["elon"][:] = diagnostic_metric_state.e_lon.ndarray.get()
+            self._nf4_basegrp[i].variables["elat"][:] = retract_data(diagnostic_metric_state.e_lat)
+            self._nf4_basegrp[i].variables["elon"][:] = retract_data(diagnostic_metric_state.e_lon)
             self._nf4_basegrp[i].variables["elat_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lat.ndarray.get()[grid.connectivities[E2C2VDim].get()]
+            ] = retract_data(diagnostic_metric_state.v_lat)[retract_data_array(grid.connectivities[E2C2VDim])]
             self._nf4_basegrp[i].variables["elon_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lon.ndarray.get()[grid.connectivities[E2C2VDim].get()]
+            ] = retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[E2C2VDim])]
             log.info(
-                f"E2C2VDim dimension: {diagnostic_metric_state.v_lon.ndarray.get()[grid.connectivities[E2C2VDim].get()].shape}"
+                f"E2C2VDim dimension: {retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[E2C2VDim])].shape}"
             )
             log.info(
-                f"V2C2VDim dimension: {diagnostic_metric_state.v_lon.ndarray.get()[grid.connectivities[V2C2VDim].get()].shape}"
+                f"V2C2VDim dimension: {retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[V2C2VDim])].shape}"
             )
 
-            self._nf4_basegrp[i].variables["vlat"][:] = diagnostic_metric_state.v_lat.ndarray.get()
-            self._nf4_basegrp[i].variables["vlon"][:] = diagnostic_metric_state.v_lon.ndarray.get()
+            self._nf4_basegrp[i].variables["vlat"][:] = retract_data(diagnostic_metric_state.v_lat)
+            self._nf4_basegrp[i].variables["vlon"][:] = retract_data(diagnostic_metric_state.v_lon)
             self._nf4_basegrp[i].variables["vlat_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lat.ndarray.get()[grid.connectivities[V2C2VDim].get()]
+            ] = retract_data(diagnostic_metric_state.v_lat)[retract_data_array(grid.connectivities[V2C2VDim])]
             self._nf4_basegrp[i].variables["vlon_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lon.ndarray.get()[grid.connectivities[V2C2VDim].get()]
+            ] = retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[V2C2VDim])]
 
             full_height = np.zeros(grid.num_levels, dtype=float)
-            half_height = diagnostic_metric_state.vct_a.ndarray.get()
+            half_height = retract_data(diagnostic_metric_state.vct_a)
             full_height_bnds = np.zeros((grid.num_levels, 2), dtype=float)
             for k in range(grid.num_levels):
                 full_height[k] = 0.5 * (half_height[k] + half_height[k + 1])
@@ -717,11 +729,11 @@ class OutputState:
         vert_vert_edge_lengths.coordinates = "elat elon"
         dual_edge_lengths.coordinates = "elat elon"
 
-        cell_areas[:] = cell_geometry.area.ndarray.get()
-        edge_areas[:] = edge_geometry.edge_areas.ndarray.get()
-        primal_edge_lengths[:] = edge_geometry.primal_edge_lengths.ndarray.get()
-        vert_vert_edge_lengths[:] = edge_geometry.vertex_vertex_lengths.ndarray.get()
-        dual_edge_lengths[:] = edge_geometry.dual_edge_lengths.ndarray.get()
+        cell_areas[:] = retract_data(cell_geometry.area)
+        edge_areas[:] = retract_data(edge_geometry.edge_areas)
+        primal_edge_lengths[:] = retract_data(edge_geometry.primal_edge_lengths)
+        vert_vert_edge_lengths[:] = retract_data(edge_geometry.vertex_vertex_lengths)
+        dual_edge_lengths[:] = retract_data(edge_geometry.dual_edge_lengths)
 
     def _write_to_netcdf(
         self,
@@ -742,70 +754,70 @@ class OutputState:
         log.info(f"Times are  {times[:]}")
         self._nf4_basegrp[self._current_file_number].variables["u"][
             self._current_write_step, :, :
-        ] = diagnostic_state.u.ndarray.get().transpose()
+        ] = retract_data(diagnostic_state.u).transpose()
         self._nf4_basegrp[self._current_file_number].variables["v"][
             self._current_write_step, :, :
-        ] = diagnostic_state.v.ndarray.get().transpose()
+        ] = retract_data(diagnostic_state.v).transpose()
         self._nf4_basegrp[self._current_file_number].variables["vn"][
             self._current_write_step, :, :
-        ] = prognostic_state.vn.ndarray.get().transpose()
+        ] = retract_data(prognostic_state.vn).transpose()
         self._nf4_basegrp[self._current_file_number].variables["w"][
             self._current_write_step, :, :
-        ] = prognostic_state.w.ndarray.get().transpose()
+        ] = retract_data(prognostic_state.w).transpose()
         self._nf4_basegrp[self._current_file_number].variables["temperature"][
             self._current_write_step, :, :
-        ] = diagnostic_state.temperature.ndarray.get().transpose()
+        ] = retract_data(diagnostic_state.temperature).transpose()
         self._nf4_basegrp[self._current_file_number].variables["pressure"][
             self._current_write_step, :, :
-        ] = diagnostic_state.pressure.ndarray.get().transpose()
+        ] = retract_data(diagnostic_state.pressure).transpose()
         self._nf4_basegrp[self._current_file_number].variables["pressure_sfc"][
             self._current_write_step, :
-        ] = diagnostic_state.pressure_sfc.ndarray.get().transpose()
+        ] = retract_data(diagnostic_state.pressure_sfc).transpose()
         self._nf4_basegrp[self._current_file_number].variables["rho"][
             self._current_write_step, :, :
-        ] = prognostic_state.rho.ndarray.get().transpose()
+        ] = retract_data(prognostic_state.rho).transpose()
         self._nf4_basegrp[self._current_file_number].variables["exner"][
             self._current_write_step, :, :
-        ] = prognostic_state.exner.ndarray.get().transpose()
+        ] = retract_data(prognostic_state.exner).transpose()
         self._nf4_basegrp[self._current_file_number].variables["theta_v"][
             self._current_write_step, :, :
-        ] = prognostic_state.theta_v.ndarray.get().transpose()
+        ] = retract_data(prognostic_state.theta_v).transpose()
 
         if solve_nonhydro is not None:
             self._nf4_basegrp[self._current_file_number].variables["exner_gradient"][
                 self._current_write_step, :, :
-            ] = solve_nonhydro.intermediate_fields.z_gradh_exner.ndarray.get().transpose()
+            ] = retract_data(solve_nonhydro.intermediate_fields.z_gradh_exner).transpose()
             self._nf4_basegrp[self._current_file_number].variables["Laplacian_vn"][
                 self._current_write_step, :, :
-            ] = solve_nonhydro.intermediate_fields.z_graddiv_vn.ndarray.get().transpose()
+            ] = retract_data(solve_nonhydro.intermediate_fields.z_graddiv_vn).transpose()
             self._nf4_basegrp[self._current_file_number].variables["Laplacian2_vn"][
                 self._current_write_step, :, :
-            ] = solve_nonhydro.z_graddiv2_vn.ndarray.get().transpose()
+            ] = retract_data(solve_nonhydro.z_graddiv2_vn).transpose()
             self._nf4_basegrp[self._current_file_number].variables["theta_v_e"][
                 self._current_write_step, :, :
-            ] = solve_nonhydro.intermediate_fields.z_theta_v_e.ndarray.get().transpose()
+            ] = retract_data(solve_nonhydro.intermediate_fields.z_theta_v_e).transpose()
 
         if nh_diagnostic_state is not None:
             self._nf4_basegrp[self._current_file_number].variables["ddt_vn_apc_1"][
                 self._current_write_step, :, :
-            ] = nh_diagnostic_state.ddt_vn_apc_ntl1.ndarray.get().transpose()
+            ] = retract_data(nh_diagnostic_state.ddt_vn_apc_ntl1).transpose()
             self._nf4_basegrp[self._current_file_number].variables["ddt_vn_apc_2"][
                 self._current_write_step, :, :
-            ] = nh_diagnostic_state.ddt_vn_apc_ntl2.ndarray.get().transpose()
+            ] = retract_data(nh_diagnostic_state.ddt_vn_apc_ntl2).transpose()
             self._nf4_basegrp[self._current_file_number].variables["ddt_vn_phy"][
                 self._current_write_step, :, :
-            ] = nh_diagnostic_state.ddt_vn_phy.ndarray.get().transpose()
+            ] = retract_data(nh_diagnostic_state.ddt_vn_phy).transpose()
 
         if diffusion is not None:
             self._nf4_basegrp[self._current_file_number].variables["diff_multfac_vn"][
                 self._current_write_step, :
-            ] = diffusion.diff_multfac_vn.ndarray.get()
+            ] = retract_data(diffusion.diff_multfac_vn)
             self._nf4_basegrp[self._current_file_number].variables["kh_smag_e"][
                 self._current_write_step, :, :
-            ] = diffusion.kh_smag_e.ndarray.get().transpose()
+            ] = retract_data(diffusion.kh_smag_e).transpose()
             self._nf4_basegrp[self._current_file_number].variables["nabla2_vn_e"][
                 self._current_write_step, :, :
-            ] = diffusion.z_nabla2_e.ndarray.get().transpose()
+            ] = retract_data(diffusion.z_nabla2_e).transpose()
 
     def output_data(
         self,
