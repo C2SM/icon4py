@@ -25,6 +25,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
+from icon4pytools.py2fgen.wrappers.experiments import UninitialisedArrays
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
@@ -88,18 +89,10 @@ class PythonWrapper(CffiPlugin):
     gt4py_backend: str = datamodels.field(init=False)
     is_gt4py_program_present: bool = datamodels.field(init=False)
 
-    def _get_uninitialised_arrays(self) -> list[str]:
-        if self.experiment == "ape_r02b04":
-            # these arrays are not initialised in this experiment and not used
-            # therefore unpacking needs to be skipped as otherwise it will trigger
-            # an error.
-            return ["mask_hdiff", "zd_diffcoef", "zd_vertoffset", "zd_intcoef"]
-        return []
-
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
-        self.uninitialised_arrays = self._get_uninitialised_arrays()
+        self.uninitialised_arrays = UninitialisedArrays.get_arrays_for_experiment(self.experiment)
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -372,11 +365,14 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
+    experiment: str
     dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
+    uninitialised_arrays: list[str] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
         self.dimension_positions = self.extract_dimension_positions()
+        self.uninitialised_arrays = UninitialisedArrays.get_arrays_for_experiment(self.experiment)
 
     def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
         """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
@@ -396,6 +392,7 @@ class F90FunctionDefinition(Func):
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
+    experiment: str
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
@@ -406,7 +403,12 @@ class F90Interface(Node):
             for f in functions
         ]
         self.function_definition = [
-            F90FunctionDefinition(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
+            F90FunctionDefinition(
+                name=f.name,
+                args=f.args,
+                is_gt4py_program=f.is_gt4py_program,
+                experiment=self.experiment,
+            )
             for f in functions
         ]
 
@@ -467,11 +469,12 @@ end function {{name}}_wrapper
             assumed_size_array=False,
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
-            arrays=[arg for arg in func.args if arg.is_array],
+            arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
+                set(func.uninitialised_arrays)
+            ),
             return_code_param=return_code_param,
         )
 
-    # todo(samkellerhals): Consider using unique SIZE args
     F90FunctionDefinition = as_jinja(
         """
 subroutine {{name}}({{param_names}} {{ return_code_param }})
@@ -487,7 +490,7 @@ subroutine {{name}}({{param_names}} {{ return_code_param }})
    {% if arrays | length >= 1 %}
    !$ACC host_data use_device( &
    {%- for arr in arrays %}
-       !$ACC {{ arr.name }}{% if not loop.last %}, &{% else %} &{% endif %}
+       !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
    {%- endfor %}
    !$ACC )
    {% endif %}

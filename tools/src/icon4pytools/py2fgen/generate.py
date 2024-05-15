@@ -74,7 +74,7 @@ def generate_python_wrapper(
     return codegen.format_source("python", generated_code)
 
 
-def generate_f90_interface(plugin: CffiPlugin) -> str:
+def generate_f90_interface(plugin: CffiPlugin, experiment: str) -> str:
     """
     Generate Fortran 90 interface code.
 
@@ -82,5 +82,7 @@ def generate_f90_interface(plugin: CffiPlugin) -> str:
         plugin: The CffiPlugin instance containing information for code generation.
     """
     logger.info("Generating Fortran interface...")
-    generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
+    generated_code = F90InterfaceGenerator.apply(
+        F90Interface(cffi_plugin=plugin, experiment=experiment)
+    )
     return format_fortran_code(generated_code)
