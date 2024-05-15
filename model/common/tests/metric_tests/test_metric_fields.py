@@ -32,9 +32,9 @@ from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
     _compute_cells2verts,
 )
-from icon4py.model.common.interpolation.stencils import cell_2_edge_interpolation
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
+    cell_2_edge_interpolation,
 )
 from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
