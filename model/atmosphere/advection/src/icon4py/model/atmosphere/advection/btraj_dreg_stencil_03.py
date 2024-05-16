@@ -80,7 +80,7 @@ def _btraj_dreg_stencil_03(
     # to the vertices.
   
     # Take care of correct counterclockwise numbering below
-    #
+  
     pos_dreg_vert_c_1_x = edge_verts_1_x - pos_on_tplane_e_x
     pos_dreg_vert_c_1_y = edge_verts_1_y - pos_on_tplane_e_y
     pos_dreg_vert_c_2_x = where(lvn_sys_pos, depart_pts_1_x, edge_verts_2_x) - pos_on_tplane_e_x
