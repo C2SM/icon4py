@@ -78,7 +78,7 @@ def _btraj_dreg_stencil_03(
     # coordinate system. The origin is located at the circumcenter
     # of the upwind cell. The distance vectors point from the cell center
     # to the vertices.
-    #
+  
     # Take care of correct counterclockwise numbering below
     #
     pos_dreg_vert_c_1_x = edge_verts_1_x - pos_on_tplane_e_x
