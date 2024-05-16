@@ -50,7 +50,7 @@ def _btraj_dreg_stencil_03(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
 ]:
-    # logical switch for MERGE operations: .TRUE. for p_vn >= 0
+    # logical switch for MERGE operations: True for p_vn >= 0
     lvn_pos = where(p_vn >= 0.0, True, False)
 
     # get line and block indices of upwind cell
