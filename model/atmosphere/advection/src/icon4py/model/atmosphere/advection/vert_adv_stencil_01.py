@@ -64,7 +64,7 @@ def _vert_adv_stencil_01(
             ),
             tracer_now,
         )
-        if (ivadv_tracer != int32(0))
+        if (ivadv_tracer != 0)
         else tracer_now
     )
 
