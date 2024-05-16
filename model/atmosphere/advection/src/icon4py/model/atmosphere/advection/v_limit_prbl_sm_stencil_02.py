@@ -27,7 +27,7 @@ def _v_limit_prbl_sm_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     q_face_up, q_face_low = where(
-        l_limit != int32(0),
+        l_limit != 0,
         where(
             (p_cc < minimum(p_face, p_face(Koff[1]))),
             (p_cc, p_cc),

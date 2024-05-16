@@ -235,7 +235,7 @@ def _divide_flux_area_list_stencil_01(
     lvn_sys_pos = where(
         (p_vn * broadcast(tangent_orientation_dsl, (EdgeDim, KDim))) >= 0.0, True, False
     )
-    famask_bool = where(famask_int == int32(1), True, False)
+    famask_bool = where(famask_int == 1, True, False)
     # ------------------------------------------------- Case 1
     mask_case1 = lintersect_line1 & lintersect_line2 & famask_bool
     ps1_x, ps1_y = line_intersect(

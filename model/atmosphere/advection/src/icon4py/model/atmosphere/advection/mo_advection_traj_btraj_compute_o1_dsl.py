@@ -42,7 +42,7 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     lvn_pos = where(p_vn > 0.0, True, False)
 
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
-    p_cell_rel_idx_dsl = where(lvn_pos, int32(0), int32(1))
+    p_cell_rel_idx_dsl = where(lvn_pos, 0, 1)
     p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
     z_ntdistv_bary_1 = -(

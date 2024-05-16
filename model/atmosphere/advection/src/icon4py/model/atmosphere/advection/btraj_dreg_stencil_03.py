@@ -55,7 +55,7 @@ def _btraj_dreg_stencil_03(
 
     # get line and block indices of upwind cell
     p_cell_idx = where(lvn_pos, cell_idx(E2EC[0]), cell_idx(E2EC[1]))
-    p_cell_rel_idx_dsl = where(lvn_pos, int32(0), int32(1))
+    p_cell_rel_idx_dsl = where(lvn_pos, 0, 1)
     p_cell_blk = where(lvn_pos, cell_blk(E2EC[0]), cell_blk(E2EC[1]))
 
     # departure points of the departure cell. Point 1 belongs to edge-vertex 1,

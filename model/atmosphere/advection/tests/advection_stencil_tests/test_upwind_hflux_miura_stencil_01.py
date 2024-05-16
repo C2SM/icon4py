@@ -50,19 +50,19 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
 
         p_out_e = (
             np.where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_1_e2c[:, 1],
                 z_lsq_coeff_1_e2c[:, 0],
             )
             + distv_bary_1
             * np.where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_2_e2c[:, 1],
                 z_lsq_coeff_2_e2c[:, 0],
             )
             + distv_bary_2
             * np.where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_3_e2c[:, 1],
                 z_lsq_coeff_3_e2c[:, 0],
             )

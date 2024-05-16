@@ -49,8 +49,8 @@ class TestMoMathDivrotRotVertexRiDsl(StencilTest):
             vec_e=vec_e,
             geofac_rot=geofac_rot,
             rot_vec=rot_vec,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_vertices),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

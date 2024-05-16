@@ -54,8 +54,8 @@ class TestApplyHydrostaticCorrectionToHorizontalGradientOfExnerPressure(StencilT
             pg_exdist=pg_exdist,
             z_hydro_corr=z_hydro_corr,
             z_gradh_exner=z_gradh_exner,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

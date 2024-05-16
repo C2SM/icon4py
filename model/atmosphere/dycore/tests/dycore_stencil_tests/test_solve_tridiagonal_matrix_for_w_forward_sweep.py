@@ -88,9 +88,9 @@ def test_solve_tridiagonal_matrix_for_w_forward_sweep():
         dtime,
         cpd,
     )
-    h_start = int32(0)
+    h_start = 0
     h_end = int32(grid.num_cells)
-    v_start = int32(1)
+    v_start = 1
     v_end = int32(grid.num_levels)
     # TODO we run this test with the C++ backend as the `embedded` backend doesn't handle this pattern
     solve_tridiagonal_matrix_for_w_forward_sweep.with_backend(run_gtfn)(
