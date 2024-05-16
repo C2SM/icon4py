@@ -111,7 +111,7 @@ def _line_intersect_numpy(
     line2_p2_lat,
 ):
     d1 = line1_p2_lon - line1_p1_lon
-    d1 = np.where(d1 != float(0), d1, line1_p2_lon)
+    d1 = np.where(d1 != 0.0, d1, line1_p2_lon)
 
     d2 = line2_p2_lon - line2_p1_lon
     d2 = np.where(d2 != float(0), d2, line2_p2_lon)
