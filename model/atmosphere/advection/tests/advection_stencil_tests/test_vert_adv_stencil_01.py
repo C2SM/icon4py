@@ -67,7 +67,7 @@ class TestVertAdvStencil01(StencilTest):
         deepatmo_divzl = random_field(grid, KDim)
         deepatmo_divzu = random_field(grid, KDim)
         rhodz_new = random_field(grid, CellDim, KDim)
-        k = as_field((KDim,), np.arange(icon_grid.num_levels, dtype=int32))
+        k = as_field((KDim,), np.arange(grid.num_levels, dtype=int32))
         p_dtime = np.float64(5.0)
         ivadv_tracer = int32(1)
         iadv_slev_jt = int32(4)
