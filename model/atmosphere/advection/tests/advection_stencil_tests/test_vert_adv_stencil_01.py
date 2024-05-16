@@ -37,7 +37,7 @@ class TestVertAdvStencil01(StencilTest):
         k: np.array,
         ivadv_tracer: int32,
         iadv_slev_jt: int32,
-        p_dtime: np.float64,
+        p_dtime: float,
         **kwargs,
     ) -> np.array:
         if ivadv_tracer != int32(0):
