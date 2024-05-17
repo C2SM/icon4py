@@ -56,42 +56,42 @@ def test_jabw_initial_condition(
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
     assert dallclose(
-        prognostic_state_now.rho.asnumpy(),
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
+        prognostic_state_now.rho.ndarray,
+        data_provider.from_savepoint_jabw_final().rho().ndarray,
     )
 
     assert dallclose(
-        prognostic_state_now.exner.asnumpy(),
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
+        prognostic_state_now.exner.ndarray,
+        data_provider.from_savepoint_jabw_final().exner().ndarray,
     )
 
     assert dallclose(
-        prognostic_state_now.theta_v.asnumpy(),
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
+        prognostic_state_now.theta_v.ndarray,
+        data_provider.from_savepoint_jabw_final().theta_v().ndarray,
     )
 
     assert dallclose(
-        prognostic_state_now.vn.asnumpy(),
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(),
+        prognostic_state_now.vn.ndarray,
+        data_provider.from_savepoint_jabw_final().vn().ndarray,
     )
 
     assert dallclose(
-        diagnostic_state.pressure.asnumpy(),
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
+        diagnostic_state.pressure.ndarray,
+        data_provider.from_savepoint_jabw_final().pressure().ndarray,
     )
 
     assert dallclose(
-        diagnostic_state.temperature.asnumpy(),
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
+        diagnostic_state.temperature.ndarray,
+        data_provider.from_savepoint_jabw_final().temperature().ndarray,
     )
 
     assert dallclose(
-        diagnostic_state.pressure_sfc.asnumpy(),
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
+        diagnostic_state.pressure_sfc.ndarray,
+        data_provider.from_savepoint_jabw_init().pressure_sfc().ndarray,
     )
 
     assert dallclose(
-        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
-        data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
+        solve_nonhydro_diagnostic_state.exner_pr.ndarray,
+        data_provider.from_savepoint_jabw_diagnostic().exner_pr().ndarray,
         atol=1.0e-14,
     )
