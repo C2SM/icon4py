@@ -28,14 +28,14 @@ try:
     import ghex
     import mpi4py
     from ghex.context import make_context
-    from ghex.util import Architecture
     from ghex.unstructured import (
-    DomainDescriptor,
-    HaloGenerator,
-    make_communication_object,
-    make_field_descriptor,
-    make_pattern,
+        DomainDescriptor,
+        HaloGenerator,
+        make_communication_object,
+        make_field_descriptor,
+        make_pattern,
     )
+    from ghex.util import Architecture
 
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
@@ -54,9 +54,9 @@ if TYPE_CHECKING:
 
 
 if device.name == "GPU":
-    ghex_arch=Architecture.GPU
+    ghex_arch = Architecture.GPU
 else:
-    ghex_arch=Architecture.CPU
+    ghex_arch = Architecture.CPU
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -107,7 +107,9 @@ class ParallelLogger(logging.Filter):
 
 
 @definitions.get_processor_properties.register(definitions.MultiNodeRun)
-def get_multinode_properties(s: definitions.MultiNodeRun, comm_id: CommId = None) -> definitions.ProcessProperties:
+def get_multinode_properties(
+    s: definitions.MultiNodeRun, comm_id: CommId = None
+) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True, comm_id=comm_id)
 
 
@@ -156,7 +158,6 @@ class GHexMultiNodeExchange:
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
         log.info("communication object initialized")
-
 
     def _domain_descriptor_info(self, descr):
         return f" domain_descriptor=[id='{descr.domain_id()}', size='{descr.size()}', inner_size='{descr.inner_size()}' (halo size='{descr.size() - descr.inner_size()}')"
@@ -243,5 +244,3 @@ def create_multinode_node_exchange(
         return GHexMultiNodeExchange(props, decomp_info)
     else:
         return SingleNodeExchange()
-
-

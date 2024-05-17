@@ -20,7 +20,6 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-from icon4py.model.common.settings import xp
 import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
@@ -36,7 +35,10 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import DecompositionInfo, SingleNodeRun, MultiNodeRun
+from icon4py.model.common.decomposition.definitions import (
+    DecompositionInfo,
+    MultiNodeRun,
+)
 from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -53,33 +55,32 @@ from icon4py.model.common.dimension import (
     EdgeIndexDim,
     KDim,
     KHalfDim,
-    V2EDim,
-    VertexDim,
-    VertexIndexDim,
     SingletonDim,
     SpecialADim,
     SpecialBDim,
     SpecialCDim,
+    V2EDim,
+    VertexDim,
+    VertexIndexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import device, xp
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile, construct_icon_grid
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-from icon4py.model.common.test_utils.parallel_helpers import (
-    check_comm_size,
+from icon4py.model.common.test_utils.grid_utils import (
+    construct_icon_grid,
+    fortran_grid_indices_to_numpy,
+    fortran_grid_indices_to_numpy_offset,
 )
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 
 
 log = setup_logger(__name__)
 
 # global diffusion object
 diffusion_granule: Diffusion = Diffusion()
-
 
 
 def diffusion_init(
@@ -159,65 +160,45 @@ def diffusion_init(
     else:
         on_gpu = False
 
-    #processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
-    #exchange = definitions.create_exchange(processor_props)
-    #diffusion_granule = Diffusion(exchange)
+    cells_start_index_np = fortran_grid_indices_to_numpy_offset(cells_start_index)
+    vert_start_index_np = fortran_grid_indices_to_numpy_offset(vert_start_index)
+    edge_start_index_np = fortran_grid_indices_to_numpy_offset(edge_start_index)
 
-    #cells_start_index_np = xp.subtract(cells_start_index.ndarray.copy(order='F'), 1)
-    #vert_start_index_np = xp.subtract(vert_start_index.ndarray.copy(order='F'), 1)
-    #edge_start_index_np = xp.subtract(edge_start_index.ndarray.copy(order='F'), 1)
-    #c_glb_index_np = xp.subtract(c_glb_index.ndarray.copy(order='F'), 1)
-    #e_glb_index_np = xp.subtract(e_glb_index.ndarray.copy(order='F'), 1)
-    #v_glb_index_np = xp.subtract(v_glb_index.ndarray.copy(order='F'), 1)
-    cells_start_index_np = np.subtract(xp.asnumpy(cells_start_index.ndarray,order='F').copy(order='F'), 1)
-    vert_start_index_np = np.subtract(xp.asnumpy(vert_start_index.ndarray,order='F').copy(order='F'), 1)
-    edge_start_index_np = np.subtract(xp.asnumpy(edge_start_index.ndarray,order='F').copy(order='F'), 1)
-    cells_end_index_np = xp.asnumpy(cells_end_index.ndarray,order='F').copy(order='F')
-    vert_end_index_np = xp.asnumpy(vert_end_index.ndarray,order='F').copy(order='F')
-    edge_end_index_np = xp.asnumpy(edge_end_index.ndarray,order='F').copy(order='F')
-    c_glb_index_np = np.subtract(xp.asnumpy(c_glb_index.ndarray,order='F').copy(order='F'), 1)
-    e_glb_index_np = np.subtract(xp.asnumpy(e_glb_index.ndarray,order='F').copy(order='F'), 1)
-    v_glb_index_np = np.subtract(xp.asnumpy(v_glb_index.ndarray,order='F').copy(order='F'), 1)
-    
+    cells_end_index_np = fortran_grid_indices_to_numpy(cells_end_index)
+    vert_end_index_np = fortran_grid_indices_to_numpy(vert_end_index)
+    edge_end_index_np = fortran_grid_indices_to_numpy(edge_end_index)
+
+    c_glb_index_np = fortran_grid_indices_to_numpy_offset(c_glb_index)
+    e_glb_index_np = fortran_grid_indices_to_numpy_offset(e_glb_index)
+    v_glb_index_np = fortran_grid_indices_to_numpy_offset(v_glb_index)
+
     nproma = c_owner_mask.ndarray.shape[0]
-    log.debug("nproma is %s",nproma)
-    log.debug(" shape of glb %s %s %s",c_glb_index_np.shape,e_glb_index_np.shape,v_glb_index_np.shape)
-    #c_glb_index_np = np.pad(c_glb_index_np, (0,nproma-num_cells), mode='constant', constant_values=0)
-    #e_glb_index_np = np.pad(e_glb_index_np, (0,nproma-num_edges), mode='constant', constant_values=0)
-    #v_glb_index_np = np.pad(v_glb_index_np, (0,nproma-num_verts), mode='constant', constant_values=0)
+    log.debug("nproma is %s", nproma)
+    log.debug(
+        " shape of glb %s %s %s", c_glb_index_np.shape, e_glb_index_np.shape, v_glb_index_np.shape
+    )
+    # c_glb_index_np = np.pad(c_glb_index_np, (0,nproma-num_cells), mode='constant', constant_values=0)
+    # e_glb_index_np = np.pad(e_glb_index_np, (0,nproma-num_edges), mode='constant', constant_values=0)
+    # v_glb_index_np = np.pad(v_glb_index_np, (0,nproma-num_verts), mode='constant', constant_values=0)
 
-    #c_owner_mask_np = c_owner_mask.ndarray[0:num_cells] 
-    #e_owner_mask_np = e_owner_mask.ndarray[0:num_edges] 
-    #v_owner_mask_np = v_owner_mask.ndarray[0:num_verts] 
+    # c_owner_mask_np = c_owner_mask.ndarray[0:num_cells]
+    # e_owner_mask_np = e_owner_mask.ndarray[0:num_edges]
+    # v_owner_mask_np = v_owner_mask.ndarray[0:num_verts]
 
-    c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray,order='F').copy(order='F')[0:num_cells] 
-    e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray,order='F').copy(order='F')[0:num_edges] 
-    v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray,order='F').copy(order='F')[0:num_verts] 
+    c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray, order="F").copy(order="F")[0:num_cells]
+    e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray, order="F").copy(order="F")[0:num_edges]
+    v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray, order="F").copy(order="F")[0:num_verts]
 
-    log.debug(" shape of glb %s %s %s",c_glb_index_np.shape,e_glb_index_np.shape,v_glb_index_np.shape)
-    log.debug("------------------------:c2e:%s",c2e.ndarray)
-    #c2e_loc = xp.squeeze(c2e.ndarray.copy(order='F'))
-    #c2e2c_loc = xp.squeeze(c2e2c.ndarray.copy(order='F'))
-    #v2e_loc = xp.squeeze(v2e.ndarray.copy(order='F'))
-    #e2c2v_loc = xp.squeeze(e2c2v.ndarray.copy(order='F'))
-    #e2c_loc = xp.squeeze(e2c.ndarray.copy(order='F'))
+    log.debug(
+        " shape of glb %s %s %s", c_glb_index_np.shape, e_glb_index_np.shape, v_glb_index_np.shape
+    )
+    log.debug("------------------------:c2e:%s", c2e.ndarray)
 
-    c2e_loc = np.squeeze(xp.asnumpy(c2e.ndarray,order='F').copy(order='F'))
-    c2e2c_loc = np.squeeze(xp.asnumpy(c2e2c.ndarray,order='F').copy(order='F'))
-    v2e_loc = np.squeeze(xp.asnumpy(v2e.ndarray,order='F').copy(order='F'))
-    e2c2v_loc = np.squeeze(xp.asnumpy(e2c2v.ndarray,order='F').copy(order='F'))
-    e2c_loc = np.squeeze(xp.asnumpy(e2c.ndarray,order='F').copy(order='F'))
-
-    log.debug("c2e shape %s",c2e_loc.shape)
-    log.debug("c2e2c shape %s",c2e2c_loc.shape)
-    log.debug("v2e shape %s",v2e_loc.shape)
-    log.debug("e2c2v shape %s",e2c2v_loc.shape)
-    log.debug("e2c shape %s",e2c_loc.shape)
-    c2e_loc = np.subtract(c2e_loc, 1)
-    c2e2c_loc = np.subtract(c2e2c_loc, 1)
-    v2e_loc = np.subtract(v2e_loc, 1)
-    e2c2v_loc = np.subtract(e2c2v_loc, 1)
-    e2c_loc = np.subtract(e2c_loc, 1)
+    c2e_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(c2e))
+    c2e2c_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(c2e2c))
+    v2e_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(v2e.ndarray))
+    e2c2v_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(e2c2v.ndarray))
+    e2c_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(e2c.ndarray))
 
     icon_grid = construct_icon_grid(
         cells_start_index_np,
@@ -238,7 +219,7 @@ def diffusion_init(
         True,
         on_gpu,
     )
-    
+
     decomposition_info = (
         DecompositionInfo(klevels=num_levels)
         .with_dimension(CellDim, c_glb_index_np, c_owner_mask_np)
@@ -248,64 +229,63 @@ def diffusion_init(
     processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    #log.debug("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
-    #log.debug("icon_grid:cell_end:%s", icon_grid.end_indices[CellDim])
-    #log.debug("icon_grid:vert_start:%s", icon_grid.start_indices[VertexDim])
-    #log.debug("icon_grid:vert_end:%s", icon_grid.end_indices[VertexDim])
-    #log.debug("icon_grid:edge_start:%s", icon_grid.start_indices[EdgeDim])
-    #log.debug("icon_grid:edge_end:%s", icon_grid.end_indices[EdgeDim])
-    #log.debug("icon_grid:c2e:%s", icon_grid.connectivities[C2EDim])
-    #log.debug("icon_grid:c2e2c:%s", icon_grid.connectivities[C2E2CDim])
-    #log.debug("icon_grid:v2e:%s", icon_grid.connectivities[V2EDim])
-    #log.debug("icon_grid:e2c2v:%s", icon_grid.connectivities[E2C2VDim])
-    #log.debug("icon_grid:e2c:%s", icon_grid.connectivities[E2CDim])
+    # log.debug("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
+    # log.debug("icon_grid:cell_end:%s", icon_grid.end_indices[CellDim])
+    # log.debug("icon_grid:vert_start:%s", icon_grid.start_indices[VertexDim])
+    # log.debug("icon_grid:vert_end:%s", icon_grid.end_indices[VertexDim])
+    # log.debug("icon_grid:edge_start:%s", icon_grid.start_indices[EdgeDim])
+    # log.debug("icon_grid:edge_end:%s", icon_grid.end_indices[EdgeDim])
+    # log.debug("icon_grid:c2e:%s", icon_grid.connectivities[C2EDim])
+    # log.debug("icon_grid:c2e2c:%s", icon_grid.connectivities[C2E2CDim])
+    # log.debug("icon_grid:v2e:%s", icon_grid.connectivities[V2EDim])
+    # log.debug("icon_grid:e2c2v:%s", icon_grid.connectivities[E2C2VDim])
+    # log.debug("icon_grid:e2c:%s", icon_grid.connectivities[E2CDim])
 
-    #log.debug("icon_grid:cell_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[CellDim])
-    #log.debug("icon_grid:cell_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[CellDim])
-    #log.debug("icon_grid:vert_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[VertexDim])
-    #log.debug("icon_grid:vert_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[VertexDim])
-    #log.debug("icon_grid:edge_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[EdgeDim])
-    #log.debug("icon_grid:edge_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[EdgeDim])
-    #log.debug("icon_grid:c2e for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[C2EDim])
-    #log.debug("icon_grid:c2e2c for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[C2E2CDim])
-    #log.debug("icon_grid:v2e for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[V2EDim])
-    #log.debug("icon_grid:e2c2v for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[E2C2VDim])
-    #log.debug("icon_grid:e2c for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[E2CDim])
+    # log.debug("icon_grid:cell_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[CellDim])
+    # log.debug("icon_grid:cell_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[CellDim])
+    # log.debug("icon_grid:vert_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[VertexDim])
+    # log.debug("icon_grid:vert_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[VertexDim])
+    # log.debug("icon_grid:edge_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[EdgeDim])
+    # log.debug("icon_grid:edge_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[EdgeDim])
+    # log.debug("icon_grid:c2e for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[C2EDim])
+    # log.debug("icon_grid:c2e2c for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[C2E2CDim])
+    # log.debug("icon_grid:v2e for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[V2EDim])
+    # log.debug("icon_grid:e2c2v for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[E2C2VDim])
+    # log.debug("icon_grid:e2c for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[E2CDim])
 
-    #xp.set_log.debugoptions(edgeitems=20)
-    #log.debug("c_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(CellDim)[0:num_cells])
-    #log.debug("e_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(EdgeDim)[0:num_edges])
-    #log.debug("v_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(VertexDim)[0:num_verts])
+    # xp.set_log.debugoptions(edgeitems=20)
+    # log.debug("c_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(CellDim)[0:num_cells])
+    # log.debug("e_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(EdgeDim)[0:num_edges])
+    # log.debug("v_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(VertexDim)[0:num_verts])
 
-    #log.debug("c_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(CellDim)[0:num_cells])
-    #log.debug("e_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(EdgeDim)[0:num_edges])
-    #log.debug("v_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(VertexDim)[0:num_verts])
+    # log.debug("c_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(CellDim)[0:num_cells])
+    # log.debug("e_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(EdgeDim)[0:num_edges])
+    # log.debug("v_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(VertexDim)[0:num_verts])
 
-    #check_comm_size(processor_props)
-    #log.debug(
+    # check_comm_size(processor_props)
+    # log.debug(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
-    #)
-    #log.debug(
+    # )
+    # log.debug(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
     #    f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
     #    f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
     #    f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
-    #)
-    #owned_cells = decomposition_info.owner_mask(CellDim)
-    #log.debug(
+    # )
+    # owned_cells = decomposition_info.owner_mask(CellDim)
+    # log.debug(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
-    #)
-    #log.debug(
+    # )
+    # log.debug(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
-    #)
-    #log.debug(
+    # )
+    # log.debug(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert(decomposition_info.owner_mask(EdgeDim)))}"
-    #)
-    #log.debug(
+    # )
+    # log.debug(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
-    #)
+    # )
 
-    #exchange.second_part(decomposition_info)
     diffusion_granule.set_exchange(exchange)
 
     # Edge geometry
@@ -379,8 +359,6 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
-
-    #diffusion_granule.set_exchange(exchange)
 
     diffusion_granule.init(
         grid=icon_grid,

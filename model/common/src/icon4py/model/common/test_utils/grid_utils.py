@@ -11,12 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
+import logging
 
-from icon4py.model.common.settings import xp
 import numpy as np
 import pytest
 
-import logging
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -31,10 +30,10 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-
-from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
+from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRID_URIS,
@@ -49,6 +48,7 @@ GLOBAL_NUM_LEVELS = 80
 MCH_CH_R04B09_LEVELS = 65
 
 log = logging.getLogger(__name__)
+
 
 @functools.cache
 def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGrid:
@@ -128,13 +128,8 @@ def construct_icon_grid(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-    #log.debug("cells_start_index shape:%s", np.asarray(cells_start_index).shape)
-    log.debug("c2e shape:%s", np.asarray(c2e).shape)
-    log.debug("v2e shape:%s", np.asarray(v2e).shape)
-    log.debug("c2e2c:%s", np.asarray(c2e2c).shape)
-    log.debug("he:%s", np.asarray(range(c2e2c.shape[0])))
-    log.debug("shape he:%s", np.asarray(range(c2e2c.shape[0])).shape)
-    c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
+
+    c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
 
     grid = (
         IconGrid()
@@ -167,6 +162,14 @@ def construct_icon_grid(
     )
 
     return grid
+
+
+def fortran_grid_indices_to_numpy_offset(inp) -> np.ndarray:
+    return np.subtract(xp.asnumpy(inp.ndarray, order="F").copy(order="F"), 1)
+
+
+def fortran_grid_indices_to_numpy(inp) -> np.ndarray:
+    return xp.asnumpy(inp.ndarray, order="F").copy(order="F")
 
 
 @pytest.fixture

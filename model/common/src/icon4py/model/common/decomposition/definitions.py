@@ -19,9 +19,9 @@ from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Protocol
 
-from icon4py.model.common.settings import xp
 from gt4py.next import Dimension
 
+from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
 
 
