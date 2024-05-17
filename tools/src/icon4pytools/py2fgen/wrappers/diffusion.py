@@ -20,7 +20,6 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
-import numpy as np
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.diffusion.diffusion import (
@@ -69,9 +68,9 @@ from icon4py.model.common.settings import device, xp
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import (
     construct_icon_grid,
+    fortran_grid_connectivities_to_xp_offset,
     fortran_grid_indices_to_numpy,
     fortran_grid_indices_to_numpy_offset,
-    fortran_grid_connectivities_to_xp_offset,
 )
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
