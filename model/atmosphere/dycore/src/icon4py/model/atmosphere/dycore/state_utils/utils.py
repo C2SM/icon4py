@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, Field
 from gt4py.next.ffront.decorator import field_operator, program
@@ -23,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common.dimension import EdgeDim, KDim
-from icon4py.model.common.settings import xp, backend
+from icon4py.model.common.settings import backend, xp
 from icon4py.model.common.type_alias import wpfloat
 
 

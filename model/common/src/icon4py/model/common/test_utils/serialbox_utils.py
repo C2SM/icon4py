@@ -47,9 +47,9 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
@@ -326,8 +326,8 @@ class IconGridSavepoint(IconSavepoint):
     def refin_ctrl(self, dim: Dimension):
         field_name = "refin_ctl"
         buffer = xp.squeeze(
-                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-            )
+            self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
+        )
         buffer = xp.asarray(buffer)
         return as_field(
             (dim,),

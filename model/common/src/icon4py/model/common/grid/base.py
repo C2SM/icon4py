@@ -128,11 +128,6 @@ class BaseGrid(ABC):
         if dim not in self.connectivities:
             raise MissingConnectivity()
 
-        if self.config.on_gpu:
-            import cupy as xp
-        else:
-            xp = np
-
         return NeighborTableOffsetProvider(
             self.connectivities[dim],
             from_dim,
