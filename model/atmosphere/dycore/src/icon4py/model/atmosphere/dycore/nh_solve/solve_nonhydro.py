@@ -773,8 +773,32 @@ class SolveNonhydro:
             if self.vertical_params.nflatlev == 1:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
-
-        nhsolve_prog.predictor_stencils_7_8_9(
+            
+        # nhsolve_prog.predictor_stencils_7_8_9(
+        #     rho=prognostic_state[nnow].rho,
+        #     rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
+        #     theta_v=prognostic_state[nnow].theta_v,
+        #     theta_ref_mc=self.metric_state_nonhydro.theta_ref_mc,
+        #     rho_ic=diagnostic_state_nh.rho_ic,
+        #     z_rth_pr_1=self.z_rth_pr_1,
+        #     z_rth_pr_2=self.z_rth_pr_2,
+        #     wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+        #     vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
+        #     ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+        #     z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     z_th_ddz_exner_c=self.z_th_ddz_exner_c,
+        #     k_field=self.k_field,
+        #     nlev=self.grid.num_levels,
+        #     horizontal_start=start_cell_lb_plus2,
+        #     horizontal_end=end_cell_halo,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels,
+        #     offset_provider=self.grid.offset_providers,
+        # )
+        nhsolve_prog.predictor_stencils_7_8_9_firststep(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -786,9 +810,24 @@ class SolveNonhydro:
             vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
             exner_pr=diagnostic_state_nh.exner_pr,
             d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
-            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
             z_theta_v_pr_ic=self.z_theta_v_pr_ic,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            k_field=self.k_field,
+            nlev=self.grid.num_levels,
+            horizontal_start=start_cell_lb_plus2,
+            horizontal_end=end_cell_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+        
+        nhsolve_prog.predictor_stencils_7_8_9_secondstep(
+            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
+            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
             z_th_ddz_exner_c=self.z_th_ddz_exner_c,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
@@ -1002,7 +1041,7 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
+        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
 
         if self.config.igradp_method == 3:
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
@@ -1647,20 +1686,20 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            # verified for e-9
-            log.debug(f"corrector: start stencile 41")
-            compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=self.interpolation_state.geofac_div,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                z_flxdiv_mass=self.z_flxdiv_mass,
-                z_flxdiv_theta=self.z_flxdiv_theta,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        # verified for e-9
+        log.debug(f"corrector: start stencile 41")
+        compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=self.interpolation_state.geofac_div,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector start stencil 42 44 45 45b")

@@ -186,10 +186,10 @@ class TimeLoop:
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.5e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.5e}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.5e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.5e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.5e}"
+                f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.5e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
