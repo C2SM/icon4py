@@ -45,8 +45,8 @@ class TestFaceValPpmStencil02c(StencilTest):
         return dict(
             p_cc=p_cc,
             p_face=p_face,
-            horizontal_start=0,
+            horizontal_start=int32(0),
             horizontal_end=int32(grid.num_cells),
-            vertical_start=1,
+            vertical_start=int32(1),
             vertical_end=int32(grid.num_levels),
         )
