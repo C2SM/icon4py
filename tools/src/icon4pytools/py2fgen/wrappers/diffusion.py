@@ -71,6 +71,7 @@ from icon4py.model.common.test_utils.grid_utils import (
     construct_icon_grid,
     fortran_grid_indices_to_numpy,
     fortran_grid_indices_to_numpy_offset,
+    fortran_grid_connectivities_to_xp_offset,
 )
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
@@ -194,11 +195,11 @@ def diffusion_init(
     )
     log.debug("------------------------:c2e:%s", c2e.ndarray)
 
-    c2e_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(c2e))
-    c2e2c_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(c2e2c))
-    v2e_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(v2e.ndarray))
-    e2c2v_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(e2c2v.ndarray))
-    e2c_loc = np.squeeze(fortran_grid_indices_to_numpy_offset(e2c.ndarray))
+    c2e_loc = fortran_grid_connectivities_to_xp_offset(c2e)
+    c2e2c_loc = fortran_grid_connectivities_to_xp_offset(c2e2c)
+    v2e_loc = fortran_grid_connectivities_to_xp_offset(v2e)
+    e2c2v_loc = fortran_grid_connectivities_to_xp_offset(e2c2v)
+    e2c_loc = fortran_grid_connectivities_to_xp_offset(e2c)
 
     icon_grid = construct_icon_grid(
         cells_start_index_np,
