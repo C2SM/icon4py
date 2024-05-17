@@ -13,6 +13,7 @@
 from __future__ import annotations
 
 import importlib
+import numpy as np
 import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
@@ -229,7 +230,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> tuple[DummyConnectivi
         has_skip_values=skip_values,
         origin_axis=location_chain[0],
         neighbor_axis=location_chain[-1],
-        index_type=int,
+        index_type=np.int32,
     ), compound_offset
 
 

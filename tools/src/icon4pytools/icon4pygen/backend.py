@@ -229,6 +229,7 @@ def generate_dace_code(
             __dace_gpu_set_stream(__state, 0, stream);
         }}"""
         )
+
     with dace.config.set_temporary("compiler", "cuda", "max_concurrent_streams", value=1):
         code_objs = sdfg.generate_code()
 
@@ -249,6 +250,43 @@ def generate_dace_code(
     if on_gpu:
         cuda_objs = [obj for obj in code_objs if obj.language == "cu" and obj.linkable]
         assert len(cuda_objs) == 1
+
+
+
+        init_func_name_before = f'__dace_init_cuda'
+        init_func_name_after = f'__dace_init_cuda_{sdfg.name}'
+
+        src_objs[0].code = src_objs[0].code.replace(init_func_name_before, init_func_name_after)
+        cuda_objs[0].code = cuda_objs[0].code.replace(init_func_name_before, init_func_name_after)
+
+        exit_func_name_before = f'__dace_exit_cuda'
+        exit_func_name_after = f'__dace_exit_cuda_{sdfg.name}'
+
+        src_objs[0].code = src_objs[0].code.replace(exit_func_name_before, exit_func_name_after)
+        cuda_objs[0].code = cuda_objs[0].code.replace(exit_func_name_before, exit_func_name_after)
+
+        set_stream_func_name_before = f'__dace_gpu_set_stream'
+        set_stream_func_name_after = f'__dace_gpu_set_stream_{sdfg.name}'
+
+        src_objs[0].code = src_objs[0].code.replace(set_stream_func_name_before, set_stream_func_name_after)
+        cuda_objs[0].code = cuda_objs[0].code.replace(set_stream_func_name_before, set_stream_func_name_after)
+
+        set_all_streams_func_name_before = f'__dace_gpu_set_all_streams'
+        set_all_streams_func_name_after = f'__dace_gpu_set_all_streams_{sdfg.name}'
+
+        src_objs[0].code = src_objs[0].code.replace(set_all_streams_func_name_before, set_all_streams_func_name_after)
+        cuda_objs[0].code = cuda_objs[0].code.replace(set_all_streams_func_name_before, set_all_streams_func_name_after)
+
+        include_line_before = f'#include <dace/dace.h>'
+        include_line_after = f'#include <dace/dace.h>\n#include \"{sdfg.name}_dace.cpp\"'
+
+        cuda_objs[0].code = cuda_objs[0].code.replace(include_line_before, include_line_after)
+
+        context_line = f"""struct compute_avg_vn_state_t {{
+    dace::cuda::Context *gpu_context;
+}};"""
+        cuda_objs[0].code = cuda_objs[0].code.replace(context_line, "")
+
         return hdr_objs[0].clean_code, src_objs[0].clean_code, cuda_objs[0].clean_code
     else:
         return hdr_objs[0].clean_code, src_objs[0].clean_code, None
