@@ -78,9 +78,6 @@ from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 log = setup_logger(__name__)
 
 # global diffusion object
-#processor_props = get_multinode_properties(MultiNodeRun())
-#exchange = definitions.create_exchange(processor_props)
-#diffusion_granule: Diffusion = Diffusion(exchange)
 diffusion_granule: Diffusion = Diffusion()
 
 
@@ -166,26 +163,6 @@ def diffusion_init(
     #exchange = definitions.create_exchange(processor_props)
     #diffusion_granule = Diffusion(exchange)
 
-    #icon_grid2 = _load_from_gridfile(
-    #    file_path=get_icon_grid_loc(),
-    #    filename=get_grid_filename(),
-    #    num_levels=num_levels,
-    #    on_gpu=on_gpu,
-    #    limited_area=True,
-    #)
-
-    #log.debug("icon_grid2:cell_start:%s", icon_grid2.start_indices[CellDim])
-    #log.debug("icon_grid2:cell_end:%s", icon_grid2.end_indices[CellDim])
-    #log.debug("icon_grid2:vert_start:%s", icon_grid2.start_indices[VertexDim])
-    #log.debug("icon_grid2:vert_end:%s", icon_grid2.end_indices[VertexDim])
-    #log.debug("icon_grid2:edge_start:%s", icon_grid2.start_indices[EdgeDim])
-    #log.debug("icon_grid2:edge_end:%s", icon_grid2.end_indices[EdgeDim])
-    #log.debug("icon_grid2:c2e:%s", icon_grid2.connectivities[C2EDim])
-    #log.debug("icon_grid2:c2e2c:%s", icon_grid2.connectivities[C2E2CDim])
-    #log.debug("icon_grid2:v2e:%s", icon_grid2.connectivities[V2EDim])
-    #log.debug("icon_grid2:e2c2v:%s", icon_grid2.connectivities[E2C2VDim])
-    #log.debug("icon_grid2:e2c:%s", icon_grid2.connectivities[E2CDim])
-
     #cells_start_index_np = xp.subtract(cells_start_index.ndarray.copy(order='F'), 1)
     #vert_start_index_np = xp.subtract(vert_start_index.ndarray.copy(order='F'), 1)
     #edge_start_index_np = xp.subtract(edge_start_index.ndarray.copy(order='F'), 1)
@@ -204,7 +181,6 @@ def diffusion_init(
     
     nproma = c_owner_mask.ndarray.shape[0]
     log.debug("nproma is %s",nproma)
-    #nproma = 32000
     log.debug(" shape of glb %s %s %s",c_glb_index_np.shape,e_glb_index_np.shape,v_glb_index_np.shape)
     #c_glb_index_np = np.pad(c_glb_index_np, (0,nproma-num_cells), mode='constant', constant_values=0)
     #e_glb_index_np = np.pad(e_glb_index_np, (0,nproma-num_edges), mode='constant', constant_values=0)
@@ -262,12 +238,7 @@ def diffusion_init(
         True,
         on_gpu,
     )
-    #decomposition_info = (
-    #    DecompositionInfo(klevels=num_levels)
-    #    .with_dimension(CellDim, c_glb_index_np, c_owner_mask.ndarray)
-    #    .with_dimension(EdgeDim, e_glb_index_np, e_owner_mask.ndarray)
-    #    .with_dimension(VertexDim, v_glb_index_np, v_owner_mask.ndarray)
-    #)
+    
     decomposition_info = (
         DecompositionInfo(klevels=num_levels)
         .with_dimension(CellDim, c_glb_index_np, c_owner_mask_np)
@@ -275,7 +246,6 @@ def diffusion_init(
         .with_dimension(VertexDim, v_glb_index_np, v_owner_mask_np)
     )
     processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
-    #processor_props = get_multinode_properties(MultiNodeRun())
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     #log.debug("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
