@@ -21,12 +21,14 @@ from typing import TYPE_CHECKING, Sequence, Union
 from gt4py.next import Dimension, Field
 
 from icon4py.model.common.decomposition.definitions import SingleNodeExchange
+from icon4py.model.common.settings import device
 
 
 #try:
 import ghex
 import mpi4py
 from ghex.context import make_context
+from ghex.util import Architecture
 from ghex.unstructured import (
 DomainDescriptor,
 HaloGenerator,
@@ -50,6 +52,11 @@ from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, Vert
 if TYPE_CHECKING:
     import mpi4py.MPI
 
+
+if device.name == "GPU":
+    ghex_arch=Architecture.GPU
+else:
+    ghex_arch=Architecture.CPU
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
@@ -173,7 +180,7 @@ class GHexMultiNodeExchange:
         domain_desc = DomainDescriptor(
             self._domain_id_gen(), all_global.tolist(), local_halo.tolist()
         )
-        log.error(
+        log.debug(
             f"domain descriptor for dim='{dim.value}' with properties {self._domain_descriptor_info(domain_desc)} created"
         )
         return domain_desc
@@ -203,16 +210,16 @@ class GHexMultiNodeExchange:
         domain_descriptor = self._domain_descriptors[dim]
         assert domain_descriptor is not None, f"domain descriptor for {dim.value} not found"
         applied_patterns = [
-            pattern(make_field_descriptor(domain_descriptor, f)) for f in fields
+            pattern(make_field_descriptor(domain_descriptor, f, arch=ghex_arch)) for f in fields
         ]
         handle = self._comm.exchange(applied_patterns)
-        log.error(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' initiated.")
         return MultiNodeResult(handle, applied_patterns)
 
     def exchange_and_wait(self, dim: Dimension, *fields: tuple):
         res = self.exchange(dim, *fields)
         res.wait()
-        log.error(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
+        log.debug(f"exchange for {len(fields)} fields of dimension ='{dim.value}' done.")
 
 
 @dataclass

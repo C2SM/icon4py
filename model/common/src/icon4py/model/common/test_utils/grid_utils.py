@@ -12,9 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
 
+from icon4py.model.common.settings import xp
 import numpy as np
 import pytest
 
+import logging
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -46,6 +48,7 @@ GLOBAL_NUM_LEVELS = 80
 
 MCH_CH_R04B09_LEVELS = 65
 
+log = logging.getLogger(__name__)
 
 @functools.cache
 def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGrid:
@@ -109,11 +112,11 @@ def construct_icon_grid(
     limited_area: bool,
     on_gpu: bool,
 ) -> IconGrid:
-    print("Constructing icon grid in py")
-    print("num_cells:%s", num_cells)
-    print("num_edges:%s", num_edges)
-    print("num_vertices:%s", num_vertices)
-    print("num_levels:%s", num_levels)
+    log.debug("Constructing icon grid in py")
+    log.debug("num_cells:%s", num_cells)
+    log.debug("num_edges:%s", num_edges)
+    log.debug("num_vertices:%s", num_vertices)
+    log.debug("num_levels:%s", num_levels)
 
     config = GridConfig(
         horizontal_config=HorizontalGridSize(
@@ -125,12 +128,12 @@ def construct_icon_grid(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-    print("cells_start_index shape:%s", np.asarray(cells_start_index).shape)
-    print("c2e shape:%s", np.asarray(c2e).shape)
-    print("v2e shape:%s", np.asarray(v2e).shape)
-    print("c2e2c:%s", np.asarray(c2e2c).shape)
-    print("he:%s", np.asarray(range(c2e2c.shape[0])))
-    print("shape he:%s", np.asarray(range(c2e2c.shape[0])).shape)
+    #log.debug("cells_start_index shape:%s", np.asarray(cells_start_index).shape)
+    log.debug("c2e shape:%s", np.asarray(c2e).shape)
+    log.debug("v2e shape:%s", np.asarray(v2e).shape)
+    log.debug("c2e2c:%s", np.asarray(c2e2c).shape)
+    log.debug("he:%s", np.asarray(range(c2e2c.shape[0])))
+    log.debug("shape he:%s", np.asarray(range(c2e2c.shape[0])).shape)
     c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
 
     grid = (
