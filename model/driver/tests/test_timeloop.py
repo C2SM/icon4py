@@ -389,29 +389,29 @@ def test_run_timeloop_single_step(
         )
 
     assert dallclose(
-        vn_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+        vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert dallclose(
-        w_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+        w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert dallclose(
-        exner_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+        exner_sp.asnumpy(),
     )
 
     assert dallclose(
-        theta_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+        theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert dallclose(
-        rho_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+        rho_sp.asnumpy(),
     )

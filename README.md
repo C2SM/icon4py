@@ -37,7 +37,7 @@ python3.10 -m venv .venv
 
 # Activate the virtual environment and make sure that 'wheel' is installed
 source .venv/bin/activate
-pip install --upgrade wheel
+pip install --upgrade wheel pip setuptools
 
 # Install all the ICON4Py packages and its dependencies
 # External dependencies would be checked out at './_external_src'
