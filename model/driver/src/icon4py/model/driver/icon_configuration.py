@@ -130,15 +130,15 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 1, 1, 6, 0, 0),
+            end_date=datetime(1, 1, 1, 1, 0, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
         )
         output_config = IconOutputConfig(
             output_do=True,
-            output_time_interval=timedelta(seconds=21600),
-            output_file_time_interval=timedelta(seconds=21600),
+            output_time_interval=timedelta(seconds=3600),
+            output_file_time_interval=timedelta(seconds=3600),
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
         )

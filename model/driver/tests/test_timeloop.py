@@ -390,55 +390,55 @@ def test_run_timeloop_single_step(
                         f.write("\n")
 
         printing(
-            rho_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+            rho_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].rho.ndarray,
             "rho",
         )
         printing(
-            exner_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+            exner_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].exner.ndarray,
             "exner",
         )
         printing(
-            theta_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+            theta_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].theta_v.ndarray,
             "theta_v",
         )
         printing(
-            w_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+            w_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].w.ndarray,
             "w",
         )
         printing(
-            vn_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+            vn_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].vn.ndarray,
             "vn",
         )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-        vn_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].vn.ndarray,
+        vn_sp.ndarray,
         atol=6e-12,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-        w_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].w.ndarray,
+        w_sp.ndarray,
         atol=8e-14,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-        exner_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].exner.ndarray,
+        exner_sp.ndarray,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-        theta_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].theta_v.ndarray,
+        theta_sp.ndarray,
         atol=4e-12,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-        rho_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].rho.ndarray,
+        rho_sp.ndarray,
     )

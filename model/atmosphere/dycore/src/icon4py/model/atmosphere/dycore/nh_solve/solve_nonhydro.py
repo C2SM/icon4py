@@ -774,31 +774,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        nhsolve_prog.predictor_stencils_7_8_9(
-            rho=prognostic_state[nnow].rho,
-            rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
-            theta_v=prognostic_state[nnow].theta_v,
-            theta_ref_mc=self.metric_state_nonhydro.theta_ref_mc,
-            rho_ic=diagnostic_state_nh.rho_ic,
-            z_rth_pr_1=self.z_rth_pr_1,
-            z_rth_pr_2=self.z_rth_pr_2,
-            wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
-            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
-            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-            k_field=self.k_field,
-            nlev=self.grid.num_levels,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-        # nhsolve_prog.predictor_stencils_7_8_9_firststep(
+        # nhsolve_prog.predictor_stencils_7_8_9(
         #     rho=prognostic_state[nnow].rho,
         #     rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
         #     theta_v=prognostic_state[nnow].theta_v,
@@ -810,23 +786,9 @@ class SolveNonhydro:
         #     vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
         #     exner_pr=diagnostic_state_nh.exner_pr,
         #     d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
-        #     z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     k_field=self.k_field,
-        #     nlev=self.grid.num_levels,
-        #     horizontal_start=start_cell_lb_plus2,
-        #     horizontal_end=end_cell_halo,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.num_levels,
-        #     offset_provider=self.grid.offset_providers,
-        # )
-        # nhsolve_prog.predictor_stencils_7_8_9_secondstep(
-        #     vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-        #     exner_pr=diagnostic_state_nh.exner_pr,
-        #     d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
         #     ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+        #     z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
         #     z_th_ddz_exner_c=self.z_th_ddz_exner_c,
         #     k_field=self.k_field,
         #     nlev=self.grid.num_levels,
@@ -836,6 +798,50 @@ class SolveNonhydro:
         #     vertical_end=self.grid.num_levels,
         #     offset_provider=self.grid.offset_providers,
         # )
+        nhsolve_prog.predictor_stencils_7_8_9_firststep(
+            rho=prognostic_state[nnow].rho,
+            rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
+            theta_v=prognostic_state[nnow].theta_v,
+            theta_ref_mc=self.metric_state_nonhydro.theta_ref_mc,
+            rho_ic=diagnostic_state_nh.rho_ic,
+            z_rth_pr_1=self.z_rth_pr_1,
+            z_rth_pr_2=self.z_rth_pr_2,
+            wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
+            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
+            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            k_field=self.k_field,
+            nlev=self.grid.num_levels,
+            horizontal_start=start_cell_lb_plus2,
+            horizontal_end=end_cell_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+        nhsolve_prog.predictor_stencils_7_8_9_secondstep(
+            vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            z_theta_v_pr_ic=self.z_theta_v_pr_ic,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
+            ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
+            z_th_ddz_exner_c=self.z_th_ddz_exner_c,
+            k_field=self.k_field,
+            nlev=self.grid.num_levels,
+            horizontal_start=start_cell_lb_plus2,
+            horizontal_end=end_cell_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+        log.info(
+            f" MAX RTH1: {self.z_rth_pr_1.ndarray.max():.12e} , MAX RTH2: {self.z_rth_pr_2.ndarray.max():.12e}"
+        )
+        log.info(
+            f" MAX THETAVPR: {self.z_theta_v_pr_ic.ndarray.max():.12e} , MAX THETAV: {diagnostic_state_nh.theta_v_ic.ndarray.max():.12e} , MAX THETAVPR: {self.z_th_ddz_exner_c.ndarray.max():.12e}"
+        )
         
         # Perturbation theta at top and surface levels
         nhsolve_prog.predictor_stencils_11_lower_upper(
@@ -1254,6 +1260,12 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
+        log.info(
+            f" PREDICTOR 0 MAX VN: {prognostic_state[nnew].vn.ndarray.max():.12e} , MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
+        log.info(
+            f" PREDICTOR 0 MAX RHO: {prognostic_state[nnew].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.12e}"
+        )
 
         if self.config.is_iau_active:
             add_analysis_increments_from_data_assimilation(
@@ -1400,6 +1412,14 @@ class SolveNonhydro:
         else:
             log.debug("exchanging prognostic field 'w'")
             self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
+
+        log.info(
+            f" PREDICTOR MAX VN: {prognostic_state[nnew].vn.ndarray.max():.12e} , MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
+        log.info(
+            f" PREDICTOR MAX RHO: {prognostic_state[nnew].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.12e}"
+        )
+        
 
     def run_corrector_step(
         self,
@@ -1615,6 +1635,12 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
+        log.info(
+            f" CORRECTOR 0 MAX VN: {prognostic_state[nnew].vn.ndarray.max():.12e} , MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR 0 MAX RHO: {prognostic_state[nnew].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.12e}"
+        )
 
         # TODO: this does not get accessed in FORTRAN
         if self.config.is_iau_active:
@@ -1685,20 +1711,29 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            # verified for e-9
-            log.debug(f"corrector: start stencile 41")
-            compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=self.interpolation_state.geofac_div,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                z_flxdiv_mass=self.z_flxdiv_mass,
-                z_flxdiv_theta=self.z_flxdiv_theta,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        # verified for e-9
+        log.debug(f"corrector: start stencile 41")
+        log.info(
+        f" CORRECTOR DEBUG MIN GEOF: {self.interpolation_state.geofac_div.ndarray.min():.12e} , MAX GEOF: {self.interpolation_state.geofac_div.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MIN MASSFL: {diagnostic_state_nh.mass_fl_e.ndarray.min():.12e} , MAX MASSFL: {diagnostic_state_nh.mass_fl_e.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MIN THETAFL: {self.z_theta_v_fl_e.ndarray.min():.12e} , MAX THETAFL: {self.z_theta_v_fl_e.ndarray.max():.12e}"
+        )
+        compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=self.interpolation_state.geofac_div,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector start stencil 42 44 45 45b")
@@ -1779,6 +1814,12 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
+        log.info(
+            f" CORRECTOR DEBUG MIN DIVT: {self.z_flxdiv_theta.ndarray.min():.12e} , MAX DIVT: {self.z_flxdiv_theta.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MIN CONR: {z_fields.z_contr_w_fl_l.ndarray.min():.12e} , MAX CONR: {z_fields.z_contr_w_fl_l.ndarray.max():.12e}"
+        )
         nhsolve_prog.stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
@@ -1819,6 +1860,24 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug(f"corrector start stencil 52")
+        log.info(
+            f" CORRECTOR DEBUG MIN ALPHA: {z_fields.z_alpha.ndarray.min():.12e} , MIN BETA: {z_fields.z_beta.ndarray.min():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MAX ALPHA: {z_fields.z_alpha.ndarray.max():.12e} , MAX BETA: {z_fields.z_beta.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MAX W_EXPL: {z_fields.z_w_expl.ndarray.max():.12e} , MAX EXNER_EXPL: {z_fields.z_exner_expl.ndarray.max():.12e} , MAX Z_Q: {z_fields.z_q.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MIN THETA : {diagnostic_state_nh.theta_v_ic.ndarray.min():.12e} , MAX THETA: {diagnostic_state_nh.theta_v_ic.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MIN VN : {prognostic_state[nnew].vn.ndarray.min():.12e} , MAX VN: {prognostic_state[nnew].vn.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR DEBUG MIN W : {prognostic_state[nnew].w.ndarray.min():.12e} , MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
         solve_tridiagonal_matrix_for_w_forward_sweep(
             vwind_impl_wgt=self.metric_state_nonhydro.vwind_impl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
@@ -1837,6 +1896,9 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
+        log.info(
+            f" CORRECTOR DEBUG 2 MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
         log.debug(f"corrector start stencil 53")
         solve_tridiagonal_matrix_for_w_back_substitution(
             z_q=z_fields.z_q,
@@ -1846,6 +1908,12 @@ class SolveNonhydro:
             vertical_start=1,
             vertical_end=self.grid.num_levels,
             offset_provider={},
+        )
+        log.info(
+            f" CORRECTOR 1 MAX VN: {prognostic_state[nnew].vn.ndarray.max():.12e} , MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR 1 MAX RHO: {prognostic_state[nnew].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.12e}"
         )
 
         if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
@@ -1886,6 +1954,12 @@ class SolveNonhydro:
             vertical_start=int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
+        )
+        log.info(
+            f" CORRECTOR 2 MAX VN: {prognostic_state[nnew].vn.ndarray.max():.12e} , MAX W: {prognostic_state[nnew].w.ndarray.max():.12e}"
+        )
+        log.info(
+            f" CORRECTOR 2 MAX RHO: {prognostic_state[nnew].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state[nnew].theta_v.ndarray.max():.12e}"
         )
 
         if lprep_adv:

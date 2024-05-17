@@ -1069,10 +1069,10 @@ class TimeLoop:
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.5e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.5e}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.12e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.12e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.5e}"
+                f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.12e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
@@ -1097,14 +1097,15 @@ class TimeLoop:
                 prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
             )
 
-            output_state.output_data(
-                self._simulation_date,
-                prognostic_state_list[self._now],
-                diagnostic_state,
-                solve_nonhydro=self.solve_nonhydro,
-                nh_diagnostic_state=solve_nonhydro_diagnostic_state,
-                diffusion=self.diffusion,
-            )
+            if output_state is not None:
+                output_state.output_data(
+                    self._simulation_date,
+                    prognostic_state_list[self._now],
+                    diagnostic_state,
+                    solve_nonhydro=self.solve_nonhydro,
+                    nh_diagnostic_state=solve_nonhydro_diagnostic_state,
+                    diffusion=self.diffusion,
+                )
 
         timer.summary(True)
 
@@ -1168,6 +1169,12 @@ class TimeLoop:
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
+            )
+            log.info(
+                f" MAX VN: {prognostic_state_list[self._next].vn.ndarray.max():.12e} , MAX W: {prognostic_state_list[self._next].w.ndarray.max():.12e}"
+            )
+            log.info(
+                f" MAX RHO: {prognostic_state_list[self._next].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state_list[self._next].theta_v.ndarray.max():.12e}"
             )
 
             do_recompute = False
