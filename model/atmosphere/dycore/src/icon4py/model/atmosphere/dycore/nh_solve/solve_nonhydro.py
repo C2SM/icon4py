@@ -72,7 +72,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     predictor_stencils_37_38,
     stencils_39_40,
     stencils_43_44_45_45b,
-    # stencils_47_48_49,
+    stencils_47_48_49,
     stencils_61_62,
     stencils_42_44_45_45b,
     compute_z_raylfac,
@@ -1297,7 +1297,7 @@ class SolveNonhydro:
                 vertical_end=1,
                 offset_provider={},
             )
-        nhsolve_prog.stencils_47_48_49(
+        stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1846,7 +1846,7 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
-        nhsolve_prog.stencils_47_48_49(
+        stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
