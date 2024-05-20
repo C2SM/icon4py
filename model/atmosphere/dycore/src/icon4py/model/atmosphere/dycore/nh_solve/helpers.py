@@ -339,7 +339,7 @@ update_mass_flux_weighted = CachedProgram(update_mass_flux_weighted_orig)
 
 update_theta_v = CachedProgram(update_theta_v_orig)
 
-en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
+#en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
 
 init_two_cell_kdim_fields_with_zero_vp = CachedProgram(init_two_cell_kdim_fields_with_zero_vp_orig)
 

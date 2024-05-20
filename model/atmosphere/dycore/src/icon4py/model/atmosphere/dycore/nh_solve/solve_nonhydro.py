@@ -56,7 +56,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     update_mass_volume_flux,
     update_mass_flux_weighted,
     update_theta_v,
-    en_smag_fac_for_zero_nshift,
+    #en_smag_fac_for_zero_nshift,
     init_two_cell_kdim_fields_with_zero_vp,
     init_two_cell_kdim_fields_with_zero_wp,
     init_two_edge_kdim_fields_with_zero_wp,
@@ -214,7 +214,7 @@ from icon4py.model.common.grid.horizontal import (
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 
-# from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
+from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import backend
 
