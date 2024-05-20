@@ -61,7 +61,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     init_two_cell_kdim_fields_with_zero_wp,
     init_two_edge_kdim_fields_with_zero_wp,
     init_test_fields,
-    predictor_stencils_2_3,
+    #predictor_stencils_2_3,
     predictor_stencils_4_5_6,
     predictor_stencils_7_8_9_firststep,
     predictor_stencils_7_8_9_secondstep,
@@ -71,13 +71,13 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     predictor_stencils_37_38,
     stencils_39_40,
     stencils_43_44_45_45b,
-    stencils_47_48_49,
+    #stencils_47_48_49,
     stencils_61_62,
     stencils_42_44_45_45b,
 )
 
 
-# import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
+import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
 
 # from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
@@ -801,7 +801,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        predictor_stencils_2_3(
+        nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
             exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
@@ -1295,7 +1295,7 @@ class SolveNonhydro:
                 vertical_end=1,
                 offset_provider={},
             )
-        stencils_47_48_49(
+        nhsolve_prog.stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1843,7 +1843,7 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
-        stencils_47_48_49(
+        nhsolve_prog.stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
