@@ -18,116 +18,162 @@ from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
 
-import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
-import icon4py.model.common.constants as constants
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
-)
-
-from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
+from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     accumulate_prep_adv_fields,
-)
-from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
-)
-from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn,
-)
-from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
-)
-from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
-)
-from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
-)
-from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism,
-)
-from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
-)
-from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
-from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn,
     compute_avg_vn_and_graddiv_vn_and_vt,
-)
-from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
-)
-from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
-)
-from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
     compute_graddiv2_of_vn,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
-)
-from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
-)
-from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    compute_mass_flux,
     compute_perturbation_of_rho_and_theta,
-)
-from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables,
-)
-from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
-)
-from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
     compute_theta_and_exner,
-)
-from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
-)
-from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp,
-)
-from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
-)
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
+    solve_tridiagonal_matrix_for_w_back_substitution,
+    solve_tridiagonal_matrix_for_w_forward_sweep,
+    update_dynamical_exner_time_increment,
+    update_mass_volume_flux,
+    update_mass_flux_weighted,
+    update_theta_v,
+    en_smag_fac_for_zero_nshift,
     init_two_cell_kdim_fields_with_zero_vp,
-)
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
     init_two_cell_kdim_fields_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
-    solve_tridiagonal_matrix_for_w_back_substitution,
-)
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
-    solve_tridiagonal_matrix_for_w_forward_sweep,
-)
+
+
+import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
+import icon4py.model.common.constants as constants
+
+# from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+#     init_cell_kdim_field_with_zero_wp,
+# )
+#
+# from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
+#     accumulate_prep_adv_fields,
+# )
+# from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
+#     add_analysis_increments_from_data_assimilation,
+# )
+# from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
+#     add_analysis_increments_to_vn,
+# )
+# from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
+#     add_temporal_tendencies_to_vn,
+# )
+# from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+#     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
+# )
+# from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
+#     add_vertical_wind_derivative_to_divergence_damping,
+# )
+# from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
+#     apply_2nd_order_divergence_damping,
+# )
+# from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+#     apply_4th_order_divergence_damping,
+# )
+# from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+#     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
+# )
+# from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
+#     apply_rayleigh_damping_mechanism,
+# )
+# from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
+#     apply_weighted_2nd_and_4th_order_divergence_damping,
+# )
+# from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
+#     compute_approx_of_2nd_vertical_derivative_of_exner,
+# )
+# from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
+# from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+#     compute_avg_vn_and_graddiv_vn_and_vt,
+# )
+# from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
+#     compute_divergence_of_fluxes_of_rho_and_theta,
+# )
+# from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
+#     compute_dwdz_for_divergence_damping,
+# )
+# from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
+#     compute_exner_from_rhotheta,
+# )
+# from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
+#     compute_graddiv2_of_vn,
+# )
+# from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+#     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
+# )
+# from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+#     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
+# )
+# from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+#     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
+# )
+# from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+#     compute_hydrostatic_correction_term,
+# )
+# from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
+# from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+#     compute_perturbation_of_rho_and_theta,
+# )
+# from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
+#     compute_results_for_thermodynamic_variables,
+# )
+# from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
+#     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
+# )
+# from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
+#     compute_theta_and_exner,
+# )
+# from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
+#     compute_vn_on_lateral_boundary,
+# )
+# from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
+#     copy_cell_kdim_field_to_vp,
+# )
+# from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+#     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+# )
+# from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
+#     mo_math_gradients_grad_green_gauss_cell_dsl,
+# )
+# from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
+#     init_two_cell_kdim_fields_with_zero_vp,
+# )
+# from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
+#     init_two_cell_kdim_fields_with_zero_wp,
+# )
+# from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
+#     init_two_edge_kdim_fields_with_zero_wp,
+# )
+# from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
+#     solve_tridiagonal_matrix_for_w_back_substitution,
+# )
+# from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+#     solve_tridiagonal_matrix_for_w_forward_sweep,
+# )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -140,16 +186,17 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_divdamp_fields,
     compute_z_raylfac,
 )
-from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
-    update_dynamical_exner_time_increment,
-)
-from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
-    update_mass_volume_flux,
-)
-from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
-    update_mass_flux_weighted,
-)
-from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
+
+# from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
+#     update_dynamical_exner_time_increment,
+# )
+# from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
+#     update_mass_volume_flux,
+# )
+# from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
+#     update_mass_flux_weighted,
+# )
+# from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
     VelocityAdvection,
 )
@@ -166,7 +213,8 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
+
+# from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import backend
 
@@ -773,7 +821,7 @@ class SolveNonhydro:
             if self.vertical_params.nflatlev == 1:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
-            
+
         # nhsolve_prog.predictor_stencils_7_8_9(
         #     rho=prognostic_state[nnow].rho,
         #     rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -820,7 +868,7 @@ class SolveNonhydro:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
-        
+
         nhsolve_prog.predictor_stencils_7_8_9_secondstep(
             vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
             theta_v_ic=diagnostic_state_nh.theta_v_ic,
