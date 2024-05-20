@@ -61,6 +61,14 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl as mo_math_divrot_rot_vertex_ri_dsl_orig,
 )
+from icon4py.model.atmosphere.dycore.velocity.velocity_advection_program import (
+    extrapolate_at_top as extrapolate_at_top_orig,
+    fused_stencil_14 as fused_stencil_14_orig,
+    fused_stencils_4_5 as fused_stencils_4_5_orig,
+    fused_stencils_9_10 as fused_stencils_9_10_orig,
+    fused_stencils_11_to_13 as fused_stencils_11_to_13_orig,
+    fused_stencils_16_to_17 as fused_stencils_16_to_17_orig,
+)
 from icon4py.model.common.settings import device
 
 
@@ -173,3 +181,10 @@ mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = CachedProgram(
 )
 
 mo_math_divrot_rot_vertex_ri_dsl = CachedProgram(mo_math_divrot_rot_vertex_ri_dsl_orig)
+
+fused_stencils_4_5 = CachedProgram(fused_stencils_4_5_orig)
+extrapolate_at_top = CachedProgram(extrapolate_at_top_orig)
+fused_stencils_9_10 = CachedProgram(fused_stencils_9_10_orig)
+fused_stencils_11_to_13 = CachedProgram(fused_stencils_11_to_13_orig)
+fused_stencil_14 = CachedProgram(fused_stencil_14_orig)
+fused_stencils_16_to_17 = CachedProgram(fused_stencils_16_to_17_orig)

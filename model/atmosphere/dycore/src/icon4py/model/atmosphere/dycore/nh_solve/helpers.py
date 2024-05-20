@@ -129,6 +129,22 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl as mo_math_gradients_grad_green_gauss_cell_dsl_orig,
 )
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
+    compute_horizontal_advection_of_rho_and_theta as compute_horizontal_advection_of_rho_and_theta_orig,
+    init_test_fields as init_test_fields_orig,
+    predictor_stencils_2_3 as predictor_stencils_2_3_orig,
+    predictor_stencils_4_5_6 as predictor_stencils_4_5_6_orig,
+    predictor_stencils_7_8_9_firststep as predictor_stencils_7_8_9_firststep_orig,
+    predictor_stencils_7_8_9_secondstep as predictor_stencils_7_8_9_secondstep_orig,
+    predictor_stencils_11_lower_upper as predictor_stencils_11_lower_upper_orig,
+    predictor_stencils_35_36 as predictor_stencils_35_36_orig,
+    predictor_stencils_37_38 as predictor_stencils_37_38_orig,
+    stencils_39_40 as stencils_39_40_orig,
+    stencils_42_44_45_45b as stencils_42_44_45_45b_orig,
+    stencils_43_44_45_45b as stencils_43_44_45_45b_orig,
+    stencils_47_48_49 as stencils_47_48_49_orig,
+    stencils_61_62 as stencils_61_62_orig,
+)
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution as solve_tridiagonal_matrix_for_w_back_substitution_orig,
 )
@@ -346,5 +362,21 @@ init_two_cell_kdim_fields_with_zero_wp = CachedProgram(init_two_cell_kdim_fields
 
 init_two_edge_kdim_fields_with_zero_wp = CachedProgram(init_two_edge_kdim_fields_with_zero_wp_orig)
 
+init_test_fields = CachedProgram(init_test_fields_orig)
+predictor_stencils_2_3 = CachedProgram(predictor_stencils_2_3_orig)
+predictor_stencils_4_5_6 = CachedProgram(predictor_stencils_4_5_6_orig)
+predictor_stencils_7_8_9_firststep = CachedProgram(predictor_stencils_7_8_9_firststep_orig)
+predictor_stencils_7_8_9_secondstep = CachedProgram(predictor_stencils_7_8_9_secondstep_orig)
+predictor_stencils_11_lower_upper = CachedProgram(predictor_stencils_11_lower_upper_orig)
+compute_horizontal_advection_of_rho_and_theta = CachedProgram(
+    compute_horizontal_advection_of_rho_and_theta_orig
+)
+predictor_stencils_35_36 = CachedProgram(predictor_stencils_35_36_orig)
+predictor_stencils_37_38 = CachedProgram(predictor_stencils_37_38_orig)
+stencils_39_40 = CachedProgram(stencils_39_40_orig)
+stencils_43_44_45_45b = CachedProgram(stencils_43_44_45_45b_orig)
+stencils_47_48_49 = CachedProgram(stencils_47_48_49_orig)
+stencils_61_62 = CachedProgram(stencils_61_62_orig)
+stencils_42_44_45_45b = CachedProgram(stencils_42_44_45_45b_orig)
 
 # _init_cell_kdim_field_with_zero_wp = CachedProgram(_init_cell_kdim_field_with_zero_wp_orig, with_domain=False)
