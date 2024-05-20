@@ -28,11 +28,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    #copy_field,
-    #init_diffusion_local_fields_for_regular_timestep,
+    # copy_field,
+    # init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
-    #scale_k,
-    #setup_fields_for_initial_step,
+    # scale_k,
+    # setup_fields_for_initial_step,
     zero_field,
 )
 
@@ -87,6 +87,7 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+
 # from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
 #     mo_intp_rbf_rbf_vec_interpol_vertex,
 # )
