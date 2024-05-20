@@ -114,6 +114,9 @@ from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp as copy_cell_kdim_field_to_vp_orig,
 )
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    init_cell_kdim_field_with_zero_wp as init_cell_kdim_field_with_zero_wp_orig,
+)
 from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
     init_two_cell_kdim_fields_with_zero_vp as init_two_cell_kdim_fields_with_zero_vp_orig,
 )
@@ -150,6 +153,9 @@ from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substit
 )
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep as solve_tridiagonal_matrix_for_w_forward_sweep_orig,
+)
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    compute_z_raylfac as compute_z_raylfac_orig,
 )
 from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment as update_dynamical_exner_time_increment_orig,
@@ -356,6 +362,8 @@ update_theta_v = CachedProgram(update_theta_v_orig)
 
 # en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
 
+init_cell_kdim_field_with_zero_wp = CachedProgram(init_cell_kdim_field_with_zero_wp_orig)
+
 init_two_cell_kdim_fields_with_zero_vp = CachedProgram(init_two_cell_kdim_fields_with_zero_vp_orig)
 
 init_two_cell_kdim_fields_with_zero_wp = CachedProgram(init_two_cell_kdim_fields_with_zero_wp_orig)
@@ -379,4 +387,5 @@ stencils_47_48_49 = CachedProgram(stencils_47_48_49_orig)
 stencils_61_62 = CachedProgram(stencils_61_62_orig)
 stencils_42_44_45_45b = CachedProgram(stencils_42_44_45_45b_orig)
 
+compute_z_raylfac = CachedProgram(compute_z_raylfac_orig, with_domain=False)
 # _init_cell_kdim_field_with_zero_wp = CachedProgram(_init_cell_kdim_field_with_zero_wp_orig, with_domain=False)

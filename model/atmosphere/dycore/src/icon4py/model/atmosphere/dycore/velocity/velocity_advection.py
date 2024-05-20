@@ -15,6 +15,10 @@ from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 
+from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+)
+
 # import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 # from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
 #     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -67,7 +71,7 @@ from icon4py.model.atmosphere.dycore.velocity.helpers import (
     interpolate_to_cell_center,
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
     interpolate_vt_to_interface_edges,
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+    # mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim

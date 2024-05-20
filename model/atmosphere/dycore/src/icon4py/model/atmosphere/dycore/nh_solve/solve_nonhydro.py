@@ -57,11 +57,12 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     update_mass_flux_weighted,
     update_theta_v,
     # en_smag_fac_for_zero_nshift,
+    init_cell_kdim_field_with_zero_wp,
     init_two_cell_kdim_fields_with_zero_vp,
     init_two_cell_kdim_fields_with_zero_wp,
     init_two_edge_kdim_fields_with_zero_wp,
     init_test_fields,
-    #predictor_stencils_2_3,
+    # predictor_stencils_2_3,
     predictor_stencils_4_5_6,
     predictor_stencils_7_8_9_firststep,
     predictor_stencils_7_8_9_secondstep,
@@ -71,9 +72,10 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     predictor_stencils_37_38,
     stencils_39_40,
     stencils_43_44_45_45b,
-    #stencils_47_48_49,
+    # stencils_47_48_49,
     stencils_61_62,
     stencils_42_44_45_45b,
+    compute_z_raylfac,
 )
 
 
@@ -199,7 +201,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
     _calculate_divdamp_fields,
-    compute_z_raylfac,
+    # compute_z_raylfac,
 )
 
 # from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
@@ -1493,6 +1495,7 @@ class SolveNonhydro:
         # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
+        # TODO: to cached program
         _calculate_divdamp_fields(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
