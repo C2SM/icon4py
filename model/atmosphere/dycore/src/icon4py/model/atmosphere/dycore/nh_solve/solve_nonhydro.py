@@ -40,7 +40,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
-    compute_hydrostatic_correction_term,
+    # compute_hydrostatic_correction_term,
     compute_mass_flux,
     compute_perturbation_of_rho_and_theta,
     compute_results_for_thermodynamic_variables,
@@ -56,7 +56,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     update_mass_volume_flux,
     update_mass_flux_weighted,
     update_theta_v,
-    #en_smag_fac_for_zero_nshift,
+    # en_smag_fac_for_zero_nshift,
     init_two_cell_kdim_fields_with_zero_vp,
     init_two_cell_kdim_fields_with_zero_wp,
     init_two_edge_kdim_fields_with_zero_wp,
@@ -131,9 +131,10 @@ import icon4py.model.common.constants as constants
 # from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
 #     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
 # )
-# from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
-#     compute_hydrostatic_correction_term,
-# )
+from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term,
+)
+
 # from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
 # from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
 #     compute_perturbation_of_rho_and_theta,

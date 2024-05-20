@@ -89,9 +89,10 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressu
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates as compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_orig,
 )
-from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
-    compute_hydrostatic_correction_term as compute_hydrostatic_correction_term_orig,
-)
+
+# from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+#    compute_hydrostatic_correction_term as compute_hydrostatic_correction_term_orig,
+# )
 from icon4py.model.atmosphere.dycore.compute_mass_flux import (
     compute_mass_flux as compute_mass_flux_orig,
 )
@@ -144,9 +145,6 @@ from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
     update_mass_volume_flux as update_mass_volume_flux_orig,
 )
 from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v as update_theta_v_orig
-from icon4py.model.common.math.smagorinsky import (
-    en_smag_fac_for_zero_nshift as en_smag_fac_for_zero_nshift_orig,
-)
 from icon4py.model.common.settings import device
 
 
@@ -295,7 +293,8 @@ compute_horizontal_gradient_of_exner_pressure_for_multiple_levels = CachedProgra
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_orig
 )
 
-compute_hydrostatic_correction_term = CachedProgram(compute_hydrostatic_correction_term_orig)
+# temp switch off
+# compute_hydrostatic_correction_term = CachedProgram(compute_hydrostatic_correction_term_orig)
 
 compute_mass_flux = CachedProgram(compute_mass_flux_orig)
 
@@ -339,7 +338,7 @@ update_mass_flux_weighted = CachedProgram(update_mass_flux_weighted_orig)
 
 update_theta_v = CachedProgram(update_theta_v_orig)
 
-#en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
+# en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
 
 init_two_cell_kdim_fields_with_zero_vp = CachedProgram(init_two_cell_kdim_fields_with_zero_vp_orig)
 
