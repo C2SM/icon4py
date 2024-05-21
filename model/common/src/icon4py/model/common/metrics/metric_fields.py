@@ -25,12 +25,17 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import (
+    CellDim,
+    EdgeDim,
+    KDim,
+    Koff,
+    VertexDim,
+)
 from icon4py.model.common.math.helpers import (
     _grad_fd_tang,
     average_cell_kdim_level_up,
     average_edge_kdim_level_up,
-    difference_k_level_down,
     difference_k_level_up,
     grad_fd_norm,
 )
@@ -79,12 +84,11 @@ def _compute_ddqz_z_half(
     z_mc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
     nlev: int32,
-) -> Field[[CellDim, KDim], wpfloat]:
-    ddqz_z_half = where(
-        (k > int32(0)) & (k < nlev),
-        difference_k_level_down(z_mc),
-        where(k == 0, 2.0 * (z_ifc - z_mc), 2.0 * (z_mc(Koff[-1]) - z_ifc)),
-    )
+):
+    # TODO: change this to concat_where once it's merged
+    ddqz_z_half = where(k == 0, 2.0 * (z_ifc - z_mc), 0.0)
+    ddqz_z_half = where((k > 0) & (k < nlev), z_mc(Koff[-1]) - z_mc, ddqz_z_half)
+    ddqz_z_half = where(k == nlev, 2.0 * (z_mc(Koff[-1]) - z_ifc), ddqz_z_half)
     return ddqz_z_half
 
 
@@ -127,7 +131,7 @@ def compute_ddqz_z_half(
 
 
 @field_operator
-def _compute_ddqz_z_full(
+def _compute_ddqz_z_full_and_inverse(
     z_ifc: Field[[CellDim, KDim], wpfloat],
 ) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
     ddqz_z_full = difference_k_level_up(z_ifc)
@@ -136,7 +140,7 @@ def _compute_ddqz_z_full(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_ddqz_z_full(
+def compute_ddqz_z_full_and_inverse(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     ddqz_z_full: Field[[CellDim, KDim], wpfloat],
     inv_ddqz_z_full: Field[[CellDim, KDim], wpfloat],
@@ -161,7 +165,7 @@ def compute_ddqz_z_full(
         vertical_end: vertical end index
 
     """
-    _compute_ddqz_z_full(
+    _compute_ddqz_z_full_and_inverse(
         z_ifc,
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
@@ -347,7 +351,7 @@ def _compute_d2dexdz2_fac1_mc(
     grav: wpfloat,
     igradp_method: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    if igradp_method <= int32(3):
+    if igradp_method <= 3:
         d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
 
     return d2dexdz2_fac1_mc
@@ -365,7 +369,7 @@ def _compute_d2dexdz2_fac2_mc(
     h_scal_bg: wpfloat,
     igradp_method: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    if igradp_method <= int32(3):
+    if igradp_method <= 3:
         d2dexdz2_fac2_mc = (
             2.0
             * grav
@@ -488,7 +492,39 @@ def compute_ddxt_z_half_e(
 
 
 @program
-def compute_ddxnt_z_full(
+def compute_ddxn_z_full(
     z_ddxnt_z_half_e: Field[[EdgeDim, KDim], float], ddxn_z_full: Field[[EdgeDim, KDim], float]
 ):
     average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
+
+
+@field_operator
+def _compute_vwind_expl_wgt(vwind_impl_wgt: Field[[CellDim], wpfloat]) -> Field[[CellDim], wpfloat]:
+    return 1.0 - vwind_impl_wgt
+
+
+@program(grid_type=GridType.UNSTRUCTURED)
+def compute_vwind_expl_wgt(
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    """
+    Compute vwind_expl_wgt.
+
+    See mo_vertical_grid.f90
+
+    Args:
+        vwind_impl_wgt: offcentering in vertical mass flux
+        vwind_expl_wgt: (output) 1 - of vwind_impl_wgt
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+
+    """
+
+    _compute_vwind_expl_wgt(
+        vwind_impl_wgt=vwind_impl_wgt,
+        out=vwind_expl_wgt,
+        domain={CellDim: (horizontal_start, horizontal_end)},
+    )

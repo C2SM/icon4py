@@ -87,8 +87,8 @@ class TestComputeExplicitPartForRhoAndExner(StencilTest):
             theta_v_ic=theta_v_ic,
             ddt_exner_phy=ddt_exner_phy,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

@@ -62,8 +62,8 @@ class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
             theta_ref_ic=theta_ref_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(3),
+            vertical_start=3,
             vertical_end=int32(grid.num_levels),
         )

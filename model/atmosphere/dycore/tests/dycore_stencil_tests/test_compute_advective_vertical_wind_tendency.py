@@ -71,8 +71,8 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
             coeff1_dwdz=coeff1_dwdz,
             coeff2_dwdz=coeff2_dwdz,
             ddt_w_adv=ddt_w_adv,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )

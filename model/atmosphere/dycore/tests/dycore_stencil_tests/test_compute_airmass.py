@@ -43,8 +43,8 @@ class TestComputeAirmass(StencilTest):
             ddqz_z_full_in=ddqz_z_full_in,
             deepatmo_t1mc_in=deepatmo_t1mc_in,
             airmass_out=airmass_out,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

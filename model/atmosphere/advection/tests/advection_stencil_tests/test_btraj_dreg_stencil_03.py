@@ -91,7 +91,7 @@ class TestBtrajDregStencil03(StencilTest):
 
         p_cell_idx = np.where(lvn_pos, cell_idx[:, 0], cell_idx[:, 1])
         p_cell_blk = np.where(lvn_pos, cell_blk[:, 0], cell_blk[:, 1])
-        p_cell_rel_idx_dsl = np.where(lvn_pos, int32(0), int32(1))
+        p_cell_rel_idx_dsl = np.where(lvn_pos, 0, 1)
 
         depart_pts_1_x = np.broadcast_to(edge_verts_1_x, p_vn.shape) - p_vn * p_dt
         depart_pts_1_y = np.broadcast_to(edge_verts_1_y, p_vn.shape) - p_vt * p_dt
