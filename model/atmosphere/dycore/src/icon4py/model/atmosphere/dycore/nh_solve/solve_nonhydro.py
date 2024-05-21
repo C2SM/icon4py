@@ -503,19 +503,19 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        en_smag_fac_for_zero_nshift(
-            self.vertical_params.vct_a,
-            self.config.divdamp_fac,
-            self.config.divdamp_fac2,
-            self.config.divdamp_fac3,
-            self.config.divdamp_fac4,
-            self.config.divdamp_z,
-            self.config.divdamp_z2,
-            self.config.divdamp_z3,
-            self.config.divdamp_z4,
-            self.enh_divdamp_fac,
-            offset_provider={"Koff": KDim},
-        )
+        # en_smag_fac_for_zero_nshift(
+        #     self.vertical_params.vct_a,
+        #     self.config.divdamp_fac,
+        #     self.config.divdamp_fac2,
+        #     self.config.divdamp_fac3,
+        #     self.config.divdamp_fac4,
+        #     self.config.divdamp_z,
+        #     self.config.divdamp_z2,
+        #     self.config.divdamp_z3,
+        #     self.config.divdamp_z4,
+        #     self.enh_divdamp_fac,
+        #     offset_provider={"Koff": KDim},
+        # )
 
         self.p_test_run = True
         self._initialized = True
@@ -803,20 +803,20 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        nhsolve_prog.predictor_stencils_2_3(
-            exner_exfac=self.metric_state_nonhydro.exner_exfac,
-            exner=prognostic_state[nnow].exner,
-            exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            z_exner_ex_pr=self.z_exner_ex_pr,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
-            k_field=self.k_field,
-            nlev=self.grid.num_levels,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider={},
-        )
+        # nhsolve_prog.predictor_stencils_2_3(
+        #     exner_exfac=self.metric_state_nonhydro.exner_exfac,
+        #     exner=prognostic_state[nnow].exner,
+        #     exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     z_exner_ex_pr=self.z_exner_ex_pr,
+        #     horizontal_start=start_cell_lb_plus2,
+        #     horizontal_end=end_cell_halo,
+        #     k_field=self.k_field,
+        #     nlev=self.grid.num_levels,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels + 1,
+        #     offset_provider={},
+        # )
 
         if self.config.igradp_method == 3:
             predictor_stencils_4_5_6(
@@ -1088,22 +1088,22 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
-        if self.config.igradp_method == 3:
-            compute_hydrostatic_correction_term(
-                theta_v=prognostic_state[nnow].theta_v,
-                ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
-                zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
-                theta_v_ic=diagnostic_state_nh.theta_v_ic,
-                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-                inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-                z_hydro_corr=self.z_hydro_corr,
-                grav_o_cpd=self.params.grav_o_cpd,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
-                vertical_start=self.grid.num_levels - 1,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        # if self.config.igradp_method == 3:
+        #     compute_hydrostatic_correction_term(
+        #         theta_v=prognostic_state[nnow].theta_v,
+        #         ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
+        #         zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
+        #         theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #         inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+        #         inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+        #         z_hydro_corr=self.z_hydro_corr,
+        #         grav_o_cpd=self.params.grav_o_cpd,
+        #         horizontal_start=start_edge_nudging_plus1,
+        #         horizontal_end=end_edge_local,
+        #         vertical_start=self.grid.num_levels - 1,
+        #         vertical_end=self.grid.num_levels,
+        #         offset_provider=self.grid.offset_providers,
+        #     )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
         hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
@@ -1297,29 +1297,29 @@ class SolveNonhydro:
                 vertical_end=1,
                 offset_provider={},
             )
-        nhsolve_prog.stencils_47_48_49(
-            w_nnew=prognostic_state[nnew].w,
-            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
-            z_rho_expl=z_fields.z_rho_expl,
-            z_exner_expl=z_fields.z_exner_expl,
-            rho_nnow=prognostic_state[nnow].rho,
-            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-            z_flxdiv_mass=self.z_flxdiv_mass,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            z_beta=z_fields.z_beta,
-            z_flxdiv_theta=self.z_flxdiv_theta,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-            k_field=self.k_field,
-            dtime=dtime,
-            nlev=self.grid.num_levels,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
-        )
+        # nhsolve_prog.stencils_47_48_49(
+        #     w_nnew=prognostic_state[nnew].w,
+        #     z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
+        #     z_rho_expl=z_fields.z_rho_expl,
+        #     z_exner_expl=z_fields.z_exner_expl,
+        #     rho_nnow=prognostic_state[nnow].rho,
+        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+        #     z_flxdiv_mass=self.z_flxdiv_mass,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     z_beta=z_fields.z_beta,
+        #     z_flxdiv_theta=self.z_flxdiv_theta,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+        #     k_field=self.k_field,
+        #     dtime=dtime,
+        #     nlev=self.grid.num_levels,
+        #     horizontal_start=start_cell_nudging,
+        #     horizontal_end=end_cell_local,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels + 1,
+        #     offset_provider=self.grid.offset_providers,
+        # )
 
         if self.config.is_iau_active:
             add_analysis_increments_from_data_assimilation(
@@ -1846,29 +1846,29 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
-        nhsolve_prog.stencils_47_48_49(
-            w_nnew=prognostic_state[nnew].w,
-            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-            w_concorr_c=diagnostic_state_nh.w_concorr_c,
-            z_rho_expl=z_fields.z_rho_expl,
-            z_exner_expl=z_fields.z_exner_expl,
-            rho_nnow=prognostic_state[nnow].rho,
-            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-            z_flxdiv_mass=self.z_flxdiv_mass,
-            exner_pr=diagnostic_state_nh.exner_pr,
-            z_beta=z_fields.z_beta,
-            z_flxdiv_theta=self.z_flxdiv_theta,
-            theta_v_ic=diagnostic_state_nh.theta_v_ic,
-            ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-            k_field=self.k_field,
-            dtime=dtime,
-            nlev=self.grid.num_levels,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
-        )
+        # nhsolve_prog.stencils_47_48_49(
+        #     w_nnew=prognostic_state[nnew].w,
+        #     z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
+        #     z_rho_expl=z_fields.z_rho_expl,
+        #     z_exner_expl=z_fields.z_exner_expl,
+        #     rho_nnow=prognostic_state[nnow].rho,
+        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+        #     z_flxdiv_mass=self.z_flxdiv_mass,
+        #     exner_pr=diagnostic_state_nh.exner_pr,
+        #     z_beta=z_fields.z_beta,
+        #     z_flxdiv_theta=self.z_flxdiv_theta,
+        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
+        #     ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+        #     k_field=self.k_field,
+        #     dtime=dtime,
+        #     nlev=self.grid.num_levels,
+        #     horizontal_start=start_cell_nudging,
+        #     horizontal_end=end_cell_local,
+        #     vertical_start=0,
+        #     vertical_end=self.grid.num_levels + 1,
+        #     offset_provider=self.grid.offset_providers,
+        # )
 
         # TODO: this is not tested in green line so far
         if self.config.is_iau_active:
