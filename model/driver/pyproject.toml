@@ -39,16 +39,6 @@ all = ["icon4py-driver[io]"]
 io = [
   "xarray[complete]",
   "uxarray",
-  "cfunits",
-  "cftime",
-  "scikit-learn",
-  "numba",
-  "scipy",
-  "holoviews",
-  "matplotlib",
-  "cartopy",
-  "dask",
-  "datashader"
 ]
 
 [project.scripts]
