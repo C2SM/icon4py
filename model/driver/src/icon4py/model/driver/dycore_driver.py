@@ -52,6 +52,18 @@ from icon4py.model.driver.initialization_utils import (
 
 log = logging.getLogger(__name__)
 
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
 
 class TimeLoop:
     @classmethod
@@ -185,6 +197,16 @@ class TimeLoop:
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
+        self._next_simulation_date()
+        self._integrate_one_time_step(
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prognostic_state_list,
+            prep_adv,
+            inital_divdamp_fac_o2,
+            do_prep_adv,
+        )
+        profile_enable()
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
@@ -217,6 +239,7 @@ class TimeLoop:
             # TODO (Chia Rui): simple IO enough for JW test
 
         timer.summary(True)
+        profile_disable()
 
     def _integrate_one_time_step(
         self,
@@ -476,21 +499,7 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
     log.info("timeloop:  DONE")
 
 
-# global profiler object
-profiler = cProfile.Profile()
-
-
-def profile_enable():
-    profiler.enable()
-
-
-def profile_disable():
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.dump_stats(f"{__name__}.profile")
 
 
 if __name__ == "__main__":
-    profile_enable()
     main()
-    profile_disable()
