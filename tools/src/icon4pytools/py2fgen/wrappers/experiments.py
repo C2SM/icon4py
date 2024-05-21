@@ -18,7 +18,7 @@ class UninitialisedArrays(Enum):
     # these arrays are not initialised in this experiment and not used
     # therefore unpacking needs to be skipped as otherwise it will trigger
     # an error.
-    APE_R02B04 = ("ape_r02b04", ["mask_hdiff", "zd_diffcoef", "zd_vertoffset", "zd_intcoef"])
+    APE_R02B04 = ("ape_r02b04", ["mask_hdiff", "zd_diffcoef", "zd_vertoffset", "zd_intcoef", "hdef_ic", "div_ic", "dwdx", "dwdy"])
 
     def __init__(self, experiment: str, arrays: list[str]):
         self._experiment = experiment

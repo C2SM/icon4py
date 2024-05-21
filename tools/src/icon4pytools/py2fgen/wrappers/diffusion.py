@@ -54,7 +54,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import device, is_limited_area_experiment
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
@@ -147,7 +147,7 @@ def diffusion_init(
         filename=get_grid_filename(),
         num_levels=num_levels,
         on_gpu=on_gpu,
-        limited_area=True,
+        limited_area=True if is_limited_area_experiment else False,
     )
 
     # Edge geometry

@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import inspect
+import numpy as np
 from typing import Any, Sequence
 
 from gt4py.eve import Node, datamodels
@@ -22,6 +23,7 @@ from icon4py.model.common.config import GT4PyBackend
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
+    BUILTIN_TO_NUMPY_TYPE
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
@@ -46,6 +48,7 @@ class FuncParameter(Node):
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
     size_args_len: int = datamodels.field(init=False)
+    np_type: str = datamodels.field(init=False)
 
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
@@ -57,6 +60,7 @@ class FuncParameter(Node):
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
+        self.np_type = to_np_type(self.d_type)
 
 
 class Func(Node):
@@ -113,6 +117,9 @@ def to_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
+def to_np_type(scalar_type: ScalarKind) -> str:
+    """Convert a scalar type to its corresponding numpy type."""
+    return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 def to_iso_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding ISO C type."""
@@ -197,6 +204,7 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
+
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code
@@ -207,6 +215,7 @@ import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
+from icon4py.model.common.settings import xp
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly
@@ -268,7 +277,7 @@ def {{ func.name }}_wrapper(
         {% endif %}
 
         {%- if arg.name in _this_node.uninitialised_arrays -%}
-        {{ arg.name }} = np.ones((1,) * {{ arg.size_args_len }})
+        {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
         {%- else -%}
         {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
         {%- endif -%}

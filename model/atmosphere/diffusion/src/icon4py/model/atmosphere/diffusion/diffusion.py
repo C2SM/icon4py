@@ -748,6 +748,7 @@ class Diffusion:
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -780,6 +781,7 @@ class Diffusion:
         log.debug(
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
+
         calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -795,6 +797,7 @@ class Diffusion:
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
+
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
         calculate_nabla2_for_theta(
             kh_smag_e=self.kh_smag_e,

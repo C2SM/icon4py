@@ -109,7 +109,6 @@ def unpack_gpu(ptr, *sizes: int):
     mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
     memptr = cp.cuda.MemoryPointer(mem, 0)
     arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
-
     return arr
 
 
