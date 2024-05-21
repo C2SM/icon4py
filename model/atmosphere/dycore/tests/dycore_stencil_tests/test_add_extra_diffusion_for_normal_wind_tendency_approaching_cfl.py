@@ -141,9 +141,9 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
             dtime=dtime,
             c_lin_e=c_lin_e,
             z_w_con_c_full=z_w_con_c_full,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
 

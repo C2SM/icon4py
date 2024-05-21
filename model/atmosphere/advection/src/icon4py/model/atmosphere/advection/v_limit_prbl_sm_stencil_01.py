@@ -34,7 +34,7 @@ def _v_limit_prbl_sm_stencil_01(
     z_delta = p_face - p_face(Koff[1])
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 
-    l_limit = where(abs(z_delta) < -1.0 * z_a6i, int32(1), int32(0))
+    l_limit = where(abs(z_delta) < -1.0 * z_a6i, 1, 0)
 
     return l_limit
 

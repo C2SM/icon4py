@@ -32,7 +32,7 @@ class TestVLimitPrblSmStencil02(StencilTest):
     @staticmethod
     def reference(grid, l_limit: np.array, p_face: np.array, p_cc: np.array, **kwargs):
         q_face_up, q_face_low = np.where(
-            l_limit != int32(0),
+            l_limit != 0,
             np.where(
                 (p_cc < np.minimum(p_face[:, :-1], p_face[:, 1:])),
                 (p_cc, p_cc),
