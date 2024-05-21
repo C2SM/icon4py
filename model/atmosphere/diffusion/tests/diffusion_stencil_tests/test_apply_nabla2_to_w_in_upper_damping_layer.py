@@ -50,9 +50,9 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
             diff_multfac_n2w=diff_multfac_n2w,
             cell_area=cell_area,
             z_nabla2_c=z_nabla2_c,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
 

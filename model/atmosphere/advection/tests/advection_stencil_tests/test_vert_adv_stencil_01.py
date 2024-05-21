@@ -37,10 +37,10 @@ class TestVertAdvStencil01(StencilTest):
         k: np.array,
         ivadv_tracer: int32,
         iadv_slev_jt: int32,
-        p_dtime: np.float64,
+        p_dtime: float,
         **kwargs,
     ) -> np.array:
-        if ivadv_tracer != int32(0):
+        if ivadv_tracer != 0:
             tracer_new = np.where(
                 (iadv_slev_jt <= k),
                 (
@@ -67,10 +67,10 @@ class TestVertAdvStencil01(StencilTest):
         deepatmo_divzl = random_field(grid, KDim)
         deepatmo_divzu = random_field(grid, KDim)
         rhodz_new = random_field(grid, CellDim, KDim)
-        k = as_field((KDim,), np.arange(0, _shape(grid, KDim)[0], dtype=int32))
+        k = as_field((KDim,), np.arange(grid.num_levels, dtype=int32))
         p_dtime = np.float64(5.0)
-        ivadv_tracer = int32(1)
-        iadv_slev_jt = int32(4)
+        ivadv_tracer = 1
+        iadv_slev_jt = 4
         tracer_new = zero_field(grid, CellDim, KDim)
         return dict(
             tracer_now=tracer_now,

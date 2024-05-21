@@ -109,10 +109,10 @@ def line_intersect(
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
     # avoid division with zero
     d1 = line1_p2_lon - line1_p1_lon
-    d1 = where(d1 != float(0), d1, line1_p2_lon)
+    d1 = where(d1 != 0.0, d1, line1_p2_lon)
 
     d2 = line2_p2_lon - line2_p1_lon
-    d2 = where(d2 != float(0), d2, line2_p2_lon)
+    d2 = where(d2 != 0.0, d2, line2_p2_lon)
 
     m1 = (line1_p2_lat - line1_p1_lat) / d1
     m2 = (line2_p2_lat - line2_p1_lat) / d2
@@ -235,7 +235,7 @@ def _divide_flux_area_list_stencil_01(
     lvn_sys_pos = where(
         (p_vn * broadcast(tangent_orientation_dsl, (EdgeDim, KDim))) >= 0.0, True, False
     )
-    famask_bool = where(famask_int == int32(1), True, False)
+    famask_bool = where(famask_int == 1, True, False)
     # ------------------------------------------------- Case 1
     mask_case1 = lintersect_line1 & lintersect_line2 & famask_bool
     ps1_x, ps1_y = line_intersect(

@@ -68,9 +68,9 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
             nudgecoeff_e=nudgecoeff_e,
             vn=vn,
             nudgezone_diff=nudgezone_diff,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
 

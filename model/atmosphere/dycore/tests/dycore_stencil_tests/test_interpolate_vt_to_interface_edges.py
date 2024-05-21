@@ -63,8 +63,8 @@ class TestInterpolateVtToInterfaceEdges(StencilTest):
             wgtfac_e=wgtfac_e,
             vt=vt,
             z_vt_ie=z_vt_ie,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )

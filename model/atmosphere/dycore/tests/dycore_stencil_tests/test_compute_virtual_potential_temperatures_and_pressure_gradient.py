@@ -83,8 +83,8 @@ class TestComputeVirtualPotentialTemperaturesAndPressureGradient(StencilTest):
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
             z_th_ddz_exner_c=z_th_ddz_exner_c,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )

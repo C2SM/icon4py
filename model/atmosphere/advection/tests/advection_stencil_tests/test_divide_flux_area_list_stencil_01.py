@@ -49,7 +49,7 @@ def _ccw_numpy(
     dy1dx2 = dy1 * dx2
 
     lccw = np.where(dx1dy2 > dy1dx2, True, False)
-    ccw_out = np.where(lccw, int32(1), int32(-1))  # 1: clockwise, -1: counterclockwise
+    ccw_out = np.where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
     return ccw_out
 
 
@@ -111,10 +111,10 @@ def _line_intersect_numpy(
     line2_p2_lat,
 ):
     d1 = line1_p2_lon - line1_p1_lon
-    d1 = np.where(d1 != float(0), d1, line1_p2_lon)
+    d1 = np.where(d1 != 0.0, d1, line1_p2_lon)
 
     d2 = line2_p2_lon - line2_p1_lon
-    d2 = np.where(d2 != float(0), d2, line2_p2_lon)
+    d2 = np.where(d2 != 0.0, d2, line2_p2_lon)
 
     m1 = (line1_p2_lat - line1_p1_lat) / d1
     m2 = (line2_p2_lat - line2_p1_lat) / d2
@@ -973,7 +973,7 @@ class TestDivideFluxAreaListStencil01(StencilTest):
             True,
             False,
         )
-        famask_bool = np.where(famask_int == int32(1), True, False)
+        famask_bool = np.where(famask_int == 1, True, False)
         mask_case1 = np.logical_and.reduce([lintersect_line1, lintersect_line2, famask_bool])
         ps1_x, ps1_y = _line_intersect_numpy(
             fl_line_p1_lon,
