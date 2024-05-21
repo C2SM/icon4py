@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.test_utils.helpers import StencilTest, _shape, random_field, zero_field
+from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
 class TestVertAdvStencil01(StencilTest):
