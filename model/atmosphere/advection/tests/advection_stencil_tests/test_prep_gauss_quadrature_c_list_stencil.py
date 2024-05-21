@@ -99,7 +99,7 @@ class TestPrepGaussQuadratureCListStencil(StencilTest):
             1.0 + zeta_4,
         )
 
-        famask_bool = np.where(famask_int == np.int32(1), True, False)
+        famask_bool = np.where(famask_int == 1, True, False)
 
         p_coords_dreg_v_1_x = np.where(famask_bool, p_coords_dreg_v_1_x, 0.0)
         p_coords_dreg_v_2_x = np.where(famask_bool, p_coords_dreg_v_2_x, 0.0)

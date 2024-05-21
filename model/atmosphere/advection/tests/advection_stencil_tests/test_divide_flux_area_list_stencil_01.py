@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
+    constant_field,
     random_field,
     random_mask,
     reshape,
@@ -48,7 +49,7 @@ def _ccw_numpy(
     dy1dx2 = dy1 * dx2
 
     lccw = np.where(dx1dy2 > dy1dx2, True, False)
-    ccw_out = np.where(lccw, int32(1), int32(-1))  # 1: clockwise, -1: counterclockwise
+    ccw_out = np.where(lccw, 1, -1)  # 1: clockwise, -1: counterclockwise
     return ccw_out
 
 
@@ -109,8 +110,14 @@ def _line_intersect_numpy(
     line2_p2_lon,
     line2_p2_lat,
 ):
-    m1 = (line1_p2_lat - line1_p1_lat) / (line1_p2_lon - line1_p1_lon)
-    m2 = (line2_p2_lat - line2_p1_lat) / (line2_p2_lon - line2_p1_lon)
+    d1 = line1_p2_lon - line1_p1_lon
+    d1 = np.where(d1 != 0.0, d1, line1_p2_lon)
+
+    d2 = line2_p2_lon - line2_p1_lon
+    d2 = np.where(d2 != 0.0, d2, line2_p2_lon)
+
+    m1 = (line1_p2_lat - line1_p1_lat) / d1
+    m2 = (line2_p2_lat - line2_p1_lat) / d2
 
     intersect_1 = (line2_p1_lat - line1_p1_lat + m1 * line1_p1_lon - m2 * line2_p1_lon) / (m1 - m2)
     intersect_2 = line1_p1_lat + m1 * (intersect_1 - line1_p1_lon)
@@ -966,7 +973,7 @@ class TestDivideFluxAreaListStencil01(StencilTest):
             True,
             False,
         )
-        famask_bool = np.where(famask_int == int32(1), True, False)
+        famask_bool = np.where(famask_int == 1, True, False)
         mask_case1 = np.logical_and.reduce([lintersect_line1, lintersect_line2, famask_bool])
         ps1_x, ps1_y = _line_intersect_numpy(
             fl_line_p1_lon,
@@ -1482,19 +1489,19 @@ class TestDivideFluxAreaListStencil01(StencilTest):
     def input_data(self, grid):
         famask_int = random_mask(grid, EdgeDim, KDim, dtype=int32)
         p_vn = random_field(grid, EdgeDim, KDim)
-        ptr_v3_lon = random_field(grid, EdgeDim, E2CDim)
+        ptr_v3_lon = random_field(grid, EdgeDim, E2CDim, low=0.1, high=1.0)
         ptr_v3_lon_field = as_1D_sparse_field(ptr_v3_lon, ECDim)
-        ptr_v3_lat = random_field(grid, EdgeDim, E2CDim)
+        ptr_v3_lat = random_field(grid, EdgeDim, E2CDim, low=0.1, high=1.0)
         ptr_v3_lat_field = as_1D_sparse_field(ptr_v3_lat, ECDim)
-        tangent_orientation_dsl = random_field(grid, EdgeDim)
-        dreg_patch0_1_lon_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_1_lat_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_2_lon_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_2_lat_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_3_lon_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_3_lat_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_4_lon_dsl = random_field(grid, EdgeDim, KDim)
-        dreg_patch0_4_lat_dsl = random_field(grid, EdgeDim, KDim)
+        tangent_orientation_dsl = random_field(grid, EdgeDim, low=0.1, high=1.0)
+        dreg_patch0_1_lon_dsl = constant_field(grid, 1.0, EdgeDim, KDim)
+        dreg_patch0_1_lat_dsl = constant_field(grid, 1.0, EdgeDim, KDim)
+        dreg_patch0_2_lon_dsl = constant_field(grid, 2.0, EdgeDim, KDim)
+        dreg_patch0_2_lat_dsl = constant_field(grid, 2.0, EdgeDim, KDim)
+        dreg_patch0_3_lon_dsl = constant_field(grid, 3.0, EdgeDim, KDim)
+        dreg_patch0_3_lat_dsl = constant_field(grid, 3.0, EdgeDim, KDim)
+        dreg_patch0_4_lon_dsl = constant_field(grid, 4.0, EdgeDim, KDim)
+        dreg_patch0_4_lat_dsl = constant_field(grid, 4.0, EdgeDim, KDim)
         dreg_patch1_1_lon_vmask = zero_field(grid, EdgeDim, KDim)
         dreg_patch1_1_lat_vmask = zero_field(grid, EdgeDim, KDim)
         dreg_patch1_2_lon_vmask = zero_field(grid, EdgeDim, KDim)

@@ -49,7 +49,7 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     rho_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     theta_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     z_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    start = int32(0)
+    start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels
     compute_z_mc.with_backend(backend)(
@@ -99,7 +99,7 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
     exner_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
     rho_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
     theta_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-    start = int32(0)
+    start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels + 1
 
@@ -164,7 +164,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     )
     num_cells = int32(icon_grid.num_cells)
     num_edges = int(icon_grid.num_edges)
-    vertical_start = int32(0)
+    vertical_start = 0
     vertical_end = int32(icon_grid.num_levels)
     compute_z_mc.with_backend(backend)(
         z_ifc=z_ifc,

@@ -42,8 +42,8 @@ class TestComputeFirstVerticalDerivative(StencilTest):
             z_exner_ic=z_exner_ic,
             inv_ddqz_z_full=inv_ddqz_z_full,
             z_dexner_dz_c_1=z_dexner_dz_c_1,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
