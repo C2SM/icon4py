@@ -94,6 +94,7 @@ def _btraj_dreg_stencil_03(
     # geographical coordinate system, which still has its origin at the circumcenter
     # of the upwind cell. Now the coordinate axes point to local East and local
     # North.
+
     # Determine primal and dual normals of the cell lying in the direction of vn
     pn_cell_1 = where(lvn_pos, primal_normal_cell_x(E2EC[0]), primal_normal_cell_x(E2EC[1]))
     pn_cell_2 = where(lvn_pos, primal_normal_cell_y(E2EC[0]), primal_normal_cell_y(E2EC[1]))
