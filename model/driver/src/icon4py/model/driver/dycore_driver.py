@@ -10,7 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import cProfile
 import logging
+import pstats
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -474,5 +476,21 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
     log.info("timeloop:  DONE")
 
 
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
+
+
 if __name__ == "__main__":
+    profile_enable()
     main()
+    profile_disable()

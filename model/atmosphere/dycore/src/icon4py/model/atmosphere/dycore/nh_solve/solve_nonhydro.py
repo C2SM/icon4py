@@ -72,7 +72,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     predictor_stencils_37_38,
     stencils_39_40,
     stencils_43_44_45_45b,
-    #stencils_47_48_49,
+    # stencils_47_48_49,
     stencils_61_62,
     stencils_42_44_45_45b,
     compute_z_raylfac,
