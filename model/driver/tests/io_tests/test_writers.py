@@ -1,3 +1,16 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 from datetime import datetime, timedelta
 
 import numpy as np
@@ -21,7 +34,8 @@ from icon4py.model.driver.io.writers import (
     filter_by_standard_name,
     to_canonical_dim_order,
 )
-from model.driver.tests.test_io import model_state, simple_grid, state_values
+
+from .test_io import model_state, simple_grid, state_values
 
 
 @pytest.mark.parametrize("input_", state_values())

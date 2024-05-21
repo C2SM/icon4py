@@ -331,5 +331,3 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
     assert group_monitor.output_path.exists()
     assert group_monitor.output_path.is_dir()
     assert "prognostics" in group_monitor._file_name_pattern
-
-

@@ -41,6 +41,7 @@ class OutputInterval(str, Enum):
     HOUR = "HOUR"
     DAY = "DAY"
 
+
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
     num = 1 if not vals[0].isnumeric() else int(vals[0])
@@ -254,8 +255,8 @@ class FieldGroupMonitor(Monitor):
     def _init_dataset(self, horizontal_size: HorizontalGridSize, vertical_grid: VerticalGridSize):
         """Initialise the dataset with global attributes and dimensions.
 
-        TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical coordinate once there is
-        terrain k-heights become [horizontal, vertical ] field
+        TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
+                          coordinate once there is terrain k-heights become [horizontal, vertical ] field
 
         """
         if self._dataset is not None:
@@ -284,22 +285,26 @@ class FieldGroupMonitor(Monitor):
             logging.info(f"Storing fields {state_to_store.keys()} at {model_time}")
             self._update_fetch_times()
 
-            if self.is_initialize_file():
+            if self._do_initialize_new_file():
                 self._init_dataset(self._horizontal_size, self._vertical_size)
             self._append_data(state_to_store, model_time)
 
-            self.update_current_file_count()
-            if self.is_file_limit_reached():
+            self._update_current_file_count()
+            if self._is_file_limit_reached():
                 self.close()
 
-    def update_current_file_count(self):
+    def _update_current_file_count(self):
         self._current_timesteps_in_file = self._current_timesteps_in_file + 1
 
-    def is_initialize_file(self):
+    def _do_initialize_new_file(self):
         return self._current_timesteps_in_file == 0
 
-    def is_file_limit_reached(self):
-        return self._current_timesteps_in_file == self.config.timesteps_per_file
+    def _is_file_limit_reached(self):
+        return (
+            self.config.timesteps_per_file
+            > 0  # since _current_timesteps_in_file >=0 this is not even necessary
+            and self._current_timesteps_in_file == self.config.timesteps_per_file
+        )
 
     def _append_data(self, state_to_store: dict, model_time: datetime):
         self._dataset.append(state_to_store, model_time)
@@ -313,11 +318,6 @@ class FieldGroupMonitor(Monitor):
             self._current_timesteps_in_file = 0
 
 
-
-
-
 def generate_name(fname: str, counter: int) -> str:
     stem = fname.split(".")[0]
     return f"{stem}_{counter:0>4}.nc"
-
-
