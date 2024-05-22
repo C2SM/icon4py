@@ -81,9 +81,7 @@ raise ValueError(f"unexpected keyword arguments: {', '.join(set(kwarg_names} - s
 ```
 
 ### Docstrings
-We encourage to add doc strings for if functions, classes and modules if they help the reader understand the code and
-contain information that is not obvious from the code itself. While we do not yet generate API documentation 
-from doc strings we might do so in the future using [Sphinx][sphinx] and some extensions such as [Sphinx-autodoc][sphinx-autodoc] and [Sphinx-napoleon][sphinx-napoleon]. These follow the Google Python Style Guide docstring conventions to automatically format the generated documentation. A complete overview can be found here: [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google).
+We encourage to add doc strings for if functions, classes and modules if they help the reader understand the code and contain information that is not obvious from the code itself. While we do not yet generate API documentation from doc strings we might do so in the future using [Sphinx][sphinx] and some extensions such as [Sphinx-autodoc][sphinx-autodoc] and [Sphinx-napoleon][sphinx-napoleon]. These follow the Google Python Style Guide docstring conventions to automatically format the generated documentation. A complete overview can be found here: [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google).
 
 Sphinx supports the [reStructuredText][sphinx-rest] (reST) markup language for defining additional formatting options in the generated documentation, however section [_3.8 Comments and Docstrings_](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) of the Google Python Style Guide does not specify how to use markups in docstrings. As a result, we decided to forbid reST markup in docstrings, except for the following cases:
 
@@ -136,11 +134,9 @@ return undeclared_symbol  # noqa: F821 [undefined-name] on purpose to trigger bl
 Testing components is a critical part of a software development project. We follow standard practices in software development and write unit, integration, and regression tests. Note that even though [doctests][doctest] are great for documentation purposes, they lack many features and are difficult to debug. Hence, they should not be used as replacement for proper unit tests except in trivial cases.
 
 ### Test suite folder structure
-In each package tests are organized under the `tests` folder. The `tests` folder should not be a package 
-but the contained test suites may be python packages.
+In each package tests are organized under the `tests` folder. The `tests` folder should not be a package but the contained test suites may be python packages.
 
-Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) 
-should only contain tests for GT4Py stencils that might be integrated into ICON.
+Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
 
 
 ## Further 
@@ -153,9 +149,6 @@ TODO:    - to use pytest features (fixtures, markers, etc.)
 TODO:    - to generate mock objects and data for tests (e.g. pytest-factoryboy, pytest-cases)
 TODO:    - to use pytest plugins
 
-Links with plugins:
-https://towardsdatascience.com/pytest-plugins-to-love-%EF%B8%8F-9c71635fbe22
-https://testandcode.com/116
 -->
 
 <!-- Reference links -->
