@@ -282,6 +282,11 @@ def generate_dace_code(
 
         cuda_objs[0].code = cuda_objs[0].code.replace(include_line_before, include_line_after)
 
+        global_line_before = f'__global__'
+        global_line_after = f'inline __global__'
+
+        cuda_objs[0].code = cuda_objs[0].code.replace(global_line_before, global_line_after)
+
         set_toplevel_tasklet_name_before = f'__dace_runkernel_tasklet_toplevel'
         set_toplevel_tasklet_name_after = f'__dace_runkernel_{sdfg.name}_tasklet_toplevel'
 
