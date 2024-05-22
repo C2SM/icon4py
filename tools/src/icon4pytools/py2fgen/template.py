@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import inspect
-import numpy as np
 from typing import Any, Sequence
 
 from gt4py.eve import Node, datamodels
@@ -23,7 +22,7 @@ from icon4py.model.common.config import GT4PyBackend
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
-    BUILTIN_TO_NUMPY_TYPE
+    BUILTIN_TO_NUMPY_TYPE,
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
@@ -117,9 +116,11 @@ def to_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
 
+
 def to_np_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding numpy type."""
     return BUILTIN_TO_NUMPY_TYPE[scalar_type]
+
 
 def to_iso_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding ISO C type."""
@@ -204,7 +205,6 @@ def render_fortran_array_sizes(param: FuncParameter) -> str:
 
 
 class PythonWrapperGenerator(TemplatedGenerator):
-
     PythonWrapper = as_jinja(
         """\
 # imports for generated wrapper code

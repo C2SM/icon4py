@@ -99,24 +99,25 @@ def process_arg(value, sizes):
 class CachedProgram:
     """Class to handle caching and compilation of GT4Py programs.
 
-        This class is responsible for caching and compiling GT4Py programs
-        with optional domain information. The compiled program and its
-        connectivity arguments are stored for efficient execution.
+    This class is responsible for caching and compiling GT4Py programs
+    with optional domain information. The compiled program and its
+    connectivity arguments are stored for efficient execution.
 
-        Attributes:
-            program (gtx.ffront.decorator.Program): The GT4Py program to be cached and compiled.
-            with_domain (bool): Flag to indicate if the program should be compiled with domain information. Defaults to True.
-            _compiled_program (Optional[Callable]): The compiled GT4Py program.
-            _conn_args (Any): Connectivity arguments extracted from the offset provider.
-            _compiled_args (tuple): Arguments used during the compilation of the program.
+    Attributes:
+        program (gtx.ffront.decorator.Program): The GT4Py program to be cached and compiled.
+        with_domain (bool): Flag to indicate if the program should be compiled with domain information. Defaults to True.
+        _compiled_program (Optional[Callable]): The compiled GT4Py program.
+        _conn_args (Any): Connectivity arguments extracted from the offset provider.
+        _compiled_args (tuple): Arguments used during the compilation of the program.
 
-        Properties:
-            compiled_program (Callable): Returns the compiled GT4Py program.
-            conn_args (Any): Returns the connectivity arguments.
+    Properties:
+        compiled_program (Callable): Returns the compiled GT4Py program.
+        conn_args (Any): Returns the connectivity arguments.
 
-        Note:
-            This functionality will be provided by GT4Py in the future.
-        """
+    Note:
+        This functionality will be provided by GT4Py in the future.
+    """
+
     program: gtx.ffront.decorator.Program
     with_domain: bool = True
     _compiled_program: Optional[Callable] = None
@@ -139,7 +140,7 @@ class CachedProgram:
             workflow.InputWithArgs(
                 data=self.program.definition_stage,
                 args=args,
-                kwargs=kwargs | {"offset_provider": offset_provider}
+                kwargs=kwargs | {"offset_provider": offset_provider},
             )
         )
         self._compiled_args = program_call.args
