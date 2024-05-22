@@ -80,8 +80,6 @@ The double quotes can also be dropped when presenting a sequence of values. In t
 raise ValueError(f"unexpected keyword arguments: {', '.join(set(kwarg_names} - set(expected_kwarg_names)))}.")
 ```
 
-
-
 ### Docstrings
 We encourage to add doc strings for if functions, classes and modules if they help the reader understand the code and
 contain information that is not obvious from the code itself. While we do not yet generate API documentation 
