@@ -149,9 +149,6 @@ TODO:    - to use pytest features (fixtures, markers, etc.)
 TODO:    - to generate mock objects and data for tests (e.g. pytest-factoryboy, pytest-cases)
 TODO:    - to use pytest plugins
 
-Links with plugins:
-https://towardsdatascience.com/pytest-plugins-to-love-%EF%B8%8F-9c71635fbe22
-https://testandcode.com/116
 -->
 
 <!-- Reference links -->
