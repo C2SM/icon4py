@@ -60,8 +60,8 @@ class TestComputeContravariantCorrection(StencilTest):
             ddxt_z_full=ddxt_z_full,
             vt=vt,
             z_w_concorr_me=z_w_concorr_me,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

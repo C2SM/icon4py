@@ -68,8 +68,8 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
             c_lin_e=c_lin_e,
             z_dexner_dz_c_1=z_dexner_dz_c_1,
             z_gradh_exner=z_gradh_exner,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

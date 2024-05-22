@@ -18,7 +18,9 @@ from .data_handling import download_and_extract
 from .datatest_utils import (
     DATA_URIS,
     DATA_URIS_APE,
+    DATA_URIS_JABW,
     GLOBAL_EXPERIMENT,
+    JABW_EXPERIMENT,
     REGIONAL_EXPERIMENT,
     SERIALIZED_DATA_PATH,
     create_icon_serial_data_provider,
@@ -59,11 +61,12 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
     try:
         destination_path = get_datapath_for_experiment(ranked_data_path, experiment)
-        uri = (
-            DATA_URIS_APE[processor_props.comm_size]
-            if experiment == GLOBAL_EXPERIMENT
-            else DATA_URIS[processor_props.comm_size]
-        )
+        if experiment == GLOBAL_EXPERIMENT:
+            uri = DATA_URIS_APE[processor_props.comm_size]
+        elif experiment == JABW_EXPERIMENT:
+            uri = DATA_URIS_JABW[processor_props.comm_size]
+        else:
+            uri = DATA_URIS[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"

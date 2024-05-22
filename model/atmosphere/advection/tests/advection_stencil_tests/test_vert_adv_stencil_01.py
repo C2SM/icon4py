@@ -13,6 +13,8 @@
 
 import numpy as np
 import pytest
+from gt4py.next import as_field
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.vert_adv_stencil_01 import vert_adv_stencil_01
 from icon4py.model.common.dimension import CellDim, KDim
@@ -32,14 +34,29 @@ class TestVertAdvStencil01(StencilTest):
         deepatmo_divzl: np.array,
         deepatmo_divzu: np.array,
         rhodz_new: np.array,
-        p_dtime,
+        k: np.array,
+        ivadv_tracer: int32,
+        iadv_slev_jt: int32,
+        p_dtime: float,
         **kwargs,
     ) -> np.array:
-        tracer_new = (
-            tracer_now * rhodz_now
-            + p_dtime
-            * (p_mflx_tracer_v[:, 1:] * deepatmo_divzl - p_mflx_tracer_v[:, :-1] * deepatmo_divzu)
-        ) / rhodz_new
+        if ivadv_tracer != 0:
+            tracer_new = np.where(
+                (iadv_slev_jt <= k),
+                (
+                    tracer_now * rhodz_now
+                    + p_dtime
+                    * (
+                        p_mflx_tracer_v[:, 1:] * deepatmo_divzl
+                        - p_mflx_tracer_v[:, :-1] * deepatmo_divzu
+                    )
+                )
+                / rhodz_new,
+                tracer_now,
+            )
+        else:
+            tracer_new = tracer_now
+
         return dict(tracer_new=tracer_new)
 
     @pytest.fixture
@@ -50,7 +67,10 @@ class TestVertAdvStencil01(StencilTest):
         deepatmo_divzl = random_field(grid, KDim)
         deepatmo_divzu = random_field(grid, KDim)
         rhodz_new = random_field(grid, CellDim, KDim)
+        k = as_field((KDim,), np.arange(grid.num_levels, dtype=int32))
         p_dtime = np.float64(5.0)
+        ivadv_tracer = 1
+        iadv_slev_jt = 4
         tracer_new = zero_field(grid, CellDim, KDim)
         return dict(
             tracer_now=tracer_now,
@@ -59,6 +79,9 @@ class TestVertAdvStencil01(StencilTest):
             deepatmo_divzl=deepatmo_divzl,
             deepatmo_divzu=deepatmo_divzu,
             rhodz_new=rhodz_new,
+            k=k,
             p_dtime=p_dtime,
+            ivadv_tracer=ivadv_tracer,
+            iadv_slev_jt=iadv_slev_jt,
             tracer_new=tracer_new,
         )

@@ -105,6 +105,7 @@ def parsed_dict():
                     "horizontal_lower": "i_startidx",
                     "horizontal_upper": "i_endidx",
                     "accpresent": "True",
+                    "optional_module": "advection",
                 }
             ],
             "StartProfile": [{"name": "apply_nabla2_to_vn_in_lateral_boundary"}],
@@ -127,5 +128,7 @@ def test_savepoint_data_factory(parsed_dict):
     savepoints = SavepointDataFactory()(parsed_dict)
     assert len(savepoints) == 2
     assert any([isinstance(sp, SavepointData) for sp in savepoints])
+    # check that unnecessary keys have been removed
+    assert not any(f.variable == "optional_module" for sp in savepoints for f in sp.fields)
     assert any([isinstance(f, FieldSerialisationData) for f in savepoints[0].fields])
     assert any([isinstance(m, Metadata) for m in savepoints[0].metadata])

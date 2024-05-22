@@ -45,8 +45,8 @@ class TestEnhanceDiffusionCoefficientForGridPointColdPools(StencilTest):
         return dict(
             kh_smag_e=kh_smag_e,
             enh_diffu_3d=enh_diffu_3d,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
