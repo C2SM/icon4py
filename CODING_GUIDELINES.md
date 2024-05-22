@@ -81,9 +81,7 @@ raise ValueError(f"unexpected keyword arguments: {', '.join(set(kwarg_names} - s
 ```
 
 ### Docstrings
-We encourage to add doc strings for if functions, classes and modules if they help the reader understand the code and
-contain information that is not obvious from the code itself. While we do not yet generate API documentation 
-from doc strings we might do so in the future using [Sphinx][sphinx] and some extensions such as [Sphinx-autodoc][sphinx-autodoc] and [Sphinx-napoleon][sphinx-napoleon]. These follow the Google Python Style Guide docstring conventions to automatically format the generated documentation. A complete overview can be found here: [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google).
+We encourage to add doc strings for if functions, classes and modules if they help the reader understand the code and contain information that is not obvious from the code itself. While we do not yet generate API documentation from doc strings we might do so in the future using [Sphinx][sphinx] and some extensions such as [Sphinx-autodoc][sphinx-autodoc] and [Sphinx-napoleon][sphinx-napoleon]. These follow the Google Python Style Guide docstring conventions to automatically format the generated documentation. A complete overview can be found here: [Example Google Style Python Docstrings](https://sphinxcontrib-napoleon.readthedocs.io/en/latest/example_google.html#example-google).
 
 Sphinx supports the [reStructuredText][sphinx-rest] (reST) markup language for defining additional formatting options in the generated documentation, however section [_3.8 Comments and Docstrings_](https://google.github.io/styleguide/pyguide.html#38-comments-and-docstrings) of the Google Python Style Guide does not specify how to use markups in docstrings. As a result, we decided to forbid reST markup in docstrings, except for the following cases:
 
