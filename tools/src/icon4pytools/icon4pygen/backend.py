@@ -287,13 +287,13 @@ def generate_dace_code(
 
         cuda_objs[0].code = cuda_objs[0].code.replace(global_line_before, global_line_after)
 
-        set_toplevel_tasklet_name_before = f'__dace_runkernel_tasklet_toplevel'
-        set_toplevel_tasklet_name_after = f'__dace_runkernel_{sdfg.name}_tasklet_toplevel'
+        set_toplevel_tasklet_name_before = f'tasklet_toplevel_map'
+        set_toplevel_tasklet_name_after = f'tasklet_{sdfg.name}_toplevel_map'
 
         src_objs[0].code = src_objs[0].code.replace(set_toplevel_tasklet_name_before, set_toplevel_tasklet_name_after)
         cuda_objs[0].code = cuda_objs[0].code.replace(set_toplevel_tasklet_name_before, set_toplevel_tasklet_name_after)
 
-        cuda_code_remove = [line for line in cuda_objs[0].code.splitlines() if not (line.startswith('DACE_EXPORTED int __dace_init_cuda_') or line.startswith('DACE_EXPORTED int __dace_exit_cuda_') or line.startswith(f'DACE_EXPORTED void __dace_runkernel_{sdfg.name}_tasklet_toplevel'))]
+        cuda_code_remove = [line for line in cuda_objs[0].code.splitlines() if not (line.startswith('DACE_EXPORTED int __dace_init_cuda_') or line.startswith('DACE_EXPORTED int __dace_exit_cuda_') or line.startswith(f'DACE_EXPORTED void __dace_runkernel_tasklet_{sdfg.name}_toplevel_map'))]
         cuda_objs[0].code = '\n'.join(cuda_code_remove)
 
         context_line_0 = f'struct {sdfg.name}' + '_state_t {\n    dace::cuda::Context *gpu_context;\n};'
