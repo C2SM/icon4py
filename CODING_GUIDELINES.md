@@ -136,11 +136,9 @@ return undeclared_symbol  # noqa: F821 [undefined-name] on purpose to trigger bl
 Testing components is a critical part of a software development project. We follow standard practices in software development and write unit, integration, and regression tests. Note that even though [doctests][doctest] are great for documentation purposes, they lack many features and are difficult to debug. Hence, they should not be used as replacement for proper unit tests except in trivial cases.
 
 ### Test suite folder structure
-In each package tests are organized under the `tests` folder. The `tests` folder should not be a package 
-but the contained test suites may be python packages.
+In each package tests are organized under the `tests` folder. The `tests` folder should not be a package but the contained test suites may be python packages.
 
-Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) 
-should only contain tests for GT4Py stencils that might be integrated into ICON.
+Test suites in folders `stencil_tests` are generally run in integration mode with [icon-exclaim](https://github.com/C2SM/icon-exclaim) and should only contain tests for the GT4Py stencils that might be integrated into ICON.
 
 
 ## Further 
