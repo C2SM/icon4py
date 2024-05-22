@@ -28,3 +28,10 @@ BUILTIN_TO_CPP_TYPE: dict[ts.ScalarKind, str] = {
     ts.ScalarKind.INT32: "int",
     ts.ScalarKind.INT64: "long",
 }
+BUILTIN_TO_NUMPY_TYPE: dict[ts.ScalarKind, str] = {
+    ts.ScalarKind.FLOAT64: "xp.float64",
+    ts.ScalarKind.FLOAT32: "xp.float32",
+    ts.ScalarKind.BOOL: "xp.int32",
+    ts.ScalarKind.INT32: "xp.int32",
+    ts.ScalarKind.INT64: "xp.int64",
+}

@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
-import pytest
 from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common.dimension import (
@@ -27,30 +26,29 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.settings import xp
+from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 
 from icon4pytools.py2fgen.wrappers.diffusion import diffusion_init, diffusion_run
 
 
-# todo(samkellerhals): turn on and off using a marker/option (required ICON_GRID_LOC)
-@pytest.mark.skip
-def test_diffusion_wrapper_py():
+def test_diffusion_wrapper_interface():
     # grid parameters
-    num_cells = 20480
-    num_edges = 30720
-    num_vertices = 10242
-    num_levels = 60
+    num_cells = 20896
+    num_edges = 31558
+    num_vertices = 10663
+    num_levels = MCH_CH_R04B09_LEVELS
     num_c2ec2o = 4
     num_v2e = 6
-    num_c2e = 2
+    num_c2e = 3
     num_e2c2v = 4
     num_c2e2c = 3
-    num_e2c = 3
+    num_e2c = 2
     mean_cell_area = 24907282236.708576
 
     # other configuration parameters
     ndyn_substeps = 2
-    dtime = 2.0
-    rayleigh_damping_height = 50000
+    dtime = 10.0
+    rayleigh_damping_height = 12500.0
     nflatlev = 30
     nflat_gradp = 59
 
@@ -64,6 +62,11 @@ def test_diffusion_wrapper_py():
     hdiff_efdt_ratio = 24.0
     smagorinski_scaling_factor = 0.025
     hdiff_temp = True
+    thslp_zdiffu = 0.02
+    thhgtd_zdiffu = 125.0
+    denom_diffu_v = 150.0
+    nudge_max_coeff = 0.075
+    itype_sher = 2  # TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND
 
     # input data - numpy
     rng = xp.random.default_rng()
@@ -183,6 +186,11 @@ def test_diffusion_wrapper_py():
         hdiff_efdt_ratio=hdiff_efdt_ratio,
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        denom_diffu_v=denom_diffu_v,
+        nudge_max_coeff=nudge_max_coeff,
+        itype_sher=itype_sher,
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inv_dual_edge_length=inv_dual_edge_length,
