@@ -282,8 +282,6 @@ def generate_dace_code(
 
         cuda_objs[0].code = cuda_objs[0].code.replace(include_line_before, include_line_after)
 
-        context_line_0 = f'struct {sdfg.name}' + '_state_t {                                                   ////__DACE:0\n    dace::cuda::Context *gpu_context;                                             ////__DACE:0\n};'
-        cuda_objs[0].code = cuda_objs[0].code.replace(context_line_0, '')
 
         #cpp_code_remove = [line for line in src_objs[0].code.splitlines() if not (line.startswith('DACE_EXPORTED bool __dace_gpu_set_stream_') or line.startswith('DACE_EXPORTED void __dace_runkernel_tasklet_toplevel_'))]
         #src_objs[0].code = '\n'.join(cpp_code_remove)
@@ -291,7 +289,10 @@ def generate_dace_code(
         cuda_code_remove = [line for line in cuda_objs[0].code.splitlines() if not (line.startswith('DACE_EXPORTED int __dace_init_cuda_') or line.startswith('DACE_EXPORTED int __dace_exit_cuda_'))]
         cuda_objs[0].code = '\n'.join(cuda_code_remove)
 
-        return hdr_objs[0].clean_code, src_objs[0].clean_code, cuda_objs[0].clean_code
+        context_line_0 = f'struct {sdfg.name}' + '_state_t {\n    dace::cuda::Context *gpu_context;\n};'
+        result_cuda_code = cuda_objs[0].clean_code.replace(context_line_0, '')
+
+        return hdr_objs[0].clean_code, src_objs[0].clean_code, result_cuda_code
     else:
         return hdr_objs[0].clean_code, src_objs[0].clean_code, None
 
