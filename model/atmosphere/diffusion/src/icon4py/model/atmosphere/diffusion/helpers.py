@@ -16,7 +16,7 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 from gt4py import next as gtx
-from gt4py.next.backend import ProgArgsInjector
+from gt4py.next.otf import workflow
 
 
 try:
@@ -115,12 +115,13 @@ class CachedProgram:
         self, *args, offset_provider: dict[str, gtx.Dimension], **kwargs: Any
     ) -> Callable:
         backend = self.program.backend
-        transformer = backend.transforms_prog.replace(
-            past_inject_args=ProgArgsInjector(
-                args=args, kwargs=kwargs | {"offset_provider": offset_provider}
+        program_call = backend.transforms_prog(
+            workflow.InputWithArgs(
+                data=self.program.definition_stage,
+                args=args,
+                kwargs=kwargs | {"offset_provider": offset_provider}
             )
         )
-        program_call = transformer(self.program.definition_stage)
         self._compiled_args = program_call.args
         return backend.executor.otf_workflow(program_call)
 
