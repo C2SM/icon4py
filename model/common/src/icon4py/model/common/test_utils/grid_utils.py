@@ -16,7 +16,7 @@ import pytest
 
 from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     GRID_URIS,
@@ -68,7 +68,7 @@ def _load_from_gridfile(
     gm = GridManager(
         ToGt4PyTransformation(),
         str(grid_file),
-        VerticalGridSize(num_levels),
+        VerticalGridConfig(num_levels),
     )
     gm(on_gpu=on_gpu, limited_area=limited_area)
     return gm.get_grid()

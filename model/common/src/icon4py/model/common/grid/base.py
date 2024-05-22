@@ -23,7 +23,7 @@ from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
-from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.common.utils import builder
 
 
@@ -41,7 +41,7 @@ class HorizontalGridSize:
 @dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    vertical_config: VerticalGridSize
+    vertical_config: VerticalGridConfig
     limited_area: bool = True
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
