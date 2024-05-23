@@ -20,7 +20,7 @@ import uxarray as ux
 import xarray as xr
 from gt4py.next.ffront.fbuiltins import float32
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
@@ -59,6 +59,7 @@ def model_state(grid: BaseGrid) -> dict[str, xr.DataArray]:
     exner = random_field(grid, CellDim, KDim, dtype=float32)
     theta_v = random_field(grid, CellDim, KDim, dtype=float32)
     w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32)
+    vn = random_field(grid, EdgeDim, KDim , dtype=float32)
     return {
         "air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
         "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
@@ -70,6 +71,9 @@ def model_state(grid: BaseGrid) -> dict[str, xr.DataArray]:
         "upward_air_velocity": to_data_array(
             w, PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"], is_on_interface=True
         ),
+        "normal_velocity": to_data_array(
+            vn, PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_interface=False
+        ),
     }
 
 
@@ -80,20 +84,26 @@ def state_values() -> xr.DataArray:
 
 
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
-@pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour"])
+@pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
+def test_to_delta_hrs(num, slot):
+    assert to_delta("DAY") == timedelta(hours=1)
+    assert to_delta(f"{num} {slot}") == timedelta(hours=num)
+
+@pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
+@pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour", "hours", "HOURS"])
 def test_to_delta_hrs(num, slot):
     assert to_delta("HOUR") == timedelta(hours=1)
     assert to_delta(f"{num} {slot}") == timedelta(hours=num)
 
 
 @pytest.mark.parametrize("num", [0, 2, 44, 4, 5])
-@pytest.mark.parametrize("slot", ["second", "SECOND"])
+@pytest.mark.parametrize("slot", ["second", "SECOND", "seconds", "SECONDS"])
 def test_to_delta_secs(num, slot):
     assert to_delta(f"{num} {slot}") == timedelta(seconds=num)
 
 
 @pytest.mark.parametrize("num", [0, 2, 3, 4, 5])
-@pytest.mark.parametrize("slot", ["MINUTE", "Minute"])
+@pytest.mark.parametrize("slot", ["MINUTE", "Minute", "minutes", "MINUTES"])
 def test_to_delta_mins(num, slot):
     assert to_delta(f"{num} {slot}") == timedelta(minutes=num)
 
@@ -124,7 +134,7 @@ def is_valid_uxgrid(file: Union[Path, str]) -> bool:
 
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(field_configs=[], output_path=path_name)
+    config = IoConfig(field_groups=[], output_path=path_name)
     monitor = IoMonitor(
         config,
         VerticalGridSize(10),
@@ -138,7 +148,7 @@ def test_io_monitor_create_output_path(test_path):
 
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(field_configs=[], output_path=path_name)
+    config = IoConfig(field_groups=[], output_path=path_name)
     monitor = IoMonitor(
         config,
         VerticalGridSize(10),
@@ -165,7 +175,7 @@ def test_io_monitor_write_dataset(test_path):
             nc_comment="Writing dummy data from icon4py for testing.",
         )
     ]
-    config = IoConfig(field_configs=field_configs, output_path=path_name)
+    config = IoConfig(field_groups=field_configs, output_path=path_name)
     monitor = IoMonitor(
         config,
         VerticalGridSize(grid.num_levels),

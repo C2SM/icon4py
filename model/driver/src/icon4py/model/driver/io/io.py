@@ -45,8 +45,10 @@ class OutputInterval(str, Enum):
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
     num = 1 if not vals[0].isnumeric() else int(vals[0])
-
+    
     value = vals[0].upper() if len(vals) < 2 else vals[1].upper()
+    value = value[:-1] if value.endswith("S") else value
+        
     if value == OutputInterval.HOUR:
         return timedelta(hours=num)
     elif value == OutputInterval.DAY:
@@ -122,16 +124,16 @@ class IoConfig(Config):
     """
 
     output_path: str = "./output/"
-    field_configs: Sequence[FieldGroupIoConfig] = ()
+    field_groups: Sequence[FieldGroupIoConfig] = ()
 
     time_units = DEFAULT_TIME_UNIT
     calendar = DEFAULT_CALENDAR
 
     def validate(self):
-        if not self.field_configs:
+        if not self.field_groups:
             log.warning("No field configurations provided for output")
         else:
-            for field_config in self.field_configs:
+            for field_config in self.field_groups:
                 field_config.validate()
 
 
@@ -160,7 +162,7 @@ class IoMonitor(Monitor):
                 grid_id=grid_id,
                 output_path=self._output_path,
             )
-            for conf in config.field_configs
+            for conf in config.field_groups
         ]
 
     def _read_grid_attrs(self) -> dict:
@@ -187,7 +189,7 @@ class IoMonitor(Monitor):
     def path(self):
         return self._output_path
 
-    def store(self, state, model_time: datetime, **kwargs):
+    def store(self, state:dict, model_time: datetime, **kwargs):
         for monitor in self._group_monitors:
             monitor.store(state, model_time, **kwargs)
 
