@@ -94,7 +94,3 @@ def _is_horizontal(dim: Dimension):
     return dim.kind == DimensionKind.HORIZONTAL
 
 
-class OutputFile:
-    def __init__(self, filename: str, grid_ds: xa.Dataset):
-        self.filename = filename
-        self.grid = grid_ds
