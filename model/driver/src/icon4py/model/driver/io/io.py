@@ -45,10 +45,10 @@ class OutputInterval(str, Enum):
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
     num = 1 if not vals[0].isnumeric() else int(vals[0])
-    
+
     value = vals[0].upper() if len(vals) < 2 else vals[1].upper()
     value = value[:-1] if value.endswith("S") else value
-        
+
     if value == OutputInterval.HOUR:
         return timedelta(hours=num)
     elif value == OutputInterval.DAY:
@@ -189,7 +189,7 @@ class IoMonitor(Monitor):
     def path(self):
         return self._output_path
 
-    def store(self, state:dict, model_time: datetime, **kwargs):
+    def store(self, state: dict, model_time: datetime, **kwargs):
         for monitor in self._group_monitors:
             monitor.store(state, model_time, **kwargs)
 
@@ -289,7 +289,7 @@ class FieldGroupMonitor(Monitor):
                 logging.error(f"Field '{e.args[0]}' is missing in state.")
                 self.close()
                 raise IncompleteStateError(e.args[0]) from e
-            
+
             logging.info(f"Storing fields {state_to_store.keys()} at {model_time}")
             self._update_fetch_times()
 
@@ -308,9 +308,7 @@ class FieldGroupMonitor(Monitor):
         return self._current_timesteps_in_file == 0
 
     def _is_file_limit_reached(self):
-        return (
-                0 < self.config.timesteps_per_file == self._current_timesteps_in_file
-        )
+        return 0 < self.config.timesteps_per_file == self._current_timesteps_in_file
 
     def _append_data(self, state_to_store: dict, model_time: datetime):
         self._dataset.append(state_to_store, model_time)

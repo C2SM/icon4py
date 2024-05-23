@@ -60,7 +60,7 @@ def model_state(grid: BaseGrid) -> dict[str, xr.DataArray]:
     exner = random_field(grid, CellDim, KDim, dtype=float32)
     theta_v = random_field(grid, CellDim, KDim, dtype=float32)
     w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=float32)
-    vn = random_field(grid, EdgeDim, KDim , dtype=float32)
+    vn = random_field(grid, EdgeDim, KDim, dtype=float32)
     return {
         "air_density": to_data_array(rho, PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
         "exner_function": to_data_array(exner, PROGNOSTIC_CF_ATTRIBUTES["exner_function"]),
@@ -86,13 +86,14 @@ def state_values() -> xr.DataArray:
 
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
-def test_to_delta_hrs(num, slot):
+def test_to_delta_days(num, slot):
     assert to_delta("DAY") == timedelta(hours=1)
     assert to_delta(f"{num} {slot}") == timedelta(hours=num)
 
+
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
 @pytest.mark.parametrize("slot", ["HOUR", "hour", "Hour", "hours", "HOURS"])
-def test_to_delta_hrs(num, slot):
+def test_to_delta_hours(num, slot):
     assert to_delta("HOUR") == timedelta(hours=1)
     assert to_delta(f"{num} {slot}") == timedelta(hours=num)
 
@@ -162,7 +163,13 @@ def test_io_monitor_write_ugrid_file(test_path):
     assert is_valid_uxgrid(ugrid_file)
 
 
-@pytest.mark.parametrize("variables", (["air_density", "exner_function", "upward_air_velocity"], ["normal_velocity", "upward_air_velocity", "theta_v"]))
+@pytest.mark.parametrize(
+    "variables",
+    (
+        ["air_density", "exner_function", "upward_air_velocity"],
+        ["normal_velocity", "upward_air_velocity", "theta_v"],
+    ),
+)
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid, grid_id = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
@@ -204,8 +211,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         elif var == "upward_air_velocity":
             assert uxds[var].shape == (3, grid.num_levels + 1, grid.num_cells)
         elif var == "normal_velocity":
-            assert uxds[var].shape == (3, grid.num_levels, grid.num_edges)    
-    
+            assert uxds[var].shape == (3, grid.num_levels, grid.num_edges)
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
@@ -274,6 +280,7 @@ def test_fieldgroup_monitor_output_time_updates_upon_store(test_path):
     one_hour_later = step_time + timedelta(hours=1)
     assert group_monitor.next_output_time == one_hour_later
 
+
 def test_fieldgroup_monitor_no_output_on_not_matching_time(test_path):
     grid = SimpleGrid()
     start_time_str = "2024-01-01T00:00:00"
@@ -296,6 +303,7 @@ def test_fieldgroup_monitor_output_time_initialized_from_config(test_path):
     config, group_monitor = create_field_group_monitor(test_path, grid, configured_start_time)
     assert group_monitor.next_output_time == datetime.fromisoformat(configured_start_time)
 
+
 def test_fieldgroup_monitor_no_output_before_start_time(test_path):
     grid = SimpleGrid()
     configured_start_time = "2024-01-01T00:00:00"
@@ -310,7 +318,6 @@ def test_fieldgroup_monitor_no_output_before_start_time(test_path):
 
 
 def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"):
-
     config = FieldGroupIoConfig(
         start_time=start_time,
         filename="test_empty.nc",
@@ -329,8 +336,6 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
     return config, group_monitor
 
 
-
-    
 @pytest.mark.parametrize(
     "config, message",
     [
@@ -408,9 +413,5 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         grid_id="simple_grid_x1",
         output_path=test_path,
     )
-    with pytest.raises(IncompleteStateError, match="Field 'foo' is missing in state") as err:
+    with pytest.raises(IncompleteStateError, match="Field 'foo' is missing in state"):
         group_monitor.store(model_state(grid), datetime.fromisoformat("2023-04-04T11:00:00"))
-        
-    
-
-    

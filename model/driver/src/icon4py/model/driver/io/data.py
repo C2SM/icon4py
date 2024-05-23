@@ -92,5 +92,3 @@ def to_data_array(
 
 def _is_horizontal(dim: Dimension):
     return dim.kind == DimensionKind.HORIZONTAL
-
-

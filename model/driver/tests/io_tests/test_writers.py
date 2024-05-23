@@ -64,7 +64,7 @@ def test_filter_by_standard_name_non_existing_name():
     assert filter_by_standard_name(state, "does_not_exist") == {}
 
 
-def initialized_writer(test_path, random_name, grid=simple_grid)->tuple[NetcdfWriter, BaseGrid]:
+def initialized_writer(test_path, random_name, grid=simple_grid) -> tuple[NetcdfWriter, BaseGrid]:
     vertical = VerticalGridSize(grid.num_levels)
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
