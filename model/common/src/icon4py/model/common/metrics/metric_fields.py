@@ -540,11 +540,10 @@ def compute_vwind_expl_wgt(
 
 
 @field_operator
-def _compute_exner_exfac(
+def _compute_maxslp_maxhgtd(
     ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
     dual_edge_length: Field[[EdgeDim], wpfloat],
-    exner_expol: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
     z_maxslp_0_1 = maximum(abs(ddxn_z_full(C2E[0])), abs(ddxn_z_full(C2E[1])))
     z_maxslp = maximum(z_maxslp_0_1, abs(ddxn_z_full(C2E[2])))
 
@@ -554,6 +553,16 @@ def _compute_exner_exfac(
     )
 
     z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
+    return z_maxslp, z_maxhgtd
+
+
+@field_operator
+def _compute_exner_exfac(
+    ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    exner_expol: wpfloat,
+) -> Field[[CellDim, KDim], wpfloat]:
+    z_maxslp, z_maxhgtd = _compute_maxslp_maxhgtd(ddxn_z_full, dual_edge_length)
 
     exner_exfac = exner_expol * minimum(1.0 - (4.0 * z_maxslp) ** 2, 1.0 - (0.002 * z_maxhgtd) ** 2)
     exner_exfac = maximum(0.0, exner_exfac)
@@ -604,7 +613,7 @@ def compute_exner_exfac(
 
 
 @field_operator
-def _compute_vwind_impl_wgt(
+def _compute_vwind_impl_wgt_1(
     z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
     z_ddxt_z_half_e: Field[[EdgeDim], wpfloat],
     dual_edge_length: Field[[EdgeDim], wpfloat],
@@ -628,15 +637,33 @@ def _compute_vwind_impl_wgt(
     return vwind_impl_wgt
 
 
+@field_operator
+def _compute_vwind_impl_wgt_2(
+    vct_a: Field[[KDim], wpfloat],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: Field[[CellDim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
+    z_diff_2 = (z_ifc - z_ifc(Koff[-1])) / (vct_a - vct_a(Koff[-1]))
+    vwind_impl_wgt_k = where(
+        z_diff_2 < 0.6, maximum(vwind_impl_wgt, 1.2 - z_diff_2), vwind_impl_wgt
+    )
+    return vwind_impl_wgt_k
+
+
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_vwind_impl_wgt(
     z_ddxn_z_half_e: Field[[EdgeDim], wpfloat],
     z_ddxt_z_half_e: Field[[EdgeDim], wpfloat],
     dual_edge_length: Field[[EdgeDim], wpfloat],
+    vct_a: Field[[KDim], wpfloat],
+    z_ifc: Field[[CellDim, KDim], wpfloat],
     vwind_impl_wgt: Field[[CellDim], wpfloat],
+    vwind_impl_wgt_k: Field[[CellDim, KDim], wpfloat],
     vwind_offctr: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     """
     Compute vwind_impl_wgt.
@@ -651,14 +678,24 @@ def compute_vwind_impl_wgt(
         vwind_offctr: off-centering in vertical wind solver
         horizontal_start: horizontal start index
         horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
     """
-    _compute_vwind_impl_wgt(
+    _compute_vwind_impl_wgt_1(
         z_ddxn_z_half_e=z_ddxn_z_half_e,
         z_ddxt_z_half_e=z_ddxt_z_half_e,
         dual_edge_length=dual_edge_length,
         vwind_offctr=vwind_offctr,
         out=vwind_impl_wgt,
         domain={CellDim: (horizontal_start, horizontal_end)},
+    )
+
+    _compute_vwind_impl_wgt_2(
+        vct_a=vct_a,
+        z_ifc=z_ifc,
+        vwind_impl_wgt=vwind_impl_wgt,
+        out=vwind_impl_wgt_k,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
 
 

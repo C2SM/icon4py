@@ -602,7 +602,6 @@ def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_sav
     assert dallclose(zdiff_gradp_full_field.asnumpy(), zdiff_gradp_ref.asnumpy(), rtol=1.0e-5)
 
 
-# TODO
 @pytest.mark.datatest
 def test_compute_vwind_impl_wgt(
     icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
@@ -616,7 +615,6 @@ def test_compute_vwind_impl_wgt(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxt_z_half_e = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
     z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
-
     horizontal_start = icon_grid.get_start_index(
         EdgeDim,
         HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
@@ -686,29 +684,29 @@ def test_compute_vwind_impl_wgt(
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2
-    vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, (CellDim))
+    vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, CellDim)
+    vwind_impl_wgt_k = constant_field(icon_grid, 0.7, CellDim, KDim)
 
     compute_vwind_impl_wgt.with_backend(backend)(
         z_ddxn_z_half_e=as_field((EdgeDim,), z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels]),
         z_ddxt_z_half_e=as_field((EdgeDim,), z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels]),
         dual_edge_length=dual_edge_length,
+        vct_a=grid_savepoint.vct_a(),
+        z_ifc=metrics_savepoint.z_ifc(),
         vwind_impl_wgt=vwind_impl_wgt_full,
+        vwind_impl_wgt_k=vwind_impl_wgt_k,
         vwind_offctr=vwind_offctr,
         horizontal_start=horizontal_start_cell,
         horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+        vertical_start=max(10, icon_grid.num_levels - 8),
+        vertical_end=icon_grid.num_levels,
+        offset_provider={
+            "C2E": icon_grid.get_offset_provider("C2E"),
+            "Koff": icon_grid.get_offset_provider("Koff"),
+        },
     )
 
-    vertical_start = max(10, icon_grid.num_levels - 8)
-    vwind_impl_wgt = vwind_impl_wgt_full.asnumpy()
-    vct_a = grid_savepoint.vct_a().asnumpy()
-    z_ifc = metrics_savepoint.z_ifc().asnumpy()
-    for jk in range(vertical_start, icon_grid.num_levels):
-        for jc in range(horizontal_start_cell, icon_grid.num_cells):
-            z_diff_2 = (z_ifc[jc, jk] - z_ifc[jc, jk - 1]) / (vct_a[jk] - vct_a[jk - 1])
-            if z_diff_2 < 0.6:
-                vwind_impl_wgt[jc] = np.maximum(vwind_impl_wgt[jc], 1.2 - z_diff_2)
-    # convert code above in numpy
+    vwind_impl_wgt = np.amax(vwind_impl_wgt_k.asnumpy(), axis=1)
     assert dallclose(vwind_impl_wgt_ref.asnumpy(), vwind_impl_wgt)
 
 
