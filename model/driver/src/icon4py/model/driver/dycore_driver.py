@@ -452,7 +452,8 @@ def initialize(
 )
 @click.option("--experiment_type", default="any", help="experiment selection")
 @click.option("--profile", default=False, help="Whether to profile code using cProfile.")
-def main(input_path, run_path, mpi, serialization_type, experiment_type, profile):
+@click.option("--disable-logging", is_flag=True, help="Disable all logging output.")
+def main(input_path, run_path, mpi, serialization_type, experiment_type, profile, disable_logging):
     """
     Run the driver.
 
@@ -473,6 +474,9 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type, profile
 
     2. run time loop
     """
+    if disable_logging:
+        logging.disable(logging.CRITICAL)
+
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
     configure_logging(run_path, experiment_type, parallel_props)
     (
