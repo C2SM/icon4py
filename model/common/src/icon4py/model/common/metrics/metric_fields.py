@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from dataclasses import dataclass
+from typing import Final
 
 from gt4py.next import (
     Field,
@@ -54,6 +56,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
+
+@dataclass(frozen=True)
+class MetricsConfig:
+   #: Temporal extrapolation of Exner for computation of horizontal pressure gradient, defined in `mo_nonhydrostatic_nml.f90` used only in metrics fields calculation.
+   exner_expol: Final[wpfloat] = 0.333
 
 
 @program(grid_type=GridType.UNSTRUCTURED)

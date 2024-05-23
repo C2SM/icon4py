@@ -83,10 +83,6 @@ class RayleighType(IntEnum):
     ] = 1  # classical Rayleigh damping, which makes use of a reference state.
     RAYLEIGH_KLEMP: Final[int] = 2  # Klemp (2008) type Rayleigh damping
 
-
-# Temporal extrapolation of Exner for computation of horizontal pressure gradient
-exner_expol: Final[wpfloat] = 0.333
-
 # Width of lateral boundary zones (as seen from the child domain) for which tendencies are interpolated from the parent domain
 grf_bdywidth_c: Final[int] = 4
 grf_bdywidth_e: Final[int] = 9

@@ -59,7 +59,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_wgtfac_e,
-    compute_z_mc,
+    compute_z_mc, MetricsConfig,
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -512,13 +512,13 @@ def test_compute_exner_exfac(
     horizontal_start = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
-    exner_exfac = constant_field(icon_grid, constants.exner_expol, CellDim, KDim)
+    exner_exfac = constant_field(icon_grid, MetricsConfig.exner_expol, CellDim, KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
-        exner_expol=constants.exner_expol,
+        exner_expol=MetricsConfig.exner_expol,
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_cells,
         vertical_start=int32(0),
