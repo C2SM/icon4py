@@ -20,7 +20,7 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional, Sequence
 
-from icon4py.model.common.components.exceptions import InvalidConfigError
+from icon4py.model.common.components.exceptions import IncompleteStateError, InvalidConfigError
 from icon4py.model.common.components.monitor import Monitor
 from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.vertical import VerticalGridSize
@@ -278,12 +278,18 @@ class FieldGroupMonitor(Monitor):
 
         Args:
             state: dict  model state dictionary
-            time: float  model time
+            model_time: the current time step of the simulation
         """
         # TODO (halungge) how to handle non time matches? That is if the model time jumps over the output time
         if self._at_capture_time(model_time):
-            # TODO this should do a deep copy of the data
-            state_to_store = {field: state[field] for field in self._field_names}
+            # TODO (halungge) this should do a deep copy of the data
+            try:
+                state_to_store = {field: state[field] for field in self._field_names}
+            except KeyError as e:
+                logging.error(f"Field '{e.args[0]}' is missing in state.")
+                self.close()
+                raise IncompleteStateError(e.args[0]) from e
+            
             logging.info(f"Storing fields {state_to_store.keys()} at {model_time}")
             self._update_fetch_times()
 
@@ -303,9 +309,7 @@ class FieldGroupMonitor(Monitor):
 
     def _is_file_limit_reached(self):
         return (
-            self.config.timesteps_per_file
-            > 0  # since _current_timesteps_in_file >=0 this is not even necessary
-            and self._current_timesteps_in_file == self.config.timesteps_per_file
+                0 < self.config.timesteps_per_file == self._current_timesteps_in_file
         )
 
     def _append_data(self, state_to_store: dict, model_time: datetime):

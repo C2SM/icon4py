@@ -18,6 +18,7 @@ import pytest
 from numpy import float32
 
 from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.test_utils.helpers import random_field
@@ -63,18 +64,18 @@ def test_filter_by_standard_name_non_existing_name():
     assert filter_by_standard_name(state, "does_not_exist") == {}
 
 
-def initialized_writer(test_path, random_name, grid=simple_grid):
+def initialized_writer(test_path, random_name, grid=simple_grid)->tuple[NetcdfWriter, BaseGrid]:
     vertical = VerticalGridSize(grid.num_levels)
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
-    dataset = NetcdfWriter(
+    writer = NetcdfWriter(
         fname,
         vertical,
         horizontal,
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
     )
-    dataset.initialize_dataset()
-    return dataset, grid
+    writer.initialize_dataset()
+    return writer, grid
 
 
 def test_initialize_writer_time_var(test_path, random_name):
@@ -111,23 +112,23 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
 
 
-def test_append_timeslice(test_path, random_name):
-    dataset, grid = initialized_writer(test_path, random_name)
+def test_writer_append_timeslice(test_path, random_name):
+    writer, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
-    assert len(dataset.variables["times"]) == 0
+    assert len(writer.variables["times"]) == 0
     slice1 = {}
-    dataset.append(slice1, time)
-    assert len(dataset.variables["times"]) == 1
+    writer.append(slice1, time)
+    assert len(writer.variables["times"]) == 1
     time1 = time + timedelta(hours=1)
-    dataset.append(slice1, time1)
-    assert len(dataset.variables["times"]) == 2
+    writer.append(slice1, time1)
+    assert len(writer.variables["times"]) == 2
     time2 = time1 + timedelta(hours=1)
-    dataset.append(slice1, time2)
-    assert len(dataset.variables["times"]) == 3
-    time_units = dataset.variables["times"].units
-    cal = dataset.variables["times"].calendar
+    writer.append(slice1, time2)
+    assert len(writer.variables["times"]) == 3
+    time_units = writer.variables["times"].units
+    cal = writer.variables["times"].calendar
     assert np.all(
-        dataset.variables["times"][:]
+        writer.variables["times"][:]
         == np.array(date2num((time, time1, time2), units=time_units, calendar=cal))
     )
 
@@ -147,7 +148,7 @@ def test_writer_append_timeslice_create_new_var(test_path, random_name):
     assert np.allclose(dataset.variables["air_density"][0], state["air_density"].data.T)
 
 
-def test_append_timeslice_existing_var(test_path, random_name):
+def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     dataset, grid = initialized_writer(test_path, random_name)
     time = datetime.now()
     state = dict(air_density=model_state(grid)["air_density"])
@@ -169,18 +170,18 @@ def test_initialize_writer_create_dimensions(
     test_path,
     random_name,
 ):
-    dataset, grid = initialized_writer(test_path, random_name)
+    writer, grid = initialized_writer(test_path, random_name)
 
-    assert dataset["title"] == "test"
-    assert dataset["institution"] == "EXCLAIM - ETH Zurich"
-    assert len(dataset.dims) == 6
-    assert dataset.dims["level"].size == grid.num_levels
-    assert dataset.dims["interface_level"].size == grid.num_levels + 1
-    assert dataset.dims["cell"].size == grid.num_cells
-    assert dataset.dims["vertex"].size == grid.num_vertices
-    assert dataset.dims["edge"].size == grid.num_edges
-    assert dataset.dims["time"].size == 0
-    assert dataset.dims["time"].isunlimited
+    assert writer["title"] == "test"
+    assert writer["institution"] == "EXCLAIM - ETH Zurich"
+    assert len(writer.dims) == 6
+    assert writer.dims["level"].size == grid.num_levels
+    assert writer.dims["interface_level"].size == grid.num_levels + 1
+    assert writer.dims["cell"].size == grid.num_cells
+    assert writer.dims["vertex"].size == grid.num_vertices
+    assert writer.dims["edge"].size == grid.num_edges
+    assert writer.dims["time"].size == 0
+    assert writer.dims["time"].isunlimited
 
-    assert dataset.variables["times"].units == DEFAULT_TIME_UNIT
-    assert dataset.variables["times"].calendar == DEFAULT_CALENDAR
+    assert writer.variables["times"].units == DEFAULT_TIME_UNIT
+    assert writer.variables["times"].calendar == DEFAULT_CALENDAR
