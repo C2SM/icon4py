@@ -38,7 +38,15 @@ requires-python = ">=3.10"
 all = ["icon4py-driver[io]"]
 io = [
   "xarray[complete]",
-  "uxarray",
+  # TODO [magdalena] there are failing tests starting from 2024.4.0: when a data file does not have
+  # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
+  # mapping. It is not yet clear whether this is a uxarray bug or on our side.
+  "uxarray==2024.3.0",
+  "netcdf4>=1.6.0", # sane version as in icon4py-common
+  "scikit-learn",
+  "holoviews",
+  "cartopy",
+  "datashader",
 ]
 
 [project.scripts]

@@ -3,4 +3,4 @@
 -e ./atmosphere/diffusion
 -e ./atmosphere/advection
 -e ./common[netcdf]
--e ./driver
+-e ./driver[io]
