@@ -55,10 +55,6 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
     interpolate_vt_to_interface_edges as interpolate_vt_to_interface_edges_orig,
 )
-
-# from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-#     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl as mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_orig,
-# )
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl as mo_math_divrot_rot_vertex_ri_dsl_orig,
 )
@@ -128,7 +124,7 @@ class CachedProgram:
             workflow.InputWithArgs(
                 data=self.program.definition_stage,
                 args=args,
-                kwargs=kwargs | {"offset_provider": offset_provider}
+                kwargs=kwargs | {"offset_provider": offset_provider},
             )
         )
         self._compiled_args = program_call.args
@@ -177,10 +173,6 @@ interpolate_vn_to_ie_and_compute_ekin_on_edges = CachedProgram(
 )
 
 interpolate_vt_to_interface_edges = CachedProgram(interpolate_vt_to_interface_edges_orig)
-
-# mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl = CachedProgram(
-#     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl_orig
-# )
 
 mo_math_divrot_rot_vertex_ri_dsl = CachedProgram(mo_math_divrot_rot_vertex_ri_dsl_orig)
 

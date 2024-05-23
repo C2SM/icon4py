@@ -14,10 +14,10 @@ import logging
 from dataclasses import dataclass
 from typing import Final, Optional
 
+import icon4py.model.common.constants as constants
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-
 from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     accumulate_prep_adv_fields,
     add_analysis_increments_from_data_assimilation,
@@ -40,7 +40,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
-    # compute_hydrostatic_correction_term,
+    compute_hydrostatic_correction_term,
     compute_mass_flux,
     compute_perturbation_of_rho_and_theta,
     compute_results_for_thermodynamic_variables,
@@ -56,13 +56,13 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     update_mass_volume_flux,
     update_mass_flux_weighted,
     update_theta_v,
-    # en_smag_fac_for_zero_nshift,
+    en_smag_fac_for_zero_nshift,
     init_cell_kdim_field_with_zero_wp,
     init_two_cell_kdim_fields_with_zero_vp,
     init_two_cell_kdim_fields_with_zero_wp,
     init_two_edge_kdim_fields_with_zero_wp,
     init_test_fields,
-    # predictor_stencils_2_3,
+    predictor_stencils_2_3,
     predictor_stencils_4_5_6,
     predictor_stencils_7_8_9_firststep,
     predictor_stencils_7_8_9_secondstep,
@@ -72,125 +72,12 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     predictor_stencils_37_38,
     stencils_39_40,
     stencils_43_44_45_45b,
-    # stencils_47_48_49,
+    stencils_47_48_49,
     stencils_61_62,
     stencils_42_44_45_45b,
     compute_z_raylfac,
 )
 
-
-import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
-import icon4py.model.common.constants as constants
-
-# from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
-#     init_cell_kdim_field_with_zero_wp,
-# )
-#
-# from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
-#     accumulate_prep_adv_fields,
-# )
-# from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
-#     add_analysis_increments_from_data_assimilation,
-# )
-# from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
-#     add_analysis_increments_to_vn,
-# )
-# from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
-#     add_temporal_tendencies_to_vn,
-# )
-# from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
-#     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
-# )
-# from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
-#     add_vertical_wind_derivative_to_divergence_damping,
-# )
-# from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
-#     apply_2nd_order_divergence_damping,
-# )
-# from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
-#     apply_4th_order_divergence_damping,
-# )
-# from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
-#     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
-# )
-# from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
-#     apply_rayleigh_damping_mechanism,
-# )
-# from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
-#     apply_weighted_2nd_and_4th_order_divergence_damping,
-# )
-# from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
-#     compute_approx_of_2nd_vertical_derivative_of_exner,
-# )
-# from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
-# from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
-#     compute_avg_vn_and_graddiv_vn_and_vt,
-# )
-# from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
-#     compute_divergence_of_fluxes_of_rho_and_theta,
-# )
-# from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
-#     compute_dwdz_for_divergence_damping,
-# )
-# from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
-#     compute_exner_from_rhotheta,
-# )
-# from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
-#     compute_graddiv2_of_vn,
-# )
-# from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
-#     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
-# )
-# from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
-#     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
-# )
-# from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
-#     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
-# )
-from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
-    compute_hydrostatic_correction_term,
-)
-
-# from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
-# from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
-#     compute_perturbation_of_rho_and_theta,
-# )
-# from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
-#     compute_results_for_thermodynamic_variables,
-# )
-# from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
-#     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
-# )
-# from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
-#     compute_theta_and_exner,
-# )
-# from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
-#     compute_vn_on_lateral_boundary,
-# )
-# from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
-#     copy_cell_kdim_field_to_vp,
-# )
-# from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-#     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-# )
-# from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
-#     mo_math_gradients_grad_green_gauss_cell_dsl,
-# )
-# from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
-#     init_two_cell_kdim_fields_with_zero_vp,
-# )
-# from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
-#     init_two_cell_kdim_fields_with_zero_wp,
-# )
-# from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
-#     init_two_edge_kdim_fields_with_zero_wp,
-# )
-# from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
-#     solve_tridiagonal_matrix_for_w_back_substitution,
-# )
-# from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
-#     solve_tridiagonal_matrix_for_w_forward_sweep,
-# )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -201,19 +88,8 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
     _calculate_divdamp_fields,
-    # compute_z_raylfac,
 )
 
-# from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
-#     update_dynamical_exner_time_increment,
-# )
-# from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
-#     update_mass_volume_flux,
-# )
-# from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
-#     update_mass_flux_weighted,
-# )
-# from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
     VelocityAdvection,
 )
@@ -230,11 +106,7 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-
-from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.settings import backend
-
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -503,19 +375,19 @@ class SolveNonhydro:
         else:
             self.jk_start = 0
 
-        # en_smag_fac_for_zero_nshift(
-        #     self.vertical_params.vct_a,
-        #     self.config.divdamp_fac,
-        #     self.config.divdamp_fac2,
-        #     self.config.divdamp_fac3,
-        #     self.config.divdamp_fac4,
-        #     self.config.divdamp_z,
-        #     self.config.divdamp_z2,
-        #     self.config.divdamp_z3,
-        #     self.config.divdamp_z4,
-        #     self.enh_divdamp_fac,
-        #     offset_provider={"Koff": KDim},
-        # )
+        en_smag_fac_for_zero_nshift(
+            self.vertical_params.vct_a,
+            self.config.divdamp_fac,
+            self.config.divdamp_fac2,
+            self.config.divdamp_fac3,
+            self.config.divdamp_fac4,
+            self.config.divdamp_z,
+            self.config.divdamp_z2,
+            self.config.divdamp_z3,
+            self.config.divdamp_z4,
+            self.enh_divdamp_fac,
+            offset_provider={"Koff": KDim},
+        )
 
         self.p_test_run = True
         self._initialized = True
@@ -803,20 +675,20 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        # nhsolve_prog.predictor_stencils_2_3(
-        #     exner_exfac=self.metric_state_nonhydro.exner_exfac,
-        #     exner=prognostic_state[nnow].exner,
-        #     exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
-        #     exner_pr=diagnostic_state_nh.exner_pr,
-        #     z_exner_ex_pr=self.z_exner_ex_pr,
-        #     horizontal_start=start_cell_lb_plus2,
-        #     horizontal_end=end_cell_halo,
-        #     k_field=self.k_field,
-        #     nlev=self.grid.num_levels,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.num_levels + 1,
-        #     offset_provider={},
-        # )
+        predictor_stencils_2_3(
+            exner_exfac=self.metric_state_nonhydro.exner_exfac,
+            exner=prognostic_state[nnow].exner,
+            exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            z_exner_ex_pr=self.z_exner_ex_pr,
+            k_field=self.k_field,
+            nlev=self.grid.num_levels,
+            horizontal_start=start_cell_lb_plus2,
+            horizontal_end=end_cell_halo,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels + 1,
+            offset_provider={},
+        )
 
         if self.config.igradp_method == 3:
             predictor_stencils_4_5_6(
@@ -839,30 +711,6 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        # predictor_stencils_7_8_9(
-        #     rho=prognostic_state[nnow].rho,
-        #     rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
-        #     theta_v=prognostic_state[nnow].theta_v,
-        #     theta_ref_mc=self.metric_state_nonhydro.theta_ref_mc,
-        #     rho_ic=diagnostic_state_nh.rho_ic,
-        #     z_rth_pr_1=self.z_rth_pr_1,
-        #     z_rth_pr_2=self.z_rth_pr_2,
-        #     wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
-        #     vwind_expl_wgt=self.metric_state_nonhydro.vwind_expl_wgt,
-        #     exner_pr=diagnostic_state_nh.exner_pr,
-        #     d_exner_dz_ref_ic=self.metric_state_nonhydro.d_exner_dz_ref_ic,
-        #     ddqz_z_half=self.metric_state_nonhydro.ddqz_z_half,
-        #     z_theta_v_pr_ic=self.z_theta_v_pr_ic,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     z_th_ddz_exner_c=self.z_th_ddz_exner_c,
-        #     k_field=self.k_field,
-        #     nlev=self.grid.num_levels,
-        #     horizontal_start=start_cell_lb_plus2,
-        #     horizontal_end=end_cell_halo,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.num_levels,
-        #     offset_provider=self.grid.offset_providers,
-        # )
         predictor_stencils_7_8_9_firststep(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
@@ -1088,22 +936,22 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
-        # if self.config.igradp_method == 3:
-        #     compute_hydrostatic_correction_term(
-        #         theta_v=prognostic_state[nnow].theta_v,
-        #         ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
-        #         zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
-        #         theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #         inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-        #         inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-        #         z_hydro_corr=self.z_hydro_corr,
-        #         grav_o_cpd=self.params.grav_o_cpd,
-        #         horizontal_start=start_edge_nudging_plus1,
-        #         horizontal_end=end_edge_local,
-        #         vertical_start=self.grid.num_levels - 1,
-        #         vertical_end=self.grid.num_levels,
-        #         offset_provider=self.grid.offset_providers,
-        #     )
+        if self.config.igradp_method == 3:
+            compute_hydrostatic_correction_term(
+                theta_v=prognostic_state[nnow].theta_v,
+                ikoffset=self.metric_state_nonhydro.vertoffset_gradp,
+                zdiff_gradp=self.metric_state_nonhydro.zdiff_gradp,
+                theta_v_ic=diagnostic_state_nh.theta_v_ic,
+                inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+                inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
+                grav_o_cpd=self.params.grav_o_cpd,
+                z_hydro_corr=self.z_hydro_corr,
+                horizontal_start=start_edge_nudging_plus1,
+                horizontal_end=end_edge_local,
+                vertical_start=int32(self.grid.num_levels) - int32(1),
+                vertical_end=int32(self.grid.num_levels),
+                offset_provider=self.grid.offset_providers,
+            )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
         hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
@@ -1297,29 +1145,29 @@ class SolveNonhydro:
                 vertical_end=1,
                 offset_provider={},
             )
-        # nhsolve_prog.stencils_47_48_49(
-        #     w_nnew=prognostic_state[nnew].w,
-        #     z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
-        #     z_rho_expl=z_fields.z_rho_expl,
-        #     z_exner_expl=z_fields.z_exner_expl,
-        #     rho_nnow=prognostic_state[nnow].rho,
-        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-        #     z_flxdiv_mass=self.z_flxdiv_mass,
-        #     exner_pr=diagnostic_state_nh.exner_pr,
-        #     z_beta=z_fields.z_beta,
-        #     z_flxdiv_theta=self.z_flxdiv_theta,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-        #     k_field=self.k_field,
-        #     dtime=dtime,
-        #     nlev=self.grid.num_levels,
-        #     horizontal_start=start_cell_nudging,
-        #     horizontal_end=end_cell_local,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.num_levels + 1,
-        #     offset_provider=self.grid.offset_providers,
-        # )
+        stencils_47_48_49(
+            w_nnew=prognostic_state[nnew].w,
+            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            z_rho_expl=z_fields.z_rho_expl,
+            z_exner_expl=z_fields.z_exner_expl,
+            rho_nnow=prognostic_state[nnow].rho,
+            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            z_beta=z_fields.z_beta,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+            k_field=self.k_field,
+            dtime=dtime,
+            nlev=int32(self.grid.num_levels),
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=int32(0),
+            vertical_end=int32(self.grid.num_levels) + int32(1),
+            offset_provider=self.grid.offset_providers,
+        )
 
         if self.config.is_iau_active:
             add_analysis_increments_from_data_assimilation(
@@ -1846,29 +1694,29 @@ class SolveNonhydro:
             )
 
         log.debug(f"corrector start stencil 47 48 49")
-        # nhsolve_prog.stencils_47_48_49(
-        #     w_nnew=prognostic_state[nnew].w,
-        #     z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
-        #     w_concorr_c=diagnostic_state_nh.w_concorr_c,
-        #     z_rho_expl=z_fields.z_rho_expl,
-        #     z_exner_expl=z_fields.z_exner_expl,
-        #     rho_nnow=prognostic_state[nnow].rho,
-        #     inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
-        #     z_flxdiv_mass=self.z_flxdiv_mass,
-        #     exner_pr=diagnostic_state_nh.exner_pr,
-        #     z_beta=z_fields.z_beta,
-        #     z_flxdiv_theta=self.z_flxdiv_theta,
-        #     theta_v_ic=diagnostic_state_nh.theta_v_ic,
-        #     ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
-        #     k_field=self.k_field,
-        #     dtime=dtime,
-        #     nlev=self.grid.num_levels,
-        #     horizontal_start=start_cell_nudging,
-        #     horizontal_end=end_cell_local,
-        #     vertical_start=0,
-        #     vertical_end=self.grid.num_levels + 1,
-        #     offset_provider=self.grid.offset_providers,
-        # )
+        stencils_47_48_49(
+            w_nnew=prognostic_state[nnew].w,
+            z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
+            w_concorr_c=diagnostic_state_nh.w_concorr_c,
+            z_rho_expl=z_fields.z_rho_expl,
+            z_exner_expl=z_fields.z_exner_expl,
+            rho_nnow=prognostic_state[nnow].rho,
+            inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            exner_pr=diagnostic_state_nh.exner_pr,
+            z_beta=z_fields.z_beta,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            theta_v_ic=diagnostic_state_nh.theta_v_ic,
+            ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
+            k_field=self.k_field,
+            dtime=dtime,
+            nlev=self.grid.num_levels,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=int32(0),
+            vertical_end=int32(self.grid.num_levels) + int32(1),
+            offset_provider=self.grid.offset_providers,
+        )
 
         # TODO: this is not tested in green line so far
         if self.config.is_iau_active:

@@ -65,6 +65,7 @@ def profile_disable():
     stats = pstats.Stats(profiler)
     stats.dump_stats(f"{__name__}.profile")
 
+
 class TimeLoop:
     @classmethod
     def name(cls):
@@ -497,8 +498,6 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
     )
 
     log.info("timeloop:  DONE")
-
-
 
 
 if __name__ == "__main__":

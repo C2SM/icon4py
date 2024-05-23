@@ -89,10 +89,9 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressu
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates as compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates_orig,
 )
-
-# from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
-#    compute_hydrostatic_correction_term as compute_hydrostatic_correction_term_orig,
-# )
+from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+    compute_hydrostatic_correction_term as compute_hydrostatic_correction_term_orig,
+)
 from icon4py.model.atmosphere.dycore.compute_mass_flux import (
     compute_mass_flux as compute_mass_flux_orig,
 )
@@ -167,6 +166,9 @@ from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
     update_mass_volume_flux as update_mass_volume_flux_orig,
 )
 from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v as update_theta_v_orig
+from icon4py.model.common.math.smagorinsky import (
+    en_smag_fac_for_zero_nshift as en_smag_fac_for_zero_nshift_orig,
+)
 from icon4py.model.common.settings import device
 
 
@@ -225,7 +227,7 @@ class CachedProgram:
             workflow.InputWithArgs(
                 data=self.program.definition_stage,
                 args=args,
-                kwargs=kwargs | {"offset_provider": offset_provider}
+                kwargs=kwargs | {"offset_provider": offset_provider},
             )
         )
         self._compiled_args = program_call.args
@@ -289,7 +291,6 @@ compute_approx_of_2nd_vertical_derivative_of_exner = CachedProgram(
     compute_approx_of_2nd_vertical_derivative_of_exner_orig
 )
 
-
 compute_avg_vn = CachedProgram(compute_avg_vn_orig)
 
 compute_avg_vn_and_graddiv_vn_and_vt = CachedProgram(compute_avg_vn_and_graddiv_vn_and_vt_orig)
@@ -316,8 +317,7 @@ compute_horizontal_gradient_of_exner_pressure_for_multiple_levels = CachedProgra
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels_orig
 )
 
-# temp switch off
-# compute_hydrostatic_correction_term = CachedProgram(compute_hydrostatic_correction_term_orig)
+compute_hydrostatic_correction_term = CachedProgram(compute_hydrostatic_correction_term_orig)
 
 compute_mass_flux = CachedProgram(compute_mass_flux_orig)
 
@@ -361,7 +361,7 @@ update_mass_flux_weighted = CachedProgram(update_mass_flux_weighted_orig)
 
 update_theta_v = CachedProgram(update_theta_v_orig)
 
-# en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig)
+en_smag_fac_for_zero_nshift = CachedProgram(en_smag_fac_for_zero_nshift_orig, with_domain=False)
 
 init_cell_kdim_field_with_zero_wp = CachedProgram(init_cell_kdim_field_with_zero_wp_orig)
 
@@ -372,21 +372,33 @@ init_two_cell_kdim_fields_with_zero_wp = CachedProgram(init_two_cell_kdim_fields
 init_two_edge_kdim_fields_with_zero_wp = CachedProgram(init_two_edge_kdim_fields_with_zero_wp_orig)
 
 init_test_fields = CachedProgram(init_test_fields_orig)
+
 predictor_stencils_2_3 = CachedProgram(predictor_stencils_2_3_orig)
+
 predictor_stencils_4_5_6 = CachedProgram(predictor_stencils_4_5_6_orig)
+
 predictor_stencils_7_8_9_firststep = CachedProgram(predictor_stencils_7_8_9_firststep_orig)
+
 predictor_stencils_7_8_9_secondstep = CachedProgram(predictor_stencils_7_8_9_secondstep_orig)
+
 predictor_stencils_11_lower_upper = CachedProgram(predictor_stencils_11_lower_upper_orig)
+
 compute_horizontal_advection_of_rho_and_theta = CachedProgram(
     compute_horizontal_advection_of_rho_and_theta_orig
 )
+
 predictor_stencils_35_36 = CachedProgram(predictor_stencils_35_36_orig)
+
 predictor_stencils_37_38 = CachedProgram(predictor_stencils_37_38_orig)
+
 stencils_39_40 = CachedProgram(stencils_39_40_orig)
+
 stencils_43_44_45_45b = CachedProgram(stencils_43_44_45_45b_orig)
+
 stencils_47_48_49 = CachedProgram(stencils_47_48_49_orig)
+
 stencils_61_62 = CachedProgram(stencils_61_62_orig)
+
 stencils_42_44_45_45b = CachedProgram(stencils_42_44_45_45b_orig)
 
 compute_z_raylfac = CachedProgram(compute_z_raylfac_orig, with_domain=False)
-# _init_cell_kdim_field_with_zero_wp = CachedProgram(_init_cell_kdim_field_with_zero_wp_orig, with_domain=False)

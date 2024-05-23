@@ -1117,8 +1117,8 @@ def stencils_47_48_49(
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
-    vertical_end: int32,
     vertical_start: int32,
+    vertical_end: int32,
 ):
     _stencils_47_48_49(
         w_nnew,

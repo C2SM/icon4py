@@ -119,7 +119,7 @@ class CachedProgram:
             workflow.InputWithArgs(
                 data=self.program.definition_stage,
                 args=args,
-                kwargs=kwargs | {"offset_provider": offset_provider}
+                kwargs=kwargs | {"offset_provider": offset_provider},
             )
         )
         self._compiled_args = program_call.args
