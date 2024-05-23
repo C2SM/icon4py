@@ -46,9 +46,9 @@ class TestApplyNabla2ToVnInLateralBoundary(StencilTest):
             z_nabla2_e=z_nabla2_e,
             area_edge=area_edge,
             vn=vn,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
 

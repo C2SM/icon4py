@@ -10,9 +10,10 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from typing import Any
+from typing import Any, Optional
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.liskov.codegen.integration.deserialise import DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
 from icon4pytools.liskov.codegen.integration.interface import (
     EndDeleteData,
     EndFusedStencilData,
@@ -30,7 +31,18 @@ from icon4pytools.liskov.pipeline.definition import Step
 logger = setup_logger(__name__)
 
 
-class StencilTransformer(Step):
+def _remove_stencils(
+    parsed: IntegrationCodeInterface, stencils_to_remove: list[CodeGenInput]
+) -> None:
+    attributes_to_modify = ["StartStencil", "EndStencil"]
+
+    for attr_name in attributes_to_modify:
+        current_stencil_list = getattr(parsed, attr_name)
+        modified_stencil_list = [_ for _ in current_stencil_list if _ not in stencils_to_remove]
+        setattr(parsed, attr_name, modified_stencil_list)
+
+
+class FusedStencilTransformer(Step):
     def __init__(self, parsed: IntegrationCodeInterface, fused: bool) -> None:
         self.parsed = parsed
         self.fused = fused
@@ -71,7 +83,7 @@ class StencilTransformer(Step):
                     self._create_delete_directives(start_single, end_single)
                     stencils_to_remove += [start_single, end_single]
 
-        self._remove_stencils(stencils_to_remove)
+        _remove_stencils(self.parsed, stencils_to_remove)
 
     def _stencil_is_removable(
         self,
@@ -105,14 +117,6 @@ class StencilTransformer(Step):
             directive.append(cls(startln=param.startln))
             setattr(self.parsed, attr, directive)
 
-    def _remove_stencils(self, stencils_to_remove: list[CodeGenInput]) -> None:
-        attributes_to_modify = ["StartStencil", "EndStencil"]
-
-        for attr_name in attributes_to_modify:
-            current_stencil_list = getattr(self.parsed, attr_name)
-            modified_stencil_list = [_ for _ in current_stencil_list if _ not in stencils_to_remove]
-            setattr(self.parsed, attr_name, modified_stencil_list)
-
     def _remove_fused_stencils(self) -> None:
         self.parsed.StartFusedStencil = []
         self.parsed.EndFusedStencil = []
@@ -120,3 +124,52 @@ class StencilTransformer(Step):
     def _remove_delete(self) -> None:
         self.parsed.StartDelete = []
         self.parsed.EndDelete = []
+
+
+class OptionalModulesTransformer(Step):
+    def __init__(
+        self, parsed: IntegrationCodeInterface, optional_modules_to_enable: Optional[tuple[str]]
+    ) -> None:
+        self.parsed = parsed
+        self.optional_modules_to_enable = optional_modules_to_enable
+
+    def __call__(self, data: Any = None) -> IntegrationCodeInterface:
+        """Transform stencils in the parse tree based on 'optional_modules_to_enable', either enabling specific modules or removing them.
+
+        Args:
+            data (Any): Optional data to be passed. Defaults to None.
+
+        Returns:
+            IntegrationCodeInterface: The modified interface object.
+        """
+        if self.optional_modules_to_enable is not None:
+            action = "enabling"
+        else:
+            action = "removing"
+        logger.info(f"Transforming stencils by {action} optional modules.")
+        self._transform_stencils()
+
+        return self.parsed
+
+    def _transform_stencils(self) -> None:
+        """Identify stencils to transform based on 'optional_modules_to_enable' and applies necessary changes."""
+        stencils_to_remove = []
+        for start_stencil, end_stencil in zip(
+            self.parsed.StartStencil, self.parsed.EndStencil, strict=False
+        ):
+            if self._should_remove_stencil(start_stencil):
+                stencils_to_remove.extend([start_stencil, end_stencil])
+
+        _remove_stencils(self.parsed, stencils_to_remove)
+
+    def _should_remove_stencil(self, stencil: StartStencilData) -> bool:
+        """Determine if a stencil should be removed based on 'optional_modules_to_enable'.
+
+        Returns:
+            bool: True if the stencil should be removed, False otherwise.
+        """
+        if stencil.optional_module == DEFAULT_STARTSTENCIL_OPTIONAL_MODULE:
+            return False
+        if self.optional_modules_to_enable is None:
+            return True
+        return stencil.optional_module not in self.optional_modules_to_enable

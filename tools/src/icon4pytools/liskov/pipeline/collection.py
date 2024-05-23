@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from icon4pytools.liskov.codegen.integration.deserialise import IntegrationCodeDeserialiser
 from icon4pytools.liskov.codegen.integration.generate import IntegrationCodeGenerator
@@ -22,7 +22,10 @@ from icon4pytools.liskov.codegen.shared.write import CodegenWriter
 from icon4pytools.liskov.external.gt4py import UpdateFieldsWithGt4PyStencils
 from icon4pytools.liskov.parsing.parse import DirectivesParser
 from icon4pytools.liskov.parsing.scan import DirectivesScanner
-from icon4pytools.liskov.parsing.transform import StencilTransformer
+from icon4pytools.liskov.parsing.transform import (
+    FusedStencilTransformer,
+    OptionalModulesTransformer,
+)
 from icon4pytools.liskov.pipeline.definition import Step, linear_pipeline
 
 
@@ -70,21 +73,28 @@ def parse_fortran_file(
 
 
 @linear_pipeline
-def process_stencils(parsed: IntegrationCodeInterface, fused: bool) -> list[Step]:
+def process_stencils(
+    parsed: IntegrationCodeInterface, fused: bool, optional_modules_to_enable: Optional[tuple[str]]
+) -> list[Step]:
     """Execute a linear pipeline to transform stencils and produce either fused or unfused execution.
 
     This function takes an input `parsed` object of type `IntegrationCodeInterface` and a `fused` boolean flag.
-    It then executes a linear pipeline, consisting of two steps: transformation of stencils for fusion or unfusion,
-    and updating fields with information from GT4Py stencils.
+    It then executes a linear pipeline, consisting of three steps: transformation of stencils for fusion or unfusion,
+    enabling optional modules, and updating fields with information from GT4Py stencils.
 
     Args:
         parsed (IntegrationCodeInterface): The input object containing parsed integration code.
         fused (bool): A boolean flag indicating whether to produce fused (True) or unfused (False) execution.
+        optional_modules_to_enable (Optional[tuple[str]]): A tuple of optional modules to enable.
 
     Returns:
-        The updated and transformed object with fields containing information from GT4Py stencils.
+        The updated and transformed IntegrationCodeInterface object.
     """
-    return [StencilTransformer(parsed, fused), UpdateFieldsWithGt4PyStencils(parsed)]
+    return [
+        FusedStencilTransformer(parsed, fused),
+        OptionalModulesTransformer(parsed, optional_modules_to_enable),
+        UpdateFieldsWithGt4PyStencils(parsed),
+    ]
 
 
 @linear_pipeline
