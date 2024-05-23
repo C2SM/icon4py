@@ -169,6 +169,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
+        profile: bool,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -207,7 +208,9 @@ class TimeLoop:
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
-        profile_enable()
+        if profile:
+            profile_enable()
+
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
@@ -240,7 +243,9 @@ class TimeLoop:
             # TODO (Chia Rui): simple IO enough for JW test
 
         timer.summary(True)
-        profile_disable()
+
+        if profile:
+            profile_disable()
 
     def _integrate_one_time_step(
         self,
@@ -446,7 +451,8 @@ def initialize(
     help="serialization type for grid info and static fields",
 )
 @click.option("--experiment_type", default="any", help="experiment selection")
-def main(input_path, run_path, mpi, serialization_type, experiment_type):
+@click.option("--profile", default=False, help="Whether to profile code using cProfile.")
+def main(input_path, run_path, mpi, serialization_type, experiment_type, profile):
     """
     Run the driver.
 
@@ -495,6 +501,7 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
         prep_adv,
         inital_divdamp_fac_o2,
         do_prep_adv=False,
+        profile=profile,
     )
 
     log.info("timeloop:  DONE")
