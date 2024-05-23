@@ -80,7 +80,7 @@ def test_icon_ugrid_patch_transposed_index_lists(file):
         patch = IconUGridPatch()
         uxds = patch(ds)
         horizontal_dims = ("cell", "edge", "vertex")
-        horizontal_sizes = list(uxds.dims[k] for k in horizontal_dims)
+        horizontal_sizes = list(uxds.sizes[k] for k in horizontal_dims)
         for name in patch.connectivities:
             assert len(uxds[name].shape) == 2
             assert uxds[name].shape[0] > uxds[name].shape[1]
@@ -106,12 +106,11 @@ def assert_start_index(uxds: Dataset, name: str):
 @pytest.mark.parametrize("file", grid_files())
 def test_extract_horizontal_coordinates(file):
     with load_data_file(file) as ds:
-        dims = ds.dims
+        dim_sizes = ds.sizes
         coords = extract_horizontal_coordinates(ds)
-        # TODO (halungge) fix data
+        # TODO (halungge) fix:
         #  - 'long_name', 'standard_name' of attributes fx cell center latitudes
-        # - 'units' convert to degrees_north, degrees_east..
-        # -  get the bounds
+        # - 'units' of lat, lon are conventionally in degrees not in radians as ICON provides themconvert to degrees_north, degrees_east..
         for k in ("cell", "edge", "vertex"):
             assert k in coords
-            assert coords[k][0].shape[0] == dims[k]
+            assert coords[k][0].shape[0] == dim_sizes[k]
