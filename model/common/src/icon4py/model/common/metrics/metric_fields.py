@@ -36,7 +36,7 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     Koff,
-    VertexDim,
+    VertexDim, C2E2C,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -1011,3 +1011,95 @@ def compute_hmask_dd3d(
         out=hmask_dd3d,
         domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+@field_operator
+def _compute_mask_hdiff() -> Field[[CellDim, KDim], bool]:
+    return broadcast(True, (CellDim, KDim))
+
+
+@program
+def compute_mask_hdiff(
+    mask_hdiff: Field[[CellDim, KDim], bool],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    _compute_mask_hdiff(
+        out=mask_hdiff,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim:(vertical_start, vertical_end)}
+    )
+
+@field_operator
+def _compute_z_maxslp_avg(
+    maxslp: Field[[CellDim, KDim], wpfloat],
+    c_bln_avg_0: Field[[CellDim], wpfloat],
+    c_bln_avg_1: Field[[CellDim], wpfloat],
+    c_bln_avg_2: Field[[CellDim], wpfloat],
+    c_bln_avg_3: Field[[CellDim], wpfloat]
+) -> Field[[CellDim, KDim], wpfloat]:
+    z_maxslp_avg = maxslp * c_bln_avg_0 + \
+                   maxslp(C2E2C[0]) * c_bln_avg_1 + \
+                   maxslp(C2E2C[1]) * c_bln_avg_2 + \
+                   maxslp(C2E2C[2]) * c_bln_avg_3
+    return z_maxslp_avg
+
+
+@field_operator
+def _compute_z_maxhgtd_avg(
+    maxhgtd: Field[[CellDim, KDim], wpfloat],
+    c_bln_avg_0: Field[[CellDim], wpfloat],
+    c_bln_avg_1: Field[[CellDim], wpfloat],
+    c_bln_avg_2: Field[[CellDim], wpfloat],
+    c_bln_avg_3: Field[[CellDim], wpfloat]
+) -> Field[[CellDim, KDim], wpfloat]:
+    z_maxhgtd_avg = maxhgtd * c_bln_avg_0 + \
+                    maxhgtd(C2E2C[0]) * c_bln_avg_1 + \
+                    maxhgtd(C2E2C[1]) * c_bln_avg_2 + \
+                    maxhgtd(C2E2C[2]) * c_bln_avg_3
+    return z_maxhgtd_avg
+
+
+@program
+def compute_z_maxslp_avg_z_maxhgtd_avg(
+    maxslp: Field[[CellDim, KDim], wpfloat],
+    maxhgtd: Field[[CellDim, KDim], wpfloat],
+    c_bln_avg_0: Field[[CellDim], wpfloat],
+    c_bln_avg_1: Field[[CellDim], wpfloat],
+    c_bln_avg_2: Field[[CellDim], wpfloat],
+    c_bln_avg_3: Field[[CellDim], wpfloat],
+    z_maxslp_avg: Field[[CellDim, KDim], wpfloat],
+    z_maxhgtd_avg: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32
+):
+    _compute_z_maxslp_avg(
+        maxslp=maxslp,
+        c_bln_avg_0=c_bln_avg_0,
+        c_bln_avg_1=c_bln_avg_1,
+        c_bln_avg_2=c_bln_avg_2,
+        c_bln_avg_3=c_bln_avg_3,
+        out=z_maxslp_avg,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+    _compute_z_maxhgtd_avg(
+        maxhgtd=maxhgtd,
+        c_bln_avg_0=c_bln_avg_0,
+        c_bln_avg_1=c_bln_avg_1,
+        c_bln_avg_2=c_bln_avg_2,
+        c_bln_avg_3=c_bln_avg_3,
+        out=z_maxhgtd_avg,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_max_nbhgt(
+    z_mc_nlev: Field[[CellDim], wpfloat],
+) -> Field[[CellDim], wpfloat]:
+    max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
+    max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
+    return max_nbhgt

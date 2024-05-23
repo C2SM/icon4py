@@ -59,7 +59,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_wgtfac_e,
-    compute_z_mc,
+    compute_z_mc, _compute_max_nbhgt, compute_z_maxslp_avg_z_maxhgtd_avg,
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -890,3 +890,119 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
     )
 
     dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
+
+@pytest.mark.datatest
+def test_compute_mask_hdiff(metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend):
+    backend = None
+    mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
+    nlev = icon_grid.num_levels
+    mask_hdiff_ref = metrics_savepoint.mask_hdiff()
+    zd_vertoffset_ref = metrics_savepoint.zd_vertoffset()
+    # TODO: inquire to Magda as to why 3316 works instead of cell_nudging
+    # cell_nudging = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+    cell_nudging = 3316
+    cell_lateral = icon_grid.get_start_index(
+        CellDim,
+        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+    )
+    z_maxslp_avg = zero_field(icon_grid, CellDim, KDim)
+    z_maxhgtd_avg = zero_field(icon_grid, CellDim, KDim)
+    c_bln_avg = interpolation_savepoint.c_bln_avg()
+    thslp_zdiffu = 0.02 # TODO: import from Fortran, note: same variable in diffusion has different value
+    thhgtd_zdiffu = 125 # TODO: import from Fortran, note: same variable in diffusion has different value
+    c_owner_mask = grid_savepoint.c_owner_mask()
+    ji = -1
+    i_masklist = [0] * icon_grid.num_cells
+    k_start = [None] * icon_grid.num_cells
+    k_end = [None] * icon_grid.num_cells
+    i_indlist = [0] * icon_grid.num_cells
+    maxslp = zero_field(icon_grid, CellDim, KDim)
+    maxhgtd = zero_field(icon_grid, CellDim, KDim)
+    max_nbhgt = zero_field(icon_grid, CellDim)
+
+    _compute_maxslp_maxhgtd(
+        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
+        dual_edge_length=grid_savepoint.dual_edge_length(),
+        out=(maxslp, maxhgtd),
+        domain={CellDim:(cell_lateral, icon_grid.num_cells), KDim: (int32(0), nlev)},
+        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
+    )
+
+    z_ifc = metrics_savepoint.z_ifc()
+    z_mc = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    compute_z_mc.with_backend(backend)(
+        z_ifc,
+        z_mc,
+        horizontal_start=int32(0),
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=int32(0),
+        vertical_end=nlev,
+        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
+    )
+
+    compute_z_maxslp_avg_z_maxhgtd_avg.with_backend(backend)(
+        maxslp=maxslp,
+        maxhgtd=maxhgtd,
+        c_bln_avg_0=as_field((CellDim,), c_bln_avg.asnumpy()[:, 0]),
+        c_bln_avg_1=as_field((CellDim,), c_bln_avg.asnumpy()[:, 1]),
+        c_bln_avg_2=as_field((CellDim,), c_bln_avg.asnumpy()[:, 2]),
+        c_bln_avg_3=as_field((CellDim,), c_bln_avg.asnumpy()[:, 3]),
+        z_maxslp_avg=z_maxslp_avg,
+        z_maxhgtd_avg=z_maxhgtd_avg,
+        horizontal_start=cell_lateral,
+        horizontal_end=int32(icon_grid.num_cells),
+        vertical_start=0,
+        vertical_end=nlev,
+        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")}
+    )
+
+    for jc in range(cell_nudging, icon_grid.num_cells):
+        if ((z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu) and c_owner_mask[jc]):
+            ji += 1
+            i_masklist[jc] = 1
+            i_indlist[ji] = jc
+
+    i_listdim = ji
+    i_listreduce = 0
+    _compute_max_nbhgt(
+        z_mc_nlev=as_field((CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        out=max_nbhgt,
+        domain={CellDim: (int32(1), int32(icon_grid.num_cells))},
+        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
+    )
+
+    for jc in range(cell_nudging, icon_grid.num_cells):
+        if i_masklist[jc] == 1:
+
+            for jk in reversed(range(nlev)):
+                if z_mc.asnumpy()[jc, jk] >= max_nbhgt.asnumpy()[jc]:
+                    k_end[jc] = jk + 1
+                    break
+
+            for jk in range(nlev):
+                if z_maxslp_avg.asnumpy()[jc, jk] >= thslp_zdiffu or z_maxhgtd_avg.asnumpy()[jc, jk] >= thhgtd_zdiffu:
+                    k_start[jc] = jk
+                    break
+
+            if k_start[jc] is not None and k_end[jc] is not None and k_start[jc] > k_end[jc]:
+                i_masklist[jc] = 0
+                i_listreduce += 1
+                k_start[jc] = nlev - 1
+
+
+    i_listdim = i_listdim - i_listreduce
+
+    ji = -1
+    for jc in range(cell_nudging, icon_grid.num_cells):
+        if i_masklist[jc] == 1:
+            ji += 1
+            i_indlist[ji] = jc
+
+    for ji in range(i_listdim):
+        jc = i_indlist[ji]
+        if k_start[jc] is not None and k_end[jc] is not None:
+            for jk in range(k_start[jc], k_end[jc]):
+                mask_hdiff[jc, jk] = True
+
+    assert dallclose(mask_hdiff, mask_hdiff_ref.asnumpy())
+
