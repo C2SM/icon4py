@@ -14,6 +14,7 @@
 from typing import Final
 
 import cftime
+import xarray
 
 
 LEVEL_NAME: Final[str] = "model_level_number"
@@ -42,3 +43,17 @@ def date2num(date, units=DEFAULT_TIME_UNIT, calendar=DEFAULT_CALENDAR):
     Convenience method that makes units and calendar optional and uses the default values.
     """
     return cftime.date2num(date, units=units, calendar=calendar)
+
+
+def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
+    """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order."""
+    dims = data.dims
+    if len(dims) >= 2:
+        if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
+            "height",
+            "level",
+            "interface_level",
+        ):
+            return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True)
+        else:
+            return data

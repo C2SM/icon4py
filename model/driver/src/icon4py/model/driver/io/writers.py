@@ -17,7 +17,6 @@ from pathlib import Path
 
 import netCDF4 as nc
 import numpy as np
-import xarray
 import xarray as xr
 
 from icon4py.model.common.decomposition.definitions import (
@@ -33,6 +32,7 @@ from icon4py.model.driver.io.cf_utils import (
     INTERFACE_LEVEL_NAME,
     LEVEL_NAME,
     date2num,
+    to_canonical_dim_order,
 )
 
 
@@ -181,17 +181,3 @@ class NetcdfWriter:
 
 def filter_by_standard_name(model_state: dict, value: str):
     return {k: v for k, v in model_state.items() if value == v.standard_name}
-
-
-def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
-    """Check for dimension being in canoncial order ('T', 'Z', 'Y', 'X') and return them in this order."""
-    dims = data.dims
-    if len(dims) >= 2:
-        if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
-            "height",
-            "level",
-            "interface_level",
-        ):
-            return data.transpose(dims[1], dims[0], *dims[2:], transpose_coords=True)
-        else:
-            return data

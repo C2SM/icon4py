@@ -33,17 +33,9 @@ from icon4py.model.driver.io.data import PROGNOSTIC_CF_ATTRIBUTES, to_data_array
 from icon4py.model.driver.io.writers import (
     NetcdfWriter,
     filter_by_standard_name,
-    to_canonical_dim_order,
 )
 
-from .test_io import model_state, simple_grid, state_values
-
-
-@pytest.mark.parametrize("input_", state_values())
-def test_to_canonical_dim_order(input_):
-    input_dims = input_.dims
-    output = to_canonical_dim_order(input_)
-    assert output.dims == (input_dims[1], input_dims[0])
+from .test_io import model_state, simple_grid
 
 
 @pytest.mark.parametrize("value", ["air_density", "upward_air_velocity"])

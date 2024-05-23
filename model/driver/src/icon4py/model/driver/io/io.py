@@ -45,6 +45,7 @@ class OutputInterval(str, Enum):
 def to_delta(value: str) -> timedelta:
     vals = value.split(" ")
     num = 1 if not vals[0].isnumeric() else int(vals[0])
+    assert num >= 0, f"Delta value must be positive: {num}"
 
     value = vals[0].upper() if len(vals) < 2 else vals[1].upper()
     value = value[:-1] if value.endswith("S") else value

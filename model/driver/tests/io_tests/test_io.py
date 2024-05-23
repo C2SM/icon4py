@@ -84,11 +84,20 @@ def state_values() -> xr.DataArray:
         yield v
 
 
-@pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
+@pytest.mark.parametrize(
+    "num",
+    [
+        1,
+        2,
+        3,
+        4,
+        5,
+    ],
+)
 @pytest.mark.parametrize("slot", ["DAY", "day", "Day", "days", "DAyS"])
 def test_to_delta_days(num, slot):
-    assert to_delta("DAY") == timedelta(hours=1)
-    assert to_delta(f"{num} {slot}") == timedelta(hours=num)
+    assert to_delta("DAY") == timedelta(days=1)
+    assert to_delta(f"{num} {slot}") == timedelta(days=num)
 
 
 @pytest.mark.parametrize("num", [1, 2, 3, 4, 5])
@@ -99,7 +108,7 @@ def test_to_delta_hours(num, slot):
 
 
 @pytest.mark.parametrize("num", [0, 2, 44, 4, 5])
-@pytest.mark.parametrize("slot", ["second", "SECOND", "seconds", "SECONDS"])
+@pytest.mark.parametrize("slot", ["second", "SECOND", "SEConds", "SECONDS"])
 def test_to_delta_secs(num, slot):
     assert to_delta(f"{num} {slot}") == timedelta(seconds=num)
 
