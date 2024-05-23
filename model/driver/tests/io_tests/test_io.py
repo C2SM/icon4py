@@ -161,7 +161,8 @@ def test_io_monitor_write_ugrid_file(test_path):
     assert is_valid_uxgrid(ugrid_file)
 
 
-def test_io_monitor_write_dataset(test_path):
+@pytest.mark.parametrize("variables", (["air_density", "exner_function", "upward_air_velocity"], ["normal_velocity", "upward_air_velocity", "theta_v"]))
+def test_io_monitor_write_dataset(test_path,variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid, grid_id = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu=False)
     state = model_state(grid)
@@ -171,7 +172,7 @@ def test_io_monitor_write_dataset(test_path):
             output_interval="HOUR",
             start_time=configured_output_start,
             filename="icon4py_dummy_output",
-            variables=["air_density", "exner_function", "upward_air_velocity"],
+            variables=variables,
             nc_comment="Writing dummy data from icon4py for testing.",
         )
     ]
@@ -195,9 +196,15 @@ def test_io_monitor_write_dataset(test_path):
 
     assert len([f for f in monitor.path.iterdir() if f.is_file()]) == 1 + len(field_configs)
     uxds = read_back_as_uxarray(monitor.path.iterdir())
-    assert uxds["air_density"].shape == (3, grid.num_levels, grid.num_cells)
-    assert uxds["exner_function"].shape == (3, grid.num_levels, grid.num_cells)
-    assert uxds["upward_air_velocity"].shape == (3, grid.num_levels + 1, grid.num_cells)
+    for var in variables:
+        assert var in uxds.variables
+        if var in ["air_density", "exner_function", "theta_v"]:
+            assert uxds[var].shape == (3, grid.num_levels, grid.num_cells)
+        elif var == "upward_air_velocity":
+            assert uxds[var].shape == (3, grid.num_levels + 1, grid.num_cells)
+        elif var == "normal_velocity":
+            assert uxds[var].shape == (3, grid.num_levels, grid.num_edges)    
+    
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
