@@ -39,6 +39,7 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 )
 from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
+    MetricsConfig,
     _compute_flat_idx,
     _compute_pg_edgeidx_vertidx,
     _compute_z_aux2,
@@ -60,7 +61,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_wgtfac_e,
-    compute_z_mc, MetricsConfig,
+    compute_z_mc,
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (

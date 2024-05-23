@@ -25,9 +25,12 @@
 
 import pytest
 
-from icon4py.model.common.dimension import E2CDim, EdgeDim, KDim
-from icon4py.model.common.metrics.stencils.compute_wgtfacq import compute_wgtfacq_c_dsl, compute_wgtfacq_e_dsl
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.common.dimension import E2CDim
+from icon4py.model.common.metrics.stencils.compute_wgtfacq import (
+    compute_wgtfacq_c_dsl,
+    compute_wgtfacq_e_dsl,
+)
+from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest

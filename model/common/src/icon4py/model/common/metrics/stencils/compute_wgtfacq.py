@@ -65,12 +65,12 @@ def compute_wgtfacq_e_dsl(
         z_ifc: geometric height at the vertical interface of cells.
         z_aux_c: interpolation of weighting coefficients to edges
         c_lin_e: interpolation field
-        wgtfacq_e_dsl: output
+        n_edges: number of edges
         nlev: int, last k level
     Returns:
     Field[EdgeDim, KDim] (full levels)
     """
-    wgtfacq_e_dsl = np.zeros(shape=(n_edges, nlev+1))
+    wgtfacq_e_dsl = np.zeros(shape=(n_edges, nlev + 1))
     z1, z2, z3 = compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
     wgtfacq_c_dsl = compute_wgtfacq_c_dsl(z_ifc, nlev)
     z_aux_c[:, 2] = z1 * z2 / (z2 - z3) / (z1 - z3)
