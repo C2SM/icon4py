@@ -42,7 +42,7 @@ io = [
   # fields of a given dimension (eg 'edge') then something in uxarray goes wrong with the dimension
   # mapping. It is not yet clear whether this is a uxarray bug or on our side.
   "uxarray==2024.3.0",
-  "netcdf4>=1.6.0",  # sane version as in icon4py-common
+  "netcdf4>=1.6.0",  # same version as in icon4py-common
   "scikit-learn",
   "holoviews",
   "cartopy",

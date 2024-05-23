@@ -29,7 +29,7 @@ class Monitor(ABC):
     def __str__(self):
         return "instance of {}(Monitor)".format(self.__class__)
 
-    # TODO (halungge) rename __call__ and make it callable, as the other components
+    # TODO (halungge) rename __call__ and make it callable, as the other components?
     @abc.abstractmethod
     def store(self, state: dict, model_time: datetime, *args, **kwargs):
         """Store state and perform class specific actions on it.
@@ -37,5 +37,6 @@ class Monitor(ABC):
 
         Args:
             state: dict  model state dictionary
+            model_time: current simulation time
         """
         pass
