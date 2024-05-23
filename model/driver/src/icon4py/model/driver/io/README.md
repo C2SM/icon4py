@@ -19,13 +19,13 @@ which installs all `ICON4Py` packages.
 
 ### General concept
 
-The module provides a `IoMonitor` that captures fields from the model state and writes them to file 
-if called at the configured output time of the field. Upon each call the monitor decides on its own 
+The module provides a `IoMonitor` that captures fields from the model state and writes them to file
+if called at the configured output time of the field. Upon each call the monitor decides on its own
 what fields it needs to write.
 
-The Datafiles produced are NETCDF4 files and conform to 
-[CF conventions](https://cfconventions.org/cf-conventions/cf-conventions.html). 
-In addition, upon start-up the monitor writes a copy of the original ICON grid file enhanced with a 
+The Datafiles produced are NETCDF4 files and conform to
+[CF conventions](https://cfconventions.org/cf-conventions/cf-conventions.html).
+In addition, upon start-up the monitor writes a copy of the original ICON grid file enhanced with a
 [UGRID](https://ugrid-conventions.github.io/ugrid-conventions/) conforming mesh, which is referenced
 in the datafiles. This grid file has the same name as the original grid file with the suffix `_ugrid.nc`.
 
@@ -34,13 +34,14 @@ CF conventional metadata. For some basic examples see [data.py](../../../icon4py
 
 #### Adding fields
 
-When adding new fields to the state the `short_name` should be taken from the 
+When adding new fields to the state the `short_name` should be taken from the
 [CF standard name table](https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html)
 or, if not available there, built up according to [guidelines of CF standard names](http://cfconventions.org/Data/cf-standard-names/docs/guidelines.html).
 
 ### Usage
 
 #### Configuration
+
 The IO module is configurable and can be configured with:
 
 - `output_path`: path where all output files will be stored.
@@ -58,13 +59,11 @@ Field groups are stored in the same file and share a common setting of
 - `nc_title` (optional): Title field of the generated netcdf file.
 - `nc_comment` (optional): Comment to be put to generated netcdf file.
 
-All fields in the `variables` list will be written out to the same file at regular 
+All fields in the `variables` list will be written out to the same file at regular
 `output_intervals` starting from the `start_time`. The output times **must exactly match a model time step**.
 
-As we have no general handling of configuration files in `ICON4Py` yet,  the configuration needs to 
+As we have no general handling of configuration files in `ICON4Py` yet, the configuration needs to
 be instantiated as Python dataclasses for now. A valid configuration could look like this:
-
-
 
 ```python
 prognostic_group = FieldGroupIoConfig(
@@ -90,7 +89,8 @@ io_config = IoConfig(
     field_groups=[prognostic_group, wind_group],
 )
 ```
-This configuration must then be passed to an instance of the `IoMonitor`, which will decide upon a 
+
+This configuration must then be passed to an instance of the `IoMonitor`, which will decide upon a
 call to `IoMonitor.store` what fields of the model state need to be written at that time:
 
 ```
@@ -99,12 +99,11 @@ io_monitor = IoMonitor(io_config)
 monitor.store(model_state, time)
 ```
 
-
-
 ### Restrictions
+
 - We only support NETCDF4 files.
 - No transformation are applied to any output data: Fields are written with the same unstructured grid resolutions as they are computed.
 - Horizontal coordinates the latitude and longitude in radians as provided by the ICON grid file.
 - Vertical coordinates are the model levels, there is no transformation to pressure levels.
 - Parallel writing is not yet implemented.
-- Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented. 
+- Global attributes of the datafiles and field metadata is only scarcely available and needs to be augmented.
