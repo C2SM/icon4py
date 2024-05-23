@@ -117,7 +117,7 @@ class IoConfig(Config):
     """
     Structured and hierarchical config for IO.
 
-    Holds some general configuration and a collection of configuraitions for each field group
+    Holds some general configuration and a collection of configurations for each field group
 
     """
 
