@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     V2CDim,
     VertexDim,
 )
+from icon4py.model.common.grid import horizontal
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
     _compute_cells2verts,
@@ -529,7 +530,6 @@ def test_compute_exner_exfac(
     assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
 
 
-# TODO
 @pytest.mark.datatest
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
     if is_roundtrip(backend):
@@ -882,8 +882,8 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
     compute_hmask_dd3d(
         e_refin_ctrl=e_refin_ctrl,
         hmask_dd3d=hmask_dd3d_full,
-        grf_nudge_start_e=int32(constants.grf_nudge_start_e),
-        grf_nudgezone_width=int32(constants.grf_nudgezone_width),
+        grf_nudge_start_e=int32(horizontal._GRF_NUDGEZONE_START_EDGES),
+        grf_nudgezone_width=int32(horizontal._GRF_NUDGEZONE_WIDTH),
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_edges,
         offset_provider={},
