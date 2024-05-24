@@ -536,14 +536,14 @@ class InterpolationSavepoint(IconSavepoint):
         ).transpose()
         return as_field((EdgeDim, E2C2EDim), buffer)
 
-    @IconSavepoint.optionally_registered(CellDim, C2E2C2EDim)
+    @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
         return as_field((CellDim, C2E2C2EDim), buffer)
 
-    @IconSavepoint.optionally_registered(CellDim, C2E2C2EDim)
+    @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
@@ -1323,7 +1323,7 @@ class IconSerialDataProvider:
             CellDim: self.serializer.read("num_cells", savepoint=sp).astype(int32)[0],
             EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(int32)[0],
             VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(int32)[0],
-            C2E2C2EDim: int32(9),
+            #C2E2C2EDim: int32(9),
             KDim: sp.metainfo.to_dict()["nlev"],
         }
         return grid_sizes
