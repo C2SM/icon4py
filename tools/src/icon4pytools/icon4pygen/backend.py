@@ -296,8 +296,22 @@ def generate_dace_code(
         cuda_code_remove = [line for line in cuda_objs[0].code.splitlines() if not (line.startswith('DACE_EXPORTED int __dace_init_cuda_') or line.startswith('DACE_EXPORTED int __dace_exit_cuda_') or line.startswith(f'DACE_EXPORTED void __dace_runkernel_tasklet_{sdfg.name}_toplevel_map'))]
         cuda_objs[0].code = '\n'.join(cuda_code_remove)
 
-        context_line_0 = f'struct {sdfg.name}' + '_state_t {\n    dace::cuda::Context *gpu_context;\n};'
-        result_cuda_code = cuda_objs[0].clean_code.replace(context_line_0, '')
+        #context_line_0 = f'struct {sdfg.name}' + '_state_t {\n    dace::cuda::Context *gpu_context;\n};'
+        #result_cuda_code = cuda_objs[0].clean_code.replace(context_line_0, '')
+
+        cuda_clean_lines = []
+        struct_found = False
+
+        for line in cuda_objs[0].clean_code.splitlines():
+            if f'struct {sdfg.name}' in line:
+                struct_found = True
+            if struct_found:
+                if line == "};":
+                    struct_found = False
+            else:
+                cuda_clean_lines.append(line)
+
+        result_cuda_code = '\n'.join(cuda_clean_lines)
 
         return hdr_objs[0].clean_code, src_objs[0].clean_code, result_cuda_code
     else:
