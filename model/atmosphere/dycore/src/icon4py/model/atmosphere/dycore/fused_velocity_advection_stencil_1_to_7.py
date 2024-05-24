@@ -73,7 +73,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
     )
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k == int32(0),
+        k == 0,
         _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )

@@ -27,7 +27,7 @@ from icon4py.model.common.test_utils.helpers import (
 
 class TestHorAdvStencil01(StencilTest):
     PROGRAM = hor_adv_stencil_01
-    OUTPUTS = ("tracer_new",)
+    OUTPUTS = ("tracer_new_hor",)
 
     @staticmethod
     def reference(
@@ -43,13 +43,13 @@ class TestHorAdvStencil01(StencilTest):
     ) -> np.array:
         geofac_div = reshape(geofac_div, grid.connectivities[C2EDim].shape)
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-        tracer_new = (
+        tracer_new_hor = (
             tracer_now * rhodz_now
             - p_dtime
             * deepatmo_divh
             * np.sum(p_mflx_tracer_h[grid.connectivities[C2EDim]] * geofac_div, axis=1)
         ) / rhodz_new
-        return dict(tracer_new=tracer_new)
+        return dict(tracer_new_hor=tracer_new_hor)
 
     @pytest.fixture
     def input_data(self, grid):
@@ -61,7 +61,7 @@ class TestHorAdvStencil01(StencilTest):
         geofac_div = random_field(grid, CellDim, C2EDim)
         geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
         p_dtime = np.float64(5.0)
-        tracer_new = zero_field(grid, CellDim, KDim)
+        tracer_new_hor = zero_field(grid, CellDim, KDim)
         return dict(
             p_mflx_tracer_h=p_mflx_tracer_h,
             deepatmo_divh=deepatmo_divh,
@@ -70,5 +70,5 @@ class TestHorAdvStencil01(StencilTest):
             rhodz_new=rhodz_new,
             geofac_div=geofac_div_new,
             p_dtime=p_dtime,
-            tracer_new=tracer_new,
+            tracer_new_hor=tracer_new_hor,
         )

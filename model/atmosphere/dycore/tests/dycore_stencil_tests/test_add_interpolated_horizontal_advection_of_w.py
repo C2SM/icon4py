@@ -57,8 +57,8 @@ class TestAddInterpolatedHorizontalAdvectionOfW(StencilTest):
             e_bln_c_s=e_bln_c_s,
             z_v_grad_w=z_v_grad_w,
             ddt_w_adv=ddt_w_adv,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

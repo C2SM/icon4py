@@ -65,7 +65,7 @@ class TestDiagnoseSurfacePressure(StencilTest):
             cpd_o_rd=CPD_O_RD,
             p0ref=P0REF,
             grav_o_rd=GRAV_O_RD,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
             vertical_start=int32(grid.num_levels),
             vertical_end=int32(grid.num_levels + 1),
