@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
+import os
 from dataclasses import dataclass
 
 from gt4py.next import as_field

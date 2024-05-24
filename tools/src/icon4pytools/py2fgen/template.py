@@ -214,9 +214,14 @@ grid = SimpleGrid()
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
-logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
+logging.basicConfig(level=logging.DEBUG,
                     format=log_format,
                     datefmt='%Y-%m-%d %H:%M:%S')
+
+
+#logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else -%}ERROR{%- endif -%},
+#                    format=log_format,
+#                    datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
 # embedded module imports
@@ -248,75 +253,75 @@ def {{ func.name }}_wrapper(
 {{ arg }}: int32{{ ", " if not loop.last else "" }}
 {%- endfor -%}
 ):
-    try:
-        {%- if _this_node.debug_mode %}
-        logging.info("Python Execution Context Start")
-        {% endif %}
+    #try:
+    {%- if _this_node.debug_mode %}
+    logging.info("Python Execution Context Start")
+    {% endif %}
 
-        # Unpack pointers into Ndarrays
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
-        logging.debug(msg)
-        {% endif %}
-        {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+    # Unpack pointers into Ndarrays
+    {% for arg in func.args %}
+    {% if arg.is_array %}
+    {%- if _this_node.debug_mode %}
+    msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
+    logging.debug(msg)
+    {% endif %}
+    {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
 
-        {%- if arg.d_type.name == "BOOL" %}
-        {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
-        {%- endif %}
+    {%- if arg.d_type.name == "BOOL" %}
+    {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
+    {%- endif %}
 
-        {%- if _this_node.debug_mode %}
-        msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name}})
-        logging.debug(msg)
-        msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        {% endif %}
-        {% endif %}
-        {% endfor %}
+    {%- if _this_node.debug_mode %}
+    msg = '{{ arg.name }} after unpacking: %s' % str({{ arg.name}})
+    logging.debug(msg)
+    msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
+    logging.debug(msg)
+    {% endif %}
+    {% endif %}
+    {% endfor %}
 
-        # Allocate GT4Py Fields
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
-        {%- if _this_node.debug_mode %}
-        msg = 'shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        msg = '{{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
-        logging.debug(msg)
-        {% endif %}
-        {% endif %}
-        {% endfor %}
+    # Allocate GT4Py Fields
+    {% for arg in func.args %}
+    {% if arg.is_array %}
+    {{ arg.name }} = np_as_located_field({{ ", ".join(arg.gtdims) }})({{ arg.name }})
+    {%- if _this_node.debug_mode %}
+    msg = 'shape of {{ arg.name }} after allocating as field = %s' % str({{ arg.name}}.shape)
+    logging.debug(msg)
+    msg = '{{ arg.name }} after allocating as field: %s' % str({{ arg.name }}.ndarray)
+    logging.debug(msg)
+    {% endif %}
+    {% endif %}
+    {% endfor %}
 
-        {{ func.name }}
-        {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
-        {%- for arg in func.args -%}
-        {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
-        {%- endfor -%}
-        {%- if func.is_gt4py_program -%}
-        offset_provider=grid.offset_providers
-        {%- endif -%}
-        )
+    {{ func.name }}
+    {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
+    {%- for arg in func.args -%}
+    {{ arg.name }}{{ ", " if not loop.last or func.is_gt4py_program else "" }}
+    {%- endfor -%}
+    {%- if func.is_gt4py_program -%}
+    offset_provider=grid.offset_providers
+    {%- endif -%}
+    )
 
-        {% if _this_node.debug_mode %}
-        # debug info
-        {% for arg in func.args %}
-        {% if arg.is_array %}
-        msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
-        logging.debug(msg)
-        msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
-        logging.debug(msg)
-        {% endif %}
-        {% endfor %}
-        {% endif %}
+    {% if _this_node.debug_mode %}
+    # debug info
+    {% for arg in func.args %}
+    {% if arg.is_array %}
+    msg = 'shape of {{ arg.name }} after computation = %s' % str({{ arg.name}}.shape)
+    logging.debug(msg)
+    msg = '{{ arg.name }} after computation: %s' % str({{ arg.name }}.ndarray)
+    logging.debug(msg)
+    {% endif %}
+    {% endfor %}
+    {% endif %}
 
-        {%- if _this_node.debug_mode %}
-        logging.info("Python Execution Context End")
-        {% endif %}
+    {%- if _this_node.debug_mode %}
+    logging.info("Python Execution Context End")
+    {% endif %}
 
-    except Exception as e:
-        logging.exception(f"A Python error occurred: {e}")
-        return 1
+    #except Exception as e:
+    #logging.exception(f"A Python error occurred: {e}")
+    #return 1
 
     return 0
 

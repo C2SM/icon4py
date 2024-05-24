@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+import os
 from dataclasses import dataclass, field
 from typing import Final
 
@@ -23,6 +24,16 @@ from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
+
+# Choose array backend
+if os.environ.get("GT4PY_GPU"):
+    import cupy as cp
+
+    xp = cp
+else:
+    import numpy as np
+
+    xp = np
 
 
 @dataclass(frozen=True)

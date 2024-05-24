@@ -48,6 +48,9 @@ from icon4py.model.common.dimension import (
     KDim,
     KHalfDim,
     V2EDim,
+    E2C2VDim,
+    E2CDim,
+    C2E2CDim,
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
@@ -243,12 +246,15 @@ def diffusion_run(
     )
 
     if linit:
+        print("Diffusion initial_run")
         diffusion_granule.initial_run(
             diagnostic_state,
             prognostic_state,
             dtime,
         )
     else:
+        print("Diffusion regular run")
         diffusion_granule.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
+    print("Done running diffusion.")

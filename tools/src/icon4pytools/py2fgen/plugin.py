@@ -13,12 +13,10 @@
 import logging
 import typing
 from pathlib import Path
-
 import cffi
 import numpy as np
 from cffi import FFI
 from numpy.typing import NDArray
-
 from icon4pytools.common.logger import setup_logger
 
 
