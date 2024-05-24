@@ -203,8 +203,8 @@ def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path):
 
 class IconUGridWriter:
     def __init__(self, original_filename: Union[Path, str], output_path: Union[Path, str]):
-        self.original_filename = original_filename
-        self.output_path = output_path
+        self.original_filename = Path(original_filename)
+        self.output_path = Path(output_path)
 
     def __call__(self, validate: bool = False):
         patch = IconUGridPatch()
