@@ -39,6 +39,10 @@ program call_square_wrapper_cffi_plugin
    call square_from_function(input, result, rc)
 #elif USE_SQUARE_ERROR
    call square_error(input, result, rc)
+#elif PROFILE_SQUARE_FROM_FUNCTION
+    call profile_enable(rc)
+    call square_from_function(input, result, rc)
+    call profile_disable(rc)
 #else
    call square(input, result, rc)
 #endif

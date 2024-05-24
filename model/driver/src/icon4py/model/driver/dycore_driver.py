@@ -10,7 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import cProfile
 import logging
+import pstats
 from datetime import datetime
 from pathlib import Path
 from typing import Callable
@@ -34,6 +36,7 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
+from icon4py.model.common.settings import xp
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
 from icon4py.model.driver.initialization_utils import (
@@ -49,6 +52,19 @@ from icon4py.model.driver.initialization_utils import (
 
 
 log = logging.getLogger(__name__)
+
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
 
 
 class TimeLoop:
@@ -154,6 +170,7 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
+        profile: bool,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -183,13 +200,25 @@ class TimeLoop:
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
         timer = Timer(self._full_name(self._integrate_one_time_step))
-        for time_step in range(self._n_time_steps):
+        self._next_simulation_date()
+        self._integrate_one_time_step(
+            diffusion_diagnostic_state,
+            solve_nonhydro_diagnostic_state,
+            prognostic_state_list,
+            prep_adv,
+            inital_divdamp_fac_o2,
+            do_prep_adv,
+        )
+        if profile:
+            profile_enable()
+
+        for time_step in range(self._n_time_steps-1):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.5e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.5e}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.12e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.12e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.5e}"
+                f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.12e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.12e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
@@ -214,7 +243,11 @@ class TimeLoop:
 
             # TODO (Chia Rui): simple IO enough for JW test
 
-        timer.summary(True)
+        if self._n_time_steps > 1:
+            timer.summary(True)
+
+        if profile:
+            profile_disable()
 
     def _integrate_one_time_step(
         self,
@@ -341,7 +374,9 @@ def initialize(
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
     ) = read_static_fields(
-        file_path, rank=props.rank, ser_type=serialization_type, experiment_type=experiment_type
+        file_path,
+        rank=props.rank,
+        ser_type=serialization_type,
     )
 
     log.info("initializing diffusion")
@@ -418,7 +453,9 @@ def initialize(
     help="serialization type for grid info and static fields",
 )
 @click.option("--experiment_type", default="any", help="experiment selection")
-def main(input_path, run_path, mpi, serialization_type, experiment_type):
+@click.option("--profile", default=False, help="Whether to profile code using cProfile.")
+@click.option("--disable-logging", is_flag=True, help="Disable all logging output.")
+def main(input_path, run_path, mpi, serialization_type, experiment_type, profile, disable_logging):
     """
     Run the driver.
 
@@ -440,7 +477,7 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
-    configure_logging(run_path, experiment_type, parallel_props)
+    configure_logging(run_path, experiment_type, parallel_props, disable_logging)
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -467,6 +504,7 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
         prep_adv,
         inital_divdamp_fac_o2,
         do_prep_adv=False,
+        profile=profile,
     )
 
     log.info("timeloop:  DONE")
