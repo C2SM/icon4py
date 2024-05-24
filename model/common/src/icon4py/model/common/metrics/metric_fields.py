@@ -351,7 +351,7 @@ def _compute_d2dexdz2_fac1_mc(
     grav: wpfloat,
     igradp_method: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    if igradp_method <= int32(3):
+    if igradp_method <= 3:
         d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
 
     return d2dexdz2_fac1_mc
@@ -369,7 +369,7 @@ def _compute_d2dexdz2_fac2_mc(
     h_scal_bg: wpfloat,
     igradp_method: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    if igradp_method <= int32(3):
+    if igradp_method <= 3:
         d2dexdz2_fac2_mc = (
             2.0
             * grav

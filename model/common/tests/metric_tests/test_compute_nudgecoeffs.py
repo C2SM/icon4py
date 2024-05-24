@@ -25,7 +25,6 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
@@ -56,7 +55,7 @@ def test_compute_nudgecoeffs_e(
     grf_nudge_start_e = RefinCtrlLevel.boundary_nudging_start(EdgeDim)
     nudge_max_coeff = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
-    nudge_zone_width = int32(10)
+    nudge_zone_width = 10
 
     horizontal_start = icon_grid.get_start_index(
         EdgeDim, HorizontalMarkerIndex.nudging_2nd_level(EdgeDim)

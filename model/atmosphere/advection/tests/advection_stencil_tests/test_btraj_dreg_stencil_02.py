@@ -42,8 +42,8 @@ class TestBtrajDregStencil02(StencilTest):
 
         opt_famask_dsl = np.where(
             traj_length > (1.25 * np.broadcast_to(e2c_length, p_vn.shape)),
-            int32(1),
-            int32(0),
+            1,
+            0,
         )
 
         return dict(opt_famask_dsl=opt_famask_dsl)

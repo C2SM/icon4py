@@ -78,9 +78,9 @@ class TestComputeZMc(StencilTest):
     def input_data(self, grid) -> dict:
         z_mc = zero_field(grid, CellDim, KDim)
         z_if = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        horizontal_start = int32(0)
+        horizontal_start = 0
         horizontal_end = grid.num_cells
-        vertical_start = int32(0)
+        vertical_start = 0
         vertical_end = grid.num_levels
 
         return dict(
@@ -105,9 +105,9 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
     compute_z_mc.with_backend(backend)(
         z_ifc,
         z_mc,
-        horizontal_start=int32(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -142,9 +142,9 @@ def test_compute_ddqz_z_full_and_inverse(icon_grid, metrics_savepoint, backend):
         z_ifc=z_ifc,
         ddqz_z_full=ddqz_z_full,
         inv_ddqz_z_full=inv_ddqz_z_full,
-        horizontal_start=int32(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -167,7 +167,7 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
         divdamp_trans_start=divdamp_trans_start,
         divdamp_trans_end=divdamp_trans_end,
         divdamp_type=divdamp_type,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=icon_grid.num_levels,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -194,7 +194,7 @@ def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backen
         rayleigh_coeff=rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=grid_savepoint.nrdmax().item() + 1,
         offset_provider={},
     )
@@ -218,9 +218,9 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
         z_ifc=metrics_savepoint.z_ifc(),
         coeff1_dwdz=coeff1_dwdz_full,
         coeff2_dwdz=coeff2_dwdz_full,
-        horizontal_start=int32(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(1),
+        vertical_start=1,
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -238,9 +238,9 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
     compute_z_mc.with_backend(backend)(
         z_ifc=z_ifc,
         z_mc=z_mc,
-        horizontal_start=int32(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -266,10 +266,10 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
         grav=grav,
         del_t_bg=del_t_bg,
         h_scal_bg=h_scal_bg,
-        igradp_method=int32(3),
-        horizontal_start=int32(0),
+        igradp_method=3,
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=int32(icon_grid.num_levels),
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -347,7 +347,7 @@ def test_compute_vwind_expl_wgt(icon_grid, metrics_savepoint, backend):
     compute_vwind_expl_wgt.with_backend(backend)(
         vwind_impl_wgt=vwind_impl_wgt,
         vwind_expl_wgt=vwind_expl_wgt_full,
-        horizontal_start=int32(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
