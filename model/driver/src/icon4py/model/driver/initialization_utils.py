@@ -769,7 +769,7 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str, experiment_name: str, processor_procs: ProcessProperties = None
+    run_path: str, experiment_name: str, processor_procs: ProcessProperties = None, disable_logging = False,
 ) -> None:
     """
     Configure logging.
@@ -798,5 +798,8 @@ def configure_logging(
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
     console_handler.setFormatter(formatter)
-    console_handler.setLevel(logging.DEBUG)
+    if disable_logging:
+        console_handler.setLevel(logging.CRITICAL)
+    else:
+        console_handler.setLevel(logging.DEBUG)
     logging.getLogger("").addHandler(console_handler)
