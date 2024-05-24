@@ -33,7 +33,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
 )
 
 # cached program import
-from icon4py.model.atmosphere.diffusion.helpers import (
+from icon4py.model.atmosphere.diffusion.cached import (
     init_diffusion_local_fields_for_regular_timestep,
     setup_fields_for_initial_step,
     scale_k,

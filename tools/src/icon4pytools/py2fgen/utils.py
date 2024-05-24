@@ -38,7 +38,7 @@ def get_local_test_grid():
     if module_spec and module_spec.origin:
         # following namespace package conventions the root is three levels down
         repo_root = Path(module_spec.origin).parents[3]
-        return os.path.join(repo_root, test_folder)
+        return os.path.join(repo_root, test_folder, "grids", "mch_ch_r04b09_dsl")
     else:
         raise FileNotFoundError(
             "The `icon4pytools` package could not be found. Ensure the package is installed "
