@@ -536,14 +536,14 @@ class InterpolationSavepoint(IconSavepoint):
         ).transpose()
         return as_field((EdgeDim, E2C2EDim), buffer)
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(CellDim, C2E2C2EDim)
     def rbf_vec_coeff_c1(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
         return as_field((CellDim, C2E2C2EDim), buffer)
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(CellDim, C2E2C2EDim)
     def rbf_vec_coeff_c2(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
