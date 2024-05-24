@@ -708,7 +708,8 @@ class MetricSavepoint(IconSavepoint):
 
     @IconSavepoint.optionally_registered()
     def zd_vertoffset(self):
-        return self._read_and_reorder_sparse_field("zd_vertoffset")
+        # return self._read_and_reorder_sparse_field("zd_vertoffset")
+        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim)
 
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
