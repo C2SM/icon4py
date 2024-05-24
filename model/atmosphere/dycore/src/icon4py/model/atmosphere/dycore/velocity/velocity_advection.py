@@ -288,8 +288,8 @@ class VelocityAdvection:
         )
 
         fused_stencil_14(
-            ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
             local_cfl_clipping=self.cfl_clipping,
             local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
@@ -510,8 +510,8 @@ class VelocityAdvection:
         )
 
         fused_stencil_14(
-            ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
             local_cfl_clipping=self.cfl_clipping,
             local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
