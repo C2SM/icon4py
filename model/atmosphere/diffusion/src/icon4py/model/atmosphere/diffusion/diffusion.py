@@ -28,16 +28,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionMetricState,
 )
 from icon4py.model.atmosphere.diffusion.diffusion_utils import (
-    # copy_field,
-    # init_diffusion_local_fields_for_regular_timestep,
     init_nabla2_factor_in_upper_damping_zone,
-    # scale_k,
-    # setup_fields_for_initial_step,
     zero_field,
 )
 
 # cached program import
-from icon4py.model.atmosphere.diffusion.helpers import (
+from icon4py.model.atmosphere.diffusion.cached import (
     init_diffusion_local_fields_for_regular_timestep,
     setup_fields_for_initial_step,
     scale_k,
@@ -53,29 +49,6 @@ from icon4py.model.atmosphere.diffusion.helpers import (
     mo_intp_rbf_rbf_vec_interpol_vertex,
 )
 
-
-# from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_vn import apply_diffusion_to_vn
-# from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence import (
-#     apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence,
-# )
-# from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostic_quantities_for_turbulence import (
-#     calculate_diagnostic_quantities_for_turbulence,
-# )
-# from icon4py.model.atmosphere.diffusion.stencils.calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools import (
-#     calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools,
-# )
-# from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_and_smag_coefficients_for_vn import (
-#     calculate_nabla2_and_smag_coefficients_for_vn,
-# )
-# from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_theta import (
-#     calculate_nabla2_for_theta,
-# )
-# from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
-#     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
-# )
-# from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
-#     update_theta_and_exner,
-# )
 from icon4py.model.common.constants import (
     CPD,
     DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
@@ -87,10 +60,6 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-
-# from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_vertex import (
-#     mo_intp_rbf_rbf_vec_interpol_vertex,
-# )
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import xp
 
@@ -134,6 +103,13 @@ class TurbulenceShearForcingType(int, Enum):
         2  #: as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` plus shear form vertical velocity
     )
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
+
+    @classmethod
+    def from_integer(cls, value: int):
+        for item in cls:
+            if item.value == value:
+                return item
+        raise ValueError(f"No {cls.__name__} member corresponds to the value {value}")
 
 
 class DiffusionConfig:
@@ -772,6 +748,7 @@ class Diffusion:
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -804,6 +781,7 @@ class Diffusion:
         log.debug(
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
+
         calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -819,6 +797,7 @@ class Diffusion:
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
+
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
         calculate_nabla2_for_theta(
             kh_smag_e=self.kh_smag_e,

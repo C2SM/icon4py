@@ -333,6 +333,7 @@ def test_run_timeloop_single_step(
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
+        profile=False,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()

@@ -18,7 +18,7 @@ import icon4py.model.common.constants as constants
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
+from icon4py.model.atmosphere.dycore.nh_solve.cached import (
     accumulate_prep_adv_fields,
     add_analysis_increments_from_data_assimilation,
     add_analysis_increments_to_vn,

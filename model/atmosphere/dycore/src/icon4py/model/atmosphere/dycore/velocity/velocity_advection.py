@@ -15,7 +15,7 @@ from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 
-from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
+from icon4py.model.atmosphere.dycore.nh_solve.cached import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
@@ -24,7 +24,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
-from icon4py.model.atmosphere.dycore.velocity.helpers import (
+from icon4py.model.atmosphere.dycore.velocity.cached import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
     add_extra_diffusion_for_w_con_approaching_cfl,
     compute_advective_normal_wind_tendency,
