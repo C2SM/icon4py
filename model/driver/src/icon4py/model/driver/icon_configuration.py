@@ -117,10 +117,11 @@ class OutputVariableList(ABC):
         ),
     }
 
-    @builder
     def add_new_variable(
         self, variable_name: str, variable_attribute: VariableAttributes
-    ):
+    ) -> None:
+        if variable_name in self.variable_name:
+            return
         self.variable_name = self.variable_name + (variable_name,)
         self.variable_attribute[variable_name] = variable_attribute
 
@@ -222,34 +223,34 @@ def read_config(experiment: Optional[str]) -> IconConfig:
         )
 
     def _Jablownoski_Williamson_config():
-        output_variable_list = (OutputVariableList()
-                                .add_new_variable(
-                                    'temperature',
-                                    VariableAttributes(
-                                        units='K',
-                                        standard_name='temperauture',
-                                        long_name='air temperauture',
-                                        CDI_grid_type='unstructured',
-                                        param='0.0.0',
-                                        number_of_grid_in_reference='1',
-                                        coordinates='clat clon',
-                                        scope='diagnostic',
-                                    )
-                                )
-                                .add_new_variable(
-                                    'temperature',
-                                    VariableAttributes(
-                                        units='K',
-                                        standard_name='temperauture',
-                                        long_name='air temperauture',
-                                        CDI_grid_type='unstructured',
-                                        param='0.0.0',
-                                        number_of_grid_in_reference='1',
-                                        coordinates='clat clon',
-                                        scope='diagnostic',
-                                    )
-                                )
-                                )
+        output_variable_list = OutputVariableList()
+        output_variable_list.add_new_variable(
+            'temperature',
+            VariableAttributes(
+                units='K',
+                standard_name='temperauture',
+                long_name='air temperauture',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='clat clon',
+                scope='diagnostic',
+            )
+        )
+        output_variable_list.add_new_variable(
+            'pressure_sfc',
+            VariableAttributes(
+                units='Pa',
+                standard_name='surface pressure',
+                long_name='surface pressure',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='clat clon',
+                scope='diagnostic',
+            )
+        )
+
         icon_run_config = IconRunConfig(
             dtime=60.0,
             end_date=datetime(1, 1, 1, 0, 1, 0),
