@@ -46,7 +46,6 @@ from icon4py.model.common.constants import (
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import (
-    C2E2C2EDim,
     CEDim,
     CellDim,
     EdgeDim,
@@ -80,8 +79,6 @@ INITIALIZATION_ERROR_MSG = (
 )
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
-GRID_ROOT = 2
-GRID_LEVEL = 4
 log = logging.getLogger(__name__)
 
 
@@ -98,21 +95,28 @@ class ExperimentType(str, Enum):
 
 
 def read_icon_grid(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> IconGrid:
     """
     Read icon grid.
 
     Args:
         path: path where to find the input data
+        rank: mpi rank of the current compute node
         ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads
         from ppser serialized test data
+        grid_root: global grid root division number
+        grid_level: global grid refinement number
     Returns:  IconGrid parsed from a given input type.
     """
     if ser_type == SerializationType.SB:
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(GRID_ROOT, GRID_LEVEL)
+            .from_savepoint_grid(grid_root, grid_level)
             .construct_icon_grid(on_gpu=False)
         )
     else:
@@ -599,7 +603,12 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path,
+    damping_height,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
@@ -609,6 +618,8 @@ def read_geometry_fields(
         damping_height: damping height for Rayleigh and divergence damping
         rank: mpi rank of the current compute node
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        grid_root: global grid root division number
+        grid_level: global grid refinement number
 
     Returns: a tuple containing fields describing edges, cells, vertical properties of the model
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
@@ -616,7 +627,7 @@ def read_geometry_fields(
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        ).from_savepoint_grid(GRID_ROOT, GRID_LEVEL)
+        ).from_savepoint_grid(grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
@@ -634,12 +645,14 @@ def read_decomp_info(
     path: Path,
     procs_props: ProcessProperties,
     ser_type=SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), True, procs_props.rank
         )
-        return sp.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).construct_decomposition_info()
+        return sp.from_savepoint_grid(grid_root, grid_level).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -648,6 +661,8 @@ def read_static_fields(
     path: Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> tuple[
     DiffusionMetricState,
     DiffusionInterpolationState,
@@ -662,6 +677,8 @@ def read_static_fields(
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        grid_root: global grid root division number
+        grid_level: global grid refinement number
 
     Returns:
         a tuple containing the metric_state and interpolation state,
@@ -674,7 +691,7 @@ def read_static_fields(
         )
         icon_grid = (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(GRID_ROOT, GRID_LEVEL)
+            .from_savepoint_grid(grid_root, grid_level)
             .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
@@ -740,20 +757,10 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
-        rbf_vec_coeff_c1 = (
-            interpolation_savepoint.rbf_vec_coeff_c1()
-            if interpolation_savepoint.rbf_vec_coeff_c1()
-            else _allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float)
-        )
-        rbf_vec_coeff_c2 = (
-            interpolation_savepoint.rbf_vec_coeff_c2()
-            if interpolation_savepoint.rbf_vec_coeff_c2()
-            else _allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float)
-        )
         diagnostic_metric_state = DiagnosticMetricState(
             ddqz_z_full=metrics_savepoint.ddqz_z_full(),
-            rbf_vec_coeff_c1=rbf_vec_coeff_c1,
-            rbf_vec_coeff_c2=rbf_vec_coeff_c2,
+            rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
+            rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
         )
 
         return (

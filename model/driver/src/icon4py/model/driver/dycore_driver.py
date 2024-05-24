@@ -186,10 +186,10 @@ class TimeLoop:
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.5e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.5e}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.15e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.15e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.5e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.5e}"
+                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.15e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
@@ -294,6 +294,8 @@ def initialize(
     props: ProcessProperties,
     serialization_type: SerializationType,
     experiment_type: ExperimentType,
+    grid_root,
+    grid_level,
 ):
     """
     Inititalize the driver run.
@@ -323,16 +325,24 @@ def initialize(
     log.info(f"reading configuration: experiment {experiment_type}")
     config = read_config(experiment_type)
 
-    decomp_info = read_decomp_info(file_path, props, serialization_type)
+    decomp_info = read_decomp_info(file_path, props, serialization_type, grid_root, grid_level)
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(file_path, rank=props.rank, ser_type=serialization_type)
+    icon_grid = read_icon_grid(
+        file_path,
+        rank=props.rank,
+        ser_type=serialization_type,
+        grid_root=grid_root,
+        grid_level=grid_level,
+    )
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
         file_path,
         damping_height=config.run_config.damping_height,
         rank=props.rank,
         ser_type=serialization_type,
+        grid_root=grid_root,
+        grid_level=grid_level,
     )
     (
         diffusion_metric_state,
@@ -344,6 +354,8 @@ def initialize(
         file_path,
         rank=props.rank,
         ser_type=serialization_type,
+        grid_root=grid_root,
+        grid_level=grid_level,
     )
 
     log.info("initializing diffusion")
@@ -420,7 +432,9 @@ def initialize(
     help="serialization type for grid info and static fields",
 )
 @click.option("--experiment_type", default="any", help="experiment selection")
-def main(input_path, run_path, mpi, serialization_type, experiment_type):
+@click.option("--grid_root", default=2, help="experiment selection")
+@click.option("--grid_level", default=4, help="experiment selection")
+def main(input_path, run_path, mpi, serialization_type, experiment_type, grid_root, grid_level):
     """
     Run the driver.
 
@@ -451,7 +465,9 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type):
         diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(Path(input_path), parallel_props, serialization_type, experiment_type)
+    ) = initialize(
+        Path(input_path), parallel_props, serialization_type, experiment_type, grid_root, grid_level
+    )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
         f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
