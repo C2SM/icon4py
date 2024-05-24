@@ -682,6 +682,8 @@ def compute_vwind_impl_wgt(
         z_ddxn_z_half_e: intermediate storage for field
         z_ddxt_z_half_e: intermediate storage for field
         dual_edge_length: dual_edge_length
+        vct_a: Field[[KDim], float]
+        z_ifc: geometric height on half levels
         vwind_impl_wgt: (output) offcentering in vertical mass flux
         vwind_offctr: off-centering in vertical wind solver
         horizontal_start: horizontal start index
