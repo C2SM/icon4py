@@ -30,7 +30,7 @@ def zonalwind_2_normalwind_jabw_numpy(
     eta_v_e: np.array,
 ):
     """
-    Compute normal wind at edge center from virtual temperature (eta_v_e).
+    Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
     Args:
         icon_grid: IconGrid
@@ -41,7 +41,7 @@ def zonalwind_2_normalwind_jabw_numpy(
         edge_lat: edge center latitude
         edge_lon: edge center longitude
         primal_normal_x: zonal component of primal normal vector at edge center
-        eta_v_e: virtual temperature at edge center
+        eta_v_e: vertical eta coordinate at edge center
     Returns: normal wind
     """
     mask = np.ones((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
