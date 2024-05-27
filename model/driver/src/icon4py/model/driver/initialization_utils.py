@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.atmosphere.dycore.init_exner_pr import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -45,7 +46,6 @@ from icon4py.model.common.constants import (
 from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
 from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import (
-    C2E2C2EDim,
     CEDim,
     CellDim,
     EdgeDim,
@@ -88,29 +88,35 @@ class SerializationType(str, Enum):
 
 
 class ExperimentType(str, Enum):
-    """Jablonowski-Williamson test"""
-
     JABW = "jabw"
-    """any test with initial conditions read from serialized data"""
+    """initial condition of Jablonowski-Williamson test"""
     ANY = "any"
+    """any test with initial conditions read from serialized data (remember to set correct SIMULATION_START_DATE)"""
 
 
 def read_icon_grid(
-    path: Path, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> IconGrid:
     """
     Read icon grid.
 
     Args:
         path: path where to find the input data
+        rank: mpi rank of the current compute node
         ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads
         from ppser serialized test data
+        grid_root: global grid root division number
+        grid_level: global grid refinement number
     Returns:  IconGrid parsed from a given input type.
     """
     if ser_type == SerializationType.SB:
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(2, 4)
+            .from_savepoint_grid(grid_root, grid_level)
             .construct_icon_grid(on_gpu=False)
         )
     else:
@@ -123,7 +129,29 @@ def model_initialization_jabw(
     edge_param: EdgeParams,
     path: Path,
     rank=0,
-):
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+    float,
+    DiagnosticState,
+    PrognosticState,
+    PrognosticState,
+]:
+    """
+    Initial condition of Jablonowski-Williamson test. Set jw_up to values larger than 0.01 if
+    you want to run baroclinic case.
+
+    Args:
+        icon_grid: IconGrid
+        cell_param: cell properties
+        edge_param: edge properties
+        path: path where to find the input data
+        rank: mpi rank of the current compute node
+    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
+        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
+        variables (now and next).
+    """
     data_provider = sb.IconSerialDataProvider(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
@@ -152,6 +180,9 @@ def model_initialization_jabw(
         EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
     grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
+    grid_idx_cell_interior_start = icon_grid.get_start_index(
+        CellDim, HorizontalMarkerIndex.interior(CellDim)
+    )
     grid_idx_cell_start_plus1 = icon_grid.get_end_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
@@ -324,6 +355,19 @@ def model_initialization_jabw(
 
     log.info("U, V computation completed.")
 
+    exner_pr = _allocate(CellDim, KDim, grid=icon_grid)
+    init_exner_pr(
+        exner,
+        data_provider.from_metrics_savepoint().exner_ref_mc(),
+        exner_pr,
+        grid_idx_cell_interior_start,
+        grid_idx_cell_end,
+        0,
+        icon_grid.num_levels,
+        offset_provider={},
+    )
+    log.info("exner_pr initialization completed.")
+
     diagnostic_state = DiagnosticState(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
@@ -355,7 +399,7 @@ def model_initialization_jabw(
     )
     solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
         theta_v_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        exner_pr=_allocate(CellDim, KDim, grid=icon_grid),
+        exner_pr=exner_pr,
         rho_ic=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         ddt_exner_phy=_allocate(CellDim, KDim, grid=icon_grid),
         grf_tend_rho=_allocate(CellDim, KDim, grid=icon_grid),
@@ -396,19 +440,28 @@ def model_initialization_jabw(
     )
 
 
-def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
+def model_initialization_serialbox(
+    icon_grid: IconGrid, path: Path, rank=0
+) -> tuple[
+    DiffusionDiagnosticState,
+    DiagnosticStateNonHydro,
+    PrepAdvection,
+    float,
+    DiagnosticState,
+    PrognosticState,
+    PrognosticState,
+]:
     """
-    Read prognostic and diagnostic state from serialized data.
+    Initial condition read from serialized data. Diagnostic variables are allocated as zero
+    fields.
 
     Args:
-        icon_grid: icon grid
-        path: path to the serialized input data
+        icon_grid: IconGrid
+        path: path where to find the input data
         rank: mpi rank of the current compute node
-
-    Returns: a tuple containing the data_provider, the initial diagnostic and prognostic state.
-        The data_provider is returned such that further timesteps of diagnostics and prognostics
-        can be read from within the dummy timeloop
-
+    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
+        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
+        variables (now and next).
     """
 
     data_provider = sb.IconSerialDataProvider(
@@ -453,9 +506,8 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
 
     diagnostic_state = DiagnosticState(
         pressure=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
+        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         temperature=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_sfc=_allocate(CellDim, grid=icon_grid),
         u=_allocate(CellDim, KDim, grid=icon_grid),
         v=_allocate(CellDim, KDim, grid=icon_grid),
     )
@@ -501,6 +553,21 @@ def read_initial_state(
     PrognosticState,
     PrognosticState,
 ]:
+    """
+    Read initial prognostic and diagnostic fields.
+
+    Args:
+        icon_grid: IconGrid
+        cell_param: cell properties
+        edge_param: edge properties
+        path: path to the serialized input data
+        rank: mpi rank of the current compute node
+        experiment_type: (optional) defaults to ANY=any, type of initial condition to be read
+
+    Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
+        PrepAdvection, second order divdamp factor, diagnostic variables, and two prognostic
+        variables (now and next).
+    """
     if experiment_type == ExperimentType.JABW:
         (
             diffusion_diagnostic_state,
@@ -536,16 +603,23 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path,
+    damping_height,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
 
     Args:
         path: path to the serialized input data
-        damping_height: damping height for Rayleigh and divergence damping TODO (CHia Rui): Check
-        rank:
+        damping_height: damping height for Rayleigh and divergence damping
+        rank: mpi rank of the current compute node
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        grid_root: global grid root division number
+        grid_level: global grid refinement number
 
     Returns: a tuple containing fields describing edges, cells, vertical properties of the model
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
@@ -553,7 +627,7 @@ def read_geometry_fields(
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        ).from_savepoint_grid(2, 4)
+        ).from_savepoint_grid(grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
@@ -571,12 +645,14 @@ def read_decomp_info(
     path: Path,
     procs_props: ProcessProperties,
     ser_type=SerializationType.SB,
+    grid_root=2,
+    grid_level=4,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
         sp = sb.IconSerialDataProvider(
             "icon_pydycore", str(path.absolute()), True, procs_props.rank
         )
-        return sp.from_savepoint_grid(2, 4).construct_decomposition_info()
+        return sp.from_savepoint_grid(grid_root, grid_level).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -585,7 +661,8 @@ def read_static_fields(
     path: Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
-    experiment_type: ExperimentType = ExperimentType.JABW,
+    grid_root=2,
+    grid_level=4,
 ) -> tuple[
     DiffusionMetricState,
     DiffusionInterpolationState,
@@ -600,7 +677,8 @@ def read_static_fields(
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
-        experiment_type: TODO (CHia RUi): Add description
+        grid_root: global grid root division number
+        grid_level: global grid refinement number
 
     Returns:
         a tuple containing the metric_state and interpolation state,
@@ -613,7 +691,7 @@ def read_static_fields(
         )
         icon_grid = (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(2, 4)
+            .from_savepoint_grid(grid_root, grid_level)
             .construct_icon_grid(on_gpu=False)
         )
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
@@ -679,19 +757,11 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
-        if experiment_type == ExperimentType.JABW:
-            diagnostic_metric_state = DiagnosticMetricState(
-                ddqz_z_full=metrics_savepoint.ddqz_z_full(),
-                rbf_vec_coeff_c1=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1(),
-                rbf_vec_coeff_c2=data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2(),
-            )
-        else:
-            # ddqz_z_full is not serialized for mch_ch_r04b09_dsl and exclaim_ape_R02B04
-            diagnostic_metric_state = DiagnosticMetricState(
-                ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
-                rbf_vec_coeff_c1=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
-                rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
-            )
+        diagnostic_metric_state = DiagnosticMetricState(
+            ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+            rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
+            rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
+        )
 
         return (
             diffusion_metric_state,
