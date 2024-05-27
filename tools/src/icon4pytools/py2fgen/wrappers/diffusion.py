@@ -143,7 +143,7 @@ def diffusion_init(
         on_gpu = False
 
     icon_grid = _load_from_gridfile(
-        file_path=get_icon_grid_loc(),
+        file_path=get_icon_grid_loc(grid_folder="mch_ch_r04b09_dsl"),
         filename=get_grid_filename(),
         num_levels=num_levels,
         on_gpu=on_gpu,
