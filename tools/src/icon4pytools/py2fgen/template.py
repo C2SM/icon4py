@@ -404,7 +404,7 @@ class F90FunctionDefinition(Func):
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
-    limited_area: str
+    limited_area: bool
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
