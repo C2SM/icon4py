@@ -118,7 +118,7 @@ def dummy_plugin():
 
 
 def test_fortran_interface(dummy_plugin):
-    interface = generate_f90_interface(dummy_plugin, experiment="mch_ch_r04b09")
+    interface = generate_f90_interface(dummy_plugin, limited_area=True)
     expected = """
     module libtest_plugin
    use, intrinsic :: iso_c_binding
@@ -238,7 +238,7 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, "GPU", False, experiment="mch_ch_r04b09")
+    interface = generate_python_wrapper(dummy_plugin, "GPU", False, limited_area=True)
     expected = '''
 # imports for generated wrapper code
 import logging

@@ -21,6 +21,7 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import cProfile
+import os
 import pstats
 
 from gt4py.next.common import Field
@@ -56,7 +57,7 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
+from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 from icon4pytools.common.logger import setup_logger
@@ -142,9 +143,10 @@ def diffusion_init(
     else:
         on_gpu = False
 
-    icon_grid = _load_from_gridfile(
-        file_path=get_icon_grid_loc(grid_folder="mch_ch_r04b09_dsl"),
-        filename=get_grid_filename(),
+    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
+
+    icon_grid = load_grid_from_file(
+        grid_file=grid_file_path,
         num_levels=num_levels,
         on_gpu=on_gpu,
         limited_area=limited_area,

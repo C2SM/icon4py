@@ -57,7 +57,7 @@ def parse_comma_separated_list(ctx, param, value) -> list[str]:
     is_flag=True,
     help="Enable debug mode to log additional Python runtime information.",
 )
-@click.option("--limited-area", is_flag=True, default=False)
+@click.option("--limited-area", is_flag=True, help="Enable limited area mode.")
 def main(
     module_import_path: str,
     functions: list[str],
