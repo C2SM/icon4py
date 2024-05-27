@@ -42,18 +42,14 @@ class TestComputeDivergenconnectivityceOfFluxesOfRhoAndTheta(StencilTest):
     ) -> tuple[np.array]:
         c2e = grid.connectivities[C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
-
-        if grid.config.on_gpu:
-            connectivity = grid.get_offset_provider("C2CE").table.get()
-        else:
-            connectivity = grid.get_offset_provider("C2CE").table
+        c2ce = grid.get_offset_provider("C2CE").table
 
         z_flxdiv_mass = np.sum(
-            geofac_div[connectivity] * mass_fl_e[c2e],
+            geofac_div[c2ce] * mass_fl_e[c2e],
             axis=1,
         )
         z_flxdiv_theta = np.sum(
-            geofac_div[connectivity] * z_theta_v_fl_e[c2e],
+            geofac_div[c2ce] * z_theta_v_fl_e[c2e],
             axis=1,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)
