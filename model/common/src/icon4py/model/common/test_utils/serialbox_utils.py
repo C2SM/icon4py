@@ -595,6 +595,9 @@ class MetricSavepoint(IconSavepoint):
     def pg_exdist(self):
         return self._get_field("pg_exdist_dsl", EdgeDim, KDim)
 
+    def pg_edgeidx_dsl(self):
+        return self._get_field("pg_edgeidx_dsl", EdgeDim, KDim, dtype=bool)
+
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", KDim)
 
