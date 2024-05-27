@@ -187,7 +187,7 @@ def diffusion_init(
         thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
         max_nudging_coeff=nudge_max_coeff,
-        shear_type=TurbulenceShearForcingType.from_integer(itype_sher),
+        shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
     diffusion_params = DiffusionParams(config)

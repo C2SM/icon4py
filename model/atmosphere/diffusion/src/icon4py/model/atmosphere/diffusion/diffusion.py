@@ -104,13 +104,6 @@ class TurbulenceShearForcingType(int, Enum):
     )
     VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND_LTHESH = 3  #: same as `VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND` but scaling of coarse-grid horizontal shear production term with 1/sqrt(Ri) (if LTKESH = TRUE)
 
-    @classmethod
-    def from_integer(cls, value: int):
-        for item in cls:
-            if item.value == value:
-                return item
-        raise ValueError(f"No {cls.__name__} member corresponds to the value {value}")
-
 
 class DiffusionConfig:
     """
