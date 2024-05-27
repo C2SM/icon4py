@@ -66,8 +66,8 @@ class TestAddVerticalWindDerivativeToDivergenceDamping(StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             z_dwdz_dd=z_dwdz_dd,
             z_graddiv_vn=z_graddiv_vn,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
