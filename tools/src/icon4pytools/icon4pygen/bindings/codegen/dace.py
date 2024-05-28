@@ -180,7 +180,12 @@ class CppDefGenerator(TemplatedGenerator):
         int horizontalEnd = 0;
         int verticalStart = 0;
         int verticalEnd = 0;
-        handle_ = __dace_init_{{ funcname }}({{ ", ".join(_this_node.sdfg_symbols) }});
+        {%- for scalar in _this_node.sdfg_scalars -%}
+        {{ scalar }} = 0;
+        {%- endfor -%}
+        handle_ = __dace_init_{{ funcname }}(
+        {{ ", ".join(_this_node.sdfg_scalars) }},
+        {{ ", ".join(_this_node.sdfg_symbols) }});
         __set_stream_{{ funcname }}(handle_, stream);
         }
         """
@@ -216,6 +221,7 @@ class CppDefGenerator(TemplatedGenerator):
         {%- for data_descr in _this_node.sdfg_arrays -%}
             , {{ data_descr.cpp_arg_name() }}
         {%- endfor -%},
+        {{ ", ".join(_this_node.sdfg_scalars) }},
         {{ ", ".join(_this_node.sdfg_symbols) }});
       }
       """
@@ -466,6 +472,7 @@ class StenClassRunFun(Node):
     stencil_name: str
     domain_args: Sequence[Scalar]
     sdfg_arrays: Sequence[DataDescriptor]
+    sdfg_scalars: Sequence[str]
     sdfg_symbols: Sequence[str]
 
 
@@ -485,6 +492,7 @@ class PrivateMembers(Node):
 
 
 class StencilClassSetupFunc(CppSetupFuncDeclaration):
+    sdfg_scalars: Sequence[str]
     sdfg_symbols: Sequence[str]
 
 
@@ -601,16 +609,14 @@ class CppDefTemplate(Node):
         symbol_map.update(
             {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in field_args}
         )
-        sorted_symbols = (
-            [arg.cpp_arg_name() for arg in scalar_args]
-            + [
-                symbols
-                for _, symbols in collections.OrderedDict(
-                    sorted(symbol_map.items())
-                ).items()
-                if symbols is not None
-            ]
-        )
+        scalars = [arg.cpp_arg_name() for arg in scalar_args]
+        sorted_symbols = [
+            symbols
+            for _, symbols in collections.OrderedDict(
+                sorted(symbol_map.items())
+            ).items()
+            if symbols is not None
+        ]
         def key_data_descr(x: DataDescriptor | str) -> str:
             return x.sdfg_arg_name() if isinstance(x, DataDescriptor) else x
 
@@ -629,6 +635,7 @@ class CppDefTemplate(Node):
                 stencil_name=self.stencil_name,
                 domain_args=domain_args,
                 sdfg_arrays=sorted(field_args, key=key_data_descr),
+                sdfg_scalars=scalars,
                 sdfg_symbols=sorted_symbols,
             ),
             public_utilities=PublicUtilities(
@@ -643,7 +650,8 @@ class CppDefTemplate(Node):
             ),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
-                sdfg_symbols=sorted_symbols
+                sdfg_scalars=scalars,
+                sdfg_symbols=sorted_symbols,
             ),
         )
 
