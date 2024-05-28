@@ -13,23 +13,16 @@
 
 import abc
 import logging
+import pathlib
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from enum import Enum
-from pathlib import Path
 from typing import Optional, Sequence
 
-from icon4py.model.common.components.exceptions import IncompleteStateError, InvalidConfigError
-from icon4py.model.common.components.monitor import Monitor
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.driver.io.cf_utils import (
-    DEFAULT_CALENDAR,
-    DEFAULT_TIME_UNIT,
-)
-from icon4py.model.driver.io.ugrid import IconUGridWriter, load_data_file
-from icon4py.model.driver.io.writers import NetcdfWriter
+from icon4py.model.common.components import exceptions, monitor
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.driver.io import cf_utils, ugrid, writers
 
 
 log = logging.getLogger(__name__)
@@ -66,7 +59,7 @@ class Config(ABC):
     """
     Base class for all config classes.
 
-    #TODO (halungge) Need to visit this, when we address configuration
+    # TODO (halungge) Need to visit this, when we address configuration
     """
 
     def __str__(self):
@@ -105,13 +98,13 @@ class FieldGroupIoConfig(Config):
     def _validate_filename(self):
         assert self.filename, "No filename provided for output."
         if self.filename.startswith("/"):
-            raise InvalidConfigError(f"Filename may not be an absolute path: {self.filename}.")
+            raise exceptions.InvalidConfigError(f"Filename may not be an absolute path: {self.filename}.")
 
     def validate(self):
         if not self.output_interval:
-            raise InvalidConfigError("No output interval provided.")
+            raise exceptions.InvalidConfigError("No output interval provided.")
         if not self.variables:
-            raise InvalidConfigError("No variables provided for output.")
+            raise exceptions.InvalidConfigError("No variables provided for output.")
         self._validate_filename()
 
 
@@ -120,15 +113,15 @@ class IoConfig(Config):
     """
     Structured and hierarchical config for IO.
 
-    Holds some general configuration and a collection of configurations for each field group
+    Holds some general configuration and a collection of configurations for each field group.
 
     """
 
     output_path: str = "./output/"
     field_groups: Sequence[FieldGroupIoConfig] = ()
 
-    time_units = DEFAULT_TIME_UNIT
-    calendar = DEFAULT_CALENDAR
+    time_units = cf_utils.DEFAULT_TIME_UNIT
+    calendar = cf_utils.DEFAULT_CALENDAR
 
     def validate(self):
         if not self.field_groups:
@@ -138,16 +131,16 @@ class IoConfig(Config):
                 field_config.validate()
 
 
-class IoMonitor(Monitor):
+class IoMonitor(monitor.Monitor):
     """
-    Composite Monitor for all IO Groups
+    Composite Monitor for all IO groups.
     """
 
     def __init__(
         self,
         config: IoConfig,
-        vertical_size: VerticalGridSize,
-        horizontal_size: HorizontalGridSize,
+        vertical_size: v_grid.VerticalGridSize,
+        horizontal_size: h_grid.HorizontalGridSize,
         grid_file_name: str,
         grid_id: str,
     ):
@@ -156,18 +149,13 @@ class IoMonitor(Monitor):
         self._grid_file = grid_file_name
         self._initialize_output()
         self._group_monitors = [
-            FieldGroupMonitor(
-                conf,
-                vertical=vertical_size,
-                horizontal=horizontal_size,
-                grid_id=grid_id,
-                output_path=self._output_path,
-            )
+            FieldGroupMonitor(conf, vertical=vertical_size, horizontal=horizontal_size,
+                              grid_id=grid_id, output_path=self._output_path)
             for conf in config.field_groups
         ]
 
     def _read_grid_attrs(self) -> dict:
-        with load_data_file(self._grid_file) as ds:
+        with ugrid.load_data_file(self._grid_file) as ds:
             return ds.attrs
 
     def _initialize_output(self):
@@ -175,7 +163,7 @@ class IoMonitor(Monitor):
         self._write_ugrid()
 
     def _create_output_dir(self):
-        path = Path(self.config.output_path)
+        path =pathlib.Path(self.config.output_path)
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
@@ -183,7 +171,7 @@ class IoMonitor(Monitor):
             log.error(f"Output directory at {path} exists: {error}.")
 
     def _write_ugrid(self):
-        writer = IconUGridWriter(self._grid_file, self._output_path)
+        writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)
         writer(validate=True)
 
     @property
@@ -191,15 +179,15 @@ class IoMonitor(Monitor):
         return self._output_path
 
     def store(self, state: dict, model_time: datetime, **kwargs):
-        for monitor in self._group_monitors:
-            monitor.store(state, model_time, **kwargs)
+        for m in self._group_monitors:
+            m.store(state, model_time, **kwargs)
 
     def close(self):
-        for monitor in self._group_monitors:
-            monitor.close()
+        for m in self._group_monitors:
+            m.close()
 
 
-class FieldGroupMonitor(Monitor):
+class FieldGroupMonitor(monitor.Monitor):
     """
     Monitor for a group of fields.
 
@@ -214,18 +202,9 @@ class FieldGroupMonitor(Monitor):
     def time_delta(self):
         return self._time_delta
 
-    @property
-    def output_path(self) -> Path:
-        return self._output_path
-
-    def __init__(
-        self,
-        config: FieldGroupIoConfig,
-        vertical: VerticalGridSize,
-        horizontal: HorizontalGridSize,
-        grid_id: str,
-        output_path: Path = Path(__file__).parent,
-    ):
+    def __init__(self, config: FieldGroupIoConfig, vertical: v_grid.VerticalGridSize,
+                 horizontal: h_grid.HorizontalGridSize, grid_id: str,
+                 output_path: pathlib.Path = pathlib.Path(__file__).parent):
         self._global_attrs = dict(
             Conventions="CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
             title=config.nc_title,
@@ -248,14 +227,19 @@ class FieldGroupMonitor(Monitor):
         self._current_timesteps_in_file = 0
         self._dataset = None
 
-    def _handle_output_path(self, output_path: Path, filename: str):
+    @property
+    def output_path(self) -> pathlib.Path:
+        return self._output_path
+
+    def _handle_output_path(self, output_path: pathlib.Path, filename: str):
         file = output_path.joinpath(filename).absolute()
         path = file.parent
         path.mkdir(parents=True, exist_ok=True, mode=0o777)
         self._output_path = path
         self._file_name_pattern = file.name
 
-    def _init_dataset(self, horizontal_size: HorizontalGridSize, vertical_grid: VerticalGridSize):
+    def _init_dataset(self, vertical_grid: v_grid.VerticalGridSize,
+                      horizontal_size: h_grid.HorizontalGridSize):
         """Initialise the dataset with global attributes and dimensions.
 
         TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
@@ -267,7 +251,7 @@ class FieldGroupMonitor(Monitor):
         self._file_counter += 1
         filename = generate_name(self._file_name_pattern, self._file_counter)
         filename = self._output_path.joinpath(filename)
-        df = NetcdfWriter(filename, vertical_grid, horizontal_size, self._global_attrs)
+        df = writers.NetcdfWriter(filename, vertical_grid, horizontal_size, self._global_attrs)
         df.initialize_dataset()
         self._dataset = df
 
@@ -289,13 +273,13 @@ class FieldGroupMonitor(Monitor):
             except KeyError as e:
                 logging.error(f"Field '{e.args[0]}' is missing in state.")
                 self.close()
-                raise IncompleteStateError(e.args[0]) from e
+                raise exceptions.IncompleteStateError(e.args[0]) from e
 
             logging.info(f"Storing fields {state_to_store.keys()} at {model_time}")
             self._update_fetch_times()
 
             if self._do_initialize_new_file():
-                self._init_dataset(self._horizontal_size, self._vertical_size)
+                self._init_dataset(self._vertical_size, self._horizontal_size)
             self._append_data(state_to_store, model_time)
 
             self._update_current_file_count()

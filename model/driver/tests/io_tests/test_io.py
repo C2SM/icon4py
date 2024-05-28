@@ -20,7 +20,7 @@ import uxarray as ux
 import xarray as xr
 from gt4py.next.ffront.fbuiltins import float32
 
-from icon4py.model.common.components.exceptions import IncompleteStateError
+from icon4py.model.common.components.exceptions import IncompleteStateError, InvalidConfigError
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -39,7 +39,6 @@ from icon4py.model.driver.io.data import (
 from icon4py.model.driver.io.io import (
     FieldGroupIoConfig,
     FieldGroupMonitor,
-    InvalidConfigError,
     IoConfig,
     IoMonitor,
     generate_name,
