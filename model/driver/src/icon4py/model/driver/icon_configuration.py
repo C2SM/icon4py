@@ -250,6 +250,32 @@ def read_config(experiment: Optional[str]) -> IconConfig:
                 scope='diagnostic',
             )
         )
+        output_variable_list.add_new_variable(
+            'u',
+            VariableAttributes(
+                units='m s-1',
+                standard_name='zonal wind',
+                long_name='zonal wind speed',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='clat clon',
+                scope='diagnostic',
+            )
+        )
+        output_variable_list.add_new_variable(
+            'v',
+            VariableAttributes(
+                units='m s-1',
+                standard_name='meridional wind',
+                long_name='meridional wind speed',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='clat clon',
+                scope='diagnostic',
+            )
+        )
 
         icon_run_config = IconRunConfig(
             dtime=60.0,

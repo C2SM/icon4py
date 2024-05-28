@@ -1127,9 +1127,10 @@ class TimeLoop:
         )
         log.info("Initialization of diagnostic variables for output.")
 
-        self._diagnose_for_output_and_physics(
-            prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
-        )
+        if output_state is not None:
+            self._diagnose_for_output_and_physics(
+                prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
+            )
 
         if not self.is_run_from_serializedData:
             self.stencil_mo_init_exner_pr(
@@ -1203,13 +1204,13 @@ class TimeLoop:
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
-            self._diagnose_for_output_and_physics(
-                prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
-            )
+            if output_state is not None:
+                self._diagnose_for_output_and_physics(
+                    prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
+                )
 
-            log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
+                log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
-            if not self.is_run_from_serializedData:
                 output_state.output_data(
                     self._simulation_date,
                     prognostic_state_list[self._now],
