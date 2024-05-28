@@ -244,7 +244,7 @@ class GridManager:
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
         dataset = self._read_gridfile(self._file_name)
-        uid, grid = self._constuct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
+        uid, grid = self._construct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
         self._grid_id = uid
         self._grid = grid
 
@@ -333,7 +333,7 @@ class GridManager:
             self._log.error(msg)
             raise IconGridError(msg) from err
 
-    def _constuct_grid(
+    def _construct_grid(
         self, dataset: Dataset, on_gpu: bool, limited_area: bool
     ) -> tuple[UUID, IconGrid]:
         grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
