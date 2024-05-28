@@ -177,13 +177,11 @@ def test_run_timeloop_single_step(
         cell_params=cell_geometry,
     )
 
-    # Default construction is for the MCH_CH_r04b09_dsl run config for nonhydro
     nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
     nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    # do_prep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
     iconrun_config = construct_iconrun_config(
@@ -191,7 +189,6 @@ def test_run_timeloop_single_step(
         timeloop_date_init,
         timeloop_date_exit,
         timeloop_diffusion_linit_init,
-        damping_height,
         ndyn_substeps=ndyn_substeps,
     )
 
