@@ -914,6 +914,10 @@ class TimeLoop:
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
+        self._timer1 = Timer(self._full_name(self._integrate_one_time_step), dp=5)
+        self._timer2 = Timer(self._full_name(self._do_dyn_substepping), dp=5)
+        self._timer3 = Timer("Diffusion", dp=5)
+
     def re_init(self):
         self._simulation_date = self.run_config.start_date
         self._is_first_step_in_simulation = True
@@ -1086,7 +1090,6 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        timer = Timer(self._full_name(self._integrate_one_time_step))
         self._next_simulation_date()
         self._integrate_one_time_step(
             diffusion_diagnostic_state,
@@ -1113,7 +1116,7 @@ class TimeLoop:
 
             # update boundary condition
 
-            timer.start()
+            self._timer1.start()
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -1122,7 +1125,7 @@ class TimeLoop:
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
-            timer.capture()
+            self._timer1.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
@@ -1145,7 +1148,9 @@ class TimeLoop:
                 )
 
         if self._n_time_steps > 1:
-            timer.summary(True)
+            self._timer1.summary(True)
+            self._timer2.summary(True)
+            self._timer3.summary(True)
 
         if profile:
             profile_disable()
@@ -1161,6 +1166,7 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
 
+        self._timer2.start()
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -1168,11 +1174,14 @@ class TimeLoop:
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
+        self._timer2.capture()
 
+        self._timer3.start()
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
+        self._timer3.capture()
 
         self._swap()
 
