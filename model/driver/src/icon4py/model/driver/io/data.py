@@ -78,9 +78,10 @@ def to_data_array(
 ) -> xa.DataArray:
     """Convert a gt4py field to a xarray dataarray.
 
-    Args: field: gt4py field,
-        attrs: (optional) dictionary of metadata attributes to be added to the dataarray, empty by default.
-        is_on_interface: (optional) boolean flag indicating if the 2d field is defined on the interface, False by default.
+    Args: 
+        field: gt4py field,
+        attrs: optional dictionary of metadata attributes to be added to the dataarray, empty by default.
+        is_on_interface: optional boolean flag indicating if the 2d field is defined on the interface, False by default.
     """
     if attrs is None:
         attrs = {}
@@ -91,5 +92,5 @@ def to_data_array(
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
 
 
-def _is_horizontal(dim: Dimension):
+def _is_horizontal(dim: Dimension)->bool:
     return dim.kind == DimensionKind.HORIZONTAL
