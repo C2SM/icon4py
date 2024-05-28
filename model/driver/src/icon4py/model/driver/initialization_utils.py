@@ -794,6 +794,7 @@ def configure_logging(
     logfile.touch(exist_ok=True)
     if disable_logging:
         logging_level = logging.CRITICAL
+        logging.disable(logging.CRITICAL)
     else:
         logging_level = logging.DEBUG
     logging.basicConfig(
