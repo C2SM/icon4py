@@ -22,7 +22,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
 from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, REGIONAL_GRIDFILE
 from icon4py.model.driver.io.ugrid import (
     FILL_VALUE,
-    IconUGridPatch,
+    IconUGridPatcher,
     dump_ugrid_file,
     extract_horizontal_coordinates,
     load_data_file,
@@ -39,7 +39,7 @@ def grid_files():
 @pytest.mark.parametrize("file", grid_files())
 def test_convert_to_ugrid(file):
     with load_data_file(file) as ds:
-        patch = IconUGridPatch()
+        patch = IconUGridPatcher()
         uxds = patch(ds, validate=True)
         assert uxds.attrs["title"] == "ICON grid description"
         assert uxds.attrs["ellipsoid_name"] == "Sphere"
@@ -55,7 +55,7 @@ def test_convert_to_ugrid(file):
 @pytest.mark.parametrize("file", grid_files())
 def test_dump_ugrid_file(file, test_path):
     with load_data_file(file) as ds:
-        patch = IconUGridPatch()
+        patch = IconUGridPatcher()
         uxds = patch(ds)
         output_dir = test_path.joinpath("output")
         output_dir.mkdir(0o755, exist_ok=True)
@@ -67,7 +67,7 @@ def test_dump_ugrid_file(file, test_path):
 @pytest.mark.parametrize("file", grid_files())
 def test_icon_ugrid_patch_index_transformation(file):
     with load_data_file(file) as ds:
-        patch = IconUGridPatch()
+        patch = IconUGridPatcher()
         uxds = patch(ds)
         for name in patch.index_lists:
             assert_start_index(uxds, name)
@@ -77,7 +77,7 @@ def test_icon_ugrid_patch_index_transformation(file):
 @pytest.mark.parametrize("file", grid_files())
 def test_icon_ugrid_patch_transposed_index_lists(file):
     with load_data_file(file) as ds:
-        patch = IconUGridPatch()
+        patch = IconUGridPatcher()
         uxds = patch(ds)
         horizontal_dims = ("cell", "edge", "vertex")
         horizontal_sizes = list(uxds.sizes[k] for k in horizontal_dims)
@@ -91,7 +91,7 @@ def test_icon_ugrid_patch_transposed_index_lists(file):
 @pytest.mark.parametrize("file", grid_files())
 def test_icon_ugrid_patch_fill_value(file):
     with load_data_file(file) as ds:
-        patch = IconUGridPatch()
+        patch = IconUGridPatcher()
         uxds = patch(ds)
         patch._set_fill_value(uxds)
         for name in patch.connectivities:

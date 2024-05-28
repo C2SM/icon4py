@@ -87,11 +87,11 @@ def extract_bounds(ds: xa.Dataset):
     )
 
 
-class IconUGridPatch:
+class IconUGridPatcher:
     """
     Patch an ICON grid file with necessary information for UGRID.
 
-    TODO: (magdalena) should all the unnecessary data fields be removed.
+    TODO: (magdalena) should all the unnecessary data fields be removed?
     """
 
     def __init__(self):
@@ -207,7 +207,7 @@ class IconUGridWriter:
         self.output_path = Path(output_path)
 
     def __call__(self, validate: bool = False):
-        patch = IconUGridPatch()
+        patch = IconUGridPatcher()
         with load_data_file(self.original_filename) as ds:
             patched_ds = patch(ds, validate)
             dump_ugrid_file(patched_ds, self.original_filename, self.output_path)
