@@ -482,7 +482,7 @@ end function {{name}}_wrapper
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
             arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
-                set(UNINITIALISED_ARRAYS)
+                set(func.uninitialised_arrays)
             ),
             return_code_param=return_code_param,
         )
