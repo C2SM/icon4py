@@ -184,7 +184,6 @@ class CppDefGenerator(TemplatedGenerator):
         {{ scalar }} = 0;
         {%- endfor -%}
         handle_ = __dace_init_{{ funcname }}(
-        {{ ", ".join(_this_node.sdfg_scalars) }},
         {{ ", ".join(_this_node.sdfg_symbols) }});
         __set_stream_{{ funcname }}(handle_, stream);
         }
@@ -221,7 +220,6 @@ class CppDefGenerator(TemplatedGenerator):
         {%- for data_descr in _this_node.sdfg_arrays -%}
             , {{ data_descr.cpp_arg_name() }}
         {%- endfor -%},
-        {{ ", ".join(_this_node.sdfg_scalars) }},
         {{ ", ".join(_this_node.sdfg_symbols) }});
       }
       """
@@ -610,7 +608,7 @@ class CppDefTemplate(Node):
             {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in field_args}
         )
         scalars = [arg.cpp_arg_name() for arg in scalar_args]
-        sorted_symbols = [
+        sorted_symbols = scalars + [
             symbols
             for _, symbols in collections.OrderedDict(
                 sorted(symbol_map.items())
