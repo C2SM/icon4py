@@ -345,40 +345,43 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
 
 
 @pytest.mark.parametrize(
-    "config, message",
+    "start_time, filename, interval, variables, message",
     [
         (
-            FieldGroupIoConfig(
-                start_time="2023-04-04T11:00:00",
-                filename="/vars/prognostics.nc",
-                output_interval="1 HOUR",
-                variables=["exner_function", "air_density"],
-            ),
+            "2023-04-04T11:00:00",
+            "",
+            "1 HOUR",
+            ["exner_function", "air_density"],
+            "Output filename is missing.",
+        ),
+        (
+            "2023-04-04T11:00:00",
+            "/vars/prognostics.nc",
+            "1 HOUR",
+            ["exner_function", "air_density"],
             "absolute path",
         ),
         (
-            FieldGroupIoConfig(
-                start_time="2023-04-04T11:00:00",
-                filename="vars/prognostics.nc",
-                output_interval="1 HOUR",
-                variables=[],
-            ),
+            "2023-04-04T11:00:00",
+            "vars/prognostics.nc",
+            "1 HOUR",
+            [],
             "No variables provided for output.",
         ),
         (
-            FieldGroupIoConfig(
-                start_time="2023-04-04T11:00:00",
-                filename="vars/prognostics.nc",
-                output_interval="",
-                variables=["air_density, exner_function"],
-            ),
+            "2023-04-04T11:00:00",
+            "vars/prognostics.nc",
+            "",
+            ["air_density, exner_function"],
             "No output interval provided.",
         ),
     ],
 )
-def test_fieldgroup_config_validate_filename(config, message):
+def test_fieldgroup_config_validate_filename(start_time, filename, interval, variables, message):
     with pytest.raises(InvalidConfigError) as err:
-        config.validate()
+        FieldGroupIoConfig(
+            start_time=start_time, filename=filename, output_interval=interval, variables=variables
+        )
     assert message in str(err.value)
 
 

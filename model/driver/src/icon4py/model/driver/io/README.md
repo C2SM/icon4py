@@ -53,7 +53,7 @@ Field groups are stored in the same file and share a common setting of
 
 - `start_time` (optional, default is model init time): A timestamp (string in iso format, for example "2024-01-01T12:00:00") when to start with the output, should be after model init time.
 - `output_interval`: String, one of ["DAY", "HOUR", "MINUTE", "SECOND"] (or plural) combined with a positive number, eg "10 HOURS", "1 DAY", describing how often the fields will be written to file.
-- `filename`: File name to be used for the datafile, it may contain a path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
+- `filename`: File name to be used for the datafile, it may contain a _relative_ path which is appended to the `output_path` . Files will be appended with a counter for roll over (see `timesteps_per_file`).
 - `timesteps_per_file` (default=10): Number of timesteps to be recorded in one file, if the value is negative all captured times go into the same file.
 - `variables`: List of variables names to be output. Variable names are the `short_name` of the CF conventions used in the model state.
 - `nc_title` (optional): Title field of the generated netcdf file.

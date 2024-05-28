@@ -95,10 +95,16 @@ class FieldGroupIoConfig(Config):
     nc_title: str = "ICON4Py Simulation"
     nc_comment: str = "ICON inspired code in Python and GT4Py"
 
+    def __post_init__(self):
+        self.validate()
+
     def _validate_filename(self):
-        assert self.filename, "No filename provided for output."
+        if not self.filename:
+            raise exceptions.InvalidConfigError("Output filename is missing.")
         if self.filename.startswith("/"):
-            raise exceptions.InvalidConfigError(f"Filename may not be an absolute path: {self.filename}.")
+            raise exceptions.InvalidConfigError(
+                f"Filename may not be an absolute path: {self.filename}."
+            )
 
     def validate(self):
         if not self.output_interval:
@@ -122,6 +128,9 @@ class IoConfig(Config):
 
     time_units = cf_utils.DEFAULT_TIME_UNIT
     calendar = cf_utils.DEFAULT_CALENDAR
+
+    def __post_init__(self):
+        self.validate()
 
     def validate(self):
         if not self.field_groups:
@@ -149,8 +158,13 @@ class IoMonitor(monitor.Monitor):
         self._grid_file = grid_file_name
         self._initialize_output()
         self._group_monitors = [
-            FieldGroupMonitor(conf, vertical=vertical_size, horizontal=horizontal_size,
-                              grid_id=grid_id, output_path=self._output_path)
+            FieldGroupMonitor(
+                conf,
+                vertical=vertical_size,
+                horizontal=horizontal_size,
+                grid_id=grid_id,
+                output_path=self._output_path,
+            )
             for conf in config.field_groups
         ]
 
@@ -163,7 +177,7 @@ class IoMonitor(monitor.Monitor):
         self._write_ugrid()
 
     def _create_output_dir(self):
-        path =pathlib.Path(self.config.output_path)
+        path = pathlib.Path(self.config.output_path)
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
@@ -202,9 +216,14 @@ class FieldGroupMonitor(monitor.Monitor):
     def time_delta(self):
         return self._time_delta
 
-    def __init__(self, config: FieldGroupIoConfig, vertical: v_grid.VerticalGridSize,
-                 horizontal: h_grid.HorizontalGridSize, grid_id: str,
-                 output_path: pathlib.Path = pathlib.Path(__file__).parent):
+    def __init__(
+        self,
+        config: FieldGroupIoConfig,
+        vertical: v_grid.VerticalGridSize,
+        horizontal: h_grid.HorizontalGridSize,
+        grid_id: str,
+        output_path: pathlib.Path = pathlib.Path(__file__).parent,
+    ):
         self._global_attrs = dict(
             Conventions="CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
             title=config.nc_title,
@@ -238,8 +257,9 @@ class FieldGroupMonitor(monitor.Monitor):
         self._output_path = path
         self._file_name_pattern = file.name
 
-    def _init_dataset(self, vertical_grid: v_grid.VerticalGridSize,
-                      horizontal_size: h_grid.HorizontalGridSize):
+    def _init_dataset(
+        self, vertical_grid: v_grid.VerticalGridSize, horizontal_size: h_grid.HorizontalGridSize
+    ):
         """Initialise the dataset with global attributes and dimensions.
 
         TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
