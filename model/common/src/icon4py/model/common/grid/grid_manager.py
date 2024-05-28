@@ -51,7 +51,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridConfig
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 
 
@@ -233,7 +233,7 @@ class GridManager:
         self,
         transformation: IndexTransformation,
         grid_file: str,
-        config: VerticalGridSize,
+        config: VerticalGridConfig,
     ):
         self._log = logging.getLogger(__name__)
         self._transformation = transformation
@@ -393,7 +393,7 @@ class GridManager:
 
         config = GridConfig(
             horizontal_config=grid_size,
-            vertical_config=self._config,
+            vertical_size=grid_level,
             on_gpu=on_gpu,
             limited_area=limited_area,
         )

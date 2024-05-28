@@ -457,7 +457,7 @@ class SimpleGrid(BaseGrid):
         vertical_grid_config = VerticalGridConfig(num_lev=10)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
-            vertical_config=vertical_grid_config,
+            vertical_size=vertical_grid_config.num_lev,
         )
 
         connectivity_dict = {

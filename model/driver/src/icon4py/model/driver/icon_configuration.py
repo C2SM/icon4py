@@ -16,6 +16,7 @@ from datetime import datetime, timedelta
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 from icon4py.model.driver.initialization_utils import ExperimentType
 
 
@@ -30,18 +31,16 @@ class IconRunConfig:
     start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
 
-    damping_height: float = 12500.0
-
-    """ndyn_substeps in ICON"""
     # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
     n_substeps: int = 5
+    """ndyn_substeps in ICON"""
 
+    apply_initial_stabilization: bool = True
     """
     ltestcase in ICON
         ltestcase has been renamed as apply_initial_stabilization because it is only used for extra damping for
         initial steps in timeloop.
     """
-    apply_initial_stabilization: bool = True
 
     restart_mode: bool = False
 
@@ -49,11 +48,21 @@ class IconRunConfig:
 @dataclass
 class IconConfig:
     run_config: IconRunConfig
+    vertical_grid_config: VerticalGridConfig
     diffusion_config: DiffusionConfig
     solve_nonhydro_config: NonHydrostaticConfig
 
 
 def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconConfig:
+    def _mch_ch_r04b09_vertical_config():
+        return VerticalGridConfig(
+            num_lev=65,
+            lowest_layer_thickness=20.0,
+            model_top_height=23000.0,
+            stretch_factor=0.65,
+            rayleigh_damping_height=12500.0,
+        )
+
     def _mch_ch_r04b09_diffusion_config():
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
@@ -73,6 +82,12 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _mch_ch_r04b09_nonhydro_config():
         return NonHydrostaticConfig(
             ndyn_substeps_var=n_substeps_reduced,
+        )
+
+    def _jabw_vertical_config():
+        return VerticalGridConfig(
+            num_lev=35,
+            rayleigh_damping_height=45000.0,
         )
 
     def _jabw_diffusion_config(n_substeps: int):
@@ -107,10 +122,10 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 dtime=timedelta(seconds=10.0),
                 start_date=datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime(2021, 6, 20, 12, 0, 10),
-                damping_height=12500.0,
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
             ),
+            _mch_ch_r04b09_vertical_config(),
             _mch_ch_r04b09_diffusion_config(),
             _mch_ch_r04b09_nonhydro_config(),
         )
@@ -119,14 +134,15 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
             end_date=datetime(1, 1, 1, 0, 30, 0),
-            damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
         )
+        jabw_vertical_config = _jabw_vertical_config()
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
         jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
             icon_run_config,
+            jabw_vertical_config,
             jabw_diffusion_config,
             jabw_nonhydro_config,
         )
@@ -134,6 +150,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     if experiment_type == ExperimentType.JABW:
         (
             model_run_config,
+            vertical_grid_config,
             diffusion_config,
             nonhydro_config,
         ) = _jablownoski_Williamson_config()
@@ -143,11 +160,13 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
         (
             model_run_config,
+            vertical_grid_config,
             diffusion_config,
             nonhydro_config,
         ) = _mch_ch_r04b09_config()
     return IconConfig(
         run_config=model_run_config,
+        vertical_grid_config=vertical_grid_config,
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
     )

@@ -53,7 +53,11 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import (
+    VerticalGridConfig,
+    VerticalModelParams,
+    get_vct_a_and_vct_b,
+)
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
@@ -318,7 +322,7 @@ def model_initialization_jabw(
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
         0,
-        icon_grid.num_levels,
+        num_levels,
         offset_provider=icon_grid.offset_providers,
     )
 
@@ -536,14 +540,17 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path, damping_height, rank=0, ser_type: SerializationType = SerializationType.SB
+    path: Path,
+    vertical_grid_config: VerticalGridConfig,
+    rank=0,
+    ser_type: SerializationType = SerializationType.SB,
 ) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
 
     Args:
         path: path to the serialized input data
-        damping_height: damping height for Rayleigh and divergence damping TODO (CHia Rui): Check
+        vertical_grid_config: Vertical grid configuration
         rank:
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
 
@@ -556,10 +563,11 @@ def read_geometry_fields(
         ).from_savepoint_grid(2, 4)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
+        vct_a, vct_b = get_vct_a_and_vct_b(vertical_grid_config)
         vertical_geometry = VerticalModelParams(
-            vct_a=sp.vct_a(),
-            rayleigh_damping_height=damping_height,
-            nflatlev=sp.nflatlev(),
+            vertical_config=vertical_grid_config,
+            vct_a=vct_a,
+            vct_b=vct_b,
             nflat_gradp=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()

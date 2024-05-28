@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -56,7 +56,7 @@ from .utils import (
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
+    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
             False,
@@ -72,7 +72,6 @@ from .utils import (
             True,
             False,
             False,
-            12500.0,
         ),
         (
             False,
@@ -88,7 +87,6 @@ from .utils import (
             False,
             False,
             True,
-            12500.0,
         ),
         (
             False,
@@ -104,7 +102,6 @@ from .utils import (
             False,
             False,
             False,
-            50000.0,
         ),
         (
             False,
@@ -120,7 +117,6 @@ from .utils import (
             False,
             False,
             True,
-            50000.0,
         ),
     ],
 )
@@ -134,6 +130,9 @@ def test_run_timeloop_single_step(
     icon_grid,
     metrics_savepoint,
     interpolation_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     ndyn_substeps,
     timeloop_diffusion_savepoint_init,
@@ -151,10 +150,17 @@ def test_run_timeloop_single_step(
     )
     diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
+    )
+    vertical_params = VerticalModelParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
         nflat_gradp=grid_savepoint.nflat_gradp(),
     )
     additional_parameters = DiffusionParams(diffusion_config)

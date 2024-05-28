@@ -44,7 +44,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
+from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -155,6 +155,9 @@ class IconGridSavepoint(IconSavepoint):
 
     def vct_a(self):
         return self._get_field("vct_a", KDim)
+
+    def vct_b(self):
+        return self._get_field("vct_b", KDim)
 
     def tangent_orientation(self):
         return self._get_field("tangent_orientation", EdgeDim)
@@ -386,7 +389,7 @@ class IconGridSavepoint(IconSavepoint):
                 num_cells=self.num(CellDim),
                 num_edges=self.num(EdgeDim),
             ),
-            vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
+            vertical_size=self.num(KDim),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
         )

@@ -116,11 +116,6 @@ def decomposition_info(data_provider, experiment):
 
 
 @pytest.fixture
-def damping_height():
-    return 12500
-
-
-@pytest.fixture
 def ndyn_substeps():
     """
     Return number of dynamical substeps.
@@ -270,3 +265,61 @@ def ntnd(savepoint_velocity_init):
 @pytest.fixture
 def vn_only():
     return False
+
+
+@pytest.fixture
+def lowest_layer_thickness(experiment):
+    if experiment == REGIONAL_EXPERIMENT:
+        return 20.0
+    else:
+        return 50.0
+
+
+@pytest.fixture
+def model_top_height(experiment):
+    if experiment == REGIONAL_EXPERIMENT:
+        return 23000.0
+    elif experiment == GLOBAL_EXPERIMENT:
+        return 75000.0
+    else:
+        return 23500.0
+
+
+@pytest.fixture
+def flat_height():
+    return 16000.0
+
+
+@pytest.fixture
+def stretch_factor(experiment):
+    if experiment == REGIONAL_EXPERIMENT:
+        return 0.65
+    elif experiment == GLOBAL_EXPERIMENT:
+        return 0.9
+    else:
+        return 1.0
+
+
+@pytest.fixture
+def damping_height(experiment):
+    if experiment == REGIONAL_EXPERIMENT:
+        return 12500.0
+    elif experiment == GLOBAL_EXPERIMENT:
+        return 50000.0
+    else:
+        return 45000.0
+
+
+@pytest.fixture
+def htop_moist_proc():
+    return 22500.0
+
+
+@pytest.fixture
+def maximal_layer_thickness():
+    return 25000.0
+
+
+@pytest.fixture
+def top_height_limit_for_maximal_layer_thickness():
+    return 15000.0

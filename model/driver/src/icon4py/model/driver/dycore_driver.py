@@ -330,7 +330,7 @@ def initialize(
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
         file_path,
-        damping_height=config.run_config.damping_height,
+        vertical_grid_config=config.vertical_grid_config,
         rank=props.rank,
         ser_type=serialization_type,
     )

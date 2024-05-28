@@ -39,7 +39,7 @@ class VerticalGridConfig:
     """
 
     # Number of full levels.
-    num_lev: Final[int]
+    num_lev: int
     # Defined as max_lay_thckn in ICON namelist mo_sleve_nml. Maximum thickness of grid cells below top_height_limit_for_maximal_layer_thickness.
     maximal_layer_thickness: Final[float] = 25000.0
     # Defined as htop_thcknlimit in ICON namelist mo_sleve_nml. Height below which thickness of grid cells must not exceed maximal_layer_thickness.
@@ -65,6 +65,11 @@ class VerticalModelParams:
     """
     Contains vertical physical parameters defined on the vertical grid derived from vertical grid configuration.
 
+    vct_a and vct_b: see docstring of compute_vct_a_and_vct_b.
+    index_of_damping_layer: height index above which Rayleigh damping of vertical wind is applied.
+    _start_index_for_moist_physics: Height index above which moist physics and advection of cloud and precipitation variables are turned off.
+    _start_index_of_flat_layer:
+    nflatlev: height index: height index above which coordinate surfaces are flat.
     """
 
     vertical_config: InitVar[VerticalGridConfig]
@@ -72,9 +77,8 @@ class VerticalModelParams:
     vct_b: Field[[KDim], float]
     index_of_damping_layer: Final[int32] = field(init=False)
     _start_index_for_moist_physics: Final[int32] = field(init=False)
-    _start_index_of_flat_layer: Final[int32] = field(init=False)
+    _end_index_of_flat_layer: Final[int32] = field(init=False)
     # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
-    nflatlev: Final[int32] = None
     nflat_gradp: Final[int32] = None
 
     def __post_init__(self, vertical_config):
@@ -93,7 +97,7 @@ class VerticalModelParams:
         )
         object.__setattr__(
             self,
-            "_start_index_of_flat_layer",
+            "_end_index_of_flat_layer",
             self._determine_kstart_flat(vct_a_array, vertical_config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
@@ -106,10 +110,8 @@ class VerticalModelParams:
             "Nominal heights of coordinate half levels and layer thicknesses (m):\n"
         )
         for k_lev in range(nlev - 1):
-            vertical_params_description.join(
-                f"k, vct_a, dvct: {k_lev:4d} {vct_a_array[k_lev]:12.3f} {vct_a_array[k_lev] - vct_a_array[k_lev+1]:12.3f}\n"
-            )
-        vertical_params_description.join(
+            vertical_params_description += f"k, vct_a, dvct: {k_lev:4d} {vct_a_array[k_lev]:12.3f} {vct_a_array[k_lev] - vct_a_array[k_lev+1]:12.3f}\n"
+        vertical_params_description += (
             f"k, vct_a, dvct: {nlev-1:4d} {vct_a_array[nlev-1]:12.3f} {0.0:12.3f}"
         )
         return vertical_params_description
@@ -120,9 +122,9 @@ class VerticalModelParams:
         return self._start_index_for_moist_physics
 
     @property
-    def kstart_flat(self):
-        """Vertical index for start level at which coordinate surfaces are flat."""
-        return self._start_index_of_flat_layer
+    def nflatlev(self):
+        """Vertical index for bottommost level at which coordinate surfaces are flat."""
+        return self._end_index_of_flat_layer
 
     @property
     def nrdmax(self):
@@ -148,7 +150,10 @@ class VerticalModelParams:
 
     @classmethod
     def _determine_kstart_flat(cls, vct_a: np.ndarray, flat_height: float) -> int32:
-        return int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
+        assert flat_height >= 0.0, "Flat surface height must be positive."
+        return (
+            0 if flat_height > vct_a[0] else int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
+        )
 
     @property
     def physical_heights(self) -> Field[[KDim], float]:
@@ -158,7 +163,7 @@ class VerticalModelParams:
 def read_vct_a_and_vct_b_from_file(file_path: Path, num_lev: int):
     """
     Read vct_a and vct_b from a file.
-    The file format should be as follows:
+    The file format should be as follows (the same format used for icon):
         #    k     vct_a(k) [Pa]   vct_b(k) []
         1  12000.0000000000  0.0000000000
         2  11800.0000000000  0.0000000000
@@ -175,66 +180,109 @@ def read_vct_a_and_vct_b_from_file(file_path: Path, num_lev: int):
     num_lev_plus_one = num_lev + 1
     vct_a = xp.zeros(num_lev_plus_one, dtype=float)
     vct_b = xp.zeros(num_lev_plus_one, dtype=float)
-    with open(file_path, "r") as vertical_grid_file:
-        # skip the first line that contains titles
-        vertical_grid_file.readline()
-        for k in range(num_lev_plus_one):
-            grid_content = vertical_grid_file.readline().split()
-            vct_a[k] = float(grid_content[1])
-            vct_b[k] = float(grid_content[2])
+    try:
+        with open(file_path, "r") as vertical_grid_file:
+            # skip the first line that contains titles
+            vertical_grid_file.readline()
+            for k in range(num_lev_plus_one):
+                grid_content = vertical_grid_file.readline().split()
+                vct_a[k] = float(grid_content[1])
+                vct_b[k] = float(grid_content[2])
+    except OSError as err:
+        raise FileNotFoundError(
+            f"Vertical coord table file {file_path} could not be read."
+        ) from err
+    except IndexError as err:
+        raise IndexError(
+            f"The number of levels in the vertical coord table file {file_path} is possibly not the same as {num_lev_plus_one} or data is missing at {k}-th line."
+        ) from err
+    except ValueError as err:
+        raise ValueError(f"data is not float at {k}-th line.") from err
     return vct_a, vct_b
 
 
-def compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[Field[KDim], Field[KDim]]:
+def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
     """
     Compute vct_a and vct_b.
-    When file_name is given in vertical_config, it will read both vct_a and vct_b from that file. Otherwise, they are analytically derived based on vertical configuration.
-    When the thickness of lowest level grid cells is smaller than 0.01, a uniform vertical grid is generated based on model top height and number of levels.
-
     vct_a is an array that contains the height of grid interfaces (or half levels) from model surface to model top, before terrain-following coordinates are applied.
-
     vct_b is an array that is used to initialize vertical wind speed above surface by a prescribed vertical profile when the surface vertical wind is given.
     It is also used to modify the initial vertical wind speed above surface according to a prescribed vertical profile by linearly merging the surface vertica wind with the existing vertical wind.
     See init_w and adjust_w in mo_nh_init_utils.f90.
 
+    When file_name is given in vertical_config, it will read both vct_a and vct_b from that file. Otherwise, they are analytically derived based on vertical configuration.
+
+    When the thickness of lowest level grid cells is larger than 0.01:
+        vct_a[k] = H (2/pi arccos((k/N)^s) )^d      N = num_lev      s = stretch_factor in vertical configuration
+        d is such that the lowest level grid cell thickness is equal to lowest_layer_thickness in vertical configuration.
+        d = ln(lowest_layer_thickness/H) / ln(2/pi arccos(((N-1)/N)^s) )
+        When top_height_limit_for_maximal_layer_thicknessis larger than model_top_height, the final model top height will be adjusted if there are layers thicker than maximal_layer_thickness.
+        Otherwise, layers above top_height_limit_for_maximal_layer_thickness will be modified such that h_0 is equal to model_top_height.
+         ------- 0     model top, z_0 = Z, h_0 = H, Z is the model top height after layer thickness > m is reduced to m, and H is model_top_height.
+        ...
+         ------- k-2
+        k-2
+         ------- k-1
+        k-1
+         ------- k
+        k            ------ top_height_limit_for_maximal_layer_thickness
+         ------- k+1
+        k+1
+         ------- k+2
+        k+2
+         ------- k+3
+        h_k..N+1 = z_k..N+1,  h and z are the same at levels k to N+1.
+        h_k-1 = h_k + m + (dh_k-1 - m) * a, the stretch factor aims to stretch layer thickness different from m. dh_k-1 = dh_k-1+shift, shift is equal to (k + s) - k, where k+s is the lowest layer index that needs to be modified, this is to prevent sudden jump.
+        h_0 = z_k + a * sum_i=0^k-1 (dh_i) + k * (1 - a) * m = H, h is vct_a before layer thickness > m is reduced to m, z is modified_vct_a after layer thickness > m is reduced, m = maximal_layer_thickness. dh_i is the layer thickness of vct_a.
+        z_0 = z_k + sum_i=0^k-1 (dh_i) = Z.
+        Hence, the stretch factor a = (H - z_k - m * k) / (Z - z_k - m * k).
+
+        An additional smoothing is performed for levels 2, 3, 4, ..., k if modified_vct_a[0] after additional smoothing is still the same as model_top_height.
+
+        THERE IS A WARNING MESSAGE IF vct_a[0] AND model_top_height ARE NOT EQUAL.
+
+    When the thickness of lowest level grid cells is smaller than or equal to 0.01:
+        a uniform vertical grid is generated based on model top height and number of levels.
+
     Args:
         vertical_config: Vertical grid configuration
-    Returns:  one dimensional (KDim) vct_a and vct_b fields.
+    Returns:  one dimensional (KDim) vct_a and vct_b gt4py fields.
     """
 
     if vertical_config.file_path is not None:
-        read_vct_a_and_vct_b_from_file(vertical_config.file_path, vertical_config.num_lev)
+        vct_a, vct_b = read_vct_a_and_vct_b_from_file(
+            vertical_config.file_path, vertical_config.num_lev
+        )
     else:
         num_lev_plus_one = vertical_config.num_lev + 1
         if vertical_config.lowest_layer_thickness > 0.01:
-            vct_a = xp.zeros(num_lev_plus_one, dtype=float)
-            vct_a_exponential_factor = math.log(
+            vct_a_exponential_factor = xp.log(
                 vertical_config.lowest_layer_thickness / vertical_config.model_top_height
-            ) / math.log(
+            ) / xp.log(
                 2.0
-                / math.acos(
+                / math.pi
+                * xp.arccos(
                     float(vertical_config.num_lev - 1) ** vertical_config.stretch_factor
                     / float(vertical_config.num_lev) ** vertical_config.stretch_factor
                 )
             )
-            for k in range(num_lev_plus_one):
-                vct_a[k] = (
-                    vertical_config.model_top_height
-                    * (
-                        2.0
-                        / math.pi
-                        * math.acos(
-                            float(vertical_config.num_lev - 1) ** vertical_config.stretch_factor
-                            / float(vertical_config.num_lev) ** vertical_config.stretch_factor
-                        )
+
+            vct_a = (
+                vertical_config.model_top_height
+                * (
+                    2.0
+                    / math.pi
+                    * xp.arccos(
+                        xp.arange(vertical_config.num_lev + 1, dtype=float)
+                        ** vertical_config.stretch_factor
+                        / float(vertical_config.num_lev) ** vertical_config.stretch_factor
                     )
-                    ** vct_a_exponential_factor
                 )
+                ** vct_a_exponential_factor
+            )
 
             if (
-                vertical_config.maximal_layer_thickness
-                > 2.0 * vertical_config.lowest_layer_thickness
-                and vertical_config.maximal_layer_thickness
+                2.0 * vertical_config.lowest_layer_thickness
+                < vertical_config.maximal_layer_thickness
                 < 0.5 * vertical_config.top_height_limit_for_maximal_layer_thickness
             ):
                 layer_thickness = vct_a[: num_lev_plus_one - 1] - vct_a[1:]
@@ -244,12 +292,12 @@ def compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[Field[
                 modified_vct_a = xp.zeros(num_lev_plus_one, dtype=float)
                 lowest_level_unmodified_thickness = 0
                 shifted_levels = 0
-                for k in range(vertical_config.num_lev, -1, -1):
+                for k in range(vertical_config.num_lev - 1, -1, -1):
                     if (
                         modified_vct_a[k + 1]
                         < vertical_config.top_height_limit_for_maximal_layer_thickness
                     ):
-                        modified_vct_a[k] = modified_vct_a[k + 1] + xp.min(
+                        modified_vct_a[k] = modified_vct_a[k + 1] + xp.minimum(
                             vertical_config.maximal_layer_thickness, layer_thickness[k]
                         )
                     elif lowest_level_unmodified_thickness == 0:
@@ -271,20 +319,20 @@ def compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[Field[
                     else (
                         vct_a[0]
                         - modified_vct_a[lowest_level_unmodified_thickness]
-                        - float(lowest_level_unmodified_thickness - 1)
+                        - float(lowest_level_unmodified_thickness)
                         * vertical_config.maximal_layer_thickness
                     )
                     / (
                         modified_vct_a[0]
                         - modified_vct_a[lowest_level_unmodified_thickness]
-                        - float(lowest_level_unmodified_thickness - 1)
+                        - float(lowest_level_unmodified_thickness)
                         * vertical_config.maximal_layer_thickness
                     )
                 )
 
-                for k in range(vertical_config.num_lev, -1, -1):
+                for k in range(vertical_config.num_lev - 1, -1, -1):
                     if vct_a[k + 1] < vertical_config.top_height_limit_for_maximal_layer_thickness:
-                        vct_a[k] = vct_a[k + 1] + xp.min(
+                        vct_a[k] = vct_a[k + 1] + xp.minimum(
                             vertical_config.maximal_layer_thickness, layer_thickness[k]
                         )
                     else:
@@ -300,14 +348,14 @@ def compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[Field[
 
                 # Try to apply additional smoothing on the stretching factor above the constant-thickness layer
                 if stretchfac != 1.0 and lowest_level_exceeding_limit < vertical_config.num_lev - 4:
-                    for k in range(vertical_config.num_lev, -1, -1):
+                    for k in range(vertical_config.num_lev - 1, -1, -1):
                         if (
                             modified_vct_a[k + 1]
                             < vertical_config.top_height_limit_for_maximal_layer_thickness
                         ):
                             modified_vct_a[k] = vct_a[k]
                         else:
-                            modified_layer_thickness = xp.min(
+                            modified_layer_thickness = xp.minimum(
                                 1.025 * (vct_a[k] - vct_a[k + 1]),
                                 1.025
                                 * (
@@ -320,19 +368,19 @@ def compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[Field[
                                 )
                                 * (modified_vct_a[k + 1] - modified_vct_a[k + 2]),
                             )
-                            modified_vct_a[k] = xp.min(
+                            modified_vct_a[k] = xp.minimum(
                                 vct_a[k], modified_vct_a[k + 1] + modified_layer_thickness
                             )
                     if modified_vct_a[0] == vct_a[0]:
                         vct_a[0:2] = modified_vct_a[0:2]
                         vct_a[
-                            lowest_level_unmodified_thickness + 1 : vertical_config.num_lev + 1
+                            lowest_level_unmodified_thickness + 1 : vertical_config.num_lev
                         ] = modified_vct_a[
-                            lowest_level_unmodified_thickness + 1 : vertical_config.num_lev + 1
+                            lowest_level_unmodified_thickness + 1 : vertical_config.num_lev
                         ]
-                        vct_a[3 : lowest_level_unmodified_thickness + 1] = 0.5 * (
-                            modified_vct_a[2:lowest_level_unmodified_thickness]
-                            + modified_vct_a[4 : lowest_level_unmodified_thickness + 2]
+                        vct_a[2 : lowest_level_unmodified_thickness + 1] = 0.5 * (
+                            modified_vct_a[1:lowest_level_unmodified_thickness]
+                            + modified_vct_a[3 : lowest_level_unmodified_thickness + 2]
                         )
         else:
             vct_a = (
@@ -343,10 +391,11 @@ def compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig) -> tuple[Field[
                 )
                 / float(vertical_config.num_lev)
             )
-        vct_b = math.exp(-vct_a / 5000.0)
+        vct_b = xp.exp(-vct_a / 5000.0)
 
-    assert xp.allclose(
-        vct_a[0], vertical_config.model_top_height
-    ), "vct_a[0] is not equal to model top height in vertical configuration. Please check again."
+    if not xp.allclose(vct_a[0], vertical_config.model_top_height):
+        log.warning(
+            f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
+        )
 
     return as_field((KDim,), vct_a), as_field((KDim,), vct_b)
