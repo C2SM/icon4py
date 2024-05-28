@@ -47,12 +47,14 @@ def get_local_test_grid(grid_folder: str):
         )
 
 
-def get_icon_grid_loc(grid_folder: str):
+def get_icon_grid_loc():
     env_path = os.environ.get("ICON_GRID_LOC")
     if env_path is not None:
-        return os.path.join(env_path, grid_folder)
+        return env_path
     else:
-        return get_local_test_grid(grid_folder)
+        raise ValueError(
+            "Need to define ICON_GRID_LOC environment variable specifying absolute path to folder containing grid."
+        )
 
 
 def get_grid_filename():

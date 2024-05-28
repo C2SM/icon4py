@@ -71,5 +71,5 @@ class Icon4PyConfig:
         return device
 
     @cached_property
-    def is_limited_area_experiment(self):
+    def limited_area(self):
         return os.environ.get("ICON4PY_LAM", False)

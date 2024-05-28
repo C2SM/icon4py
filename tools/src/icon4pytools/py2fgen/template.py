@@ -26,7 +26,7 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
-from icon4pytools.py2fgen.wrappers.experiments import UninitialisedArrays
+from icon4pytools.py2fgen.wrappers.experiments import UNINITIALISED_ARRAYS
 
 
 CFFI_DECORATOR = "@ffi.def_extern()"
@@ -84,7 +84,7 @@ class CffiPlugin(Node):
 class PythonWrapper(CffiPlugin):
     backend: str
     debug_mode: bool
-    experiment: str
+    limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
     cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
@@ -95,7 +95,11 @@ class PythonWrapper(CffiPlugin):
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
-        self.uninitialised_arrays = UninitialisedArrays.get_arrays_for_experiment(self.experiment)
+        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
+
+
+def get_uninitialised_arrays(limited_area: bool):
+    return UNINITIALISED_ARRAYS if not limited_area else []
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -374,14 +378,13 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
-    experiment: str
+    limited_area: bool
     dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
-    uninitialised_arrays: list[str] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
         self.dimension_positions = self.extract_dimension_positions()
-        self.uninitialised_arrays = UninitialisedArrays.get_arrays_for_experiment(self.experiment)
+        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
     def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
         """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
@@ -401,7 +404,7 @@ class F90FunctionDefinition(Func):
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
-    experiment: str
+    limited_area: bool
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
@@ -416,7 +419,7 @@ class F90Interface(Node):
                 name=f.name,
                 args=f.args,
                 is_gt4py_program=f.is_gt4py_program,
-                experiment=self.experiment,
+                limited_area=self.limited_area,
             )
             for f in functions
         ]
