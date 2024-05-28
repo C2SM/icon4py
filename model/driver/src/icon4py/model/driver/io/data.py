@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from typing import Final
 
 import xarray as xa
 from gt4py._core.definitions import ScalarT
@@ -19,7 +20,7 @@ from icon4py.model.driver.io.ugrid import dimension_mapping, ugrid_attributes
 
 
 ### CF attributes of the prognostic variables
-PROGNOSTIC_CF_ATTRIBUTES = dict(
+PROGNOSTIC_CF_ATTRIBUTES:Final[dict] = dict(
     air_density=dict(
         standard_name="air_density", long_name="density", units="kg m-3", icon_var_name="rho"
     ),
@@ -56,7 +57,7 @@ PROGNOSTIC_CF_ATTRIBUTES = dict(
 )
 
 ### CF attributes of diagnostic variables
-DIAGNOSTIC_CF_ATTRIBUTES = dict(
+DIAGNOSTIC_CF_ATTRIBUTES:Final[dict] = dict(
     eastward_wind=dict(
         standard_name="eastward_wind",
         long_name="eastward wind component",
