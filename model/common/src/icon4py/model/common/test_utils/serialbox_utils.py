@@ -539,12 +539,14 @@ class InterpolationSavepoint(IconSavepoint):
         ).transpose()
         return as_field((EdgeDim, E2C2EDim), buffer)
 
+    @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c1(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c1", self.savepoint).astype(float)
         ).transpose()
         return as_field((CellDim, C2E2C2EDim), buffer)
 
+    @IconSavepoint.optionally_registered()
     def rbf_vec_coeff_c2(self):
         buffer = np.squeeze(
             self.serializer.read("rbf_vec_coeff_c2", self.savepoint).astype(float)
@@ -583,6 +585,7 @@ class MetricSavepoint(IconSavepoint):
     def inv_ddqz_z_full(self):
         return self._get_field("inv_ddqz_z_full", CellDim, KDim)
 
+    @IconSavepoint.optionally_registered(CellDim, KDim)
     def ddqz_z_full(self):
         return self._get_field("ddqz_z_full", CellDim, KDim)
 
@@ -594,6 +597,9 @@ class MetricSavepoint(IconSavepoint):
 
     def pg_exdist(self):
         return self._get_field("pg_exdist_dsl", EdgeDim, KDim)
+
+    def pg_edgeidx_dsl(self):
+        return self._get_field("pg_edgeidx_dsl", EdgeDim, KDim, dtype=bool)
 
     def rayleigh_w(self):
         return self._get_field("rayleigh_w", KDim)
