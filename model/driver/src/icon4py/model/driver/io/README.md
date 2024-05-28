@@ -2,7 +2,7 @@
 
 ### Pre-requisites and installation
 
-The IO module needs optional dependencies in the `io`-group `io` in [pyproject.toml](../../../pyproject.toml)
+The IO module requires the installation of the `io` optional dependencies defined in [pyproject.toml](../../../pyproject.toml)
 of the `icon4py-driver` package and can be installed with the following command:
 
 ```bash
