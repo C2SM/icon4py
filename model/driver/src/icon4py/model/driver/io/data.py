@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Final
 
+import gt4py._core.definitions as gt_coredefs
+import gt4py.next.common as gt
 import xarray as xa
-from gt4py._core.definitions import ScalarT
-from gt4py.next.common import Dimension, DimensionKind, Dims, DimsT, Field
 
 from icon4py.model.driver.io.ugrid import dimension_mapping, ugrid_attributes
 
@@ -74,7 +74,9 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict] = dict(
 
 
 def to_data_array(
-    field: Field[Dims[DimsT], ScalarT], attrs=None, is_on_interface: bool = False
+    field: gt.Field[gt.Dims[gt.DimsT], gt_coredefs.ScalarT],
+    attrs=None,
+    is_on_interface: bool = False,
 ) -> xa.DataArray:
     """Convert a gt4py field to a xarray dataarray.
 
@@ -92,5 +94,5 @@ def to_data_array(
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
 
 
-def _is_horizontal(dim: Dimension) -> bool:
-    return dim.kind == DimensionKind.HORIZONTAL
+def _is_horizontal(dim: gt.Dimension) -> bool:
+    return dim.kind == gt.DimensionKind.HORIZONTAL

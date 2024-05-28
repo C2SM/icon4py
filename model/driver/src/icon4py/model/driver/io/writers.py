@@ -12,32 +12,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import logging
+import pathlib
 from datetime import datetime
-from pathlib import Path
 
 import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
-from icon4py.model.common.decomposition.definitions import (
-    ProcessProperties,
-    SingleNodeProcessProperties,
-)
-from icon4py.model.common.grid.base import HorizontalGridSize
-from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.driver.io.cf_utils import (
-    COARDS_T_POS,
-    DEFAULT_CALENDAR,
-    DEFAULT_TIME_UNIT,
-    INTERFACE_LEVEL_NAME,
-    LEVEL_NAME,
-    date2num,
-    to_canonical_dim_order,
-)
+from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.driver.io import cf_utils
 
 
 log = logging.getLogger(__name__)
-processor_properties = SingleNodeProcessProperties()
+processor_properties = decomp_defs.SingleNodeProcessProperties()
 
 
 class NetcdfWriter:
@@ -49,16 +37,13 @@ class NetcdfWriter:
       - the possibility to append time slices to a variable already present in the file. (Xarray.to_netcdf does not support this https://github.com/pydata/xarray/issues/1672)
     """
 
-    def __getitem__(self, item):
-        return self.dataset.getncattr(item)
-
     def __init__(
         self,
-        file_name: Path,
-        vertical: VerticalGridSize,
-        horizontal: HorizontalGridSize,
+        file_name: pathlib.Path,
+        vertical: v_grid.VerticalGridSize,
+        horizontal: h_grid.HorizontalGridSize,
         global_attrs: dict,
-        process_properties: ProcessProperties = processor_properties,
+        process_properties: decomp_defs.ProcessProperties = processor_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties
@@ -67,7 +52,10 @@ class NetcdfWriter:
         self.attrs = global_attrs
         self.dataset = None
 
-    def add_dimension(self, name: str, values: xr.DataArray):
+    def __getitem__(self, item):
+        return self.dataset.getncattr(item)
+
+    def add_dimension(self, name: str, values: xr.DataArray) -> None:
         self.dataset.createDimension(name, values.shape[0])
         dim = self.dataset.createVariable(name, values.dtype, (name,))
         dim.units = values.units
@@ -77,7 +65,7 @@ class NetcdfWriter:
         dim.long_name = values.long_name
         dim.standard_name = values.standard_name
 
-    def initialize_dataset(self):
+    def initialize_dataset(self) -> None:
         self.dataset = nc.Dataset(
             self._file_name,
             "w",
@@ -98,15 +86,15 @@ class NetcdfWriter:
         log.debug(f"Creating dimensions {self.dataset.dimensions} in {self._file_name}")
         # create time variables
         times = self.dataset.createVariable("times", "f8", ("time",))
-        times.units = DEFAULT_TIME_UNIT
-        times.calendar = DEFAULT_CALENDAR
+        times.units = cf_utils.DEFAULT_TIME_UNIT
+        times.calendar = cf_utils.DEFAULT_CALENDAR
         times.standard_name = "time"
         times.long_name = "time"
         # create vertical coordinates:
         levels = self.dataset.createVariable("levels", np.int32, ("level",))
         levels.units = "1"
         levels.long_name = "model full levels"
-        levels.standard_name = LEVEL_NAME
+        levels.standard_name = cf_utils.LEVEL_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
 
         interface_levels = self.dataset.createVariable(
@@ -114,12 +102,12 @@ class NetcdfWriter:
         )
         interface_levels.units = "1"
         interface_levels.long_name = "model interface levels"
-        interface_levels.standard_name = INTERFACE_LEVEL_NAME
+        interface_levels.standard_name = cf_utils.INTERFACE_LEVEL_NAME
         interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
         # TODO (magdalena) add vct_a as vertical coordinate?
 
-    def append(self, state_to_append: dict[str, xr.DataArray], model_time: datetime):
+    def append(self, state_to_append: dict[str, xr.DataArray], model_time: datetime) -> None:
         """
         Append the fields to the dataset.
 
@@ -133,10 +121,10 @@ class NetcdfWriter:
         """
         time = self.dataset["times"]
         time_pos = len(time)
-        time[time_pos] = date2num(model_time, units=time.units, calendar=time.calendar)
+        time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
         for k, new_slice in state_to_append.items():
             standard_name = new_slice.standard_name
-            new_slice = to_canonical_dim_order(new_slice)
+            new_slice = cf_utils.to_canonical_dim_order(new_slice)
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
@@ -162,11 +150,13 @@ class NetcdfWriter:
                 # we can acutally assume fixed index ordering here, input arrays are  re-shaped to canonical order (see above)
 
                 right = (slice(None),) * (len(dims) - 1)
-                expand_slice = (slice(shape[COARDS_T_POS] - 1, shape[COARDS_T_POS]),)
+                expand_slice = (
+                    slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
+                )
                 slices = expand_slice + right
                 self.dataset.variables[var_name][slices] = new_slice.data
 
-    def close(self):
+    def close(self) -> None:
         if self.dataset.isopen():
             self.dataset.close()
 
@@ -179,5 +169,5 @@ class NetcdfWriter:
         return self.dataset.variables
 
 
-def filter_by_standard_name(model_state: dict, value: str):
+def filter_by_standard_name(model_state: dict, value: str) -> dict:
     return {k: v for k, v in model_state.items() if value == v.standard_name}

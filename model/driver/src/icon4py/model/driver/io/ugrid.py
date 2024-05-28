@@ -12,42 +12,42 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import contextlib
 import logging
-from pathlib import Path
+import pathlib
 from typing import Final, Union
 
+import gt4py.next as gt
 import uxarray
 import xarray as xa
-from gt4py.next import Dimension, DimensionKind
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.grid.grid_manager import GridFile
+from icon4py.model.common.grid import grid_manager as gm
 
 
 log = logging.getLogger(__name__)
 
-FILL_VALUE = GridFile.INVALID_INDEX
+FILL_VALUE = gm.GridFile.INVALID_INDEX
 MESH = "mesh"
 
-HORIZONTAL_DIMENSION_MAPPING: Final[dict[Dimension, str]] = {
+HORIZONTAL_DIMENSION_MAPPING: Final[dict[gt.Dimension, str]] = {
     CellDim: "cell",
     EdgeDim: "edge",
     VertexDim: "vertex",
 }
 
-COORDINATES_MAPPING: Final[dict[Dimension, str]] = {
+COORDINATES_MAPPING: Final[dict[gt.Dimension, str]] = {
     CellDim: "clon clat",
     VertexDim: "vlon vlat",
     EdgeDim: "elon elat",
 }
 
-LOCATION_MAPPING: Final[dict[Dimension, str]] = {
+LOCATION_MAPPING: Final[dict[gt.Dimension, str]] = {
     CellDim: "face",
     VertexDim: "node",
     EdgeDim: "edge",
 }
 
 
-def extract_horizontal_coordinates(ds: xa.Dataset) -> dict:
+def extract_horizontal_coordinates(ds: xa.Dataset) -> dict[str, tuple[xa.DataArray, xa.DataArray]]:
     """
     Extract the coordinates from the ICON grid file.
 
@@ -60,25 +60,25 @@ def extract_horizontal_coordinates(ds: xa.Dataset) -> dict:
     )
 
 
-def dimension_mapping(dim: Dimension, is_on_interface: bool) -> str:
+def dimension_mapping(dim: gt.Dimension, is_on_interface: bool) -> str:
     assert dim.kind in (
-        DimensionKind.HORIZONTAL,
-        DimensionKind.VERTICAL,
+        gt.DimensionKind.HORIZONTAL,
+        gt.DimensionKind.VERTICAL,
     ), "only horizontal and vertical dimensions are supported."
-    if dim.kind == DimensionKind.VERTICAL:
+    if dim.kind == gt.DimensionKind.VERTICAL:
         return "interface_level" if is_on_interface else "level"
     else:
         return HORIZONTAL_DIMENSION_MAPPING[dim]
 
 
-def ugrid_attributes(dim: Dimension) -> dict:
-    if dim.kind == DimensionKind.HORIZONTAL:
+def ugrid_attributes(dim: gt.Dimension) -> dict:
+    if dim.kind == gt.DimensionKind.HORIZONTAL:
         return dict(location=LOCATION_MAPPING[dim], coordinates=COORDINATES_MAPPING[dim], mesh=MESH)
     else:
         return {}
 
 
-def extract_bounds(ds: xa.Dataset) -> dict:
+def extract_bounds(ds: xa.Dataset) -> dict[str, tuple[xa.DataArray, xa.DataArray]]:
     """
     Extract the bounds from the ICON grid file.
     TODO (@halungge) does it  work for decomposed grids?
@@ -182,6 +182,8 @@ class IconUGridPatcher:
 
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension)
         and others the other way around. We transpose them to have all the same ordering.
+
+        TODO (@halungge) should eventually be supported by UXarray.
         """
         for name in self.connectivities:
             shp = ds[name].shape
@@ -217,12 +219,16 @@ class IconUGridWriter:
     Patch an ICON grid file with necessary information to make it compliant with UGRID conventions.
     """
 
-    def __init__(self, original_filename: Union[Path, str], output_path: Union[Path, str]):
-        self.original_filename = Path(original_filename)
-        self.output_path = Path(output_path)
+    def __init__(
+        self, original_filename: Union[pathlib.Path, str], output_path: Union[pathlib.Path, str]
+    ):
+        self.original_filename = pathlib.Path(original_filename)
+        self.output_path = pathlib.Path(output_path)
 
     @staticmethod
-    def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path) -> None:
+    def dump_ugrid_file(
+        ds: xa.Dataset, original_filename: pathlib.Path, output_path: pathlib.Path
+    ) -> None:
         stem = original_filename.stem
         filename = output_path.joinpath(stem + "_ugrid.nc")
         ds.to_netcdf(filename, format="NETCDF4", engine="netcdf4")
@@ -235,7 +241,7 @@ class IconUGridWriter:
 
 
 @contextlib.contextmanager
-def load_data_file(filename: Union[Path | str]) -> xa.Dataset:
+def load_data_file(filename: Union[pathlib.Path | str]) -> xa.Dataset:
     ds = xa.open_dataset(filename)
     try:
         yield ds

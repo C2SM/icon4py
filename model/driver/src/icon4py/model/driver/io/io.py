@@ -66,7 +66,7 @@ class Config(ABC):
         return "instance of {}(Config)".format(self.__class__)
 
     @abc.abstractmethod
-    def validate(self):
+    def validate(self) -> None:
         """
         Validate the config.
 
@@ -98,7 +98,7 @@ class FieldGroupIoConfig(Config):
     def __post_init__(self):
         self.validate()
 
-    def _validate_filename(self):
+    def _validate_filename(self) -> None:
         if not self.filename:
             raise exceptions.InvalidConfigError("Output filename is missing.")
         if self.filename.startswith("/"):
@@ -106,7 +106,7 @@ class FieldGroupIoConfig(Config):
                 f"Filename may not be an absolute path: {self.filename}."
             )
 
-    def validate(self):
+    def validate(self) -> None:
         if not self.output_interval:
             raise exceptions.InvalidConfigError("No output interval provided.")
         if not self.variables:
@@ -132,7 +132,7 @@ class IoConfig(Config):
     def __post_init__(self):
         self.validate()
 
-    def validate(self):
+    def validate(self) -> None:
         if not self.field_groups:
             log.warning("No field configurations provided for output")
         else:
@@ -153,7 +153,6 @@ class IoMonitor(monitor.Monitor):
         grid_file_name: str,
         grid_id: str,
     ):
-        config.validate()
         self.config = config
         self._grid_file = grid_file_name
         self._initialize_output()
@@ -172,11 +171,11 @@ class IoMonitor(monitor.Monitor):
         with ugrid.load_data_file(self._grid_file) as ds:
             return ds.attrs
 
-    def _initialize_output(self):
+    def _initialize_output(self) -> None:
         self._create_output_dir()
         self._write_ugrid()
 
-    def _create_output_dir(self):
+    def _create_output_dir(self) -> None:
         path = pathlib.Path(self.config.output_path)
         try:
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
@@ -184,7 +183,7 @@ class IoMonitor(monitor.Monitor):
         except OSError as error:
             log.error(f"Output directory at {path} exists: {error}.")
 
-    def _write_ugrid(self):
+    def _write_ugrid(self) -> None:
         writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)
         writer(validate=True)
 
@@ -192,7 +191,7 @@ class IoMonitor(monitor.Monitor):
     def path(self):
         return self._output_path
 
-    def store(self, state: dict, model_time: datetime, **kwargs):
+    def store(self, state: dict, model_time: datetime, **kwargs) -> None:
         for m in self._group_monitors:
             m.store(state, model_time, **kwargs)
 
@@ -259,7 +258,7 @@ class FieldGroupMonitor(monitor.Monitor):
 
     def _init_dataset(
         self, vertical_grid: v_grid.VerticalGridSize, horizontal_size: h_grid.HorizontalGridSize
-    ):
+    ) -> None:
         """Initialise the dataset with global attributes and dimensions.
 
         TODO (magdalena): as long as we have no terrain it is probably ok to take vct_a as vertical
@@ -275,10 +274,10 @@ class FieldGroupMonitor(monitor.Monitor):
         df.initialize_dataset()
         self._dataset = df
 
-    def _update_fetch_times(self):
+    def _update_fetch_times(self) -> None:
         self._next_output_time = self._next_output_time + self._time_delta
 
-    def store(self, state: dict, model_time: datetime, **kwargs):
+    def store(self, state: dict, model_time: datetime, **kwargs) -> None:
         """Pick fields from the state dictionary to be written to disk.
 
         Args:
@@ -306,22 +305,22 @@ class FieldGroupMonitor(monitor.Monitor):
             if self._is_file_limit_reached():
                 self.close()
 
-    def _update_current_file_count(self):
+    def _update_current_file_count(self) -> None:
         self._current_timesteps_in_file = self._current_timesteps_in_file + 1
 
-    def _do_initialize_new_file(self):
+    def _do_initialize_new_file(self) -> bool:
         return self._current_timesteps_in_file == 0
 
-    def _is_file_limit_reached(self):
+    def _is_file_limit_reached(self) -> bool:
         return 0 < self.config.timesteps_per_file == self._current_timesteps_in_file
 
-    def _append_data(self, state_to_store: dict, model_time: datetime):
+    def _append_data(self, state_to_store: dict, model_time: datetime) -> None:
         self._dataset.append(state_to_store, model_time)
 
-    def _at_capture_time(self, model_time):
+    def _at_capture_time(self, model_time) -> bool:
         return self._next_output_time == model_time
 
-    def close(self):
+    def close(self) -> None:
         if self._dataset is not None:
             self._dataset.close()
             self._current_timesteps_in_file = 0
