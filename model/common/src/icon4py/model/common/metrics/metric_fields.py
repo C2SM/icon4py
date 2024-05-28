@@ -30,13 +30,14 @@ from gt4py.next import (
 
 from icon4py.model.common.dimension import (
     C2E,
+    C2E2C,
     E2C,
     CellDim,
     E2CDim,
     EdgeDim,
     KDim,
     Koff,
-    VertexDim, C2E2C,
+    VertexDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -1012,6 +1013,7 @@ def compute_hmask_dd3d(
         domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
 
+
 @field_operator
 def _compute_mask_hdiff() -> Field[[CellDim, KDim], bool]:
     return broadcast(True, (CellDim, KDim))
@@ -1027,8 +1029,9 @@ def compute_mask_hdiff(
 ):
     _compute_mask_hdiff(
         out=mask_hdiff,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim:(vertical_start, vertical_end)}
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
+
 
 @field_operator
 def _compute_z_maxslp_avg(
@@ -1036,12 +1039,14 @@ def _compute_z_maxslp_avg(
     c_bln_avg_0: Field[[CellDim], wpfloat],
     c_bln_avg_1: Field[[CellDim], wpfloat],
     c_bln_avg_2: Field[[CellDim], wpfloat],
-    c_bln_avg_3: Field[[CellDim], wpfloat]
+    c_bln_avg_3: Field[[CellDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-    z_maxslp_avg = maxslp * c_bln_avg_0 + \
-                   maxslp(C2E2C[0]) * c_bln_avg_1 + \
-                   maxslp(C2E2C[1]) * c_bln_avg_2 + \
-                   maxslp(C2E2C[2]) * c_bln_avg_3
+    z_maxslp_avg = (
+        maxslp * c_bln_avg_0
+        + maxslp(C2E2C[0]) * c_bln_avg_1
+        + maxslp(C2E2C[1]) * c_bln_avg_2
+        + maxslp(C2E2C[2]) * c_bln_avg_3
+    )
     return z_maxslp_avg
 
 
@@ -1051,12 +1056,14 @@ def _compute_z_maxhgtd_avg(
     c_bln_avg_0: Field[[CellDim], wpfloat],
     c_bln_avg_1: Field[[CellDim], wpfloat],
     c_bln_avg_2: Field[[CellDim], wpfloat],
-    c_bln_avg_3: Field[[CellDim], wpfloat]
+    c_bln_avg_3: Field[[CellDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-    z_maxhgtd_avg = maxhgtd * c_bln_avg_0 + \
-                    maxhgtd(C2E2C[0]) * c_bln_avg_1 + \
-                    maxhgtd(C2E2C[1]) * c_bln_avg_2 + \
-                    maxhgtd(C2E2C[2]) * c_bln_avg_3
+    z_maxhgtd_avg = (
+        maxhgtd * c_bln_avg_0
+        + maxhgtd(C2E2C[0]) * c_bln_avg_1
+        + maxhgtd(C2E2C[1]) * c_bln_avg_2
+        + maxhgtd(C2E2C[2]) * c_bln_avg_3
+    )
     return z_maxhgtd_avg
 
 
@@ -1073,7 +1080,7 @@ def compute_z_maxslp_avg_z_maxhgtd_avg(
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
-    vertical_end: int32
+    vertical_end: int32,
 ):
     _compute_z_maxslp_avg(
         maxslp=maxslp,
@@ -1103,4 +1110,3 @@ def _compute_max_nbhgt(
     max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
     max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
     return max_nbhgt
-

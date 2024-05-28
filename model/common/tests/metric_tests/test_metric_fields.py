@@ -20,13 +20,14 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
+    C2E2CDim,
     CellDim,
     E2CDim,
     ECDim,
     EdgeDim,
     KDim,
     V2CDim,
-    VertexDim, C2E2CDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
@@ -39,6 +40,8 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
+    _compute_max_nbhgt,
+    _compute_maxslp_maxhgtd,
     _compute_pg_edgeidx_vertidx,
     _compute_z_aux2,
     compute_bdy_halo_c,
@@ -59,7 +62,15 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_wgtfac_e,
-    compute_z_mc, _compute_max_nbhgt, compute_z_maxslp_avg_z_maxhgtd_avg, _compute_maxslp_maxhgtd,
+    compute_z_maxslp_avg_z_maxhgtd_avg,
+    compute_z_mc,
+)
+from icon4py.model.common.metrics.stencils.compute_diffusion_metrics import (
+    _compute_i_params,
+    _compute_k_start_end,
+    _compute_mask_hdiff,
+    _compute_zd_diffcoef_dsl,
+    _compute_zd_vertoffset_dsl,
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.datatest_utils import (
@@ -891,8 +902,11 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
 
     dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
 
+
 @pytest.mark.datatest
-def test_compute_mask_hdiff(metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend):
+def test_compute_diffusion_metrics(
+    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
+):
     backend = None
     mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
     zd_vertoffset_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
@@ -910,23 +924,24 @@ def test_compute_mask_hdiff(metrics_savepoint, interpolation_savepoint, icon_gri
     z_maxhgtd_avg = zero_field(icon_grid, CellDim, KDim)
     zd_diffcoef_dsl = zero_field(icon_grid, CellDim, KDim).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
-    thslp_zdiffu = 0.02 # TODO: import from Fortran, note: same variable in diffusion has different value
-    thhgtd_zdiffu = 125 # TODO: import from Fortran, note: same variable in diffusion has different value
-    c_owner_mask = grid_savepoint.c_owner_mask()
-    ji = -1
-    i_masklist = [0] * icon_grid.num_cells
-    k_start = [None] * icon_grid.num_cells
-    k_end = [None] * icon_grid.num_cells
-    i_indlist = [0] * icon_grid.num_cells
+    thslp_zdiffu = (
+        0.02  # TODO: import from Fortran, note: same variable in diffusion has different value
+    )
+    thhgtd_zdiffu = (
+        125  # TODO: import from Fortran, note: same variable in diffusion has different value
+    )
+    c_owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     maxslp = zero_field(icon_grid, CellDim, KDim)
     maxhgtd = zero_field(icon_grid, CellDim, KDim)
     max_nbhgt = zero_field(icon_grid, CellDim)
+    c2e2c = icon_grid.connectivities[C2E2CDim]
+    nbidx = constant_field(icon_grid, 1, CellDim, C2E2CDim, KDim, dtype=int).asnumpy()
 
     _compute_maxslp_maxhgtd(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         out=(maxslp, maxhgtd),
-        domain={CellDim:(cell_lateral, icon_grid.num_cells), KDim: (int32(0), nlev)},
+        domain={CellDim: (cell_lateral, icon_grid.num_cells), KDim: (int32(0), nlev)},
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
@@ -941,6 +956,7 @@ def test_compute_mask_hdiff(metrics_savepoint, interpolation_savepoint, icon_gri
         vertical_end=nlev,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
+    z_mc_off = z_mc.asnumpy()[c2e2c]
 
     compute_z_maxslp_avg_z_maxhgtd_avg.with_backend(backend)(
         maxslp=maxslp,
@@ -955,17 +971,9 @@ def test_compute_mask_hdiff(metrics_savepoint, interpolation_savepoint, icon_gri
         horizontal_end=int32(icon_grid.num_cells),
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")}
+        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
     )
 
-    for jc in range(cell_nudging, icon_grid.num_cells):
-        if ((z_maxslp_avg[jc, nlev - 1] >= thslp_zdiffu or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu) and c_owner_mask[jc]):
-            ji += 1
-            i_masklist[jc] = 1
-            i_indlist[ji] = jc
-
-    i_listdim = ji
-    i_listreduce = 0
     _compute_max_nbhgt(
         z_mc_nlev=as_field((CellDim,), z_mc.asnumpy()[:, nlev - 1]),
         out=max_nbhgt,
@@ -973,80 +981,57 @@ def test_compute_mask_hdiff(metrics_savepoint, interpolation_savepoint, icon_gri
         offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
     )
 
-    for jc in range(cell_nudging, icon_grid.num_cells):
-        if i_masklist[jc] == 1:
+    k_start, k_end = _compute_k_start_end(
+        z_mc.asnumpy(),
+        max_nbhgt.asnumpy(),
+        z_maxslp_avg.asnumpy(),
+        z_maxhgtd_avg.asnumpy(),
+        c_owner_mask,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+        cell_nudging,
+        icon_grid.num_cells,
+        nlev,
+    )
 
-            for jk in reversed(range(nlev)):
-                if z_mc.asnumpy()[jc, jk] >= max_nbhgt.asnumpy()[jc]:
-                    k_end[jc] = jk + 1
-                    break
+    i_indlist, i_listreduce, ji = _compute_i_params(
+        k_start,
+        k_end,
+        z_maxslp_avg.asnumpy(),
+        z_maxhgtd_avg.asnumpy(),
+        c_owner_mask,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+        cell_nudging,
+        icon_grid.num_cells,
+        nlev,
+    )
 
-            for jk in range(nlev):
-                if z_maxslp_avg.asnumpy()[jc, jk] >= thslp_zdiffu or z_maxhgtd_avg.asnumpy()[jc, jk] >= thhgtd_zdiffu:
-                    k_start[jc] = jk
-                    break
-
-            if k_start[jc] is not None and k_end[jc] is not None and k_start[jc] > k_end[jc]:
-                i_masklist[jc] = 0
-                i_listreduce += 1
-                k_start[jc] = nlev - 1
-
-
-    i_listdim = i_listdim - i_listreduce
-
-    ji = -1
-    for jc in range(cell_nudging, icon_grid.num_cells):
-        if i_masklist[jc] == 1:
-            ji += 1
-            i_indlist[ji] = jc
-
-    c2e2c = icon_grid.connectivities[C2E2CDim]
-    nbidx = constant_field(icon_grid, nlev, CellDim, C2E2CDim, KDim, dtype=int).asnumpy()
-    # for jc in range(cell_nudging, icon_grid.num_cells):
-    #     if i_masklist[jc] == 1:
-    #         jk_start = nlev - 1
-    #         if k_start[jc] is not None and k_end[jc] is not None:
-    #             for jk in reversed(range(k_start[jc], k_end[jc])):
-    #                 for jk1 in reversed(range(jk_start)):
-    #                     # if jc == 3320 and jk == 56:
-    #                     #     a = 1
-    #                     if z_mc.asnumpy()[jc, jk] <= z_mc.asnumpy()[c2e2c][jc, 0, jk1] and z_mc.asnumpy()[jc, jk] >= z_mc.asnumpy()[c2e2c][jc, 0, jk1+1]:
-    #                         nbidx[jc, 0, jk] = jk1
-    #                         jk_start = jk1
-    #                         break
-    #
-    #         jk_start = nlev - 1
-    #         if k_start[jc] is not None and k_end[jc] is not None:
-    #             for jk in reversed(range(k_start[jc], k_end[jc])):
-    #                 for jk1 in reversed(range(jk_start)):
-    #                     if z_mc.asnumpy()[jc, jk] <= z_mc.asnumpy()[c2e2c][jc, 1, jk1] and z_mc.asnumpy()[jc, jk] >= z_mc.asnumpy()[c2e2c][jc, 1, jk1+1]:
-    #                         nbidx[jc, 1, jk] = jk1
-    #                         jk_start = jk1
-    #                         break
-    #
-    #         jk_start = nlev - 1
-    #         if k_start[jc] is not None and k_end[jc] is not None:
-    #             for jk in reversed(range(k_start[jc], k_end[jc])):
-    #                 for jk1 in reversed(range(jk_start)):
-    #                     if z_mc.asnumpy()[jc, jk] <= z_mc.asnumpy()[c2e2c][jc, 2, jk1] and z_mc.asnumpy()[jc, jk] >= z_mc.asnumpy()[c2e2c][jc, 2, jk1+1]:
-    #                         nbidx[jc, 2, jk] = jk1
-    #                         jk_start = jk1
-    #                         break
-
-    for ji in range(i_listdim):
-        jc = i_indlist[ji]
-        if k_start[jc] is not None and k_end[jc] is not None:
-            for jk in range(k_start[jc], k_end[jc]):
-                mask_hdiff[jc, jk] = True
-                zd_diffcoef_dsl_var = max(0.0, math.sqrt(max(0.0, z_maxslp_avg.asnumpy()[jc, jk] - thslp_zdiffu)) / 250.0,
-                                       2.e-4 * math.sqrt(max(0.0, z_maxhgtd_avg.asnumpy()[jc, jk] - thhgtd_zdiffu)))
-                zd_diffcoef_dsl_var = min(1.0 / 500.0, zd_diffcoef_dsl_var)
-                zd_diffcoef_dsl[jc, jk] = zd_diffcoef_dsl_var
-                # zd_vertoffset_dsl[jc, 0, jk] = nbidx[jc, 0, jk] - jk
-                # zd_vertoffset_dsl[jc, 1, jk] = nbidx[jc, 1, jk] - jk
-                # zd_vertoffset_dsl[jc, 2, jk] = nbidx[jc, 2, jk] - jk
+    i_listdim = ji - i_listreduce
+    mask_hdiff = _compute_mask_hdiff(mask_hdiff, k_start, k_end, i_indlist, i_listdim)
+    zd_diffcoef_dsl = _compute_zd_diffcoef_dsl(
+        z_maxslp_avg.asnumpy(),
+        z_maxhgtd_avg.asnumpy(),
+        k_start,
+        k_end,
+        i_indlist,
+        i_listdim,
+        zd_diffcoef_dsl,
+        thslp_zdiffu,
+        thhgtd_zdiffu,
+    )
+    zd_vertoffset_dsl = _compute_zd_vertoffset_dsl(
+        k_start,
+        k_end,
+        z_mc.asnumpy(),
+        z_mc_off,
+        nbidx,
+        i_indlist,
+        i_listdim,
+        zd_vertoffset_dsl,
+        nlev,
+    )
 
     assert dallclose(mask_hdiff, mask_hdiff_ref.asnumpy())
-    assert dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy())
-    # assert dallclose(zd_vertoffset_dsl[:, 0, :], zd_vertoffset_ref.asnumpy()[:, 0, :])
-
+    assert dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11)
+    assert dallclose(zd_vertoffset_dsl, zd_vertoffset_ref.asnumpy())
