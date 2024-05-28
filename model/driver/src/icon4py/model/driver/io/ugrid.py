@@ -28,25 +28,29 @@ log = logging.getLogger(__name__)
 FILL_VALUE = GridFile.INVALID_INDEX
 MESH = "mesh"
 
-HORIZONTAL_DIMENSION_MAPPING:Final[dict[Dimension, str]] = {CellDim: "cell", EdgeDim: "edge", VertexDim: "vertex"}
+HORIZONTAL_DIMENSION_MAPPING: Final[dict[Dimension, str]] = {
+    CellDim: "cell",
+    EdgeDim: "edge",
+    VertexDim: "vertex",
+}
 
-COORDINATES_MAPPING:Final[dict[Dimension, str]] = {
+COORDINATES_MAPPING: Final[dict[Dimension, str]] = {
     CellDim: "clon clat",
     VertexDim: "vlon vlat",
     EdgeDim: "elon elat",
 }
 
-LOCATION_MAPPING:Final[dict[Dimension, str]] = {
+LOCATION_MAPPING: Final[dict[Dimension, str]] = {
     CellDim: "face",
     VertexDim: "node",
     EdgeDim: "edge",
 }
 
 
-def extract_horizontal_coordinates(ds: xa.Dataset)-> dict:
+def extract_horizontal_coordinates(ds: xa.Dataset) -> dict:
     """
     Extract the coordinates from the ICON grid file.
-    
+
     TODO (@halungge) does it  work for decomposed grids?
     """
     return dict(
@@ -67,9 +71,6 @@ def dimension_mapping(dim: Dimension, is_on_interface: bool) -> str:
         return HORIZONTAL_DIMENSION_MAPPING[dim]
 
 
-
-
-
 def ugrid_attributes(dim: Dimension) -> dict:
     if dim.kind == DimensionKind.HORIZONTAL:
         return dict(location=LOCATION_MAPPING[dim], coordinates=COORDINATES_MAPPING[dim], mesh=MESH)
@@ -77,7 +78,7 @@ def ugrid_attributes(dim: Dimension) -> dict:
         return {}
 
 
-def extract_bounds(ds: xa.Dataset)->dict:
+def extract_bounds(ds: xa.Dataset) -> dict:
     """
     Extract the bounds from the ICON grid file.
     TODO (@halungge) does it  work for decomposed grids?
@@ -126,7 +127,7 @@ class IconUGridPatcher:
         # "child_edge_index",
 
     @staticmethod
-    def _add_mesh_var(ds: xa.Dataset)->None:
+    def _add_mesh_var(ds: xa.Dataset) -> None:
         """Add the `mesh` variable and mappings for coordinates and connectivities to the ICON grid file."""
         ds["mesh"] = xa.DataArray(
             -1,  # A dummy value for creating the DataArray with the actual attributes
@@ -148,18 +149,18 @@ class IconUGridPatcher:
             ),
         )
 
-    def _patch_start_index(self, ds: xa.Dataset, with_zero_start_index: bool = False)->None:
+    def _patch_start_index(self, ds: xa.Dataset, with_zero_start_index: bool = False) -> None:
         """Patch the start index of the index lists in the ICON grid file.
-        
+
         Adds the 'start_index' attribute to index lists in the grid file.
-        
-        TODO: (@halungge) According to UGRID conventions 1 based index arrays should be converted 
-                on the fly by setting the 'start_index' attribute to 1. We do it manually here until it is implemented 
-                in UXarray. 
+
+        TODO: (@halungge) According to UGRID conventions 1 based index arrays should be converted
+                on the fly by setting the 'start_index' attribute to 1. We do it manually here until it is implemented
+                in UXarray.
         Args:
             ds: ICON grid file as xarray dataset
-            with_zero_start_index: If True, the 'start_index' is set to 0 and the indices shifted, otherwise 'start_index' = 1 and no further manipulation done on the indices.      
-                
+            with_zero_start_index: If True, the 'start_index' is set to 0 and the indices shifted, otherwise 'start_index' = 1 and no further manipulation done on the indices.
+
         """
         for var in self.index_lists:
             if var in ds:
@@ -170,13 +171,13 @@ class IconUGridPatcher:
                 else:
                     ds[var].attrs["start_index"] = 1
 
-    def _set_fill_value(self, ds: xa.Dataset)->None:
+    def _set_fill_value(self, ds: xa.Dataset) -> None:
         """Set the '_FillValue' attribute for the connectivity arrays in the ICON grid file."""
         for var in self.connectivities:
             if var in ds:
                 ds[var].attrs["_FillValue"] = FILL_VALUE
 
-    def _transpose_index_lists(self, ds: xa.Dataset)->None:
+    def _transpose_index_lists(self, ds: xa.Dataset) -> None:
         """Unify the dimension order of fields in ICON grid file.
 
         The ICON grid file contains some fields of order (sparse_dimension, horizontal_dimension)
@@ -193,7 +194,7 @@ class IconUGridPatcher:
                 )
 
     @staticmethod
-    def _validate(ds: xa.Dataset)->None:
+    def _validate(ds: xa.Dataset) -> None:
         grid = uxarray.open_grid(ds)
         try:
             grid.validate()
@@ -210,20 +211,22 @@ class IconUGridPatcher:
             self._validate(ds)
         return ds
 
+
 class IconUGridWriter:
     """
     Patch an ICON grid file with necessary information to make it compliant with UGRID conventions.
     """
+
     def __init__(self, original_filename: Union[Path, str], output_path: Union[Path, str]):
         self.original_filename = Path(original_filename)
         self.output_path = Path(output_path)
 
     @staticmethod
-    def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path)->None:
+    def dump_ugrid_file(ds: xa.Dataset, original_filename: Path, output_path: Path) -> None:
         stem = original_filename.stem
         filename = output_path.joinpath(stem + "_ugrid.nc")
         ds.to_netcdf(filename, format="NETCDF4", engine="netcdf4")
-        
+
     def __call__(self, validate: bool = False):
         patch = IconUGridPatcher()
         with load_data_file(self.original_filename) as ds:

@@ -20,7 +20,7 @@ from icon4py.model.driver.io.ugrid import dimension_mapping, ugrid_attributes
 
 
 ### CF attributes of the prognostic variables
-PROGNOSTIC_CF_ATTRIBUTES:Final[dict] = dict(
+PROGNOSTIC_CF_ATTRIBUTES: Final[dict] = dict(
     air_density=dict(
         standard_name="air_density", long_name="density", units="kg m-3", icon_var_name="rho"
     ),
@@ -57,7 +57,7 @@ PROGNOSTIC_CF_ATTRIBUTES:Final[dict] = dict(
 )
 
 ### CF attributes of diagnostic variables
-DIAGNOSTIC_CF_ATTRIBUTES:Final[dict] = dict(
+DIAGNOSTIC_CF_ATTRIBUTES: Final[dict] = dict(
     eastward_wind=dict(
         standard_name="eastward_wind",
         long_name="eastward wind component",
@@ -78,7 +78,7 @@ def to_data_array(
 ) -> xa.DataArray:
     """Convert a gt4py field to a xarray dataarray.
 
-    Args: 
+    Args:
         field: gt4py field,
         attrs: optional dictionary of metadata attributes to be added to the dataarray, empty by default.
         is_on_interface: optional boolean flag indicating if the 2d field is defined on the interface, False by default.
@@ -92,5 +92,5 @@ def to_data_array(
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
 
 
-def _is_horizontal(dim: Dimension)->bool:
+def _is_horizontal(dim: Dimension) -> bool:
     return dim.kind == DimensionKind.HORIZONTAL

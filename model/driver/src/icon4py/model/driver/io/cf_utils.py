@@ -35,11 +35,10 @@ COARDS_Z_POS: Final[int] = 1
 HORIZONTAL_POS: Final[int] = 2
 
 date2num = functools.partial(cftime.date2num, units=DEFAULT_TIME_UNIT, calendar=DEFAULT_CALENDAR)
-date2num.__doc__= """Convert a datetime object to a number.
+date2num.__doc__ = """Convert a datetime object to a number.
 
 Convenience method that sets units and calendar to the default values.
 """
-
 
 
 def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:

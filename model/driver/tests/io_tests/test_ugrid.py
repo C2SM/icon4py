@@ -57,7 +57,6 @@ def test_icon_ugrid_writer_writes_ugrid_file(file, test_path):
     output_dir = test_path.joinpath("output")
     output_dir.mkdir(0o755, exist_ok=True)
     writer = IconUGridWriter(file, output_dir)
-    
     writer(validate=False)
     fname = output_dir.iterdir().__next__().name
     assert fname == file.stem + "_ugrid.nc"
