@@ -176,6 +176,7 @@ class EdgeParams:
         inverse_primal_edge_lengths=None,
         dual_edge_lengths=None,
         inverse_dual_edge_lengths=None,
+        vertex_vertex_lengths=None,
         inverse_vertex_vertex_lengths=None,
         primal_normal_vert_x=None,
         primal_normal_vert_y=None,
@@ -241,6 +242,13 @@ class EdgeParams:
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
+        """
+
+        self.vertex_vertex_lengths: Field[[EdgeDim], float] = vertex_vertex_lengths
+        """
+        Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
+
+        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
         self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths

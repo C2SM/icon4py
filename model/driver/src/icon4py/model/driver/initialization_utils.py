@@ -755,6 +755,13 @@ def read_static_fields(
             ddqz_z_full=metrics_savepoint.ddqz_z_full(),
             rbf_vec_coeff_c1=rbf_vec_coeff_c1,
             rbf_vec_coeff_c2=rbf_vec_coeff_c2,
+            cell_center_lat=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).cell_center_lat(),
+            cell_center_lon=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).cell_center_lon(),
+            v_lat=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).v_lat(),
+            v_lon=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).v_lon(),
+            e_lat=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).edge_center_lat(),
+            e_lon=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).edge_center_lon(),
+            vct_a=data_provider.from_savepoint_grid(GRID_ROOT, GRID_LEVEL).vct_a(),
         )
 
         return (
