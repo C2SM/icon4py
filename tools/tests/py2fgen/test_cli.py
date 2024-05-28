@@ -159,8 +159,6 @@ def test_py2fgen_compilation_and_execution_multi_return_profile(
     )
 
 
-# todo: enable on CI
-@pytest.mark.skip("Requires setting ICON_GRID_LOC environment variable.")
 def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,
@@ -200,14 +198,11 @@ def test_py2fgen_compilation_and_execution_gpu(
         py2fbackend,
         samples_path,
         test_name,
-        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # Ensure NVFORTRAN_COMPILER is set in your environment variables
+        "nvfortran",
         extra_flags,
     )
 
 
-# todo: enable on CI
-# Need to compile using nvfortran, and set CUDACXX path to nvcc cuda compiler. Also need to set ICON_GRID_LOC for path to gridfile, and ICON4PY_BACKEND to determine device at runtime.
-@pytest.mark.skip("Requires setting various environment variables.")
 @pytest.mark.parametrize(
     "py2fbackend, extra_flags",
     [("GPU", ("-acc", "-Minfo=acc"))],
@@ -215,7 +210,7 @@ def test_py2fgen_compilation_and_execution_gpu(
 def test_py2fgen_compilation_and_execution_diffusion_gpu(
     cli_runner, samples_path, py2fbackend, extra_flags
 ):
-    # todo: requires setting ICON_GRID_LOC
+    # todo: requires setting ICON4PY_BACKEND=GPU
     run_test_case(
         cli_runner,
         "icon4pytools.py2fgen.wrappers.diffusion",
@@ -224,7 +219,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(
         py2fbackend,
         samples_path,
         "test_diffusion",
-        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # todo: set nvfortran location in base.yml file.
+        "nvfortran",
         extra_flags,
     )
 

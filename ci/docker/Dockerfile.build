@@ -1,4 +1,4 @@
-FROM docker.io/nvidia/cuda:11.2.2-devel-ubuntu20.04
+FROM nvcr.io/nvidia/nvhpc:21.3-devel-cuda11.2-ubuntu20.04
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
