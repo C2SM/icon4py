@@ -1,4 +1,4 @@
-FROM docker.io/nvidia/cuda:11.2.2-devel-ubuntu20.04
+FROM ubuntu:20.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -31,7 +31,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install Boost
-RUN wget --quiet -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
+RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
     echo c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f boost_1_72_0.tar.gz > boost_hash.txt && \
     sha256sum -c boost_hash.txt && \
     tar xzf boost_1_72_0.tar.gz && \
@@ -39,10 +39,9 @@ RUN wget --quiet -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/f
     rm boost_1_72_0.tar.gz boost_hash.txt
 
 ENV BOOST_ROOT /usr/local/
-ENV CUDA_HOME /usr/local/cuda
 
 # Install pyenv and Python version specified by PYVERSION
-ARG PYVERSION
+ENV PYVERSION 3.10.9
 RUN curl https://pyenv.run | bash
 
 ENV PYENV_ROOT /root/.pyenv
@@ -58,9 +57,9 @@ ENV PATH="/root/.pyenv/shims:${PATH}"
 
 # Install Python packages
 COPY . /icon4py
-RUN pip install --upgrade pip setuptools wheel tox cupy-cuda11x clang-format
+RUN pip install --upgrade pip setuptools wheel tox cupy clang-format
 
-# Install NVIDIA HPC SDK required for nvfortran
+# Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=21.3
 ARG HPC_SDK_NAME=nvhpc_2021_213_Linux_x86_64_cuda_11.2
 ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/21.3/${HPC_SDK_NAME}.tar.gz
@@ -71,6 +70,9 @@ RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     rm /tmp/nvhpc.tar.gz
 
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
+
+# Source the HPC SDK environment script
+RUN echo "source /opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin/makelocalrc" >> /root/.bashrc
 
 ENV NVHPC=/opt/nvidia/hpc_sdk
 ENV PATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin:${PATH}
