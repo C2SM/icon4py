@@ -42,17 +42,11 @@ RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
 
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
-# Source the HPC SDK environment script
-RUN echo "source /opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin/makelocalrc" >> /root/.bashrc
-
 ENV NVHPC=/opt/nvidia/hpc_sdk
 ENV PATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin:${PATH}
 ENV LD_LIBRARY_PATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/lib:${LD_LIBRARY_PATH}
 ENV MANPATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/man:${MANPATH}
 ENV LM_LICENSE_FILE=${NVHPC}/licenses
-
-# Ensure the environment variables are set in the running shell
-RUN /bin/bash -c "source /opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin/makelocalrc"
 
 # Install Boost
 RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
