@@ -35,7 +35,7 @@ MCH_CH_R04B09_LEVELS = 65
 @functools.cache
 def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGrid:
     if experiment == GLOBAL_EXPERIMENT:
-        return _load_from_gridfile(
+        return _download_and_load_from_gridfile(
             R02B04_GLOBAL,
             "icon_grid_0013_R02B04_R.nc",
             num_levels=GLOBAL_NUM_LEVELS,
@@ -43,7 +43,7 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> IconGr
             limited_area=False,
         )
     elif experiment == REGIONAL_EXPERIMENT:
-        return _load_from_gridfile(
+        return _download_and_load_from_gridfile(
             REGIONAL_EXPERIMENT,
             "grid.nc",
             num_levels=MCH_CH_R04B09_LEVELS,
@@ -77,7 +77,7 @@ def load_grid_from_file(
     return gm.get_grid()
 
 
-def _load_from_gridfile(
+def _download_and_load_from_gridfile(
     file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
 ) -> IconGrid:
     grid_file = download_grid_file(file_path, filename)
