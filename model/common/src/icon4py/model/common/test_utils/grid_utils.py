@@ -11,20 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
-from uuid import UUID
 
 import pytest
 
-from icon4py.model.common.grid.grid_manager import GridManager, ToGt4PyTransformation
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.common.test_utils.datatest_utils import (
-    GLOBAL_EXPERIMENT,
-    GRID_URIS,
-    GRIDS_PATH,
-    R02B04_GLOBAL,
-    REGIONAL_EXPERIMENT,
-)
+import icon4py.model.common.grid.grid_manager as gm
+import icon4py.model.common.test_utils.datatest_utils as dt_utils
+from icon4py.model.common.grid import icon, vertical
 
 
 REGIONAL_GRIDFILE = "grid.nc"
@@ -37,18 +29,18 @@ MCH_CH_R04B09_LEVELS = 65
 
 
 @functools.cache
-def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> tuple[IconGrid, UUID]:
-    if experiment == GLOBAL_EXPERIMENT:
+def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> icon.IconGrid:
+    if experiment == dt_utils.GLOBAL_EXPERIMENT:
         return _load_from_gridfile(
-            R02B04_GLOBAL,
+            dt_utils.R02B04_GLOBAL,
             GLOBAL_GRIDFILE,
             num_levels=GLOBAL_NUM_LEVELS,
             on_gpu=on_gpu,
             limited_area=False,
         )
-    elif experiment == REGIONAL_EXPERIMENT:
+    elif experiment == dt_utils.REGIONAL_EXPERIMENT:
         return _load_from_gridfile(
-            REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT,
             REGIONAL_GRIDFILE,
             num_levels=MCH_CH_R04B09_LEVELS,
             on_gpu=on_gpu,
@@ -60,23 +52,23 @@ def get_icon_grid_from_gridfile(experiment: str, on_gpu: bool = False) -> tuple[
 
 def _load_from_gridfile(
     file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
-) -> tuple[IconGrid, UUID]:
-    grid_file = GRIDS_PATH.joinpath(file_path, filename)
+) -> icon.IconGrid:
+    grid_file = dt_utils.GRIDS_PATH.joinpath(file_path, filename)
     if not grid_file.exists():
         from icon4py.model.common.test_utils.data_handling import download_and_extract
 
         download_and_extract(
-            GRID_URIS[file_path],
+            dt_utils.GRID_URIS[file_path],
             grid_file.parent,
             grid_file.parent,
         )
-    gm = GridManager(
-        ToGt4PyTransformation(),
+    manager = gm.GridManager(
+        gm.ToGt4PyTransformation(),
         str(grid_file),
-        VerticalGridSize(num_levels),
+        vertical.VerticalGridSize(num_levels),
     )
-    gm(on_gpu=on_gpu, limited_area=limited_area)
-    return gm.get_grid(), gm.grid_id
+    manager(on_gpu=on_gpu, limited_area=limited_area)
+    return manager.grid
 
 
 @pytest.fixture

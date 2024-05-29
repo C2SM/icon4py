@@ -165,8 +165,8 @@ def test_io_monitor_write_ugrid_file(test_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid, grid_id = grid_utils.get_icon_grid_from_gridfile(
-        grid_utils.GLOBAL_EXPERIMENT, on_gpu=False
+    grid = grid_utils.get_icon_grid_from_gridfile(
+        datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
     )
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
@@ -185,7 +185,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         grid.config.vertical_config,
         grid.config.horizontal_config,
         grid_file,
-        str(grid_id),
+        str(grid.id),
     )
     start_time = dt.datetime.fromisoformat(configured_output_start)
     monitor.store(state, start_time)
@@ -210,8 +210,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
-    grid, grid_id = grid_utils.get_icon_grid_from_gridfile(
-        grid_utils.GLOBAL_EXPERIMENT, on_gpu=False
+    grid = grid_utils.get_icon_grid_from_gridfile(
+        datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
     )
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
@@ -227,7 +227,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
         config,
         vertical=grid.config.vertical_config,
         horizontal=grid.config.horizontal_config,
-        grid_id=str(grid_id),
+        grid_id=str(grid.id),
         output_path=test_path,
     )
     time = dt.datetime.fromisoformat(configured_output_start)

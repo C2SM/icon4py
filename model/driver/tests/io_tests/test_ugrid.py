@@ -31,7 +31,7 @@ def grid_files():
     ]
 
     for ff in files:
-        yield grid_utils.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
+        yield datatest_utils.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
 
 
 @pytest.mark.parametrize("file", grid_files())

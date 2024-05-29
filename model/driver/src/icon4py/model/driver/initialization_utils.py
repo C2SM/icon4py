@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import functools
 import logging
 import math
 from enum import Enum
@@ -62,7 +62,7 @@ from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpol
 )
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4py.model.driver.jablonowski_willamson_testcase import zonalwind_2_normalwind_jabw_numpy
 from icon4py.model.driver.serialbox_helpers import (
@@ -72,6 +72,10 @@ from icon4py.model.driver.serialbox_helpers import (
 )
 from icon4py.model.driver.testcase_functions import hydrostatic_adjustment_numpy
 
+
+GRID_LEVEL = 4
+GRID_ROOT = 2
+GLOBAL_GRID_ID = dt_utils.GRID_IDS[dt_utils.GLOBAL_EXPERIMENT]
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = (
@@ -110,7 +114,11 @@ def read_icon_grid(
     if ser_type == SerializationType.SB:
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(2, 4)
+            .from_savepoint_grid(
+                GLOBAL_GRID_ID,
+                GRID_ROOT,
+                GRID_LEVEL,
+            )
             .construct_icon_grid(on_gpu=False)
         )
     else:
@@ -411,9 +419,7 @@ def model_initialization_serialbox(icon_grid: IconGrid, path: Path, rank=0):
 
     """
 
-    data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-    )
+    data_provider = _serial_data_provider(path, rank)
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
@@ -551,9 +557,7 @@ def read_geometry_fields(
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        ).from_savepoint_grid(2, 4)
+        sp = _grid_savepoint(path, rank)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vertical_geometry = VerticalModelParams(
@@ -567,16 +571,26 @@ def read_geometry_fields(
         raise NotImplementedError(SB_ONLY_MSG)
 
 
+@functools.cache
+def _serial_data_provider(path, rank) -> sb.IconSerialDataProvider:
+    return sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+
+
+@functools.cache
+def _grid_savepoint(path, rank) -> sb.IconGridSavepoint:
+    sp = _serial_data_provider(path, rank).from_savepoint_grid(
+        GLOBAL_GRID_ID, GRID_ROOT, GRID_LEVEL
+    )
+    return sp
+
+
 def read_decomp_info(
     path: Path,
     procs_props: ProcessProperties,
     ser_type=SerializationType.SB,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), True, procs_props.rank
-        )
-        return sp.from_savepoint_grid(2, 4).construct_decomposition_info()
+        return _grid_savepoint(path, procs_props.rank).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -608,14 +622,10 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        data_provider = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        )
-        icon_grid = (
-            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(2, 4)
-            .construct_icon_grid(on_gpu=False)
-        )
+        data_provider = _serial_data_provider(path, rank)
+
+        icon_grid = _grid_savepoint(path, rank).construct_icon_grid(on_gpu=False)
+
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
         )

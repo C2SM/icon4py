@@ -10,11 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import dataclasses
+import uuid
 
-from dataclasses import dataclass
-
+import gt4py.next as gt_next
 import numpy as np
-from gt4py.next import Dimension
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -63,7 +63,7 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridS
 from icon4py.model.common.grid.vertical import VerticalGridSize
 
 
-@dataclass
+@dataclasses.dataclass
 class SimpleGridData:
     c2v_table = np.asarray(
         [
@@ -400,6 +400,7 @@ class SimpleGrid(BaseGrid):
     def __init__(self):
         """Instantiate a SimpleGrid used for testing purposes."""
         super().__init__()
+
         self._configure()
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
@@ -412,13 +413,33 @@ class SimpleGrid(BaseGrid):
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                C2EDim,
+                CellDim,
+                CEDim,
+            ),
             "Koff": (lambda: KDim,),  # Koff is a special case
             "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
             "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                E2C2VDim,
+                EdgeDim,
+                ECVDim,
+            ),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                E2CDim,
+                EdgeDim,
+                ECDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2CDim,
+                CellDim,
+                CECDim,
+            ),
             "C2CECEC": (
                 self._get_offset_provider_for_sparse_fields,
                 C2E2C2E2CDim,
@@ -448,10 +469,10 @@ class SimpleGrid(BaseGrid):
         return self.config.num_levels
 
     @property
-    def id(self) -> str:
-        return __class__.__name__
+    def id(self) -> uuid.UUID:
+        return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
 
-    def _has_skip_values(self, dimension: Dimension) -> bool:
+    def _has_skip_values(self, dimension: gt_next.Dimension) -> bool:
         return False
 
     def _configure(self):

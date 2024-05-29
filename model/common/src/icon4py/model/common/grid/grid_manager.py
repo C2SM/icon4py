@@ -14,10 +14,9 @@ import dataclasses
 import logging
 from enum import Enum
 from typing import Optional
-from uuid import UUID
 
+import gt4py.next.common as gt_common
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind
 
 
 try:
@@ -51,8 +50,11 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid import (
+    base as grid_def,
+    icon as icon_grid,
+    vertical as v_grid,
+)
 
 
 class GridFileName(str, Enum):
@@ -233,24 +235,18 @@ class GridManager:
         self,
         transformation: IndexTransformation,
         grid_file: str,
-        config: VerticalGridSize,
+        config: v_grid.VerticalGridSize,
     ):
         self._log = logging.getLogger(__name__)
         self._transformation = transformation
         self._config = config
-        self._grid: Optional[IconGrid] = None
+        self._grid: Optional[icon_grid.IconGrid] = None
         self._file_name = grid_file
-        self._grid_id = None
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
         dataset = self._read_gridfile(self._file_name)
-        uid, grid = self._construct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
-        self._grid_id = uid
+        grid = self._construct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
-
-    @property
-    def grid_id(self):
-        return self._grid_id
 
     def _read_gridfile(self, fname: str) -> Dataset:
         try:
@@ -318,11 +314,12 @@ class GridManager:
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
 
-    def get_grid(self):
+    @property
+    def grid(self):
         return self._grid
 
-    def _get_index(self, dim: Dimension, start_marker: int, index_dict):
-        if dim.kind != DimensionKind.HORIZONTAL:
+    def _get_index(self, dim: gt_common.Dimension, start_marker: int, index_dict):
+        if dim.kind != gt_common.DimensionKind.HORIZONTAL:
             msg = f"getting start index in horizontal domain with non - horizontal dimension {dim}"
             self._log.warning(msg)
             raise IconGridError(msg)
@@ -335,11 +332,10 @@ class GridManager:
 
     def _construct_grid(
         self, dataset: Dataset, on_gpu: bool, limited_area: bool
-    ) -> tuple[UUID, IconGrid]:
-        grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
-        return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
+    ) -> icon_grid.IconGrid:
+        return self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
 
-    def get_size(self, dim: Dimension):
+    def get_size(self, dim: gt_common.Dimension):
         if dim == VertexDim:
             return self._grid.config.num_vertices
         elif dim == CellDim:
@@ -363,16 +359,19 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_grid_dataset(self, dataset: Dataset, on_gpu: bool, limited_area=True) -> IconGrid:
+    def _from_grid_dataset(
+        self, dataset: Dataset, on_gpu: bool, limited_area=True
+    ) -> icon_grid.IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
         num_vertices = reader.dimension(GridFile.DimensionName.VERTEX_NAME)
+        uuid = dataset.getncattr(GridFile.PropertyName.GRID_ID)
         grid_level = dataset.getncattr(GridFile.PropertyName.LEVEL)
         grid_root = dataset.getncattr(GridFile.PropertyName.ROOT)
-        global_params = GlobalGridParams(level=grid_level, root=grid_root)
+        global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
 
-        grid_size = HorizontalGridSize(
+        grid_size = grid_def.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         c2e = self._get_index_field(reader, GridFile.OffsetName.C2E)
@@ -397,14 +396,14 @@ class GridManager:
             refine_ctrl_max,
         ) = self._read_grid_refinement_information(dataset)
 
-        config = GridConfig(
+        config = grid_def.GridConfig(
             horizontal_config=grid_size,
             vertical_config=self._config,
             on_gpu=on_gpu,
             limited_area=limited_area,
         )
-        icon_grid = (
-            IconGrid()
+        grid = (
+            icon_grid.IconGrid(uuid)
             .with_config(config)
             .with_global_params(global_params)
             .with_connectivities(
@@ -427,15 +426,15 @@ class GridManager:
             .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
             .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
         )
-        icon_grid.update_size_connectivities(
+        grid.update_size_connectivities(
             {
-                ECVDim: icon_grid.size[EdgeDim] * icon_grid.size[E2C2VDim],
-                CEDim: icon_grid.size[CellDim] * icon_grid.size[C2EDim],
-                ECDim: icon_grid.size[EdgeDim] * icon_grid.size[E2CDim],
+                ECVDim: grid.size[EdgeDim] * grid.size[E2C2VDim],
+                CEDim: grid.size[CellDim] * grid.size[C2EDim],
+                ECDim: grid.size[EdgeDim] * grid.size[E2CDim],
             }
         )
-        icon_grid.id = self._grid_id
-        return icon_grid
+
+        return grid
 
     @staticmethod
     def _construct_diamond_vertices(

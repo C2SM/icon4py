@@ -10,12 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass
-from functools import cached_property
+import dataclasses
+import functools
+import uuid
 
+import gt4py.next.common as gt_common
+import gt4py.next.ffront.fbuiltins as gt_builtins
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -45,20 +46,21 @@ from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class GlobalGridParams:
     root: int
     level: int
 
-    @cached_property
+    @functools.cached_property
     def num_cells(self):
         return 20.0 * self.root**2 * 4.0**self.level
 
 
 class IconGrid(BaseGrid):
-    def __init__(self):
+    def __init__(self, id_: uuid.UUID):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
+        self._id = id_
         self.start_indices = {}
         self.end_indices = {}
         self.global_properties = None
@@ -68,15 +70,35 @@ class IconGrid(BaseGrid):
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
             "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                E2CDim,
+                EdgeDim,
+                ECDim,
+            ),
             "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
             "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
             "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
             "C2V": (self._get_offset_provider, C2VDim, CellDim, VertexDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                E2C2VDim,
+                EdgeDim,
+                ECVDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                C2E2CDim,
+                CellDim,
+                CECDim,
+            ),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                C2EDim,
+                CellDim,
+                CEDim,
+            ),
             "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
             "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
@@ -87,14 +109,13 @@ class IconGrid(BaseGrid):
                 CECECDim,
             ),
         }
-        self._id = __class__.__name__
 
     @builder
     def with_start_end_indices(
-        self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
+        self, dim: gt_common.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices.astype(int32)
-        self.end_indices[dim] = end_indices.astype(int32)
+        self.start_indices[dim] = start_indices.astype(gt_builtins.int32)
+        self.end_indices[dim] = end_indices.astype(gt_builtins.int32)
 
     @builder
     def with_global_params(self, global_params: GlobalGridParams):
@@ -131,14 +152,16 @@ class IconGrid(BaseGrid):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
 
-    def _has_skip_values(self, dimension: Dimension) -> bool:
+    def _has_skip_values(self, dimension: gt_common.Dimension) -> bool:
         """
         Determine whether a sparse dimension has skip values.
 
         For the icosahedral global grid skip values are only present for the pentagon points. In the local area model there are also skip values at the boundaries when
         accessing neighbouring cells or edges from vertices.
         """
-        assert dimension.kind == DimensionKind.LOCAL, "only local dimensions can have skip values"
+        assert (
+            dimension.kind == gt_common.DimensionKind.LOCAL
+        ), "only local dimensions can have skip values"
         if dimension in (V2EDim, V2CDim):
             return True
         elif self.limited_area:
@@ -160,10 +183,6 @@ class IconGrid(BaseGrid):
     def id(self):
         return self._id
 
-    @id.setter
-    def id(self, value: str):
-        self._id = value
-
     @property
     def n_shift(self):
         return self.config.n_shift_total if self.config else 0
@@ -172,7 +191,7 @@ class IconGrid(BaseGrid):
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
-    def get_start_index(self, dim: Dimension, marker: int) -> int32:
+    def get_start_index(self, dim: gt_common.Dimension, marker: int) -> gt_builtins.int32:
         """
         Use to specify lower end of domains of a field for field_operators.
 
@@ -181,7 +200,7 @@ class IconGrid(BaseGrid):
         """
         return self.start_indices[dim][marker]
 
-    def get_end_index(self, dim: Dimension, marker: int) -> int32:
+    def get_end_index(self, dim: gt_common.Dimension, marker: int) -> gt_builtins.int32:
         """
         Use to specify upper end of domains of a field for field_operators.
 

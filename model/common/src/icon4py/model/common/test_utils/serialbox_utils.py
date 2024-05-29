@@ -12,16 +12,16 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import functools
 import logging
+import uuid
 
 import numpy as np
 import serialbox
-import serialbox as ser
 from gt4py.next import as_field
 from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.decomposition.definitions as decomposition
 from icon4py.model.common import dimension
-from icon4py.model.common.decomposition.definitions import DecompositionInfo
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
     C2E2CDim,
@@ -44,18 +44,19 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid import base, horizontal, icon, vertical
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    flatten_first_two_dims,
+)
 
 
 log = logging.getLogger(__name__)
 
 
 class IconSavepoint:
-    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict):
+    def __init__(self, sp: serialbox.Savepoint, ser: serialbox.Serializer, size: dict):
         self.savepoint = sp
         self.serializer = ser
         self.sizes = size
@@ -143,9 +144,18 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
-    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int):
+    def __init__(
+        self,
+        sp: serialbox.Savepoint,
+        ser: serialbox.Serializer,
+        grid_id: uuid.UUID,
+        size: dict,
+        root: int,
+        level: int,
+    ):
         super().__init__(sp, ser, size)
-        self.global_grid_params = GlobalGridParams(root, level)
+        self._grid_id = grid_id
+        self.global_grid_params = icon.GlobalGridParams(root, level)
 
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)
@@ -361,7 +371,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def construct_decomposition_info(self):
         return (
-            DecompositionInfo(klevels=self.num(KDim))
+            decomposition.DecompositionInfo(klevels=self.num(KDim))
             .with_dimension(*self._get_decomp_fields(CellDim))
             .with_dimension(*self._get_decomp_fields(EdgeDim))
             .with_dimension(*self._get_decomp_fields(VertexDim))
@@ -372,7 +382,7 @@ class IconGridSavepoint(IconSavepoint):
         mask = self.owner_mask(dim)[0 : self.num(dim)]
         return dim, global_index, mask
 
-    def construct_icon_grid(self, on_gpu: bool) -> IconGrid:
+    def construct_icon_grid(self, on_gpu: bool) -> icon.IconGrid:
         cell_starts = self.cells_start_index()
         cell_ends = self.cells_end_index()
         vertex_starts = self.vertex_start_index()
@@ -380,13 +390,13 @@ class IconGridSavepoint(IconSavepoint):
         edge_starts = self.edge_start_index()
         edge_ends = self.edge_end_index()
 
-        config = GridConfig(
-            horizontal_config=HorizontalGridSize(
+        config = base.GridConfig(
+            horizontal_config=horizontal.HorizontalGridSize(
                 num_vertices=self.num(VertexDim),
                 num_cells=self.num(CellDim),
                 num_edges=self.num(EdgeDim),
             ),
-            vertical_config=VerticalGridSize(num_lev=self.num(KDim)),
+            vertical_config=vertical.VerticalGridSize(num_lev=self.num(KDim)),
             limited_area=self.get_metadata("limited_area").get("limited_area"),
             on_gpu=on_gpu,
         )
@@ -395,7 +405,7 @@ class IconGridSavepoint(IconSavepoint):
         c2e2c0 = np.column_stack(((np.asarray(range(c2e2c.shape[0]))), c2e2c))
         e2c2e0 = np.column_stack(((np.asarray(range(e2c2e.shape[0]))), e2c2e))
         grid = (
-            IconGrid()
+            icon.IconGrid(self._grid_id)
             .with_config(config)
             .with_global_params(self.global_grid_params)
             .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
@@ -433,7 +443,7 @@ class IconGridSavepoint(IconSavepoint):
 
         return grid
 
-    def construct_edge_geometry(self) -> EdgeParams:
+    def construct_edge_geometry(self) -> horizontal.EdgeParams:
         primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
             as_1D_sparse_field(self.primal_normal_vert_x(), ECVDim),
             as_1D_sparse_field(self.primal_normal_vert_y(), ECVDim),
@@ -452,7 +462,7 @@ class IconGridSavepoint(IconSavepoint):
             as_1D_sparse_field(self.dual_normal_cell_x(), ECDim),
             as_1D_sparse_field(self.dual_normal_cell_y(), ECDim),
         )
-        return EdgeParams(
+        return horizontal.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
@@ -473,8 +483,8 @@ class IconGridSavepoint(IconSavepoint):
             primal_normal_y=self.primal_normal_y(),
         )
 
-    def construct_cell_geometry(self) -> CellParams:
-        return CellParams.from_global_num_cells(
+    def construct_cell_geometry(self) -> horizontal.CellParams:
+        return horizontal.CellParams.from_global_num_cells(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
@@ -1296,7 +1306,7 @@ class IconJabwDiagnosticSavepoint(IconSavepoint):
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
         self.rank = mpi_rank
-        self.serializer: ser.Serializer = None
+        self.serializer: serialbox.Serializer = None
         self.file_path: str = path
         self.fname = f"{fname_prefix}_rank{self.rank!s}"
         self.log = logging.getLogger(__name__)
@@ -1306,7 +1316,9 @@ class IconSerialDataProvider:
     def _init_serializer(self, do_print: bool):
         if not self.fname:
             self.log.warning(" WARNING: no filename! closing serializer")
-        self.serializer = ser.Serializer(ser.OpenModeKind.Read, self.file_path, self.fname)
+        self.serializer = serialbox.Serializer(
+            serialbox.OpenModeKind.Read, self.file_path, self.fname
+        )
         if do_print:
             self.print_info()
 
@@ -1324,10 +1336,17 @@ class IconSerialDataProvider:
         }
         return grid_sizes
 
-    def from_savepoint_grid(self, grid_root, grid_level) -> IconGridSavepoint:
+    def from_savepoint_grid(
+        self, grid_id: uuid.UUID, grid_root: int, grid_level: int
+    ) -> IconGridSavepoint:
         savepoint = self._get_icon_grid_savepoint()
         return IconGridSavepoint(
-            savepoint, self.serializer, size=self.grid_size, root=grid_root, level=grid_level
+            savepoint,
+            self.serializer,
+            grid_id=grid_id,
+            size=self.grid_size,
+            root=grid_root,
+            level=grid_level,
         )
 
     def _get_icon_grid_savepoint(self):
