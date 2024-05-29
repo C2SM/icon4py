@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import functools
 from typing import Final
 
 import cftime
@@ -34,11 +33,15 @@ COARDS_T_POS: Final[int] = 0
 COARDS_Z_POS: Final[int] = 1
 HORIZONTAL_POS: Final[int] = 2
 
-date2num = functools.partial(cftime.date2num, units=DEFAULT_TIME_UNIT, calendar=DEFAULT_CALENDAR)
-date2num.__doc__ = """Convert a datetime object to a number.
 
-Convenience method that sets units and calendar to the default values.
-"""
+def date2num(date, units=DEFAULT_TIME_UNIT, calendar=DEFAULT_CALENDAR):
+    """
+
+    Convert a datetime object to a number.
+
+    Convenience method that makes units and calendar optional and uses the default values.
+    """
+    return cftime.date2num(date, units=units, calendar=calendar)
 
 
 def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
