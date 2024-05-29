@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import dataclasses
 import logging
 import pathlib
 from datetime import datetime
@@ -28,6 +28,12 @@ log = logging.getLogger(__name__)
 processor_properties = decomp_defs.SingleNodeProcessProperties()
 
 
+@dataclasses.dataclass
+class TimeProperties:
+    units: str
+    calendar: str
+
+
 class NetcdfWriter:
     """
     Writer for netcdf files.
@@ -42,11 +48,13 @@ class NetcdfWriter:
         file_name: pathlib.Path,
         vertical: v_grid.VerticalGridSize,
         horizontal: h_grid.HorizontalGridSize,
+        time_properties: TimeProperties,
         global_attrs: dict,
         process_properties: decomp_defs.ProcessProperties = processor_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties
+        self._time_properties = time_properties
         self.num_levels = vertical.num_lev
         self.horizontal_size = horizontal
         self.attrs = global_attrs
@@ -54,16 +62,6 @@ class NetcdfWriter:
 
     def __getitem__(self, item):
         return self.dataset.getncattr(item)
-
-    def add_dimension(self, name: str, values: xr.DataArray) -> None:
-        self.dataset.createDimension(name, values.shape[0])
-        dim = self.dataset.createVariable(name, values.dtype, (name,))
-        dim.units = values.units
-        if hasattr(values.attrs, "calendar"):
-            dim.calendar = values.calendar
-
-        dim.long_name = values.long_name
-        dim.standard_name = values.standard_name
 
     def initialize_dataset(self) -> None:
         self.dataset = nc.Dataset(
@@ -86,8 +84,8 @@ class NetcdfWriter:
         log.debug(f"Creating dimensions {self.dataset.dimensions} in {self._file_name}")
         # create time variables
         times = self.dataset.createVariable("times", "f8", ("time",))
-        times.units = cf_utils.DEFAULT_TIME_UNIT
-        times.calendar = cf_utils.DEFAULT_CALENDAR
+        times.units = self._time_properties.units
+        times.calendar = self._time_properties.calendar
         times.standard_name = "time"
         times.long_name = "time"
         # create vertical coordinates:

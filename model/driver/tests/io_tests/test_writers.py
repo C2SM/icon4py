@@ -22,6 +22,7 @@ from icon4py.model.common.test_utils import helpers
 from icon4py.model.driver.io import cf_utils, data
 from icon4py.model.driver.io.writers import (
     NetcdfWriter,
+    TimeProperties,
     filter_by_standard_name,
 )
 
@@ -56,6 +57,7 @@ def initialized_writer(
         fname,
         vertical,
         horizontal,
+        TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
     )
     writer.initialize_dataset()

@@ -221,6 +221,8 @@ class FieldGroupMonitor(monitor.Monitor):
         vertical: v_grid.VerticalGridSize,
         horizontal: h_grid.HorizontalGridSize,
         grid_id: str,
+        time_units: str = cf_utils.DEFAULT_TIME_UNIT,
+        calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
     ):
         self._global_attrs = dict(
@@ -235,6 +237,7 @@ class FieldGroupMonitor(monitor.Monitor):
             uuidOfHGrid=grid_id,
         )
         self.config = config
+        self._time_properties = writers.TimeProperties(time_units, calendar)
         self._vertical_size = vertical
         self._horizontal_size = horizontal
         self._field_names = config.variables
@@ -272,7 +275,13 @@ class FieldGroupMonitor(monitor.Monitor):
         self._file_counter += 1
         filename = generate_name(self._file_name_pattern, self._file_counter)
         filename = self._output_path.joinpath(filename)
-        df = writers.NetcdfWriter(filename, vertical_grid, horizontal_size, self._global_attrs)
+        df = writers.NetcdfWriter(
+            filename,
+            vertical_grid,
+            horizontal_size,
+            self._time_properties,
+            self._global_attrs,
+        )
         df.initialize_dataset()
         self._dataset = df
 
