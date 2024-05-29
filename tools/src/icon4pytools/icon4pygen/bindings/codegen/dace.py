@@ -194,7 +194,7 @@ class CppDefGenerator(TemplatedGenerator):
         """\
         private:
         {%- for field in _this_node.fields -%}
-        {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_;
+        inline static {{ field.renderer.render_ctype('c++') }} {{ field.renderer.render_pointer() }} {{ field.name }}_;
         {%- endfor -%}
         inline static GpuTriMesh mesh_;
         inline static bool is_setup_;
