@@ -40,6 +40,32 @@ def _compute_nbidx(
     return nbidx[jc, ind, :]
 
 
+def _compute_z_vintcoeff(
+    k_start: list,
+    k_end: list,
+    z_mc: np.array,
+    z_mc_off: np.array,
+    z_vintcoeff: np.array,
+    jc: int,
+    ind: int,
+    nlev: int,
+) -> np.array:
+    jk_start = nlev - 2
+    for jk in reversed(range(k_start[jc], k_end[jc])):
+        for jk1 in reversed(range(jk_start + 1)):
+            if (
+                z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
+                and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
+            ):
+                z_vintcoeff[jc, ind, jk] = (z_mc[jc, jk] - z_mc_off[jc, ind, jk1 + 1]) / (
+                    z_mc_off[jc, ind, jk1] - z_mc_off[jc, ind, jk1 + 1]
+                )
+                jk_start = jk1
+                break
+
+    return z_vintcoeff[jc, ind, :]
+
+
 def _compute_i_params(
     k_start: list,
     k_end: list,
@@ -109,15 +135,23 @@ def _compute_k_start_end(
     return k_start, k_end
 
 
-def _compute_zd_vertoffset_dsl(
-    k_start: list,
-    k_end: list,
+def compute_diffusion_metrics(
     z_mc: np.array,
     z_mc_off: np.array,
-    nbidx: np.array,
+    k_start: list,
+    k_end: list,
     i_indlist: list,
     i_listdim: int,
+    nbidx: np.array,
+    z_vintcoeff: np.array,
+    z_maxslp_avg: np.array,
+    z_maxhgtd_avg: np.array,
+    mask_hdiff: np.array,
+    zd_diffcoef_dsl: np.array,
+    zd_intcoef_dsl: np.array,
     zd_vertoffset_dsl: np.array,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
     nlev: int,
 ) -> np.array:
     for ji in range(i_listdim):
@@ -126,41 +160,25 @@ def _compute_zd_vertoffset_dsl(
             nbidx[jc, 0, :] = _compute_nbidx(k_start, k_end, z_mc, z_mc_off, nbidx, jc, 0, nlev)
             nbidx[jc, 1, :] = _compute_nbidx(k_start, k_end, z_mc, z_mc_off, nbidx, jc, 1, nlev)
             nbidx[jc, 2, :] = _compute_nbidx(k_start, k_end, z_mc, z_mc_off, nbidx, jc, 2, nlev)
+
+            z_vintcoeff[jc, 0, :] = _compute_z_vintcoeff(
+                k_start, k_end, z_mc, z_mc_off, z_vintcoeff, jc, 0, nlev
+            )
+            z_vintcoeff[jc, 1, :] = _compute_z_vintcoeff(
+                k_start, k_end, z_mc, z_mc_off, z_vintcoeff, jc, 1, nlev
+            )
+            z_vintcoeff[jc, 2, :] = _compute_z_vintcoeff(
+                k_start, k_end, z_mc, z_mc_off, z_vintcoeff, jc, 2, nlev
+            )
             for jk in range(k_start[jc], k_end[jc]):
+                zd_intcoef_dsl[jc, 0, jk] = z_vintcoeff[jc, 0, jk]
+                zd_intcoef_dsl[jc, 1, jk] = z_vintcoeff[jc, 1, jk]
+                zd_intcoef_dsl[jc, 2, jk] = z_vintcoeff[jc, 2, jk]
+
                 zd_vertoffset_dsl[jc, 0, jk] = nbidx[jc, 0, jk] - jk
                 zd_vertoffset_dsl[jc, 1, jk] = nbidx[jc, 1, jk] - jk
                 zd_vertoffset_dsl[jc, 2, jk] = nbidx[jc, 2, jk] - jk
 
-    return zd_vertoffset_dsl
-
-
-def _compute_mask_hdiff(
-    mask_hdiff: np.array, k_start: list, k_end: list, i_indlist: list, i_listdim: int
-) -> np.array:
-    for ji in range(i_listdim):
-        jc = i_indlist[ji]
-        if k_start[jc] is not None and k_end[jc] is not None:
-            for jk in range(k_start[jc], k_end[jc]):
-                mask_hdiff[jc, jk] = True
-
-    return mask_hdiff
-
-
-def _compute_zd_diffcoef_dsl(
-    z_maxslp_avg: np.array,
-    z_maxhgtd_avg: np.array,
-    k_start: list,
-    k_end: list,
-    i_indlist: list,
-    i_listdim: int,
-    zd_diffcoef_dsl: np.array,
-    thslp_zdiffu: float,
-    thhgtd_zdiffu: float,
-) -> np.array:
-    for ji in range(i_listdim):
-        jc = i_indlist[ji]
-        if k_start[jc] is not None and k_end[jc] is not None:
-            for jk in range(k_start[jc], k_end[jc]):
                 zd_diffcoef_dsl_var = max(
                     0.0,
                     math.sqrt(max(0.0, z_maxslp_avg[jc, jk] - thslp_zdiffu)) / 250.0,
@@ -169,4 +187,6 @@ def _compute_zd_diffcoef_dsl(
                 zd_diffcoef_dsl_var = min(0.002, zd_diffcoef_dsl_var)
                 zd_diffcoef_dsl[jc, jk] = zd_diffcoef_dsl_var
 
-    return zd_diffcoef_dsl
+                mask_hdiff[jc, jk] = True
+
+    return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl

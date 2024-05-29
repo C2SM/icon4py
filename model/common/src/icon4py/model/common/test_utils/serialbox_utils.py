@@ -683,7 +683,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
@@ -692,6 +692,7 @@ class MetricSavepoint(IconSavepoint):
 
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
+        ser_input = self._reduce_to_dim_size(ser_input, (CellDim, C2E2CDim, KDim))
         if ser_input.shape[1] != sparse_size:
             ser_input = np.moveaxis(ser_input, 1, -1)
 
@@ -706,10 +707,9 @@ class MetricSavepoint(IconSavepoint):
         assert old_shape[1] == sparse_size
         return as_field(target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]))
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
     def zd_vertoffset(self):
-        # return self._read_and_reorder_sparse_field("zd_vertoffset")
-        return self._get_field("zd_vertoffset", CellDim, C2E2CDim, KDim)
+        return self._read_and_reorder_sparse_field("zd_vertoffset")
 
     def zd_vertidx(self):
         return np.squeeze(self.serializer.read("zd_vertidx", self.savepoint))
