@@ -277,13 +277,13 @@ class GridManager:
                 reader,
                 GridFile.GridRefinementName.START_INDEX_EDGES,
                 transpose=False,
-                dtype=np.int64,
+                dtype=np.int32,
             )[_CHILD_DOM],
             VertexDim: self._get_index_field(
                 reader,
                 GridFile.GridRefinementName.START_INDEX_VERTICES,
                 transpose=False,
-                dtype=np.int64,
+                dtype=np.int32,
             )[_CHILD_DOM],
         }
         end_indices = {
@@ -292,21 +292,21 @@ class GridManager:
                 GridFile.GridRefinementName.END_INDEX_CELLS,
                 transpose=False,
                 apply_offset=False,
-                dtype=np.int64,
+                dtype=np.int32,
             )[_CHILD_DOM],
             EdgeDim: self._get_index_field(
                 reader,
                 GridFile.GridRefinementName.END_INDEX_EDGES,
                 transpose=False,
                 apply_offset=False,
-                dtype=np.int64,
+                dtype=np.int32,
             )[_CHILD_DOM],
             VertexDim: self._get_index_field(
                 reader,
                 GridFile.GridRefinementName.END_INDEX_VERTICES,
                 transpose=False,
                 apply_offset=False,
-                dtype=np.int64,
+                dtype=np.int32,
             )[_CHILD_DOM],
         }
 
