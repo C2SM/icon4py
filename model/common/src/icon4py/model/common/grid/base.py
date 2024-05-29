@@ -128,7 +128,7 @@ class BaseGrid(ABC):
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
-
+        assert self.connectivities[dim].dtype == np.int32, "Neighbortable type must be of type int32"
         return NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),
             from_dim,

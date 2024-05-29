@@ -23,7 +23,8 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     neighbor_axis: Dimension,
     has_skip_values: bool,
 ):
-    table = xp.asarray(np.arange(old_shape[0] * old_shape[1]).reshape(old_shape))
+    table = xp.asarray(np.arange(old_shape[0] * old_shape[1], dtype=np.int32).reshape(old_shape))
+    assert table.dtype == xp.int32, "Neighbortable type for 1d sparse fields must be of type int32"
     return NeighborTableOffsetProvider(
         table,
         origin_axis,
