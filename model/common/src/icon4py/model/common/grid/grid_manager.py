@@ -218,7 +218,7 @@ class ToGt4PyTransformation(IndexTransformation):
         Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
         INVALID values which are marked with -1 in the grid file and are kept such.
         """
-        return np.where(array == GridFile.INVALID_INDEX, 0, -1)
+        return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=np.int32)
 
 
 class GridManager:
