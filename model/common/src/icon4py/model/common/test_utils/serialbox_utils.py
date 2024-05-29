@@ -291,7 +291,7 @@ class IconGridSavepoint(IconSavepoint):
         else:
             return self._c2e2c2e()
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
     def _c2e2c2e(self):
         return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
 
@@ -512,7 +512,7 @@ class InterpolationSavepoint(IconSavepoint):
             (CellDim, C2E2CODim), grg[:num_cells, :, 1]
         )
 
-    @IconSavepoint.optionally_registered()
+    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
