@@ -440,7 +440,7 @@ class SimpleGrid(BaseGrid):
         return self.config.num_edges
 
     @property
-    def diamond_table(self) -> int:
+    def diamond_table(self) -> np.ndarray:
         return SimpleGridData.e2c2v_table
 
     @property
