@@ -111,7 +111,7 @@ class BaseGrid(ABC):
 
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
-        self.connectivities.update({d: k.astype(int) for d, k in connectivity.items()})
+        self.connectivities.update(connectivity)
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @builder
