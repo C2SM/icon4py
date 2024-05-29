@@ -12,12 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import abc
+import enum
 import logging
 import pathlib
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import Optional, Sequence
 
 from icon4py.model.common.components import exceptions, monitor
@@ -28,7 +28,7 @@ from icon4py.model.driver.io import cf_utils, ugrid, writers
 log = logging.getLogger(__name__)
 
 
-class OutputInterval(str, Enum):
+class OutputInterval(str, enum.Enum):
     SECOND = "SECOND"
     MINUTE = "MINUTE"
     HOUR = "HOUR"
@@ -257,7 +257,9 @@ class FieldGroupMonitor(monitor.Monitor):
         self._file_name_pattern = file.name
 
     def _init_dataset(
-        self, vertical_grid: v_grid.VerticalGridSize, horizontal_size: h_grid.HorizontalGridSize
+        self,
+        vertical_grid: v_grid.VerticalGridSize,
+        horizontal_size: h_grid.HorizontalGridSize,
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.
 

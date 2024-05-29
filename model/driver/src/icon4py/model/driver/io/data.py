@@ -13,7 +13,7 @@
 from typing import Final
 
 import gt4py._core.definitions as gt_coredefs
-import gt4py.next.common as gt
+import gt4py.next.common as gt_common
 import xarray as xa
 
 from icon4py.model.driver.io.ugrid import dimension_mapping, ugrid_attributes
@@ -74,7 +74,7 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict] = dict(
 
 
 def to_data_array(
-    field: gt.Field[gt.Dims[gt.DimsT], gt_coredefs.ScalarT],
+    field: gt_common.Field[gt_common.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
     attrs=None,
     is_on_interface: bool = False,
 ) -> xa.DataArray:
@@ -94,5 +94,5 @@ def to_data_array(
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
 
 
-def _is_horizontal(dim: gt.Dimension) -> bool:
-    return dim.kind == gt.DimensionKind.HORIZONTAL
+def _is_horizontal(dim: gt_common.Dimension) -> bool:
+    return dim.kind == gt_common.DimensionKind.HORIZONTAL

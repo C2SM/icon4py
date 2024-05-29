@@ -19,7 +19,7 @@ import gt4py.next as gt
 import uxarray
 import xarray as xa
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+import icon4py.model.common.dimension as dim
 from icon4py.model.common.grid import grid_manager as gm
 
 
@@ -29,25 +29,27 @@ FILL_VALUE = gm.GridFile.INVALID_INDEX
 MESH = "mesh"
 
 HORIZONTAL_DIMENSION_MAPPING: Final[dict[gt.Dimension, str]] = {
-    CellDim: "cell",
-    EdgeDim: "edge",
-    VertexDim: "vertex",
+    dim.CellDim: "cell",
+    dim.EdgeDim: "edge",
+    dim.VertexDim: "vertex",
 }
 
 COORDINATES_MAPPING: Final[dict[gt.Dimension, str]] = {
-    CellDim: "clon clat",
-    VertexDim: "vlon vlat",
-    EdgeDim: "elon elat",
+    dim.CellDim: "clon clat",
+    dim.VertexDim: "vlon vlat",
+    dim.EdgeDim: "elon elat",
 }
 
 LOCATION_MAPPING: Final[dict[gt.Dimension, str]] = {
-    CellDim: "face",
-    VertexDim: "node",
-    EdgeDim: "edge",
+    dim.CellDim: "face",
+    dim.VertexDim: "node",
+    dim.EdgeDim: "edge",
 }
 
 
-def extract_horizontal_coordinates(ds: xa.Dataset) -> dict[str, tuple[xa.DataArray, xa.DataArray]]:
+def extract_horizontal_coordinates(
+    ds: xa.Dataset,
+) -> dict[str, tuple[xa.DataArray, xa.DataArray]]:
     """
     Extract the coordinates from the ICON grid file.
 
@@ -73,7 +75,11 @@ def dimension_mapping(dim: gt.Dimension, is_on_interface: bool) -> str:
 
 def ugrid_attributes(dim: gt.Dimension) -> dict:
     if dim.kind == gt.DimensionKind.HORIZONTAL:
-        return dict(location=LOCATION_MAPPING[dim], coordinates=COORDINATES_MAPPING[dim], mesh=MESH)
+        return dict(
+            location=LOCATION_MAPPING[dim],
+            coordinates=COORDINATES_MAPPING[dim],
+            mesh=MESH,
+        )
     else:
         return {}
 
@@ -220,7 +226,9 @@ class IconUGridWriter:
     """
 
     def __init__(
-        self, original_filename: Union[pathlib.Path, str], output_path: Union[pathlib.Path, str]
+        self,
+        original_filename: Union[pathlib.Path, str],
+        output_path: Union[pathlib.Path, str],
     ):
         self.original_filename = pathlib.Path(original_filename)
         self.output_path = pathlib.Path(output_path)

@@ -10,16 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.simple import SimpleGrid
+import icon4py.model.common.grid.simple as simple_grid
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import random_field
 from icon4py.model.driver.io.data import PROGNOSTIC_CF_ATTRIBUTES, to_data_array
 from icon4py.model.driver.io.ugrid import MESH
 
 
 def test_data_array_has_ugrid_and_cf_attributes():
-    grid = SimpleGrid()
-    buffer = random_field(grid, CellDim, KDim)
+    grid = simple_grid.SimpleGrid()
+    buffer = random_field(grid, dims.CellDim, dims.KDim)
     data_array = to_data_array(buffer, PROGNOSTIC_CF_ATTRIBUTES["air_density"])
     assert data_array.attrs["units"] == "kg m-3"
     assert data_array.attrs["standard_name"] == "air_density"

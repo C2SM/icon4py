@@ -12,14 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import numpy as np
 import pytest
-from xarray import Dataset
+import xarray as xa
 
-from icon4py.model.common.test_utils.datatest_utils import (
-    GRIDS_PATH,
-    R02B04_GLOBAL,
-    REGIONAL_EXPERIMENT,
-)
-from icon4py.model.common.test_utils.grid_utils import GLOBAL_GRIDFILE, REGIONAL_GRIDFILE
+from icon4py.model.common.test_utils import datatest_utils, grid_utils
 from icon4py.model.driver.io.ugrid import (
     FILL_VALUE,
     IconUGridPatcher,
@@ -30,10 +25,13 @@ from icon4py.model.driver.io.ugrid import (
 
 
 def grid_files():
-    files = [(R02B04_GLOBAL, GLOBAL_GRIDFILE), (REGIONAL_EXPERIMENT, REGIONAL_GRIDFILE)]
+    files = [
+        (datatest_utils.R02B04_GLOBAL, grid_utils.GLOBAL_GRIDFILE),
+        (datatest_utils.REGIONAL_EXPERIMENT, grid_utils.REGIONAL_GRIDFILE),
+    ]
 
     for ff in files:
-        yield GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
+        yield grid_utils.GRIDS_PATH.joinpath(ff[0]).joinpath(ff[1])
 
 
 @pytest.mark.parametrize("file", grid_files())
@@ -96,7 +94,7 @@ def test_icon_ugrid_patch_fill_value(file):
             assert uxds[name].attrs["_FillValue"] == FILL_VALUE
 
 
-def assert_start_index(uxds: Dataset, name: str):
+def assert_start_index(uxds: xa.Dataset, name: str):
     assert uxds[name].attrs["start_index"] == 0
     assert np.min(np.where(uxds[name].data > FILL_VALUE)) == 0
 

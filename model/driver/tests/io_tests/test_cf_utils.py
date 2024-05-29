@@ -13,7 +13,7 @@
 
 import pytest
 
-from icon4py.model.driver.io.cf_utils import to_canonical_dim_order
+from icon4py.model.driver.io import cf_utils
 
 from .test_io import state_values
 
@@ -21,5 +21,5 @@ from .test_io import state_values
 @pytest.mark.parametrize("input_", state_values())
 def test_to_canonical_dim_order(input_):
     input_dims = input_.dims
-    output = to_canonical_dim_order(input_)
+    output = cf_utils.to_canonical_dim_order(input_)
     assert output.dims == (input_dims[1], input_dims[0])
