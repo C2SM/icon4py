@@ -50,7 +50,7 @@ class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
 
         z_rhofluxdiv_c_out = (
-            np.sum(p_mass_flx_e_c2e * geofac_div, axis=1) if nsub == int32(1) else z_rhofluxdiv_c
+            np.sum(p_mass_flx_e_c2e * geofac_div, axis=1) if nsub == 1 else z_rhofluxdiv_c
         )
         z_fluxdiv_c_dsl = np.sum(z_tracer_mflx_c2e * geofac_div, axis=1)
         z_rho_new_dsl = z_rho_now - z_dtsub * z_rhofluxdiv_c_out
@@ -65,7 +65,7 @@ class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        nsub = int32(1)
+        nsub = 1
         p_mass_flx_e = random_field(grid, EdgeDim, KDim)
         geofac_div = random_field(grid, CellDim, C2EDim)
         z_rhofluxdiv_c = random_field(grid, CellDim, KDim)

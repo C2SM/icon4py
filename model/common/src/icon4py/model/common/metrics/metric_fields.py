@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from dataclasses import dataclass
+from typing import Final
 
 from gt4py.next import (
     Field,
@@ -55,6 +57,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
+
+
+@dataclass(frozen=True)
+class MetricsConfig:
+    #: Temporal extrapolation of Exner for computation of horizontal pressure gradient, defined in `mo_nonhydrostatic_nml.f90` used only in metrics fields calculation.
+    exner_expol: Final[wpfloat] = 0.333
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
@@ -361,7 +369,7 @@ def _compute_d2dexdz2_fac1_mc(
     grav: wpfloat,
     igradp_method: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    if igradp_method <= int32(3):
+    if igradp_method <= 3:
         d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
 
     return d2dexdz2_fac1_mc
@@ -379,7 +387,7 @@ def _compute_d2dexdz2_fac2_mc(
     h_scal_bg: wpfloat,
     igradp_method: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
-    if igradp_method <= int32(3):
+    if igradp_method <= 3:
         d2dexdz2_fac2_mc = (
             2.0
             * grav
@@ -675,6 +683,8 @@ def compute_vwind_impl_wgt(
         z_ddxn_z_half_e: intermediate storage for field
         z_ddxt_z_half_e: intermediate storage for field
         dual_edge_length: dual_edge_length
+        vct_a: Field[[KDim], float]
+        z_ifc: geometric height on half levels
         vwind_impl_wgt: (output) offcentering in vertical mass flux
         vwind_offctr: off-centering in vertical wind solver
         horizontal_start: horizontal start index

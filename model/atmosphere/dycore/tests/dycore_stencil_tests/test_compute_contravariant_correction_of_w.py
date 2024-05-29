@@ -68,8 +68,8 @@ class TestComputeContravariantCorrectionOfW(StencilTest):
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w_concorr_c=w_concorr_c,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )

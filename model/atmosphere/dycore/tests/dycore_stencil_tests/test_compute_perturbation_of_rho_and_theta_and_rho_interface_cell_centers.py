@@ -47,9 +47,9 @@ class TestComputePerturbationOfRhoAndThetaAndRhoInterfaceCellCenters(StencilTest
             rho_ic=rho_ic,
             z_rth_pr_1=z_rth_pr_1,
             z_rth_pr_2=z_rth_pr_2,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )
 

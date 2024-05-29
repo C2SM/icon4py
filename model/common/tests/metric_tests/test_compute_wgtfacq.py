@@ -25,10 +25,12 @@
 
 import pytest
 
-from icon4py.model.common.dimension import E2CDim, EdgeDim, KDim
-from icon4py.model.common.metrics.stencils.compute_wgtfacq_c_dsl import compute_wgtfacq_c_dsl
-from icon4py.model.common.metrics.stencils.compute_wgtfacq_e_dsl import compute_wgtfacq_e_dsl
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.common.dimension import E2CDim
+from icon4py.model.common.metrics.stencils.compute_wgtfacq import (
+    compute_wgtfacq_c_dsl,
+    compute_wgtfacq_e_dsl,
+)
+from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
@@ -44,7 +46,6 @@ def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint):
 
 @pytest.mark.datatest
 def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_grid):
-    wgtfacq_e_dsl_full = zero_field(icon_grid, EdgeDim, KDim, extend={KDim: 1})
     wgtfacq_e_dsl_ref = metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels + 1)
 
     wgtfacq_e_dsl_full = compute_wgtfacq_e_dsl(
@@ -52,7 +53,7 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
         z_aux_c=metrics_savepoint.wgtfac_c().asnumpy(),
         c_lin_e=interpolation_savepoint.c_lin_e().asnumpy(),
-        wgtfacq_e_dsl=wgtfacq_e_dsl_full.asnumpy(),
+        n_edges=icon_grid.num_edges,
         nlev=icon_grid.num_levels,
     )
 

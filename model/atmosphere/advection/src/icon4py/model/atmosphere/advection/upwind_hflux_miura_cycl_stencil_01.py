@@ -30,19 +30,19 @@ def _upwind_hflux_miura_cycl_stencil_01(
 ) -> Field[[EdgeDim, KDim], float]:
     z_tracer_mflx_dsl = (
         where(
-            cell_rel_idx_dsl == int32(1),
+            cell_rel_idx_dsl == 1,
             z_lsq_coeff_1_dsl(E2C[1]),
             z_lsq_coeff_1_dsl(E2C[0]),
         )
         + distv_bary_1
         * where(
-            cell_rel_idx_dsl == int32(1),
+            cell_rel_idx_dsl == 1,
             z_lsq_coeff_2_dsl(E2C[1]),
             z_lsq_coeff_2_dsl(E2C[0]),
         )
         + distv_bary_2
         * where(
-            cell_rel_idx_dsl == int32(1),
+            cell_rel_idx_dsl == 1,
             z_lsq_coeff_3_dsl(E2C[1]),
             z_lsq_coeff_3_dsl(E2C[0]),
         )

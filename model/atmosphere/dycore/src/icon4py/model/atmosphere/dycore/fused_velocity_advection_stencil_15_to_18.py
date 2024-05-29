@@ -60,12 +60,12 @@ def _fused_velocity_advection_stencil_16_to_18(
     k = broadcast(k, (CellDim, KDim))
 
     ddt_w_adv = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (int32(1) <= k),
+        (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
         _compute_advective_vertical_wind_tendency(z_w_con_c, w, coeff1_dwdz, coeff2_dwdz),
         ddt_w_adv,
     )
     ddt_w_adv = where(
-        (cell_lower_bound <= cell < cell_upper_bound) & (int32(1) <= k),
+        (cell_lower_bound <= cell < cell_upper_bound) & (1 <= k),
         _add_interpolated_horizontal_advection_of_w(e_bln_c_s, z_v_grad_w, ddt_w_adv),
         ddt_w_adv,
     )

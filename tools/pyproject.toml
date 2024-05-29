@@ -26,7 +26,8 @@ dependencies = [
   'icon4py-common',
   'tabulate>=0.8.9',
   'fprettify>=0.3.7',
-  'cffi>=1.5'
+  'cffi>=1.5',
+  "nanobind<2.0.0"
 ]
 description = 'Tools and utilities for integrating icon4py code into the ICON model.'
 dynamic = ['version']

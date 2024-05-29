@@ -89,3 +89,9 @@ def test_jabw_initial_condition(
         diagnostic_state.pressure_sfc.asnumpy(),
         data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
     )
+
+    assert dallclose(
+        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
+        data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
+        atol=1.0e-14,
+    )

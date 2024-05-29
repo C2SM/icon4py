@@ -67,8 +67,8 @@ class TestUpdateThetaV(StencilTest):
             rho_new=rho_new,
             theta_v_new=theta_v_new,
             cvd_o_rd=cvd_o_rd,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
