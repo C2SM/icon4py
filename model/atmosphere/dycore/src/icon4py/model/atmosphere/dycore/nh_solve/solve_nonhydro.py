@@ -1647,20 +1647,20 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            # verified for e-9
-            log.debug(f"corrector: start stencile 41")
-            compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=self.interpolation_state.geofac_div,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                z_flxdiv_mass=self.z_flxdiv_mass,
-                z_flxdiv_theta=self.z_flxdiv_theta,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        # verified for e-9
+        log.debug(f"corrector: start stencil 41")
+        compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=self.interpolation_state.geofac_div,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector start stencil 42 44 45 45b")

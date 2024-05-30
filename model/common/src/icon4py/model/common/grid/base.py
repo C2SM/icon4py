@@ -24,6 +24,7 @@ import numpy as np
 import icon4py.model.common.utils as common_utils
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import utils as grid_utils, vertical as v_grid
+from icon4py.model.common.settings import xp
 
 
 class MissingConnectivity(ValueError):
@@ -136,11 +137,6 @@ class BaseGrid(ABC):
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
-
-        if self.config.on_gpu:
-            import cupy as xp
-        else:
-            xp = np
 
         return gt_embedded.NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),

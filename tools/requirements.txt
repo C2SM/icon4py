@@ -2,5 +2,5 @@
 ../model/atmosphere/dycore
 ../model/atmosphere/advection
 ../model/atmosphere/diffusion
-../model/common
+../model/common[netcdf]
 .

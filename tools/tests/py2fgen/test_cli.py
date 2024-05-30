@@ -39,7 +39,7 @@ def run_test_case(
     module: str,
     function: str,
     plugin_name: str,
-    backend: str,
+    py2fbackend: str,
     samples_path: Path,
     fortran_driver: str,
     compiler: str = "gfortran",
@@ -47,7 +47,7 @@ def run_test_case(
     expected_error_code: int = 0,
 ):
     with cli.isolated_filesystem():
-        result = cli.invoke(main, [module, function, plugin_name, "-b", backend, "-d"])
+        result = cli.invoke(main, [module, function, plugin_name, "-b", py2fbackend])
         assert result.exit_code == 0, "CLI execution failed"
 
         try:
@@ -102,7 +102,7 @@ def run_fortran_executable(plugin_name: str):
 
 
 @pytest.mark.parametrize(
-    "backend, extra_flags",
+    "py2fbackend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
         ("ROUNDTRIP", ""),
@@ -111,7 +111,7 @@ def run_fortran_executable(plugin_name: str):
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
-    cli_runner, backend, samples_path, wrapper_module, extra_flags
+    cli_runner, py2fbackend, samples_path, wrapper_module, extra_flags
 ):
     """Tests embedding Python functions, and GT4Py program directly.
     Also tests embedding multiple functions in one shared library.
@@ -121,7 +121,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
         wrapper_module,
         "square,square_from_function",
         "square_plugin",
-        backend,
+        py2fbackend,
         samples_path,
         "test_square",
         extra_compiler_flags=extra_flags,
@@ -143,17 +143,17 @@ def test_py2fgen_python_error_propagation_to_fortran(cli_runner, samples_path, w
     )
 
 
-@pytest.mark.parametrize("backend", ("CPU", "ROUNDTRIP"))
-def test_py2fgen_compilation_and_execution_multi_return(
-    cli_runner, backend, samples_path, wrapper_module
+@pytest.mark.parametrize("py2fbackend", ("CPU",))
+def test_py2fgen_compilation_and_execution_multi_return_profile(
+    cli_runner, py2fbackend, samples_path, wrapper_module
 ):
     """Tests embedding multi return gt4py program."""
     run_test_case(
         cli_runner,
         wrapper_module,
-        "multi_return",
-        "multi_return_plugin",
-        backend,
+        "multi_return_from_function,profile_enable,profile_disable",
+        "multi_return_from_function_plugin",
+        py2fbackend,
         samples_path,
         "test_multi_return",
     )
@@ -165,7 +165,7 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
     run_test_case(
         cli_runner,
         "icon4pytools.py2fgen.wrappers.diffusion",
-        "diffusion_init,diffusion_run",
+        "diffusion_init,diffusion_run,profile_enable,profile_disable",
         "diffusion_plugin",
         "CPU",
         samples_path,
@@ -176,7 +176,7 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
 # todo: enable on CI
 @pytest.mark.skip("Requires setting various environment variables.")
 @pytest.mark.parametrize(
-    "function_name, plugin_name, test_name, backend, extra_flags",
+    "function_name, plugin_name, test_name, py2fbackend, extra_flags",
     [
         ("square", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
         ("multi_return", "multi_return_plugin", "test_multi_return", "GPU", ("-acc", "-Minfo=acc")),
@@ -187,7 +187,7 @@ def test_py2fgen_compilation_and_execution_gpu(
     function_name,
     plugin_name,
     test_name,
-    backend,
+    py2fbackend,
     samples_path,
     wrapper_module,
     extra_flags,
@@ -197,7 +197,7 @@ def test_py2fgen_compilation_and_execution_gpu(
         wrapper_module,
         function_name,
         plugin_name,
-        backend,
+        py2fbackend,
         samples_path,
         test_name,
         "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # Ensure NVFORTRAN_COMPILER is set in your environment variables
@@ -209,11 +209,11 @@ def test_py2fgen_compilation_and_execution_gpu(
 # Need to compile using nvfortran, and set CUDACXX path to nvcc cuda compiler. Also need to set ICON_GRID_LOC for path to gridfile, and ICON4PY_BACKEND to determine device at runtime.
 @pytest.mark.skip("Requires setting various environment variables.")
 @pytest.mark.parametrize(
-    "backend, extra_flags",
+    "py2fbackend, extra_flags",
     [("GPU", ("-acc", "-Minfo=acc"))],
 )
 def test_py2fgen_compilation_and_execution_diffusion_gpu(
-    cli_runner, samples_path, backend, extra_flags
+    cli_runner, samples_path, py2fbackend, extra_flags
 ):
     # todo: requires setting ICON_GRID_LOC
     run_test_case(
@@ -221,9 +221,31 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(
         "icon4pytools.py2fgen.wrappers.diffusion",
         "diffusion_init,diffusion_run",
         "diffusion_plugin",
-        backend,
+        py2fbackend,
         samples_path,
         "test_diffusion",
         "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # todo: set nvfortran location in base.yml file.
         extra_flags,
+    )
+
+
+@pytest.mark.parametrize(
+    "py2fbackend, extra_flags",
+    [
+        ("CPU", ("-DPROFILE_SQUARE_FROM_FUNCTION",)),
+    ],
+)
+def test_py2fgen_compilation_and_profiling(
+    cli_runner, py2fbackend, samples_path, wrapper_module, extra_flags
+):
+    """Test profiling using cProfile of the generated wrapper."""
+    run_test_case(
+        cli_runner,
+        wrapper_module,
+        "square_from_function,profile_enable,profile_disable",
+        "square_plugin",
+        py2fbackend,
+        samples_path,
+        "test_square",
+        extra_compiler_flags=extra_flags,
     )

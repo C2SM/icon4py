@@ -45,6 +45,8 @@ _MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
 
 _ICON_INDEX_OFFSET_EDGES: Final[int] = 13
 _GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
+_GRF_NUDGEZONE_START_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + 1
+_GRF_NUDGEZONE_WIDTH: Final[int] = 8
 _MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
 _MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
 _MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
@@ -346,13 +348,13 @@ class EdgeParams:
 @dataclass(frozen=True)
 class CellParams:
     #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
-    cell_center_lat: Field[[CellDim], float]
+    cell_center_lat: Field[[CellDim], float] = None
     #: Longitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
-    cell_center_lon: Field[[CellDim], float]
+    cell_center_lon: Field[[CellDim], float] = None
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
-    area: Field[[CellDim], float]
+    area: Field[[CellDim], float] = None
     #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
-    mean_cell_area: float
+    mean_cell_area: float = None
     length_rescale_factor: float = 1.0
 
     @classmethod

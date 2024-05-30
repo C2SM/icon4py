@@ -25,19 +25,23 @@
 
 import pytest
 
-from icon4py.model.common.metrics.stencils.compute_wgtfacq_c import compute_wgtfacq_c
+from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.metrics.stencils.compute_coeff_gradekin import compute_coeff_gradekin
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
-def test_compute_wgtfacq_c(icon_grid, metrics_savepoint):  # fixture
-    wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
-    z_ifc = metrics_savepoint.z_ifc()
-
-    vertical_end = icon_grid.num_levels
-
-    wgtfacq_c = compute_wgtfacq_c(
-        z_ifc.asnumpy(),
-        vertical_end,
+def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
+    edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
+    inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
+    coeff_gradekin_ref = metrics_savepoint.coeff_gradekin()
+    horizontal_start = icon_grid.get_start_index(
+        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
-    assert dallclose(wgtfacq_c, wgtfacq_c_dsl.asnumpy())
+    horizontal_end = icon_grid.num_edges
+
+    coeff_gradekin_full = compute_coeff_gradekin(
+        edge_cell_length, inv_dual_edge_length, horizontal_start, horizontal_end
+    )
+    assert dallclose(coeff_gradekin_ref.asnumpy(), coeff_gradekin_full.asnumpy())
