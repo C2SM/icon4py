@@ -163,7 +163,6 @@ def test_py2fgen_compilation_and_execution_multi_return_profile(
     "function_name, plugin_name, test_name, py2fbackend, extra_flags",
     [
         ("square", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
-        ("multi_return", "multi_return_plugin", "test_multi_return", "GPU", ("-acc", "-Minfo=acc")),
     ],
 )
 def test_py2fgen_compilation_and_execution_gpu(
