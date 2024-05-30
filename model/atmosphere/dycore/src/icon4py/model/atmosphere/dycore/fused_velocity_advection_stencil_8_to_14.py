@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
@@ -39,7 +40,7 @@ def _fused_velocity_advection_stencil_8_to_14(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     cfl_clipping: Field[[CellDim, KDim], bool],
     pre_levelmask: Field[[CellDim, KDim], bool],
@@ -116,7 +117,7 @@ def fused_velocity_advection_stencil_8_to_14(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     cfl_clipping: Field[[CellDim, KDim], bool],
     pre_levelmask: Field[[CellDim, KDim], bool],

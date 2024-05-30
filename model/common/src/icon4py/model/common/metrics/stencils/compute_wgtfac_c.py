@@ -15,6 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.type_alias import wpfloat
@@ -22,24 +23,24 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_wgtfac_c_nlev(
-    z_ifc: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    z_ifc: fa.CKwpField,
+) -> fa.CKwpField:
     z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-2]) - z_ifc)
     return z_wgtfac_c
 
 
 @field_operator
 def _compute_wgtfac_c_0(
-    z_ifc: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    z_ifc: fa.CKwpField,
+) -> fa.CKwpField:
     z_wgtfac_c = (z_ifc(Koff[+1]) - z_ifc) / (z_ifc(Koff[+2]) - z_ifc)
     return z_wgtfac_c
 
 
 @field_operator
 def _compute_wgtfac_c_inner(
-    z_ifc: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    z_ifc: fa.CKwpField,
+) -> fa.CKwpField:
     z_wgtfac_c = (z_ifc(Koff[-1]) - z_ifc) / (z_ifc(Koff[-1]) - z_ifc(Koff[+1]))
     return z_wgtfac_c
 
@@ -49,7 +50,7 @@ def _compute_wgtfac_c(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     k: Field[[KDim], int32],
     nlev: int32,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> fa.CKwpField:
     wgt_fac_c = where((k > 0) & (k < nlev), _compute_wgtfac_c_inner(z_ifc), z_ifc)
     wgt_fac_c = where(k == 0, _compute_wgtfac_c_0(z_ifc=z_ifc), wgt_fac_c)
     wgt_fac_c = where(k == nlev, _compute_wgtfac_c_nlev(z_ifc=z_ifc), wgt_fac_c)
@@ -59,8 +60,8 @@ def _compute_wgtfac_c(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=run_gtfn)
 def compute_wgtfac_c(
-    wgtfac_c: Field[[CellDim, KDim], wpfloat],
-    z_ifc: Field[[CellDim, KDim], wpfloat],
+    wgtfac_c: fa.CKwpField,
+    z_ifc: fa.CKwpField,
     k: Field[[KDim], int32],
     nlev: int32,
 ):

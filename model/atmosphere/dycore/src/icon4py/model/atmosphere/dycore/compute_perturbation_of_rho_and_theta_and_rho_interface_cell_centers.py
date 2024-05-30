@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
     _compute_perturbation_of_rho_and_theta,
@@ -26,12 +27,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    rho: Field[[CellDim, KDim], wpfloat],
+    rho: fa.CKwpField,
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_v: fa.CKwpField,
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],
 ) -> tuple[
-    Field[[CellDim, KDim], wpfloat],
+    fa.CKwpField,
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
@@ -48,11 +49,11 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    rho: Field[[CellDim, KDim], wpfloat],
+    rho: fa.CKwpField,
     rho_ref_mc: Field[[CellDim, KDim], vpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_v: fa.CKwpField,
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    rho_ic: fa.CKwpField,
     z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,

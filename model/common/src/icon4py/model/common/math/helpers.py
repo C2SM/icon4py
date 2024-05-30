@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next import Field, field_operator
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, Koff, VertexDim
 from icon4py.model.common.type_alias import wpfloat
@@ -19,8 +20,8 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def average_cell_kdim_level_up(
-    half_level_field: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    half_level_field: fa.CKwpField,
+) -> fa.CKwpField:
     """
     Calculate the mean value of adjacent interface levels.
 
@@ -55,8 +56,8 @@ def average_edge_kdim_level_up(
 
 @field_operator
 def difference_k_level_down(
-    half_level_field: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    half_level_field: fa.CKwpField,
+) -> fa.CKwpField:
     """
     Calculate the difference value of adjacent interface levels.
 
@@ -73,8 +74,8 @@ def difference_k_level_down(
 
 @field_operator
 def difference_k_level_up(
-    half_level_field: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    half_level_field: fa.CKwpField,
+) -> fa.CKwpField:
     """
     Calculate the difference value of adjacent interface levels.
 

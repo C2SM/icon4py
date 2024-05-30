@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -22,17 +23,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_explicit_part_for_rho_and_exner(
-    rho_nnow: Field[[CellDim, KDim], wpfloat],
+    rho_nnow: fa.CKwpField,
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
-    exner_pr: Field[[CellDim, KDim], wpfloat],
+    z_contr_w_fl_l: fa.CKwpField,
+    exner_pr: fa.CKwpField,
     z_beta: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_theta: Field[[CellDim, KDim], vpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    theta_v_ic: fa.CKwpField,
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     dtime: wpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CKwpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49."""
     inv_ddqz_z_full_wp, z_flxdiv_mass_wp, z_beta_wp, z_flxdiv_theta_wp, ddt_exner_phy_wp = astype(
         (inv_ddqz_z_full, z_flxdiv_mass, z_beta, z_flxdiv_theta, ddt_exner_phy), wpfloat
@@ -57,16 +58,16 @@ def _compute_explicit_part_for_rho_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_explicit_part_for_rho_and_exner(
-    z_rho_expl: Field[[CellDim, KDim], wpfloat],
-    z_exner_expl: Field[[CellDim, KDim], wpfloat],
-    rho_nnow: Field[[CellDim, KDim], wpfloat],
+    z_rho_expl: fa.CKwpField,
+    z_exner_expl: fa.CKwpField,
+    rho_nnow: fa.CKwpField,
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
-    exner_pr: Field[[CellDim, KDim], wpfloat],
+    z_contr_w_fl_l: fa.CKwpField,
+    exner_pr: fa.CKwpField,
     z_beta: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_theta: Field[[CellDim, KDim], vpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    theta_v_ic: fa.CKwpField,
     ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
     dtime: wpfloat,
     horizontal_start: int32,

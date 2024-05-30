@@ -49,7 +49,7 @@ def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
     z_contr_w_fl_l: fa.CKwpField,
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    rho_ic: fa.CKwpField,
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     vwind_expl_wgt: fa.CwpField,
     dtime: wpfloat,

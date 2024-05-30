@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, exp, int32, log
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -24,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _diagnose_surface_pressure(
     exner: Field[[CellDim, KDim], vpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full: fa.CKwpField,
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
     grav_o_rd: wpfloat,
@@ -45,7 +46,7 @@ def _diagnose_surface_pressure(
 def diagnose_surface_pressure(
     exner: Field[[CellDim, KDim], vpfloat],
     temperature: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full: fa.CKwpField,
     pressure_sfc: Field[[CellDim, KDim], vpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,

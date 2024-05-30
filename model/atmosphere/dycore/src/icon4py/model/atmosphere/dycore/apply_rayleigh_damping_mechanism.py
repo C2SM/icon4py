@@ -37,7 +37,7 @@ def _apply_rayleigh_damping_mechanism(
 def apply_rayleigh_damping_mechanism(
     z_raylfac: Field[[KDim], wpfloat],
     w_1: fa.CwpField,
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

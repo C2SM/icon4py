@@ -13,6 +13,7 @@
 
 from gt4py.next import Field, GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, int32, log
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat
@@ -76,11 +77,11 @@ def compute_reference_atmosphere_edge_fields(
 
 @field_operator
 def compute_z_temp(
-    z_mc: Field[[CellDim, KDim], wpfloat],
+    z_mc: fa.CKwpField,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> fa.CKwpField:
     denom = t0sl_bg - del_t_bg
     z_temp = denom + del_t_bg * exp(-z_mc / h_scal_bg)
     return z_temp
@@ -88,14 +89,14 @@ def compute_z_temp(
 
 @field_operator
 def compute_z_aux1_cell(
-    z_mc: Field[[CellDim, KDim], wpfloat],
+    z_mc: fa.CKwpField,
     p0sl_bg: wpfloat,
     grav: wpfloat,
     rd: wpfloat,
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> fa.CKwpField:
     denom = t0sl_bg - del_t_bg
     logval = log((exp(z_mc / h_scal_bg) * denom + del_t_bg) / t0sl_bg)
     return p0sl_bg * exp(-grav / rd * h_scal_bg / denom * logval)
@@ -103,7 +104,7 @@ def compute_z_aux1_cell(
 
 @field_operator
 def _compute_reference_atmosphere_cell_fields(
-    z_mc: Field[[CellDim, KDim], wpfloat],
+    z_mc: fa.CKwpField,
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -113,9 +114,9 @@ def _compute_reference_atmosphere_cell_fields(
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
 ) -> tuple[
-    Field[[CellDim, KDim], wpfloat],
-    Field[[CellDim, KDim], wpfloat],
-    Field[[CellDim, KDim], wpfloat],
+    fa.CKwpField,
+    fa.CKwpField,
+    fa.CKwpField,
 ]:
     z_aux1 = compute_z_aux1_cell(
         z_mc=z_mc,
@@ -141,10 +142,10 @@ def _compute_reference_atmosphere_cell_fields(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_cell_fields(
-    z_height: Field[[CellDim, KDim], wpfloat],
-    exner_ref_mc: Field[[CellDim, KDim], wpfloat],
-    rho_ref_mc: Field[[CellDim, KDim], wpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], wpfloat],
+    z_height: fa.CKwpField,
+    exner_ref_mc: fa.CKwpField,
+    rho_ref_mc: fa.CKwpField,
+    theta_ref_mc: fa.CKwpField,
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -196,8 +197,8 @@ def compute_reference_atmosphere_cell_fields(
 
 @field_operator
 def compute_d_exner_dz_ref_ic(
-    theta_ref_ic: Field[[CellDim, KDim], wpfloat], grav: wpfloat, cpd: wpfloat
-) -> Field[[CellDim, KDim], wpfloat]:
+    theta_ref_ic: fa.CKwpField, grav: wpfloat, cpd: wpfloat
+) -> fa.CKwpField:
     """
     Calculate first vertical derivative of reference Exner pressure, half level mass points.
 

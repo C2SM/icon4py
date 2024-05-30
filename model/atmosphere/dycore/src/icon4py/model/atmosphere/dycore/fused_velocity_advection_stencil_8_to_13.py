@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import _copy_cell_kdim_field_to_vp
 from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
@@ -36,7 +37,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
@@ -83,7 +84,7 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
@@ -122,7 +123,7 @@ def _fused_velocity_advection_stencil_8_to_13(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
@@ -174,7 +175,7 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
@@ -205,7 +206,7 @@ def fused_velocity_advection_stencil_8_to_13(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],

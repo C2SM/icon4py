@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, exp, int32, log
+from gt4py.next.ffront.fbuiltins import exp, int32, log
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,12 +23,12 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_exner_from_rhotheta(
-    rho: Field[[CellDim, KDim], wpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    exner: Field[[CellDim, KDim], wpfloat],
+    rho: fa.CKwpField,
+    theta_v: fa.CKwpField,
+    exner: fa.CKwpField,
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CKwpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_67."""
     theta_v_wp = exner
     exner_wp = exp(rd_o_cvd * log(rd_o_p0ref * rho * theta_v_wp))
@@ -36,9 +37,9 @@ def _compute_exner_from_rhotheta(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_exner_from_rhotheta(
-    rho: Field[[CellDim, KDim], wpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    exner: Field[[CellDim, KDim], wpfloat],
+    rho: fa.CKwpField,
+    theta_v: fa.CKwpField,
+    exner: fa.CKwpField,
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
     horizontal_start: int32,

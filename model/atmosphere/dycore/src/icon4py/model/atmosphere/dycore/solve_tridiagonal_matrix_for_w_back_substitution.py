@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -31,7 +32,7 @@ def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def solve_tridiagonal_matrix_for_w_back_substitution(
     z_q: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

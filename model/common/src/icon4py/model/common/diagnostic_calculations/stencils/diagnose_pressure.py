@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, exp, int32, sqrt
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -41,7 +42,7 @@ def _scan_pressure(
 
 @field_operator
 def _diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full: fa.CKwpField,
     temperature: Field[[CellDim, KDim], vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
     grav_o_rd: wpfloat,
@@ -52,7 +53,7 @@ def _diagnose_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
+    ddqz_z_full: fa.CKwpField,
     temperature: Field[[CellDim, KDim], vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
     pressure: Field[[CellDim, KDim], vpfloat],

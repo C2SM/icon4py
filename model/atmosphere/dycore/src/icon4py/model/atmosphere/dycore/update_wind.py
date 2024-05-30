@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,10 +23,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _update_wind(
-    w_now: Field[[CellDim, KDim], wpfloat],
-    grf_tend_w: Field[[CellDim, KDim], wpfloat],
+    w_now: fa.CKwpField,
+    grf_tend_w: fa.CKwpField,
     dtime: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> fa.CKwpField:
     """Formerly known as _mo_solve_nonhydro_stencil_62."""
     w_new_wp = w_now + dtime * grf_tend_w
     return w_new_wp
@@ -33,9 +34,9 @@ def _update_wind(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_wind(
-    w_now: Field[[CellDim, KDim], wpfloat],
-    grf_tend_w: Field[[CellDim, KDim], wpfloat],
-    w_new: Field[[CellDim, KDim], wpfloat],
+    w_now: fa.CKwpField,
+    grf_tend_w: fa.CKwpField,
+    w_new: fa.CKwpField,
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
