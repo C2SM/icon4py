@@ -15,10 +15,13 @@ import abc
 import enum
 import logging
 import pathlib
+import uuid
 from abc import ABC
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Optional, Sequence
+from typing import Optional, Sequence, TypedDict
+
+from typing_extensions import Required
 
 from icon4py.model.common.components import exceptions, monitor
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -151,7 +154,7 @@ class IoMonitor(monitor.Monitor):
         vertical_size: v_grid.VerticalGridSize,
         horizontal_size: h_grid.HorizontalGridSize,
         grid_file_name: str,
-        grid_id: str,
+        grid_id: uuid.UUID,
     ):
         self.config = config
         self._grid_file = grid_file_name
@@ -200,6 +203,42 @@ class IoMonitor(monitor.Monitor):
             m.close()
 
 
+class GlobalFileAttributes(TypedDict, total=False):
+    """
+    Global file attributes of  a ICON generated netCDF file.
+
+    Attribute map what ICON produces, (including the upper, lower case pattern).
+    Omissions (possibly incomplete):
+    - 'CDI' used for the supported CDI version (http://mpimet.mpg.de/cdi) since we do not support it
+
+    Additions:
+    - 'external_variables': variable used by CF conventions if cell_measure variables are used from an external file'
+    """
+
+    #: version of the supported CF conventions
+    Conventions: Required[str]  # TODO (halungge) check changelog? latest version is 1.11
+
+    #: unique id of the horizontal grid used in the simulation (from grid file)
+    uuidOfHGrid: Required[uuid.UUID]
+
+    #: institution name
+    institution: Required[str]
+
+    #: title of the file or simulation
+    title: Required[str]
+
+    #: source code repository
+    source: Required[str]
+
+    #: path of the binary and generation time stamp of the file
+    history: Required[str]
+
+    #: references for publication # TODO (halungge) check if this is the right reference
+    references: str
+    comment: str
+    external_variables: str
+
+
 class FieldGroupMonitor(monitor.Monitor):
     """
     Monitor for a group of fields.
@@ -220,22 +259,23 @@ class FieldGroupMonitor(monitor.Monitor):
         config: FieldGroupIoConfig,
         vertical: v_grid.VerticalGridSize,
         horizontal: h_grid.HorizontalGridSize,
-        grid_id: str,
+        grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
         calendar: str = cf_utils.DEFAULT_CALENDAR,
         output_path: pathlib.Path = pathlib.Path(__file__).parent,
     ):
-        self._global_attrs = dict(
-            Conventions="CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
-            title=config.nc_title,
-            comment=config.nc_comment,
-            institution="ETH Zurich and MeteoSwiss",
-            source="ICON4Py",
-            history="Created by ICON4Py",
-            references="https://icon4py.github.io",
-            external_variables="",  # TODO (halungge) needed if cell_measure (cell area) variables are in external file
-            uuidOfHGrid=grid_id,
-        )
+        self._global_attrs: GlobalFileAttributes = {
+            "Conventions": "CF-1.7",  # TODO (halungge) check changelog? latest version is 1.11
+            "title": config.nc_title,
+            "comment": config.nc_comment,
+            "institution": "ETH Zurich and MeteoSwiss",
+            "source": "https://icon4py.github.io",
+            "history": output_path.absolute().as_posix()
+            + " "
+            + datetime.now().isoformat(),  # TODO (halungge) this is actually the path to the binary in ICON not the output path
+            "references": "https://icon4py.github.io",
+            "uuidOfHGrid": grid_id,
+        }
         self.config = config
         self._time_properties = writers.TimeProperties(time_units, calendar)
         self._vertical_size = vertical

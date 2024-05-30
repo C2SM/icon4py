@@ -135,7 +135,7 @@ def test_io_monitor_create_output_path(test_path):
         simple_grid.config.vertical_config,
         simple_grid.config.horizontal_config,
         grid_file,
-        "simple_grid",
+        simple_grid.id,
     )
     assert monitor.path.exists()
     assert monitor.path.is_dir()
@@ -183,7 +183,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
         grid.config.vertical_config,
         grid.config.horizontal_config,
         grid_file,
-        str(grid.id),
+        grid.id,
     )
     start_time = dt.datetime.fromisoformat(configured_output_start)
     monitor.store(state, start_time)
@@ -223,7 +223,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
         config,
         vertical=grid.config.vertical_config,
         horizontal=grid.config.horizontal_config,
-        grid_id=str(grid.id),
+        grid_id=grid.id,
         output_path=test_path,
     )
     time = dt.datetime.fromisoformat(configured_output_start)
@@ -327,12 +327,11 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
         variables=["exner_function", "air_density"],
     )
 
-    horizontal_size = grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,
         vertical=grid.config.vertical_config,
-        horizontal=horizontal_size,
-        grid_id="simple_grid",
+        horizontal=grid.config.horizontal_config,
+        grid_id=grid.id,
         output_path=test_path,
     )
     return config, group_monitor
@@ -395,7 +394,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
         config,
         vertical=vertical_size,
         horizontal=horizontal_size,
-        grid_id="simple_grid_x1",
+        grid_id=simple_grid.id,
         output_path=test_path,
     )
     assert group_monitor.output_path == test_path.joinpath("vars")
@@ -411,15 +410,16 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         output_interval="1 HOUR",
         variables=["exner_function", "air_density", "foo"],
     )
-    grid = simple_grid
     vertical_size = simple_grid.config.vertical_config
-    horizontal_size = grid.config.horizontal_config
+    horizontal_size = simple_grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,
         vertical=vertical_size,
         horizontal=horizontal_size,
-        grid_id="simple_grid_x1",
+        grid_id=simple_grid.id,
         output_path=test_path,
     )
     with pytest.raises(errors.IncompleteStateError, match="Field 'foo' is missing in state"):
-        group_monitor.store(model_state(grid), dt.datetime.fromisoformat("2023-04-04T11:00:00"))
+        group_monitor.store(
+            model_state(simple_grid), dt.datetime.fromisoformat("2023-04-04T11:00:00")
+        )

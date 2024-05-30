@@ -73,7 +73,7 @@ class NetcdfWriter:
             comm=self._process_properties.comm,
         )
         log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
-        self.dataset.setncatts(self.attrs)
+        self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
         ## create dimensions all except time are fixed
         self.dataset.createDimension("time", None)
         self.dataset.createDimension("level", self.num_levels)
