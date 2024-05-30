@@ -564,6 +564,7 @@ def _compute_maxslp_maxhgtd(
     z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
     return z_maxslp, z_maxhgtd
 
+
 @program
 def compute_maxslp_maxhgtd(
     ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
@@ -573,14 +574,30 @@ def compute_maxslp_maxhgtd(
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
-    vertical_end: int32
+    vertical_end: int32,
 ):
+    """
+    Compute z_maxslp and z_maxhgtd.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        ddxn_z_full: dual_edge_length
+        dual_edge_length: dual_edge_length
+        z_maxslp: output
+        z_maxhgtd: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
     _compute_maxslp_maxhgtd(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
         out=(z_maxslp, z_maxhgtd),
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
+
 
 @field_operator
 def _compute_exner_exfac(
@@ -1054,6 +1071,18 @@ def compute_mask_hdiff(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute mask_hdiff.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        mask_hdiff: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
     _compute_mask_hdiff(
         out=mask_hdiff,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
@@ -1109,6 +1138,26 @@ def compute_z_maxslp_avg_z_maxhgtd_avg(
     vertical_start: int32,
     vertical_end: int32,
 ):
+    """
+    Compute z_maxslp_avg and z_maxhgtd_avg.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        maxslp: Max field over ddxn_z_full offset
+        maxhgtd: Max field over ddxn_z_full offset*dual_edge_length offset
+        c_bln_avg_0: Interpolation field 0th K element
+        c_bln_avg_1: Interpolation field 1st K element
+        c_bln_avg_2: Interpolation field 2nd K element
+        c_bln_avg_3: Interpolation field 3rd K element
+        z_maxslp_avg: output
+        z_maxhgtd_avg: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+
     _compute_z_maxslp_avg(
         maxslp=maxslp,
         c_bln_avg_0=c_bln_avg_0,
@@ -1138,6 +1187,7 @@ def _compute_max_nbhgt(
     max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
     return max_nbhgt
 
+
 @program
 def compute_max_nbhgt(
     z_mc_nlev: Field[[CellDim], wpfloat],
@@ -1145,8 +1195,17 @@ def compute_max_nbhgt(
     horizontal_start: int32,
     horizontal_end: int32,
 ):
+    """
+    Compute max_nbhgt.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        z_mc_nlev: Last K level of z_mc
+        max_nbhgt: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+    """
     _compute_max_nbhgt(
-        z_mc_nlev=z_mc_nlev,
-        out=max_nbhgt,
-        domain={CellDim: (horizontal_start, horizontal_end)}
+        z_mc_nlev=z_mc_nlev, out=max_nbhgt, domain={CellDim: (horizontal_start, horizontal_end)}
     )
