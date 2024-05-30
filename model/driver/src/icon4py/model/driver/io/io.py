@@ -81,7 +81,7 @@ class Config(ABC):
 
 
 @dataclass(frozen=True)
-class FieldGroupIoConfig(Config):
+class FieldGroupIOConfig(Config):
     """
     Structured config for IO of a field group.
 
@@ -118,7 +118,7 @@ class FieldGroupIoConfig(Config):
 
 
 @dataclass(frozen=True)
-class IoConfig(Config):
+class IOConfig(Config):
     """
     Structured and hierarchical config for IO.
 
@@ -127,7 +127,7 @@ class IoConfig(Config):
     """
 
     output_path: str = "./output/"
-    field_groups: Sequence[FieldGroupIoConfig] = ()
+    field_groups: Sequence[FieldGroupIOConfig] = ()
 
     time_units = cf_utils.DEFAULT_TIME_UNIT
     calendar = cf_utils.DEFAULT_CALENDAR
@@ -143,14 +143,14 @@ class IoConfig(Config):
                 field_config.validate()
 
 
-class IoMonitor(monitor.Monitor):
+class IOMonitor(monitor.Monitor):
     """
     Composite Monitor for all IO groups.
     """
 
     def __init__(
         self,
-        config: IoConfig,
+        config: IOConfig,
         vertical_size: v_grid.VerticalGridSize,
         horizontal_size: h_grid.HorizontalGridSize,
         grid_file_name: str,
@@ -256,7 +256,7 @@ class FieldGroupMonitor(monitor.Monitor):
 
     def __init__(
         self,
-        config: FieldGroupIoConfig,
+        config: FieldGroupIOConfig,
         vertical: v_grid.VerticalGridSize,
         horizontal: h_grid.HorizontalGridSize,
         grid_id: uuid.UUID,
@@ -315,7 +315,7 @@ class FieldGroupMonitor(monitor.Monitor):
         self._file_counter += 1
         filename = generate_name(self._file_name_pattern, self._file_counter)
         filename = self._output_path.joinpath(filename)
-        df = writers.NetcdfWriter(
+        df = writers.NETCDFWriter(
             filename,
             vertical_grid,
             horizontal_size,

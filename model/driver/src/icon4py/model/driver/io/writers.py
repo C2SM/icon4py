@@ -34,7 +34,7 @@ class TimeProperties:
     calendar: str
 
 
-class NetcdfWriter:
+class NETCDFWriter:
     """
     Writer for netcdf files.
 

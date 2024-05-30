@@ -21,7 +21,7 @@ from icon4py.model.common.grid import base
 from icon4py.model.common.test_utils import helpers
 from icon4py.model.driver.io import cf_utils, data
 from icon4py.model.driver.io.writers import (
-    NetcdfWriter,
+    NETCDFWriter,
     TimeProperties,
     filter_by_standard_name,
 )
@@ -49,11 +49,11 @@ def test_filter_by_standard_name_non_existing_name():
 
 def initialized_writer(
     test_path, random_name, grid=test_io.simple_grid
-) -> tuple[NetcdfWriter, base.BaseGrid]:
+) -> tuple[NETCDFWriter, base.BaseGrid]:
     vertical = grid.config.vertical_config
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
-    writer = NetcdfWriter(
+    writer = NETCDFWriter(
         fname,
         vertical,
         horizontal,

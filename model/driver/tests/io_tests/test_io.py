@@ -26,10 +26,10 @@ from icon4py.model.common.grid import base, simple
 from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 from icon4py.model.driver.io import data, ugrid
 from icon4py.model.driver.io.io import (
-    FieldGroupIoConfig,
+    FieldGroupIOConfig,
     FieldGroupMonitor,
-    IoConfig,
-    IoMonitor,
+    IOConfig,
+    IOMonitor,
     generate_name,
     to_delta,
 )
@@ -129,8 +129,8 @@ def is_valid_uxgrid(file: Union[pathlib.Path, str]) -> bool:
 
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(field_groups=[], output_path=path_name)
-    monitor = IoMonitor(
+    config = IOConfig(field_groups=[], output_path=path_name)
+    monitor = IOMonitor(
         config,
         simple_grid.config.vertical_config,
         simple_grid.config.horizontal_config,
@@ -143,8 +143,8 @@ def test_io_monitor_create_output_path(test_path):
 
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    config = IoConfig(field_groups=[], output_path=path_name)
-    monitor = IoMonitor(
+    config = IOConfig(field_groups=[], output_path=path_name)
+    monitor = IOMonitor(
         config,
         simple_grid.config.vertical_config,
         simple_grid.config.horizontal_config,
@@ -169,7 +169,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     field_configs = [
-        FieldGroupIoConfig(
+        FieldGroupIOConfig(
             output_interval="HOUR",
             start_time=configured_output_start,
             filename="icon4py_dummy_output",
@@ -177,8 +177,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
             nc_comment="Writing dummy data from icon4py for testing.",
         )
     ]
-    config = IoConfig(field_groups=field_configs, output_path=path_name)
-    monitor = IoMonitor(
+    config = IOConfig(field_groups=field_configs, output_path=path_name)
+    monitor = IOMonitor(
         config,
         grid.config.vertical_config,
         grid.config.horizontal_config,
@@ -212,7 +212,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     filename_stub = "icon4py_dummy_output"
-    config = FieldGroupIoConfig(
+    config = FieldGroupIOConfig(
         output_interval="HOUR",
         start_time=configured_output_start,
         filename=filename_stub,
@@ -320,7 +320,7 @@ def test_fieldgroup_monitor_no_output_before_start_time(test_path):
 
 
 def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"):
-    config = FieldGroupIoConfig(
+    config = FieldGroupIOConfig(
         start_time=start_time,
         filename="test_empty.nc",
         output_interval="1 HOUR",
@@ -372,7 +372,7 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
 )
 def test_fieldgroup_config_validate_filename(start_time, filename, interval, variables, message):
     with pytest.raises(errors.InvalidConfigError) as err:
-        FieldGroupIoConfig(
+        FieldGroupIOConfig(
             start_time=start_time,
             filename=filename,
             output_interval=interval,
@@ -382,7 +382,7 @@ def test_fieldgroup_config_validate_filename(start_time, filename, interval, var
 
 
 def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
-    config = FieldGroupIoConfig(
+    config = FieldGroupIOConfig(
         start_time="2023-04-04T11:00:00",
         filename="vars/prognostics.nc",
         output_interval="1 HOUR",
@@ -404,7 +404,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
 
 
 def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
-    config = FieldGroupIoConfig(
+    config = FieldGroupIOConfig(
         start_time="2023-04-04T11:00:00",
         filename="vars/prognostics.nc",
         output_interval="1 HOUR",
