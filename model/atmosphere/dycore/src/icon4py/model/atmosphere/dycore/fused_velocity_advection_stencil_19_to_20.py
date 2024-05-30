@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
@@ -45,15 +46,15 @@ def _fused_velocity_advection_stencil_19_to_20(
     coeff_gradekin: Field[[ECDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
-    f_e: Field[[EdgeDim], wpfloat],
+    f_e: fa.EwpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
     levelmask: Field[[KDim], bool],
-    area_edge: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    area_edge: fa.EwpField,
+    tangent_orientation: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     k: Field[[KDim], int32],
     cfl_w_limit: vpfloat,
@@ -114,15 +115,15 @@ def fused_velocity_advection_stencil_19_to_20(
     coeff_gradekin: Field[[ECDim], vpfloat],
     z_ekinh: Field[[CellDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
-    f_e: Field[[EdgeDim], wpfloat],
+    f_e: fa.EwpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
     levelmask: Field[[KDim], bool],
-    area_edge: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    area_edge: fa.EwpField,
+    tangent_orientation: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
     k: Field[[KDim], int32],

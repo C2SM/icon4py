@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     _calculate_nabla2_for_z,
@@ -35,19 +36,19 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _apply_diffusion_to_theta_and_exner(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    theta_v_in: Field[[CellDim, KDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
+    theta_v_in: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_diffcoef: Field[[CellDim, KDim], wpfloat],
-    geofac_n2s_c: Field[[CellDim], wpfloat],
+    zd_diffcoef: fa.CKwpField,
+    geofac_n2s_c: fa.CwpField,
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
-    area: Field[[CellDim], wpfloat],
-    exner: Field[[CellDim, KDim], wpfloat],
+    area: fa.CwpField,
+    exner: fa.CKwpField,
     rd_o_cvd: vpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CKwpField, fa.CKwpField]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v_in)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
     z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
@@ -67,18 +68,18 @@ def _apply_diffusion_to_theta_and_exner(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_theta_and_exner(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    theta_v_in: Field[[CellDim, KDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
+    theta_v_in: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],
     mask: Field[[CellDim, KDim], bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_diffcoef: Field[[CellDim, KDim], wpfloat],
-    geofac_n2s_c: Field[[CellDim], wpfloat],
+    zd_diffcoef: fa.CKwpField,
+    geofac_n2s_c: fa.CwpField,
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
-    area: Field[[CellDim], wpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    exner: Field[[CellDim, KDim], wpfloat],
+    area: fa.CwpField,
+    theta_v: fa.CKwpField,
+    exner: fa.CKwpField,
     rd_o_cvd: vpfloat,
 ):
     _apply_diffusion_to_theta_and_exner(

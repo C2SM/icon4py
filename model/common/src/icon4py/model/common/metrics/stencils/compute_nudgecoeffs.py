@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, exp, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.type_alias import wpfloat
@@ -26,7 +27,7 @@ def _compute_nudgecoeffs(
     nudge_max_coeffs: wpfloat,
     nudge_efold_width: wpfloat,
     nudge_zone_width: int32,
-) -> Field[[EdgeDim], wpfloat]:
+) -> fa.EwpField:
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
         nudge_max_coeffs
@@ -37,7 +38,7 @@ def _compute_nudgecoeffs(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
-    nudgecoeffs_e: Field[[EdgeDim], wpfloat],
+    nudgecoeffs_e: fa.EwpField,
     refin_ctrl: Field[[EdgeDim], int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,

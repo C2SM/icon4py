@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, maximum, minimum, sqrt
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.settings import backend
@@ -23,9 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], vpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    tangent_orientation: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    inv_vert_vert_length: fa.EwpField,
     u_vert: Field[[VertexDim, KDim], vpfloat],
     v_vert: Field[[VertexDim, KDim], vpfloat],
     primal_normal_vert_x: Field[[ECVDim], wpfloat],
@@ -154,9 +155,9 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_and_smag_coefficients_for_vn(
     diff_multfac_smag: Field[[KDim], vpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
+    tangent_orientation: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    inv_vert_vert_length: fa.EwpField,
     u_vert: Field[[VertexDim, KDim], vpfloat],
     v_vert: Field[[VertexDim, KDim], vpfloat],
     primal_normal_vert_x: Field[[ECVDim], wpfloat],

@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     _enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -28,7 +29,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_v: fa.CKwpField,
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
@@ -46,7 +47,7 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-    theta_v: Field[[CellDim, KDim], wpfloat],
+    theta_v: fa.CKwpField,
     theta_ref_mc: Field[[CellDim, KDim], vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,

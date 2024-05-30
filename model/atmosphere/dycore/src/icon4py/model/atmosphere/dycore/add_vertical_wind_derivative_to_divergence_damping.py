@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_vertical_wind_derivative_to_divergence_damping(
-    hmask_dd3d: Field[[EdgeDim], wpfloat],
+    hmask_dd3d: fa.EwpField,
     scalfac_dd3d: Field[[KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
     z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
@@ -43,9 +44,9 @@ def _add_vertical_wind_derivative_to_divergence_damping(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_vertical_wind_derivative_to_divergence_damping(
-    hmask_dd3d: Field[[EdgeDim], wpfloat],
+    hmask_dd3d: fa.EwpField,
     scalfac_dd3d: Field[[KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
     z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,

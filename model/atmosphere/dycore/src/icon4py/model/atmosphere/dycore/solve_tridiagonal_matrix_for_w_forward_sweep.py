@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -41,18 +42,18 @@ def _w(
 
 @field_operator
 def _solve_tridiagonal_matrix_for_w_forward_sweep(
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: fa.CwpField,
+    theta_v_ic: fa.CKwpField,
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     z_alpha: Field[[CellDim, KDim], vpfloat],
     z_beta: Field[[CellDim, KDim], vpfloat],
-    z_w_expl: Field[[CellDim, KDim], wpfloat],
-    z_exner_expl: Field[[CellDim, KDim], wpfloat],
+    z_w_expl: fa.CKwpField,
+    z_exner_expl: fa.CKwpField,
     z_q: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[Field[[CellDim, KDim], vpfloat], fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
@@ -70,15 +71,15 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def solve_tridiagonal_matrix_for_w_forward_sweep(
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: fa.CwpField,
+    theta_v_ic: fa.CKwpField,
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
     z_alpha: Field[[CellDim, KDim], vpfloat],
     z_beta: Field[[CellDim, KDim], vpfloat],
-    z_w_expl: Field[[CellDim, KDim], wpfloat],
-    z_exner_expl: Field[[CellDim, KDim], wpfloat],
+    z_w_expl: fa.CKwpField,
+    z_exner_expl: fa.CKwpField,
     z_q: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     dtime: wpfloat,
     cpd: wpfloat,
     horizontal_start: int32,

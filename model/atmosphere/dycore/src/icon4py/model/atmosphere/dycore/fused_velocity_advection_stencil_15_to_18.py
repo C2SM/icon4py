@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, maximum, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     _add_extra_diffusion_for_w_con_approaching_cfl,
@@ -34,7 +35,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _fused_velocity_advection_stencil_16_to_18(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
     coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
@@ -44,7 +45,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     cell: Field[[CellDim], int32],
     k: Field[[KDim], int32],
@@ -99,7 +100,7 @@ def _fused_velocity_advection_stencil_16_to_18(
 @field_operator
 def _fused_velocity_advection_stencil_15_to_18(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
     coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
@@ -109,7 +110,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     cell: Field[[CellDim], int32],
     k: Field[[KDim], int32],
@@ -160,7 +161,7 @@ def _fused_velocity_advection_stencil_15_to_18(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_15_to_18(
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
     coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
@@ -170,7 +171,7 @@ def fused_velocity_advection_stencil_15_to_18(
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: Field[[CellDim], bool],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     cell: Field[[CellDim], int32],

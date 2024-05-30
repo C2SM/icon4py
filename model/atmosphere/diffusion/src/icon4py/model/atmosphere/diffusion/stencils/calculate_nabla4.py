@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.settings import backend
@@ -27,8 +28,8 @@ def _calculate_nabla4(
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
     z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
-    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    inv_vert_vert_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     u_vert_wp, v_vert_wp = astype((u_vert, v_vert), wpfloat)
 
@@ -67,8 +68,8 @@ def calculate_nabla4(
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
     z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
-    inv_vert_vert_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    inv_vert_vert_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,

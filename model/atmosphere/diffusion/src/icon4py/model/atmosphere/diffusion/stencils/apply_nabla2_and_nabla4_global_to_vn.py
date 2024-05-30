@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: Field[[EdgeDim], wpfloat],
+    area_edge: fa.EwpField,
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
@@ -39,7 +40,7 @@ def _apply_nabla2_and_nabla4_global_to_vn(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: Field[[EdgeDim], wpfloat],
+    area_edge: fa.EwpField,
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],

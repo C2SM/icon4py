@@ -22,6 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     _init_two_edge_kdim_fields_with_zero_wp,
@@ -48,9 +49,9 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
-    area_edge: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    area_edge: fa.EwpField,
+    tangent_orientation: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
     zeta: Field[[VertexDim, KDim], vpfloat],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
@@ -105,8 +106,8 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
     area_edge: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
+    tangent_orientation: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
     zeta: Field[[VertexDim, KDim], vpfloat],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],

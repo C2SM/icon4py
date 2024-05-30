@@ -15,6 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -23,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
@@ -61,7 +62,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
     z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     ikoffset: Field[[ECDim, KDim], int32],

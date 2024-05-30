@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,15 +23,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
-    w_nnow: Field[[CellDim, KDim], wpfloat],
+    w_nnow: fa.CKwpField,
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    rho_ic: fa.CKwpField,
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    vwind_expl_wgt: fa.CwpField,
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CKwpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_43."""
     ddt_w_adv_ntl1_wp, z_th_ddz_exner_c_wp, w_concorr_c_wp = astype(
         (ddt_w_adv_ntl1, z_th_ddz_exner_c, w_concorr_c), wpfloat
@@ -43,14 +44,14 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
-    z_w_expl: Field[[CellDim, KDim], wpfloat],
-    w_nnow: Field[[CellDim, KDim], wpfloat],
+    z_w_expl: fa.CKwpField,
+    w_nnow: fa.CKwpField,
     ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
     z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
+    z_contr_w_fl_l: fa.CKwpField,
     rho_ic: Field[[CellDim, KDim], wpfloat],
     w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    vwind_expl_wgt: Field[[CellDim], wpfloat],
+    vwind_expl_wgt: fa.CwpField,
     dtime: wpfloat,
     cpd: wpfloat,
     horizontal_start: int32,

@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -23,9 +24,9 @@ from icon4py.model.common.type_alias import wpfloat
 @field_operator
 def _apply_rayleigh_damping_mechanism(
     z_raylfac: Field[[KDim], wpfloat],
-    w_1: Field[[CellDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    w_1: fa.CwpField,
+    w: fa.CKwpField,
+) -> fa.CKwpField:
     """Formerly known as _mo_solve_nonhydro_stencil_54."""
     z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
     w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
@@ -35,7 +36,7 @@ def _apply_rayleigh_damping_mechanism(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_rayleigh_damping_mechanism(
     z_raylfac: Field[[KDim], wpfloat],
-    w_1: Field[[CellDim], wpfloat],
+    w_1: fa.CwpField,
     w: Field[[CellDim, KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,

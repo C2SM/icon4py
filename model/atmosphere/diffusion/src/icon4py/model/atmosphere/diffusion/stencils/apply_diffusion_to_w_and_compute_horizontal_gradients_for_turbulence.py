@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -32,11 +33,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    w_old: Field[[CellDim, KDim], wpfloat],
+    w_old: fa.CKwpField,
     type_shear: int32,
     dwdx: Field[[CellDim, KDim], vpfloat],
     dwdy: Field[[CellDim, KDim], vpfloat],
@@ -48,7 +49,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     interior_idx: int32,
     halo_idx: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], wpfloat],
+    fa.CKwpField,
     Field[[CellDim, KDim], vpfloat],
     Field[[CellDim, KDim], vpfloat],
 ]:
@@ -82,12 +83,12 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    w_old: Field[[CellDim, KDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w_old: fa.CKwpField,
+    w: fa.CKwpField,
     type_shear: int32,
     dwdx: Field[[CellDim, KDim], vpfloat],
     dwdy: Field[[CellDim, KDim], vpfloat],

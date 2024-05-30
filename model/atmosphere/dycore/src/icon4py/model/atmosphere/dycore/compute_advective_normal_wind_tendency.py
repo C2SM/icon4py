@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import (
     E2C,
@@ -39,7 +40,7 @@ def _compute_advective_normal_wind_tendency(
     z_ekinh: Field[[CellDim, KDim], vpfloat],
     zeta: Field[[VertexDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
-    f_e: Field[[EdgeDim], wpfloat],
+    f_e: fa.EwpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -73,7 +74,7 @@ def compute_advective_normal_wind_tendency(
     z_ekinh: Field[[CellDim, KDim], vpfloat],
     zeta: Field[[VertexDim, KDim], vpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
-    f_e: Field[[EdgeDim], wpfloat],
+    f_e: fa.EwpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],

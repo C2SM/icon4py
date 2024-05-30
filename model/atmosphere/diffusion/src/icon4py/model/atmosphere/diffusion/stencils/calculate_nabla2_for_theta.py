@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     _calculate_nabla2_for_z,
@@ -29,8 +30,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _calculate_nabla2_for_theta(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
+    inv_dual_edge_length: fa.EwpField,
+    theta_v: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)

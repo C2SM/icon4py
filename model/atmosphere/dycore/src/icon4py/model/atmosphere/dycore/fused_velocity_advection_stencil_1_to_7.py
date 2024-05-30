@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -34,7 +35,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -137,10 +138,10 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
+    w: fa.CKwpField,
+    inv_dual_edge_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    tangent_orientation: fa.EwpField,
     z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -213,10 +214,10 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
+    w: fa.CKwpField,
+    inv_dual_edge_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    tangent_orientation: fa.EwpField,
     z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -271,10 +272,10 @@ def _fused_velocity_advection_stencil_1_to_7(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
+    w: fa.CKwpField,
+    inv_dual_edge_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    tangent_orientation: fa.EwpField,
     z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -364,10 +365,10 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
+    w: fa.CKwpField,
+    inv_dual_edge_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    tangent_orientation: fa.EwpField,
     z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
@@ -421,10 +422,10 @@ def fused_velocity_advection_stencil_1_to_7(
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
+    w: fa.CKwpField,
+    inv_dual_edge_length: fa.EwpField,
+    inv_primal_edge_length: fa.EwpField,
+    tangent_orientation: fa.EwpField,
     z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],

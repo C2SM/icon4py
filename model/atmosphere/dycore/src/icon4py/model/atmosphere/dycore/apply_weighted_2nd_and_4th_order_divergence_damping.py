@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -24,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _apply_weighted_2nd_and_4th_order_divergence_damping(
     scal_divdamp: Field[[KDim], wpfloat],
     bdy_divdamp: Field[[KDim], wpfloat],
-    nudgecoeff_e: Field[[EdgeDim], wpfloat],
+    nudgecoeff_e: fa.EwpField,
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], wpfloat]:
@@ -41,7 +42,7 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
 def apply_weighted_2nd_and_4th_order_divergence_damping(
     scal_divdamp: Field[[KDim], wpfloat],
     bdy_divdamp: Field[[KDim], wpfloat],
-    nudgecoeff_e: Field[[EdgeDim], wpfloat],
+    nudgecoeff_e: fa.EwpField,
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: Field[[EdgeDim, KDim], wpfloat],
     horizontal_start: int32,

@@ -22,6 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -35,9 +36,9 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     owner_mask: Field[[CellDim], bool],
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
@@ -74,9 +75,9 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
     owner_mask: Field[[CellDim], bool],
     z_w_con_c: Field[[CellDim, KDim], vpfloat],
     ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: fa.CKwpField,
     ddt_w_adv: Field[[CellDim, KDim], vpfloat],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,

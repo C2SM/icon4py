@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,13 +23,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_solver_coefficients_matrix(
-    exner_nnow: Field[[CellDim, KDim], wpfloat],
-    rho_nnow: Field[[CellDim, KDim], wpfloat],
-    theta_v_nnow: Field[[CellDim, KDim], wpfloat],
+    exner_nnow: fa.CKwpField,
+    rho_nnow: fa.CKwpField,
+    theta_v_nnow: fa.CKwpField,
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: fa.CwpField,
+    theta_v_ic: fa.CKwpField,
+    rho_ic: fa.CKwpField,
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
@@ -44,14 +45,14 @@ def _compute_solver_coefficients_matrix(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_solver_coefficients_matrix(
     z_beta: Field[[CellDim, KDim], vpfloat],
-    exner_nnow: Field[[CellDim, KDim], wpfloat],
-    rho_nnow: Field[[CellDim, KDim], wpfloat],
-    theta_v_nnow: Field[[CellDim, KDim], wpfloat],
+    exner_nnow: fa.CKwpField,
+    rho_nnow: fa.CKwpField,
+    theta_v_nnow: fa.CKwpField,
     inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
     z_alpha: Field[[CellDim, KDim], vpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    vwind_impl_wgt: fa.CwpField,
+    theta_v_ic: fa.CKwpField,
+    rho_ic: fa.CKwpField,
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,

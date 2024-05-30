@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,14 +23,14 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _update_mass_volume_flux(
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
-    vol_flx_ic: Field[[CellDim, KDim], wpfloat],
+    z_contr_w_fl_l: fa.CKwpField,
+    rho_ic: fa.CKwpField,
+    vwind_impl_wgt: fa.CwpField,
+    w: fa.CKwpField,
+    mass_flx_ic: fa.CKwpField,
+    vol_flx_ic: fa.CKwpField,
     r_nsubsteps: wpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CKwpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_58."""
     z_a = r_nsubsteps * (z_contr_w_fl_l + rho_ic * vwind_impl_wgt * w)
     mass_flx_ic_wp = mass_flx_ic + z_a
@@ -39,12 +40,12 @@ def _update_mass_volume_flux(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_mass_volume_flux(
-    z_contr_w_fl_l: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    mass_flx_ic: Field[[CellDim, KDim], wpfloat],
-    vol_flx_ic: Field[[CellDim, KDim], wpfloat],
+    z_contr_w_fl_l: fa.CKwpField,
+    rho_ic: fa.CKwpField,
+    vwind_impl_wgt: fa.CwpField,
+    w: fa.CKwpField,
+    mass_flx_ic: fa.CKwpField,
+    vol_flx_ic: fa.CKwpField,
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
