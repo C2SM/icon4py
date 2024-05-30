@@ -38,15 +38,18 @@ ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/22.11/${HPC_SDK_NA
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     mkdir -p /opt/nvidia && \
     tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
-    rm /tmp/nvhpc.tar.gz
+    rm /tmp/nvhpc.tar.g
 
 ENV NVHPC_DEFAULT_CUDA=11.8
 ENV NVHPC_SILENT=1
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
-ENV PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin:$PATH
-ENV MANPATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/man:$MANPATH
-ENV PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/comm_libs/mpi/bin:$PATH
+# Set environment variables
+ENV NVHPC=/opt/nvidia/hpc_sdk
+ENV PATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin:${PATH}
+ENV LD_LIBRARY_PATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/lib:${LD_LIBRARY_PATH}
+ENV MANPATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/compilers/man:${MANPATH}
+ENV PATH=${NVHPC}/Linux_x86_64/${HPC_SDK_VERSION}/comm_libs/mpi/bin:$PATH
 
 # Install Boost
 RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
