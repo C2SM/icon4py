@@ -564,6 +564,23 @@ def _compute_maxslp_maxhgtd(
     z_maxhgtd = maximum(z_maxhgtd_0_1, abs(ddxn_z_full(C2E[2]) * dual_edge_length(C2E[2])))
     return z_maxslp, z_maxhgtd
 
+@program
+def compute_maxslp_maxhgtd(
+    ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    z_maxslp: Field[[CellDim, KDim], wpfloat],
+    z_maxhgtd: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32
+):
+    _compute_maxslp_maxhgtd(
+        ddxn_z_full=ddxn_z_full,
+        dual_edge_length=dual_edge_length,
+        out=(z_maxslp, z_maxhgtd),
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
 
 @field_operator
 def _compute_exner_exfac(
@@ -1120,3 +1137,16 @@ def _compute_max_nbhgt(
     max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
     max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
     return max_nbhgt
+
+@program
+def compute_max_nbhgt(
+    z_mc_nlev: Field[[CellDim], wpfloat],
+    max_nbhgt: Field[[CellDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    _compute_max_nbhgt(
+        z_mc_nlev=z_mc_nlev,
+        out=max_nbhgt,
+        domain={CellDim: (horizontal_start, horizontal_end)}
+    )

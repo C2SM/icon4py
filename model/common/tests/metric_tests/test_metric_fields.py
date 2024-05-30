@@ -42,8 +42,8 @@ from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
     MetricsConfig,
     _compute_flat_idx,
-    _compute_max_nbhgt,
-    _compute_maxslp_maxhgtd,
+    compute_max_nbhgt,
+    compute_maxslp_maxhgtd,
     _compute_pg_edgeidx_vertidx,
     _compute_z_aux2,
     compute_bdy_halo_c,
@@ -856,11 +856,15 @@ def test_compute_diffusion_metrics(
     )
     nlev = icon_grid.num_levels
 
-    _compute_maxslp_maxhgtd(
+    compute_maxslp_maxhgtd.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
-        out=(maxslp, maxhgtd),
-        domain={CellDim: (cell_lateral, icon_grid.num_cells), KDim: (int32(0), nlev)},
+        z_maxslp=maxslp,
+        z_maxhgtd= maxhgtd,
+        horizontal_start=cell_lateral,
+        horizontal_end=icon_grid.num_cells,
+        vertical_start=0,
+        vertical_end=nlev,
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
@@ -868,9 +872,9 @@ def test_compute_diffusion_metrics(
     compute_z_mc.with_backend(backend)(
         metrics_savepoint.z_ifc(),
         z_mc,
-        horizontal_start=int32(0),
+        horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=int32(0),
+        vertical_start=0,
         vertical_end=nlev,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
@@ -885,16 +889,17 @@ def test_compute_diffusion_metrics(
         z_maxslp_avg=z_maxslp_avg,
         z_maxhgtd_avg=z_maxhgtd_avg,
         horizontal_start=cell_lateral,
-        horizontal_end=int32(icon_grid.num_cells),
+        horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
     )
 
-    _compute_max_nbhgt(
+    compute_max_nbhgt.with_backend(backend)(
         z_mc_nlev=as_field((CellDim,), z_mc.asnumpy()[:, nlev - 1]),
-        out=max_nbhgt,
-        domain={CellDim: (int32(1), int32(icon_grid.num_cells))},
+        max_nbhgt=max_nbhgt,
+        horizontal_start=cell_nudging,
+        horizontal_end=icon_grid.num_cells,
         offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
     )
 
