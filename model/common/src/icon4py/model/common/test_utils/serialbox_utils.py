@@ -291,7 +291,7 @@ class IconGridSavepoint(IconSavepoint):
         else:
             return self._c2e2c2e()
 
-    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
+    @IconSavepoint.optionally_registered()
     def _c2e2c2e(self):
         return self._get_connectivity_array("c2e2c2e", CellDim, reverse=True)
 
@@ -512,7 +512,7 @@ class InterpolationSavepoint(IconSavepoint):
             (CellDim, C2E2CODim), grg[:num_cells, :, 1]
         )
 
-    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
+    @IconSavepoint.optionally_registered()
     def zd_intcoef(self):
         return self._get_field("vcoef", CellDim, C2E2CDim, KDim)
 
@@ -686,7 +686,7 @@ class MetricSavepoint(IconSavepoint):
     def zd_diffcoef(self):
         return self._get_field("zd_diffcoef", CellDim, KDim)
 
-    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
+    @IconSavepoint.optionally_registered()
     def zd_intcoef(self):
         return self._read_and_reorder_sparse_field("vcoef")
 
@@ -710,7 +710,7 @@ class MetricSavepoint(IconSavepoint):
         assert old_shape[1] == sparse_size
         return as_field(target_dims, data.reshape(old_shape[0] * old_shape[1], old_shape[2]))
 
-    @IconSavepoint.optionally_registered(CellDim, C2E2CDim, KDim)
+    @IconSavepoint.optionally_registered()
     def zd_vertoffset(self):
         return self._read_and_reorder_sparse_field("zd_vertoffset")
 

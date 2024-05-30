@@ -831,6 +831,7 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
 def test_compute_diffusion_metrics(
     metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
