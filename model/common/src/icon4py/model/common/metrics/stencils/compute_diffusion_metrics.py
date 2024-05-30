@@ -26,15 +26,15 @@ def _compute_nbidx(
     ind: int,
     nlev: int,
 ) -> np.array:
-    jk_start = nlev - 2
+    jk_start = nlev - 1
     for jk in reversed(range(k_start[jc], k_end[jc])):
-        for jk1 in reversed(range(jk_start + 1)):
+        for jk1 in reversed(range(jk_start)):
             if (
                 z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
                 and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
             ):
                 nbidx[jc, ind, jk] = jk1
-                jk_start = jk1
+                jk_start = jk1 + 1
                 break
 
     return nbidx[jc, ind, :]
