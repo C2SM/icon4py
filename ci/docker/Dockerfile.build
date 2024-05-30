@@ -48,7 +48,7 @@ RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 ENV PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/bin:$PATH
 ENV MANPATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/man:$MANPATH
 ENV PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/comm_libs/mpi/bin:$PATH
-ENV LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}/compilers/lib:$LD_LIBRARY_PATH
+ENV LD_LIBRARY_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/2022/cuda/lib64:$LD_LIBRARY_PATH
 
 # Install Boost
 RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
