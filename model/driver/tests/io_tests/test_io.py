@@ -165,9 +165,7 @@ def test_io_monitor_write_ugrid_file(test_path):
 )
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
-    grid = grid_utils.get_icon_grid_from_gridfile(
-        datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
-    )
+    grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     field_configs = [
@@ -210,9 +208,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
-    grid = grid_utils.get_icon_grid_from_gridfile(
-        datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False
-    )
+    grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     filename_stub = "icon4py_dummy_output"

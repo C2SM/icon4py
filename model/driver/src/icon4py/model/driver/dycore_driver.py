@@ -327,7 +327,9 @@ def initialize(
     log.info(f"reading configuration: experiment {experiment_type}")
     config = read_config(experiment_type)
 
-    decomp_info = read_decomp_info(file_path, props, serialization_type, grid_id, grid_root, grid_level)
+    decomp_info = read_decomp_info(
+        file_path, props, serialization_type, grid_id, grid_root, grid_level
+    )
 
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = read_icon_grid(
@@ -438,8 +440,14 @@ def initialize(
 @click.option("--experiment_type", default="any", help="experiment selection")
 @click.option("--grid_root", default=2, help="experiment selection")
 @click.option("--grid_level", default=4, help="experiment selection")
-@click.option("--grid_id", default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba", help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)")
-def main(input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level):
+@click.option(
+    "--grid_id",
+    default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
+    help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
+)
+def main(
+    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+):
     """
     Run the driver.
 

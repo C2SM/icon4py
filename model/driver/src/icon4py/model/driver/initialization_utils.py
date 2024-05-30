@@ -102,7 +102,7 @@ def read_icon_grid(
     path: Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
-    grid_id = GLOBAL_GRID_ID,    
+    grid_id=GLOBAL_GRID_ID,
     grid_root=2,
     grid_level=4,
 ) -> IconGrid:
@@ -651,9 +651,7 @@ def _serial_data_provider(path, rank) -> sb.IconSerialDataProvider:
 
 @functools.cache
 def _grid_savepoint(path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
-    sp = _serial_data_provider(path, rank).from_savepoint_grid(
-        grid_id, grid_root, grid_level
-    )
+    sp = _serial_data_provider(path, rank).from_savepoint_grid(grid_id, grid_root, grid_level)
     return sp
 
 
@@ -666,7 +664,9 @@ def read_decomp_info(
     grid_level=4,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        return _grid_savepoint(path, procs_props.rank, grid_id, grid_root, grid_level).construct_decomposition_info()
+        return _grid_savepoint(
+            path, procs_props.rank, grid_id, grid_root, grid_level
+        ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
@@ -704,7 +704,9 @@ def read_static_fields(
     if ser_type == SerializationType.SB:
         data_provider = _serial_data_provider(path, rank)
 
-        icon_grid = _grid_savepoint(path, rank, grid_id, grid_root, grid_level).construct_icon_grid(on_gpu=False)
+        icon_grid = _grid_savepoint(path, rank, grid_id, grid_root, grid_level).construct_icon_grid(
+            on_gpu=False
+        )
 
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
