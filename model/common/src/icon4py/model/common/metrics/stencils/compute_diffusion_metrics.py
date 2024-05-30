@@ -11,59 +11,55 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import math
-
 import numpy as np
 
 
 def _compute_nbidx(
-    k_start: list,
-    k_end: list,
+    k_range: range,
     z_mc: np.array,
     z_mc_off: np.array,
     nbidx: np.array,
     jc: int,
-    ind: int,
     nlev: int,
 ) -> np.array:
-    jk_start = nlev - 1
-    for jk in reversed(range(k_start[jc], k_end[jc])):
-        for jk1 in reversed(range(jk_start)):
-            if (
-                z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
-                and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
-            ):
-                nbidx[jc, ind, jk] = jk1
-                jk_start = jk1 + 1
-                break
+    for ind in range(3):
+        jk_start = nlev - 1
+        for jk in reversed(k_range):
+            for jk1 in reversed(range(jk_start)):
+                if (
+                    z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
+                    and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
+                ):
+                    nbidx[jc, ind, jk] = jk1
+                    jk_start = jk1 + 1
+                    break
 
-    return nbidx[jc, ind, :]
+    return nbidx[jc, :, :]
 
 
 def _compute_z_vintcoeff(
-    k_start: list,
-    k_end: list,
+    k_range: range,
     z_mc: np.array,
     z_mc_off: np.array,
     z_vintcoeff: np.array,
     jc: int,
-    ind: int,
     nlev: int,
 ) -> np.array:
-    jk_start = nlev - 1
-    for jk in reversed(range(k_start[jc], k_end[jc])):
-        for jk1 in reversed(range(jk_start)):
-            if (
-                z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
-                and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
-            ):
-                z_vintcoeff[jc, ind, jk] = (z_mc[jc, jk] - z_mc_off[jc, ind, jk1 + 1]) / (
-                    z_mc_off[jc, ind, jk1] - z_mc_off[jc, ind, jk1 + 1]
-                )
-                jk_start = jk1 + 1
-                break
+    for ind in range(3):
+        jk_start = nlev - 1
+        for jk in reversed(k_range):
+            for jk1 in reversed(range(jk_start)):
+                if (
+                    z_mc[jc, jk] <= z_mc_off[jc, ind, jk1]
+                    and z_mc[jc, jk] >= z_mc_off[jc, ind, jk1 + 1]
+                ):
+                    z_vintcoeff[jc, ind, jk] = (z_mc[jc, jk] - z_mc_off[jc, ind, jk1 + 1]) / (
+                        z_mc_off[jc, ind, jk1] - z_mc_off[jc, ind, jk1 + 1]
+                    )
+                    jk_start = jk1 + 1
+                    break
 
-    return z_vintcoeff[jc, ind, :]
+    return z_vintcoeff[jc, :, :]
 
 
 def _compute_i_params(
@@ -91,7 +87,7 @@ def _compute_i_params(
             ji += 1
             i_indlist[ji] = jc
 
-            if k_start[jc] is not None and k_end[jc] is not None and k_start[jc] > k_end[jc]:
+            if all((k_start[jc], k_end[jc])) and k_start[jc] > k_end[jc]:
                 i_listreduce += 1
             else:
                 ji_ind += 1
@@ -129,7 +125,7 @@ def _compute_k_start_end(
                     k_start[jc] = jk
                     break
 
-            if k_start[jc] is not None and k_end[jc] is not None and k_start[jc] > k_end[jc]:
+            if all((k_start[jc], k_end[jc])) and k_start[jc] > k_end[jc]:
                 k_start[jc] = nlev - 1
 
     return k_start, k_end
@@ -156,37 +152,24 @@ def compute_diffusion_metrics(
 ) -> np.array:
     for ji in range(i_listdim):
         jc = i_indlist[ji]
-        if k_start[jc] is not None and k_end[jc] is not None:
-            nbidx[jc, 0, :] = _compute_nbidx(k_start, k_end, z_mc, z_mc_off, nbidx, jc, 0, nlev)
-            nbidx[jc, 1, :] = _compute_nbidx(k_start, k_end, z_mc, z_mc_off, nbidx, jc, 1, nlev)
-            nbidx[jc, 2, :] = _compute_nbidx(k_start, k_end, z_mc, z_mc_off, nbidx, jc, 2, nlev)
-
-            z_vintcoeff[jc, 0, :] = _compute_z_vintcoeff(
-                k_start, k_end, z_mc, z_mc_off, z_vintcoeff, jc, 0, nlev
+        k_range = range(k_start[jc], k_end[jc])
+        if all((k_range)):
+            nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)
+            z_vintcoeff[jc, :, :] = _compute_z_vintcoeff(
+                k_range, z_mc, z_mc_off, z_vintcoeff, jc, nlev
             )
-            z_vintcoeff[jc, 1, :] = _compute_z_vintcoeff(
-                k_start, k_end, z_mc, z_mc_off, z_vintcoeff, jc, 1, nlev
+
+            zd_intcoef_dsl[jc, :, k_range] = z_vintcoeff[jc, :, k_range]
+            zd_vertoffset_dsl[jc, :, k_range] = nbidx[jc, :, k_range] - np.transpose([k_range] * 3)
+            mask_hdiff[jc, k_range] = True
+
+            zd_diffcoef_dsl_var = np.maximum(
+                0.0,
+                np.maximum(
+                    np.sqrt(np.maximum(0.0, z_maxslp_avg[jc, k_range] - thslp_zdiffu)) / 250.0,
+                    2.0e-4 * np.sqrt(np.maximum(0.0, z_maxhgtd_avg[jc, k_range] - thhgtd_zdiffu)),
+                ),
             )
-            z_vintcoeff[jc, 2, :] = _compute_z_vintcoeff(
-                k_start, k_end, z_mc, z_mc_off, z_vintcoeff, jc, 2, nlev
-            )
-            for jk in range(k_start[jc], k_end[jc]):
-                zd_intcoef_dsl[jc, 0, jk] = z_vintcoeff[jc, 0, jk]
-                zd_intcoef_dsl[jc, 1, jk] = z_vintcoeff[jc, 1, jk]
-                zd_intcoef_dsl[jc, 2, jk] = z_vintcoeff[jc, 2, jk]
-
-                zd_vertoffset_dsl[jc, 0, jk] = nbidx[jc, 0, jk] - jk
-                zd_vertoffset_dsl[jc, 1, jk] = nbidx[jc, 1, jk] - jk
-                zd_vertoffset_dsl[jc, 2, jk] = nbidx[jc, 2, jk] - jk
-
-                zd_diffcoef_dsl_var = max(
-                    0.0,
-                    math.sqrt(max(0.0, z_maxslp_avg[jc, jk] - thslp_zdiffu)) / 250.0,
-                    2.0e-4 * math.sqrt(max(0.0, z_maxhgtd_avg[jc, jk] - thhgtd_zdiffu)),
-                )
-                zd_diffcoef_dsl_var = min(0.002, zd_diffcoef_dsl_var)
-                zd_diffcoef_dsl[jc, jk] = zd_diffcoef_dsl_var
-
-                mask_hdiff[jc, jk] = True
+            zd_diffcoef_dsl[jc, k_range] = np.minimum(0.002, zd_diffcoef_dsl_var)
 
     return mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl
