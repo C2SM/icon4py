@@ -14,6 +14,8 @@
 import numpy as np
 from gt4py.next import Dimension, NeighborTableOffsetProvider
 
+from icon4py.model.common.settings import xp
+
 
 def neighbortable_offset_provider_for_1d_sparse_fields(
     old_shape: tuple[int, int],
@@ -22,10 +24,6 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     has_skip_values: bool,
     on_gpu: bool,
 ):
-    if on_gpu:
-        import cupy as xp
-    else:
-        xp = np
 
     table = xp.asarray(np.arange(old_shape[0] * old_shape[1]).reshape(old_shape))
     return NeighborTableOffsetProvider(

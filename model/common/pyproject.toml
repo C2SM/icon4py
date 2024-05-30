@@ -19,7 +19,8 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Physics"
 ]
 dependencies = [
-  "gt4py>=1.0.1"
+  "gt4py>=1.0.1",
+  "nanobind<2.0.0"
 ]
 description = "Shared code for the icon4py model."
 dynamic = ['version']

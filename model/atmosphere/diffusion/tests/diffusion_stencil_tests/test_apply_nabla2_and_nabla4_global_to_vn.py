@@ -52,9 +52,9 @@ class TestApplyNabla2AndNabla4GlobalToVn(StencilTest):
             z_nabla4_e2=z_nabla4_e2,
             diff_multfac_vn=diff_multfac_vn,
             vn=vn,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )
 

@@ -28,7 +28,7 @@ class TestVLimitPrblSmStencil01(StencilTest):
     def reference(grid, p_face: np.array, p_cc: np.array, **kwargs):
         z_delta = p_face[:, :-1] - p_face[:, 1:]
         z_a6i = 6.0 * (p_cc - 0.5 * (p_face[:, :-1] + p_face[:, 1:]))
-        l_limit = np.where(np.abs(z_delta) < -1 * z_a6i, int32(1), int32(0))
+        l_limit = np.where(np.abs(z_delta) < -1 * z_a6i, 1, 0)
         return dict(l_limit=l_limit)
 
     @pytest.fixture

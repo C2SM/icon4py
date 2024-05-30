@@ -57,8 +57,8 @@ class TestCalculateNabla2OfTheta(StencilTest):
             z_nabla2_e=z_nabla2_e,
             geofac_div=geofac_div_new,
             z_temp=z_temp,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

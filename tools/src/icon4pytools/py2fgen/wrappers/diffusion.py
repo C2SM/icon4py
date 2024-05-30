@@ -20,6 +20,10 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+import cProfile
+import os
+import pstats
+
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
 from icon4py.model.atmosphere.diffusion.diffusion import (
@@ -64,7 +68,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device, xp
+from icon4py.model.common.settings import device, xp, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import (
     construct_icon_grid,
@@ -81,6 +85,19 @@ log = setup_logger(__name__)
 
 # global diffusion object
 diffusion_granule: Diffusion = Diffusion()
+
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
 
 
 def diffusion_init(
@@ -114,6 +131,11 @@ def diffusion_init(
     hdiff_efdt_ratio: float64,
     smagorinski_scaling_factor: float64,
     hdiff_temp: bool,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
+    denom_diffu_v: float,
+    nudge_max_coeff: float,
+    itype_sher: int32,
     tangent_orientation: Field[[EdgeDim], float64],
     inverse_primal_edge_lengths: Field[[EdgeDim], float64],
     inv_dual_edge_length: Field[[EdgeDim], float64],
@@ -321,11 +343,11 @@ def diffusion_init(
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
-        shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        velocity_boundary_diffusion_denom=denom_diffu_v,
+        max_nudging_coeff=nudge_max_coeff,
+        shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
     diffusion_params = DiffusionParams(config)
