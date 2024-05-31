@@ -32,6 +32,8 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import (
     zero_field,
 )
 
+from icon4py.model.common import field_type_aliases as fa
+
 # cached program import
 from icon4py.model.atmosphere.diffusion.cached import (
     init_diffusion_local_fields_for_regular_timestep,
