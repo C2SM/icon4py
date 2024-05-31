@@ -48,7 +48,7 @@ def _compute_wgtfac_c_inner(
 @field_operator
 def _compute_wgtfac_c(
     z_ifc: Field[[CellDim, KDim], wpfloat],
-    k: Field[[KDim], int32],
+    k: fa.KintField,
     nlev: int32,
 ) -> fa.CKwpField:
     wgt_fac_c = where((k > 0) & (k < nlev), _compute_wgtfac_c_inner(z_ifc), z_ifc)
@@ -62,7 +62,7 @@ def _compute_wgtfac_c(
 def compute_wgtfac_c(
     wgtfac_c: fa.CKwpField,
     z_ifc: fa.CKwpField,
-    k: Field[[KDim], int32],
+    k: fa.KintField,
     nlev: int32,
 ):
     _compute_wgtfac_c(

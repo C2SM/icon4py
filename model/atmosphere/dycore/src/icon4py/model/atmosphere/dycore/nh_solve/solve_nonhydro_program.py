@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -115,7 +116,7 @@ def _predictor_stencils_2_3(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     (z_exner_ex_pr, exner_pr) = where(
@@ -135,7 +136,7 @@ def predictor_stencils_2_3(
     exner_ref_mc: Field[[CellDim, KDim], float],
     exner_pr: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -166,7 +167,7 @@ def _predictor_stencils_4_5_6(
     wgtfac_c: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     # Perturbation Exner pressure on bottom half level
@@ -201,7 +202,7 @@ def predictor_stencils_4_5_6(
     wgtfac_c: Field[[CellDim, KDim], float],
     inv_ddqz_z_full: Field[[CellDim, KDim], float],
     z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -242,7 +243,7 @@ def _predictor_stencils_7_8_9(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
 ) -> tuple[
     Field[[CellDim, KDim], float],
@@ -300,7 +301,7 @@ def predictor_stencils_7_8_9(
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -347,7 +348,7 @@ def _predictor_stencils_11_lower_upper(
     theta_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     z_theta_v_pr_ic = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
@@ -367,7 +368,7 @@ def predictor_stencils_11_lower_upper(
     theta_ref_ic: Field[[CellDim, KDim], float],
     z_theta_v_pr_ic: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nlev: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -453,7 +454,7 @@ def _predictor_stencils_35_36(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
 ) -> tuple[
     Field[[EdgeDim, KDim], float],
@@ -485,7 +486,7 @@ def predictor_stencils_35_36(
     vn_ie: Field[[EdgeDim, KDim], float],
     z_vt_ie: Field[[EdgeDim, KDim], float],
     z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -552,7 +553,7 @@ def _stencils_39_40(
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex_plus1: int32,
     nlev: int32,
 ) -> Field[[CellDim, KDim], float]:
@@ -580,7 +581,7 @@ def stencils_39_40(
     wgtfac_c: Field[[CellDim, KDim], float],
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex_plus1: int32,
     nlev: int32,
     horizontal_start: int32,
@@ -625,7 +626,7 @@ def _stencils_42_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     rd: float,
     cvd: float,
     dtime: float,
@@ -700,7 +701,7 @@ def stencils_42_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     rd: float,
     cvd: float,
     dtime: float,
@@ -767,7 +768,7 @@ def _stencils_43_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     rd: float,
     cvd: float,
     dtime: float,
@@ -835,7 +836,7 @@ def stencils_43_44_45_45b(
     vwind_impl_wgt: Field[[CellDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     rd: float,
     cvd: float,
     dtime: float,
@@ -893,7 +894,7 @@ def _stencils_47_48_49(
     z_flxdiv_theta: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddt_exner_phy: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     dtime: float,
     nlev: int32,
 ) -> tuple[
@@ -942,7 +943,7 @@ def stencils_47_48_49(
     z_flxdiv_theta: Field[[CellDim, KDim], float],
     theta_v_ic: Field[[CellDim, KDim], float],
     ddt_exner_phy: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     dtime: float,
     nlev: int32,
     horizontal_start: int32,
@@ -986,7 +987,7 @@ def _stencils_61_62(
     rho_new: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
     w_new: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     dtime: float,
     nlev: int32,
 ) -> tuple[
@@ -1020,7 +1021,7 @@ def stencils_61_62(
     rho_new: Field[[CellDim, KDim], float],
     exner_new: Field[[CellDim, KDim], float],
     w_new: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     dtime: float,
     nlev: int32,
     horizontal_start: int32,

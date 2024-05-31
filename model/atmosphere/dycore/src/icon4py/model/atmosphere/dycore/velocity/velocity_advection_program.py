@@ -13,6 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
     _add_interpolated_horizontal_advection_of_w,
@@ -55,7 +56,7 @@ def _fused_stencils_4_5(
     ddxn_z_full: Field[[EdgeDim, KDim], float],
     ddxt_z_full: Field[[EdgeDim, KDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
 ) -> tuple[
@@ -89,7 +90,7 @@ def fused_stencils_4_5(
     ddxn_z_full: Field[[EdgeDim, KDim], float],
     ddxt_z_full: Field[[EdgeDim, KDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
     horizontal_start: int32,
@@ -145,7 +146,7 @@ def _fused_stencils_9_10(
     local_z_w_concorr_mc: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
@@ -171,7 +172,7 @@ def fused_stencils_9_10(
     local_z_w_concorr_mc: Field[[CellDim, KDim], float],
     wgtfac_c: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
     horizontal_start: int32,
@@ -201,7 +202,7 @@ def _fused_stencils_11_to_13(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     local_z_w_con_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
 ):
@@ -226,7 +227,7 @@ def fused_stencils_11_to_13(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
     local_z_w_con_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
     horizontal_start: int32,

@@ -13,6 +13,7 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 
@@ -50,7 +51,7 @@ def _face_val_ppm_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
     p_face_in: Field[[CellDim, KDim], float],
-    k: Field[[KDim], int32],
+    k: fa.KintField,
     slev: int32,
     elev: int32,
     slevp1: int32,
@@ -76,7 +77,7 @@ def face_val_ppm_stencil_02(
     p_cc: Field[[CellDim, KDim], float],
     p_cellhgt_mc_now: Field[[CellDim, KDim], float],
     p_face_in: Field[[CellDim, KDim], float],
-    k: Field[[KDim], int32],
+    k: fa.KintField,
     slev: int32,
     elev: int32,
     slevp1: int32,

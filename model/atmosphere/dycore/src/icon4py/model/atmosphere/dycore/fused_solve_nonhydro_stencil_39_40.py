@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
@@ -31,7 +32,7 @@ def _fused_solve_nonhydro_stencil_39_40(
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
-    vert_idx: Field[[KDim], int32],
+    vert_idx: fa.KintField,
     nlev: int32,
     nflatlev: int32,
 ) -> Field[[CellDim, KDim], vpfloat]:
@@ -51,7 +52,7 @@ def fused_solve_nonhydro_stencil_39_40(
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
     wgtfacq_c: Field[[CellDim, KDim], vpfloat],
-    vert_idx: Field[[KDim], int32],
+    vert_idx: fa.KintField,
     nlev: int32,
     nflatlev: int32,
     w_concorr_c: Field[[CellDim, KDim], vpfloat],

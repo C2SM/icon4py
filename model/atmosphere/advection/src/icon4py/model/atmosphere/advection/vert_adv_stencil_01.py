@@ -13,6 +13,7 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 
@@ -43,7 +44,7 @@ def _vert_adv_stencil_01(
     deepatmo_divzl: Field[[KDim], float],
     deepatmo_divzu: Field[[KDim], float],
     rhodz_new: Field[[CellDim, KDim], float],
-    k: Field[[KDim], int32],
+    k: fa.KintField,
     p_dtime: float,
     ivadv_tracer: int32,
     iadv_slev_jt: int32,
@@ -79,7 +80,7 @@ def vert_adv_stencil_01(
     deepatmo_divzl: Field[[KDim], float],
     deepatmo_divzu: Field[[KDim], float],
     rhodz_new: Field[[CellDim, KDim], float],
-    k: Field[[KDim], int32],
+    k: fa.KintField,
     p_dtime: float,
     ivadv_tracer: int32,
     iadv_slev_jt: int32,
