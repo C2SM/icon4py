@@ -17,7 +17,7 @@ from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -28,7 +28,7 @@ def _compute_hydrostatic_correction_term(
     ikoffset: Field[[ECDim, KDim], int32],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     theta_v_ic: fa.CKwpField,
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
     inv_dual_edge_length: fa.EwpField,
     grav_o_cpd: wpfloat,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
@@ -70,7 +70,7 @@ def compute_hydrostatic_correction_term(
     ikoffset: Field[[ECDim, KDim], int32],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     theta_v_ic: fa.CKwpField,
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
     inv_dual_edge_length: fa.EwpField,
     grav_o_cpd: wpfloat,
     z_hydro_corr: Field[[EdgeDim, KDim], vpfloat],

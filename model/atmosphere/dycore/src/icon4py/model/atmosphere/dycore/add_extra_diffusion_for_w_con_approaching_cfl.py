@@ -34,16 +34,16 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: fa.CboolField,
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CKvpField,
+    ddqz_z_half: fa.CKvpField,
     area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     w: fa.CKwpField,
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv: fa.CKvpField,
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CKvpField:
     """Formerly known as _mo_velocity_advection_stencil_18."""
     z_w_con_c_wp, ddqz_z_half_wp, ddt_w_adv_wp, cfl_w_limit_wp = astype(
         (z_w_con_c, ddqz_z_half, ddt_w_adv, cfl_w_limit), wpfloat
@@ -73,12 +73,12 @@ def add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: fa.CboolField,
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CKvpField,
+    ddqz_z_half: fa.CKvpField,
     area: fa.CwpField,
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     w: fa.CKwpField,
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv: fa.CKvpField,
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,

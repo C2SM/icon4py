@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
@@ -21,17 +21,16 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _init_two_cell_kdim_fields_index_with_zero_vp(
-    field_index_with_zero_1: Field[[CellDim, KDim], vpfloat],
-    field_index_with_zero_2: Field[[CellDim, KDim], vpfloat],
+    field_index_with_zero_1: fa.CKvpField,
+    field_index_with_zero_2: fa.CKvpField,
     k: fa.KintField,
     k1: int32,
     k2: int32,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_45 and _mo_solve_nonhydro_stencil_45_b."""
     k = broadcast(k, (CellDim, KDim))
 
@@ -47,8 +46,8 @@ def _init_two_cell_kdim_fields_index_with_zero_vp(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_two_cell_kdim_fields_index_with_zero_vp(
-    field_index_with_zero_1: Field[[CellDim, KDim], vpfloat],
-    field_index_with_zero_2: Field[[CellDim, KDim], vpfloat],
+    field_index_with_zero_1: fa.CKvpField,
+    field_index_with_zero_2: fa.CKvpField,
     k: fa.KintField,
     k1: int32,
     k2: int32,

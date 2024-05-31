@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat
 @field_operator
 def _copy_cell_kdim_field_to_vp(
     field: fa.CKwpField,
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CKvpField:
     """Formerly known as _mo_velocity_advection_stencil_11 or _mo_solve_nonhydro_stencil_59."""
     field_copy = astype(field, vpfloat)
     return field_copy
@@ -33,7 +33,7 @@ def _copy_cell_kdim_field_to_vp(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def copy_cell_kdim_field_to_vp(
     field: fa.CKwpField,
-    field_copy: Field[[CellDim, KDim], vpfloat],
+    field_copy: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -28,7 +28,7 @@ def _temporary_fields_for_turbulence_diagnostics(
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     kh_smag_ec_wp, diff_multfac_smag_wp = astype((kh_smag_ec, diff_multfac_smag), wpfloat)
 
     kh_c_wp = neighbor_sum(kh_smag_ec_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim) / diff_multfac_smag_wp
@@ -43,8 +43,8 @@ def temporary_fields_for_turbulence_diagnostics(
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-    kh_c: Field[[CellDim, KDim], vpfloat],
-    div: Field[[CellDim, KDim], vpfloat],
+    kh_c: fa.CKvpField,
+    div: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

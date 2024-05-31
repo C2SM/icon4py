@@ -43,10 +43,10 @@ def _scan_pressure(
 @field_operator
 def _diagnose_pressure(
     ddqz_z_full: fa.CKwpField,
-    temperature: Field[[CellDim, KDim], vpfloat],
+    temperature: fa.CKvpField,
     pressure_sfc: Field[[CellDim], vpfloat],
     grav_o_rd: wpfloat,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, temperature, pressure_sfc, grav_o_rd)
     return pressure, pressure_ifc
 
@@ -54,10 +54,10 @@ def _diagnose_pressure(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_pressure(
     ddqz_z_full: fa.CKwpField,
-    temperature: Field[[CellDim, KDim], vpfloat],
+    temperature: fa.CKvpField,
     pressure_sfc: Field[[CellDim], vpfloat],
-    pressure: Field[[CellDim, KDim], vpfloat],
-    pressure_ifc: Field[[CellDim, KDim], vpfloat],
+    pressure: fa.CKvpField,
+    pressure_ifc: fa.CKvpField,
     grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

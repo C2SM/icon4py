@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
@@ -24,25 +24,25 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     w: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
+    ddqz_z_half: fa.CKvpField,
     rho_now: fa.CKwpField,
     rho_var: fa.CKwpField,
     theta_now: fa.CKwpField,
     theta_var: fa.CKwpField,
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: fa.CKvpField,
+    theta_ref_mc: fa.CKvpField,
     vwind_expl_wgt: fa.CwpField,
     exner_pr: fa.CKwpField,
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], vpfloat],
+    d_exner_dz_ref_ic: fa.CKvpField,
     dtime: wpfloat,
     wgt_nnow_rth: wpfloat,
     wgt_nnew_rth: wpfloat,
 ) -> tuple[
     fa.CKwpField,
-    Field[[CellDim, KDim], vpfloat],
+    fa.CKvpField,
     fa.CKwpField,
-    Field[[CellDim, KDim], vpfloat],
+    fa.CKvpField,
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_10."""
     w_concorr_c_wp, wgtfac_c_wp, theta_ref_mc_wp, ddqz_z_half_wp = astype(
@@ -88,21 +88,21 @@ def _compute_rho_virtual_potential_temperatures_and_pressure_gradient(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_rho_virtual_potential_temperatures_and_pressure_gradient(
     w: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
+    ddqz_z_half: fa.CKvpField,
     rho_now: fa.CKwpField,
     rho_var: fa.CKwpField,
     theta_now: fa.CKwpField,
     theta_var: fa.CKwpField,
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: fa.CKvpField,
+    theta_ref_mc: fa.CKvpField,
     vwind_expl_wgt: fa.CwpField,
     exner_pr: fa.CKwpField,
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], vpfloat],
+    d_exner_dz_ref_ic: fa.CKvpField,
     rho_ic: fa.CKwpField,
-    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    z_theta_v_pr_ic: fa.CKvpField,
     theta_v_ic: fa.CKwpField,
-    z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
+    z_th_ddz_exner_c: fa.CKvpField,
     dtime: wpfloat,
     wgt_nnow_rth: wpfloat,
     wgt_nnew_rth: wpfloat,

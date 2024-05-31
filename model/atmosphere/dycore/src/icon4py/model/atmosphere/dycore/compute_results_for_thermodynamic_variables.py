@@ -13,25 +13,25 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CKwpField,
     vwind_impl_wgt: fa.CwpField,
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
     rho_ic: fa.CKwpField,
     w: fa.CKwpField,
     z_exner_expl: fa.CKwpField,
-    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
-    z_alpha: Field[[CellDim, KDim], vpfloat],
-    z_beta: Field[[CellDim, KDim], vpfloat],
+    exner_ref_mc: fa.CKvpField,
+    z_alpha: fa.CKvpField,
+    z_beta: fa.CKvpField,
     rho_now: fa.CKwpField,
     theta_v_now: fa.CKwpField,
     exner_now: fa.CKwpField,
@@ -68,13 +68,13 @@ def _compute_results_for_thermodynamic_variables(
 def compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CKwpField,
     vwind_impl_wgt: fa.CwpField,
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
     rho_ic: fa.CKwpField,
     w: fa.CKwpField,
     z_exner_expl: fa.CKwpField,
-    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
-    z_alpha: Field[[CellDim, KDim], vpfloat],
-    z_beta: Field[[CellDim, KDim], vpfloat],
+    exner_ref_mc: fa.CKvpField,
+    z_alpha: fa.CKvpField,
+    z_beta: fa.CKvpField,
     rho_now: fa.CKwpField,
     theta_v_now: fa.CKwpField,
     exner_now: fa.CKwpField,

@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -24,11 +24,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _update_dynamical_exner_time_increment(
     exner: fa.CKwpField,
-    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
-    exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
+    ddt_exner_phy: fa.CKvpField,
+    exner_dyn_incr: fa.CKvpField,
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_60."""
     exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
 
@@ -39,8 +39,8 @@ def _update_dynamical_exner_time_increment(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_dynamical_exner_time_increment(
     exner: fa.CKwpField,
-    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
-    exner_dyn_incr: Field[[CellDim, KDim], vpfloat],
+    ddt_exner_phy: fa.CKvpField,
+    exner_dyn_incr: fa.CKvpField,
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
     horizontal_start: int32,

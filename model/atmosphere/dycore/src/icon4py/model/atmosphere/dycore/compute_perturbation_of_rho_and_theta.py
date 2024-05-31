@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -24,10 +24,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_perturbation_of_rho_and_theta(
     rho: fa.CKwpField,
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
+    rho_ref_mc: fa.CKvpField,
     theta_v: fa.CKwpField,
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+    theta_ref_mc: fa.CKvpField,
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_07 or _mo_solve_nonhydro_stencil_13."""
     rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
 
@@ -39,11 +39,11 @@ def _compute_perturbation_of_rho_and_theta(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_perturbation_of_rho_and_theta(
     rho: fa.CKwpField,
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
+    rho_ref_mc: fa.CKvpField,
     theta_v: fa.CKwpField,
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    theta_ref_mc: fa.CKvpField,
+    z_rth_pr_1: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

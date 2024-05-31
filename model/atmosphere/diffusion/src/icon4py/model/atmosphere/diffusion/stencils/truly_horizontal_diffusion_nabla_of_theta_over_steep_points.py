@@ -31,8 +31,8 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
     theta_v: fa.CKwpField,
-    z_temp: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    z_temp: fa.CKvpField,
+) -> fa.CKvpField:
     z_temp_wp = astype(z_temp, wpfloat)
 
     theta_v_0 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0])))
@@ -80,7 +80,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
     theta_v: fa.CKwpField,
-    z_temp: Field[[CellDim, KDim], vpfloat],
+    z_temp: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

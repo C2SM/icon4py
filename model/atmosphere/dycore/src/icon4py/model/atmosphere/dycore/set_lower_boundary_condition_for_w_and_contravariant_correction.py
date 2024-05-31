@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
@@ -21,12 +21,12 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _set_lower_boundary_condition_for_w_and_contravariant_correction(
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
 ) -> tuple[fa.CKwpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_47."""
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
@@ -40,7 +40,7 @@ def _set_lower_boundary_condition_for_w_and_contravariant_correction(
 def set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_nnew: fa.CKwpField,
     z_contr_w_fl_l: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

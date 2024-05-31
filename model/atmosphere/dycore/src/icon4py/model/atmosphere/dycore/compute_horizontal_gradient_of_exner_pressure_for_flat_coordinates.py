@@ -16,7 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: fa.CKvpField,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     """Formerly konwn as _mo_solve_nonhydro_stencil_18."""
     z_gradh_exner_wp = inv_dual_edge_length * astype(
@@ -36,7 +36,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: fa.CKvpField,
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,

@@ -13,21 +13,21 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     w_nnow: fa.CKwpField,
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv_ntl1: fa.CKvpField,
+    z_th_ddz_exner_c: fa.CKvpField,
     rho_ic: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
     vwind_expl_wgt: fa.CwpField,
     dtime: wpfloat,
     cpd: wpfloat,
@@ -46,11 +46,11 @@ def _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
 def compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
     z_w_expl: fa.CKwpField,
     w_nnow: fa.CKwpField,
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], vpfloat],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], vpfloat],
+    ddt_w_adv_ntl1: fa.CKvpField,
+    z_th_ddz_exner_c: fa.CKvpField,
     z_contr_w_fl_l: fa.CKwpField,
     rho_ic: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
     vwind_expl_wgt: fa.CwpField,
     dtime: wpfloat,
     cpd: wpfloat,

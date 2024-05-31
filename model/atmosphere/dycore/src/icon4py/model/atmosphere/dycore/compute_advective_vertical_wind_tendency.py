@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_advective_vertical_wind_tendency(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CKvpField,
     w: fa.CKwpField,
-    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
-    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    coeff1_dwdz: fa.CKvpField,
+    coeff2_dwdz: fa.CKvpField,
+) -> fa.CKvpField:
     """Formerly known as _mo_velocity_advection_stencil_16."""
     z_w_con_c_wp = astype(z_w_con_c, wpfloat)
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
@@ -42,11 +42,11 @@ def _compute_advective_vertical_wind_tendency(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_advective_vertical_wind_tendency(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CKvpField,
     w: fa.CKwpField,
-    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
-    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    coeff1_dwdz: fa.CKvpField,
+    coeff2_dwdz: fa.CKvpField,
+    ddt_w_adv: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

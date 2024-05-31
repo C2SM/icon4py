@@ -13,25 +13,25 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_explicit_part_for_rho_and_exner(
     rho_nnow: fa.CKwpField,
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
+    z_flxdiv_mass: fa.CKvpField,
     z_contr_w_fl_l: fa.CKwpField,
     exner_pr: fa.CKwpField,
-    z_beta: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_theta: Field[[CellDim, KDim], vpfloat],
+    z_beta: fa.CKvpField,
+    z_flxdiv_theta: fa.CKvpField,
     theta_v_ic: fa.CKwpField,
-    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
+    ddt_exner_phy: fa.CKvpField,
     dtime: wpfloat,
 ) -> tuple[fa.CKwpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49."""
@@ -61,14 +61,14 @@ def compute_explicit_part_for_rho_and_exner(
     z_rho_expl: fa.CKwpField,
     z_exner_expl: fa.CKwpField,
     rho_nnow: fa.CKwpField,
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
+    z_flxdiv_mass: fa.CKvpField,
     z_contr_w_fl_l: fa.CKwpField,
     exner_pr: fa.CKwpField,
-    z_beta: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_theta: Field[[CellDim, KDim], vpfloat],
+    z_beta: fa.CKvpField,
+    z_flxdiv_theta: fa.CKvpField,
     theta_v_ic: fa.CKwpField,
-    ddt_exner_phy: Field[[CellDim, KDim], vpfloat],
+    ddt_exner_phy: fa.CKvpField,
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

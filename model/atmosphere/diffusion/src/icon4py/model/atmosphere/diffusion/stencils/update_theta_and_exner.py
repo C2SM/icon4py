@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _update_theta_and_exner(
-    z_temp: Field[[CellDim, KDim], vpfloat],
+    z_temp: fa.CKvpField,
     area: fa.CwpField,
     theta_v: fa.CKwpField,
     exner: fa.CKwpField,
@@ -39,7 +39,7 @@ def _update_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_theta_and_exner(
-    z_temp: Field[[CellDim, KDim], vpfloat],
+    z_temp: fa.CKvpField,
     area: fa.CwpField,
     theta_v: fa.CKwpField,
     exner: fa.CKwpField,

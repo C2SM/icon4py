@@ -21,6 +21,7 @@ from gt4py.next.ffront.fbuiltins import (
     int32,
     where,
 )
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
@@ -29,14 +30,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: fa.CKvpField,
+    z_w_con_c: fa.CKvpField,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
 ) -> tuple[
     Field[[CellDim, KDim], bool],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    fa.CKvpField,
+    fa.CKvpField,
 ]:
     """Formerly know as _mo_velocity_advection_stencil_14."""
     z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
@@ -67,10 +68,10 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_half: fa.CKvpField,
+    z_w_con_c: fa.CKvpField,
     cfl_clipping: Field[[CellDim, KDim], bool],
-    vcfl: Field[[CellDim, KDim], vpfloat],
+    vcfl: fa.CKvpField,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
     horizontal_start: int32,

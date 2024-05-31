@@ -22,7 +22,7 @@ from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_f
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     _temporary_field_for_grid_point_cold_pools_enhancement,
 )
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -30,7 +30,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CKwpField,
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    theta_ref_mc: fa.CKvpField,
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
@@ -48,7 +48,7 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CKwpField,
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    theta_ref_mc: fa.CKvpField,
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],

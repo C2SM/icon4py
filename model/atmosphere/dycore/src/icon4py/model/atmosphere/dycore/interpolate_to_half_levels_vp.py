@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -22,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _interpolate_to_half_levels_vp(
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    interpolant: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    wgtfac_c: fa.CKvpField,
+    interpolant: fa.CKvpField,
+) -> fa.CKvpField:
     """Formerly known mo_velocity_advection_stencil_10 and as _mo_solve_nonhydro_stencil_05."""
     interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
         vpfloat("1.0") - wgtfac_c
@@ -34,9 +35,9 @@ def _interpolate_to_half_levels_vp(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_to_half_levels_vp(
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    interpolant: Field[[CellDim, KDim], vpfloat],
-    interpolation_to_half_levels_vp: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: fa.CKvpField,
+    interpolant: fa.CKvpField,
+    interpolation_to_half_levels_vp: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

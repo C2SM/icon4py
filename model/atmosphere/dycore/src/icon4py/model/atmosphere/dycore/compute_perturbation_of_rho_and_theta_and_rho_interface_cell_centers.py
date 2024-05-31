@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
@@ -21,20 +21,20 @@ from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta impor
 )
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: fa.CKvpField,
     rho: fa.CKwpField,
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
+    rho_ref_mc: fa.CKvpField,
     theta_v: fa.CKwpField,
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    theta_ref_mc: fa.CKvpField,
 ) -> tuple[
     fa.CKwpField,
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    fa.CKvpField,
+    fa.CKvpField,
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_08."""
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
@@ -48,14 +48,14 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: fa.CKvpField,
     rho: fa.CKwpField,
-    rho_ref_mc: Field[[CellDim, KDim], vpfloat],
+    rho_ref_mc: fa.CKvpField,
     theta_v: fa.CKwpField,
-    theta_ref_mc: Field[[CellDim, KDim], vpfloat],
+    theta_ref_mc: fa.CKvpField,
     rho_ic: fa.CKwpField,
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    z_rth_pr_1: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

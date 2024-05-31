@@ -13,12 +13,12 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
@@ -28,7 +28,7 @@ def _update_mass_flux_weighted(
     vwind_impl_wgt: fa.CwpField,
     w_now: fa.CKwpField,
     w_new: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
     mass_flx_ic: fa.CKwpField,
     r_nsubsteps: wpfloat,
 ) -> fa.CKwpField:
@@ -48,7 +48,7 @@ def update_mass_flux_weighted(
     vwind_impl_wgt: fa.CwpField,
     w_now: fa.CKwpField,
     w_new: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
     mass_flx_ic: fa.CKwpField,
     r_nsubsteps: wpfloat,
     horizontal_start: int32,

@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_dwdz_for_divergence_damping(
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
     w: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    w_concorr_c: fa.CKvpField,
+) -> fa.CKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_56_63."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
@@ -38,10 +38,10 @@ def _compute_dwdz_for_divergence_damping(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_dwdz_for_divergence_damping(
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
+    inv_ddqz_z_full: fa.CKvpField,
     w: fa.CKwpField,
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    z_dwdz_dd: Field[[CellDim, KDim], vpfloat],
+    w_concorr_c: fa.CKvpField,
+    z_dwdz_dd: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

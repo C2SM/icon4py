@@ -33,7 +33,7 @@ def _calculate_nabla2_for_theta(
     inv_dual_edge_length: fa.EwpField,
     theta_v: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CKvpField:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
     return z_temp

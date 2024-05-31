@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -22,11 +22,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _extrapolate_temporally_exner_pressure(
-    exner_exfac: Field[[CellDim, KDim], vpfloat],
+    exner_exfac: fa.CKvpField,
     exner: fa.CKwpField,
-    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    exner_ref_mc: fa.CKvpField,
     exner_pr: fa.CKwpField,
-) -> tuple[Field[[CellDim, KDim], vpfloat], fa.CKwpField]:
+) -> tuple[fa.CKvpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_02."""
     exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
 
@@ -39,11 +39,11 @@ def _extrapolate_temporally_exner_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_temporally_exner_pressure(
-    exner_exfac: Field[[CellDim, KDim], vpfloat],
+    exner_exfac: fa.CKvpField,
     exner: fa.CKwpField,
-    exner_ref_mc: Field[[CellDim, KDim], vpfloat],
+    exner_ref_mc: fa.CKvpField,
     exner_pr: fa.CKwpField,
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

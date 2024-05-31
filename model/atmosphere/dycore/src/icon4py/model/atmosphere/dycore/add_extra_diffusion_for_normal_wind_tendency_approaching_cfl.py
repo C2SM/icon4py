@@ -31,7 +31,6 @@ from icon4py.model.common.dimension import (
     E2C,
     E2C2EO,
     E2V,
-    CellDim,
     E2C2EODim,
     E2CDim,
     EdgeDim,
@@ -47,7 +46,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
-    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c_full: fa.CKvpField,
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
     area_edge: fa.EwpField,
     tangent_orientation: fa.EwpField,
@@ -103,7 +102,7 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
-    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c_full: fa.CKvpField,
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
     area_edge: Field[[EdgeDim], wpfloat],
     tangent_orientation: fa.EwpField,

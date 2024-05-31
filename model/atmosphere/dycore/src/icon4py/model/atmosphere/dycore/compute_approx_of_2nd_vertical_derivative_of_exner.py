@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -22,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _compute_approx_of_2nd_vertical_derivative_of_exner(
-    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
-    d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
-    d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    z_theta_v_pr_ic: fa.CKvpField,
+    d2dexdz2_fac1_mc: fa.CKvpField,
+    d2dexdz2_fac2_mc: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
+) -> fa.CKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_12."""
     z_dexner_dz_c_2_vp = -vpfloat("0.5") * (
         (z_theta_v_pr_ic - z_theta_v_pr_ic(Koff[1])) * d2dexdz2_fac1_mc
@@ -37,11 +38,11 @@ def _compute_approx_of_2nd_vertical_derivative_of_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_approx_of_2nd_vertical_derivative_of_exner(
-    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
-    d2dexdz2_fac1_mc: Field[[CellDim, KDim], vpfloat],
-    d2dexdz2_fac2_mc: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
-    z_dexner_dz_c_2: Field[[CellDim, KDim], vpfloat],
+    z_theta_v_pr_ic: fa.CKvpField,
+    d2dexdz2_fac1_mc: fa.CKvpField,
+    d2dexdz2_fac2_mc: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
+    z_dexner_dz_c_2: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

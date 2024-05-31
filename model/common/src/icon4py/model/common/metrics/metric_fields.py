@@ -51,7 +51,7 @@ from icon4py.model.common.math.helpers import (
     difference_k_level_up,
     grad_fd_norm,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 """
@@ -318,7 +318,7 @@ def compute_rayleigh_w(
 @field_operator
 def _compute_coeff_dwdz(
     ddqz_z_full: fa.CKwpField, z_ifc: fa.CKwpField
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     coeff1_dwdz = ddqz_z_full / ddqz_z_full(Koff[-1]) / (z_ifc(Koff[-1]) - z_ifc(Koff[1]))
     coeff2_dwdz = ddqz_z_full(Koff[-1]) / ddqz_z_full / (z_ifc(Koff[-1]) - z_ifc(Koff[1]))
 
@@ -329,8 +329,8 @@ def _compute_coeff_dwdz(
 def compute_coeff_dwdz(
     ddqz_z_full: fa.CKwpField,
     z_ifc: fa.CKwpField,
-    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
-    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
+    coeff1_dwdz: fa.CKvpField,
+    coeff2_dwdz: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

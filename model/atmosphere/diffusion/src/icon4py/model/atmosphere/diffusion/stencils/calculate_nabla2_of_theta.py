@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _calculate_nabla2_of_theta(
     z_nabla2_e: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CKvpField:
     z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
     return astype(z_temp_wp, vpfloat)
 
@@ -34,7 +34,7 @@ def _calculate_nabla2_of_theta(
 def calculate_nabla2_of_theta(
     z_nabla2_e: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
-    z_temp: Field[[CellDim, KDim], vpfloat],
+    z_temp: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

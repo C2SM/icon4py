@@ -26,7 +26,7 @@ def _compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: Field[[CEDim], wpfloat],
     mass_fl_e: fa.EKwpField,
     z_theta_v_fl_e: fa.EKwpField,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_41."""
     z_flxdiv_mass_wp = neighbor_sum(geofac_div(C2CE) * mass_fl_e(C2E), axis=C2EDim)
     z_flxdiv_theta_wp = neighbor_sum(geofac_div(C2CE) * z_theta_v_fl_e(C2E), axis=C2EDim)
@@ -38,8 +38,8 @@ def compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: Field[[CEDim], wpfloat],
     mass_fl_e: fa.EKwpField,
     z_theta_v_fl_e: fa.EKwpField,
-    z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
-    z_flxdiv_theta: Field[[CellDim, KDim], vpfloat],
+    z_flxdiv_mass: fa.CKvpField,
+    z_flxdiv_theta: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

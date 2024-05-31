@@ -13,21 +13,21 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_to_surface
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _set_theta_v_prime_ic_at_lower_boundary(
-    wgtfacq_c: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr: Field[[CellDim, KDim], vpfloat],
-    theta_ref_ic: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], fa.CKwpField]:
+    wgtfacq_c: fa.CKvpField,
+    z_rth_pr: fa.CKvpField,
+    theta_ref_ic: fa.CKvpField,
+) -> tuple[fa.CKvpField, fa.CKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_11_upper."""
     z_theta_v_pr_ic_vp = _interpolate_to_surface(wgtfacq_c=wgtfacq_c, interpolant=z_rth_pr)
     theta_v_ic_vp = theta_ref_ic + z_theta_v_pr_ic_vp
@@ -36,10 +36,10 @@ def _set_theta_v_prime_ic_at_lower_boundary(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_theta_v_prime_ic_at_lower_boundary(
-    wgtfacq_c: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr: Field[[CellDim, KDim], vpfloat],
-    theta_ref_ic: Field[[CellDim, KDim], vpfloat],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], vpfloat],
+    wgtfacq_c: fa.CKvpField,
+    z_rth_pr: fa.CKvpField,
+    theta_ref_ic: fa.CKvpField,
+    z_theta_v_pr_ic: fa.CKvpField,
     theta_v_ic: fa.CKwpField,
     horizontal_start: int32,
     horizontal_end: int32,

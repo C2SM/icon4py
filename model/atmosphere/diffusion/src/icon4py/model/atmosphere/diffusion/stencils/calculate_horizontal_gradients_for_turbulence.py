@@ -26,7 +26,7 @@ def _calculate_horizontal_gradients_for_turbulence(
     w: fa.CKwpField,
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CKvpField, fa.CKvpField]:
     dwdx_wp = neighbor_sum(geofac_grg_x * w(C2E2CO), axis=C2E2CODim)
     dwdy_wp = neighbor_sum(geofac_grg_y * w(C2E2CO), axis=C2E2CODim)
     return astype((dwdx_wp, dwdy_wp), vpfloat)
@@ -37,8 +37,8 @@ def calculate_horizontal_gradients_for_turbulence(
     w: fa.CKwpField,
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: fa.CKvpField,
+    dwdy: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

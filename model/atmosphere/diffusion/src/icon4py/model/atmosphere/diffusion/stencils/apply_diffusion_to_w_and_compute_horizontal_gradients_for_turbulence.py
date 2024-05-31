@@ -28,7 +28,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
@@ -39,8 +39,8 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     w_old: fa.CKwpField,
     type_shear: int32,
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: fa.CKvpField,
+    dwdy: fa.CKvpField,
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
     k: fa.KintField,
@@ -50,8 +50,8 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     halo_idx: int32,
 ) -> tuple[
     fa.CKwpField,
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    fa.CKvpField,
+    fa.CKvpField,
 ]:
     k = broadcast(k, (CellDim, KDim))
     dwdx, dwdy = (
@@ -90,8 +90,8 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     w_old: fa.CKwpField,
     w: fa.CKwpField,
     type_shear: int32,
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: fa.CKvpField,
+    dwdy: fa.CKvpField,
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
     k: fa.KintField,

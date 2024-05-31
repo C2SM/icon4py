@@ -17,7 +17,7 @@ from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim, Koff
+from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -25,11 +25,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: fa.CKvpField,
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
-    z_dexner_dz_c_1: Field[[CellDim, KDim], vpfloat],
-    z_dexner_dz_c_2: Field[[CellDim, KDim], vpfloat],
+    z_dexner_dz_c_1: fa.CKvpField,
+    z_dexner_dz_c_2: fa.CKvpField,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_20."""
     z_exner_ex_pr_0 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[0])))
@@ -63,11 +63,11 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: Field[[CellDim, KDim], vpfloat],
+    z_exner_ex_pr: fa.CKvpField,
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
-    z_dexner_dz_c_1: Field[[CellDim, KDim], vpfloat],
-    z_dexner_dz_c_2: Field[[CellDim, KDim], vpfloat],
+    z_dexner_dz_c_1: fa.CKvpField,
+    z_dexner_dz_c_2: fa.CKvpField,
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,

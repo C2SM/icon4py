@@ -16,7 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -70,12 +70,12 @@ def _sten_16(
     theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
     p_distv_bary_1: fa.EKwpField,
     p_distv_bary_2: fa.EKwpField,
-    z_grad_rth_1: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_2: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_3: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_4: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    z_grad_rth_1: fa.CKvpField,
+    z_grad_rth_2: fa.CKvpField,
+    z_grad_rth_3: fa.CKvpField,
+    z_grad_rth_4: fa.CKvpField,
+    z_rth_pr_1: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
 ) -> tuple[fa.EKwpField, fa.EKwpField]:
     (
         theta_ref_me_wp,
@@ -140,12 +140,12 @@ def _compute_horizontal_advection_of_rho_and_theta(
     p_dthalf: wpfloat,
     rho_ref_me: Field[[EdgeDim, KDim], vpfloat],
     theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
-    z_grad_rth_1: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_2: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_3: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_4: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    z_grad_rth_1: fa.CKvpField,
+    z_grad_rth_2: fa.CKvpField,
+    z_grad_rth_3: fa.CKvpField,
+    z_grad_rth_4: fa.CKvpField,
+    z_rth_pr_1: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
 ) -> tuple[fa.EKwpField, fa.EKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1."""
     (p_distv_bary_1, p_distv_bary_2) = _compute_btraj(
@@ -190,12 +190,12 @@ def compute_horizontal_advection_of_rho_and_theta(
     p_dthalf: wpfloat,
     rho_ref_me: Field[[EdgeDim, KDim], vpfloat],
     theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
-    z_grad_rth_1: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_2: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_3: Field[[CellDim, KDim], vpfloat],
-    z_grad_rth_4: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
-    z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
+    z_grad_rth_1: fa.CKvpField,
+    z_grad_rth_2: fa.CKvpField,
+    z_grad_rth_3: fa.CKvpField,
+    z_grad_rth_4: fa.CKvpField,
+    z_rth_pr_1: fa.CKvpField,
+    z_rth_pr_2: fa.CKvpField,
     z_rho_e: fa.EKwpField,
     z_theta_v_e: fa.EKwpField,
     horizontal_start: int32,

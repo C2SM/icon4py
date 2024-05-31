@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -24,8 +25,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_contravariant_correction_of_w(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], vpfloat]:
+    wgtfac_c: fa.CKvpField,
+) -> fa.CKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_39."""
     z_w_concorr_me_offset_1 = z_w_concorr_me(Koff[-1])
 
@@ -51,8 +52,8 @@ def _compute_contravariant_correction_of_w(
 def compute_contravariant_correction_of_w(
     e_bln_c_s: Field[[CEDim], wpfloat],
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: fa.CKvpField,
+    w_concorr_c: fa.CKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
