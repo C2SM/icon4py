@@ -1176,12 +1176,12 @@ class TimeLoop:
         )
         self._timer2.capture()
 
-        self._timer3.start()
         if self.diffusion.config.apply_to_horizontal_wind:
+            self._timer3.start()
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
-        self._timer3.capture()
+            self._timer3.capture()
 
         self._swap()
 
@@ -1237,6 +1237,7 @@ def initialize(
     props: ProcessProperties,
     serialization_type: SerializationType,
     experiment_type: ExperimentType,
+    enable_output: bool,
 ):
     """
     Inititalize the driver run.
@@ -1339,17 +1340,20 @@ def initialize(
 
     log.info("initializing netCDF4 output state")
     log.info(f"{config.output_config}")
-    output_state = OutputState(
-        config.output_config,
-        config.run_config.start_date,
-        config.run_config.end_date,
-        icon_grid,
-        cell_geometry,
-        edge_geometry,
-        diagnostic_metric_state,
-        prognostic_state_list[0],
-        diagnostic_state,
-    )
+    if enable_output:
+        output_state = OutputState(
+            config.output_config,
+            config.run_config.start_date,
+            config.run_config.end_date,
+            icon_grid,
+            cell_geometry,
+            edge_geometry,
+            diagnostic_metric_state,
+            prognostic_state_list[0],
+            diagnostic_state,
+        )
+    else:
+        output_state = None
 
     timeloop = TimeLoop(
         run_config=config.run_config,
@@ -1382,7 +1386,8 @@ def initialize(
 @click.option("--experiment_type", default="any", help="experiment selection")
 @click.option("--profile", default=False, help="Whether to profile code using cProfile.")
 @click.option("--disable-logging", is_flag=True, help="Disable all logging output.")
-def main(input_path, run_path, mpi, serialization_type, experiment_type, profile, disable_logging):
+@click.option("--enable_output", is_flag=True, help="Enable output.")
+def main(input_path, run_path, mpi, serialization_type, experiment_type, profile, disable_logging, enable_output):
     """
     Run the driver.
 
@@ -1415,7 +1420,7 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type, profile
         output_state,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(Path(input_path), parallel_props, serialization_type, experiment_type)
+    ) = initialize(Path(input_path), parallel_props, serialization_type, experiment_type, enable_output)
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
         f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
