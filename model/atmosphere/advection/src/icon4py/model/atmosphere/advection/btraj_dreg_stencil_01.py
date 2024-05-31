@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, where
+from gt4py.next.ffront.fbuiltins import broadcast, where
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
@@ -22,7 +22,7 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 def _btraj_dreg_stencil_01(
     lcounterclock: bool,
     p_vn: fa.EKfloatField,
-    tangent_orientation: Field[[EdgeDim], float],
+    tangent_orientation: fa.EfloatField,
 ) -> fa.EKboolField:
     tangent_orientation = broadcast(tangent_orientation, (EdgeDim, KDim))
     return where(p_vn * tangent_orientation >= 0.0, lcounterclock, False)
@@ -32,7 +32,7 @@ def _btraj_dreg_stencil_01(
 def btraj_dreg_stencil_01(
     lcounterclock: bool,
     p_vn: fa.EKfloatField,
-    tangent_orientation: Field[[EdgeDim], float],
+    tangent_orientation: fa.EfloatField,
     lvn_sys_pos: fa.EKboolField,
 ):
     _btraj_dreg_stencil_01(lcounterclock, p_vn, tangent_orientation, out=lvn_sys_pos)

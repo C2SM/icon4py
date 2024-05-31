@@ -30,6 +30,8 @@ EKwpField: TypeAlias = Field[Dims[EdgeDim, KDim], wpfloat]  # type: ignore [vali
 CKvpField: TypeAlias = Field[Dims[CellDim, KDim], vpfloat]  # type: ignore [valid-type]
 
 CfloatField: TypeAlias = Field[Dims[CellDim], float]  # type: ignore [valid-type]
+EfloatField: TypeAlias = Field[Dims[EdgeDim], float]  # type: ignore [valid-type]
+KfloatField: TypeAlias = Field[Dims[KDim], float]  # type: ignore [valid-type]
 CKfloatField: TypeAlias = Field[Dims[CellDim, KDim], float]  # type: ignore [valid-type]
 EKfloatField: TypeAlias = Field[Dims[EdgeDim, KDim], float]  # type: ignore [valid-type]
 

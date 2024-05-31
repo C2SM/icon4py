@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
@@ -23,8 +23,8 @@ def _vert_adv_stencil_01a(
     tracer_now: fa.CKfloatField,
     rhodz_now: fa.CKfloatField,
     p_mflx_tracer_v: fa.CKfloatField,
-    deepatmo_divzl: Field[[KDim], float],
-    deepatmo_divzu: Field[[KDim], float],
+    deepatmo_divzl: fa.KfloatField,
+    deepatmo_divzu: fa.KfloatField,
     rhodz_new: fa.CKfloatField,
     p_dtime: float,
 ) -> fa.CKfloatField:
@@ -41,8 +41,8 @@ def _vert_adv_stencil_01(
     tracer_now: fa.CKfloatField,
     rhodz_now: fa.CKfloatField,
     p_mflx_tracer_v: fa.CKfloatField,
-    deepatmo_divzl: Field[[KDim], float],
-    deepatmo_divzu: Field[[KDim], float],
+    deepatmo_divzl: fa.KfloatField,
+    deepatmo_divzu: fa.KfloatField,
     rhodz_new: fa.CKfloatField,
     k: fa.KintField,
     p_dtime: float,
@@ -77,8 +77,8 @@ def vert_adv_stencil_01(
     tracer_now: fa.CKfloatField,
     rhodz_now: fa.CKfloatField,
     p_mflx_tracer_v: fa.CKfloatField,
-    deepatmo_divzl: Field[[KDim], float],
-    deepatmo_divzu: Field[[KDim], float],
+    deepatmo_divzl: fa.KfloatField,
+    deepatmo_divzu: fa.KfloatField,
     rhodz_new: fa.CKfloatField,
     k: fa.KintField,
     p_dtime: float,

@@ -15,13 +15,13 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim
 
 
 @field_operator
 def _hor_adv_stencil_01(
     p_mflx_tracer_h: fa.EKfloatField,
-    deepatmo_divh: Field[[KDim], float],
+    deepatmo_divh: fa.KfloatField,
     tracer_now: fa.CKfloatField,
     rhodz_now: fa.CKfloatField,
     rhodz_new: fa.CKfloatField,
@@ -41,7 +41,7 @@ def _hor_adv_stencil_01(
 @program
 def hor_adv_stencil_01(
     p_mflx_tracer_h: fa.EKfloatField,
-    deepatmo_divh: Field[[KDim], float],
+    deepatmo_divh: fa.KfloatField,
     tracer_now: fa.CKfloatField,
     rhodz_now: fa.CKfloatField,
     rhodz_new: fa.CKfloatField,

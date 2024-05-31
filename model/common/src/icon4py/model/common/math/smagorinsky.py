@@ -11,8 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, field_operator, program
+from gt4py.next import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import KDim, Koff
 from icon4py.model.common.settings import backend
@@ -20,7 +21,7 @@ from icon4py.model.common.settings import backend
 
 @field_operator
 def _en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
+    vect_a: fa.KfloatField,
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -29,7 +30,7 @@ def _en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-) -> Field[[KDim], float]:
+) -> fa.KfloatField:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
     df32 = hdiff_smag_fac3 - hdiff_smag_fac2
@@ -50,7 +51,7 @@ def _en_smag_fac_for_zero_nshift(
 
 @program(backend=backend)
 def en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
+    vect_a: fa.KfloatField,
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -59,7 +60,7 @@ def en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    enh_smag_fac: Field[[KDim], float],
+    enh_smag_fac: fa.KfloatField,
 ):
     _en_smag_fac_for_zero_nshift(
         vect_a,

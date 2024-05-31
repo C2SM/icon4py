@@ -15,7 +15,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim
+from icon4py.model.common.dimension import E2EC, ECDim
 
 
 @field_operator
@@ -24,14 +24,14 @@ def _btraj_dreg_stencil_03(
     p_vt: fa.EKfloatField,
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
-    edge_verts_1_x: Field[[EdgeDim], float],
-    edge_verts_2_x: Field[[EdgeDim], float],
-    edge_verts_1_y: Field[[EdgeDim], float],
-    edge_verts_2_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_y: Field[[EdgeDim], float],
+    edge_verts_1_x: fa.EfloatField,
+    edge_verts_2_x: fa.EfloatField,
+    edge_verts_1_y: fa.EfloatField,
+    edge_verts_2_y: fa.EfloatField,
+    pos_on_tplane_e_1_x: fa.EfloatField,
+    pos_on_tplane_e_2_x: fa.EfloatField,
+    pos_on_tplane_e_1_y: fa.EfloatField,
+    pos_on_tplane_e_2_y: fa.EfloatField,
     primal_normal_cell_x: Field[[ECDim], float],
     primal_normal_cell_y: Field[[ECDim], float],
     dual_normal_cell_x: Field[[ECDim], float],
@@ -135,14 +135,14 @@ def btraj_dreg_stencil_03(
     p_vt: fa.EKfloatField,
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
-    edge_verts_1_x: Field[[EdgeDim], float],
-    edge_verts_2_x: Field[[EdgeDim], float],
-    edge_verts_1_y: Field[[EdgeDim], float],
-    edge_verts_2_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_y: Field[[EdgeDim], float],
+    edge_verts_1_x: fa.EfloatField,
+    edge_verts_2_x: fa.EfloatField,
+    edge_verts_1_y: fa.EfloatField,
+    edge_verts_2_y: fa.EfloatField,
+    pos_on_tplane_e_1_x: fa.EfloatField,
+    pos_on_tplane_e_2_x: fa.EfloatField,
+    pos_on_tplane_e_1_y: fa.EfloatField,
+    pos_on_tplane_e_2_y: fa.EfloatField,
     primal_normal_cell_x: Field[[ECDim], float],
     primal_normal_cell_y: Field[[ECDim], float],
     dual_normal_cell_x: Field[[ECDim], float],

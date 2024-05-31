@@ -42,7 +42,7 @@ def _calculate_nabla2_for_theta(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_for_theta(
     kh_smag_e: fa.EKfloatField,
-    inv_dual_edge_length: Field[[EdgeDim], float],
+    inv_dual_edge_length: fa.EfloatField,
     theta_v: fa.CKfloatField,
     geofac_div: Field[[CEDim], float],
     z_temp: fa.CKfloatField,

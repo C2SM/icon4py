@@ -361,7 +361,7 @@ class Diffusion:
         self.interpolation_state: DiffusionInterpolationState = None
         self.metric_state: DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
-        self.diff_multfac_n2w: Field[[KDim], float] = None
+        self.diff_multfac_n2w: fa.KfloatField = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
@@ -558,8 +558,8 @@ class Diffusion:
         diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        diff_multfac_vn: Field[[KDim], float],
-        smag_limit: Field[[KDim], float],
+        diff_multfac_vn: fa.KfloatField,
+        smag_limit: fa.KfloatField,
         smag_offset: float,
     ):
         """

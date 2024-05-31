@@ -225,7 +225,7 @@ def compute_scalfac_dd3d(
     See mo_vertical_grid.f90
 
     Args:
-        vct_a: Field[[KDim], float],
+        vct_a: Field[Dims[KDim], float],
         scalfac_dd3d: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
@@ -290,7 +290,7 @@ def compute_rayleigh_w(
 
     Args:
         rayleigh_w: (output) Rayleigh damping
-        vct_a: Field[[KDim], float]
+        vct_a: Field[Dims[KDim], float]
         vct_a_1: 1D of vct_a
         damping_height: height at which w-damping and sponge layer start
         rayleigh_type: type of Rayleigh damping (1: CLASSIC, 2: Klemp (2008))
@@ -681,7 +681,7 @@ def compute_vwind_impl_wgt(
         z_ddxn_z_half_e: intermediate storage for field
         z_ddxt_z_half_e: intermediate storage for field
         dual_edge_length: dual_edge_length
-        vct_a: Field[[KDim], float]
+        vct_a: Field[Dims[KDim], float]
         z_ifc: geometric height on half levels
         vwind_impl_wgt: (output) offcentering in vertical mass flux
         vwind_offctr: off-centering in vertical wind solver

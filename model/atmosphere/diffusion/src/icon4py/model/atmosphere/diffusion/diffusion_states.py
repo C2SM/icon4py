@@ -23,7 +23,6 @@ from icon4py.model.common.dimension import (
     CECDim,
     CEDim,
     CellDim,
-    EdgeDim,
     KDim,
     V2EDim,
     VertexDim,
@@ -85,7 +84,7 @@ class DiffusionInterpolationState:
     geofac_grg_y: Field[
         [CellDim, C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
-    nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
+    nudgecoeff_e: fa.EfloatField  # Nudgeing coeffients for edges
 
     @functools.cached_property
     def geofac_n2s_c(self) -> fa.CfloatField:

@@ -195,7 +195,7 @@ class EdgeParams:
         primal_normal_x=None,
         primal_normal_y=None,
     ):
-        self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
+        self.tangent_orientation: fa.EfloatField = tangent_orientation
         """
         Orientation of vector product of the edge and the adjacent cell centers
              v3
@@ -215,21 +215,21 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
         """
 
-        self.primal_edge_lengths: Field[[EdgeDim], float] = primal_edge_lengths
+        self.primal_edge_lengths: fa.EfloatField = primal_edge_lengths
         """
         Length of the triangle edge.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
         """
 
-        self.inverse_primal_edge_lengths: Field[[EdgeDim], float] = inverse_primal_edge_lengths
+        self.inverse_primal_edge_lengths: fa.EfloatField = inverse_primal_edge_lengths
         """
         Inverse of the triangle edge length: 1.0/primal_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
         """
 
-        self.dual_edge_lengths: Field[[EdgeDim], float] = dual_edge_lengths
+        self.dual_edge_lengths: fa.EfloatField = dual_edge_lengths
         """
         Length of the hexagon/pentagon edge.
         vertices of the hexagon/pentagon are cell centers and its center
@@ -239,14 +239,14 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
         """
 
-        self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
+        self.inverse_dual_edge_lengths: fa.EfloatField = inverse_dual_edge_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
-        self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
+        self.inverse_vertex_vertex_lengths: fa.EfloatField = inverse_vertex_vertex_lengths
         """
         Inverse distance between outer vertices of adjacent cells.
 
@@ -311,7 +311,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.edge_areas: Field[[EdgeDim], float] = edge_areas
+        self.edge_areas: fa.EfloatField = edge_areas
         """
         Area of the quadrilateral whose edges are the primal edge and
         the associated dual edge.
@@ -320,12 +320,12 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.f_e: Field[[EdgeDim], float] = f_e
+        self.f_e: fa.EfloatField = f_e
         """
         Coriolis parameter at cell edges
         """
 
-        self.edge_center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
+        self.edge_center: tuple[fa.EfloatField, fa.EfloatField] = (
             edge_center_lat,
             edge_center_lon,
         )

@@ -97,7 +97,7 @@ class InterpolationState:
     geofac_grg_y: Field[
         [CellDim, C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
-    nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
+    nudgecoeff_e: fa.EfloatField  # Nudgeing coeffients for edges
 
     c_lin_e: Field[[EdgeDim, E2CDim], float]
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], float]
@@ -116,7 +116,7 @@ class MetricStateNonHydro:
     bdy_halo_c: fa.CboolField
     # Finally, a mask field that excludes boundary halo points
     mask_prog_halo_c: Field[[CellDim, KDim], bool]
-    rayleigh_w: Field[[KDim], float]
+    rayleigh_w: fa.KfloatField
 
     wgtfac_c: fa.CKfloatField
     wgtfacq_c: fa.CKfloatField
@@ -148,8 +148,8 @@ class MetricStateNonHydro:
     vwind_expl_wgt: fa.CfloatField
     vwind_impl_wgt: fa.CfloatField
 
-    hmask_dd3d: Field[[EdgeDim], float]
-    scalfac_dd3d: Field[[KDim], float]
+    hmask_dd3d: fa.EfloatField
+    scalfac_dd3d: fa.KfloatField
 
     coeff1_dwdz: fa.CKfloatField
     coeff2_dwdz: fa.CKfloatField

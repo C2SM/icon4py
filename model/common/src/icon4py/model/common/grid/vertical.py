@@ -15,10 +15,9 @@ from dataclasses import dataclass, field
 from typing import Final
 
 import numpy as np
-from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import KDim
 from icon4py.model.common.settings import xp
 
 
@@ -40,7 +39,7 @@ class VerticalModelParams:
     htop_moist_proc: height [m] where moist physics is turned off. Defined in `mo_nonhydrostatic_nml.f90` as `htop_moist_proc`
     """
 
-    vct_a: Field[[KDim], float]
+    vct_a: fa.KfloatField
     rayleigh_damping_height: Final[float] = 45000.0
     htop_moist_proc: Final[float] = 22500.0
     index_of_damping_layer: Final[int32] = field(init=False)
@@ -92,7 +91,7 @@ class VerticalModelParams:
         )
 
     @property
-    def physical_heights(self) -> Field[[KDim], float]:
+    def physical_heights(self) -> fa.KfloatField:
         return self.vct_a
 
 

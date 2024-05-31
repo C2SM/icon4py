@@ -388,9 +388,9 @@ class SolveNonhydro:
         self.cell_params: Optional[CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac: Optional[Field[[KDim], float]] = None
-        self.scal_divdamp: Optional[Field[[KDim], float]] = None
-        self._bdy_divdamp: Optional[Field[[KDim], float]] = None
+        self.enh_divdamp_fac: Optional[fa.KfloatField] = None
+        self.scal_divdamp: Optional[fa.KfloatField] = None
+        self._bdy_divdamp: Optional[fa.KfloatField] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0

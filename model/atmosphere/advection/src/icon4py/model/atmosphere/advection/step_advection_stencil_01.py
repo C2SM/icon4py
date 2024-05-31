@@ -11,19 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common.dimension import Koff
 
 
 @field_operator
 def _step_advection_stencil_01(
     rhodz_ast: fa.CKfloatField,
     p_mflx_contra_v: fa.CKfloatField,
-    deepatmo_divzl: Field[[KDim], float],
-    deepatmo_divzu: Field[[KDim], float],
+    deepatmo_divzl: fa.KfloatField,
+    deepatmo_divzu: fa.KfloatField,
     p_dtime: float,
 ) -> fa.CKfloatField:
     k_offset_up_low = p_dtime * (
@@ -36,8 +36,8 @@ def _step_advection_stencil_01(
 def step_advection_stencil_01(
     rhodz_ast: fa.CKfloatField,
     p_mflx_contra_v: fa.CKfloatField,
-    deepatmo_divzl: Field[[KDim], float],
-    deepatmo_divzu: Field[[KDim], float],
+    deepatmo_divzl: fa.KfloatField,
+    deepatmo_divzu: fa.KfloatField,
     p_dtime: float,
     rhodz_ast2: fa.CKfloatField,
 ):
