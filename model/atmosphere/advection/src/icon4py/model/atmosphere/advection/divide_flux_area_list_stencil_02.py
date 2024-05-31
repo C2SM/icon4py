@@ -15,7 +15,7 @@ import sys
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, where
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
@@ -32,14 +32,14 @@ def _divide_flux_area_list_stencil_02(
     bf_cc_patch1_lat: Field[[ECDim], float],
     bf_cc_patch2_lon: Field[[ECDim], float],
     bf_cc_patch2_lat: Field[[ECDim], float],
-    butterfly_idx_patch1_vnpos: Field[[EdgeDim], int32],
-    butterfly_idx_patch1_vnneg: Field[[EdgeDim], int32],
-    butterfly_blk_patch1_vnpos: Field[[EdgeDim], int32],
-    butterfly_blk_patch1_vnneg: Field[[EdgeDim], int32],
-    butterfly_idx_patch2_vnpos: Field[[EdgeDim], int32],
-    butterfly_idx_patch2_vnneg: Field[[EdgeDim], int32],
-    butterfly_blk_patch2_vnpos: Field[[EdgeDim], int32],
-    butterfly_blk_patch2_vnneg: Field[[EdgeDim], int32],
+    butterfly_idx_patch1_vnpos: fa.EintField,
+    butterfly_idx_patch1_vnneg: fa.EintField,
+    butterfly_blk_patch1_vnpos: fa.EintField,
+    butterfly_blk_patch1_vnneg: fa.EintField,
+    butterfly_idx_patch2_vnpos: fa.EintField,
+    butterfly_idx_patch2_vnneg: fa.EintField,
+    butterfly_blk_patch2_vnpos: fa.EintField,
+    butterfly_blk_patch2_vnneg: fa.EintField,
     dreg_patch1_1_lon_vmask: Field[[EdgeDim, KDim], float],
     dreg_patch1_1_lat_vmask: Field[[EdgeDim, KDim], float],
     dreg_patch1_2_lon_vmask: Field[[EdgeDim, KDim], float],
@@ -184,14 +184,14 @@ def divide_flux_area_list_stencil_02(
     bf_cc_patch1_lat: Field[[ECDim], float],
     bf_cc_patch2_lon: Field[[ECDim], float],
     bf_cc_patch2_lat: Field[[ECDim], float],
-    butterfly_idx_patch1_vnpos: Field[[EdgeDim], int32],
-    butterfly_idx_patch1_vnneg: Field[[EdgeDim], int32],
-    butterfly_blk_patch1_vnpos: Field[[EdgeDim], int32],
-    butterfly_blk_patch1_vnneg: Field[[EdgeDim], int32],
-    butterfly_idx_patch2_vnpos: Field[[EdgeDim], int32],
-    butterfly_idx_patch2_vnneg: Field[[EdgeDim], int32],
-    butterfly_blk_patch2_vnpos: Field[[EdgeDim], int32],
-    butterfly_blk_patch2_vnneg: Field[[EdgeDim], int32],
+    butterfly_idx_patch1_vnpos: fa.EintField,
+    butterfly_idx_patch1_vnneg: fa.EintField,
+    butterfly_blk_patch1_vnpos: fa.EintField,
+    butterfly_blk_patch1_vnneg: fa.EintField,
+    butterfly_idx_patch2_vnpos: fa.EintField,
+    butterfly_idx_patch2_vnneg: fa.EintField,
+    butterfly_blk_patch2_vnpos: fa.EintField,
+    butterfly_blk_patch2_vnneg: fa.EintField,
     dreg_patch1_1_lon_vmask: Field[[EdgeDim, KDim], float],
     dreg_patch1_1_lat_vmask: Field[[EdgeDim, KDim], float],
     dreg_patch1_2_lon_vmask: Field[[EdgeDim, KDim], float],

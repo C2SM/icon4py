@@ -150,7 +150,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     k: fa.KintField,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EintField,
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> tuple[
@@ -226,7 +226,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     k: fa.KintField,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EintField,
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> tuple[
@@ -285,7 +285,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     istep: int32,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EintField,
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> tuple[
@@ -378,7 +378,7 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     istep: int32,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EintField,
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> Field[[EdgeDim, KDim], float]:
@@ -435,7 +435,7 @@ def fused_velocity_advection_stencil_1_to_7(
     istep: int32,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EintField,
     lateral_boundary_7: int32,
     halo_1: int32,
     horizontal_start: int32,
