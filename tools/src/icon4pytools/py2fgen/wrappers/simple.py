@@ -16,9 +16,9 @@ import pstats
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, float64, int32, neighbor_sum
+from gt4py.next.ffront.fbuiltins import Field, float64, int32
 from icon4py.model.common.caching import CachedProgram
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
@@ -68,14 +68,11 @@ def _multi_return(
     mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
     vn_traj: Field[[EdgeDim, KDim], wpfloat],
     mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
 ) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
     """accumulate_prep_adv_fields stencil formerly known as _mo_solve_nonhydro_stencil_34."""
     vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
-    z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)  # noqa: F841
     return vn_traj_wp, mass_flx_me_wp
 
 
@@ -85,8 +82,6 @@ def multi_return(
     mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
     vn_traj: Field[[EdgeDim, KDim], wpfloat],
     mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -98,8 +93,6 @@ def multi_return(
         mass_fl_e,
         vn_traj,
         mass_flx_me,
-        geofac_div,
-        z_nabla2_e,
         r_nsubsteps,
         out=(vn_traj, mass_flx_me),
         domain={
@@ -124,8 +117,6 @@ def multi_return_from_function(
     mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
     vn_traj: Field[[EdgeDim, KDim], wpfloat],
     mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -137,8 +128,6 @@ def multi_return_from_function(
         mass_fl_e,
         vn_traj,
         mass_flx_me,
-        geofac_div,
-        z_nabla2_e,
         r_nsubsteps,
         horizontal_start,
         horizontal_end,

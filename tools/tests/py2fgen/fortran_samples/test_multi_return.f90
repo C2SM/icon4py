@@ -38,7 +38,7 @@ program call_multi_return_cffi_plugin
    vertical_start = 0
    vertical_end = kdim
 
-   !$ACC data copyin(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps)
+   !$ACC data copyin(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me)
 
    ! print array shapes and values before computation
    print *, "Arrays before computation:"
@@ -52,14 +52,15 @@ program call_multi_return_cffi_plugin
    print *, trim(str_buffer)
    print *
 
+
    ! call once just so that we compile the code once (profiling becomes easier later)
-   call multi_return_from_function(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, geofac_div, z_nabla2_e, r_nsubsteps, &
+   call multi_return_from_function(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
                      horizontal_start, horizontal_end, vertical_start, vertical_end, rc)
 
    ! call the cffi plugin
    call profile_enable(rc)
    do n = 1, 1000
-       call multi_return_from_function(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, geofac_div, z_nabla2_e, r_nsubsteps, &
+       call multi_return_from_function(z_vn_avg, mass_fl_e, vn_traj, mass_flx_me, r_nsubsteps, &
                      horizontal_start, horizontal_end, vertical_start, vertical_end, rc)
 
        ! print array shapes and values

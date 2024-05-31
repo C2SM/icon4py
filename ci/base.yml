@@ -44,3 +44,4 @@ variables:
     CSCS_NEEDED_DATA: icon4py
     TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
     ICON_GRID_LOC: "/project/d121/icon4py/ci/testdata/grids/mch_ch_r04b09_dsl"
+    PY2F_GPU_TESTS: 1
