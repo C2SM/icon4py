@@ -29,7 +29,7 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common.dimension import CEDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -42,8 +42,8 @@ def _fused_velocity_advection_stencil_8_to_14(
     wgtfac_c: fa.CKvpField,
     w: fa.CKwpField,
     ddqz_z_half: fa.CKvpField,
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    pre_levelmask: Field[[CellDim, KDim], bool],
+    cfl_clipping: fa.CKboolField,
+    pre_levelmask: fa.CKboolField,
     vcfl: fa.CKvpField,
     z_w_concorr_mc: fa.CKvpField,
     w_concorr_c: fa.CKvpField,
@@ -58,8 +58,8 @@ def _fused_velocity_advection_stencil_8_to_14(
     nrdmax: int32,
 ) -> tuple[
     fa.CKvpField,
-    Field[[CellDim, KDim], bool],
-    Field[[CellDim, KDim], bool],
+    fa.CKboolField,
+    fa.CKboolField,
     fa.CKvpField,
     fa.CKvpField,
 ]:
@@ -119,8 +119,8 @@ def fused_velocity_advection_stencil_8_to_14(
     wgtfac_c: fa.CKvpField,
     w: fa.CKwpField,
     ddqz_z_half: fa.CKvpField,
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    pre_levelmask: Field[[CellDim, KDim], bool],
+    cfl_clipping: fa.CKboolField,
+    pre_levelmask: fa.CKboolField,
     vcfl: fa.CKvpField,
     z_w_concorr_mc: fa.CKvpField,
     w_concorr_c: fa.CKvpField,

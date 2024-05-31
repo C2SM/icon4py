@@ -115,7 +115,7 @@ class MetricStateNonHydro:
 
     bdy_halo_c: fa.CboolField
     # Finally, a mask field that excludes boundary halo points
-    mask_prog_halo_c: Field[[CellDim, KDim], bool]
+    mask_prog_halo_c: fa.CKboolField
     rayleigh_w: fa.KfloatField
 
     wgtfac_c: fa.CKfloatField

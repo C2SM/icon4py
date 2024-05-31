@@ -32,7 +32,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
+    cfl_clipping: fa.CKboolField,
     owner_mask: fa.CboolField,
     z_w_con_c: fa.CKvpField,
     ddqz_z_half: fa.CKvpField,
@@ -71,7 +71,7 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
+    cfl_clipping: fa.CKboolField,
     owner_mask: fa.CboolField,
     z_w_con_c: fa.CKvpField,
     ddqz_z_half: fa.CKvpField,

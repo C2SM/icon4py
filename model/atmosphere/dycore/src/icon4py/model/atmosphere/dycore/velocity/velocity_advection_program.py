@@ -275,7 +275,7 @@ def _fused_stencil_14(
 def fused_stencil_14(
     local_z_w_con_c: fa.CKfloatField,
     ddqz_z_half: fa.CKfloatField,
-    local_cfl_clipping: Field[[CellDim, KDim], bool],
+    local_cfl_clipping: fa.CKboolField,
     local_vcfl: fa.CKfloatField,
     cfl_w_limit: float,
     dtime: float,

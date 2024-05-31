@@ -14,7 +14,6 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
-    Field,
     abs,
     astype,
     broadcast,
@@ -35,7 +34,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
 ) -> tuple[
-    Field[[CellDim, KDim], bool],
+    fa.CKboolField,
     fa.CKvpField,
     fa.CKvpField,
 ]:
@@ -70,7 +69,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: fa.CKvpField,
     z_w_con_c: fa.CKvpField,
-    cfl_clipping: Field[[CellDim, KDim], bool],
+    cfl_clipping: fa.CKboolField,
     vcfl: fa.CKvpField,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,

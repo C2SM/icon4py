@@ -41,10 +41,9 @@ CintField: TypeAlias = Field[Dims[CellDim], int32]  # type: ignore [valid-type]
 EintField: TypeAlias = Field[Dims[EdgeDim], int32]  # type: ignore [valid-type]
 KintField: TypeAlias = Field[Dims[KDim], int32]  # type: ignore [valid-type]
 EKintField: TypeAlias = Field[Dims[EdgeDim, KDim], int32]  # type: ignore [valid-type]
+CKintField: TypeAlias = Field[Dims[CellDim, KDim], int32]  # type: ignore [valid-type]
 
 CboolField: TypeAlias = Field[Dims[CellDim], bool]  # type: ignore [valid-type]
 EboolField: TypeAlias = Field[Dims[EdgeDim], bool]  # type: ignore [valid-type]
+CKboolField: TypeAlias = Field[Dims[CellDim, KDim], bool]  # type: ignore [valid-type]
 EKboolField: TypeAlias = Field[Dims[EdgeDim, KDim], bool]  # type: ignore [valid-type]
-
-# CKboolField
-# CKintField

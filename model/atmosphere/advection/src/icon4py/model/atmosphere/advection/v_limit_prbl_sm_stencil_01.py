@@ -13,15 +13,13 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
-    Field,
     FieldOffset,
     abs,
-    int32,
     where,
 )
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import KDim
 
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
@@ -31,7 +29,7 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 def _v_limit_prbl_sm_stencil_01(
     p_face: fa.CKfloatField,
     p_cc: fa.CKfloatField,
-) -> Field[[CellDim, KDim], int32]:
+) -> fa.CKintField:
     z_delta = p_face - p_face(Koff[1])
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 
@@ -44,7 +42,7 @@ def _v_limit_prbl_sm_stencil_01(
 def v_limit_prbl_sm_stencil_01(
     p_face: fa.CKfloatField,
     p_cc: fa.CKfloatField,
-    l_limit: Field[[CellDim, KDim], int32],
+    l_limit: fa.CKintField,
 ):
     _v_limit_prbl_sm_stencil_01(
         p_face,

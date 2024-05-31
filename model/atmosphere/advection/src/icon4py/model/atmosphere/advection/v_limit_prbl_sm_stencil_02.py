@@ -12,10 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, FieldOffset, int32, minimum, where
+from gt4py.next.ffront.fbuiltins import FieldOffset, minimum, where
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import KDim
 
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
@@ -23,7 +23,7 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _v_limit_prbl_sm_stencil_02(
-    l_limit: Field[[CellDim, KDim], int32],
+    l_limit: fa.CKintField,
     p_face: fa.CKfloatField,
     p_cc: fa.CKfloatField,
 ) -> tuple[fa.CKfloatField, fa.CKfloatField]:
@@ -46,7 +46,7 @@ def _v_limit_prbl_sm_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_02(
-    l_limit: Field[[CellDim, KDim], int32],
+    l_limit: fa.CKintField,
     p_face: fa.CKfloatField,
     p_cc: fa.CKfloatField,
     p_face_up: fa.CKfloatField,

@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    mask: Field[[CellDim, KDim], bool],
+    mask: fa.CKboolField,
     zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: fa.CKwpField,
     geofac_n2s_c: fa.CwpField,
@@ -73,7 +73,7 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    mask: Field[[CellDim, KDim], bool],
+    mask: fa.CKboolField,
     zd_vertoffset: Field[[CECDim, KDim], int32],
     zd_diffcoef: fa.CKwpField,
     geofac_n2s_c: fa.CwpField,

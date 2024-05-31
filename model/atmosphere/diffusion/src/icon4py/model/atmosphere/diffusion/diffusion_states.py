@@ -57,7 +57,7 @@ class DiffusionMetricState:
     wgtfac_c: Field[
         [CellDim, KDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
-    mask_hdiff: Field[[CellDim, KDim], bool]
+    mask_hdiff: fa.CKboolField
     zd_vertoffset: Field[[CECDim, KDim], int32]
     zd_diffcoef: fa.CKfloatField
     zd_intcoef: Field[[CECDim, KDim], float]
