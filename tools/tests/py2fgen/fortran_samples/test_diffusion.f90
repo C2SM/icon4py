@@ -104,7 +104,7 @@ program diffusion_simulation
    integer(c_int), parameter :: num_cells = 20896
    integer(c_int), parameter :: num_edges = 31558
    integer(c_int), parameter :: num_vertices = 10663
-   integer(c_int), parameter :: num_levels = 60
+   integer(c_int), parameter :: num_levels = 65
    integer(c_int), parameter :: num_c2ec2o = 4
    integer(c_int), parameter :: num_v2e = 6
    integer(c_int), parameter :: num_c2e = 3
@@ -345,6 +345,7 @@ program diffusion_simulation
 
    ! initial run
    call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit, rc)
+   print *, "Initial diffusion run done"
 
    ! Call diffusion_run
    call profile_enable(rc)

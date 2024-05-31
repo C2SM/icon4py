@@ -12,14 +12,14 @@ stages:
 
 variables:
   PYTHON_VERSION: "3.10"
-  PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
+  PERSIST_IMAGE_NAME: "${CSCS_REGISTRY_PATH}/icon4py:${CI_COMMIT_SHORT_SHA}"
 
 .build_template:
   stage: build
   extends: .container-builder-cscs-zen2
   variables:
     DOCKERFILE: ci/docker/Dockerfile.build
-    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION"]'
+    DOCKER_BUILD_ARGS: '["PYVERSION=${PYVERSION}"]'
     <<: *py310
 
 .test_template:
@@ -33,7 +33,7 @@ variables:
     - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
     - python -c "import cupy"
-    - ls ${TEST_DATA_PATH}
+    - ls "${TEST_DATA_PATH}"
   variables:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
@@ -43,5 +43,8 @@ variables:
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     CSCS_NEEDED_DATA: icon4py
     TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
-    ICON_GRID_LOC: "/project/d121/icon4py/ci/testdata/grids/mch_ch_r04b09_dsl"
+    ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     PY2F_GPU_TESTS: 1
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
+    CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
+    NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
