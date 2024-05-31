@@ -45,11 +45,11 @@ ENV NVHPC_SILENT=1
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
 # Set environment variables
-ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION} \
-    PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
+ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}
+
+ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
     LD_LIBRARY_PATH=${HPC_SDK_PATH}/cuda/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
-
 
 # Install Boost
 RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
