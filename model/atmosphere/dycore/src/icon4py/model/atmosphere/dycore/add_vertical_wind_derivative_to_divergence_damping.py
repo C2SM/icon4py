@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _add_vertical_wind_derivative_to_divergence_damping(
     hmask_dd3d: fa.EwpField,
-    scalfac_dd3d: Field[[KDim], wpfloat],
+    scalfac_dd3d: fa.KwpField,
     inv_dual_edge_length: fa.EwpField,
     z_dwdz_dd: fa.CKvpField,
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
@@ -45,7 +45,7 @@ def _add_vertical_wind_derivative_to_divergence_damping(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_vertical_wind_derivative_to_divergence_damping(
     hmask_dd3d: fa.EwpField,
-    scalfac_dd3d: Field[[KDim], wpfloat],
+    scalfac_dd3d: fa.KwpField,
     inv_dual_edge_length: fa.EwpField,
     z_dwdz_dd: fa.CKvpField,
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],

@@ -23,8 +23,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_weighted_2nd_and_4th_order_divergence_damping(
-    scal_divdamp: Field[[KDim], wpfloat],
-    bdy_divdamp: Field[[KDim], wpfloat],
+    scal_divdamp: fa.KwpField,
+    bdy_divdamp: fa.KwpField,
     nudgecoeff_e: fa.EwpField,
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: fa.EKwpField,
@@ -40,8 +40,8 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_weighted_2nd_and_4th_order_divergence_damping(
-    scal_divdamp: Field[[KDim], wpfloat],
-    bdy_divdamp: Field[[KDim], wpfloat],
+    scal_divdamp: fa.KwpField,
+    bdy_divdamp: fa.KwpField,
     nudgecoeff_e: fa.EwpField,
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
     vn: fa.EKwpField,

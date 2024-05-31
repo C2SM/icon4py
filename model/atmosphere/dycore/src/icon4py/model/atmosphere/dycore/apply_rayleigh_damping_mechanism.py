@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32
+from gt4py.next.ffront.fbuiltins import broadcast, int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _apply_rayleigh_damping_mechanism(
-    z_raylfac: Field[[KDim], wpfloat],
+    z_raylfac: fa.KwpField,
     w_1: fa.CwpField,
     w: fa.CKwpField,
 ) -> fa.CKwpField:
@@ -35,7 +35,7 @@ def _apply_rayleigh_damping_mechanism(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_rayleigh_damping_mechanism(
-    z_raylfac: Field[[KDim], wpfloat],
+    z_raylfac: fa.KwpField,
     w_1: fa.CwpField,
     w: fa.CKwpField,
     horizontal_start: int32,

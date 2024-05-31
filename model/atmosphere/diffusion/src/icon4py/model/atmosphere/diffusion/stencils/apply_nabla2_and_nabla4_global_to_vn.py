@@ -27,7 +27,7 @@ def _apply_nabla2_and_nabla4_global_to_vn(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     z_nabla2_e: fa.EKwpField,
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
-    diff_multfac_vn: Field[[KDim], wpfloat],
+    diff_multfac_vn: fa.KwpField,
     vn: fa.EKwpField,
 ) -> fa.EKwpField:
     kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
@@ -44,7 +44,7 @@ def apply_nabla2_and_nabla4_global_to_vn(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     z_nabla2_e: fa.EKwpField,
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
-    diff_multfac_vn: Field[[KDim], wpfloat],
+    diff_multfac_vn: fa.KwpField,
     vn: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
