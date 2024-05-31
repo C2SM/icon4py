@@ -14,13 +14,14 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, minimum, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_02(
-    refin_ctrl: Field[[CellDim], int32],
+    refin_ctrl: fa.CintField,
     p_cc: Field[[CellDim, KDim], float],
     z_tracer_new_low: Field[[CellDim, KDim], float],
     z_tracer_max: Field[[CellDim, KDim], float],
@@ -47,7 +48,7 @@ def _hflx_limiter_mo_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflx_limiter_mo_stencil_02(
-    refin_ctrl: Field[[CellDim], int32],
+    refin_ctrl: fa.CintField,
     p_cc: Field[[CellDim, KDim], float],
     z_tracer_new_low: Field[[CellDim, KDim], float],
     z_tracer_max: Field[[CellDim, KDim], float],
