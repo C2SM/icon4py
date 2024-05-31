@@ -22,7 +22,7 @@ from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, Ed
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 
 # global profiler object

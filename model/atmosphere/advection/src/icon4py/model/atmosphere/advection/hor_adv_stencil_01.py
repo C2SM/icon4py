@@ -13,20 +13,21 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, neighbor_sum
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, EdgeDim, KDim
 
 
 @field_operator
 def _hor_adv_stencil_01(
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     deepatmo_divh: Field[[KDim], float],
-    tracer_now: Field[[CellDim, KDim], float],
-    rhodz_now: Field[[CellDim, KDim], float],
-    rhodz_new: Field[[CellDim, KDim], float],
+    tracer_now: fa.CKfloatField,
+    rhodz_now: fa.CKfloatField,
+    rhodz_new: fa.CKfloatField,
     geofac_div: Field[[CEDim], float],
     p_dtime: float,
-) -> Field[[CellDim, KDim], float]:
+) -> fa.CKfloatField:
     tracer_new_hor = (
         tracer_now * rhodz_now
         - p_dtime
@@ -41,11 +42,11 @@ def _hor_adv_stencil_01(
 def hor_adv_stencil_01(
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     deepatmo_divh: Field[[KDim], float],
-    tracer_now: Field[[CellDim, KDim], float],
-    rhodz_now: Field[[CellDim, KDim], float],
-    rhodz_new: Field[[CellDim, KDim], float],
+    tracer_now: fa.CKfloatField,
+    rhodz_now: fa.CKfloatField,
+    rhodz_new: fa.CKfloatField,
     geofac_div: Field[[CEDim], float],
-    tracer_new_hor: Field[[CellDim, KDim], float],
+    tracer_new_hor: fa.CKfloatField,
     p_dtime: float,
 ):
     _hor_adv_stencil_01(

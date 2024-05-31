@@ -29,7 +29,7 @@ from gt4py.next import (
     tanh,
     where,
 )
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import (
     C2E,

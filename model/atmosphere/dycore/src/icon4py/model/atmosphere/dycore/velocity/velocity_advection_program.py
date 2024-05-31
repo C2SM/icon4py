@@ -13,7 +13,7 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
     _add_interpolated_horizontal_advection_of_w,
@@ -143,13 +143,13 @@ def extrapolate_at_top(
 def _fused_stencils_9_10(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_concorr_mc: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
+    local_z_w_concorr_mc: fa.CKfloatField,
+    wgtfac_c: fa.CKfloatField,
+    w_concorr_c: fa.CKfloatField,
     k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[fa.CKfloatField, fa.CKfloatField]:
     local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
@@ -169,9 +169,9 @@ def _fused_stencils_9_10(
 def fused_stencils_9_10(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_concorr_mc: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
+    local_z_w_concorr_mc: fa.CKfloatField,
+    wgtfac_c: fa.CKfloatField,
+    w_concorr_c: fa.CKfloatField,
     k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
@@ -199,9 +199,9 @@ def fused_stencils_9_10(
 
 @field_operator
 def _fused_stencils_11_to_13(
-    w: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    local_z_w_con_c: Field[[CellDim, KDim], float],
+    w: fa.CKfloatField,
+    w_concorr_c: fa.CKfloatField,
+    local_z_w_con_c: fa.CKfloatField,
     k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
@@ -224,9 +224,9 @@ def _fused_stencils_11_to_13(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_11_to_13(
-    w: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    local_z_w_con_c: Field[[CellDim, KDim], float],
+    w: fa.CKfloatField,
+    w_concorr_c: fa.CKfloatField,
+    local_z_w_con_c: fa.CKfloatField,
     k_field: fa.KintField,
     nflatlev_startindex: int32,
     nlev: int32,
@@ -252,8 +252,8 @@ def fused_stencils_11_to_13(
 
 @field_operator
 def _fused_stencil_14(
-    local_z_w_con_c: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
+    local_z_w_con_c: fa.CKfloatField,
+    ddqz_z_half: fa.CKfloatField,
     cfl_w_limit: float,
     dtime: float,
 ):
@@ -273,10 +273,10 @@ def _fused_stencil_14(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencil_14(
-    local_z_w_con_c: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
+    local_z_w_con_c: fa.CKfloatField,
+    ddqz_z_half: fa.CKfloatField,
     local_cfl_clipping: Field[[CellDim, KDim], bool],
-    local_vcfl: Field[[CellDim, KDim], float],
+    local_vcfl: fa.CKfloatField,
     cfl_w_limit: float,
     dtime: float,
     horizontal_start: int32,
@@ -299,13 +299,13 @@ def fused_stencil_14(
 
 @field_operator
 def _fused_stencils_16_to_17(
-    w: Field[[CellDim, KDim], float],
+    w: fa.CKfloatField,
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_con_c: Field[[CellDim, KDim], float],
-    coeff1_dwdz: Field[[CellDim, KDim], float],
-    coeff2_dwdz: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    local_z_w_con_c: fa.CKfloatField,
+    coeff1_dwdz: fa.CKfloatField,
+    coeff2_dwdz: fa.CKfloatField,
+) -> fa.CKfloatField:
     ddt_w_adv = _compute_advective_vertical_wind_tendency(
         local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
     )
@@ -316,13 +316,13 @@ def _fused_stencils_16_to_17(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_16_to_17(
-    w: Field[[CellDim, KDim], float],
+    w: fa.CKfloatField,
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_con_c: Field[[CellDim, KDim], float],
-    coeff1_dwdz: Field[[CellDim, KDim], float],
-    coeff2_dwdz: Field[[CellDim, KDim], float],
-    ddt_w_adv: Field[[CellDim, KDim], float],
+    local_z_w_con_c: fa.CKfloatField,
+    coeff1_dwdz: fa.CKfloatField,
+    coeff2_dwdz: fa.CKfloatField,
+    ddt_w_adv: fa.CKfloatField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

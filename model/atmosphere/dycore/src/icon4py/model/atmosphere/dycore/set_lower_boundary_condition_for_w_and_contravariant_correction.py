@@ -14,7 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import astype, int32
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     _init_cell_kdim_field_with_zero_wp,

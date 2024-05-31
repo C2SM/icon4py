@@ -13,26 +13,25 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, maximum
-
-from icon4py.model.common.dimension import CellDim, KDim
+from gt4py.next.ffront.fbuiltins import maximum
+from model.common.tests import field_aliases as fa
 
 
 @field_operator
 def _step_advection_stencil_03(
-    p_tracer_now: Field[[CellDim, KDim], float],
-    p_grf_tend_tracer: Field[[CellDim, KDim], float],
+    p_tracer_now: fa.CKfloatField,
+    p_grf_tend_tracer: fa.CKfloatField,
     p_dtime: float,
-) -> Field[[CellDim, KDim], float]:
+) -> fa.CKfloatField:
     p_tracer_new = maximum(0.0, p_tracer_now + p_dtime * p_grf_tend_tracer)
     return p_tracer_new
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def step_advection_stencil_03(
-    p_tracer_now: Field[[CellDim, KDim], float],
-    p_grf_tend_tracer: Field[[CellDim, KDim], float],
-    p_tracer_new: Field[[CellDim, KDim], float],
+    p_tracer_now: fa.CKfloatField,
+    p_grf_tend_tracer: fa.CKfloatField,
+    p_tracer_new: fa.CKfloatField,
     p_dtime: float,
 ):
     _step_advection_stencil_03(p_tracer_now, p_grf_tend_tracer, p_dtime, out=p_tracer_new)

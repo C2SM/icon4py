@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 from gt4py.next import as_field
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,

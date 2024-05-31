@@ -12,9 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next import Field, field_operator
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, Koff, VertexDim
+from icon4py.model.common.dimension import E2C, E2V, EdgeDim, KDim, Koff, VertexDim
 
 
 @field_operator
@@ -91,7 +91,7 @@ def difference_k_level_up(
 
 @field_operator
 def grad_fd_norm(
-    psi_c: Field[[CellDim, KDim], float],
+    psi_c: fa.CKfloatField,
     inv_dual_edge_length: Field[[EdgeDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     """
@@ -99,7 +99,7 @@ def grad_fd_norm(
 
     Computes the difference of two offseted values multiplied by a field of the offseted dimension
     Args:
-        psi_c: Field[[CellDim, KDim], float],
+        psi_c: fa.CKfloatField,
         inv_dual_edge_length: Field[[EdgeDim], float],
 
     Returns: Field[[EdgeDim, KDim], float]

@@ -14,16 +14,17 @@
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import minimum, where
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_05(
     z_anti: Field[[EdgeDim, KDim], float],
     z_mflx_low: Field[[EdgeDim, KDim], float],
-    r_m: Field[[CellDim, KDim], float],
-    r_p: Field[[CellDim, KDim], float],
+    r_m: fa.CKfloatField,
+    r_p: fa.CKfloatField,
 ) -> Field[[EdgeDim, KDim], float]:
     z_signum = where((z_anti > 0.0), 1.0, -1.0)
 
@@ -41,8 +42,8 @@ def _hflx_limiter_mo_stencil_05(
 def hflx_limiter_mo_stencil_05(
     z_anti: Field[[EdgeDim, KDim], float],
     z_mflx_low: Field[[EdgeDim, KDim], float],
-    r_m: Field[[CellDim, KDim], float],
-    r_p: Field[[CellDim, KDim], float],
+    r_m: fa.CKfloatField,
+    r_p: fa.CKfloatField,
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
 ):
     _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)

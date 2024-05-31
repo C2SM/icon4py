@@ -13,7 +13,7 @@
 from dataclasses import dataclass
 
 from gt4py.next.common import Field
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -42,26 +42,26 @@ class DiagnosticStateNonHydro:
     w_concorr_c: Field[
         [CellDim, KDim], float
     ]  # contravariant vert correction (nproma,nlevp1,nblks_c)[m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    theta_v_ic: Field[[CellDim, KDim], float]
-    exner_pr: Field[[CellDim, KDim], float]
-    rho_ic: Field[[CellDim, KDim], float]
-    ddt_exner_phy: Field[[CellDim, KDim], float]
-    grf_tend_rho: Field[[CellDim, KDim], float]
-    grf_tend_thv: Field[[CellDim, KDim], float]
-    grf_tend_w: Field[[CellDim, KDim], float]
+    theta_v_ic: fa.CKfloatField
+    exner_pr: fa.CKfloatField
+    rho_ic: fa.CKfloatField
+    ddt_exner_phy: fa.CKfloatField
+    grf_tend_rho: fa.CKfloatField
+    grf_tend_thv: fa.CKfloatField
+    grf_tend_w: fa.CKfloatField
     mass_fl_e: Field[[EdgeDim, KDim], float]
     ddt_vn_phy: Field[[EdgeDim, KDim], float]
     grf_tend_vn: Field[[EdgeDim, KDim], float]
     ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float]
     ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float]
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float]
-    ddt_w_adv_ntl2: Field[[CellDim, KDim], float]
+    ddt_w_adv_ntl1: fa.CKfloatField
+    ddt_w_adv_ntl2: fa.CKfloatField
 
     # Analysis increments
     rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
     vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]
     exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
-    exner_dyn_incr: Field[[CellDim, KDim], float]  # exner pressure dynamics increment
+    exner_dyn_incr: fa.CKfloatField  # exner pressure dynamics increment
 
     @property
     def ddt_vn_apc_pc(
@@ -72,7 +72,7 @@ class DiagnosticStateNonHydro:
     @property
     def ddt_w_adv_pc(
         self,
-    ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    ) -> tuple[fa.CKfloatField, fa.CKfloatField]:
         return (self.ddt_w_adv_ntl1, self.ddt_w_adv_ntl2)
 
 
@@ -118,27 +118,27 @@ class MetricStateNonHydro:
     mask_prog_halo_c: Field[[CellDim, KDim], bool]
     rayleigh_w: Field[[KDim], float]
 
-    wgtfac_c: Field[[CellDim, KDim], float]
-    wgtfacq_c: Field[[CellDim, KDim], float]
+    wgtfac_c: fa.CKfloatField
+    wgtfacq_c: fa.CKfloatField
     wgtfac_e: Field[[EdgeDim, KDim], float]
     wgtfacq_e: Field[[EdgeDim, KDim], float]
 
-    exner_exfac: Field[[CellDim, KDim], float]
-    exner_ref_mc: Field[[CellDim, KDim], float]
-    rho_ref_mc: Field[[CellDim, KDim], float]
-    theta_ref_mc: Field[[CellDim, KDim], float]
+    exner_exfac: fa.CKfloatField
+    exner_ref_mc: fa.CKfloatField
+    rho_ref_mc: fa.CKfloatField
+    theta_ref_mc: fa.CKfloatField
     rho_ref_me: Field[[EdgeDim, KDim], float]
     theta_ref_me: Field[[EdgeDim, KDim], float]
-    theta_ref_ic: Field[[CellDim, KDim], float]
+    theta_ref_ic: fa.CKfloatField
 
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float]
-    ddqz_z_half: Field[[CellDim, KDim], float]  # half KDim ?
-    d2dexdz2_fac1_mc: Field[[CellDim, KDim], float]
-    d2dexdz2_fac2_mc: Field[[CellDim, KDim], float]
+    d_exner_dz_ref_ic: fa.CKfloatField
+    ddqz_z_half: fa.CKfloatField  # half KDim ?
+    d2dexdz2_fac1_mc: fa.CKfloatField
+    d2dexdz2_fac2_mc: fa.CKfloatField
     ddxn_z_full: Field[[EdgeDim, KDim], float]
     ddqz_z_full_e: Field[[EdgeDim, KDim], float]
     ddxt_z_full: Field[[EdgeDim, KDim], float]
-    inv_ddqz_z_full: Field[[CellDim, KDim], float]
+    inv_ddqz_z_full: fa.CKfloatField
 
     vertoffset_gradp: Field[[ECDim, KDim], float]
     zdiff_gradp: Field[[ECDim, KDim], float]
@@ -151,8 +151,8 @@ class MetricStateNonHydro:
     hmask_dd3d: Field[[EdgeDim], float]
     scalfac_dd3d: Field[[KDim], float]
 
-    coeff1_dwdz: Field[[CellDim, KDim], float]
-    coeff2_dwdz: Field[[CellDim, KDim], float]
+    coeff1_dwdz: fa.CKfloatField
+    coeff2_dwdz: fa.CKfloatField
     coeff_gradekin: Field[[ECDim], float]
 
 
@@ -162,5 +162,5 @@ class PrepAdvection:
 
     vn_traj: Field[[EdgeDim, KDim], float]
     mass_flx_me: Field[[EdgeDim, KDim], float]
-    mass_flx_ic: Field[[CellDim, KDim], float]
-    vol_flx_ic: Field[[CellDim, KDim], float]
+    mass_flx_ic: fa.CKfloatField
+    vol_flx_ic: fa.CKfloatField

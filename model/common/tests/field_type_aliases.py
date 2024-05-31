@@ -29,6 +29,8 @@ EKwpField: TypeAlias = Field[Dims[EdgeDim, KDim], wpfloat]  # type: ignore [vali
 
 CKvpField: TypeAlias = Field[Dims[CellDim, KDim], vpfloat]  # type: ignore [valid-type]
 
+CKfloatField: TypeAlias = Field[Dims[CellDim, KDim], float]  # type: ignore [valid-type]
+
 CintField: TypeAlias = Field[Dims[CellDim], int32]  # type: ignore [valid-type]
 EintField: TypeAlias = Field[Dims[EdgeDim], int32]  # type: ignore [valid-type]
 KintField: TypeAlias = Field[Dims[KDim], int32]  # type: ignore [valid-type]

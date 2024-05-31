@@ -11,18 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _init_zero_c_k() -> Field[[CellDim, KDim], float]:
+def _init_zero_c_k() -> fa.CKfloatField:
     return broadcast(0.0, (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def init_zero_c_k(field: Field[[CellDim, KDim], float]):
+def init_zero_c_k(field: fa.CKfloatField):
     _init_zero_c_k(out=field)

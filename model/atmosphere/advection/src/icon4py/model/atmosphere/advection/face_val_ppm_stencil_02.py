@@ -12,17 +12,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
-from model.common.tests import field_aliases as fa
+from gt4py.next.ffront.fbuiltins import broadcast, int32, where
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
 def _face_val_ppm_stencil_02a(
-    p_cc: Field[[CellDim, KDim], float],
-    p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    p_cc: fa.CKfloatField,
+    p_cellhgt_mc_now: fa.CKfloatField,
+) -> fa.CKfloatField:
     p_face = p_cc * (1.0 - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
         p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     ) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1])) * p_cc + p_cc(Koff[-1]))
@@ -32,31 +32,31 @@ def _face_val_ppm_stencil_02a(
 
 @field_operator
 def _face_val_ppm_stencil_02b(
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    p_cc: fa.CKfloatField,
+) -> fa.CKfloatField:
     p_face = p_cc
     return p_face
 
 
 @field_operator
 def _face_val_ppm_stencil_02c(
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    p_cc: fa.CKfloatField,
+) -> fa.CKfloatField:
     p_face = p_cc(Koff[-1])
     return p_face
 
 
 @field_operator
 def _face_val_ppm_stencil_02(
-    p_cc: Field[[CellDim, KDim], float],
-    p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-    p_face_in: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    p_cellhgt_mc_now: fa.CKfloatField,
+    p_face_in: fa.CKfloatField,
     k: fa.KintField,
     slev: int32,
     elev: int32,
     slevp1: int32,
     elevp1: int32,
-) -> Field[[CellDim, KDim], float]:
+) -> fa.CKfloatField:
     k = broadcast(k, (CellDim, KDim))
 
     p_face = where(
@@ -74,15 +74,15 @@ def _face_val_ppm_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_02(
-    p_cc: Field[[CellDim, KDim], float],
-    p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-    p_face_in: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    p_cellhgt_mc_now: fa.CKfloatField,
+    p_face_in: fa.CKfloatField,
     k: fa.KintField,
     slev: int32,
     elev: int32,
     slevp1: int32,
     elevp1: int32,
-    p_face: Field[[CellDim, KDim], float],
+    p_face: fa.CKfloatField,
 ):
     _face_val_ppm_stencil_02(
         p_cc,

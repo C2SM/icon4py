@@ -13,13 +13,14 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, where
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 
 
 @field_operator
 def _hflx_limiter_pd_stencil_02(
-    r_m: Field[[CellDim, KDim], float],
+    r_m: fa.CKfloatField,
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
 ) -> Field[[EdgeDim, KDim], float]:
     p_mflx_tracer_h_out = where(
@@ -32,7 +33,7 @@ def _hflx_limiter_pd_stencil_02(
 
 @program
 def hflx_limiter_pd_stencil_02(
-    r_m: Field[[CellDim, KDim], float],
+    r_m: fa.CKfloatField,
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
 ):
     _hflx_limiter_pd_stencil_02(

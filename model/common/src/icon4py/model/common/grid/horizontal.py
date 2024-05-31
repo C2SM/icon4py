@@ -16,6 +16,7 @@ from functools import cached_property
 from typing import ClassVar, Final
 
 from gt4py.next import Dimension, Field, field_operator, neighbor_sum
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common import constants, dimension
 from icon4py.model.common.dimension import (
@@ -418,7 +419,7 @@ class RefinCtrlLevel:
 
 @field_operator
 def _compute_cells2verts(
-    p_cell_in: Field[[CellDim, KDim], float],
+    p_cell_in: fa.CKfloatField,
     c_int: Field[[VertexDim, V2CDim], float],
 ) -> Field[[VertexDim, KDim], float]:
     p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)

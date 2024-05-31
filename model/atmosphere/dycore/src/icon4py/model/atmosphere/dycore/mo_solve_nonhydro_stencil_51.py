@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
@@ -22,15 +23,15 @@ from icon4py.model.common.settings import backend
 @field_operator
 def _mo_solve_nonhydro_stencil_51(
     vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_w_expl: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
+    theta_v_ic: fa.CKfloatField,
+    ddqz_z_half: fa.CKfloatField,
+    z_beta: fa.CKfloatField,
+    z_alpha: fa.CKfloatField,
+    z_w_expl: fa.CKfloatField,
+    z_exner_expl: fa.CKfloatField,
     dtime: float,
     cpd: float,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+) -> tuple[fa.CKfloatField, fa.CKfloatField]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
     z_c = -z_gamma * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
@@ -43,15 +44,15 @@ def _mo_solve_nonhydro_stencil_51(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_solve_nonhydro_stencil_51(
-    z_q: Field[[CellDim, KDim], float],
-    w_nnew: Field[[CellDim, KDim], float],
+    z_q: fa.CKfloatField,
+    w_nnew: fa.CKfloatField,
     vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    z_w_expl: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
+    theta_v_ic: fa.CKfloatField,
+    ddqz_z_half: fa.CKfloatField,
+    z_beta: fa.CKfloatField,
+    z_alpha: fa.CKfloatField,
+    z_w_expl: fa.CKfloatField,
+    z_exner_expl: fa.CKfloatField,
     dtime: float,
     cpd: float,
     horizontal_start: int32,

@@ -13,7 +13,7 @@
 
 from gt4py.next import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, int32, log
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import wpfloat

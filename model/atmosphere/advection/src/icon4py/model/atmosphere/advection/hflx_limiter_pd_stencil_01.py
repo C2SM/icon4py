@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, KDim
 
@@ -20,12 +21,12 @@ from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, K
 @field_operator
 def _hflx_limiter_pd_stencil_01(
     geofac_div: Field[[CEDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    p_rhodz_now: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    p_rhodz_now: fa.CKfloatField,
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     p_dtime: float,
     dbl_eps: float,
-) -> Field[[CellDim, KDim], float]:
+) -> fa.CKfloatField:
     zero = broadcast(0.0, (CellDim, KDim))
 
     pm_0 = maximum(zero, p_mflx_tracer_h(C2E[0]) * geofac_div(C2CE[0]) * p_dtime)
@@ -40,10 +41,10 @@ def _hflx_limiter_pd_stencil_01(
 @program
 def hflx_limiter_pd_stencil_01(
     geofac_div: Field[[CEDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    p_rhodz_now: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    p_rhodz_now: fa.CKfloatField,
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
-    r_m: Field[[CellDim, KDim], float],
+    r_m: fa.CKfloatField,
     p_dtime: float,
     dbl_eps: float,
 ):

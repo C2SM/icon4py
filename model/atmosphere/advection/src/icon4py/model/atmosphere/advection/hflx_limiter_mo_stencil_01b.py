@@ -13,6 +13,7 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neighbor_sum
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
 
@@ -20,18 +21,18 @@ from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, Ed
 @field_operator
 def _hflx_limiter_mo_stencil_01b(
     geofac_div: Field[[CEDim], float],
-    p_rhodz_now: Field[[CellDim, KDim], float],
-    p_rhodz_new: Field[[CellDim, KDim], float],
+    p_rhodz_now: fa.CKfloatField,
+    p_rhodz_new: fa.CKfloatField,
     z_mflx_low: Field[[EdgeDim, KDim], float],
     z_anti: Field[[EdgeDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
     p_dtime: float,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    fa.CKfloatField,
+    fa.CKfloatField,
+    fa.CKfloatField,
+    fa.CKfloatField,
+    fa.CKfloatField,
 ]:
     zero = broadcast(0.0, (CellDim, KDim))
 
@@ -65,17 +66,17 @@ def _hflx_limiter_mo_stencil_01b(
 @program
 def hflx_limiter_mo_stencil_01b(
     geofac_div: Field[[CEDim], float],
-    p_rhodz_now: Field[[CellDim, KDim], float],
-    p_rhodz_new: Field[[CellDim, KDim], float],
+    p_rhodz_now: fa.CKfloatField,
+    p_rhodz_new: fa.CKfloatField,
     z_mflx_low: Field[[EdgeDim, KDim], float],
     z_anti: Field[[EdgeDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
     p_dtime: float,
-    z_mflx_anti_in: Field[[CellDim, KDim], float],
-    z_mflx_anti_out: Field[[CellDim, KDim], float],
-    z_tracer_new_low: Field[[CellDim, KDim], float],
-    z_tracer_max: Field[[CellDim, KDim], float],
-    z_tracer_min: Field[[CellDim, KDim], float],
+    z_mflx_anti_in: fa.CKfloatField,
+    z_mflx_anti_out: fa.CKfloatField,
+    z_tracer_new_low: fa.CKfloatField,
+    z_tracer_max: fa.CKfloatField,
+    z_tracer_min: fa.CKfloatField,
 ):
     _hflx_limiter_mo_stencil_01b(
         geofac_div,

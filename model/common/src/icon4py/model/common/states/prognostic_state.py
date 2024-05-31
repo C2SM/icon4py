@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 from gt4py.next import as_field
 from gt4py.next.common import Field
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 
@@ -26,13 +27,13 @@ class PrognosticState:
     Corresponds to ICON t_nh_prog
     """
 
-    rho: Field[[CellDim, KDim], float]  # density, rho(nproma, nlev, nblks_c) [m/s]
-    w: Field[[CellDim, KDim], float]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
+    rho: fa.CKfloatField  # density, rho(nproma, nlev, nblks_c) [m/s]
+    w: fa.CKfloatField  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
     vn: Field[
         [EdgeDim, KDim], float
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
-    exner: Field[[CellDim, KDim], float]  # exner function, exner(nrpoma, nlev, nblks_c)
-    theta_v: Field[[CellDim, KDim], float]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
+    exner: fa.CKfloatField  # exner function, exner(nrpoma, nlev, nblks_c)
+    theta_v: fa.CKfloatField  # virtual temperature, (nproma, nlev, nlbks_c) [K]
 
     @property
     def w_1(self) -> Field[[CellDim], float]:

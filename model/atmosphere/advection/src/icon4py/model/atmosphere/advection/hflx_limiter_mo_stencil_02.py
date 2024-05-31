@@ -11,27 +11,25 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, minimum, where
-from model.common.tests import field_aliases as fa
-
-from icon4py.model.common.dimension import CellDim, KDim
+from model.common.tests import field_type_aliases as fa
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_02(
     refin_ctrl: fa.CintField,
-    p_cc: Field[[CellDim, KDim], float],
-    z_tracer_new_low: Field[[CellDim, KDim], float],
-    z_tracer_max: Field[[CellDim, KDim], float],
-    z_tracer_min: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    z_tracer_new_low: fa.CKfloatField,
+    z_tracer_max: fa.CKfloatField,
+    z_tracer_min: fa.CKfloatField,
     lo_bound: int32,
     hi_bound: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    fa.CKfloatField,
+    fa.CKfloatField,
+    fa.CKfloatField,
 ]:
     condition = (refin_ctrl == lo_bound) | (refin_ctrl == hi_bound)
     z_tracer_new_out = where(
@@ -49,15 +47,15 @@ def _hflx_limiter_mo_stencil_02(
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflx_limiter_mo_stencil_02(
     refin_ctrl: fa.CintField,
-    p_cc: Field[[CellDim, KDim], float],
-    z_tracer_new_low: Field[[CellDim, KDim], float],
-    z_tracer_max: Field[[CellDim, KDim], float],
-    z_tracer_min: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    z_tracer_new_low: fa.CKfloatField,
+    z_tracer_max: fa.CKfloatField,
+    z_tracer_min: fa.CKfloatField,
     lo_bound: int32,
     hi_bound: int32,
-    z_tracer_new_low_out: Field[[CellDim, KDim], float],
-    z_tracer_max_out: Field[[CellDim, KDim], float],
-    z_tracer_min_out: Field[[CellDim, KDim], float],
+    z_tracer_new_low_out: fa.CKfloatField,
+    z_tracer_max_out: fa.CKfloatField,
+    z_tracer_min_out: fa.CKfloatField,
 ):
     _hflx_limiter_mo_stencil_02(
         refin_ctrl,

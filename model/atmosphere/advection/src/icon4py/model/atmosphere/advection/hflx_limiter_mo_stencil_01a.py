@@ -13,15 +13,16 @@
 
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, abs
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_01a(
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
 ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
     z_mflx_low = 0.5 * (
         p_mass_flx_e * (p_cc(E2C[0]) + p_cc(E2C[1]))
@@ -37,7 +38,7 @@ def _hflx_limiter_mo_stencil_01a(
 def hflx_limiter_mo_stencil_01a(
     p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
     z_mflx_low: Field[[EdgeDim, KDim], float],
     z_anti: Field[[EdgeDim, KDim], float],
 ):

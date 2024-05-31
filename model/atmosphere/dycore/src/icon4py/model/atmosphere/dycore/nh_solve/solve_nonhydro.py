@@ -170,7 +170,7 @@ from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import backend
 
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -191,12 +191,12 @@ class IntermediateFields:
     z_alpha: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_beta: Field[[CellDim, KDim], float]
+    z_beta: fa.CKfloatField
     z_w_expl: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_exner_expl: Field[[CellDim, KDim], float]
-    z_q: Field[[CellDim, KDim], float]
+    z_exner_expl: fa.CKfloatField
+    z_q: fa.CKfloatField
     z_contr_w_fl_l: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -205,8 +205,8 @@ class IntermediateFields:
     z_kin_hor_e: Field[[EdgeDim, KDim], float]
     z_vt_ie: Field[[EdgeDim, KDim], float]
     z_graddiv_vn: Field[[EdgeDim, KDim], float]
-    z_rho_expl: Field[[CellDim, KDim], float]
-    z_dwdz_dd: Field[[CellDim, KDim], float]
+    z_rho_expl: fa.CKfloatField
+    z_dwdz_dd: fa.CKfloatField
 
     @classmethod
     def allocate(cls, grid: BaseGrid):

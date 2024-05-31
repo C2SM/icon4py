@@ -12,23 +12,21 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
-
-from icon4py.model.common.dimension import CellDim, KDim
+from model.common.tests import field_aliases as fa
 
 
 @field_operator
 def _face_val_ppm_stencil_02b(
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    p_cc: fa.CKfloatField,
+) -> fa.CKfloatField:
     p_face = p_cc
     return p_face
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_02b(
-    p_cc: Field[[CellDim, KDim], float],
-    p_face: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    p_face: fa.CKfloatField,
 ):
     _face_val_ppm_stencil_02b(
         p_cc,

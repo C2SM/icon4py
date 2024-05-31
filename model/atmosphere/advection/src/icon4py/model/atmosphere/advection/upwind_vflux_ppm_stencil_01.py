@@ -11,18 +11,17 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-
-from icon4py.model.common.dimension import CellDim, KDim
+from model.common.tests import field_aliases as fa
 
 
 @field_operator
 def _upwind_vflux_ppm_stencil_01(
-    z_face_up: Field[[CellDim, KDim], float],
-    z_face_low: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    z_face_up: fa.CKfloatField,
+    z_face_low: fa.CKfloatField,
+    p_cc: fa.CKfloatField,
+) -> tuple[fa.CKfloatField, fa.CKfloatField]:
     z_delta_q = 0.5 * (z_face_up - z_face_low)
     z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
 
@@ -31,10 +30,10 @@ def _upwind_vflux_ppm_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_vflux_ppm_stencil_01(
-    z_face_up: Field[[CellDim, KDim], float],
-    z_face_low: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    z_delta_q: Field[[CellDim, KDim], float],
-    z_a1: Field[[CellDim, KDim], float],
+    z_face_up: fa.CKfloatField,
+    z_face_low: fa.CKfloatField,
+    p_cc: fa.CKfloatField,
+    z_delta_q: fa.CKfloatField,
+    z_a1: fa.CKfloatField,
 ):
     _upwind_vflux_ppm_stencil_01(z_face_up, z_face_low, p_cc, out=(z_delta_q, z_a1))

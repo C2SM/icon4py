@@ -13,6 +13,7 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, FieldOffset, int32, minimum, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
 
@@ -23,9 +24,9 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 @field_operator
 def _v_limit_prbl_sm_stencil_02(
     l_limit: Field[[CellDim, KDim], int32],
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    p_face: fa.CKfloatField,
+    p_cc: fa.CKfloatField,
+) -> tuple[fa.CKfloatField, fa.CKfloatField]:
     q_face_up, q_face_low = where(
         l_limit != 0,
         where(
@@ -46,10 +47,10 @@ def _v_limit_prbl_sm_stencil_02(
 @program(grid_type=GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_02(
     l_limit: Field[[CellDim, KDim], int32],
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    p_face_up: Field[[CellDim, KDim], float],
-    p_face_low: Field[[CellDim, KDim], float],
+    p_face: fa.CKfloatField,
+    p_cc: fa.CKfloatField,
+    p_face_up: fa.CKfloatField,
+    p_face_low: fa.CKfloatField,
 ):
     _v_limit_prbl_sm_stencil_02(
         l_limit,

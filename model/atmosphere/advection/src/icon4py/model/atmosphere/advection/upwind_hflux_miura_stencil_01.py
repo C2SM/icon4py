@@ -14,16 +14,16 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 
 
 @field_operator
 def _upwind_hflux_miura_stencil_01(
-    z_lsq_coeff_1: Field[[CellDim, KDim], float],
-    z_lsq_coeff_2: Field[[CellDim, KDim], float],
-    z_lsq_coeff_3: Field[[CellDim, KDim], float],
+    z_lsq_coeff_1: fa.CKfloatField,
+    z_lsq_coeff_2: fa.CKfloatField,
+    z_lsq_coeff_3: fa.CKfloatField,
     distv_bary_1: Field[[EdgeDim, KDim], float],
     distv_bary_2: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
@@ -40,9 +40,9 @@ def _upwind_hflux_miura_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_stencil_01(
-    z_lsq_coeff_1: Field[[CellDim, KDim], float],
-    z_lsq_coeff_2: Field[[CellDim, KDim], float],
-    z_lsq_coeff_3: Field[[CellDim, KDim], float],
+    z_lsq_coeff_1: fa.CKfloatField,
+    z_lsq_coeff_2: fa.CKfloatField,
+    z_lsq_coeff_3: fa.CKfloatField,
     distv_bary_1: Field[[EdgeDim, KDim], float],
     distv_bary_2: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],

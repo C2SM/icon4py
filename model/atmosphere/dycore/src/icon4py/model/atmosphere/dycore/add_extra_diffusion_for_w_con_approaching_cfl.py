@@ -22,7 +22,7 @@ from gt4py.next.ffront.fbuiltins import (
     neighbor_sum,
     where,
 )
-from model.common.tests import field_aliases as fa
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend

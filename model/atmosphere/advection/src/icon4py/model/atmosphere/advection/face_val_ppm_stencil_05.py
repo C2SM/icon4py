@@ -12,17 +12,17 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common.dimension import Koff
 
 
 @field_operator
 def _face_val_ppm_stencil_05(
-    p_cc: Field[[CellDim, KDim], float],
-    p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-    z_slope: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
+    p_cc: fa.CKfloatField,
+    p_cellhgt_mc_now: fa.CKfloatField,
+    z_slope: fa.CKfloatField,
+) -> fa.CKfloatField:
     zgeo1 = p_cellhgt_mc_now(Koff[-1]) / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     zgeo2 = 1.0 / (
         p_cellhgt_mc_now(Koff[-2])
@@ -53,10 +53,10 @@ def _face_val_ppm_stencil_05(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_05(
-    p_cc: Field[[CellDim, KDim], float],
-    p_cellhgt_mc_now: Field[[CellDim, KDim], float],
-    z_slope: Field[[CellDim, KDim], float],
-    p_face: Field[[CellDim, KDim], float],
+    p_cc: fa.CKfloatField,
+    p_cellhgt_mc_now: fa.CKfloatField,
+    z_slope: fa.CKfloatField,
+    p_face: fa.CKfloatField,
 ):
     _face_val_ppm_stencil_05(
         p_cc,

@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -53,13 +54,13 @@ class DiffusionDiagnosticState:
 class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
-    theta_ref_mc: Field[[CellDim, KDim], float]
+    theta_ref_mc: fa.CKfloatField
     wgtfac_c: Field[
         [CellDim, KDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: Field[[CellDim, KDim], bool]
     zd_vertoffset: Field[[CECDim, KDim], int32]
-    zd_diffcoef: Field[[CellDim, KDim], float]
+    zd_diffcoef: fa.CKfloatField
     zd_intcoef: Field[[CECDim, KDim], float]
 
 
