@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _update_theta_v(
-    mask_prog_halo_c: Field[[CellDim], bool],
+    mask_prog_halo_c: fa.CboolField,
     rho_now: fa.CKwpField,
     theta_v_now: fa.CKwpField,
     exner_new: fa.CKwpField,
@@ -46,7 +46,7 @@ def _update_theta_v(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_theta_v(
-    mask_prog_halo_c: Field[[CellDim], bool],
+    mask_prog_halo_c: fa.CboolField,
     rho_now: fa.CKwpField,
     theta_v_now: fa.CKwpField,
     exner_new: fa.CKwpField,

@@ -15,6 +15,7 @@ import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
+from model.common.tests import field_aliases as fa
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -67,7 +68,7 @@ class VelocityAdvection:
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
         edge_params: EdgeParams,
-        owner_mask: Field[[CellDim], bool],
+        owner_mask: fa.CboolField,
     ):
         self._initialized = False
         self.grid: IconGrid = grid

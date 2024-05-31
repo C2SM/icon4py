@@ -170,6 +170,7 @@ from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import backend
 
+from model.common.tests import field_aliases as fa
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -405,7 +406,7 @@ class SolveNonhydro:
         vertical_params: VerticalModelParams,
         edge_geometry: EdgeParams,
         cell_geometry: CellParams,
-        owner_mask: Field[[CellDim], bool],
+        owner_mask: fa.CboolField,
     ):
         """
         Initialize NonHydrostatic granule with configuration.

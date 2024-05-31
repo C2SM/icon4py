@@ -18,7 +18,7 @@ from pathlib import Path
 
 import numpy as np
 from gt4py.next import as_field
-from gt4py.next.common import Field
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -609,7 +609,7 @@ def read_geometry_fields(
     ser_type: SerializationType = SerializationType.SB,
     grid_root=2,
     grid_level=4,
-) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
+) -> tuple[EdgeParams, CellParams, VerticalModelParams, fa.CboolField]:
     """
     Read fields containing grid properties.
 

@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, where
+from gt4py.next.ffront.fbuiltins import exp, int32, log, where
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -23,7 +23,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_theta_and_exner(
-    bdy_halo_c: Field[[CellDim], bool],
+    bdy_halo_c: fa.CboolField,
     rho: fa.CKwpField,
     theta_v: fa.CKwpField,
     exner: fa.CKwpField,
@@ -38,7 +38,7 @@ def _compute_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_theta_and_exner(
-    bdy_halo_c: Field[[CellDim], bool],
+    bdy_halo_c: fa.CboolField,
     rho: fa.CKwpField,
     theta_v: fa.CKwpField,
     exner: fa.CKwpField,
