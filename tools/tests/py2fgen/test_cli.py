@@ -189,7 +189,7 @@ def test_py2fgen_compilation_and_execution_gpu(
         backend,
         samples_path,
         test_name,
-        "/opt/nvidia/hpc_sdk/Linux_x86_64/24.1/compilers/bin/nvfortran",
+        "nvfortran",
         extra_flags,
     )
 
@@ -233,7 +233,7 @@ def test_py2fgen_compilation_and_execution_diffusion_gpu(
         backend,
         samples_path,
         "test_diffusion",
-        "/opt/nvidia/hpc_sdk/Linux_x86_64/2024/compilers/bin/nvfortran",  # todo: set nvfortran location in base.yml file.
+        "nvfortran",
         extra_flags,
     )
 
