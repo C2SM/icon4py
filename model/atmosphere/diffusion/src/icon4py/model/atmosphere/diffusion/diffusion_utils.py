@@ -18,7 +18,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
 
@@ -40,7 +40,7 @@ def copy_field(old_f: fa.CKfloatField, new_f: fa.CKfloatField):
 
 
 @field_operator
-def _identity_e_k(field: Field[[EdgeDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
+def _identity_e_k(field: fa.EKfloatField) -> fa.EKfloatField:
     return field
 
 

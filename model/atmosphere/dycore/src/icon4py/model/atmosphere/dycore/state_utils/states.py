@@ -35,7 +35,7 @@ from icon4py.model.common.dimension import (
 class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
-    vt: Field[[EdgeDim, KDim], float]
+    vt: fa.EKfloatField
     vn_ie: Field[
         [EdgeDim, KDim], float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -49,24 +49,24 @@ class DiagnosticStateNonHydro:
     grf_tend_rho: fa.CKfloatField
     grf_tend_thv: fa.CKfloatField
     grf_tend_w: fa.CKfloatField
-    mass_fl_e: Field[[EdgeDim, KDim], float]
-    ddt_vn_phy: Field[[EdgeDim, KDim], float]
-    grf_tend_vn: Field[[EdgeDim, KDim], float]
-    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float]
-    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float]
+    mass_fl_e: fa.EKfloatField
+    ddt_vn_phy: fa.EKfloatField
+    grf_tend_vn: fa.EKfloatField
+    ddt_vn_apc_ntl1: fa.EKfloatField
+    ddt_vn_apc_ntl2: fa.EKfloatField
     ddt_w_adv_ntl1: fa.CKfloatField
     ddt_w_adv_ntl2: fa.CKfloatField
 
     # Analysis increments
-    rho_incr: Field[[EdgeDim, KDim], float]  # moist density increment [kg/m^3]
-    vn_incr: Field[[EdgeDim, KDim], float]  # normal velocity increment [m/s]
-    exner_incr: Field[[EdgeDim, KDim], float]  # exner increment [- ]
+    rho_incr: fa.EKfloatField  # moist density increment [kg/m^3]
+    vn_incr: fa.EKfloatField  # normal velocity increment [m/s]
+    exner_incr: fa.EKfloatField  # exner increment [- ]
     exner_dyn_incr: fa.CKfloatField  # exner pressure dynamics increment
 
     @property
     def ddt_vn_apc_pc(
         self,
-    ) -> tuple[Field[[EdgeDim, KDim], float], Field[[EdgeDim, KDim], float]]:
+    ) -> tuple[fa.EKfloatField, fa.EKfloatField]:
         return (self.ddt_vn_apc_ntl1, self.ddt_vn_apc_ntl2)
 
     @property
@@ -120,30 +120,30 @@ class MetricStateNonHydro:
 
     wgtfac_c: fa.CKfloatField
     wgtfacq_c: fa.CKfloatField
-    wgtfac_e: Field[[EdgeDim, KDim], float]
-    wgtfacq_e: Field[[EdgeDim, KDim], float]
+    wgtfac_e: fa.EKfloatField
+    wgtfacq_e: fa.EKfloatField
 
     exner_exfac: fa.CKfloatField
     exner_ref_mc: fa.CKfloatField
     rho_ref_mc: fa.CKfloatField
     theta_ref_mc: fa.CKfloatField
-    rho_ref_me: Field[[EdgeDim, KDim], float]
-    theta_ref_me: Field[[EdgeDim, KDim], float]
+    rho_ref_me: fa.EKfloatField
+    theta_ref_me: fa.EKfloatField
     theta_ref_ic: fa.CKfloatField
 
     d_exner_dz_ref_ic: fa.CKfloatField
     ddqz_z_half: fa.CKfloatField  # half KDim ?
     d2dexdz2_fac1_mc: fa.CKfloatField
     d2dexdz2_fac2_mc: fa.CKfloatField
-    ddxn_z_full: Field[[EdgeDim, KDim], float]
-    ddqz_z_full_e: Field[[EdgeDim, KDim], float]
-    ddxt_z_full: Field[[EdgeDim, KDim], float]
+    ddxn_z_full: fa.EKfloatField
+    ddqz_z_full_e: fa.EKfloatField
+    ddxt_z_full: fa.EKfloatField
     inv_ddqz_z_full: fa.CKfloatField
 
     vertoffset_gradp: Field[[ECDim, KDim], float]
     zdiff_gradp: Field[[ECDim, KDim], float]
     ipeidx_dsl: fa.EKboolField
-    pg_exdist: Field[[EdgeDim, KDim], float]
+    pg_exdist: fa.EKfloatField
 
     vwind_expl_wgt: Field[[CellDim], float]
     vwind_impl_wgt: Field[[CellDim], float]
@@ -160,7 +160,7 @@ class MetricStateNonHydro:
 class PrepAdvection:
     """Dataclass used in SolveNonHydro that pre-calculates fields during the dynamical substepping that are later needed in tracer advection."""
 
-    vn_traj: Field[[EdgeDim, KDim], float]
-    mass_flx_me: Field[[EdgeDim, KDim], float]
+    vn_traj: fa.EKfloatField
+    mass_flx_me: fa.EKfloatField
     mass_flx_ic: fa.CKfloatField
     vol_flx_ic: fa.CKfloatField

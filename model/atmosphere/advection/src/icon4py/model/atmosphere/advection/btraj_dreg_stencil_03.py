@@ -15,13 +15,13 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim
 
 
 @field_operator
 def _btraj_dreg_stencil_03(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
+    p_vt: fa.EKfloatField,
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
     edge_verts_1_x: Field[[EdgeDim], float],
@@ -42,14 +42,14 @@ def _btraj_dreg_stencil_03(
     fa.EKintField,
     fa.EKintField,
     fa.EKintField,
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
 ]:
     # logical switch for MERGE operations: True for p_vn >= 0
     lvn_pos = where(p_vn >= 0.0, True, False)
@@ -131,8 +131,8 @@ def _btraj_dreg_stencil_03(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def btraj_dreg_stencil_03(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
+    p_vt: fa.EKfloatField,
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
     edge_verts_1_x: Field[[EdgeDim], float],
@@ -152,14 +152,14 @@ def btraj_dreg_stencil_03(
     p_cell_idx: fa.EKintField,
     p_cell_rel_idx_dsl: fa.EKintField,
     p_cell_blk: fa.EKintField,
-    p_coords_dreg_v_1_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_1_lat_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_lat_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_lat_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_lat_dsl: Field[[EdgeDim, KDim], float],
+    p_coords_dreg_v_1_lon_dsl: fa.EKfloatField,
+    p_coords_dreg_v_2_lon_dsl: fa.EKfloatField,
+    p_coords_dreg_v_3_lon_dsl: fa.EKfloatField,
+    p_coords_dreg_v_4_lon_dsl: fa.EKfloatField,
+    p_coords_dreg_v_1_lat_dsl: fa.EKfloatField,
+    p_coords_dreg_v_2_lat_dsl: fa.EKfloatField,
+    p_coords_dreg_v_3_lat_dsl: fa.EKfloatField,
+    p_coords_dreg_v_4_lat_dsl: fa.EKfloatField,
 ):
     _btraj_dreg_stencil_03(
         p_vn,

@@ -21,7 +21,7 @@ from icon4py.model.common.dimension import EdgeDim, KDim
 @field_operator
 def _btraj_dreg_stencil_01(
     lcounterclock: bool,
-    p_vn: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
     tangent_orientation: Field[[EdgeDim], float],
 ) -> fa.EKboolField:
     tangent_orientation = broadcast(tangent_orientation, (EdgeDim, KDim))
@@ -31,7 +31,7 @@ def _btraj_dreg_stencil_01(
 @program(grid_type=GridType.UNSTRUCTURED)
 def btraj_dreg_stencil_01(
     lcounterclock: bool,
-    p_vn: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
     tangent_orientation: Field[[EdgeDim], float],
     lvn_sys_pos: fa.EKboolField,
 ):

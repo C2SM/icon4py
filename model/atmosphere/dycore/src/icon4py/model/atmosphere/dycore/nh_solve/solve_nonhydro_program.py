@@ -89,10 +89,10 @@ from icon4py.model.common.settings import backend
 # TODO: abishekg7 move this to tests
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_test_fields(
-    z_rho_e: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
+    z_rho_e: fa.EKfloatField,
+    z_theta_v_e: fa.EKfloatField,
     z_dwdz_dd: fa.CKfloatField,
-    z_graddiv_vn: Field[[EdgeDim, KDim], float],
+    z_graddiv_vn: fa.EKfloatField,
     indices_edges_1: int32,
     indices_edges_2: int32,
     indices_cells_1: int32,
@@ -393,8 +393,8 @@ def predictor_stencils_11_lower_upper(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_of_rho_and_theta(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
+    p_vt: fa.EKfloatField,
     pos_on_tplane_e_1: Field[[ECDim], float],
     pos_on_tplane_e_2: Field[[ECDim], float],
     primal_normal_cell_1: Field[[ECDim], float],
@@ -402,16 +402,16 @@ def compute_horizontal_advection_of_rho_and_theta(
     primal_normal_cell_2: Field[[ECDim], float],
     dual_normal_cell_2: Field[[ECDim], float],
     p_dthalf: float,
-    rho_ref_me: Field[[EdgeDim, KDim], float],
-    theta_ref_me: Field[[EdgeDim, KDim], float],
+    rho_ref_me: fa.EKfloatField,
+    theta_ref_me: fa.EKfloatField,
     z_grad_rth_1: fa.CKfloatField,
     z_grad_rth_2: fa.CKfloatField,
     z_grad_rth_3: fa.CKfloatField,
     z_grad_rth_4: fa.CKfloatField,
     z_rth_pr_1: fa.CKfloatField,
     z_rth_pr_2: fa.CKfloatField,
-    z_rho_e: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
+    z_rho_e: fa.EKfloatField,
+    z_theta_v_e: fa.EKfloatField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -445,22 +445,22 @@ def compute_horizontal_advection_of_rho_and_theta(
 
 @field_operator
 def _predictor_stencils_35_36(
-    vn: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+    vn: fa.EKfloatField,
+    ddxn_z_full: fa.EKfloatField,
+    ddxt_z_full: fa.EKfloatField,
+    vt: fa.EKfloatField,
+    z_w_concorr_me: fa.EKfloatField,
+    wgtfac_e: fa.EKfloatField,
+    vn_ie: fa.EKfloatField,
+    z_vt_ie: fa.EKfloatField,
+    z_kin_hor_e: fa.EKfloatField,
     k_field: fa.KintField,
     nflatlev_startindex: int32,
 ) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
 ]:
     z_w_concorr_me = where(
         k_field >= nflatlev_startindex,
@@ -477,15 +477,15 @@ def _predictor_stencils_35_36(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_35_36(
-    vn: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
+    vn: fa.EKfloatField,
+    ddxn_z_full: fa.EKfloatField,
+    ddxt_z_full: fa.EKfloatField,
+    vt: fa.EKfloatField,
+    z_w_concorr_me: fa.EKfloatField,
+    wgtfac_e: fa.EKfloatField,
+    vn_ie: fa.EKfloatField,
+    z_vt_ie: fa.EKfloatField,
+    z_kin_hor_e: fa.EKfloatField,
     k_field: fa.KintField,
     nflatlev_startindex: int32,
     horizontal_start: int32,
@@ -515,12 +515,12 @@ def predictor_stencils_35_36(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_37_38(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
+    vn: fa.EKfloatField,
+    vt: fa.EKfloatField,
+    vn_ie: fa.EKfloatField,
+    z_vt_ie: fa.EKfloatField,
+    z_kin_hor_e: fa.EKfloatField,
+    wgtfacq_e_dsl: fa.EKfloatField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -549,7 +549,7 @@ def predictor_stencils_37_38(
 @field_operator
 def _stencils_39_40(
     e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: fa.EKfloatField,
     wgtfac_c: fa.CKfloatField,
     wgtfacq_c_dsl: fa.CKfloatField,
     w_concorr_c: fa.CKfloatField,
@@ -577,7 +577,7 @@ def _stencils_39_40(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
     e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: fa.EKfloatField,
     wgtfac_c: fa.CKfloatField,
     wgtfacq_c_dsl: fa.CKfloatField,
     w_concorr_c: fa.CKfloatField,

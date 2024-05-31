@@ -20,8 +20,8 @@ from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
 @field_operator
 def _btraj_dreg_stencil_02(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
+    p_vt: fa.EKfloatField,
     edge_cell_length: Field[[ECDim], float],
     p_dt: float,
 ) -> fa.EKintField:
@@ -35,8 +35,8 @@ def _btraj_dreg_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def btraj_dreg_stencil_02(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EKfloatField,
+    p_vt: fa.EKfloatField,
     edge_cell_length: Field[[ECDim], float],
     p_dt: float,
     opt_famask_dsl: fa.EKintField,

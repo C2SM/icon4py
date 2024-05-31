@@ -11,28 +11,27 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-
-from icon4py.model.common.dimension import EdgeDim, KDim
+from model.common.tests import field_type_aliases as fa
 
 
 @field_operator
 def _upwind_hflux_miura_cycl_stencil_03b(
-    z_tracer_mflx_1_dsl: Field[[EdgeDim, KDim], float],
-    z_tracer_mflx_2_dsl: Field[[EdgeDim, KDim], float],
-    z_tracer_mflx_3_dsl: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+    z_tracer_mflx_1_dsl: fa.EKfloatField,
+    z_tracer_mflx_2_dsl: fa.EKfloatField,
+    z_tracer_mflx_3_dsl: fa.EKfloatField,
+) -> fa.EKfloatField:
     p_out_e = (z_tracer_mflx_1_dsl + z_tracer_mflx_2_dsl + z_tracer_mflx_3_dsl) / float(3)
     return p_out_e
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_cycl_stencil_03b(
-    z_tracer_mflx_1_dsl: Field[[EdgeDim, KDim], float],
-    z_tracer_mflx_2_dsl: Field[[EdgeDim, KDim], float],
-    z_tracer_mflx_3_dsl: Field[[EdgeDim, KDim], float],
-    p_out_e: Field[[EdgeDim, KDim], float],
+    z_tracer_mflx_1_dsl: fa.EKfloatField,
+    z_tracer_mflx_2_dsl: fa.EKfloatField,
+    z_tracer_mflx_3_dsl: fa.EKfloatField,
+    p_out_e: fa.EKfloatField,
 ):
     _upwind_hflux_miura_cycl_stencil_03b(
         z_tracer_mflx_1_dsl, z_tracer_mflx_2_dsl, z_tracer_mflx_3_dsl, out=(p_out_e)

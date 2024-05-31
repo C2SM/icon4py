@@ -187,7 +187,7 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    z_gradh_exner: Field[[EdgeDim, KDim], float]
+    z_gradh_exner: fa.EKfloatField
     z_alpha: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -200,11 +200,11 @@ class IntermediateFields:
     z_contr_w_fl_l: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_rho_e: Field[[EdgeDim, KDim], float]
-    z_theta_v_e: Field[[EdgeDim, KDim], float]
-    z_kin_hor_e: Field[[EdgeDim, KDim], float]
-    z_vt_ie: Field[[EdgeDim, KDim], float]
-    z_graddiv_vn: Field[[EdgeDim, KDim], float]
+    z_rho_e: fa.EKfloatField
+    z_theta_v_e: fa.EKfloatField
+    z_kin_hor_e: fa.EKfloatField
+    z_vt_ie: fa.EKfloatField
+    z_graddiv_vn: fa.EKfloatField
     z_rho_expl: fa.CKfloatField
     z_dwdz_dd: fa.CKfloatField
 

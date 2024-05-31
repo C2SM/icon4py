@@ -15,7 +15,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum, neighbor_sum
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KDim
 
 
 @field_operator
@@ -23,8 +23,8 @@ def _hflx_limiter_mo_stencil_01b(
     geofac_div: Field[[CEDim], float],
     p_rhodz_now: fa.CKfloatField,
     p_rhodz_new: fa.CKfloatField,
-    z_mflx_low: Field[[EdgeDim, KDim], float],
-    z_anti: Field[[EdgeDim, KDim], float],
+    z_mflx_low: fa.EKfloatField,
+    z_anti: fa.EKfloatField,
     p_cc: fa.CKfloatField,
     p_dtime: float,
 ) -> tuple[
@@ -68,8 +68,8 @@ def hflx_limiter_mo_stencil_01b(
     geofac_div: Field[[CEDim], float],
     p_rhodz_now: fa.CKfloatField,
     p_rhodz_new: fa.CKfloatField,
-    z_mflx_low: Field[[EdgeDim, KDim], float],
-    z_anti: Field[[EdgeDim, KDim], float],
+    z_mflx_low: fa.EKfloatField,
+    z_anti: fa.EKfloatField,
     p_cc: fa.CKfloatField,
     p_dtime: float,
     z_mflx_anti_in: fa.CKfloatField,

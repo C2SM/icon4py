@@ -93,7 +93,7 @@ def difference_k_level_up(
 def grad_fd_norm(
     psi_c: fa.CKfloatField,
     inv_dual_edge_length: Field[[EdgeDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EKfloatField:
     """
     Calculate the gradient value of adjacent interface levels.
 
@@ -102,7 +102,7 @@ def grad_fd_norm(
         psi_c: fa.CKfloatField,
         inv_dual_edge_length: Field[[EdgeDim], float],
 
-    Returns: Field[[EdgeDim, KDim], float]
+    Returns: fa.EKfloatField
 
     """
     grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
@@ -114,6 +114,6 @@ def _grad_fd_tang(
     psi_v: Field[[VertexDim, KDim], float],
     inv_primal_edge_length: Field[[EdgeDim], float],
     tangent_orientation: Field[[EdgeDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EKfloatField:
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e

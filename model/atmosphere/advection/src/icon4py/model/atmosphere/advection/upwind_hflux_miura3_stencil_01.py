@@ -11,12 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C
 
 
 @field_operator
@@ -31,20 +31,20 @@ def _upwind_hflux_miura3_stencil_01(
     z_lsq_coeff_8: fa.CKfloatField,
     z_lsq_coeff_9: fa.CKfloatField,
     z_lsq_coeff_10: fa.CKfloatField,
-    z_quad_vector_sum_1: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_2: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_3: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_4: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_5: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_6: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_7: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_8: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_9: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_10: Field[[EdgeDim, KDim], float],
-    z_dreg_area: Field[[EdgeDim, KDim], float],
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
+    z_quad_vector_sum_1: fa.EKfloatField,
+    z_quad_vector_sum_2: fa.EKfloatField,
+    z_quad_vector_sum_3: fa.EKfloatField,
+    z_quad_vector_sum_4: fa.EKfloatField,
+    z_quad_vector_sum_5: fa.EKfloatField,
+    z_quad_vector_sum_6: fa.EKfloatField,
+    z_quad_vector_sum_7: fa.EKfloatField,
+    z_quad_vector_sum_8: fa.EKfloatField,
+    z_quad_vector_sum_9: fa.EKfloatField,
+    z_quad_vector_sum_10: fa.EKfloatField,
+    z_dreg_area: fa.EKfloatField,
+    p_mass_flx_e: fa.EKfloatField,
     cell_rel_idx_dsl: fa.EKintField,
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EKfloatField:
     p_out_e_miura3 = (
         (
             where(
@@ -127,20 +127,20 @@ def upwind_hflux_miura3_stencil_01(
     z_lsq_coeff_8: fa.CKfloatField,
     z_lsq_coeff_9: fa.CKfloatField,
     z_lsq_coeff_10: fa.CKfloatField,
-    z_quad_vector_sum_1: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_2: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_3: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_4: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_5: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_6: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_7: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_8: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_9: Field[[EdgeDim, KDim], float],
-    z_quad_vector_sum_10: Field[[EdgeDim, KDim], float],
-    z_dreg_area: Field[[EdgeDim, KDim], float],
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
+    z_quad_vector_sum_1: fa.EKfloatField,
+    z_quad_vector_sum_2: fa.EKfloatField,
+    z_quad_vector_sum_3: fa.EKfloatField,
+    z_quad_vector_sum_4: fa.EKfloatField,
+    z_quad_vector_sum_5: fa.EKfloatField,
+    z_quad_vector_sum_6: fa.EKfloatField,
+    z_quad_vector_sum_7: fa.EKfloatField,
+    z_quad_vector_sum_8: fa.EKfloatField,
+    z_quad_vector_sum_9: fa.EKfloatField,
+    z_quad_vector_sum_10: fa.EKfloatField,
+    z_dreg_area: fa.EKfloatField,
+    p_mass_flx_e: fa.EKfloatField,
     cell_rel_idx_dsl: fa.EKintField,
-    p_out_e_miura3: Field[[EdgeDim, KDim], float],
+    p_out_e_miura3: fa.EKfloatField,
 ):
     _upwind_hflux_miura3_stencil_01(
         z_lsq_coeff_1,

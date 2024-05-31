@@ -11,12 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import where
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C
 
 
 @field_operator
@@ -24,11 +24,11 @@ def _upwind_hflux_miura_stencil_01(
     z_lsq_coeff_1: fa.CKfloatField,
     z_lsq_coeff_2: fa.CKfloatField,
     z_lsq_coeff_3: fa.CKfloatField,
-    distv_bary_1: Field[[EdgeDim, KDim], float],
-    distv_bary_2: Field[[EdgeDim, KDim], float],
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
+    distv_bary_1: fa.EKfloatField,
+    distv_bary_2: fa.EKfloatField,
+    p_mass_flx_e: fa.EKfloatField,
     cell_rel_idx_dsl: fa.EKintField,
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EKfloatField:
     p_out_e = (
         where(cell_rel_idx_dsl == 1, z_lsq_coeff_1(E2C[1]), z_lsq_coeff_1(E2C[0]))
         + distv_bary_1 * where(cell_rel_idx_dsl == 1, z_lsq_coeff_2(E2C[1]), z_lsq_coeff_2(E2C[0]))
@@ -43,11 +43,11 @@ def upwind_hflux_miura_stencil_01(
     z_lsq_coeff_1: fa.CKfloatField,
     z_lsq_coeff_2: fa.CKfloatField,
     z_lsq_coeff_3: fa.CKfloatField,
-    distv_bary_1: Field[[EdgeDim, KDim], float],
-    distv_bary_2: Field[[EdgeDim, KDim], float],
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
+    distv_bary_1: fa.EKfloatField,
+    distv_bary_2: fa.EKfloatField,
+    p_mass_flx_e: fa.EKfloatField,
     cell_rel_idx_dsl: fa.EKintField,
-    p_out_e: Field[[EdgeDim, KDim], float],
+    p_out_e: fa.EKfloatField,
 ):
     _upwind_hflux_miura_stencil_01(
         z_lsq_coeff_1,

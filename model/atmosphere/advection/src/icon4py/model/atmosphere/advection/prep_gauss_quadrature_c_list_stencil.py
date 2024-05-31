@@ -13,23 +13,21 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, where
+from gt4py.next.ffront.fbuiltins import where
 from model.common.tests import field_type_aliases as fa
-
-from icon4py.model.common.dimension import EdgeDim, KDim
 
 
 @field_operator
 def _prep_gauss_quadrature_c_list_stencil(
     famask_int: fa.EKintField,
-    p_coords_dreg_v_1_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_1_y: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_y: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_y: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_y: Field[[EdgeDim, KDim], float],
+    p_coords_dreg_v_1_x: fa.EKfloatField,
+    p_coords_dreg_v_2_x: fa.EKfloatField,
+    p_coords_dreg_v_3_x: fa.EKfloatField,
+    p_coords_dreg_v_4_x: fa.EKfloatField,
+    p_coords_dreg_v_1_y: fa.EKfloatField,
+    p_coords_dreg_v_2_y: fa.EKfloatField,
+    p_coords_dreg_v_3_y: fa.EKfloatField,
+    p_coords_dreg_v_4_y: fa.EKfloatField,
     shape_func_1_1: float,
     shape_func_2_1: float,
     shape_func_3_1: float,
@@ -60,19 +58,19 @@ def _prep_gauss_quadrature_c_list_stencil(
     wgt_eta_2: float,
     dbl_eps: float,
     eps: float,
-    p_dreg_area_in: Field[[EdgeDim, KDim], float],
+    p_dreg_area_in: fa.EKfloatField,
 ) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
+    fa.EKfloatField,
 ]:
     z_wgt_1 = 0.0625 * wgt_zeta_1 * wgt_eta_1
     z_wgt_2 = 0.0625 * wgt_zeta_1 * wgt_eta_2
@@ -328,14 +326,14 @@ def _prep_gauss_quadrature_c_list_stencil(
 @program(grid_type=GridType.UNSTRUCTURED)
 def prep_gauss_quadrature_c_list_stencil(
     famask_int: fa.EKintField,
-    p_coords_dreg_v_1_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_x: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_1_y: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_y: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_y: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_y: Field[[EdgeDim, KDim], float],
+    p_coords_dreg_v_1_x: fa.EKfloatField,
+    p_coords_dreg_v_2_x: fa.EKfloatField,
+    p_coords_dreg_v_3_x: fa.EKfloatField,
+    p_coords_dreg_v_4_x: fa.EKfloatField,
+    p_coords_dreg_v_1_y: fa.EKfloatField,
+    p_coords_dreg_v_2_y: fa.EKfloatField,
+    p_coords_dreg_v_3_y: fa.EKfloatField,
+    p_coords_dreg_v_4_y: fa.EKfloatField,
     shape_func_1_1: float,
     shape_func_2_1: float,
     shape_func_3_1: float,
@@ -366,18 +364,18 @@ def prep_gauss_quadrature_c_list_stencil(
     wgt_eta_2: float,
     dbl_eps: float,
     eps: float,
-    p_dreg_area_in: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_1: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_2: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_3: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_4: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_5: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_6: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_7: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_8: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_9: Field[[EdgeDim, KDim], float],
-    p_quad_vector_sum_10: Field[[EdgeDim, KDim], float],
-    p_dreg_area: Field[[EdgeDim, KDim], float],
+    p_dreg_area_in: fa.EKfloatField,
+    p_quad_vector_sum_1: fa.EKfloatField,
+    p_quad_vector_sum_2: fa.EKfloatField,
+    p_quad_vector_sum_3: fa.EKfloatField,
+    p_quad_vector_sum_4: fa.EKfloatField,
+    p_quad_vector_sum_5: fa.EKfloatField,
+    p_quad_vector_sum_6: fa.EKfloatField,
+    p_quad_vector_sum_7: fa.EKfloatField,
+    p_quad_vector_sum_8: fa.EKfloatField,
+    p_quad_vector_sum_9: fa.EKfloatField,
+    p_quad_vector_sum_10: fa.EKfloatField,
+    p_dreg_area: fa.EKfloatField,
 ):
     _prep_gauss_quadrature_c_list_stencil(
         famask_int,

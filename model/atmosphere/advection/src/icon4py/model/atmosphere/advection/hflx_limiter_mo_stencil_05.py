@@ -11,21 +11,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import minimum, where
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import E2C, EdgeDim, KDim
+from icon4py.model.common.dimension import E2C
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_05(
-    z_anti: Field[[EdgeDim, KDim], float],
-    z_mflx_low: Field[[EdgeDim, KDim], float],
+    z_anti: fa.EKfloatField,
+    z_mflx_low: fa.EKfloatField,
     r_m: fa.CKfloatField,
     r_p: fa.CKfloatField,
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EKfloatField:
     z_signum = where((z_anti > 0.0), 1.0, -1.0)
 
     r_frac = 0.5 * (
@@ -40,10 +39,10 @@ def _hflx_limiter_mo_stencil_05(
 
 @program
 def hflx_limiter_mo_stencil_05(
-    z_anti: Field[[EdgeDim, KDim], float],
-    z_mflx_low: Field[[EdgeDim, KDim], float],
+    z_anti: fa.EKfloatField,
+    z_mflx_low: fa.EKfloatField,
     r_m: fa.CKfloatField,
     r_p: fa.CKfloatField,
-    p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
+    p_mflx_tracer_h: fa.EKfloatField,
 ):
     _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)

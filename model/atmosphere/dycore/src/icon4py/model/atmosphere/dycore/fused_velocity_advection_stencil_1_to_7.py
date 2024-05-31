@@ -381,7 +381,7 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     edge: fa.EintField,
     lateral_boundary_7: int32,
     halo_1: int32,
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EKfloatField:
     return _fused_velocity_advection_stencil_1_to_7(
         vn,
         rbf_vec_coeff_e,

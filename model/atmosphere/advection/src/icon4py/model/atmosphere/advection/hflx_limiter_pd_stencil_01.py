@@ -15,7 +15,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, KDim
 
 
 @field_operator
@@ -23,7 +23,7 @@ def _hflx_limiter_pd_stencil_01(
     geofac_div: Field[[CEDim], float],
     p_cc: fa.CKfloatField,
     p_rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
+    p_mflx_tracer_h: fa.EKfloatField,
     p_dtime: float,
     dbl_eps: float,
 ) -> fa.CKfloatField:
@@ -43,7 +43,7 @@ def hflx_limiter_pd_stencil_01(
     geofac_div: Field[[CEDim], float],
     p_cc: fa.CKfloatField,
     p_rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
+    p_mflx_tracer_h: fa.EKfloatField,
     r_m: fa.CKfloatField,
     p_dtime: float,
     dbl_eps: float,

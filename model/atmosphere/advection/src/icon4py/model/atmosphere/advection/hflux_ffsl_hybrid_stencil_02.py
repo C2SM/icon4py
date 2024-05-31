@@ -13,17 +13,15 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field
-
-from icon4py.model.common.dimension import EdgeDim, KDim
+from model.common.tests import field_type_aliases as fa
 
 
 @field_operator
 def _hflux_ffsl_hybrid_stencil_02(
-    p_out_e_hybrid_2: Field[[EdgeDim, KDim], float],
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    z_dreg_area: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+    p_out_e_hybrid_2: fa.EKfloatField,
+    p_mass_flx_e: fa.EKfloatField,
+    z_dreg_area: fa.EKfloatField,
+) -> fa.EKfloatField:
     p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
     return p_out_e_hybrid_2
@@ -31,9 +29,9 @@ def _hflux_ffsl_hybrid_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflux_ffsl_hybrid_stencil_02(
-    p_out_e_hybrid_2: Field[[EdgeDim, KDim], float],
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    z_dreg_area: Field[[EdgeDim, KDim], float],
+    p_out_e_hybrid_2: fa.EKfloatField,
+    p_mass_flx_e: fa.EKfloatField,
+    z_dreg_area: fa.EKfloatField,
 ):
     _hflux_ffsl_hybrid_stencil_02(
         p_out_e_hybrid_2,
