@@ -26,7 +26,6 @@ from icon4py.model.common.dimension import (
     EdgeDim,
     KDim,
     Koff,
-    VertexDim,
 )
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -37,7 +36,7 @@ def _compute_advective_normal_wind_tendency(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
     z_ekinh: fa.CKvpField,
-    zeta: Field[[VertexDim, KDim], vpfloat],
+    zeta: fa.VKvpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     f_e: fa.EwpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
@@ -71,7 +70,7 @@ def compute_advective_normal_wind_tendency(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
     z_ekinh: fa.CKvpField,
-    zeta: Field[[VertexDim, KDim], vpfloat],
+    zeta: fa.VKvpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     f_e: fa.EwpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],

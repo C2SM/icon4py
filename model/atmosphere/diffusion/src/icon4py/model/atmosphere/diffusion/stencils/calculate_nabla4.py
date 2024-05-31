@@ -16,15 +16,15 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import E2C2V, E2ECV, ECVDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_nabla4(
-    u_vert: Field[[VertexDim, KDim], vpfloat],
-    v_vert: Field[[VertexDim, KDim], vpfloat],
+    u_vert: fa.VKvpField,
+    v_vert: fa.VKvpField,
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
     z_nabla2_e: fa.EKwpField,
@@ -63,8 +63,8 @@ def _calculate_nabla4(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla4(
-    u_vert: Field[[VertexDim, KDim], vpfloat],
-    v_vert: Field[[VertexDim, KDim], vpfloat],
+    u_vert: fa.VKvpField,
+    v_vert: fa.VKvpField,
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
     z_nabla2_e: fa.EKwpField,

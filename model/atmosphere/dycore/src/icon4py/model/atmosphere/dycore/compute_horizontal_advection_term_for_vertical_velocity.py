@@ -16,7 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import E2C, E2V, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import E2C, E2V, EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -29,7 +29,7 @@ def _compute_horizontal_advection_term_for_vertical_velocity(
     z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_w_v: Field[[VertexDim, KDim], vpfloat],
+    z_w_v: fa.VKvpField,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     """Formerly know as _mo_velocity_advection_stencil_07."""
     z_vt_ie_wp, vn_ie_wp = astype((z_vt_ie, vn_ie), wpfloat)
@@ -50,7 +50,7 @@ def compute_horizontal_advection_term_for_vertical_velocity(
     z_vt_ie: Field[[EdgeDim, KDim], vpfloat],
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_w_v: Field[[VertexDim, KDim], vpfloat],
+    z_w_v: fa.VKvpField,
     z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,

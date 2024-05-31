@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: fa.CKwpField,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-) -> Field[[VertexDim, KDim], vpfloat]:
+) -> fa.VKvpField:
     p_vert_out_wp = neighbor_sum(p_cell_in(V2C) * c_intp, axis=V2CDim)
     return astype(p_vert_out_wp, vpfloat)
 
@@ -34,7 +34,7 @@ def _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
 def mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
     p_cell_in: fa.CKwpField,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    p_vert_out: Field[[VertexDim, KDim], vpfloat],
+    p_vert_out: fa.VKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: fa.EKwpField,
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
-) -> Field[[VertexDim, KDim], vpfloat]:
+) -> fa.VKvpField:
     rot_vec_wp = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
     return astype(rot_vec_wp, vpfloat)
 
@@ -34,7 +34,7 @@ def _mo_math_divrot_rot_vertex_ri_dsl(
 def mo_math_divrot_rot_vertex_ri_dsl(
     vec_e: fa.EKwpField,
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
-    rot_vec: Field[[VertexDim, KDim], vpfloat],
+    rot_vec: fa.VKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
