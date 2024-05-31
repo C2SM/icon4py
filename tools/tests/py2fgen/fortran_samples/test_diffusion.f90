@@ -101,20 +101,20 @@ program diffusion_simulation
    integer(c_int) :: n
 
    ! Constants and types
-   integer(c_int), parameter :: num_cells = 20480
-   integer(c_int), parameter :: num_edges = 30720
-   integer(c_int), parameter :: num_vertices = 10242
+   integer(c_int), parameter :: num_cells = 20896
+   integer(c_int), parameter :: num_edges = 31558
+   integer(c_int), parameter :: num_vertices = 10663
    integer(c_int), parameter :: num_levels = 60
    integer(c_int), parameter :: num_c2ec2o = 4
    integer(c_int), parameter :: num_v2e = 6
-   integer(c_int), parameter :: num_c2e = 2
+   integer(c_int), parameter :: num_c2e = 3
    integer(c_int), parameter :: num_e2c2v = 4
    integer(c_int), parameter :: num_c2e2c = 3
-   integer(c_int), parameter :: num_e2c = 3
+   integer(c_int), parameter :: num_e2c = 2
    real(c_double), parameter :: mean_cell_area = 24907282236.708576
    integer(c_int), parameter :: ndyn_substeps = 2
-   real(c_double), parameter :: dtime = 2.0
-   real(c_double), parameter :: rayleigh_damping_height = 50000
+   real(c_double), parameter :: dtime = 10.0
+   real(c_double), parameter :: rayleigh_damping_height = 12500.0
    integer(c_int), parameter :: nflatlev = 30
    integer(c_int), parameter :: nflat_gradp = 59
    integer(c_int), parameter :: diffusion_type = 5 ! Assuming DiffusionType.SMAGORINSKY_4TH_ORDER is represented by 5
@@ -229,7 +229,7 @@ program diffusion_simulation
 
    ! Fill arrays with random numbers
    ! For 1D arrays
-   call fill_random_1d(vct_a, 0.0_c_double, 75000.0_c_double) ! needs to be above 50000 damping height restriction
+   call fill_random_1d(vct_a, 0.0_c_double, 75000.0_c_double) ! needs to be above 12500 damping height restriction
    call fill_random_1d(nudgecoeff_e, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(tangent_orientation, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(inverse_primal_edge_lengths, 0.0_c_double, 1.0_c_double)
