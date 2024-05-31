@@ -62,7 +62,7 @@ def _compute_z_vintcoeff(
     return z_vintcoeff[jc, :, :]
 
 
-def _compute_i_params(
+def _compute_ls_params(
     k_start: list,
     k_end: list,
     z_maxslp_avg: np.array,
@@ -74,8 +74,8 @@ def _compute_i_params(
     n_cells: int,
     nlev: int,
 ) -> tuple[list, int, int]:
-    i_indlist = [0] * n_cells
-    i_listreduce = 0
+    indlist = [0] * n_cells
+    listreduce = 0
     ji = -1
     ji_ind = -1
 
@@ -85,15 +85,15 @@ def _compute_i_params(
             or z_maxhgtd_avg[jc, nlev - 1] >= thhgtd_zdiffu
         ) and c_owner_mask[jc]:
             ji += 1
-            i_indlist[ji] = jc
+            indlist[ji] = jc
 
             if all((k_start[jc], k_end[jc])) and k_start[jc] > k_end[jc]:
-                i_listreduce += 1
+                listreduce += 1
             else:
                 ji_ind += 1
-                i_indlist[ji_ind] = jc
+                indlist[ji_ind] = jc
 
-    return i_indlist, i_listreduce, ji
+    return indlist, listreduce, ji
 
 
 def _compute_k_start_end(
@@ -134,10 +134,8 @@ def _compute_k_start_end(
 def compute_diffusion_metrics(
     z_mc: np.array,
     z_mc_off: np.array,
-    k_start: list,
-    k_end: list,
-    i_indlist: list,
-    i_listdim: int,
+    max_nbhgt: np.array,
+    c_owner_mask: np.array,
     nbidx: np.array,
     z_vintcoeff: np.array,
     z_maxslp_avg: np.array,
@@ -148,10 +146,40 @@ def compute_diffusion_metrics(
     zd_vertoffset_dsl: np.array,
     thslp_zdiffu: float,
     thhgtd_zdiffu: float,
+    cell_nudging: int,
+    n_cells: int,
     nlev: int,
-) -> np.array:
-    for ji in range(i_listdim):
-        jc = i_indlist[ji]
+) -> tuple[np.array, np.array, np.array, np.array]:
+    k_start, k_end = _compute_k_start_end(
+        z_mc=z_mc,
+        max_nbhgt=max_nbhgt,
+        z_maxslp_avg=z_maxslp_avg,
+        z_maxhgtd_avg=z_maxhgtd_avg,
+        c_owner_mask=c_owner_mask,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        cell_nudging=cell_nudging,
+        n_cells=n_cells,
+        nlev=nlev,
+    )
+
+    indlist, listreduce, ji = _compute_ls_params(
+        k_start=k_start,
+        k_end=k_end,
+        z_maxslp_avg=z_maxslp_avg,
+        z_maxhgtd_avg=z_maxhgtd_avg,
+        c_owner_mask=c_owner_mask,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        cell_nudging=cell_nudging,
+        n_cells=n_cells,
+        nlev=nlev,
+    )
+
+    listdim = ji - listreduce
+
+    for ji in range(listdim):
+        jc = indlist[ji]
         k_range = range(k_start[jc], k_end[jc])
         if all((k_range)):
             nbidx[jc, :, :] = _compute_nbidx(k_range, z_mc, z_mc_off, nbidx, jc, nlev)

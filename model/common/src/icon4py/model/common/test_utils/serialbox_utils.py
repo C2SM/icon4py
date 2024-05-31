@@ -485,7 +485,7 @@ class IconGridSavepoint(IconSavepoint):
 
 class InterpolationSavepoint(IconSavepoint):
     def c_bln_avg(self):
-        return self._get_field("c_bln_avg", CellDim, KDim)
+        return self._get_field("c_bln_avg", CellDim, C2E2CODim)
 
     def c_intp(self):
         return self._get_field("c_intp", VertexDim, V2CDim)

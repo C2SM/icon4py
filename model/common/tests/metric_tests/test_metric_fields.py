@@ -20,17 +20,14 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
-    C2E2CDim,
-    CECDim,
     CellDim,
     EdgeDim,
     KDim,
     V2CDim,
     VertexDim,
 )
+from icon4py.model.common.grid import horizontal
 from icon4py.model.common.grid.horizontal import (
-    _GRF_NUDGEZONE_START_EDGES,
-    _GRF_NUDGEZONE_WIDTH,
     HorizontalMarkerIndex,
     _compute_cells2verts,
 )
@@ -55,8 +52,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_exner_exfac,
     compute_hmask_dd3d,
     compute_mask_prog_halo_c,
-    compute_max_nbhgt,
-    compute_maxslp_maxhgtd,
     compute_pg_edgeidx_dsl,
     compute_pg_exdist_dsl,
     compute_rayleigh_w,
@@ -64,13 +59,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_vwind_impl_wgt,
     compute_wgtfac_e,
-    compute_z_maxslp_avg_z_maxhgtd_avg,
     compute_z_mc,
-)
-from icon4py.model.common.metrics.stencils.compute_diffusion_metrics import (
-    _compute_i_params,
-    _compute_k_start_end,
-    compute_diffusion_metrics,
 )
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -80,7 +69,6 @@ from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     constant_field,
     dallclose,
-    flatten_first_two_dims,
     is_python,
     is_roundtrip,
     random_field,
@@ -817,147 +805,11 @@ def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backen
     compute_hmask_dd3d(
         e_refin_ctrl=e_refin_ctrl,
         hmask_dd3d=hmask_dd3d_full,
-        grf_nudge_start_e=int32(_GRF_NUDGEZONE_START_EDGES),
-        grf_nudgezone_width=int32(_GRF_NUDGEZONE_WIDTH),
+        grf_nudge_start_e=int32(horizontal._GRF_NUDGEZONE_START_EDGES),
+        grf_nudgezone_width=int32(horizontal._GRF_NUDGEZONE_WIDTH),
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_edges,
         offset_provider={},
     )
 
     dallclose(hmask_dd3d_full.asnumpy(), hmask_dd3d_ref.asnumpy())
-
-
-@pytest.mark.datatest
-def test_compute_diffusion_metrics(
-    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
-):
-    if is_roundtrip(backend):
-        pytest.skip("skipping: slow backend")
-    mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
-    zd_vertoffset_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
-    z_vintcoeff = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
-    zd_intcoef_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
-    z_maxslp_avg = zero_field(icon_grid, CellDim, KDim)
-    z_maxhgtd_avg = zero_field(icon_grid, CellDim, KDim)
-    zd_diffcoef_dsl = zero_field(icon_grid, CellDim, KDim).asnumpy()
-    maxslp = zero_field(icon_grid, CellDim, KDim)
-    maxhgtd = zero_field(icon_grid, CellDim, KDim)
-    max_nbhgt = zero_field(icon_grid, CellDim)
-
-    c2e2c = icon_grid.connectivities[C2E2CDim]
-    nbidx = constant_field(icon_grid, 1, CellDim, C2E2CDim, KDim, dtype=int).asnumpy()
-    c_bln_avg = interpolation_savepoint.c_bln_avg()
-    thslp_zdiffu = 0.02
-    thhgtd_zdiffu = 125
-    cell_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
-    cell_lateral = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
-    )
-    nlev = icon_grid.num_levels
-
-    compute_maxslp_maxhgtd.with_backend(backend)(
-        ddxn_z_full=metrics_savepoint.ddxn_z_full(),
-        dual_edge_length=grid_savepoint.dual_edge_length(),
-        z_maxslp=maxslp,
-        z_maxhgtd=maxhgtd,
-        horizontal_start=cell_lateral,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
-    )
-
-    z_mc = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
-    compute_z_mc.with_backend(backend)(
-        metrics_savepoint.z_ifc(),
-        z_mc,
-        horizontal_start=0,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
-    )
-
-    compute_z_maxslp_avg_z_maxhgtd_avg.with_backend(backend)(
-        maxslp=maxslp,
-        maxhgtd=maxhgtd,
-        c_bln_avg_0=as_field((CellDim,), c_bln_avg.asnumpy()[:, 0]),
-        c_bln_avg_1=as_field((CellDim,), c_bln_avg.asnumpy()[:, 1]),
-        c_bln_avg_2=as_field((CellDim,), c_bln_avg.asnumpy()[:, 2]),
-        c_bln_avg_3=as_field((CellDim,), c_bln_avg.asnumpy()[:, 3]),
-        z_maxslp_avg=z_maxslp_avg,
-        z_maxhgtd_avg=z_maxhgtd_avg,
-        horizontal_start=cell_lateral,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=0,
-        vertical_end=nlev,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
-    )
-
-    compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=as_field((CellDim,), z_mc.asnumpy()[:, nlev - 1]),
-        max_nbhgt=max_nbhgt,
-        horizontal_start=cell_nudging,
-        horizontal_end=icon_grid.num_cells,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
-    )
-
-    k_start, k_end = _compute_k_start_end(
-        z_mc=z_mc.asnumpy(),
-        max_nbhgt=max_nbhgt.asnumpy(),
-        z_maxslp_avg=z_maxslp_avg.asnumpy(),
-        z_maxhgtd_avg=z_maxhgtd_avg.asnumpy(),
-        c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        cell_nudging=cell_nudging,
-        n_cells=icon_grid.num_cells,
-        nlev=nlev,
-    )
-
-    i_indlist, i_listreduce, ji = _compute_i_params(
-        k_start=k_start,
-        k_end=k_end,
-        z_maxslp_avg=z_maxslp_avg.asnumpy(),
-        z_maxhgtd_avg=z_maxhgtd_avg.asnumpy(),
-        c_owner_mask=grid_savepoint.c_owner_mask().asnumpy(),
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        cell_nudging=cell_nudging,
-        n_cells=icon_grid.num_cells,
-        nlev=nlev,
-    )
-
-    i_listdim = ji - i_listreduce
-
-    mask_hdiff, zd_diffcoef_dsl, zd_intcoef_dsl, zd_vertoffset_dsl = compute_diffusion_metrics(
-        z_mc=z_mc.asnumpy(),
-        z_mc_off=z_mc.asnumpy()[c2e2c],
-        k_start=k_start,
-        k_end=k_end,
-        i_indlist=i_indlist,
-        i_listdim=i_listdim,
-        nbidx=nbidx,
-        z_vintcoeff=z_vintcoeff,
-        z_maxslp_avg=z_maxslp_avg.asnumpy(),
-        z_maxhgtd_avg=z_maxhgtd_avg.asnumpy(),
-        mask_hdiff=mask_hdiff,
-        zd_diffcoef_dsl=zd_diffcoef_dsl,
-        zd_intcoef_dsl=zd_intcoef_dsl,
-        zd_vertoffset_dsl=zd_vertoffset_dsl,
-        thslp_zdiffu=thslp_zdiffu,
-        thhgtd_zdiffu=thhgtd_zdiffu,
-        nlev=nlev,
-    )
-    zd_intcoef_dsl = flatten_first_two_dims(
-        CECDim, KDim, field=as_field((CellDim, C2E2CDim, KDim), zd_intcoef_dsl)
-    )
-    zd_vertoffset_dsl = flatten_first_two_dims(
-        CECDim, KDim, field=as_field((CellDim, C2E2CDim, KDim), zd_vertoffset_dsl)
-    )
-
-    assert dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
-    assert dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11)
-    assert dallclose(zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy())
-    assert dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())

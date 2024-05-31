@@ -1059,72 +1059,24 @@ def compute_hmask_dd3d(
 
 
 @field_operator
-def _compute_mask_hdiff() -> Field[[CellDim, KDim], bool]:
-    return broadcast(True, (CellDim, KDim))
-
-
-@program
-def compute_mask_hdiff(
-    mask_hdiff: Field[[CellDim, KDim], bool],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    """
-    Compute mask_hdiff.
-
-    See mo_vertical_grid.f90.
-
-    Args:
-        mask_hdiff: output
-        horizontal_start: horizontal start index
-        horizontal_end: horizontal end index
-        vertical_start: vertical start index
-        vertical_end: vertical end index
-    """
-    _compute_mask_hdiff(
-        out=mask_hdiff,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
-    )
-
-
-@field_operator
-def _compute_z_maxslp_avg(
-    maxslp: Field[[CellDim, KDim], wpfloat],
+def _compute_weighted_cell_neighbor_sum(
+    field: Field[[CellDim, KDim], wpfloat],
     c_bln_avg_0: Field[[CellDim], wpfloat],
     c_bln_avg_1: Field[[CellDim], wpfloat],
     c_bln_avg_2: Field[[CellDim], wpfloat],
     c_bln_avg_3: Field[[CellDim], wpfloat],
 ) -> Field[[CellDim, KDim], wpfloat]:
-    z_maxslp_avg = (
-        maxslp * c_bln_avg_0
-        + maxslp(C2E2C[0]) * c_bln_avg_1
-        + maxslp(C2E2C[1]) * c_bln_avg_2
-        + maxslp(C2E2C[2]) * c_bln_avg_3
+    field_avg = (
+        field * c_bln_avg_0
+        + field(C2E2C[0]) * c_bln_avg_1
+        + field(C2E2C[1]) * c_bln_avg_2
+        + field(C2E2C[2]) * c_bln_avg_3
     )
-    return z_maxslp_avg
-
-
-@field_operator
-def _compute_z_maxhgtd_avg(
-    maxhgtd: Field[[CellDim, KDim], wpfloat],
-    c_bln_avg_0: Field[[CellDim], wpfloat],
-    c_bln_avg_1: Field[[CellDim], wpfloat],
-    c_bln_avg_2: Field[[CellDim], wpfloat],
-    c_bln_avg_3: Field[[CellDim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
-    z_maxhgtd_avg = (
-        maxhgtd * c_bln_avg_0
-        + maxhgtd(C2E2C[0]) * c_bln_avg_1
-        + maxhgtd(C2E2C[1]) * c_bln_avg_2
-        + maxhgtd(C2E2C[2]) * c_bln_avg_3
-    )
-    return z_maxhgtd_avg
+    return field_avg
 
 
 @program
-def compute_z_maxslp_avg_z_maxhgtd_avg(
+def compute_weighted_cell_neighbor_sum(
     maxslp: Field[[CellDim, KDim], wpfloat],
     maxhgtd: Field[[CellDim, KDim], wpfloat],
     c_bln_avg_0: Field[[CellDim], wpfloat],
@@ -1146,10 +1098,10 @@ def compute_z_maxslp_avg_z_maxhgtd_avg(
     Args:
         maxslp: Max field over ddxn_z_full offset
         maxhgtd: Max field over ddxn_z_full offset*dual_edge_length offset
-        c_bln_avg_0: Interpolation field 0th K element
-        c_bln_avg_1: Interpolation field 1st K element
-        c_bln_avg_2: Interpolation field 2nd K element
-        c_bln_avg_3: Interpolation field 3rd K element
+        c_bln_avg_0: Interpolation field 0th sparse element
+        c_bln_avg_1: Interpolation field 1st sparse element
+        c_bln_avg_2: Interpolation field 2nd sparse element
+        c_bln_avg_3: Interpolation field 3rd sparse element
         z_maxslp_avg: output
         z_maxhgtd_avg: output
         horizontal_start: horizontal start index
@@ -1158,8 +1110,8 @@ def compute_z_maxslp_avg_z_maxhgtd_avg(
         vertical_end: vertical end index
     """
 
-    _compute_z_maxslp_avg(
-        maxslp=maxslp,
+    _compute_weighted_cell_neighbor_sum(
+        field=maxslp,
         c_bln_avg_0=c_bln_avg_0,
         c_bln_avg_1=c_bln_avg_1,
         c_bln_avg_2=c_bln_avg_2,
@@ -1168,8 +1120,8 @@ def compute_z_maxslp_avg_z_maxhgtd_avg(
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
 
-    _compute_z_maxhgtd_avg(
-        maxhgtd=maxhgtd,
+    _compute_weighted_cell_neighbor_sum(
+        field=maxhgtd,
         c_bln_avg_0=c_bln_avg_0,
         c_bln_avg_1=c_bln_avg_1,
         c_bln_avg_2=c_bln_avg_2,
