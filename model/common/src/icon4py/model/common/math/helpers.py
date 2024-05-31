@@ -27,9 +27,9 @@ def average_cell_kdim_level_up(
     Computes the average of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
 
-    Returns: Field[[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
 
     """
     return 0.5 * (half_level_field + half_level_field(Koff[1]))
@@ -63,9 +63,9 @@ def difference_k_level_down(
     Computes the difference of two adjacent interface levels downwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
 
-    Returns: Field[[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
 
     """
     return half_level_field(Koff[-1]) - half_level_field
@@ -81,9 +81,9 @@ def difference_k_level_up(
     Computes the difference of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
 
-    Returns: Field[[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
 
     """
     return half_level_field - half_level_field(Koff[1])

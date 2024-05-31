@@ -13,12 +13,11 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import int32, where
 from gt4py.next.program_processors.runners.gtfn import run_gtfn
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import CellDim, KDim, Koff
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.dimension import Koff
 
 
 @field_operator
@@ -47,7 +46,7 @@ def _compute_wgtfac_c_inner(
 
 @field_operator
 def _compute_wgtfac_c(
-    z_ifc: Field[[CellDim, KDim], wpfloat],
+    z_ifc: fa.CKwpField,
     k: fa.KintField,
     nlev: int32,
 ) -> fa.CKwpField:

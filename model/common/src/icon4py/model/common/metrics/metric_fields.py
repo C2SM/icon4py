@@ -81,8 +81,8 @@ def compute_z_mc(
     returned fields is defined on full levels (KDim)
 
     Args:
-        z_ifc: Field[[CellDim, KDim], wpfloat] geometric height on half levels
-        z_mc: Field[[CellDim, KDim], wpfloat] output, geometric height defined on full levels
+        z_ifc: Field[Dims[CellDim, KDim], wpfloat] geometric height on half levels
+        z_mc: Field[Dims[CellDim, KDim], wpfloat] output, geometric height defined on full levels
         horizontal_start:int32 start index of horizontal domain
         horizontal_end:int32 end index of horizontal domain
         vertical_start:int32 start index of vertical domain

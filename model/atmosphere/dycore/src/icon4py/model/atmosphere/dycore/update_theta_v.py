@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import int32, where
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import CellDim, KDim
@@ -31,7 +31,7 @@ def _update_theta_v(
     rho_new: fa.CKwpField,
     theta_v_new: fa.CKwpField,
     cvd_o_rd: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> fa.CKwpField:
     """Formerly known as _mo_solve_nonhydro_stencil_68."""
     theta_v_new_wp = where(
         mask_prog_halo_c,
