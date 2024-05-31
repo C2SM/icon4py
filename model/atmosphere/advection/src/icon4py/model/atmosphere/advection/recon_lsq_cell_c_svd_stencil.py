@@ -13,8 +13,8 @@
 
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from model.common.tests import field_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim
 
 

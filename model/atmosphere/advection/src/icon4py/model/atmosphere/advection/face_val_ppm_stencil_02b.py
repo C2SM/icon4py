@@ -12,7 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from model.common.tests import field_aliases as fa
+
+from icon4py.model.common import field_type_aliases as fa
 
 
 @field_operator
