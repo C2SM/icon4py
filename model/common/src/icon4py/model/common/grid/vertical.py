@@ -16,8 +16,8 @@ from typing import Final
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from model.common.tests import field_type_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.settings import xp
 
 

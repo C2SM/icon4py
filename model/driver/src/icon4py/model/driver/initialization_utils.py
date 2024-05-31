@@ -18,7 +18,6 @@ from pathlib import Path
 
 import numpy as np
 from gt4py.next import as_field
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -33,6 +32,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.constants import (
     CPD_O_RD,
     CVD_O_RD,

@@ -21,8 +21,8 @@ from gt4py.next.ffront.fbuiltins import (
     int32,
     maximum,
 )
-from model.common.tests import field_type_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat

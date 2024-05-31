@@ -168,9 +168,8 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.settings import backend
 
-from model.common.tests import field_type_aliases as fa
+from icon4py.model.common import field_type_aliases as fa
 
 # flake8: noqa
 log = logging.getLogger(__name__)

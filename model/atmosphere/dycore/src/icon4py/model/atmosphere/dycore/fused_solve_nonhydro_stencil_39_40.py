@@ -13,7 +13,6 @@
 
 from gt4py.next.ffront.decorator import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w import (
     _compute_contravariant_correction_of_w,
@@ -21,6 +20,7 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w impor
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat

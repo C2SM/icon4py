@@ -13,8 +13,8 @@
 
 from gt4py.next import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
-from model.common.tests import field_type_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, Koff
 from icon4py.model.common.settings import backend
 

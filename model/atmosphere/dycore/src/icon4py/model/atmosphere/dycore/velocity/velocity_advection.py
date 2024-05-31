@@ -14,7 +14,6 @@
 import numpy as np
 from gt4py.next import as_field
 from gt4py.next.iterator.builtins import int32
-from model.common.tests import field_type_aliases as fa
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -52,6 +51,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid

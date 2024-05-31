@@ -13,8 +13,8 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, sqrt, where
-from model.common.tests import field_type_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
 

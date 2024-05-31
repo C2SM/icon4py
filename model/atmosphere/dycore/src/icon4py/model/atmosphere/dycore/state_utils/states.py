@@ -13,8 +13,8 @@
 from dataclasses import dataclass
 
 from gt4py.next.common import Field
-from model.common.tests import field_type_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CEDim,

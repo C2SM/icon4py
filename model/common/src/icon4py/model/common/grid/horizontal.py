@@ -16,9 +16,8 @@ from functools import cached_property
 from typing import ClassVar, Final
 
 from gt4py.next import Dimension, Field, field_operator, neighbor_sum
-from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common import constants, dimension
+from icon4py.model.common import constants, dimension, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     V2C,
     CellDim,

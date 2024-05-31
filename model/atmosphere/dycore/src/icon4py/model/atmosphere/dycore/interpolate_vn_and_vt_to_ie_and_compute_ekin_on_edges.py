@@ -14,7 +14,6 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
@@ -22,6 +21,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_ed
 from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
     _interpolate_vt_to_interface_edges,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
 

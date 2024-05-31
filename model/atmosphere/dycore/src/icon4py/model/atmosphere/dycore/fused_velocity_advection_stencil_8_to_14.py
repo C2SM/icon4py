@@ -13,7 +13,6 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     _compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
@@ -29,6 +28,7 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CEDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat

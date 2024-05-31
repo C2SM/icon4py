@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from gt4py.next import Field, field_operator
-from model.common.tests import field_type_aliases as fa
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2V, KDim, Koff, VertexDim
 
 

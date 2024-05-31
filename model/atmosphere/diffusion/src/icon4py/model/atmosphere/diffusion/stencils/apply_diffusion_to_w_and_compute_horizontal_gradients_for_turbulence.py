@@ -14,7 +14,6 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w import _apply_nabla2_to_w
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
@@ -26,6 +25,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat

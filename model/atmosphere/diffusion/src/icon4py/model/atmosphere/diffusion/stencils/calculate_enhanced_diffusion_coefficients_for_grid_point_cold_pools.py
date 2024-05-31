@@ -14,7 +14,6 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
     _enhance_diffusion_coefficient_for_grid_point_cold_pools,
@@ -22,6 +21,7 @@ from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_f
 from icon4py.model.atmosphere.diffusion.stencils.temporary_field_for_grid_point_cold_pools_enhancement import (
     _temporary_field_for_grid_point_cold_pools_enhancement,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat

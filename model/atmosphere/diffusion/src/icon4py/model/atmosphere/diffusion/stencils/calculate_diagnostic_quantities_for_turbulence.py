@@ -14,7 +14,6 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbulence import (
     _calculate_diagnostics_for_turbulence,
@@ -22,6 +21,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     _temporary_fields_for_turbulence_diagnostics,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat

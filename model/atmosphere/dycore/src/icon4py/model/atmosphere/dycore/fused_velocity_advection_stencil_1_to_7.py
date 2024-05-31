@@ -13,7 +13,6 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
-from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -35,6 +34,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
