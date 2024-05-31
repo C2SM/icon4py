@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import Field, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 
@@ -40,7 +41,7 @@ def _hflux_ffsl_hybrid_stencil_01a(
     z_quad_vector_sum0_8: Field[[EdgeDim, KDim], float],
     z_quad_vector_sum0_9: Field[[EdgeDim, KDim], float],
     z_quad_vector_sum0_10: Field[[EdgeDim, KDim], float],
-    patch0_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
+    patch0_cell_rel_idx_dsl: fa.EKintField,
 ) -> Field[[EdgeDim, KDim], float]:
     p_out_e_hybrid_1a = (
         where(
@@ -130,7 +131,7 @@ def hflux_ffsl_hybrid_stencil_01a(
     z_quad_vector_sum0_8: Field[[EdgeDim, KDim], float],
     z_quad_vector_sum0_9: Field[[EdgeDim, KDim], float],
     z_quad_vector_sum0_10: Field[[EdgeDim, KDim], float],
-    patch0_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
+    patch0_cell_rel_idx_dsl: fa.EKintField,
     p_out_e_hybrid_1a: Field[[EdgeDim, KDim], float],
 ):
     _hflux_ffsl_hybrid_stencil_01a(

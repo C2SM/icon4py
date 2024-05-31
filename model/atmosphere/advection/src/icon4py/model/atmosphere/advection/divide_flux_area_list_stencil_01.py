@@ -15,7 +15,7 @@ import sys
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, where
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
@@ -34,7 +34,7 @@ def ccw(
     p1_lat: Field[[EdgeDim, KDim], float],
     p2_lon: Field[[EdgeDim, KDim], float],
     p2_lat: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], int32]:
+) -> fa.EKintField:
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -126,7 +126,7 @@ def line_intersect(
 
 @field_operator
 def _divide_flux_area_list_stencil_01(
-    famask_int: Field[[EdgeDim, KDim], int32],
+    famask_int: fa.EKintField,
     p_vn: Field[[EdgeDim, KDim], float],
     ptr_v3_lon: Field[[ECDim], float],
     ptr_v3_lat: Field[[ECDim], float],
@@ -676,7 +676,7 @@ def _divide_flux_area_list_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def divide_flux_area_list_stencil_01(
-    famask_int: Field[[EdgeDim, KDim], int32],
+    famask_int: fa.EKintField,
     p_vn: Field[[EdgeDim, KDim], float],
     ptr_v3_lon: Field[[ECDim], float],
     ptr_v3_lat: Field[[ECDim], float],

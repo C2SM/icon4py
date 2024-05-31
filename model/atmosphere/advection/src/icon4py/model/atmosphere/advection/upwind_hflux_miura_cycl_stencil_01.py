@@ -13,7 +13,8 @@
 
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where
+from gt4py.next.ffront.fbuiltins import where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 
@@ -26,7 +27,7 @@ def _upwind_hflux_miura_cycl_stencil_01(
     distv_bary_1: Field[[EdgeDim, KDim], float],
     distv_bary_2: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
+    cell_rel_idx_dsl: fa.EKintField,
 ) -> Field[[EdgeDim, KDim], float]:
     z_tracer_mflx_dsl = (
         where(
@@ -59,7 +60,7 @@ def upwind_hflux_miura_cycl_stencil_01(
     distv_bary_1: Field[[EdgeDim, KDim], float],
     distv_bary_2: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
+    cell_rel_idx_dsl: fa.EKintField,
     z_tracer_mflx_dsl: Field[[EdgeDim, KDim], float],
 ):
     _upwind_hflux_miura_cycl_stencil_01(

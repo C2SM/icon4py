@@ -13,14 +13,15 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32, where
+from gt4py.next.ffront.fbuiltins import Field, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 
 
 @field_operator
 def _prep_gauss_quadrature_c_list_stencil(
-    famask_int: Field[[EdgeDim, KDim], int32],
+    famask_int: fa.EKintField,
     p_coords_dreg_v_1_x: Field[[EdgeDim, KDim], float],
     p_coords_dreg_v_2_x: Field[[EdgeDim, KDim], float],
     p_coords_dreg_v_3_x: Field[[EdgeDim, KDim], float],
@@ -326,7 +327,7 @@ def _prep_gauss_quadrature_c_list_stencil(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def prep_gauss_quadrature_c_list_stencil(
-    famask_int: Field[[EdgeDim, KDim], int32],
+    famask_int: fa.EKintField,
     p_coords_dreg_v_1_x: Field[[EdgeDim, KDim], float],
     p_coords_dreg_v_2_x: Field[[EdgeDim, KDim], float],
     p_coords_dreg_v_3_x: Field[[EdgeDim, KDim], float],

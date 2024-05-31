@@ -13,7 +13,8 @@
 
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where
+from gt4py.next.ffront.fbuiltins import where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
 
@@ -42,7 +43,7 @@ def _upwind_hflux_miura3_stencil_01(
     z_quad_vector_sum_10: Field[[EdgeDim, KDim], float],
     z_dreg_area: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
+    cell_rel_idx_dsl: fa.EKintField,
 ) -> Field[[EdgeDim, KDim], float]:
     p_out_e_miura3 = (
         (
@@ -138,7 +139,7 @@ def upwind_hflux_miura3_stencil_01(
     z_quad_vector_sum_10: Field[[EdgeDim, KDim], float],
     z_dreg_area: Field[[EdgeDim, KDim], float],
     p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
+    cell_rel_idx_dsl: fa.EKintField,
     p_out_e_miura3: Field[[EdgeDim, KDim], float],
 ):
     _upwind_hflux_miura3_stencil_01(

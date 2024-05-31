@@ -16,6 +16,7 @@ import sys
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
@@ -25,7 +26,7 @@ sys.setrecursionlimit(5500)
 
 @field_operator
 def _divide_flux_area_list_stencil_02(
-    famask_int: Field[[EdgeDim, KDim], int32],
+    famask_int: fa.EKintField,
     p_vn: Field[[EdgeDim, KDim], float],
     bf_cc_patch1_lon: Field[[ECDim], float],
     bf_cc_patch1_lat: Field[[ECDim], float],
@@ -72,10 +73,10 @@ def _divide_flux_area_list_stencil_02(
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
     Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], int32],
+    fa.EKintField,
+    fa.EKintField,
+    fa.EKintField,
+    fa.EKintField,
 ]:
     famask_bool = where(famask_int == 1, True, False)
     lvn_pos = where(p_vn >= 0.0, True, False)
@@ -177,7 +178,7 @@ def _divide_flux_area_list_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def divide_flux_area_list_stencil_02(
-    famask_int: Field[[EdgeDim, KDim], int32],
+    famask_int: fa.EKintField,
     p_vn: Field[[EdgeDim, KDim], float],
     bf_cc_patch1_lon: Field[[ECDim], float],
     bf_cc_patch1_lat: Field[[ECDim], float],
@@ -207,10 +208,10 @@ def divide_flux_area_list_stencil_02(
     dreg_patch2_3_lat_vmask: Field[[EdgeDim, KDim], float],
     dreg_patch2_4_lon_vmask: Field[[EdgeDim, KDim], float],
     dreg_patch2_4_lat_vmask: Field[[EdgeDim, KDim], float],
-    patch1_cell_idx_vmask: Field[[EdgeDim, KDim], int32],
-    patch1_cell_blk_vmask: Field[[EdgeDim, KDim], int32],
-    patch2_cell_idx_vmask: Field[[EdgeDim, KDim], int32],
-    patch2_cell_blk_vmask: Field[[EdgeDim, KDim], int32],
+    patch1_cell_idx_vmask: fa.EKintField,
+    patch1_cell_blk_vmask: fa.EKintField,
+    patch2_cell_idx_vmask: fa.EKintField,
+    patch2_cell_blk_vmask: fa.EKintField,
 ):
     _divide_flux_area_list_stencil_02(
         famask_int,
