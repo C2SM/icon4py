@@ -29,16 +29,16 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    z_kin_hor_e: fa.EKvpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    z_w_concorr_me: fa.EKvpField,
     wgtfac_c: fa.CKvpField,
     w: fa.CKwpField,
     ddqz_z_half: fa.CKvpField,
@@ -113,9 +113,9 @@ def _fused_velocity_advection_stencil_8_to_14(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_14(
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
+    z_kin_hor_e: fa.EKvpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    z_w_concorr_me: fa.EKvpField,
     wgtfac_c: fa.CKvpField,
     w: fa.CKwpField,
     ddqz_z_half: fa.CKvpField,

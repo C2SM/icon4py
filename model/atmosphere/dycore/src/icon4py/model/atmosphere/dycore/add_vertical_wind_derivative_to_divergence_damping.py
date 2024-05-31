@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
+from gt4py.next.ffront.fbuiltins import astype, broadcast, int32
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import E2C, EdgeDim, KDim
@@ -27,8 +27,8 @@ def _add_vertical_wind_derivative_to_divergence_damping(
     scalfac_dd3d: fa.KwpField,
     inv_dual_edge_length: fa.EwpField,
     z_dwdz_dd: fa.CKvpField,
-    z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
+    z_graddiv_vn: fa.EKvpField,
+) -> fa.EKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_17."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
@@ -48,7 +48,7 @@ def add_vertical_wind_derivative_to_divergence_damping(
     scalfac_dd3d: fa.KwpField,
     inv_dual_edge_length: fa.EwpField,
     z_dwdz_dd: fa.CKvpField,
-    z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
+    z_graddiv_vn: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

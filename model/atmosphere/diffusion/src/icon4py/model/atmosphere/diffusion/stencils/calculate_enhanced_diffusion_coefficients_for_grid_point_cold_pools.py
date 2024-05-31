@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.enhance_diffusion_coefficient_for_grid_point_cold_pools import (
@@ -33,8 +33,8 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_ref_mc: fa.CKvpField,
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
+    kh_smag_e: fa.EKvpField,
+) -> fa.EKvpField:
     enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v,
         theta_ref_mc,
@@ -51,7 +51,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_ref_mc: fa.CKvpField,
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32, maximum
+from gt4py.next.ffront.fbuiltins import astype, broadcast, int32, maximum
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
@@ -23,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _apply_nabla2_and_nabla4_to_vn(
     area_edge: fa.EwpField,
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
     z_nabla2_e: fa.EKwpField,
-    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    z_nabla4_e2: fa.EKvpField,
     diff_multfac_vn: fa.KwpField,
     nudgecoeff_e: fa.EwpField,
     vn: fa.EKwpField,
@@ -46,9 +46,9 @@ def _apply_nabla2_and_nabla4_to_vn(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_and_nabla4_to_vn(
     area_edge: fa.EwpField,
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
     z_nabla2_e: fa.EKwpField,
-    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    z_nabla4_e2: fa.EKvpField,
     diff_multfac_vn: fa.KwpField,
     nudgecoeff_e: fa.EwpField,
     vn: fa.EKwpField,

@@ -22,14 +22,14 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
     _calculate_nabla2_of_theta,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _calculate_nabla2_for_theta(
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
     inv_dual_edge_length: fa.EwpField,
     theta_v: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],

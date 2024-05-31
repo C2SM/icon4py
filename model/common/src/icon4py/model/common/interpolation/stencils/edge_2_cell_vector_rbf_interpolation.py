@@ -16,14 +16,14 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 from model.common.tests import field_type_aliases as fa
 
-from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _edge_2_cell_vector_rbf_interpolation(
-    p_e_in: Field[[EdgeDim, KDim], vpfloat],
+    p_e_in: fa.EKvpField,
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
 ) -> tuple[fa.CKvpField, fa.CKvpField]:
@@ -34,7 +34,7 @@ def _edge_2_cell_vector_rbf_interpolation(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def edge_2_cell_vector_rbf_interpolation(
-    p_e_in: Field[[EdgeDim, KDim], vpfloat],
+    p_e_in: fa.EKvpField,
     ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
     p_u_out: fa.CKvpField,

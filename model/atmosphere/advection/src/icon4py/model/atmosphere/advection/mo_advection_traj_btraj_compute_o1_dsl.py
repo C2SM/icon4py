@@ -37,8 +37,8 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     fa.EKintField,
     fa.EKintField,
     fa.EKintField,
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EKvpField,
+    fa.EKvpField,
 ]:
     lvn_pos = where(p_vn > 0.0, True, False)
 
@@ -94,8 +94,8 @@ def mo_advection_traj_btraj_compute_o1_dsl(
     p_cell_idx: fa.EKintField,
     p_cell_rel_idx_dsl: fa.EKintField,
     p_cell_blk: fa.EKintField,
-    p_distv_bary_1: Field[[EdgeDim, KDim], vpfloat],
-    p_distv_bary_2: Field[[EdgeDim, KDim], vpfloat],
+    p_distv_bary_1: fa.EKvpField,
+    p_distv_bary_2: fa.EKvpField,
     p_dthalf: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

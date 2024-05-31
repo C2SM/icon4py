@@ -46,18 +46,18 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CKvpField,
-    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    ddqz_z_full_e: fa.EKvpField,
     area_edge: fa.EwpField,
     tangent_orientation: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     zeta: fa.VKvpField,
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EKwpField,
-    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc: fa.EKvpField,
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     dtime: wpfloat,
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     """Formerly known as _mo_velocity_advection_stencil_20."""
     z_w_con_c_full_wp, ddqz_z_full_e_wp, ddt_vn_apc_wp, cfl_w_limit_wp = astype(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
@@ -102,14 +102,14 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     levelmask: Field[[KDim], bool],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CKvpField,
-    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    ddqz_z_full_e: fa.EKvpField,
     area_edge: fa.EwpField,
     tangent_orientation: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     zeta: fa.VKvpField,
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EKwpField,
-    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc: fa.EKvpField,
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     dtime: wpfloat,

@@ -21,15 +21,15 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w impor
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    z_w_concorr_me: fa.EKvpField,
     wgtfac_c: fa.CKvpField,
     wgtfacq_c: fa.CKvpField,
     vert_idx: fa.KintField,
@@ -49,7 +49,7 @@ def _fused_solve_nonhydro_stencil_39_40(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
+    z_w_concorr_me: fa.EKvpField,
     wgtfac_c: fa.CKvpField,
     wgtfacq_c: fa.CKvpField,
     vert_idx: fa.KintField,

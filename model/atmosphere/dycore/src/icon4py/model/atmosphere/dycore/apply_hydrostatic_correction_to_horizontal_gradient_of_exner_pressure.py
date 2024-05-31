@@ -24,10 +24,10 @@ from icon4py.model.common.type_alias import vpfloat
 @field_operator
 def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: fa.EKboolField,
-    pg_exdist: Field[[EdgeDim, KDim], vpfloat],
+    pg_exdist: fa.EKvpField,
     z_hydro_corr: Field[[EdgeDim], vpfloat],
-    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
+    z_gradh_exner: fa.EKvpField,
+) -> fa.EKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_22."""
     z_gradh_exner_vp = where(ipeidx_dsl, z_gradh_exner + z_hydro_corr * pg_exdist, z_gradh_exner)
     return z_gradh_exner_vp
@@ -36,9 +36,9 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: fa.EKboolField,
-    pg_exdist: Field[[EdgeDim, KDim], vpfloat],
+    pg_exdist: fa.EKvpField,
     z_hydro_corr: Field[[EdgeDim], vpfloat],
-    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    z_gradh_exner: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

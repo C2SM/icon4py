@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_tangential_wind(
     vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     """Formerly knowan as _mo_velocity_advection_stencil_01."""
     vt_wp = neighbor_sum(rbf_vec_coeff_e * vn(E2C2E), axis=E2C2EDim)
     return astype(vt_wp, vpfloat)
@@ -35,7 +35,7 @@ def _compute_tangential_wind(
 def compute_tangential_wind(
     vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
+    vt: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

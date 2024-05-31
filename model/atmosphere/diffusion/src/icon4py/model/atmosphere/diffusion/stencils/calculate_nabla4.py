@@ -30,7 +30,7 @@ def _calculate_nabla4(
     z_nabla2_e: fa.EKwpField,
     inv_vert_vert_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     u_vert_wp, v_vert_wp = astype((u_vert, v_vert), wpfloat)
 
     nabv_tang_vp = astype(
@@ -70,7 +70,7 @@ def calculate_nabla4(
     z_nabla2_e: fa.EKwpField,
     inv_vert_vert_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
-    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
+    z_nabla4_e2: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -24,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _cell_2_edge_interpolation(
     in_field: fa.CKvpField, coeff: Field[[EdgeDim, E2CDim], vpfloat]
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     """
     Interpolate a Cell Field to Edges.
 
@@ -40,7 +40,7 @@ def _cell_2_edge_interpolation(
 def cell_2_edge_interpolation(
     in_field: fa.CKvpField,
     coeff: Field[[EdgeDim, E2CDim], wpfloat],
-    out_field: Field[[EdgeDim, KDim], vpfloat],
+    out_field: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

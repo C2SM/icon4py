@@ -31,7 +31,7 @@ def _compute_hydrostatic_correction_term(
     inv_ddqz_z_full: fa.CKvpField,
     inv_dual_edge_length: fa.EwpField,
     grav_o_cpd: wpfloat,
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_21."""
     zdiff_gradp_wp = astype(zdiff_gradp, wpfloat)
 
@@ -73,7 +73,7 @@ def compute_hydrostatic_correction_term(
     inv_ddqz_z_full: fa.CKvpField,
     inv_dual_edge_length: fa.EwpField,
     grav_o_cpd: wpfloat,
-    z_hydro_corr: Field[[EdgeDim, KDim], vpfloat],
+    z_hydro_corr: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

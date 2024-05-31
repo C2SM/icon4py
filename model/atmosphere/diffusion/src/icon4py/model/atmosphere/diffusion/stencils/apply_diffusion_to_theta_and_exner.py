@@ -28,14 +28,14 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
-from icon4py.model.common.dimension import CECDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CECDim, CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_diffusion_to_theta_and_exner(
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
     inv_dual_edge_length: fa.EwpField,
     theta_v_in: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],
@@ -67,7 +67,7 @@ def _apply_diffusion_to_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_theta_and_exner(
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
     inv_dual_edge_length: fa.EwpField,
     theta_v_in: fa.CKwpField,
     geofac_div: Field[[CEDim], wpfloat],

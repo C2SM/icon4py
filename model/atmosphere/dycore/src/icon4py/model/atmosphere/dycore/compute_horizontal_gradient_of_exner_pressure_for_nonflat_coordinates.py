@@ -25,10 +25,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     inv_dual_edge_length: fa.EwpField,
     z_exner_ex_pr: fa.CKvpField,
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
+    ddxn_z_full: fa.EKvpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_dexner_dz_c_1: fa.CKvpField,
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_19."""
     ddxn_z_full_wp, z_dexner_dz_c_1_wp = astype((ddxn_z_full, z_dexner_dz_c_1), wpfloat)
 
@@ -42,10 +42,10 @@ def _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
 def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     inv_dual_edge_length: fa.EwpField,
     z_exner_ex_pr: fa.CKvpField,
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
+    ddxn_z_full: fa.EKvpField,
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
     z_dexner_dz_c_1: fa.CKvpField,
-    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    z_gradh_exner: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

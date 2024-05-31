@@ -27,7 +27,7 @@ from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency im
 from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
     _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
-from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -40,7 +40,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     coeff2_dwdz: fa.CKvpField,
     ddt_w_adv: fa.CKvpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    z_v_grad_w: fa.EKvpField,
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: fa.CboolField,
@@ -105,7 +105,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     coeff2_dwdz: fa.CKvpField,
     ddt_w_adv: fa.CKvpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    z_v_grad_w: fa.EKvpField,
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: fa.CboolField,
@@ -166,7 +166,7 @@ def fused_velocity_advection_stencil_15_to_18(
     coeff2_dwdz: fa.CKvpField,
     ddt_w_adv: fa.CKvpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    z_v_grad_w: fa.EKvpField,
     levelmask: Field[[KDim], bool],
     cfl_clipping: Field[[CellDim, KDim], bool],
     owner_mask: fa.CboolField,

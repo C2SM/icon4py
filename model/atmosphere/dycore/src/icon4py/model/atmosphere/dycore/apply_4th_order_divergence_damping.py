@@ -13,18 +13,18 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
+from gt4py.next.ffront.fbuiltins import astype, broadcast, int32
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _apply_4th_order_divergence_damping(
     scal_divdamp: fa.KwpField,
-    z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
+    z_graddiv2_vn: fa.EKvpField,
     vn: fa.EKwpField,
 ) -> fa.EKwpField:
     """Formelry known as _mo_solve_nonhydro_4th_order_divdamp."""
@@ -37,7 +37,7 @@ def _apply_4th_order_divergence_damping(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_4th_order_divergence_damping(
     scal_divdamp: fa.KwpField,
-    z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
+    z_graddiv2_vn: fa.EKvpField,
     vn: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,

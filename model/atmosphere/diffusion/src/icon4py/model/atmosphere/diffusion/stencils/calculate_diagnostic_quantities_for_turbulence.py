@@ -22,14 +22,14 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     _temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_ec: fa.EKvpField,
     vn: fa.EKwpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
@@ -45,7 +45,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_diagnostic_quantities_for_turbulence(
-    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_ec: fa.EKvpField,
     vn: fa.EKwpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],

@@ -37,8 +37,8 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     smag_limit: Field[[KDim], vpfloat],
     smag_offset: vpfloat,
 ) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EKvpField,
+    fa.EKvpField,
     fa.EKwpField,
 ]:
     diff_multfac_smag_wp, u_vert_wp, v_vert_wp, smag_offset_wp = astype(
@@ -166,8 +166,8 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     dual_normal_vert_y: Field[[ECVDim], wpfloat],
     vn: fa.EKwpField,
     smag_limit: Field[[KDim], vpfloat],
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
+    kh_smag_e: fa.EKvpField,
+    kh_smag_ec: fa.EKvpField,
     z_nabla2_e: fa.EKwpField,
     smag_offset: vpfloat,
     horizontal_start: int32,

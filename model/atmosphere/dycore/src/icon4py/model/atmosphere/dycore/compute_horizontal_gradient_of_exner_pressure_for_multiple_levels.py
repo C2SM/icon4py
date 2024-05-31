@@ -30,7 +30,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     ikoffset: Field[[ECDim, KDim], int32],
     z_dexner_dz_c_1: fa.CKvpField,
     z_dexner_dz_c_2: fa.CKvpField,
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EKvpField:
     """Formerly known as _mo_solve_nonhydro_stencil_20."""
     z_exner_ex_pr_0 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[0])))
     z_exner_ex_pr_1 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[1])))
@@ -68,7 +68,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     ikoffset: Field[[ECDim, KDim], int32],
     z_dexner_dz_c_1: fa.CKvpField,
     z_dexner_dz_c_2: fa.CKvpField,
-    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    z_gradh_exner: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

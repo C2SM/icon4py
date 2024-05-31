@@ -13,22 +13,22 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     vn_nnow: fa.EKwpField,
-    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
-    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], vpfloat],
-    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc_ntl1: fa.EKvpField,
+    ddt_vn_apc_ntl2: fa.EKvpField,
+    ddt_vn_phy: fa.EKvpField,
     z_theta_v_e: fa.EKwpField,
-    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    z_gradh_exner: fa.EKvpField,
     dtime: wpfloat,
     wgt_nnow_vel: wpfloat,
     wgt_nnew_vel: wpfloat,
@@ -51,11 +51,11 @@ def _add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
     vn_nnow: fa.EKwpField,
-    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], vpfloat],
-    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], vpfloat],
-    ddt_vn_phy: Field[[EdgeDim, KDim], vpfloat],
+    ddt_vn_apc_ntl1: fa.EKvpField,
+    ddt_vn_apc_ntl2: fa.EKvpField,
+    ddt_vn_phy: fa.EKvpField,
     z_theta_v_e: fa.EKwpField,
-    z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
+    z_gradh_exner: fa.EKvpField,
     vn_nnew: fa.EKwpField,
     dtime: wpfloat,
     wgt_nnow_vel: wpfloat,

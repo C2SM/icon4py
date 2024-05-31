@@ -13,19 +13,19 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_mass_flux(
     z_rho_e: fa.EKwpField,
     z_vn_avg: fa.EKwpField,
-    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    ddqz_z_full_e: fa.EKvpField,
     z_theta_v_e: fa.EKwpField,
 ) -> tuple[fa.EKwpField, fa.EKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_32."""
@@ -38,7 +38,7 @@ def _compute_mass_flux(
 def compute_mass_flux(
     z_rho_e: fa.EKwpField,
     z_vn_avg: fa.EKwpField,
-    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    ddqz_z_full_e: fa.EKvpField,
     z_theta_v_e: fa.EKwpField,
     mass_fl_e: fa.EKwpField,
     z_theta_v_fl_e: fa.EKwpField,

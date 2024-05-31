@@ -18,13 +18,13 @@ from model.common.tests import field_type_aliases as fa
 
 from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_btraj(
     p_vn: fa.EKwpField,
-    p_vt: Field[[EdgeDim, KDim], vpfloat],
+    p_vt: fa.EKvpField,
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
     pos_on_tplane_e_2: Field[[ECDim], wpfloat],
     primal_normal_cell_1: Field[[ECDim], wpfloat],
@@ -66,8 +66,8 @@ def _compute_btraj(
 @field_operator
 def _sten_16(
     p_vn: fa.EKwpField,
-    rho_ref_me: Field[[EdgeDim, KDim], vpfloat],
-    theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
+    rho_ref_me: fa.EKvpField,
+    theta_ref_me: fa.EKvpField,
     p_distv_bary_1: fa.EKwpField,
     p_distv_bary_2: fa.EKwpField,
     z_grad_rth_1: fa.CKvpField,
@@ -130,7 +130,7 @@ def _sten_16(
 @field_operator
 def _compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EKwpField,
-    p_vt: Field[[EdgeDim, KDim], vpfloat],
+    p_vt: fa.EKvpField,
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
     pos_on_tplane_e_2: Field[[ECDim], wpfloat],
     primal_normal_cell_1: Field[[ECDim], wpfloat],
@@ -138,8 +138,8 @@ def _compute_horizontal_advection_of_rho_and_theta(
     primal_normal_cell_2: Field[[ECDim], wpfloat],
     dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_dthalf: wpfloat,
-    rho_ref_me: Field[[EdgeDim, KDim], vpfloat],
-    theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
+    rho_ref_me: fa.EKvpField,
+    theta_ref_me: fa.EKvpField,
     z_grad_rth_1: fa.CKvpField,
     z_grad_rth_2: fa.CKvpField,
     z_grad_rth_3: fa.CKvpField,
@@ -180,7 +180,7 @@ def _compute_horizontal_advection_of_rho_and_theta(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EKwpField,
-    p_vt: Field[[EdgeDim, KDim], vpfloat],
+    p_vt: fa.EKvpField,
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
     pos_on_tplane_e_2: Field[[ECDim], wpfloat],
     primal_normal_cell_1: Field[[ECDim], wpfloat],
@@ -188,8 +188,8 @@ def compute_horizontal_advection_of_rho_and_theta(
     primal_normal_cell_2: Field[[ECDim], wpfloat],
     dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_dthalf: wpfloat,
-    rho_ref_me: Field[[EdgeDim, KDim], vpfloat],
-    theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
+    rho_ref_me: fa.EKvpField,
+    theta_ref_me: fa.EKvpField,
     z_grad_rth_1: fa.CKvpField,
     z_grad_rth_2: fa.CKvpField,
     z_grad_rth_3: fa.CKvpField,

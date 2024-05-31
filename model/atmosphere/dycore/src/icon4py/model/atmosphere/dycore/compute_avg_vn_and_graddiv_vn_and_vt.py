@@ -31,8 +31,8 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
 ) -> tuple[
     fa.EKwpField,
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EKvpField,
+    fa.EKvpField,
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_30."""
     z_vn_avg_wp = _compute_avg_vn(e_flx_avg=e_flx_avg, vn=vn)
@@ -48,8 +48,8 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     z_vn_avg: fa.EKwpField,
-    z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
+    z_graddiv_vn: fa.EKvpField,
+    vt: fa.EKvpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
