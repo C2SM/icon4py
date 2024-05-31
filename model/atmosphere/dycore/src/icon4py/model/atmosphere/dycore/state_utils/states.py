@@ -13,6 +13,7 @@
 from dataclasses import dataclass
 
 from gt4py.next.common import Field
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -141,7 +142,7 @@ class MetricStateNonHydro:
 
     vertoffset_gradp: Field[[ECDim, KDim], float]
     zdiff_gradp: Field[[ECDim, KDim], float]
-    ipeidx_dsl: Field[[EdgeDim, KDim], bool]
+    ipeidx_dsl: fa.EKboolField
     pg_exdist: Field[[EdgeDim, KDim], float]
 
     vwind_expl_wgt: Field[[CellDim], float]

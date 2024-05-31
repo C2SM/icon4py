@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-    ipeidx_dsl: Field[[EdgeDim, KDim], bool],
+    ipeidx_dsl: fa.EKboolField,
     pg_exdist: Field[[EdgeDim, KDim], vpfloat],
     z_hydro_corr: Field[[EdgeDim], vpfloat],
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],
@@ -34,7 +35,7 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
-    ipeidx_dsl: Field[[EdgeDim, KDim], bool],
+    ipeidx_dsl: fa.EKboolField,
     pg_exdist: Field[[EdgeDim, KDim], vpfloat],
     z_hydro_corr: Field[[EdgeDim], vpfloat],
     z_gradh_exner: Field[[EdgeDim, KDim], vpfloat],

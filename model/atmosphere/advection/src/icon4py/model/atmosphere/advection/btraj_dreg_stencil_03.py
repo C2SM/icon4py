@@ -13,6 +13,7 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
@@ -35,7 +36,7 @@ def _btraj_dreg_stencil_03(
     primal_normal_cell_y: Field[[ECDim], float],
     dual_normal_cell_x: Field[[ECDim], float],
     dual_normal_cell_y: Field[[ECDim], float],
-    lvn_sys_pos: Field[[EdgeDim, KDim], bool],
+    lvn_sys_pos: fa.EKboolField,
     p_dt: float,
 ) -> tuple[
     Field[[EdgeDim, KDim], int32],
@@ -146,7 +147,7 @@ def btraj_dreg_stencil_03(
     primal_normal_cell_y: Field[[ECDim], float],
     dual_normal_cell_x: Field[[ECDim], float],
     dual_normal_cell_y: Field[[ECDim], float],
-    lvn_sys_pos: Field[[EdgeDim, KDim], bool],
+    lvn_sys_pos: fa.EKboolField,
     p_dt: float,
     p_cell_idx: Field[[EdgeDim, KDim], int32],
     p_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],

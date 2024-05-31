@@ -16,6 +16,7 @@ import sys
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 
@@ -59,7 +60,7 @@ def lintersect(
     line2_p1_lat: Field[[EdgeDim, KDim], float],
     line2_p2_lon: Field[[EdgeDim, KDim], float],
     line2_p2_lat: Field[[EdgeDim, KDim], float],
-) -> Field[[EdgeDim, KDim], bool]:
+) -> fa.EKboolField:
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
