@@ -10,11 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.model.common.config import Icon4PyConfig
 
-
-config = Icon4PyConfig()
-backend = config.gt4py_runner
-xp = config.array_ns
-device = config.device
-limited_area = config.limited_area
+# these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
+# therefore unpacking needs to be skipped as otherwise it will trigger an error.
+UNINITIALISED_ARRAYS = [
+    "mask_hdiff",
+    "zd_diffcoef",
+    "zd_vertoffset",
+    "zd_intcoef",
+    "hdef_ic",
+    "div_ic",
+    "dwdx",
+    "dwdy",
+]
