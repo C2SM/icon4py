@@ -15,7 +15,7 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim, CellDim
+from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim
 
 
 @field_operator
@@ -30,15 +30,15 @@ def _recon_lsq_cell_c_svd_stencil(
     lsq_pseudoinv_7: Field[[CECECDim], float],
     lsq_pseudoinv_8: Field[[CECECDim], float],
     lsq_pseudoinv_9: Field[[CECECDim], float],
-    lsq_moments_1: Field[[CellDim], float],
-    lsq_moments_2: Field[[CellDim], float],
-    lsq_moments_3: Field[[CellDim], float],
-    lsq_moments_4: Field[[CellDim], float],
-    lsq_moments_5: Field[[CellDim], float],
-    lsq_moments_6: Field[[CellDim], float],
-    lsq_moments_7: Field[[CellDim], float],
-    lsq_moments_8: Field[[CellDim], float],
-    lsq_moments_9: Field[[CellDim], float],
+    lsq_moments_1: fa.CfloatField,
+    lsq_moments_2: fa.CfloatField,
+    lsq_moments_3: fa.CfloatField,
+    lsq_moments_4: fa.CfloatField,
+    lsq_moments_5: fa.CfloatField,
+    lsq_moments_6: fa.CfloatField,
+    lsq_moments_7: fa.CfloatField,
+    lsq_moments_8: fa.CfloatField,
+    lsq_moments_9: fa.CfloatField,
 ) -> tuple[
     fa.CKfloatField,
     fa.CKfloatField,
@@ -189,15 +189,15 @@ def recon_lsq_cell_c_svd_stencil(
     lsq_pseudoinv_7: Field[[CECECDim], float],
     lsq_pseudoinv_8: Field[[CECECDim], float],
     lsq_pseudoinv_9: Field[[CECECDim], float],
-    lsq_moments_1: Field[[CellDim], float],
-    lsq_moments_2: Field[[CellDim], float],
-    lsq_moments_3: Field[[CellDim], float],
-    lsq_moments_4: Field[[CellDim], float],
-    lsq_moments_5: Field[[CellDim], float],
-    lsq_moments_6: Field[[CellDim], float],
-    lsq_moments_7: Field[[CellDim], float],
-    lsq_moments_8: Field[[CellDim], float],
-    lsq_moments_9: Field[[CellDim], float],
+    lsq_moments_1: fa.CfloatField,
+    lsq_moments_2: fa.CfloatField,
+    lsq_moments_3: fa.CfloatField,
+    lsq_moments_4: fa.CfloatField,
+    lsq_moments_5: fa.CfloatField,
+    lsq_moments_6: fa.CfloatField,
+    lsq_moments_7: fa.CfloatField,
+    lsq_moments_8: fa.CfloatField,
+    lsq_moments_9: fa.CfloatField,
     p_coeff_1_dsl: fa.CKfloatField,
     p_coeff_2_dsl: fa.CKfloatField,
     p_coeff_3_dsl: fa.CKfloatField,

@@ -36,5 +36,5 @@ class PrognosticState:
     theta_v: fa.CKfloatField  # virtual temperature, (nproma, nlev, nlbks_c) [K]
 
     @property
-    def w_1(self) -> Field[[CellDim], float]:
+    def w_1(self) -> fa.CfloatField:
         return as_field((CellDim,), self.w.ndarray[:, 0])

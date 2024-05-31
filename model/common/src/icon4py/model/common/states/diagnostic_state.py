@@ -38,7 +38,7 @@ class DiagnosticState:
     v: fa.CKfloatField
 
     @property
-    def pressure_sfc(self) -> Field[[CellDim], float]:
+    def pressure_sfc(self) -> fa.CfloatField:
         return as_field((CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 

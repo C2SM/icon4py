@@ -88,7 +88,7 @@ class DiffusionInterpolationState:
     nudgecoeff_e: Field[[EdgeDim], float]  # Nudgeing coeffients for edges
 
     @functools.cached_property
-    def geofac_n2s_c(self) -> Field[[CellDim], float]:
+    def geofac_n2s_c(self) -> fa.CfloatField:
         return as_field((CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property

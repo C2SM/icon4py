@@ -145,8 +145,8 @@ class MetricStateNonHydro:
     ipeidx_dsl: fa.EKboolField
     pg_exdist: fa.EKfloatField
 
-    vwind_expl_wgt: Field[[CellDim], float]
-    vwind_impl_wgt: Field[[CellDim], float]
+    vwind_expl_wgt: fa.CfloatField
+    vwind_impl_wgt: fa.CfloatField
 
     hmask_dd3d: Field[[EdgeDim], float]
     scalfac_dd3d: Field[[KDim], float]

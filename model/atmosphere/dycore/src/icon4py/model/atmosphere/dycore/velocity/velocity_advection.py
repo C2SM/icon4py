@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next import as_field
-from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 from model.common.tests import field_type_aliases as fa
 
@@ -111,7 +110,7 @@ class VelocityAdvection:
         z_vt_ie: fa.EKfloatField,
         dtime: float,
         ntnd: int,
-        cell_areas: Field[[CellDim], float],
+        cell_areas: fa.CfloatField,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -421,7 +420,7 @@ class VelocityAdvection:
         z_vt_ie: fa.EKfloatField,
         dtime: float,
         ntnd: int,
-        cell_areas: Field[[CellDim], float],
+        cell_areas: fa.CfloatField,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
