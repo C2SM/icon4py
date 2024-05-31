@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, GridType, field_operator, program
+from gt4py.next import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, int32, log
 from model.common.tests import field_aliases as fa
 
@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_reference_atmosphere_edge_fields(
-    z_me: Field[[EdgeDim, KDim], wpfloat],
+    z_me: fa.EKwpField,
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -30,7 +30,7 @@ def _compute_reference_atmosphere_edge_fields(
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+) -> tuple[fa.EKwpField, fa.EKwpField]:
     denom = t0sl_bg - del_t_bg
     exp_z_me = exp(z_me / h_scal_bg)
     logval = log((exp_z_me * denom + del_t_bg) / t0sl_bg)
@@ -44,9 +44,9 @@ def _compute_reference_atmosphere_edge_fields(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_edge_fields(
-    z_me: Field[[EdgeDim, KDim], wpfloat],
-    rho_ref_me: Field[[EdgeDim, KDim], wpfloat],
-    theta_ref_me: Field[[EdgeDim, KDim], wpfloat],
+    z_me: fa.EKwpField,
+    rho_ref_me: fa.EKwpField,
+    theta_ref_me: fa.EKwpField,
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,

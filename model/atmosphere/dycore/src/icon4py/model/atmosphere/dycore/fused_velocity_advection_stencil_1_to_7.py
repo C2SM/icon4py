@@ -42,10 +42,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def compute_interface_vt_vn_and_kinetic_energy(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -86,7 +86,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_6(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -94,7 +94,7 @@ def _fused_velocity_advection_stencil_1_to_6(
     z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
     wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
     nflatlev: int32,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -129,7 +129,7 @@ def _fused_velocity_advection_stencil_1_to_6(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_predictor(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -142,7 +142,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
     inv_dual_edge_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -205,7 +205,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_corrector(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -218,7 +218,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     inv_dual_edge_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -263,7 +263,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -276,7 +276,7 @@ def _fused_velocity_advection_stencil_1_to_7(
     inv_dual_edge_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -356,7 +356,7 @@ def _fused_velocity_advection_stencil_1_to_7(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_restricted(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -369,7 +369,7 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
     inv_dual_edge_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
@@ -413,7 +413,7 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_1_to_7(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
     ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
@@ -426,7 +426,7 @@ def fused_velocity_advection_stencil_1_to_7(
     inv_dual_edge_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     tangent_orientation: fa.EwpField,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
+    z_vt_ie: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],

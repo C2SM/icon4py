@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbulence import (
     _calculate_diagnostics_for_turbulence,
@@ -29,7 +30,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
@@ -45,7 +46,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],

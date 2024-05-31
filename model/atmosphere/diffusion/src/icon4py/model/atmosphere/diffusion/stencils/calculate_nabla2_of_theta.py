@@ -14,15 +14,16 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_nabla2_of_theta(
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
 ) -> Field[[CellDim, KDim], vpfloat]:
     z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
@@ -31,7 +32,7 @@ def _calculate_nabla2_of_theta(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_of_theta(
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
     z_temp: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,

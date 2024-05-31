@@ -27,8 +27,8 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
     bdy_divdamp: Field[[KDim], wpfloat],
     nudgecoeff_e: fa.EwpField,
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
-) -> Field[[EdgeDim, KDim], wpfloat]:
+    vn: fa.EKwpField,
+) -> fa.EKwpField:
     """Formelry known as _mo_solve_nonhydro_stencil_27."""
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
 
@@ -44,7 +44,7 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
     bdy_divdamp: Field[[KDim], wpfloat],
     nudgecoeff_e: fa.EwpField,
     z_graddiv2_vn: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

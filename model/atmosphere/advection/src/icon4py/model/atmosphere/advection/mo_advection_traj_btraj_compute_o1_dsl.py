@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -21,8 +22,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _mo_advection_traj_btraj_compute_o1_dsl(
-    p_vn: Field[[EdgeDim, KDim], wpfloat],
-    p_vt: Field[[EdgeDim, KDim], wpfloat],
+    p_vn: fa.EKwpField,
+    p_vt: fa.EKwpField,
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
@@ -80,8 +81,8 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_advection_traj_btraj_compute_o1_dsl(
-    p_vn: Field[[EdgeDim, KDim], wpfloat],
-    p_vt: Field[[EdgeDim, KDim], wpfloat],
+    p_vn: fa.EKwpField,
+    p_vt: fa.EKwpField,
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],

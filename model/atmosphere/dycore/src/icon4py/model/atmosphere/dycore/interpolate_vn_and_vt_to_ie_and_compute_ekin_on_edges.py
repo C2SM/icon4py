@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_to_ie_and_compute_ekin_on_edges,
@@ -23,13 +24,13 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
 ) -> tuple[
     Field[[EdgeDim, KDim], vpfloat],
@@ -47,7 +48,7 @@ def _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     vt: Field[[EdgeDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     z_vt_ie: Field[[EdgeDim, KDim], vpfloat],

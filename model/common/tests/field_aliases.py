@@ -20,20 +20,20 @@ from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-CwpField: TypeAlias = Field[Dims[CellDim], wpfloat]
-EwpField: TypeAlias = Field[Dims[EdgeDim], wpfloat]
-VwpField: TypeAlias = Field[Dims[VertexDim], wpfloat]
-KwpField: TypeAlias = Field[Dims[KDim], wpfloat]
-CKwpField: TypeAlias = Field[Dims[CellDim, KDim], wpfloat]
-EKwpField: TypeAlias = Field[Dims[EdgeDim, KDim], wpfloat]
+CwpField: TypeAlias = Field[Dims[CellDim], wpfloat]  # type: ignore [valid-type]
+EwpField: TypeAlias = Field[Dims[EdgeDim], wpfloat]  # type: ignore [valid-type]
+VwpField: TypeAlias = Field[Dims[VertexDim], wpfloat]  # type: ignore [valid-type]
+KwpField: TypeAlias = Field[Dims[KDim], wpfloat]  # type: ignore [valid-type]
+CKwpField: TypeAlias = Field[Dims[CellDim, KDim], wpfloat]  # type: ignore [valid-type]
+EKwpField: TypeAlias = Field[Dims[EdgeDim, KDim], wpfloat]  # type: ignore [valid-type]
 
-CKvpField: TypeAlias = Field[Dims[CellDim, KDim], vpfloat]
+CKvpField: TypeAlias = Field[Dims[CellDim, KDim], vpfloat]  # type: ignore [valid-type]
 
-CintField: TypeAlias = Field[Dims[CellDim], int32]
-EintField: TypeAlias = Field[Dims[EdgeDim], int32]
-KintField: TypeAlias = Field[Dims[KDim], int32]
-EKintField: TypeAlias = Field[Dims[EdgeDim, KDim], int32]
+CintField: TypeAlias = Field[Dims[CellDim], int32]  # type: ignore [valid-type]
+EintField: TypeAlias = Field[Dims[EdgeDim], int32]  # type: ignore [valid-type]
+KintField: TypeAlias = Field[Dims[KDim], int32]  # type: ignore [valid-type]
+EKintField: TypeAlias = Field[Dims[EdgeDim, KDim], int32]  # type: ignore [valid-type]
 
-CboolField: TypeAlias = Field[Dims[CellDim], bool]
-EboolField: TypeAlias = Field[Dims[EdgeDim], bool]
-EKboolField: TypeAlias = Field[Dims[EdgeDim, KDim], bool]
+CboolField: TypeAlias = Field[Dims[CellDim], bool]  # type: ignore [valid-type]
+EboolField: TypeAlias = Field[Dims[EdgeDim], bool]  # type: ignore [valid-type]
+EKboolField: TypeAlias = Field[Dims[EdgeDim, KDim], bool]  # type: ignore [valid-type]

@@ -21,6 +21,7 @@ from gt4py.next.ffront.fbuiltins import (
     int32,
     maximum,
 )
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -61,9 +62,9 @@ def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDi
 @field_operator
 def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
     tuple[
-        Field[[EdgeDim, KDim], wpfloat],
-        Field[[EdgeDim, KDim], wpfloat],
-        Field[[EdgeDim, KDim], wpfloat],
+        fa.EKwpField,
+        fa.EKwpField,
+        fa.EKwpField,
     ]
 ):
     return (

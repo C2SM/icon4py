@@ -15,7 +15,6 @@ from gt4py.next import Field, field_operator
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, E2V, CellDim, EdgeDim, KDim, Koff, VertexDim
-from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
@@ -38,17 +37,17 @@ def average_cell_kdim_level_up(
 
 @field_operator
 def average_edge_kdim_level_up(
-    half_level_field: Field[[EdgeDim, KDim], wpfloat],
-) -> Field[[EdgeDim, KDim], wpfloat]:
+    half_level_field: fa.EKwpField,
+) -> fa.EKwpField:
     """
     Calculate the mean value of adjacent interface levels.
 
     Computes the average of two adjacent interface levels upwards over an edge field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[[EdgeDim, KDim], wpfloat]
+        half_level_field: fa.EKwpField
 
-    Returns: Field[[EdgeDim, KDim], wpfloat] full level field
+    Returns: fa.EKwpField full level field
 
     """
     return 0.5 * (half_level_field + half_level_field(Koff[1]))

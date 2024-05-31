@@ -40,7 +40,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _fused_velocity_advection_stencil_19_to_20(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
@@ -109,7 +109,7 @@ def _fused_velocity_advection_stencil_19_to_20(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_19_to_20(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],

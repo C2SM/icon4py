@@ -26,7 +26,7 @@ def _calculate_nabla2_for_z(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: fa.EwpField,
     theta_v: fa.CKwpField,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> fa.EKwpField:
     kh_smag_e_wp = astype(kh_smag_e, wpfloat)
 
     z_nabla2_e_wp = kh_smag_e_wp * inv_dual_edge_length * (theta_v(E2C[1]) - theta_v(E2C[0]))
@@ -38,7 +38,7 @@ def calculate_nabla2_for_z(
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     inv_dual_edge_length: fa.EwpField,
     theta_v: fa.CKwpField,
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

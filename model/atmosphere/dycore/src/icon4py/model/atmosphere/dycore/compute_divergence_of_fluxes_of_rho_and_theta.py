@@ -14,8 +14,9 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from model.common.tests import field_aliases as fa
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -23,8 +24,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: Field[[CEDim], wpfloat],
-    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    mass_fl_e: fa.EKwpField,
+    z_theta_v_fl_e: fa.EKwpField,
 ) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_41."""
     z_flxdiv_mass_wp = neighbor_sum(geofac_div(C2CE) * mass_fl_e(C2E), axis=C2EDim)
@@ -35,8 +36,8 @@ def _compute_divergence_of_fluxes_of_rho_and_theta(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: Field[[CEDim], wpfloat],
-    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    mass_fl_e: fa.EKwpField,
+    z_theta_v_fl_e: fa.EKwpField,
     z_flxdiv_mass: Field[[CellDim, KDim], vpfloat],
     z_flxdiv_theta: Field[[CellDim, KDim], vpfloat],
     horizontal_start: int32,

@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -23,9 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _apply_2nd_order_divergence_damping(
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     scal_divdamp_o2: wpfloat,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> fa.EKwpField:
     """Formerly known as _mo_solve_nonhydro_stencil_26."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
@@ -36,7 +37,7 @@ def _apply_2nd_order_divergence_damping(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_2nd_order_divergence_damping(
     z_graddiv_vn: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     scal_divdamp_o2: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

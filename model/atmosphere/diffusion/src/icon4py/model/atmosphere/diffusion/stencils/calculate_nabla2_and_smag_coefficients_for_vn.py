@@ -33,13 +33,13 @@ def _calculate_nabla2_and_smag_coefficients_for_vn(
     primal_normal_vert_y: Field[[ECVDim], wpfloat],
     dual_normal_vert_x: Field[[ECVDim], wpfloat],
     dual_normal_vert_y: Field[[ECVDim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     smag_limit: Field[[KDim], vpfloat],
     smag_offset: vpfloat,
 ) -> tuple[
     Field[[EdgeDim, KDim], vpfloat],
     Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], wpfloat],
+    fa.EKwpField,
 ]:
     diff_multfac_smag_wp, u_vert_wp, v_vert_wp, smag_offset_wp = astype(
         (diff_multfac_smag, u_vert, v_vert, smag_offset), wpfloat
@@ -164,11 +164,11 @@ def calculate_nabla2_and_smag_coefficients_for_vn(
     primal_normal_vert_y: Field[[ECVDim], wpfloat],
     dual_normal_vert_x: Field[[ECVDim], wpfloat],
     dual_normal_vert_y: Field[[ECVDim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     smag_limit: Field[[KDim], vpfloat],
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
     kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     smag_offset: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C2E, E2C2EDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_tangential_wind(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
 ) -> Field[[EdgeDim, KDim], vpfloat]:
     """Formerly knowan as _mo_velocity_advection_stencil_01."""
@@ -32,7 +33,7 @@ def _compute_tangential_wind(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_tangential_wind(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
     vt: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,

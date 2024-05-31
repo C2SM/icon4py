@@ -27,7 +27,7 @@ def _calculate_nabla4(
     v_vert: Field[[VertexDim, KDim], vpfloat],
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     inv_vert_vert_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
 ) -> Field[[EdgeDim, KDim], vpfloat]:
@@ -67,7 +67,7 @@ def calculate_nabla4(
     v_vert: Field[[VertexDim, KDim], vpfloat],
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     inv_vert_vert_length: fa.EwpField,
     inv_primal_edge_length: fa.EwpField,
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],

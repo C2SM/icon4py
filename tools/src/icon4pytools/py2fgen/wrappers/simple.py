@@ -22,6 +22,7 @@ from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, Ed
 from icon4py.model.common.grid.simple import SimpleGrid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
+from model.common.tests import field_aliases as fa
 
 
 # global profiler object
@@ -64,14 +65,14 @@ def square_from_function(
 
 @field_operator
 def _multi_return(
-    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
-    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
-    vn_traj: Field[[EdgeDim, KDim], wpfloat],
-    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    z_vn_avg: fa.EKwpField,
+    mass_fl_e: fa.EKwpField,
+    vn_traj: fa.EKwpField,
+    mass_flx_me: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     r_nsubsteps: wpfloat,
-) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+) -> tuple[fa.EKwpField, fa.EKwpField]:
     """accumulate_prep_adv_fields stencil formerly known as _mo_solve_nonhydro_stencil_34."""
     vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
@@ -81,12 +82,12 @@ def _multi_return(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def multi_return(
-    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
-    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
-    vn_traj: Field[[EdgeDim, KDim], wpfloat],
-    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    z_vn_avg: fa.EKwpField,
+    mass_fl_e: fa.EKwpField,
+    vn_traj: fa.EKwpField,
+    mass_flx_me: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -120,12 +121,12 @@ multi_return_cached = CachedProgram(multi_return)
 
 
 def multi_return_from_function(
-    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
-    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
-    vn_traj: Field[[EdgeDim, KDim], wpfloat],
-    mass_flx_me: Field[[EdgeDim, KDim], wpfloat],
+    z_vn_avg: fa.EKwpField,
+    mass_fl_e: fa.EKwpField,
+    vn_traj: fa.EKwpField,
+    mass_flx_me: fa.EKwpField,
     geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

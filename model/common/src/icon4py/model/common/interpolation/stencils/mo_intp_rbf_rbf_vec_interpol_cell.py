@@ -20,7 +20,6 @@ from icon4py.model.common.dimension import (
     C2E,
     C2EDim,
     CellDim,
-    EdgeDim,
     KDim,
 )
 from icon4py.model.common.settings import backend
@@ -29,7 +28,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _mo_intp_rbf_rbf_vec_interpol_cell(
-    p_vn_in: Field[[EdgeDim, KDim], wpfloat],
+    p_vn_in: fa.EKwpField,
     ptr_coeff_1: Field[[CellDim, C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2EDim], wpfloat],
 ) -> tuple[fa.CKwpField, fa.CKwpField]:
@@ -40,7 +39,7 @@ def _mo_intp_rbf_rbf_vec_interpol_cell(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_intp_rbf_rbf_vec_interpol_cell(
-    p_vn_in: Field[[EdgeDim, KDim], wpfloat],
+    p_vn_in: fa.EKwpField,
     ptr_coeff_1: Field[[CellDim, C2EDim], wpfloat],
     ptr_coeff_2: Field[[CellDim, C2EDim], wpfloat],
     p_u_out: fa.CKwpField,

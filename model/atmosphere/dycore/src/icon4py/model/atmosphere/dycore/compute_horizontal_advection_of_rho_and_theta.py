@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,7 +23,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_btraj(
-    p_vn: Field[[EdgeDim, KDim], wpfloat],
+    p_vn: fa.EKwpField,
     p_vt: Field[[EdgeDim, KDim], vpfloat],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
     pos_on_tplane_e_2: Field[[ECDim], wpfloat],
@@ -31,7 +32,7 @@ def _compute_btraj(
     primal_normal_cell_2: Field[[ECDim], wpfloat],
     dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_dthalf: wpfloat,
-) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+) -> tuple[fa.EKwpField, fa.EKwpField]:
     lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
 
     z_ntdistv_bary_1 = -(
@@ -64,18 +65,18 @@ def _compute_btraj(
 
 @field_operator
 def _sten_16(
-    p_vn: Field[[EdgeDim, KDim], wpfloat],
+    p_vn: fa.EKwpField,
     rho_ref_me: Field[[EdgeDim, KDim], vpfloat],
     theta_ref_me: Field[[EdgeDim, KDim], vpfloat],
-    p_distv_bary_1: Field[[EdgeDim, KDim], wpfloat],
-    p_distv_bary_2: Field[[EdgeDim, KDim], wpfloat],
+    p_distv_bary_1: fa.EKwpField,
+    p_distv_bary_2: fa.EKwpField,
     z_grad_rth_1: Field[[CellDim, KDim], vpfloat],
     z_grad_rth_2: Field[[CellDim, KDim], vpfloat],
     z_grad_rth_3: Field[[CellDim, KDim], vpfloat],
     z_grad_rth_4: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+) -> tuple[fa.EKwpField, fa.EKwpField]:
     (
         theta_ref_me_wp,
         rho_ref_me_wp,
@@ -128,7 +129,7 @@ def _sten_16(
 
 @field_operator
 def _compute_horizontal_advection_of_rho_and_theta(
-    p_vn: Field[[EdgeDim, KDim], wpfloat],
+    p_vn: fa.EKwpField,
     p_vt: Field[[EdgeDim, KDim], vpfloat],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
     pos_on_tplane_e_2: Field[[ECDim], wpfloat],
@@ -145,7 +146,7 @@ def _compute_horizontal_advection_of_rho_and_theta(
     z_grad_rth_4: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+) -> tuple[fa.EKwpField, fa.EKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_16_fused_btraj_traj_o1."""
     (p_distv_bary_1, p_distv_bary_2) = _compute_btraj(
         p_vn,
@@ -178,7 +179,7 @@ def _compute_horizontal_advection_of_rho_and_theta(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_of_rho_and_theta(
-    p_vn: Field[[EdgeDim, KDim], wpfloat],
+    p_vn: fa.EKwpField,
     p_vt: Field[[EdgeDim, KDim], vpfloat],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
     pos_on_tplane_e_2: Field[[ECDim], wpfloat],
@@ -195,8 +196,8 @@ def compute_horizontal_advection_of_rho_and_theta(
     z_grad_rth_4: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_1: Field[[CellDim, KDim], vpfloat],
     z_rth_pr_2: Field[[CellDim, KDim], vpfloat],
-    z_rho_e: Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
+    z_rho_e: fa.EKwpField,
+    z_theta_v_e: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

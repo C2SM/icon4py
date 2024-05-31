@@ -25,11 +25,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _apply_nabla2_and_nabla4_global_to_vn(
     area_edge: fa.EwpField,
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
     diff_multfac_vn: Field[[KDim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
-) -> Field[[EdgeDim, KDim], wpfloat]:
+    vn: fa.EKwpField,
+) -> fa.EKwpField:
     kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
 
     vn_wp = vn + area_edge * (
@@ -42,10 +42,10 @@ def _apply_nabla2_and_nabla4_global_to_vn(
 def apply_nabla2_and_nabla4_global_to_vn(
     area_edge: fa.EwpField,
     kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
     diff_multfac_vn: Field[[KDim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

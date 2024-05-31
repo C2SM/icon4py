@@ -13,7 +13,8 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,10 +23,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_vn_on_lateral_boundary(
-    grf_tend_vn: Field[[EdgeDim, KDim], wpfloat],
-    vn_now: Field[[EdgeDim, KDim], wpfloat],
+    grf_tend_vn: fa.EKwpField,
+    vn_now: fa.EKwpField,
     dtime: wpfloat,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> fa.EKwpField:
     """Formerly known as _mo_solve_nonhydro_stencil_29."""
     vn_new_wp = vn_now + dtime * grf_tend_vn
     return vn_new_wp
@@ -33,9 +34,9 @@ def _compute_vn_on_lateral_boundary(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_vn_on_lateral_boundary(
-    grf_tend_vn: Field[[EdgeDim, KDim], wpfloat],
-    vn_now: Field[[EdgeDim, KDim], wpfloat],
-    vn_new: Field[[EdgeDim, KDim], wpfloat],
+    grf_tend_vn: fa.EKwpField,
+    vn_now: fa.EKwpField,
+    vn_new: fa.EKwpField,
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
+from gt4py.next.ffront.fbuiltins import int32
 from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
@@ -22,20 +22,20 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _apply_nabla2_to_vn_in_lateral_boundary(
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     area_edge: fa.EwpField,
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     fac_bdydiff_v: wpfloat,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> fa.EKwpField:
     vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
     return vn_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_to_vn_in_lateral_boundary(
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
+    z_nabla2_e: fa.EKwpField,
     area_edge: fa.EwpField,
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EKwpField,
     fac_bdydiff_v: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

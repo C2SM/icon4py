@@ -14,6 +14,7 @@
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from model.common.tests import field_aliases as fa
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -22,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_mass_flux(
-    z_rho_e: Field[[EdgeDim, KDim], wpfloat],
-    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
+    z_rho_e: fa.EKwpField,
+    z_vn_avg: fa.EKwpField,
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
-    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
-) -> tuple[Field[[EdgeDim, KDim], wpfloat], Field[[EdgeDim, KDim], wpfloat]]:
+    z_theta_v_e: fa.EKwpField,
+) -> tuple[fa.EKwpField, fa.EKwpField]:
     """Formerly known as _mo_solve_nonhydro_stencil_32."""
     mass_fl_e_wp = z_rho_e * z_vn_avg * astype(ddqz_z_full_e, wpfloat)
     z_theta_v_fl_e_wp = mass_fl_e_wp * z_theta_v_e
@@ -35,12 +36,12 @@ def _compute_mass_flux(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_mass_flux(
-    z_rho_e: Field[[EdgeDim, KDim], wpfloat],
-    z_vn_avg: Field[[EdgeDim, KDim], wpfloat],
+    z_rho_e: fa.EKwpField,
+    z_vn_avg: fa.EKwpField,
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
-    z_theta_v_e: Field[[EdgeDim, KDim], wpfloat],
-    mass_fl_e: Field[[EdgeDim, KDim], wpfloat],
-    z_theta_v_fl_e: Field[[EdgeDim, KDim], wpfloat],
+    z_theta_v_e: fa.EKwpField,
+    mass_fl_e: fa.EKwpField,
+    z_theta_v_fl_e: fa.EKwpField,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
