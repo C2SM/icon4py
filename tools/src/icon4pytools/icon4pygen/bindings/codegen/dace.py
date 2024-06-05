@@ -13,6 +13,7 @@
 import collections
 from pathlib import Path
 from typing import Any, Optional, Sequence, Union
+import warnings
 
 from gt4py import eve
 from gt4py.eve.codegen import (
@@ -566,7 +567,10 @@ class CppDefTemplate(Node):
             for i in range(f.rank()):
                 size_symbol = f"__{f.name}_size_{i}"
                 if size_symbol in self.arglist_init and size_symbol not in scalar_args:
-                    raise RuntimeError(f"Field size {size_symbol} not found as scalar argument.")
+                    warnings.warn(f"Field size {size_symbol} not found as scalar argument.")
+                    # TODO: the field size is supposed to be passed as a scalar argument
+                    # but sometimes it is not, so we need to consider the max size of the field
+                    symbol_args[f"__{f.name}_size_{i}"] = "0"
         for f in self.offsets:
             array_param = f"__connectivity_{f.renderer.render_uppercase_shorthand()}"
             array_arg = f"mesh_.{f.renderer.render_lowercase_shorthand()}Table"

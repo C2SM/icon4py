@@ -183,6 +183,10 @@ def generate_dace_code(
     **kwargs: Any,
 ) -> tuple[str, str, Optional[str], list[str], list[str]]:
     import dace
+    # bool data type should be represented as 4-bytes integer in the generate code for Fortran compatibility
+    dace.dtypes.bool.ctype = dace.dtypes.int32.ctype
+    dace.dtypes.bool.ctype_unaligned = dace.dtypes.int32.ctype_unaligned
+    dace.dtypes.bool.bytes = dace.dtypes.int32.bytes
 
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
     check_for_domain_bounds(stencil_info.fendef)
@@ -237,17 +241,7 @@ def generate_dace_code(
         )
 
     with dace.config.set_temporary("compiler", "cuda", "max_concurrent_streams", value=1):
-        # bool data type should be represented as 4-bytes integer in the generate code for Fortran compatibility
-        prev_bool_dtype = copy.deepcopy(dace.dtypes.bool)
-        dace.dtypes.bool.ctype = dace.dtypes.int32.ctype
-        dace.dtypes.bool.ctype_unaligned = dace.dtypes.int32.ctype_unaligned
-        dace.dtypes.bool.bytes = dace.dtypes.int32.bytes
-        
-        # generate source code
         code_objs = sdfg.generate_code()
-        
-        # restore the original bool data type
-        dace.dtypes.bool = prev_bool_dtype
 
     hdr_objs = [obj for obj in code_objs if obj.language == "h"]
     assert len(hdr_objs) == 1
