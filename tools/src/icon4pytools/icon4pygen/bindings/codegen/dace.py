@@ -10,10 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import collections
-from pathlib import Path
-from typing import Any, Optional, Sequence, Union
 import warnings
+from pathlib import Path
+from typing import Any, Sequence
 
 from gt4py import eve
 from gt4py.eve.codegen import (
@@ -597,17 +596,12 @@ class CppDefTemplate(Node):
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
                 sdfg_arglist=self.arglist_run,
-                sdfg_args=(array_args|symbol_args),
+                sdfg_args=(array_args | symbol_args),
             ),
-            public_utilities=PublicUtilities(
-                fields=fields["output"],
-                funcname=self.stencil_name
-            ),
+            public_utilities=PublicUtilities(fields=fields["output"], funcname=self.stencil_name),
             copy_pointers=CopyPointers(fields=self.fields),
             private_members=PrivateMembers(
-                fields=self.fields,
-                out_fields=fields["output"],
-                funcname=self.stencil_name
+                fields=self.fields, out_fields=fields["output"], funcname=self.stencil_name
             ),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
@@ -684,7 +678,7 @@ def generate_cpp_definition(
     outpath: Path,
     arglist_init: Sequence[str],
     arglist_run: Sequence[str],
-) -> None:   
+) -> None:
     definition = CppDefTemplate(
         stencil_name=stencil_name,
         fields=fields,
