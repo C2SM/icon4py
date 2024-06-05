@@ -176,15 +176,10 @@ class CppDefGenerator(TemplatedGenerator):
         mesh_info_vtk_ = mesh_info_vtk;
         verify_ = verify;
 
-        int horizontalStart = 0;
-        int horizontalEnd = 0;
-        int verticalStart = 0;
-        int verticalEnd = 0;
-        {%- for scalar in _this_node.sdfg_scalars -%}
-        {{ scalar }} = 0;
-        {%- endfor -%}
         handle_ = __dace_init_{{ funcname }}(
-        {{ ", ".join(_this_node.sdfg_symbols) }});
+        {%- for param in _this_node.sdfg_arglist -%}
+            {{_this_node.sdfg_symbols[param] if param not in _this_node.sdfg_scalars else 0}}{%- if not loop.last -%}, {%- endif -%}
+        {%- endfor -%});
         __set_stream_{{ funcname }}(handle_, stream);
         }
         """
@@ -208,19 +203,16 @@ class CppDefGenerator(TemplatedGenerator):
 
     StenClassRunFun = as_jinja(
         """
-      void run({%- for arg in _this_node.domain_args -%}
-        const int {{arg.cpp_arg_name()}}{%- if not loop.last -%}, {%- endif -%}
-      {%- endfor -%}) {
+      void run(const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) {
         if (!is_setup_) {
             printf("{{ stencil_name }} has not been set up! make sure setup() is called before run!\\n");
             return;
         }
 
         __program_{{ stencil_name }}(handle_
-        {%- for data_descr in _this_node.sdfg_arrays -%}
-            , {{ data_descr.cpp_arg_name() }}
-        {%- endfor -%},
-        {{ ", ".join(_this_node.sdfg_symbols) }});
+        {%- for param in _this_node.sdfg_arglist -%}
+            , {{_this_node.sdfg_args[param]}}
+        {%- endfor -%});
       }
       """
     )
@@ -411,47 +403,6 @@ class CppDefGenerator(TemplatedGenerator):
     )
 
 
-class Scalar:
-    name: str
-    var_name: str
-
-    def __init__(self, name: str, var_name: str):
-        self.name = name
-        self.var_name = var_name
-
-    def sdfg_arg_name(self) -> str:
-        return self.name
-
-    def cpp_arg_name(self) -> str:
-        return self.var_name
-
-
-class DataDescriptor:
-    data_descr: Union[Field, Offset]
-
-    def __init__(self, data_descr: Field | Offset):
-        self.data_descr = data_descr
-
-    def sdfg_arg_name(self) -> str:
-        if isinstance(self.data_descr, Field):
-            return self.data_descr.name
-        # for offset data arrays
-        return f"__connectivity_{self.data_descr.renderer.render_uppercase_shorthand()}"
-
-    def cpp_arg_name(self) -> str:
-        if isinstance(self.data_descr, Field):
-            return f"{self.data_descr.name}_"
-        # for offset data arrays
-        return f"mesh_.{self.data_descr.renderer.render_lowercase_shorthand()}Table"
-
-    def strides(self) -> Optional[str]:
-        if isinstance(self.data_descr, Field):
-            return self.data_descr.renderer.render_strides(use_dense_rank=False)
-
-        # for offset data arrays
-        return "1, mesh_.Nproma"
-
-
 class CppFunc(Node):
     funcname: str
 
@@ -468,10 +419,8 @@ class GpuTriMesh(Node):
 
 class StenClassRunFun(Node):
     stencil_name: str
-    domain_args: Sequence[Scalar]
-    sdfg_arrays: Sequence[DataDescriptor]
-    sdfg_scalars: Sequence[str]
-    sdfg_symbols: Sequence[str]
+    sdfg_arglist: list[str]
+    sdfg_args: dict[str, str]
 
 
 class PublicUtilities(Node):
@@ -490,8 +439,9 @@ class PrivateMembers(Node):
 
 
 class StencilClassSetupFunc(CppSetupFuncDeclaration):
-    sdfg_scalars: Sequence[str]
-    sdfg_symbols: Sequence[str]
+    sdfg_arglist: list[str]
+    sdfg_scalars: set[str]
+    sdfg_symbols: dict[str, str]
 
 
 class StencilClass(Node):
@@ -550,8 +500,10 @@ class FreeFunc(CppFreeFunc):
 
 class CppDefTemplate(Node):
     stencil_name: str
-    fields: Sequence[Field]
-    offsets: Sequence[Offset]
+    fields: list[Field]
+    offsets: list[Offset]
+    arglist_init: list[str]
+    arglist_run: list[str]
 
     includes: IncludeStatements = eve.datamodels.field(init=False)
     stencil_class: StencilClass = eve.datamodels.field(init=False)
@@ -563,8 +515,6 @@ class CppDefTemplate(Node):
 
     def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
-        scalar_fields = [field for field in self.fields if field.rank() == 0]
-        non_scalar_fields = [field for field in self.fields if field.rank() != 0]
         tolerance_fields = [field for field in output_fields if not field.is_integral()]
         # since we can vertical fields as dense fields for the purpose of this function, lets include them here
         dense_fields = [
@@ -576,6 +526,7 @@ class CppDefTemplate(Node):
         compound_fields = [field for field in self.fields if field.is_compound()]
         sparse_offsets = [offset for offset in self.offsets if not offset.is_compound_location()]
         strided_offsets = [offset for offset in self.offsets if offset.is_compound_location()]
+        all_fields = self.fields
 
         offsets = dict(sparse=sparse_offsets, strided=strided_offsets)
         fields = dict(
@@ -583,40 +534,50 @@ class CppDefTemplate(Node):
             dense=dense_fields,
             sparse=sparse_fields,
             compound=compound_fields,
-            scalar=scalar_fields,
-            non_scalar=non_scalar_fields,
+            all_fields=all_fields,
             tolerance=tolerance_fields,
         )
         return fields, offsets
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
-        fields, offsets = self._get_field_data()
-        field_args = set(DataDescriptor(x) for x in [*fields["non_scalar"], *self.offsets])
-        scalar_args = set(DataDescriptor(x) for x in fields["scalar"])
+        fields, _ = self._get_field_data()
         offset_renderer = GpuTriMeshOffsetRenderer(self.offsets)
-        domain_args = [
-            Scalar("vertical_start", "verticalStart"),
-            Scalar("vertical_end", "verticalEnd"),
-            Scalar("horizontal_start", "horizontalStart"),
-            Scalar("horizontal_end", "horizontalEnd"),
-        ]
 
-        symbol_map: dict[str, Optional[str]] = {
-            arg.sdfg_arg_name(): arg.cpp_arg_name() for arg in domain_args
+        array_args = {}
+        scalar_args = {
+            "vertical_start",
+            "vertical_end",
+            "horizontal_start",
+            "horizontal_end",
         }
-        symbol_map.update(
-            {data_descr.sdfg_arg_name(): data_descr.strides() for data_descr in field_args}
-        )
-        scalars = [arg.cpp_arg_name() for arg in scalar_args]
-        sorted_symbols = scalars + [
-            symbols
-            for _, symbols in collections.OrderedDict(
-                sorted(symbol_map.items())
-            ).items()
-            if symbols is not None
-        ]
-        def key_data_descr(x: DataDescriptor | str) -> str:
-            return x.sdfg_arg_name() if isinstance(x, DataDescriptor) else x
+        symbol_args = {}
+        for f in fields["all_fields"]:
+            if f.rank() == 0:
+                # this is a scalar, therefore passed to the SDFG as a dace symbol
+                symbol_args[f.name] = f"{f.name}_"
+                scalar_args.add(f.name)
+            else:
+                # a regular field, therefore passed as an array with symbolic shape and strides
+                array_args[f.name] = f"{f.name}_"
+                strides = f.renderer.render_strides(use_dense_rank=False).split(",")
+                for i, s in enumerate(strides):
+                    symbol_args[f"__{f.name}_stride_{i}"] = s
+        for f in fields["all_fields"]:
+            for i in range(f.rank()):
+                size_symbol = f"__{f.name}_size_{i}"
+                if size_symbol in self.arglist_init and size_symbol not in scalar_args:
+                    raise RuntimeError(f"Field size {size_symbol} not found as scalar argument.")
+        for f in self.offsets:
+            array_param = f"__connectivity_{f.renderer.render_uppercase_shorthand()}"
+            array_arg = f"mesh_.{f.renderer.render_lowercase_shorthand()}Table"
+            array_args[array_param] = array_arg
+            symbol_args[f"__{array_param}_stride_0"] = "1"
+            symbol_args[f"__{array_param}_stride_1"] = "mesh_.Nproma"
+        # add symbols for domain arguments
+        symbol_args["vertical_start"] = "verticalStart"
+        symbol_args["vertical_end"] = "verticalEnd"
+        symbol_args["horizontal_start"] = "horizontalStart"
+        symbol_args["horizontal_end"] = "horizontalEnd"
 
         self.includes = IncludeStatements(
             funcname=self.stencil_name,
@@ -631,10 +592,8 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
-                domain_args=domain_args,
-                sdfg_arrays=sorted(field_args, key=key_data_descr),
-                sdfg_scalars=scalars,
-                sdfg_symbols=sorted_symbols,
+                sdfg_arglist=self.arglist_run,
+                sdfg_args=(array_args|symbol_args),
             ),
             public_utilities=PublicUtilities(
                 fields=fields["output"],
@@ -648,8 +607,9 @@ class CppDefTemplate(Node):
             ),
             setup_func=StencilClassSetupFunc(
                 funcname=self.stencil_name,
-                sdfg_scalars=scalars,
-                sdfg_symbols=sorted_symbols,
+                sdfg_arglist=self.arglist_init,
+                sdfg_scalars=scalar_args,
+                sdfg_symbols=symbol_args,
             ),
         )
 
@@ -718,11 +678,15 @@ def generate_cpp_definition(
     fields: Sequence[Field],
     offsets: Sequence[Offset],
     outpath: Path,
-) -> None:
+    arglist_init: Sequence[str],
+    arglist_run: Sequence[str],
+) -> None:   
     definition = CppDefTemplate(
         stencil_name=stencil_name,
         fields=fields,
         offsets=offsets,
+        arglist_init=arglist_init,
+        arglist_run=arglist_run,
     )
     source = format_source("cpp", CppDefGenerator.apply(definition), style="LLVM")
     write_string(source, outpath, f"{stencil_name}.cpp")

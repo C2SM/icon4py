@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from pathlib import Path
+from typing import Sequence
 
 from icon4pytools.icon4pygen.bindings.codegen.cpp import generate_cpp_definition
 from icon4pytools.icon4pygen.bindings.codegen.dace import (
@@ -80,7 +81,7 @@ class DacePyBindGen:
     """
 
     def __init__(self, stencil_info: StencilInfo) -> None:
-        self.stencil_name = stencil_info.fendef.id
+        self.stencil_name = str(stencil_info.fendef.id)
         self.fields, self.offsets = self._stencil_info_to_binding_type(stencil_info)
 
     @staticmethod
@@ -92,7 +93,7 @@ class DacePyBindGen:
         binding_offsets = [Offset(chain) for chain in chains]
         return binding_fields, binding_offsets
 
-    def __call__(self, outpath: Path) -> None:
+    def __call__(self, outpath: Path, arglist_init: Sequence[str], arglist_run: Sequence[str]) -> None:
         check_dir_exists(outpath)
         generate_f90_file(self.stencil_name, self.fields, self.offsets, outpath)
         generate_cpp_header(self.stencil_name, self.fields, outpath)
@@ -101,4 +102,6 @@ class DacePyBindGen:
             self.fields,
             self.offsets,
             outpath,
+            arglist_init,
+            arglist_run,
         )

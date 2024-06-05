@@ -179,7 +179,7 @@ def generate_dace_code(
     on_gpu: bool,
     temporaries: bool,
     **kwargs: Any,
-) -> tuple[str, str, Optional[str]]:
+) -> tuple[str, str, Optional[str], list[str], list[str]]:
     import dace
 
     """Generate a GridTools C++ header for a given stencil definition using specified configuration parameters."""
@@ -188,7 +188,7 @@ def generate_dace_code(
     transformed_fencil = transform_and_configure_fencil(stencil_info.fendef)
 
     translation = dace_workflow.DaCeTranslator(
-        auto_optimize=True,
+        auto_optimize=False,
         device_type=core_defs.DeviceType.CUDA if on_gpu else core_defs.DeviceType.CPU,
     )
 
@@ -219,6 +219,9 @@ def generate_dace_code(
         column_axis=KDim,  # only used for ScanOperator
         **kwargs,
     )
+
+    arglist_init = sdfg.signature_arglist(with_arrays=False, with_types=False, for_call=True)
+    arglist_run = sdfg.signature_arglist(with_arrays=True, with_types=False, for_call=True)
 
     # limit cuda code generation to only use one cuda stream and expose utility function
     # to override it
@@ -324,9 +327,9 @@ def generate_dace_code(
 
         result_cuda_code = '\n'.join(cuda_clean_lines)
 
-        return hdr_objs[0].clean_code, src_objs[0].clean_code, result_cuda_code
+        return hdr_objs[0].clean_code, src_objs[0].clean_code, result_cuda_code, arglist_init, arglist_run
     else:
-        return hdr_objs[0].clean_code, src_objs[0].clean_code, None
+        return hdr_objs[0].clean_code, src_objs[0].clean_code, None, arglist_init, arglist_run
 
 
 class DaceCodegen:
@@ -335,7 +338,7 @@ class DaceCodegen:
     def __init__(self, stencil_info: StencilInfo) -> None:
         self.stencil_info = stencil_info
 
-    def __call__(self, outpath: Path, temporaries: bool) -> None:
+    def __call__(self, outpath: Path, temporaries: bool) -> tuple[list[str], list[str]]:
         """Generate CUDA code using the DaCe backend and write it to a file.
 
         Returns the name of the kernel to be invoked.
@@ -343,7 +346,7 @@ class DaceCodegen:
         # only support cuda codegen
         on_gpu = True
 
-        dc_hdr, dc_src, dc_cuda = generate_dace_code(
+        dc_hdr, dc_src, dc_cuda, arglist_init, arglist_run = generate_dace_code(
             self.stencil_info,
             self.stencil_info.offset_provider,
             on_gpu,
@@ -355,3 +358,5 @@ class DaceCodegen:
 
         assert dc_cuda is not None
         write_string(dc_cuda, outpath, f"{self.stencil_info.fendef.id}_dace.cu")
+
+        return arglist_init, arglist_run
