@@ -248,6 +248,8 @@ class NonHydrostaticConfig:
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
         divdamp_type: int = 3,
+        divdamp_trans_start: float = 12500.0,
+        divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
         rhotheta_offctr: float = -0.1,
         veladv_offctr: float = 0.25,
@@ -261,7 +263,6 @@ class NonHydrostaticConfig:
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
         htop_moist_proc: float = 22500.0,
-        ltestcase: bool = False,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -285,6 +286,9 @@ class NonHydrostaticConfig:
 
         #: type of divergence damping
         self.divdamp_type: int = divdamp_type
+        #: Lower and upper bound of transition zone between 2D and 3D divergence damping in case of divdamp_type = 32 [m]
+        self.divdamp_trans_start: float = divdamp_trans_start
+        self.divdamp_trans_end: float = divdamp_trans_end
 
         #: off-centering for density and potential temperature at interface levels.
         #: Specifying a negative value here reduces the amount of vertical
@@ -315,7 +319,6 @@ class NonHydrostaticConfig:
         #: from mo_run_nml.f90
         #: use vertical nesting
         self.l_vert_nested: bool = l_vert_nested
-        self.ltestcase = ltestcase  # TODO (magdalena) handle differently
 
         #: from mo_initicon_nml.f90/ mo_initicon_config.f90
         #: whether IAU is active at current time
@@ -1257,7 +1260,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1644,20 +1647,20 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            # verified for e-9
-            log.debug(f"corrector: start stencile 41")
-            compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=self.interpolation_state.geofac_div,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                z_flxdiv_mass=self.z_flxdiv_mass,
-                z_flxdiv_theta=self.z_flxdiv_theta,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        # verified for e-9
+        log.debug(f"corrector: start stencil 41")
+        compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=self.interpolation_state.geofac_div,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
         if self.config.itime_scheme == 4:
             log.debug(f"corrector start stencil 42 44 45 45b")
@@ -1807,7 +1810,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == constants.RAYLEIGH_KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
             log.debug(f"corrector start stencil 54")
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,

@@ -71,8 +71,8 @@ class TestCalculateNabla2ForZ(StencilTest):
             inv_dual_edge_length=inv_dual_edge_length,
             theta_v=theta_v,
             z_nabla2_e=z_nabla2_e,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

@@ -23,7 +23,8 @@ classifiers = [
 ]
 dependencies = [
   "gt4py>=1.0.1",
-  "icon4py-common>=0.0.5"
+  "icon4py-common>=0.0.5",
+  "nanobind<2.0.0"
 ]
 description = "ICON diffusion."
 dynamic = ['version']

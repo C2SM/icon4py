@@ -10,15 +10,24 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import math
 from dataclasses import dataclass
+from functools import cached_property
 from typing import ClassVar, Final
 
-from gt4py.next import Dimension, Field, GridType, field_operator, neighbor_sum, program
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next import Dimension, Field, field_operator, neighbor_sum
 
-from icon4py.model.common import dimension
-from icon4py.model.common.dimension import E2C, CellDim, E2CDim, ECDim, ECVDim, EdgeDim, KDim
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common import constants, dimension
+from icon4py.model.common.dimension import (
+    V2C,
+    CellDim,
+    ECDim,
+    ECVDim,
+    EdgeDim,
+    KDim,
+    V2CDim,
+    VertexDim,
+)
 
 
 NUM_GHOST_ROWS: Final[int] = 2
@@ -36,6 +45,8 @@ _MAX_RL_VERTEX: Final[int] = _MAX_RL_CELL
 
 _ICON_INDEX_OFFSET_EDGES: Final[int] = 13
 _GRF_BOUNDARY_WIDTH_EDGES: Final[int] = 9
+_GRF_NUDGEZONE_START_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + 1
+_GRF_NUDGEZONE_WIDTH: Final[int] = 8
 _MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
 _MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
 _MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
@@ -178,9 +189,13 @@ class EdgeParams:
         dual_normal_cell_y=None,
         edge_areas=None,
         f_e=None,
+        edge_center_lat=None,
+        edge_center_lon=None,
+        primal_normal_x=None,
+        primal_normal_y=None,
     ):
         self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
-        r"""
+        """
         Orientation of vector product of the edge and the adjacent cell centers
              v3
             /  \
@@ -203,32 +218,35 @@ class EdgeParams:
         """
         Length of the triangle edge.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
         """
 
         self.inverse_primal_edge_lengths: Field[[EdgeDim], float] = inverse_primal_edge_lengths
         """
         Inverse of the triangle edge length: 1.0/primal_edge_length.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
         """
 
         self.dual_edge_lengths: Field[[EdgeDim], float] = dual_edge_lengths
         """
         Length of the hexagon/pentagon edge.
+        vertices of the hexagon/pentagon are cell centers and its center
+        is located at the common vertex.
+        the dual edge bisects the primal edge othorgonally.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
         """
 
         self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
         self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
-        r"""
+        """
         Inverse distance between outer vertices of adjacent cells.
 
         v1--------
@@ -241,7 +259,7 @@ class EdgeParams:
 
         inverse_vertex_vertex_length(e) = 1.0/|v2-v1|
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
+        defined in ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
         """
 
         self.primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
@@ -249,9 +267,11 @@ class EdgeParams:
             primal_normal_vert_y,
         )
         """
-        Normal of the triangle edge, projected onto the location of the vertices
+        Normal of the triangle edge, projected onto the location of the
+        four vertices of neighboring cells.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_normal_vert
+        and computed in ICON in mo_intp_coeffs.f90
         """
 
         self.dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
@@ -259,26 +279,44 @@ class EdgeParams:
             dual_normal_vert_y,
         )
         """
-        Tangent to the triangle edge, projected onto the location of vertices.
+        zonal (x) and meridional (y) components of vector tangent to the triangle edge,
+        projected onto the location of the four vertices of neighboring cells.
 
-         defined int ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
+        defined in ICON in mo_model_domain.f90:t_grid_edges%dual_normal_vert
+        and computed in ICON in mo_intp_coeffs.f90
         """
 
         self.primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
         )
+        """
+        zonal (x) and meridional (y) components of vector normal to the cell edge
+        projected onto the location of neighboring cell centers.
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_normal_cell
+        and computed in ICON in mo_intp_coeffs.f90
+        """
 
         self.dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
         )
+        """
+        zonal (x) and meridional (y) components of vector normal to the dual edge
+        projected onto the location of neighboring cell centers.
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%dual_normal_cell
+        and computed in ICON in mo_intp_coeffs.f90
+        """
 
         self.edge_areas: Field[[EdgeDim], float] = edge_areas
         """
-        Area of the quadrilateral (two triangles) adjacent to the edge.
+        Area of the quadrilateral whose edges are the primal edge and
+        the associated dual edge.
 
-        defined int ICON in mo_model_domain.f90:t_grid_edges%area_edge
+        defined in ICON in mo_model_domain.f90:t_grid_edges%area_edge
+        and computed in ICON in mo_intp_coeffs.f90
         """
 
         self.f_e: Field[[EdgeDim], float] = f_e
@@ -286,46 +324,79 @@ class EdgeParams:
         Coriolis parameter at cell edges
         """
 
+        self.edge_center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
+            edge_center_lat,
+            edge_center_lon,
+        )
+        """
+        Latitude and longitude at the edge center
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%center
+        """
+
+        self.primal_normal: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+            primal_normal_x,
+            primal_normal_y,
+        )
+        """
+        zonal (x) and meridional (y) components of vector normal to the cell edge
+
+        defined in ICON in mo_model_domain.f90:t_grid_edges%primal_normal
+        """
+
 
 @dataclass(frozen=True)
 class CellParams:
+    #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
+    cell_center_lat: Field[[CellDim], float] = None
+    #: Longitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
+    cell_center_lon: Field[[CellDim], float] = None
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
-    area: Field[[CellDim], float]
+    area: Field[[CellDim], float] = None
+    #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
+    mean_cell_area: float = None
+    length_rescale_factor: float = 1.0
 
-    mean_cell_area: float
+    @classmethod
+    def from_global_num_cells(
+        cls,
+        cell_center_lat: Field[[CellDim], float],
+        cell_center_lon: Field[[CellDim], float],
+        area: Field[[CellDim], float],
+        global_num_cells: int,
+        length_rescale_factor: float = 1.0,
+    ):
+        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        return cls(
+            cell_center_lat=cell_center_lat,
+            cell_center_lon=cell_center_lon,
+            area=area,
+            mean_cell_area=mean_cell_area,
+            length_rescale_factor=length_rescale_factor,
+        )
 
+    @cached_property
+    def characteristic_length(self):
+        return math.sqrt(self.mean_cell_area)
 
-@field_operator
-def _cell_2_edge_interpolation(
-    in_field: Field[[CellDim, KDim], wpfloat], coeff: Field[[EdgeDim, E2CDim], wpfloat]
-) -> Field[[EdgeDim, KDim], wpfloat]:
-    """
-    Interpolate a Cell Field to Edges.
+    @cached_property
+    def mean_cell_area(self):
+        return self.mean_cell_area
 
-    There is a special handling of lateral boundary edges in `subroutine cells2edges_scalar`
-    where the value is set to the one valid in_field value without multiplication by coeff.
-    This essentially means: the skip value neighbor in the neighbor_sum is skipped and coeff needs to
-    be 1 for this Edge index.
-    """
-    return neighbor_sum(in_field(E2C) * coeff, axis=E2CDim)
+    @staticmethod
+    def _compute_mean_cell_area(radius, num_cells):
+        """
+        Compute the mean cell area.
 
+        Computes the mean cell area by dividing the sphere by the number of cells in the
+        global grid.
 
-@program(grid_type=GridType.UNSTRUCTURED)
-def cell_2_edge_interpolation(
-    in_field: Field[[CellDim, KDim], wpfloat],
-    coeff: Field[[EdgeDim, E2CDim], wpfloat],
-    out_field: Field[[EdgeDim, KDim], wpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _cell_2_edge_interpolation(
-        in_field,
-        coeff,
-        out=out_field,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
-    )
+        Args:
+            radius: average earth radius, might be rescaled by a scaling parameter
+            num_cells: number of cells on the global grid
+        Returns: mean area of one cell [m^2]
+        """
+        return 4.0 * math.pi * radius**2 / num_cells
 
 
 class RefinCtrlLevel:
@@ -343,3 +414,12 @@ class RefinCtrlLevel:
             raise ValueError(
                 f"nudging start level only exists for {CellDim} and {EdgeDim}"
             ) from err
+
+
+@field_operator
+def _compute_cells2verts(
+    p_cell_in: Field[[CellDim, KDim], float],
+    c_int: Field[[VertexDim, V2CDim], float],
+) -> Field[[VertexDim, KDim], float]:
+    p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)
+    return p_vert_out

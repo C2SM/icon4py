@@ -55,7 +55,7 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
         field_index_with_zero_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
 
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim)[0], dtype=int32))
-        k1 = int32(1)
+        k1 = 1
         k2 = int32(grid.num_levels)
 
         return dict(
@@ -64,8 +64,8 @@ class TestInitTwoCellKdimFieldsIndexWithZeroVp(StencilTest):
             k=k,
             k1=k1,
             k2=k2,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

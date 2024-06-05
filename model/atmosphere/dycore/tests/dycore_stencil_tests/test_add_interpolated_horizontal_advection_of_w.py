@@ -27,8 +27,10 @@ def add_interpolated_horizontal_advection_of_w_numpy(
     grid, e_bln_c_s: np.array, z_v_grad_w: np.array, ddt_w_adv: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    c2ce = grid.get_offset_provider("C2CE").table
+
     ddt_w_adv = ddt_w_adv + np.sum(
-        z_v_grad_w[grid.connectivities[C2EDim]] * e_bln_c_s[grid.get_offset_provider("C2CE").table],
+        z_v_grad_w[grid.connectivities[C2EDim]] * e_bln_c_s[c2ce],
         axis=1,
     )
     return ddt_w_adv
@@ -57,8 +59,8 @@ class TestAddInterpolatedHorizontalAdvectionOfW(StencilTest):
             e_bln_c_s=e_bln_c_s,
             z_v_grad_w=z_v_grad_w,
             ddt_w_adv=ddt_w_adv,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

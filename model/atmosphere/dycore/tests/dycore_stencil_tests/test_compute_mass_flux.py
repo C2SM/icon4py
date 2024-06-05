@@ -54,8 +54,8 @@ class TestComputeMassFlux(StencilTest):
             z_theta_v_e=z_theta_v_e,
             mass_fl_e=mass_fl_e,
             z_theta_v_fl_e=z_theta_v_fl_e,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

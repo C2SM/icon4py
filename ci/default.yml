@@ -17,7 +17,7 @@ test_model_stencils:
     # exclude slow test configurations
     - if: $BACKEND == "roundtrip" && $GRID == "icon_grid"
       when: never
-    - when: always
+    - when: on_success
 
 test_tools:
   extends: .test_template

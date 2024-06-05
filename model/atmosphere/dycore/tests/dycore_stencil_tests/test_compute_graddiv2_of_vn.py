@@ -45,8 +45,8 @@ class TestComputeGraddiv2OfVn(StencilTest):
             geofac_grdiv=geofac_grdiv,
             z_graddiv_vn=z_graddiv_vn,
             z_graddiv2_vn=z_graddiv2_vn,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

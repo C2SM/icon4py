@@ -148,6 +148,8 @@ In addition, other optional keyword arguments are the following:
 
 - `copies`: Takes a boolean string input, and controls whether before field copies should be made or not. If set to False only the `#ifdef __DSL_VERIFY` directive is generated. Defaults to true.<br><br>
 
+- `optional_module`: Takes a boolean string input, and controls whether stencils is part of an optional module. Defaults to "None".<br><br>
+
 #### `!$DSL END STENCIL()`
 
 This directive denotes the end of a stencil. The required argument is `name`, which must match the name of the preceding `START STENCIL` directive.
@@ -342,7 +344,7 @@ Options:
 ## Important Environment Variables
 
 When embedding granules it may be necessary to use an ICON grid file, as is the case in the diffusion granule wrapper.
-The granule expects an `ICON_GRID_LOC` environment variable with the path to the folder holding the grid netcdf file.
+The granule expects an `ICON_GRID_LOC` environment variable with the path to the folder containing the different grids.
 
 ### Example
 
