@@ -238,7 +238,7 @@ def diffusion_init(
         v2e_loc,
         e2c2v_loc,
         e2c_loc,
-        limited_area,
+        True,
         on_gpu,
     )
 
@@ -248,8 +248,8 @@ def diffusion_init(
         .with_dimension(EdgeDim, e_glb_index_np, e_owner_mask_np)
         .with_dimension(VertexDim, v_glb_index_np, v_owner_mask_np)
     )
-    processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
+    #processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
+    #exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     # log.debug("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
     # log.debug("icon_grid:cell_end:%s", icon_grid.end_indices[CellDim])
@@ -308,7 +308,7 @@ def diffusion_init(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     # )
 
-    diffusion_granule.set_exchange(exchange)
+    #diffusion_granule.set_exchange(exchange)
 
     # Edge geometry
     edge_params = EdgeParams(
