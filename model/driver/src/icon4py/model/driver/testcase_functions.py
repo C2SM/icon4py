@@ -92,7 +92,7 @@ def mo_u2vn_jabw_numpy(
     return vn
 
 
-def mo_hydro_adjust(
+def hydrostatic_adjustment_numpy(
     wgtfac_c: np.array,
     ddqz_z_half: np.array,
     exner_ref_mc: np.array,

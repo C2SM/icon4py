@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
 
 from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -40,7 +41,7 @@ def _add_vertical_wind_derivative_to_divergence_damping(
     return astype(z_graddiv_vn_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_vertical_wind_derivative_to_divergence_damping(
     hmask_dd3d: Field[[EdgeDim], wpfloat],
     scalfac_dd3d: Field[[KDim], wpfloat],

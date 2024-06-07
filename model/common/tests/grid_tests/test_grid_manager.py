@@ -70,6 +70,7 @@ R02B04_GLOBAL_NUM_CELLS = 20480
 MCH_CH_04B09_NUM_VERTICES = 10663
 MCH_CH_R04B09_LOCAL_NUM_EDGES = 31558
 MCH_CH_RO4B09_LOCAL_NUM_CELLS = 20896
+MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
 
 
 MCH_CH_R04B09_CELL_DOMAINS = {
@@ -113,8 +114,11 @@ MCH_CH_R04B09_EDGE_DOMAINS = {
 def simple_grid_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_GRID_NC).absolute()
     grid = SimpleGrid()
+
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
+    dataset.setncattr(GridFile.PropertyName.LEVEL, 0)
+    dataset.setncattr(GridFile.PropertyName.ROOT, 0)
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=grid.num_vertices)
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=grid.num_edges)
@@ -497,6 +501,23 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
     )
 
 
+@pytest.mark.datatest
+@pytest.mark.with_netcdf
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+)
+def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
+    caplog.set_level(logging.DEBUG)
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
+    serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    assert np.allclose(
+        grid.get_offset_provider("C2E2CO").table,
+        serialized_grid.get_offset_provider("C2E2CO").table,
+    )
+
+
 # e2c2e (e2c2eo) - diamond: exists in serial, simple_mesh
 @pytest.mark.datatest
 @pytest.mark.with_netcdf
@@ -508,15 +529,19 @@ def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
-    serialized_e2c2e = grid_savepoint.e2c2e()[0 : grid.num_cells, :]
+    serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").table
+    serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").table
     assert_invalid_indices(serialized_e2c2e, grid_file)
 
     e2c2e_table = grid.get_offset_provider("E2C2E").table
+    e2c2e0_table = grid.get_offset_provider("E2C2EO").table
 
     assert_invalid_indices(e2c2e_table, grid_file)
     # ICON calculates diamond edges only from rl_start = 2 (lateral_boundary(EdgeDim) + 1 for
     # boundaries all values are INVALID even though the half diamond exists (see mo_model_domimp_setup.f90 ll 163ff.)
     assert_unless_invalid(e2c2e_table, serialized_e2c2e)
+    assert_unless_invalid(e2c2e0_table, serialized_e2c2eO)
 
 
 def assert_unless_invalid(table, serialized_ref):
@@ -914,3 +939,16 @@ def test_get_start_end_index_for_global_grid(
     from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
+
+
+@pytest.mark.parametrize(
+    "grid_file, global_num_cells",
+    [
+        (R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
+        (REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+    ],
+)
+def test_grid_level_and_root(grid_file, global_num_cells):
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file, num_levels=10).get_grid()
+    assert global_num_cells == grid.global_num_cells

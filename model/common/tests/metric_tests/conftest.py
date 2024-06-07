@@ -10,12 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import gt4py.next.program_processors.modular_executor
-import pytest
 
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     grid_savepoint,
@@ -28,17 +25,3 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
     backend,
 )
-
-
-@pytest.fixture
-def is_otf(backend) -> bool:  # noqa : F811 # fixture is used in the test
-    # not reusing the `uses_local_area_icon_grid_with_otf` fixture because it also checks for the grid
-    # want to exclude python backends:
-    #   - cannot run on embedded: because of slicing
-    #   - roundtrip is very slow on large grid
-    if hasattr(backend, "executor"):
-        if isinstance(
-            backend.executor, gt4py.next.program_processors.modular_executor.ModularExecutor
-        ):
-            return True
-    return False

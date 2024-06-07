@@ -17,12 +17,11 @@ from pathlib import Path
 from typing import Callable, Optional
 
 import click
+from gt4py.next import as_field
 import netCDF4 as nf4
 import numpy as np
 from cftime import date2num, num2date
 from devtools import Timer
-from gt4py.next import as_field
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
@@ -41,15 +40,14 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.mo_diagnose_temperature_pressure import (
-    mo_diagnose_pressure,
-    mo_diagnose_pressure_sfc,
-    mo_diagnose_temperature,
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
+    diagnose_temperature,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_exner_pr import mo_init_exner_pr
-from icon4py.model.common.diagnostic_calculations.stencils.mo_init_zero import (
-    mo_init_ddt_cell_zero,
-    mo_init_ddt_edge_zero,
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
+    diagnose_pressure,
+)
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
+    diagnose_surface_pressure,
 )
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
@@ -69,6 +67,7 @@ from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, 
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconOutputConfig, IconRunConfig, read_config
 from icon4py.model.driver.initialization_utils import (
+    ExperimentType,
     SerializationType,
     configure_logging,
     read_decomp_info,
@@ -79,10 +78,6 @@ from icon4py.model.driver.initialization_utils import (
 )
 from icon4py.model.driver.testcase_functions import mo_rbf_vec_interpol_cell_numpy
 
-
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
 
 log = logging.getLogger(__name__)
 
@@ -947,47 +942,32 @@ class TimeLoop:
         grid: Optional[IconGrid],
         diffusion: Diffusion,
         solve_nonhydro: SolveNonhydro,
-        is_run_from_serializedData: bool = False,
     ):
         self.run_config: IconRunConfig = run_config
         self.grid: Optional[IconGrid] = grid
         self.diffusion = diffusion
         self.solve_nonhydro = solve_nonhydro
-        # TODO (Chia Rui): find a more elegant way to determine whether this timeloop is run for comparison with serialized data
-        self.is_run_from_serializedData = is_run_from_serializedData
 
         self._n_time_steps: int = int(
-            (self.run_config.end_date - self.run_config.start_date)
-            / timedelta(seconds=self.run_config.dtime)
+            (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
         )
+        self.dtime_in_seconds: float = self.run_config.dtime.total_seconds()
         self._n_substeps_var: int = self.run_config.n_substeps
-        self._substep_timestep: float = float(self.run_config.dtime / self._n_substeps_var)
+        self._substep_timestep: float = float(self.dtime_in_seconds / self._n_substeps_var)
 
         self._validate_config()
 
         # current simulation date
         self._simulation_date: datetime = self.run_config.start_date
 
-        self._do_initial_stabilization: bool = self.run_config.apply_initial_stabilization
+        self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
 
-        self.stencil_mo_rbf_vec_interpol_cell = mo_rbf_vec_interpol_cell.with_backend(backend)
-        self.stencil_mo_diagnose_temperature = mo_diagnose_temperature.with_backend(backend)
-        self.stencil_mo_diagnose_pressure_sfc = mo_diagnose_pressure_sfc.with_backend(backend)
-        self.stencil_mo_diagnose_pressure = mo_diagnose_pressure.with_backend(backend)
-        self.stencil_mo_init_exner_pr = mo_init_exner_pr.with_backend(backend)
-        self.stencil_mo_init_ddt_cell_zero = mo_init_ddt_cell_zero.with_backend(backend)
-        self.stencil_mo_init_ddt_edge_zero = mo_init_ddt_edge_zero.with_backend(backend)
-
-        self.offset_provider_c2e2c2e = {
-            "C2E2C2E": self.grid.get_offset_provider("C2E2C2E"),
-        }
-
     def re_init(self):
         self._simulation_date = self.run_config.start_date
-        self._do_initial_stabilization = self.run_config.apply_initial_stabilization
+        self._is_first_step_in_simulation = True
         self._n_substeps_var = self.run_config.n_substeps
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
@@ -1000,8 +980,9 @@ class TimeLoop:
         if not self.solve_nonhydro.initialized:
             raise Exception("nonhydro solver is not initialized before time loop")
 
-    def _not_first_step(self):
-        self._do_initial_stabilization = False
+    @property
+    def first_step_in_simulation(self):
+        return self._is_first_step_in_simulation
 
     def _is_last_substep(self, step_nr: int):
         return step_nr == (self.n_substeps_var - 1)
@@ -1011,11 +992,7 @@ class TimeLoop:
         return step_nr == 0
 
     def _next_simulation_date(self):
-        self._simulation_date += timedelta(seconds=self.run_config.dtime)
-
-    @property
-    def do_initial_stabilization(self):
-        return self._do_initial_stabilization
+        self._simulation_date += self.run_config.dtime
 
     @property
     def n_substeps_var(self):
@@ -1055,58 +1032,61 @@ class TimeLoop:
         diagnostic_state: DiagnosticState,
         diagnostic_metric_state: DiagnosticMetricState,
     ):
-        self.stencil_mo_rbf_vec_interpol_cell(
+        mo_rbf_vec_interpol_cell(
             prognostic_state.vn,
             diagnostic_metric_state.rbf_vec_coeff_c1,
             diagnostic_metric_state.rbf_vec_coeff_c2,
             diagnostic_state.u,
             diagnostic_state.v,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider=self.offset_provider_c2e2c2e,
+            horizontal_start=self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
+            horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
         )
         log.debug(
             f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}"
         )
 
-        self.stencil_mo_diagnose_temperature(
+        diagnose_temperature(
             prognostic_state.theta_v,
             prognostic_state.exner,
             diagnostic_state.temperature,
+            horizontal_start=self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider={},
+        )
+
+        diagnose_surface_pressure(
+            prognostic_state.exner,
+            diagnostic_state.temperature,
+            diagnostic_metric_state.ddqz_z_full,
+            diagnostic_state.pressure_ifc,
+            CPD_O_RD,
+            P0REF,
+            GRAV_O_RD,
+            horizontal_start=self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            vertical_start=self.grid.num_levels,
+            vertical_end=self.grid.num_levels + 1,
+            offset_provider=self.grid.offset_providers,
+        )
+
+        diagnose_pressure(
+            diagnostic_metric_state.ddqz_z_full,
+            diagnostic_state.temperature,
+            diagnostic_state.pressure_sfc,
+            diagnostic_state.pressure,
+            diagnostic_state.pressure_ifc,
+            GRAV_O_RD,
             self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
             self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             0,
             self.grid.num_levels,
             offset_provider={},
         )
-
-        exner_nlev_minus2 = prognostic_state.exner[:, self.grid.num_levels - 3]
-        temperature_nlev = diagnostic_state.temperature[:, self.grid.num_levels - 1]
-        temperature_nlev_minus1 = diagnostic_state.temperature[:, self.grid.num_levels - 2]
-        temperature_nlev_minus2 = diagnostic_state.temperature[:, self.grid.num_levels - 3]
-        ddqz_z_full_nlev = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 1]
-        ddqz_z_full_nlev_minus1 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 2]
-        ddqz_z_full_nlev_minus2 = diagnostic_metric_state.ddqz_z_full[:, self.grid.num_levels - 3]
-        self.stencil_mo_diagnose_pressure_sfc(
-            exner_nlev_minus2,
-            temperature_nlev,
-            temperature_nlev_minus1,
-            temperature_nlev_minus2,
-            ddqz_z_full_nlev,
-            ddqz_z_full_nlev_minus1,
-            ddqz_z_full_nlev_minus2,
-            diagnostic_state.pressure_sfc,
-            CPD_O_RD,
-            P0REF,
-            GRAV_O_RD,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            offset_provider={},
-        )
-
-        # TODO (Chia Rui): to add computation of pressure
 
     def time_integration(
         self,
@@ -1123,45 +1103,46 @@ class TimeLoop:
         output_state: OutputState = None,
     ):
         log.info(
-            f"starting time loop for dtime={self.run_config.dtime} n_timesteps={self._n_time_steps}"
+            f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
         )
         log.info("Initialization of diagnostic variables for output.")
+        log.info(
+            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
+        )
 
         if output_state is not None:
             self._diagnose_for_output_and_physics(
                 prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
             )
 
-        if not self.is_run_from_serializedData:
-            self.stencil_mo_init_exner_pr(
-                prognostic_state_list[self._now].exner,
-                self.solve_nonhydro.metric_state_nonhydro.exner_ref_mc,
-                solve_nonhydro_diagnostic_state.exner_pr,
-                self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-                self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-                0,
-                self.grid.num_levels,
-                offset_provider={},
-            )
+            log.info(f"Debugging U (before diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
-        log.info(f"Debugging U (before diffusion): {np.max(diagnostic_state.u.asnumpy())}")
+        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
 
-        log.info(
-            f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self._do_initial_stabilization} dtime={self.run_config.dtime} substep_timestep={self._substep_timestep}"
-        )
-        if self.diffusion.config.apply_to_horizontal_wind and self._do_initial_stabilization and not self.run_config.run_testcase:
+        if (
+            self.diffusion.config.apply_to_horizontal_wind
+            and self.run_config.apply_initial_stabilization
+            and self._is_first_step_in_simulation
+        ):
             log.info("running initial step to diffuse fields before timeloop starts")
             self.diffusion.initial_run(
                 diffusion_diagnostic_state,
                 prognostic_state_list[self._now],
-                self.run_config.dtime,
+                self.dtime_in_seconds,
             )
-
+        log.info(
+            f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
+        )
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
+            log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f"simulation date : {self._simulation_date} run timestep : {time_step} initial_stabilization : {self._do_initial_stabilization}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.15e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.15e}"
             )
+            log.info(
+                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.15e}"
+            )
+            # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
             """
             if not self.is_run_from_serializedData:
@@ -1189,7 +1170,7 @@ class TimeLoop:
 
             self._next_simulation_date()
 
-            # put boundary condition update here
+            # update boundary condition
 
             timer.start()
             self._integrate_one_time_step(
@@ -1253,7 +1234,7 @@ class TimeLoop:
         log.info(
             f"starting speed-test time loop for gt4py-version rbf interpolation with n_timesteps={self._n_time_steps}"
         )
-        fo = mo_rbf_vec_interpol_cell.with_backend(backend)
+        fo = mo_rbf_vec_interpol_cell
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"run timestep : {time_step}")
@@ -1310,6 +1291,8 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
+        # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
+
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -1320,7 +1303,7 @@ class TimeLoop:
 
         if self.diffusion.config.apply_to_horizontal_wind:
             self.diffusion.run(
-                diffusion_diagnostic_state, prognostic_state_list[self._next], self.run_config.dtime
+                diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
 
         self._swap()
@@ -1342,7 +1325,7 @@ class TimeLoop:
         for dyn_substep in range(self._n_substeps_var):
             log.info(
                 f"simulation date : {self._simulation_date} substep / n_substeps : {dyn_substep} / "
-                f"{self.n_substeps_var} , initial_stabilization : {self._do_initial_stabilization}, "
+                f"{self.n_substeps_var} , is_first_step_in_simulation : {self._is_first_step_in_simulation}, "
                 f"nnow: {self._now}, nnew : {self._next}"
             )
             self.solve_nonhydro.time_step(
@@ -1352,7 +1335,7 @@ class TimeLoop:
                 divdamp_fac_o2=inital_divdamp_fac_o2,
                 dtime=self._substep_timestep,
                 l_recompute=do_recompute,
-                l_init=self._do_initial_stabilization,
+                l_init=self._is_first_step_in_simulation,
                 nnew=self._next,
                 nnow=self._now,
                 lclean_mflx=do_clean_mflx,
@@ -1367,20 +1350,18 @@ class TimeLoop:
             if not self._is_last_substep(dyn_substep):
                 self._swap()
 
-            self._not_first_step()
+            self._is_first_step_in_simulation = False
 
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
-# "icon_pydycore"
-
-
 def initialize(
-    experiment_name: str,
-    fname_prefix: str,
-    ser_type: SerializationType,
     file_path: Path,
     props: ProcessProperties,
+    serialization_type: SerializationType,
+    experiment_type: ExperimentType,
+    grid_root,
+    grid_level,
 ):
     """
     Inititalize the driver run.
@@ -1401,21 +1382,33 @@ def initialize(
          diffusion_diagnostic_state: initial state for diffusion diagnostic variables
          nonhydro_diagnostic_state: initial state for solve_nonhydro diagnostic variables
          prognostic_state: initial state for prognostic variables
+         diagnostic_state: initial state for global diagnostic variables
          prep_advection: fields collecting data for advection during the solve nonhydro timestep
          inital_divdamp_fac_o2: initial divergence damping factor
 
     """
     log.info("initialize parallel runtime")
-    log.info(f"reading configuration: experiment {experiment_name}")
-    config = read_config(experiment_name)
+    log.info(f"reading configuration: experiment {experiment_type}")
+    config = read_config(experiment_type)
 
-    decomp_info = read_decomp_info(fname_prefix, file_path, props, ser_type=ser_type)
+    decomp_info = read_decomp_info(file_path, props, serialization_type, grid_root, grid_level)
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(fname_prefix, file_path, rank=props.rank, ser_type=ser_type)
+    icon_grid = read_icon_grid(
+        file_path,
+        rank=props.rank,
+        ser_type=serialization_type,
+        grid_root=grid_root,
+        grid_level=grid_level,
+    )
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
-        fname_prefix, file_path, config.run_config.damping_height, rank=props.rank, ser_type=ser_type
+        file_path,
+        damping_height=config.run_config.damping_height,
+        rank=props.rank,
+        ser_type=serialization_type,
+        grid_root=grid_root,
+        grid_level=grid_level,
     )
     (
         diffusion_metric_state,
@@ -1423,7 +1416,13 @@ def initialize(
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
-    ) = read_static_fields(experiment_name, fname_prefix, file_path, ser_type=ser_type)
+    ) = read_static_fields(
+        file_path,
+        rank=props.rank,
+        ser_type=serialization_type,
+        grid_root=grid_root,
+        grid_level=grid_level,
+    )
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -1464,13 +1463,12 @@ def initialize(
         prognostic_state_now,
         prognostic_state_next,
     ) = read_initial_state(
-        experiment_name,
-        fname_prefix,
         icon_grid,
         cell_geometry,
         edge_geometry,
         file_path,
         rank=props.rank,
+        experiment_type=experiment_type,
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
@@ -1500,7 +1498,6 @@ def initialize(
         diagnostic_metric_state,
         diagnostic_state,
         prognostic_state_list,
-        output_state,
         prep_adv,
         inital_divdamp_fac_o2,
     )
@@ -1508,19 +1505,24 @@ def initialize(
 
 @click.command()
 @click.argument("input_path")
-@click.argument("fname_prefix")
-@click.option("--experiment_name", default="mch_ch_r04b09_dsl")
-@click.option("--ser_type", default="serialbox")
 @click.option("--run_path", default="./", help="folder for output")
 @click.option("--mpi", default=False, help="whether or not you are running with mpi")
 @click.option("--speed_test", default=False)
-def main(input_path, fname_prefix, experiment_name, ser_type, run_path, mpi, speed_test):
+@click.option(
+    "--serialization_type",
+    default="serialbox",
+    help="serialization type for grid info and static fields",
+)
+@click.option("--experiment_type", default="any", help="experiment selection")
+@click.option("--grid_root", default=2, help="experiment selection")
+@click.option("--grid_level", default=4, help="experiment selection")
+def main(input_path, run_path, mpi, speed_test, serialization_type, experiment_type, grid_root, grid_level):
     """
     Run the driver.
 
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
-    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/jw_node1_nproma50000/ jabw --experiment_name=jabw --ser_type=serialbox
-    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data icon_pydycore --ser_type=serialbox
+    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/jw_node1_nproma50000/ --experiment_type=any --serialization_type=serialbox
+    python driver/src/icon4py/model/driver/dycore_driver.py ~/PycharmProjects/main/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data --experiment_type=jabw  --serialization_type=serialbox
 
     steps:
     1. initialize model from serialized data:
@@ -1538,9 +1540,7 @@ def main(input_path, fname_prefix, experiment_name, ser_type, run_path, mpi, spe
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
-
-    configure_logging(run_path, experiment_name, parallel_props)
-
+    configure_logging(run_path, experiment_type, parallel_props)
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -1551,8 +1551,9 @@ def main(input_path, fname_prefix, experiment_name, ser_type, run_path, mpi, spe
         output_state,
         prep_adv,
         inital_divdamp_fac_o2,
-    ) = initialize(experiment_name, fname_prefix, ser_type, Path(input_path), parallel_props)
-
+    ) = initialize(
+        Path(input_path), parallel_props, serialization_type, experiment_type, grid_root, grid_level
+    )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
         f"input args: input_path={input_path}, n_time_steps={timeloop.n_time_steps}, ending date={timeloop.run_config.end_date}"
@@ -1565,7 +1566,9 @@ def main(input_path, fname_prefix, experiment_name, ser_type, run_path, mpi, spe
 
     if speed_test:
         timeloop.time_integration_speed_test(
-            diagnostic_metric_state, diagnostic_state, prognostic_state_list
+            diagnostic_metric_state,
+            diagnostic_state,
+            prognostic_state_list,
         )
     else:
         timeloop.time_integration(

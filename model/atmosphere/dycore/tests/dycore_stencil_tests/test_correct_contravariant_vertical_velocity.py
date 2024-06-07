@@ -30,7 +30,7 @@ def correct_contravariant_vertical_velocity_numpy(
     return z_w_con_c
 
 
-class TestMoVelocityAdvectionStencil13(StencilTest):
+class TestCorrectContravariantVerticalVelocity(StencilTest):
     PROGRAM = correct_contravariant_vertical_velocity
     OUTPUTS = ("z_w_con_c",)
 
@@ -47,8 +47,8 @@ class TestMoVelocityAdvectionStencil13(StencilTest):
         return dict(
             w_concorr_c=w_concorr_c,
             z_w_con_c=z_w_con_c,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

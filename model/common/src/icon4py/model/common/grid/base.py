@@ -22,7 +22,6 @@ from gt4py.next.common import Dimension
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
 from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
 from icon4py.model.common.grid.vertical import VerticalGridSize
 from icon4py.model.common.utils import builder
@@ -32,14 +31,20 @@ class MissingConnectivity(ValueError):
     pass
 
 
-@dataclass(
-    frozen=True,
-)
+@dataclass(frozen=True)
+class HorizontalGridSize:
+    num_vertices: int
+    num_edges: int
+    num_cells: int
+
+
+@dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
     vertical_config: VerticalGridSize
     limited_area: bool = True
     n_shift_total: int = 0
+    length_rescale_factor: float = 1.0
     lvertnest: bool = False
     on_gpu: bool = False
 
@@ -143,7 +148,6 @@ class BaseGrid(ABC):
             self.connectivities[dim].shape,
             from_dim,
             to_dim,
-            on_gpu=self.config.on_gpu,
             has_skip_values=self._has_skip_values(dim),
         )
 

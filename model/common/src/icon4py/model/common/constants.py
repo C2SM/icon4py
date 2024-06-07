@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import sys
+from enum import IntEnum
 from typing import Final
 
 from icon4py.model.common.type_alias import wpfloat
@@ -49,6 +50,12 @@ P0REF: Final[wpfloat] = REFERENCE_PRESSURE
 SEAL_LEVEL_PRESSURE: Final[wpfloat] = 101325.0
 P0SL_BG: Final[wpfloat] = SEAL_LEVEL_PRESSURE
 
+# average earth radius in [m]
+EARTH_RADIUS: Final[float] = 6.371229e6
+
+#: Earth angular velocity [rad/s]
+EARTH_ANGULAR_VELOCITY: Final[wpfloat] = 7.29212e-5
+
 #: sea level temperature for reference atmosphere [K]
 SEA_LEVEL_TEMPERATURE: Final[wpfloat] = 288.15
 T0SL_BG: Final[wpfloat] = SEA_LEVEL_TEMPERATURE
@@ -84,6 +91,9 @@ MATH_PI_4: Final[float] = 0.785398163397448309615660845819875721
 # TODO (magdalena) not a constant, this is a default config parameter
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 
-#: Klemp (2008) type Rayleigh damping
-# TODO (magdalena) not a constant, move somewhere else, convert to enum
-RAYLEIGH_KLEMP: Final[int] = 2
+
+class RayleighType(IntEnum):
+    RAYLEIGH_CLASSIC: Final[
+        int
+    ] = 1  # classical Rayleigh damping, which makes use of a reference state.
+    RAYLEIGH_KLEMP: Final[int] = 2  # Klemp (2008) type Rayleigh damping

@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil34(StencilTest):
+class TestAccumulatePrepAdvFields(StencilTest):
     PROGRAM = accumulate_prep_adv_fields
     OUTPUTS = ("vn_traj", "mass_flx_me")
 
@@ -53,8 +53,8 @@ class TestMoSolveNonhydroStencil34(StencilTest):
             vn_traj=vn_traj,
             mass_flx_me=mass_flx_me,
             r_nsubsteps=r_nsubsteps,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

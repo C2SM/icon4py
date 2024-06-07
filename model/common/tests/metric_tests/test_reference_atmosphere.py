@@ -16,8 +16,8 @@ from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid.horizontal import (
-    HorizontalMarkerIndex,
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
 from icon4py.model.common.metrics.metric_fields import compute_z_mc
@@ -26,7 +26,7 @@ from icon4py.model.common.metrics.reference_atmosphere import (
     compute_reference_atmosphere_cell_fields,
     compute_reference_atmosphere_edge_fields,
 )
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
+from icon4py.model.common.test_utils.helpers import dallclose, is_roundtrip, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -38,6 +38,8 @@ from icon4py.model.common.type_alias import wpfloat
 def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     icon_grid, metrics_savepoint, backend
 ):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     exner_ref_mc_ref = metrics_savepoint.exner_ref_mc()
     rho_ref_mc_ref = metrics_savepoint.rho_ref_mc()
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
@@ -47,7 +49,7 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     rho_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     theta_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
     z_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    start = int32(0)
+    start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels
     compute_z_mc.with_backend(backend)(
@@ -89,13 +91,15 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
 def test_compute_reference_atmsophere_on_half_level_mass_points(
     icon_grid, metrics_savepoint, backend
 ):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 
     exner_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
     rho_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
     theta_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-    start = int32(0)
+    start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels + 1
 
@@ -123,9 +127,9 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
 
 
 @pytest.mark.datatest
-def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend, is_otf):
-    if not is_otf:
-        pytest.skip("skipping: unsupported backend")
+def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
     d_exner_dz_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
@@ -142,10 +146,10 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend, is_otf
 
 @pytest.mark.datatest
 def test_compute_reference_atmosphere_on_full_level_edge_fields(
-    icon_grid, interpolation_savepoint, metrics_savepoint, backend, is_otf
+    icon_grid, interpolation_savepoint, metrics_savepoint, backend
 ):
-    if not is_otf:
-        pytest.skip("skipping: unsupported backend")
+    if is_roundtrip(backend):
+        pytest.skip("skipping: slow backend")
     rho_ref_me_ref = metrics_savepoint.rho_ref_me()
     theta_ref_me_ref = metrics_savepoint.theta_ref_me()
     rho_ref_me = metrics_savepoint.rho_ref_me()
@@ -160,7 +164,7 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     )
     num_cells = int32(icon_grid.num_cells)
     num_edges = int(icon_grid.num_edges)
-    vertical_start = int32(0)
+    vertical_start = 0
     vertical_end = int32(icon_grid.num_levels)
     compute_z_mc.with_backend(backend)(
         z_ifc=z_ifc,

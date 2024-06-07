@@ -100,7 +100,7 @@ def pytest_generate_tests(metafunc):
         gpu_backends = ["gtfn_gpu"]
 
         try:
-            from gt4py.next.program_processors.runners.dace_iterator import (
+            from gt4py.next.program_processors.runners.dace import (
                 run_dace_cpu,
                 run_dace_gpu,
             )

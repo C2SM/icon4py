@@ -32,7 +32,7 @@ def interpolate_to_surface_numpy(
     return interpolation_to_surface
 
 
-class TestMoSolveNonhydroStencil04(StencilTest):
+class TestInterpolateToSurface(StencilTest):
     PROGRAM = interpolate_to_surface
     OUTPUTS = ("interpolation_to_surface",)
 
@@ -62,8 +62,8 @@ class TestMoSolveNonhydroStencil04(StencilTest):
             interpolant=interpolant,
             wgtfacq_c=wgtfacq_c,
             interpolation_to_surface=interpolation_to_surface,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(3),
+            vertical_start=3,
             vertical_end=int32(grid.num_levels),
         )

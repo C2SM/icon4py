@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil53(StencilTest):
+class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
     PROGRAM = solve_tridiagonal_matrix_for_w_back_substitution
     OUTPUTS = ("w",)
 
@@ -42,9 +42,9 @@ class TestMoSolveNonhydroStencil53(StencilTest):
     def input_data(self, grid):
         z_q = random_field(grid, CellDim, KDim, dtype=vpfloat)
         w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        h_start = int32(0)
+        h_start = 0
         h_end = int32(grid.num_cells)
-        v_start = int32(1)
+        v_start = 1
         v_end = int32(grid.num_levels)
         return dict(
             z_q=z_q,

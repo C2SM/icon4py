@@ -28,7 +28,7 @@ def compute_tangential_wind_numpy(grid, vn: np.array, rbf_vec_coeff_e: np.array)
     return vt
 
 
-class TestMoVelocityAdvectionStencil01(StencilTest):
+class TestComputeTangentialWind(StencilTest):
     PROGRAM = compute_tangential_wind
     OUTPUTS = ("vt",)
 
@@ -47,8 +47,8 @@ class TestMoVelocityAdvectionStencil01(StencilTest):
             vn=vn,
             rbf_vec_coeff_e=rbf_vec_coeff_e,
             vt=vt,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

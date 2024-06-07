@@ -77,7 +77,7 @@ def _divide_flux_area_list_stencil_02(
     Field[[EdgeDim, KDim], int32],
     Field[[EdgeDim, KDim], int32],
 ]:
-    famask_bool = where(famask_int == int32(1), True, False)
+    famask_bool = where(famask_int == 1, True, False)
     lvn_pos = where(p_vn >= 0.0, True, False)
     # Translation of patch 1 and patch 2 in system relative to respective cell
     bf_cc_patch1_lon = where(
@@ -133,22 +133,22 @@ def _divide_flux_area_list_stencil_02(
     patch1_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch1_vnpos_3d, butterfly_idx_patch1_vnneg_3d),
-        int32(0),
+        0,
     )
     patch2_cell_idx_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_idx_patch2_vnpos_3d, butterfly_idx_patch2_vnneg_3d),
-        int32(0),
+        0,
     )
     patch1_cell_blk_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_blk_patch1_vnpos_3d, butterfly_blk_patch1_vnneg_3d),
-        int32(0),
+        0,
     )
     patch2_cell_blk_vmask = where(
         famask_bool,
         where(lvn_pos, butterfly_blk_patch2_vnpos_3d, butterfly_blk_patch2_vnneg_3d),
-        int32(0),
+        0,
     )
 
     return (

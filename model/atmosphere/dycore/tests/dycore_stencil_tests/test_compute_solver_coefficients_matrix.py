@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil44(StencilTest):
+class TestComputeSolverCoefficientsMatrix(StencilTest):
     PROGRAM = compute_solver_coefficients_matrix
     OUTPUTS = ("z_beta", "z_alpha")
 
@@ -76,8 +76,8 @@ class TestMoSolveNonhydroStencil44(StencilTest):
             dtime=dtime,
             rd=rd,
             cvd=cvd,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

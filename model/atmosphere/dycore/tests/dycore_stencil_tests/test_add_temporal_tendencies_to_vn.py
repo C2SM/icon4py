@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil24(StencilTest):
+class TestAddTemporalTendenciesToVn(StencilTest):
     PROGRAM = add_temporal_tendencies_to_vn
     OUTPUTS = ("vn_nnew",)
 
@@ -63,8 +63,8 @@ class TestMoSolveNonhydroStencil24(StencilTest):
             vn_nnew=vn_nnew,
             dtime=dtime,
             cpd=cpd,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

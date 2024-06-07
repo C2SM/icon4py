@@ -13,6 +13,7 @@
 
 from dataclasses import dataclass
 
+from gt4py.next import as_field
 from gt4py.next.common import Field
 
 from icon4py.model.common.dimension import C2E2C2EDim, CellDim, KDim, VertexDim
@@ -21,19 +22,23 @@ from icon4py.model.common.dimension import C2E2C2EDim, CellDim, KDim, VertexDim
 @dataclass
 class DiagnosticState:
     """Class that contains the diagnostic state which is not used in dycore but may be used in physics.
-    These variables are only stored for output purpose.
+    These variables are also stored for output purpose.
 
     Corresponds to ICON t_nh_diag
     """
 
     pressure: Field[[CellDim, KDim], float]
-    pressure_ifc: Field[
-        [CellDim, KDim], float
-    ]  # has the same K dimension size with full-level variables because surface pressure is defined separately
+    # pressure at half levels
+    pressure_ifc: Field[[CellDim, KDim], float]
     temperature: Field[[CellDim, KDim], float]
-    pressure_sfc: Field[[CellDim], float]
+    # zonal wind speed
     u: Field[[CellDim, KDim], float]
+    # meridional wind speed
     v: Field[[CellDim, KDim], float]
+
+    @property
+    def pressure_sfc(self) -> Field[[CellDim], float]:
+        return as_field((CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 
 @dataclass

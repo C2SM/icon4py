@@ -14,7 +14,6 @@
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     grid_savepoint,

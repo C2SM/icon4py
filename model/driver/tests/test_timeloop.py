@@ -15,7 +15,6 @@ import os
 
 import numpy as np
 import pytest
-from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
@@ -28,15 +27,14 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, zero_field
-from icon4py.model.common.dimension import C2E2C2EDim, CEDim, CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
+from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
-    JABW_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
 from icon4py.model.common.test_utils.helpers import (
@@ -44,7 +42,6 @@ from icon4py.model.common.test_utils.helpers import (
     dallclose,
 )
 from icon4py.model.driver.dycore_driver import TimeLoop
-from icon4py.model.driver.initialization_utils import model_initialization_jabw
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
@@ -58,84 +55,9 @@ from .utils import (
 )
 
 
-compiler_backend = run_gtfn
-compiler_cached_backend = run_gtfn_cached
-backend = compiler_cached_backend
-
-
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, experiment_name, fname_prefix, rank, debug",
-    [
-        (JABW_EXPERIMENT, "jabw", "icon_pydycore", 0, False),
-    ],
-)
-def test_jabw_initial_condition(
-    experiment,
-    datapath,
-    experiment_name,
-    fname_prefix,
-    rank,
-    data_provider,
-    grid_savepoint,
-    icon_grid,
-    debug,
-):
-    edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
-
-    (
-        diffusion_diagnostic_state,
-        solve_nonhydro_diagnostic_state,
-        prep_adv,
-        divdamp_fac_o2,
-        diagnostic_state,
-        prognostic_state_now,
-        prognostic_state_next,
-    ) = model_initialization_jabw(
-        icon_grid, cell_geometry, edge_geometry, datapath, fname_prefix, rank
-    )
-
-    # note that w is not verified because we decided to force w to zero in python framework after discussion
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
-        prognostic_state_now.rho.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
-        prognostic_state_now.exner.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
-        prognostic_state_now.theta_v.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(), prognostic_state_now.vn.asnumpy()
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
-        diagnostic_state.pressure.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
-        diagnostic_state.temperature.asnumpy(),
-    )
-
-    assert dallclose(
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
-        diagnostic_state.pressure_sfc.asnumpy(),
-    )
-
-
-@pytest.mark.datatest
-@pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, ndyn_substeps, damping_height",
+    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
     [
         (
             False,
@@ -201,57 +123,6 @@ def test_jabw_initial_condition(
             True,
             50000.0,
         ),
-        (
-            False,
-            JABW_EXPERIMENT,
-            1,
-            2,
-            0,
-            4,
-            "2008-09-01T00:00:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:05:00.000",
-            False,
-            False,
-            False,
-            5,
-            45000.0,
-        ),
-        (
-            False,
-            JABW_EXPERIMENT,
-            1,
-            2,
-            0,
-            4,
-            "2008-09-01T00:05:00.000",
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:10:00.000",
-            False,
-            False,
-            True,
-            5,
-            45000.0,
-        ),
-        (
-            False,
-            JABW_EXPERIMENT,
-            1,
-            2,
-            0,
-            4,
-            "2008-09-01T00:10:00.000",
-            "2008-09-01T00:15:00.000",
-            "2008-09-01T00:15:00.000",
-            "2008-09-01T00:15:00.000",
-            False,
-            False,
-            True,
-            5,
-            45000.0,
-        ),
     ],
 )
 def test_run_timeloop_single_step(
@@ -315,12 +186,12 @@ def test_run_timeloop_single_step(
         timeloop_date_init,
         timeloop_date_exit,
         timeloop_diffusion_linit_init,
-        damping_height=damping_height,
+        damping_height,
         ndyn_substeps=ndyn_substeps,
     )
 
     assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert iconrun_config.dtime == diffusion_dtime
+    assert iconrun_config.dtime.total_seconds() == diffusion_dtime
 
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = InterpolationState(
@@ -393,9 +264,8 @@ def test_run_timeloop_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-
     diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
-        timeloop_diffusion_savepoint_init, grid_savepoint, False
+        timeloop_diffusion_savepoint_init,
     )
 
     prep_adv = PrepAdvection(
@@ -429,17 +299,13 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = TimeLoop(
-        iconrun_config, icon_grid, diffusion, solve_nonhydro, is_run_from_serializedData=True
-    )
+    timeloop = TimeLoop(iconrun_config, icon_grid, diffusion, solve_nonhydro)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
     initial_prognostic_date = "2021-06-20T12:00:10.000"
     if experiment == GLOBAL_EXPERIMENT:
         initial_prognostic_date = "2000-01-01T00:00:00.000"
-    elif experiment == JABW_EXPERIMENT:
-        initial_prognostic_date = "2008-09-01T00:00:00.000"
 
     if timeloop_date_exit == initial_prognostic_date:
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
@@ -461,28 +327,25 @@ def test_run_timeloop_single_step(
 
     prognostic_state_list = [prognostic_state, prognostic_state_new]
 
-    diagnostic_state = DiagnosticState(
-        pressure=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid),
-        temperature=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_sfc=_allocate(CellDim, grid=icon_grid),
-        u=_allocate(CellDim, KDim, grid=icon_grid),
-        v=_allocate(CellDim, KDim, grid=icon_grid),
+    diagnostic_metric_state = DiagnosticMetricState(
+        ddqz_z_full=metrics_savepoint.ddqz_z_full(),
+        rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
+        rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
+        cell_center_lat=grid_savepoint.cell_center_lat(),
+        cell_center_lon=grid_savepoint.cell_center_lon(),
+        v_lat=grid_savepoint.v_lat(),
+        v_lon=grid_savepoint.v_lon(),
+        e_lat=grid_savepoint.edge_center_lat(),
+        e_lon=grid_savepoint.edge_center_lon(),
+        vct_a=grid_savepoint.vct_a(),
     )
 
-    diagnostic_metric_state = DiagnosticMetricState(
-        ddqz_z_full=_allocate(CellDim, KDim, grid=icon_grid, dtype=float),
-        rbf_vec_coeff_c1=_allocate(
-            CellDim, C2E2C2EDim, grid=icon_grid, dtype=float
-        ),  # TODO: change to C2E2C2EDim
-        rbf_vec_coeff_c2=_allocate(CellDim, C2E2C2EDim, grid=icon_grid, dtype=float),
-        v_lat=_allocate(VertexDim, grid=icon_grid),
-        v_lon=_allocate(VertexDim, grid=icon_grid),
-        e_lat=_allocate(EdgeDim, grid=icon_grid),
-        e_lon=_allocate(EdgeDim, grid=icon_grid),
-        cell_center_lat=_allocate(CellDim, grid=icon_grid),
-        cell_center_lon=_allocate(CellDim, grid=icon_grid),
-        vct_a=grid_savepoint.vct_a(),
+    diagnostic_state = DiagnosticState(
+        pressure=None,
+        pressure_ifc=None,
+        temperature=None,
+        u=None,
+        v=None,
     )
 
     timeloop.time_integration(
@@ -550,29 +413,29 @@ def test_run_timeloop_single_step(
         )
 
     assert dallclose(
-        vn_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+        vn_sp.asnumpy(),
         atol=6e-12,
     )
 
     assert dallclose(
-        w_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+        w_sp.asnumpy(),
         atol=8e-14,
     )
 
     assert dallclose(
-        exner_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+        exner_sp.asnumpy(),
     )
 
     assert dallclose(
-        theta_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+        theta_sp.asnumpy(),
         atol=4e-12,
     )
 
     assert dallclose(
-        rho_sp.asnumpy(),
         prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+        rho_sp.asnumpy(),
     )

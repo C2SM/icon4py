@@ -41,11 +41,11 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_the
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta import (
-    _compute_pertubation_of_rho_and_theta,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    _compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.compute_pertubation_of_rho_and_theta_and_rho_at_ic import (
-    _compute_pertubation_of_rho_and_theta_and_rho_at_ic,
+from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers import (
+    _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers,
 )
 from icon4py.model.atmosphere.dycore.compute_solver_coefficients_matrix import (
     _compute_solver_coefficients_matrix,
@@ -57,6 +57,12 @@ from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_t
 from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
     _extrapolate_temporally_exner_pressure,
 )
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+    _init_cell_kdim_field_with_zero_wp,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
@@ -64,23 +70,23 @@ from icon4py.model.atmosphere.dycore.interpolate_to_surface import _interpolate_
 from icon4py.model.atmosphere.dycore.interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges import (
     _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
 from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
     _set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _set_zero_c_k, _set_zero_e_k
-from icon4py.model.atmosphere.dycore.update_densety_exener_wind import _update_densety_exener_wind
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    _broadcast_zero_to_three_edge_kdim_fields_wp,
+)
+from icon4py.model.atmosphere.dycore.update_density_exner_wind import _update_density_exner_wind
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
 from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 
 
 # TODO: abishekg7 move this to tests
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_test_fields(
     z_rho_e: Field[[EdgeDim, KDim], float],
     z_theta_v_e: Field[[EdgeDim, KDim], float],
@@ -92,19 +98,11 @@ def init_test_fields(
     indices_cells_2: int32,
     nlev: int32,
 ):
-    _set_zero_e_k(
-        out=z_rho_e,
+    _broadcast_zero_to_three_edge_kdim_fields_wp(
+        out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
         domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
     )
-    _set_zero_e_k(
-        out=z_theta_v_e,
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
-    )
-    _set_zero_e_k(
-        out=z_graddiv_vn,
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
-    )
-    _set_zero_c_k(
+    _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
         domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
     )
@@ -121,16 +119,16 @@ def _predictor_stencils_2_3(
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
     (z_exner_ex_pr, exner_pr) = where(
-        (k_field >= int32(0)) & (k_field < nlev),
+        (k_field >= 0) & (k_field < nlev),
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(k_field == nlev, _set_zero_c_k(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_2_3(
     exner_exfac: Field[[CellDim, KDim], float],
     exner: Field[[CellDim, KDim], float],
@@ -195,7 +193,7 @@ def _predictor_stencils_4_5_6(
     return z_exner_ic, z_dexner_dz_c_1
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_4_5_6(
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     z_exner_ex_pr: Field[[CellDim, KDim], float],
@@ -255,21 +253,21 @@ def _predictor_stencils_7_8_9(
     Field[[CellDim, KDim], float],
 ]:
     (z_rth_pr_1, z_rth_pr_2) = where(
-        k_field == int32(0),
-        _compute_pertubation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
+        k_field == 0,
+        _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
     (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
-        k_field >= int32(1),
-        _compute_pertubation_of_rho_and_theta_and_rho_at_ic(
+        k_field >= 1,
+        _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
             wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
         ),
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
     (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
-        k_field >= int32(1),
+        k_field >= 1,
         _compute_virtual_potential_temperatures_and_pressure_gradient(
             wgtfac_c,
             z_rth_pr_2,
@@ -285,7 +283,7 @@ def _predictor_stencils_7_8_9(
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_7_8_9(
     rho: Field[[CellDim, KDim], float],
     rho_ref_mc: Field[[CellDim, KDim], float],
@@ -352,7 +350,7 @@ def _predictor_stencils_11_lower_upper(
     k_field: Field[[KDim], int32],
     nlev: int32,
 ) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_theta_v_pr_ic)
+    z_theta_v_pr_ic = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
 
     (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
@@ -362,7 +360,7 @@ def _predictor_stencils_11_lower_upper(
     return z_theta_v_pr_ic, theta_v_ic
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_11_lower_upper(
     wgtfacq_c_dsl: Field[[CellDim, KDim], float],
     z_rth_pr: Field[[CellDim, KDim], float],
@@ -392,7 +390,7 @@ def predictor_stencils_11_lower_upper(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: Field[[EdgeDim, KDim], float],
     p_vt: Field[[EdgeDim, KDim], float],
@@ -469,14 +467,14 @@ def _predictor_stencils_35_36(
         z_w_concorr_me,
     )
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field >= int32(1),
+        k_field >= 1,
         _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_35_36(
     vn: Field[[EdgeDim, KDim], float],
     ddxn_z_full: Field[[EdgeDim, KDim], float],
@@ -514,7 +512,7 @@ def predictor_stencils_35_36(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_37_38(
     vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
@@ -575,7 +573,7 @@ def _stencils_39_40(
     return w_concorr_c
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
     e_bln_c_s: Field[[CEDim], float],
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
@@ -643,7 +641,7 @@ def _stencils_42_44_45_45b(
     Field[[CellDim, KDim], float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= int32(1)) & (k_field < nlev),
+        (k_field >= 1) & (k_field < nlev),
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -661,7 +659,7 @@ def _stencils_42_44_45_45b(
     )
 
     (z_beta, z_alpha) = where(
-        (k_field >= int32(0)) & (k_field < nlev),
+        (k_field >= 0) & (k_field < nlev),
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -676,13 +674,13 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
-    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
+    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_42_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
@@ -783,7 +781,7 @@ def _stencils_43_44_45_45b(
     Field[[CellDim, KDim], float],
 ]:
     (z_w_expl, z_contr_w_fl_l) = where(
-        (k_field >= int32(1)) & (k_field < nlev),
+        (k_field >= 1) & (k_field < nlev),
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
             ddt_w_adv_ntl1,
@@ -797,7 +795,7 @@ def _stencils_43_44_45_45b(
         (z_w_expl, z_contr_w_fl_l),
     )
     (z_beta, z_alpha) = where(
-        (k_field >= int32(0)) & (k_field < nlev),
+        (k_field >= 0) & (k_field < nlev),
         _compute_solver_coefficients_matrix(
             exner_nnow,
             rho_nnow,
@@ -812,13 +810,13 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), z_alpha)
-    z_q = where(k_field == int32(0), _set_cell_kdim_field_to_zero_vp(), z_q)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_43_44_45_45b(
     z_w_expl: Field[[CellDim, KDim], float],
     w_nnow: Field[[CellDim, KDim], float],
@@ -911,7 +909,7 @@ def _stencils_47_48_49(
     )
     # 48 and 49 are identical except for bounds
     (z_rho_expl, z_exner_expl) = where(
-        (k_field >= int32(0)) & (k_field < nlev),
+        (k_field >= 0) & (k_field < nlev),
         _compute_explicit_part_for_rho_and_exner(
             rho_nnow,
             inv_ddqz_z_full,
@@ -929,7 +927,7 @@ def _stencils_47_48_49(
     return w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_47_48_49(
     w_nnew: Field[[CellDim, KDim], float],
     z_contr_w_fl_l: Field[[CellDim, KDim], float],
@@ -997,8 +995,8 @@ def _stencils_61_62(
     Field[[CellDim, KDim], float],
 ]:
     (rho_new, exner_new, w_new) = where(
-        (k_field >= int32(0)) & (k_field < nlev),
-        _update_densety_exener_wind(
+        (k_field >= 0) & (k_field < nlev),
+        _update_density_exner_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),
@@ -1011,7 +1009,7 @@ def _stencils_61_62(
     return rho_new, exner_new, w_new
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def stencils_61_62(
     rho_now: Field[[CellDim, KDim], float],
     grf_tend_rho: Field[[CellDim, KDim], float],

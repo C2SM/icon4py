@@ -22,7 +22,9 @@ from gt4py.next.ffront.fbuiltins import (
     maximum,
 )
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.settings import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
@@ -51,62 +53,23 @@ def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]
     return field * factor
 
 
-@program
+@program(backend=backend)
 def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
 
 @field_operator
-def _set_zero_v_k() -> Field[[VertexDim, KDim], float]:
-    return broadcast(0.0, (VertexDim, KDim))
-
-
-@program
-def set_zero_v_k(field: Field[[VertexDim, KDim], float]):
-    _set_zero_v_k(out=field)
-
-
-@field_operator
-def _set_zero_e_k() -> Field[[EdgeDim, KDim], float]:
-    return broadcast(0.0, (EdgeDim, KDim))
-
-
-@program
-def set_zero_e_k(
-    field: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
+    tuple[
+        Field[[EdgeDim, KDim], wpfloat],
+        Field[[EdgeDim, KDim], wpfloat],
+        Field[[EdgeDim, KDim], wpfloat],
+    ]
 ):
-    _set_zero_e_k(
-        out=field,
-        domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
-    )
-
-
-@field_operator
-def _set_zero_c_k() -> Field[[CellDim, KDim], float]:
-    return broadcast(0.0, (CellDim, KDim))
-
-
-@program
-def set_zero_c_k(
-    field: Field[[CellDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
-):
-    _set_zero_c_k(
-        out=field,
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        },
+    return (
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
     )
 
 
@@ -153,7 +116,7 @@ def _compute_z_raylfac(rayleigh_w: Field[[KDim], float], dtime: float) -> Field[
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program
+@program(backend=backend)
 def compute_z_raylfac(
     rayleigh_w: Field[[KDim], float], dtime: float, z_raylfac: Field[[KDim], float]
 ):

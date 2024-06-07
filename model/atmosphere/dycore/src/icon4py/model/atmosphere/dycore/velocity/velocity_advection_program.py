@@ -34,14 +34,15 @@ from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity imp
     _correct_contravariant_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import _extrapolate_at_top
+from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+    _init_cell_kdim_field_with_zero_vp,
+)
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.atmosphere.dycore.set_cell_kdim_field_to_zero_vp import (
-    _set_cell_kdim_field_to_zero_vp,
-)
 from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 
 
 @field_operator
@@ -70,7 +71,7 @@ def _fused_stencils_4_5(
     )
 
     (vn_ie, z_vt_ie, z_kin_hor_e) = where(
-        k_field == int32(0),
+        k_field == 0,
         _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
     )
@@ -78,7 +79,7 @@ def _fused_stencils_4_5(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_4_5(
     vn: Field[[EdgeDim, KDim], float],
     vt: Field[[EdgeDim, KDim], float],
@@ -116,7 +117,7 @@ def fused_stencils_4_5(
     )
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_at_top(
     wgtfacq_e: Field[[EdgeDim, KDim], float],
     vn: Field[[EdgeDim, KDim], float],
@@ -155,7 +156,7 @@ def _fused_stencils_9_10(
     )
 
     w_concorr_c = where(
-        (k_field >= nflatlev_startindex + int32(1)) & (k_field < nlev),
+        (k_field >= nflatlev_startindex + 1) & (k_field < nlev),
         _interpolate_to_half_levels_vp(interpolant=local_z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
     )
@@ -163,7 +164,7 @@ def _fused_stencils_9_10(
     return local_z_w_concorr_mc, w_concorr_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_9_10(
     z_w_concorr_me: Field[[EdgeDim, KDim], float],
     e_bln_c_s: Field[[CEDim], float],
@@ -205,22 +206,22 @@ def _fused_stencils_11_to_13(
     nlev: int32,
 ):
     local_z_w_con_c = where(
-        (k_field >= int32(0)) & (k_field < nlev),
+        (k_field >= 0) & (k_field < nlev),
         _copy_cell_kdim_field_to_vp(w),
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = where(k_field == nlev, _set_cell_kdim_field_to_zero_vp(), local_z_w_con_c)
+    local_z_w_con_c = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c)
 
     local_z_w_con_c = where(
-        (k_field >= (nflatlev_startindex + int32(1))) & (k_field < nlev),
+        (k_field >= (nflatlev_startindex + 1)) & (k_field < nlev),
         _correct_contravariant_vertical_velocity(local_z_w_con_c, w_concorr_c),
         local_z_w_con_c,
     )
     return local_z_w_con_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_11_to_13(
     w: Field[[CellDim, KDim], float],
     w_concorr_c: Field[[CellDim, KDim], float],
@@ -269,7 +270,7 @@ def _fused_stencil_14(
     return local_cfl_clipping, local_vcfl, local_z_w_con_c
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencil_14(
     local_z_w_con_c: Field[[CellDim, KDim], float],
     ddqz_z_half: Field[[CellDim, KDim], float],
@@ -312,7 +313,7 @@ def _fused_stencils_16_to_17(
     return ddt_w_adv
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_16_to_17(
     w: Field[[CellDim, KDim], float],
     local_z_v_grad_w: Field[[EdgeDim, KDim], float],

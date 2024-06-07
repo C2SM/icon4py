@@ -38,7 +38,7 @@ def interpolate_to_cell_center_numpy(
     return interpolation
 
 
-class TestMoVelocityAdvectionStencil09(StencilTest):
+class TestInterpolateToCellCenter(StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 
@@ -57,8 +57,8 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
             interpolant=interpolant,
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             interpolation=interpolation,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

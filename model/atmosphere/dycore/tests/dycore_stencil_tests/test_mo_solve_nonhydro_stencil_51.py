@@ -100,8 +100,8 @@ class TestMoSolveNonHydroStencil51(StencilTest):
             z_exner_expl=z_exner_expl,
             dtime=dtime,
             cpd=cpd,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )

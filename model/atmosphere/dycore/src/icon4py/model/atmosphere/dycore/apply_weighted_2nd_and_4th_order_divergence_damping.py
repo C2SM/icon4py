@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
 
 from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -36,7 +37,7 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
     return vn_wp
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_weighted_2nd_and_4th_order_divergence_damping(
     scal_divdamp: Field[[KDim], wpfloat],
     bdy_divdamp: Field[[KDim], wpfloat],
