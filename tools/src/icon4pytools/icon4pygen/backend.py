@@ -194,7 +194,7 @@ def generate_dace_code(
     transformed_fencil = transform_and_configure_fencil(stencil_info.fendef)
 
     translation = dace_workflow.DaCeTranslator(
-        auto_optimize=False,
+        auto_optimize=True,
         device_type=core_defs.DeviceType.CUDA if on_gpu else core_defs.DeviceType.CPU,
     )
 
