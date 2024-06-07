@@ -28,7 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestComputeDivergenceOfFluxesOfRhoAndTheta(StencilTest):
+class TestComputeDivergenconnectivityceOfFluxesOfRhoAndTheta(StencilTest):
     PROGRAM = compute_divergence_of_fluxes_of_rho_and_theta
     OUTPUTS = ("z_flxdiv_mass", "z_flxdiv_theta")
 
@@ -42,12 +42,14 @@ class TestComputeDivergenceOfFluxesOfRhoAndTheta(StencilTest):
     ) -> tuple[np.array]:
         c2e = grid.connectivities[C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
+        c2ce = grid.get_offset_provider("C2CE").table
+
         z_flxdiv_mass = np.sum(
-            geofac_div[grid.get_offset_provider("C2CE").table] * mass_fl_e[c2e],
+            geofac_div[c2ce] * mass_fl_e[c2e],
             axis=1,
         )
         z_flxdiv_theta = np.sum(
-            geofac_div[grid.get_offset_provider("C2CE").table] * z_theta_v_fl_e[c2e],
+            geofac_div[c2ce] * z_theta_v_fl_e[c2e],
             axis=1,
         )
         return dict(z_flxdiv_mass=z_flxdiv_mass, z_flxdiv_theta=z_flxdiv_theta)

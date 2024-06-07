@@ -344,7 +344,7 @@ Options:
 ## Important Environment Variables
 
 When embedding granules it may be necessary to use an ICON grid file, as is the case in the diffusion granule wrapper.
-The granule expects an `ICON_GRID_LOC` environment variable with the path to the folder holding the grid netcdf file.
+The granule expects an `ICON_GRID_LOC` environment variable with the path to the folder containing the different grids.
 
 ### Example
 
