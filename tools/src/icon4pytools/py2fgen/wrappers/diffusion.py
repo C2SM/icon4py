@@ -238,7 +238,7 @@ def diffusion_init(
         v2e_loc,
         e2c2v_loc,
         e2c_loc,
-        True,
+        limited_area,
         on_gpu,
     )
 
