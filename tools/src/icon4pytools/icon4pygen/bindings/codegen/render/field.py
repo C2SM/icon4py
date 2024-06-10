@@ -42,6 +42,17 @@ class FieldRenderer:
             tags.append("unstructured::dim::vertical")
         return ",".join(tags)
 
+    def render_horizontal_size(self):
+        """Render c++ size in horizontal dimension."""
+        _size = {"E": "NumEdges", "C": "NumCells", "V": "NumVertices"}
+        if self.entity.is_dense():
+            return _size[str(self.entity.location)]
+        elif self.entity.is_sparse() or self.entity.is_compound():
+            location = cast(ChainedLocation | CompoundLocation, self.entity.location)
+            return _size[str(location[0])]
+        else:
+            raise BindingsRenderingException("horizontal size called on scalar")
+
     def render_strides(self, use_dense_rank: bool = True) -> str:
         if self.entity.rank() == 0:
             raise BindingsRenderingException("can not render sid of a scalar")

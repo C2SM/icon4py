@@ -512,6 +512,7 @@ class CppDefTemplate(Node):
     run_verify_func: RunAndVerifyFunc = eve.datamodels.field(init=False)
     setup_func: SetupFunc = eve.datamodels.field(init=False)
     free_func: FreeFunc = eve.datamodels.field(init=False)
+    k_size_suffix: str = "k_size"
 
     def _get_field_data(self) -> tuple:
         output_fields = [field for field in self.fields if field.intent.out]
@@ -565,11 +566,18 @@ class CppDefTemplate(Node):
         for f in fields["all_fields"]:
             for i in range(f.rank()):
                 size_symbol = f"__{f.name}_size_{i}"
-                if size_symbol in self.arglist_init and size_symbol not in scalar_args:
+                if f in fields["output"]:
+                    assert i < 2
+                    if i == 0:
+                        symbol_value = f"mesh_.{f.renderer.render_horizontal_size()}"
+                    else:
+                        symbol_value = f"{f.name}_{self.k_size_suffix}"
+                    symbol_args[size_symbol] = symbol_value
+                elif size_symbol in self.arglist_init and size_symbol not in scalar_args:
                     warnings.warn(f"Field size {size_symbol} not found as scalar argument.")
                     # TODO: the field size is supposed to be passed as a scalar argument
                     # but sometimes it is not, so we need to consider the max size of the field
-                    symbol_args[f"__{f.name}_size_{i}"] = "0"
+                    symbol_args[size_symbol] = "0"
         for f in self.offsets:
             array_param = f"__connectivity_{f.renderer.render_uppercase_shorthand()}"
             array_arg = f"mesh_.{f.renderer.render_lowercase_shorthand()}Table"
@@ -618,7 +626,7 @@ class CppDefTemplate(Node):
                 funcname=self.stencil_name,
                 fields=self.fields,
                 out_fields=fields["output"],
-                k_size_suffix="k_size",
+                k_size_suffix=self.k_size_suffix,
             ),
         )
 
