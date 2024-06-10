@@ -942,21 +942,24 @@ def dace_jit(self):
                     # Parse SDFG
                     sdfg = daceP._parse(args, kwargs)
 
+                    # HALO EXCHANGE
                     if isinstance(self._exchange, GHexMultiNodeExchange):
                         counter = 0
                         for nested_sdfg in sdfg.all_sdfgs_recursive():
                             if not hasattr(nested_sdfg, "GT4Py_Program_input_fields"):
                                 continue
-                            
+
+                            if len(nested_sdfg.GT4Py_Program_output_fields) == 0:
+                                continue
+
                             field_dims = set()
-                            for buffer_name, dims in nested_sdfg.GT4Py_Program_output_fields.items():
-                                for dim in dims:
-                                    if dim.kind == DimensionKind.HORIZONTAL:
-                                        field_dims.add(dim)
+                            for dim in nested_sdfg.GT4Py_Program_output_fields.values():
+                                field_dims.add(dim)
 
                             if len(field_dims) > 1:
-                                raise ValueError("The output fields to be communicated are not defined on the same dimension kind.")
+                                raise ValueError("The output fields to be communicated are not defined on the same dimension.")
 
+                            # dimension of the fields to be exchanged
                             dim = {'Cell':CellDim, 'Edge':EdgeDim, 'Vertex':VertexDim}[list(field_dims)[0].value] if len(field_dims) == 1 else None
                             if not dim:
                                 continue
@@ -967,11 +970,11 @@ def dace_jit(self):
                             # Gather all input fields for the all stencils below the current one
                             input_fields = set() # global names (refer to the fused sdfg) and not local ones (nested sdfgs)
                             cont = True
-                            for one_after_nsdfg in sdfg.all_sdfgs_recursive():
-                                if not hasattr(one_after_nsdfg, "GT4Py_Program_input_fields"):
+                            for ones_after_nsdfg in sdfg.all_sdfgs_recursive():
+                                if not hasattr(ones_after_nsdfg, "GT4Py_Program_input_fields"):
                                     continue
 
-                                if one_after_nsdfg is nested_sdfg:
+                                if ones_after_nsdfg is nested_sdfg:
                                     cont = False
                                     continue
 
@@ -979,12 +982,46 @@ def dace_jit(self):
                                     continue
 
                                 for sdfg_state in sdfg.states():
-                                    if sdfg_state.label == one_after_nsdfg.parent.label:
+                                    if sdfg_state.label == ones_after_nsdfg.parent.label:
                                         break
-                                
-                                for buffer_name in one_after_nsdfg.GT4Py_Program_input_fields:
-                                    if not one_after_nsdfg.neighbor_access[buffer_name]:
+
+                                for buffer_name in ones_after_nsdfg.GT4Py_Program_input_fields:
+                                    halo_access = False
+                                    for op_ in ones_after_nsdfg.offset_providers_per_input_field[buffer_name]:
+                                        if halo_access:
+                                            continue
+                                        if len(op_) == 0:
+                                            continue
+                                        offset_literal_value = op_[0].value
+                                        if not hasattr(self.grid.offset_providers[offset_literal_value], 'table'):
+                                            continue
+                                        op = self.grid.offset_providers[offset_literal_value].table
+
+                                        source_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[0]]
+                                        dest_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[-2] if offset_literal_value[-1] == 'O' else offset_literal_value[-1]]
+                                        
+                                        if source_dim != list(ones_after_nsdfg.GT4Py_Program_output_fields.values())[0]:
+                                           continue
+                                        
+                                        inds_to_check = op[ones_after_nsdfg.stencil_horizontal_start]
+                                        for ind in range(ones_after_nsdfg.stencil_horizontal_start+1, ones_after_nsdfg.stencil_horizontal_end):
+                                            inds_to_check = np.concatenate((inds_to_check, op[ind]))
+
+                                        halos_inds = self._exchange._decomposition_info.local_index(dest_dim, di.EntryType.HALO)
+
+                                        if np.intersect1d(halos_inds, inds_to_check).size > 0:
+                                            halo_access = True
+                                            break
+                                    
+                                    all_bools = mpi4py.MPI.COMM_WORLD.allgather(halo_access)
+                                    if len(set(all_bools)) == 2:
+                                        halo_access = True
+                                    else:
+                                        halo_access = all_bools[0]
+
+                                    if not halo_access:
                                         continue
+
                                     global_buffer_name = None
                                     for edge in sdfg_state.all_edges_recursive():
                                         # global_buffer_name [src] --> local buffer_name [dst]
