@@ -563,10 +563,13 @@ class CppDefTemplate(Node):
                 strides = f.renderer.render_strides(use_dense_rank=False).split(",")
                 for i, s in enumerate(strides):
                     symbol_args[f"__{f.name}_stride_{i}"] = s
+        output_fields = {
+            f.name for f in fields["output"]
+        }
         for f in fields["all_fields"]:
             for i in range(f.rank()):
                 size_symbol = f"__{f.name}_size_{i}"
-                if f in fields["output"]:
+                if f.name in output_fields and f.rank() != 0:
                     assert i < 2
                     if i == 0:
                         symbol_value = f"mesh_.{f.renderer.render_horizontal_size()}"
