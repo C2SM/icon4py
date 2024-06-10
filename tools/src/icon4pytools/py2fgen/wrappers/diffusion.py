@@ -203,13 +203,13 @@ def diffusion_init(
     # e_glb_index_np = np.pad(e_glb_index_np, (0,nproma-num_edges), mode='constant', constant_values=0)
     # v_glb_index_np = np.pad(v_glb_index_np, (0,nproma-num_verts), mode='constant', constant_values=0)
 
-    # c_owner_mask_np = c_owner_mask.ndarray[0:num_cells]
-    # e_owner_mask_np = e_owner_mask.ndarray[0:num_edges]
-    # v_owner_mask_np = v_owner_mask.ndarray[0:num_verts]
+    c_owner_mask_np = c_owner_mask.ndarray.copy(order="F")[0:num_cells]
+    e_owner_mask_np = e_owner_mask.ndarray.copy(order="F")[0:num_edges]
+    v_owner_mask_np = v_owner_mask.ndarray.copy(order="F")[0:num_verts]
 
-    c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray, order="F").copy(order="F")[0:num_cells]
-    e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray, order="F").copy(order="F")[0:num_edges]
-    v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray, order="F").copy(order="F")[0:num_verts]
+    #c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray, order="F").copy(order="F")[0:num_cells]
+    #e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray, order="F").copy(order="F")[0:num_edges]
+    #v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray, order="F").copy(order="F")[0:num_verts]
 
     log.debug(
         " shape of glb %s %s %s", c_glb_index_np.shape, e_glb_index_np.shape, v_glb_index_np.shape

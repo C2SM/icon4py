@@ -132,7 +132,8 @@ def construct_icon_grid(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-
+    log.debug(" c2e2c.shape[0] %s",c2e2c.shape[0])
+    log.debug(" xp.asarray(range(c2e2c.shape[0]))) %s",xp.asarray(range(c2e2c.shape[0])).shape)  
     c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
 
     grid = (
@@ -169,7 +170,8 @@ def construct_icon_grid(
 
 
 def fortran_grid_indices_to_numpy_offset(inp) -> np.ndarray:
-    return np.subtract(xp.asnumpy(inp.ndarray, order="F").copy(order="F"), 1)
+    #return np.subtract(xp.asnumpy(inp.ndarray, order="F").copy(order="F"), 1)
+    return np.subtract(inp.ndarray.copy(order="F"), 1)
 
 
 def fortran_grid_connectivities_to_xp_offset(inp) -> np.ndarray:
@@ -177,7 +179,8 @@ def fortran_grid_connectivities_to_xp_offset(inp) -> np.ndarray:
 
 
 def fortran_grid_indices_to_numpy(inp) -> np.ndarray:
-    return xp.asnumpy(inp.ndarray, order="F").copy(order="F")
+    #return xp.asnumpy(inp.ndarray, order="F").copy(order="F")
+    return inp.ndarray.copy(order="F")
 
 def _download_and_load_from_gridfile(
     file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
