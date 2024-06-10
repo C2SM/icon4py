@@ -53,13 +53,13 @@ class DiffusionDiagnosticState:
 class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
-    theta_ref_mc: fa.CKfloatField
+    theta_ref_mc: fa.CellKField[float]
     wgtfac_c: Field[
         [CellDim, KDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
-    mask_hdiff: fa.CKboolField
+    mask_hdiff: fa.CellKField[bool]
     zd_vertoffset: Field[[CECDim, KDim], int32]
-    zd_diffcoef: fa.CKfloatField
+    zd_diffcoef: fa.CellKField[float]
     zd_intcoef: Field[[CECDim, KDim], float]
 
 
@@ -84,10 +84,10 @@ class DiffusionInterpolationState:
     geofac_grg_y: Field[
         [CellDim, C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
-    nudgecoeff_e: fa.EfloatField  # Nudgeing coeffients for edges
+    nudgecoeff_e: fa.EdgeField[float]  # Nudgeing coeffients for edges
 
     @functools.cached_property
-    def geofac_n2s_c(self) -> fa.CfloatField:
+    def geofac_n2s_c(self) -> fa.CellField[float]:
         return as_field((CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property

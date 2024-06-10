@@ -19,10 +19,10 @@ from icon4py.model.common import field_type_aliases as fa
 
 @field_operator
 def _upwind_vflux_ppm_stencil_01(
-    z_face_up: fa.CKfloatField,
-    z_face_low: fa.CKfloatField,
-    p_cc: fa.CKfloatField,
-) -> tuple[fa.CKfloatField, fa.CKfloatField]:
+    z_face_up: fa.CellKField[float],
+    z_face_low: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
     z_delta_q = 0.5 * (z_face_up - z_face_low)
     z_a1 = p_cc - 0.5 * (z_face_up + z_face_low)
 
@@ -31,10 +31,10 @@ def _upwind_vflux_ppm_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_vflux_ppm_stencil_01(
-    z_face_up: fa.CKfloatField,
-    z_face_low: fa.CKfloatField,
-    p_cc: fa.CKfloatField,
-    z_delta_q: fa.CKfloatField,
-    z_a1: fa.CKfloatField,
+    z_face_up: fa.CellKField[float],
+    z_face_low: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+    z_delta_q: fa.CellKField[float],
+    z_a1: fa.CellKField[float],
 ):
     _upwind_vflux_ppm_stencil_01(z_face_up, z_face_low, p_cc, out=(z_delta_q, z_a1))

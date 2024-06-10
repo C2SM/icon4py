@@ -22,15 +22,17 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _init_two_edge_kdim_fields_with_zero_wp() -> tuple[fa.EKwpField, fa.EKwpField]:
+def _init_two_edge_kdim_fields_with_zero_wp() -> (
+    tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]
+):
     """Formerly know as _mo_solve_nonhydro_stencil_14, _mo_solve_nonhydro_stencil_15, or _mo_solve_nonhydro_stencil_33."""
     return broadcast(wpfloat("0.0"), (EdgeDim, KDim)), broadcast(wpfloat("0.0"), (EdgeDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_two_edge_kdim_fields_with_zero_wp(
-    edge_kdim_field_with_zero_wp_1: fa.EKwpField,
-    edge_kdim_field_with_zero_wp_2: fa.EKwpField,
+    edge_kdim_field_with_zero_wp_1: fa.EdgeKField[wpfloat],
+    edge_kdim_field_with_zero_wp_2: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

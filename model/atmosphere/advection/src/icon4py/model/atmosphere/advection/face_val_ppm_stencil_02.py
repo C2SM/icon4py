@@ -20,9 +20,9 @@ from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 @field_operator
 def _face_val_ppm_stencil_02a(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+) -> fa.CellKField[float]:
     p_face = p_cc * (1.0 - (p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1]))) + (
         p_cellhgt_mc_now / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     ) * ((p_cellhgt_mc_now / p_cellhgt_mc_now(Koff[-1])) * p_cc + p_cc(Koff[-1]))
@@ -32,31 +32,31 @@ def _face_val_ppm_stencil_02a(
 
 @field_operator
 def _face_val_ppm_stencil_02b(
-    p_cc: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+) -> fa.CellKField[float]:
     p_face = p_cc
     return p_face
 
 
 @field_operator
 def _face_val_ppm_stencil_02c(
-    p_cc: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+) -> fa.CellKField[float]:
     p_face = p_cc(Koff[-1])
     return p_face
 
 
 @field_operator
 def _face_val_ppm_stencil_02(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-    p_face_in: fa.CKfloatField,
-    k: fa.KintField,
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+    p_face_in: fa.CellKField[float],
+    k: fa.KField[int32],
     slev: int32,
     elev: int32,
     slevp1: int32,
     elevp1: int32,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     k = broadcast(k, (CellDim, KDim))
 
     p_face = where(
@@ -74,15 +74,15 @@ def _face_val_ppm_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_02(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-    p_face_in: fa.CKfloatField,
-    k: fa.KintField,
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+    p_face_in: fa.CellKField[float],
+    k: fa.KField[int32],
     slev: int32,
     elev: int32,
     slevp1: int32,
     elevp1: int32,
-    p_face: fa.CKfloatField,
+    p_face: fa.CellKField[float],
 ):
     _face_val_ppm_stencil_02(
         p_cc,

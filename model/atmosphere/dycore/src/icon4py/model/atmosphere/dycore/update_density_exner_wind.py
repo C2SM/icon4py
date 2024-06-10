@@ -24,17 +24,17 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _update_density_exner_wind(
-    rho_now: fa.CKwpField,
-    grf_tend_rho: fa.CKwpField,
-    theta_v_now: fa.CKwpField,
-    grf_tend_thv: fa.CKwpField,
-    w_now: fa.CKwpField,
-    grf_tend_w: fa.CKwpField,
+    rho_now: fa.CellKField[wpfloat],
+    grf_tend_rho: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    grf_tend_thv: fa.CellKField[wpfloat],
+    w_now: fa.CellKField[wpfloat],
+    grf_tend_w: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ) -> tuple[
-    fa.CKwpField,
-    fa.CKwpField,
-    fa.CKwpField,
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_61."""
     rho_new_wp = rho_now + dtime * grf_tend_rho
@@ -45,15 +45,15 @@ def _update_density_exner_wind(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_density_exner_wind(
-    rho_now: fa.CKwpField,
-    grf_tend_rho: fa.CKwpField,
-    theta_v_now: fa.CKwpField,
-    grf_tend_thv: fa.CKwpField,
-    w_now: fa.CKwpField,
-    grf_tend_w: fa.CKwpField,
-    rho_new: fa.CKwpField,
-    exner_new: fa.CKwpField,
-    w_new: fa.CKwpField,
+    rho_now: fa.CellKField[wpfloat],
+    grf_tend_rho: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    grf_tend_thv: fa.CellKField[wpfloat],
+    w_now: fa.CellKField[wpfloat],
+    grf_tend_w: fa.CellKField[wpfloat],
+    rho_new: fa.CellKField[wpfloat],
+    exner_new: fa.CellKField[wpfloat],
+    w_new: fa.CellKField[wpfloat],
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

@@ -18,29 +18,29 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_results_for_thermodynamic_variables(
-    z_rho_expl: fa.CKwpField,
-    vwind_impl_wgt: fa.CwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    rho_ic: fa.CKwpField,
-    w: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    exner_ref_mc: fa.CKvpField,
-    z_alpha: fa.CKvpField,
-    z_beta: fa.CKvpField,
-    rho_now: fa.CKwpField,
-    theta_v_now: fa.CKwpField,
-    exner_now: fa.CKwpField,
+    z_rho_expl: fa.CellKField[wpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    rho_ic: fa.CellKField[wpfloat],
+    w: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    exner_ref_mc: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    rho_now: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    exner_now: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cvd_o_rd: wpfloat,
 ) -> tuple[
-    fa.CKwpField,
-    fa.CKwpField,
-    fa.CKwpField,
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_55."""
     inv_ddqz_z_full_wp, exner_ref_mc_wp, z_alpha_wp, z_beta_wp = astype(
@@ -66,21 +66,21 @@ def _compute_results_for_thermodynamic_variables(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_results_for_thermodynamic_variables(
-    z_rho_expl: fa.CKwpField,
-    vwind_impl_wgt: fa.CwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    rho_ic: fa.CKwpField,
-    w: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    exner_ref_mc: fa.CKvpField,
-    z_alpha: fa.CKvpField,
-    z_beta: fa.CKvpField,
-    rho_now: fa.CKwpField,
-    theta_v_now: fa.CKwpField,
-    exner_now: fa.CKwpField,
-    rho_new: fa.CKwpField,
-    exner_new: fa.CKwpField,
-    theta_v_new: fa.CKwpField,
+    z_rho_expl: fa.CellKField[wpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    rho_ic: fa.CellKField[wpfloat],
+    w: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    exner_ref_mc: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    rho_now: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    exner_now: fa.CellKField[wpfloat],
+    rho_new: fa.CellKField[wpfloat],
+    exner_new: fa.CellKField[wpfloat],
+    theta_v_new: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cvd_o_rd: wpfloat,
     horizontal_start: int32,

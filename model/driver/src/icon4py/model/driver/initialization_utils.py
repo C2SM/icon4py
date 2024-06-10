@@ -609,7 +609,7 @@ def read_geometry_fields(
     ser_type: SerializationType = SerializationType.SB,
     grid_root=2,
     grid_level=4,
-) -> tuple[EdgeParams, CellParams, VerticalModelParams, fa.CboolField]:
+) -> tuple[EdgeParams, CellParams, VerticalModelParams, fa.CellField[bool]]:
     """
     Read fields containing grid properties.
 

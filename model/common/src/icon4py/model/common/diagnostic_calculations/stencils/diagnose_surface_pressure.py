@@ -18,18 +18,18 @@ from gt4py.next.ffront.fbuiltins import exp, int32, log
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _diagnose_surface_pressure(
-    exner: fa.CKvpField,
-    temperature: fa.CKvpField,
-    ddqz_z_full: fa.CKwpField,
+    exner: fa.CellKField[vpfloat],
+    temperature: fa.CellKField[vpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
     grav_o_rd: wpfloat,
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     pressure_sfc = p0ref * exp(
         cpd_o_rd * log(exner(Koff[-3]))
         + grav_o_rd
@@ -44,10 +44,10 @@ def _diagnose_surface_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_surface_pressure(
-    exner: fa.CKvpField,
-    temperature: fa.CKvpField,
-    ddqz_z_full: fa.CKwpField,
-    pressure_sfc: fa.CKvpField,
+    exner: fa.CellKField[vpfloat],
+    temperature: fa.CellKField[vpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+    pressure_sfc: fa.CellKField[vpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
     grav_o_rd: wpfloat,

@@ -22,16 +22,16 @@ from icon4py.model.common.settings import backend
 
 @field_operator
 def _mo_solve_nonhydro_stencil_51(
-    vwind_impl_wgt: fa.CfloatField,
-    theta_v_ic: fa.CKfloatField,
-    ddqz_z_half: fa.CKfloatField,
-    z_beta: fa.CKfloatField,
-    z_alpha: fa.CKfloatField,
-    z_w_expl: fa.CKfloatField,
-    z_exner_expl: fa.CKfloatField,
+    vwind_impl_wgt: fa.CellField[float],
+    theta_v_ic: fa.CellKField[float],
+    ddqz_z_half: fa.CellKField[float],
+    z_beta: fa.CellKField[float],
+    z_alpha: fa.CellKField[float],
+    z_w_expl: fa.CellKField[float],
+    z_exner_expl: fa.CellKField[float],
     dtime: float,
     cpd: float,
-) -> tuple[fa.CKfloatField, fa.CKfloatField]:
+) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
     z_gamma = dtime * cpd * vwind_impl_wgt * theta_v_ic / ddqz_z_half
     z_c = -z_gamma * z_beta * z_alpha(Koff[1])
     z_b = 1.0 + z_gamma * z_alpha * (z_beta(Koff[-1]) + z_beta)
@@ -44,15 +44,15 @@ def _mo_solve_nonhydro_stencil_51(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_solve_nonhydro_stencil_51(
-    z_q: fa.CKfloatField,
-    w_nnew: fa.CKfloatField,
-    vwind_impl_wgt: fa.CfloatField,
-    theta_v_ic: fa.CKfloatField,
-    ddqz_z_half: fa.CKfloatField,
-    z_beta: fa.CKfloatField,
-    z_alpha: fa.CKfloatField,
-    z_w_expl: fa.CKfloatField,
-    z_exner_expl: fa.CKfloatField,
+    z_q: fa.CellKField[float],
+    w_nnew: fa.CellKField[float],
+    vwind_impl_wgt: fa.CellField[float],
+    theta_v_ic: fa.CellKField[float],
+    ddqz_z_half: fa.CellKField[float],
+    z_beta: fa.CellKField[float],
+    z_alpha: fa.CellKField[float],
+    z_w_expl: fa.CellKField[float],
+    z_exner_expl: fa.CellKField[float],
     dtime: float,
     cpd: float,
     horizontal_start: int32,

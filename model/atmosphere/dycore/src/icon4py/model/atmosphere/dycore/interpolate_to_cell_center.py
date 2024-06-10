@@ -23,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _interpolate_to_cell_center(
-    interpolant: fa.EKvpField,
+    interpolant: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     """Formerly known as mo_velocity_advection_stencil_08 or mo_velocity_advection_stencil_09."""
     interpolant_wp = astype(interpolant, wpfloat)
     interpolation_wp = neighbor_sum(e_bln_c_s(C2CE) * interpolant_wp(C2E), axis=C2EDim)
@@ -34,9 +34,9 @@ def _interpolate_to_cell_center(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_to_cell_center(
-    interpolant: fa.EKvpField,
+    interpolant: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    interpolation: fa.CKvpField,
+    interpolation: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

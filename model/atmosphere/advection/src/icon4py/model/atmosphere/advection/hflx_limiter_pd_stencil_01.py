@@ -21,12 +21,12 @@ from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, KDim
 @field_operator
 def _hflx_limiter_pd_stencil_01(
     geofac_div: Field[[CEDim], float],
-    p_cc: fa.CKfloatField,
-    p_rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_h: fa.EKfloatField,
+    p_cc: fa.CellKField[float],
+    p_rhodz_now: fa.CellKField[float],
+    p_mflx_tracer_h: fa.EdgeKField[float],
     p_dtime: float,
     dbl_eps: float,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     zero = broadcast(0.0, (CellDim, KDim))
 
     pm_0 = maximum(zero, p_mflx_tracer_h(C2E[0]) * geofac_div(C2CE[0]) * p_dtime)
@@ -41,10 +41,10 @@ def _hflx_limiter_pd_stencil_01(
 @program
 def hflx_limiter_pd_stencil_01(
     geofac_div: Field[[CEDim], float],
-    p_cc: fa.CKfloatField,
-    p_rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_h: fa.EKfloatField,
-    r_m: fa.CKfloatField,
+    p_cc: fa.CellKField[float],
+    p_rhodz_now: fa.CellKField[float],
+    p_mflx_tracer_h: fa.EdgeKField[float],
+    r_m: fa.CellKField[float],
     p_dtime: float,
     dbl_eps: float,
 ):

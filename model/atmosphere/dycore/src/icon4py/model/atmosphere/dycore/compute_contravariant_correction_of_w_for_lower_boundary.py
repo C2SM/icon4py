@@ -24,9 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_contravariant_correction_of_w_for_lower_boundary(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfacq_c: fa.CKvpField,
-) -> fa.CKvpField:
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_40."""
     z_w_concorr_me_wp = astype(z_w_concorr_me, wpfloat)
 
@@ -53,9 +53,9 @@ def _compute_contravariant_correction_of_w_for_lower_boundary(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_contravariant_correction_of_w_for_lower_boundary(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfacq_c: fa.CKvpField,
-    w_concorr_c: fa.CKvpField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

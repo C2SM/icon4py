@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_exner_from_rhotheta(
-    rho: fa.CKwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    rho: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_67."""
     theta_v_wp = exner
     exner_wp = exp(rd_o_cvd * log(rd_o_p0ref * rho * theta_v_wp))
@@ -37,9 +37,9 @@ def _compute_exner_from_rhotheta(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_exner_from_rhotheta(
-    rho: fa.CKwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    rho: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
     horizontal_start: int32,

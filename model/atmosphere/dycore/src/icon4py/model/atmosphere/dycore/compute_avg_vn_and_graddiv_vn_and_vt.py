@@ -26,13 +26,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], wpfloat],
-    vn: fa.EKwpField,
+    vn: fa.EdgeKField[wpfloat],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
 ) -> tuple[
-    fa.EKwpField,
-    fa.EKvpField,
-    fa.EKvpField,
+    fa.EdgeKField[wpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_30."""
     z_vn_avg_wp = _compute_avg_vn(e_flx_avg=e_flx_avg, vn=vn)
@@ -44,12 +44,12 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: Field[[EdgeDim, E2C2EODim], wpfloat],
-    vn: fa.EKwpField,
+    vn: fa.EdgeKField[wpfloat],
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    z_vn_avg: fa.EKwpField,
-    z_graddiv_vn: fa.EKvpField,
-    vt: fa.EKvpField,
+    z_vn_avg: fa.EdgeKField[wpfloat],
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -21,7 +21,7 @@ from icon4py.model.common.settings import backend
 
 @field_operator
 def _en_smag_fac_for_zero_nshift(
-    vect_a: fa.KfloatField,
+    vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -30,7 +30,7 @@ def _en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-) -> fa.KfloatField:
+) -> fa.KField[float]:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
     df32 = hdiff_smag_fac3 - hdiff_smag_fac2
@@ -51,7 +51,7 @@ def _en_smag_fac_for_zero_nshift(
 
 @program(backend=backend)
 def en_smag_fac_for_zero_nshift(
-    vect_a: fa.KfloatField,
+    vect_a: fa.KField[float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -60,7 +60,7 @@ def en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    enh_smag_fac: fa.KfloatField,
+    enh_smag_fac: fa.KField[float],
 ):
     _en_smag_fac_for_zero_nshift(
         vect_a,

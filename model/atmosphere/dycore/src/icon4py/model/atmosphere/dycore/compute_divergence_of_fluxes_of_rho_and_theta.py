@@ -24,9 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: Field[[CEDim], wpfloat],
-    mass_fl_e: fa.EKwpField,
-    z_theta_v_fl_e: fa.EKwpField,
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    z_theta_v_fl_e: fa.EdgeKField[wpfloat],
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_41."""
     z_flxdiv_mass_wp = neighbor_sum(geofac_div(C2CE) * mass_fl_e(C2E), axis=C2EDim)
     z_flxdiv_theta_wp = neighbor_sum(geofac_div(C2CE) * z_theta_v_fl_e(C2E), axis=C2EDim)
@@ -36,10 +36,10 @@ def _compute_divergence_of_fluxes_of_rho_and_theta(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_divergence_of_fluxes_of_rho_and_theta(
     geofac_div: Field[[CEDim], wpfloat],
-    mass_fl_e: fa.EKwpField,
-    z_theta_v_fl_e: fa.EKwpField,
-    z_flxdiv_mass: fa.CKvpField,
-    z_flxdiv_theta: fa.CKvpField,
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    z_theta_v_fl_e: fa.EdgeKField[wpfloat],
+    z_flxdiv_mass: fa.CellKField[vpfloat],
+    z_flxdiv_theta: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

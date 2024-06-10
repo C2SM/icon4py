@@ -26,17 +26,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_virtual_potential_temperatures_and_pressure_gradient(
-    wgtfac_c: fa.CKvpField,
-    z_rth_pr_2: fa.CKvpField,
-    theta_v: fa.CKwpField,
-    vwind_expl_wgt: fa.CwpField,
-    exner_pr: fa.CKwpField,
-    d_exner_dz_ref_ic: fa.CKvpField,
-    ddqz_z_half: fa.CKvpField,
+    wgtfac_c: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
 ) -> tuple[
-    fa.CKvpField,
-    fa.CKwpField,
-    fa.CKvpField,
+    fa.CellKField[vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_09."""
     wgtfac_c_wp, ddqz_z_half_wp = astype((wgtfac_c, ddqz_z_half), wpfloat)
@@ -51,16 +51,16 @@ def _compute_virtual_potential_temperatures_and_pressure_gradient(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_virtual_potential_temperatures_and_pressure_gradient(
-    wgtfac_c: fa.CKvpField,
-    z_rth_pr_2: fa.CKvpField,
-    theta_v: fa.CKwpField,
-    vwind_expl_wgt: fa.CwpField,
-    exner_pr: fa.CKwpField,
-    d_exner_dz_ref_ic: fa.CKvpField,
-    ddqz_z_half: fa.CKvpField,
-    z_theta_v_pr_ic: fa.CKvpField,
-    theta_v_ic: fa.CKwpField,
-    z_th_ddz_exner_c: fa.CKvpField,
+    wgtfac_c: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    vwind_expl_wgt: fa.CellField[wpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+    d_exner_dz_ref_ic: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_theta_v_pr_ic: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    z_th_ddz_exner_c: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

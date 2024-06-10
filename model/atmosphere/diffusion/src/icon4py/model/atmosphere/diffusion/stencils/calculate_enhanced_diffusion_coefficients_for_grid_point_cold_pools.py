@@ -29,12 +29,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
-    kh_smag_e: fa.EKvpField,
-) -> fa.EKvpField:
+    kh_smag_e: fa.EdgeKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     enh_diffu_3d = _temporary_field_for_grid_point_cold_pools_enhancement(
         theta_v,
         theta_ref_mc,
@@ -47,11 +47,11 @@ def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
-    kh_smag_e: fa.EKvpField,
+    kh_smag_e: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

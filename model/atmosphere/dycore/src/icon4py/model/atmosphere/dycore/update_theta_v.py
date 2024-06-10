@@ -23,15 +23,15 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _update_theta_v(
-    mask_prog_halo_c: fa.CboolField,
-    rho_now: fa.CKwpField,
-    theta_v_now: fa.CKwpField,
-    exner_new: fa.CKwpField,
-    exner_now: fa.CKwpField,
-    rho_new: fa.CKwpField,
-    theta_v_new: fa.CKwpField,
+    mask_prog_halo_c: fa.CellField[bool],
+    rho_now: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    exner_new: fa.CellKField[wpfloat],
+    exner_now: fa.CellKField[wpfloat],
+    rho_new: fa.CellKField[wpfloat],
+    theta_v_new: fa.CellKField[wpfloat],
     cvd_o_rd: wpfloat,
-) -> fa.CKwpField:
+) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_68."""
     theta_v_new_wp = where(
         mask_prog_halo_c,
@@ -46,13 +46,13 @@ def _update_theta_v(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_theta_v(
-    mask_prog_halo_c: fa.CboolField,
-    rho_now: fa.CKwpField,
-    theta_v_now: fa.CKwpField,
-    exner_new: fa.CKwpField,
-    exner_now: fa.CKwpField,
-    rho_new: fa.CKwpField,
-    theta_v_new: fa.CKwpField,
+    mask_prog_halo_c: fa.CellField[bool],
+    rho_now: fa.CellKField[wpfloat],
+    theta_v_now: fa.CellKField[wpfloat],
+    exner_new: fa.CellKField[wpfloat],
+    exner_now: fa.CellKField[wpfloat],
+    rho_new: fa.CellKField[wpfloat],
+    theta_v_new: fa.CellKField[wpfloat],
     cvd_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

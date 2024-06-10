@@ -22,20 +22,20 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _apply_nabla2_to_vn_in_lateral_boundary(
-    z_nabla2_e: fa.EKwpField,
-    area_edge: fa.EwpField,
-    vn: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     fac_bdydiff_v: wpfloat,
-) -> fa.EKwpField:
+) -> fa.EdgeKField[wpfloat]:
     vn_wp = vn + (area_edge * fac_bdydiff_v * z_nabla2_e)
     return vn_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_to_vn_in_lateral_boundary(
-    z_nabla2_e: fa.EKwpField,
-    area_edge: fa.EwpField,
-    vn: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     fac_bdydiff_v: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

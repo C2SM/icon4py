@@ -20,11 +20,11 @@ from icon4py.model.common.dimension import E2C
 
 @field_operator
 def _hflx_limiter_mo_stencil_05(
-    z_anti: fa.EKfloatField,
-    z_mflx_low: fa.EKfloatField,
-    r_m: fa.CKfloatField,
-    r_p: fa.CKfloatField,
-) -> fa.EKfloatField:
+    z_anti: fa.EdgeKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    r_m: fa.CellKField[float],
+    r_p: fa.CellKField[float],
+) -> fa.EdgeKField[float]:
     z_signum = where((z_anti > 0.0), 1.0, -1.0)
 
     r_frac = 0.5 * (
@@ -39,10 +39,10 @@ def _hflx_limiter_mo_stencil_05(
 
 @program
 def hflx_limiter_mo_stencil_05(
-    z_anti: fa.EKfloatField,
-    z_mflx_low: fa.EKfloatField,
-    r_m: fa.CKfloatField,
-    r_p: fa.CKfloatField,
-    p_mflx_tracer_h: fa.EKfloatField,
+    z_anti: fa.EdgeKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    r_m: fa.CellKField[float],
+    r_p: fa.CellKField[float],
+    p_mflx_tracer_h: fa.EdgeKField[float],
 ):
     _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)

@@ -23,17 +23,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_nabla2_for_w(
-    w: fa.CKwpField, geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat]
-) -> fa.CKvpField:
+    w: fa.CellKField[wpfloat], geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat]
+) -> fa.CellKField[vpfloat]:
     z_nabla2_c_wp = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
     return astype(z_nabla2_c_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_for_w(
-    w: fa.CKwpField,
+    w: fa.CellKField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    z_nabla2_c: fa.CKvpField,
+    z_nabla2_c: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

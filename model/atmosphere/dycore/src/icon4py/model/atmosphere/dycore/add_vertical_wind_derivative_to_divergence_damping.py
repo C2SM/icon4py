@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_vertical_wind_derivative_to_divergence_damping(
-    hmask_dd3d: fa.EwpField,
-    scalfac_dd3d: fa.KwpField,
-    inv_dual_edge_length: fa.EwpField,
-    z_dwdz_dd: fa.CKvpField,
-    z_graddiv_vn: fa.EKvpField,
-) -> fa.EKvpField:
+    hmask_dd3d: fa.EdgeField[wpfloat],
+    scalfac_dd3d: fa.KField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    z_dwdz_dd: fa.CellKField[vpfloat],
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_17."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
@@ -44,11 +44,11 @@ def _add_vertical_wind_derivative_to_divergence_damping(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_vertical_wind_derivative_to_divergence_damping(
-    hmask_dd3d: fa.EwpField,
-    scalfac_dd3d: fa.KwpField,
-    inv_dual_edge_length: fa.EwpField,
-    z_dwdz_dd: fa.CKvpField,
-    z_graddiv_vn: fa.EKvpField,
+    hmask_dd3d: fa.EdgeField[wpfloat],
+    scalfac_dd3d: fa.KField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    z_dwdz_dd: fa.CellKField[vpfloat],
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

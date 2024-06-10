@@ -20,17 +20,17 @@ from icon4py.model.common import field_type_aliases as fa
 
 @field_operator
 def _hflx_limiter_mo_stencil_02(
-    refin_ctrl: fa.CintField,
-    p_cc: fa.CKfloatField,
-    z_tracer_new_low: fa.CKfloatField,
-    z_tracer_max: fa.CKfloatField,
-    z_tracer_min: fa.CKfloatField,
+    refin_ctrl: fa.CellField[int32],
+    p_cc: fa.CellKField[float],
+    z_tracer_new_low: fa.CellKField[float],
+    z_tracer_max: fa.CellKField[float],
+    z_tracer_min: fa.CellKField[float],
     lo_bound: int32,
     hi_bound: int32,
 ) -> tuple[
-    fa.CKfloatField,
-    fa.CKfloatField,
-    fa.CKfloatField,
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     condition = (refin_ctrl == lo_bound) | (refin_ctrl == hi_bound)
     z_tracer_new_out = where(
@@ -47,16 +47,16 @@ def _hflx_limiter_mo_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflx_limiter_mo_stencil_02(
-    refin_ctrl: fa.CintField,
-    p_cc: fa.CKfloatField,
-    z_tracer_new_low: fa.CKfloatField,
-    z_tracer_max: fa.CKfloatField,
-    z_tracer_min: fa.CKfloatField,
+    refin_ctrl: fa.CellField[int32],
+    p_cc: fa.CellKField[float],
+    z_tracer_new_low: fa.CellKField[float],
+    z_tracer_max: fa.CellKField[float],
+    z_tracer_min: fa.CellKField[float],
     lo_bound: int32,
     hi_bound: int32,
-    z_tracer_new_low_out: fa.CKfloatField,
-    z_tracer_max_out: fa.CKfloatField,
-    z_tracer_min_out: fa.CKfloatField,
+    z_tracer_new_low_out: fa.CellKField[float],
+    z_tracer_max_out: fa.CellKField[float],
+    z_tracer_min_out: fa.CellKField[float],
 ):
     _hflx_limiter_mo_stencil_02(
         refin_ctrl,

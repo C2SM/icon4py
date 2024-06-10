@@ -24,15 +24,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    mask: fa.CKboolField,
+    mask: fa.CellKField[bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_diffcoef: fa.CKwpField,
-    geofac_n2s_c: fa.CwpField,
+    zd_diffcoef: fa.CellKField[wpfloat],
+    geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
-    theta_v: fa.CKwpField,
-    z_temp: fa.CKvpField,
-) -> fa.CKvpField:
+    theta_v: fa.CellKField[wpfloat],
+    z_temp: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     z_temp_wp = astype(z_temp, wpfloat)
 
     theta_v_0 = theta_v(as_offset(Koff, zd_vertoffset(C2CEC[0])))
@@ -73,14 +73,14 @@ def _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
-    mask: fa.CKboolField,
+    mask: fa.CellKField[bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_diffcoef: fa.CKwpField,
-    geofac_n2s_c: fa.CwpField,
+    zd_diffcoef: fa.CellKField[wpfloat],
+    geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
-    theta_v: fa.CKwpField,
-    z_temp: fa.CKvpField,
+    theta_v: fa.CellKField[wpfloat],
+    z_temp: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

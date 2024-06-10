@@ -15,12 +15,13 @@ from gt4py.next import Field, field_operator
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, E2V, KDim, Koff, VertexDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def average_cell_kdim_level_up(
-    half_level_field: fa.CKwpField,
-) -> fa.CKwpField:
+    half_level_field: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     """
     Calculate the mean value of adjacent interface levels.
 
@@ -37,17 +38,17 @@ def average_cell_kdim_level_up(
 
 @field_operator
 def average_edge_kdim_level_up(
-    half_level_field: fa.EKwpField,
-) -> fa.EKwpField:
+    half_level_field: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
     """
     Calculate the mean value of adjacent interface levels.
 
     Computes the average of two adjacent interface levels upwards over an edge field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: fa.EKwpField
+        half_level_field: fa.EdgeKField[wpfloat]
 
-    Returns: fa.EKwpField full level field
+    Returns: fa.EdgeKField[wpfloat] full level field
 
     """
     return 0.5 * (half_level_field + half_level_field(Koff[1]))
@@ -55,8 +56,8 @@ def average_edge_kdim_level_up(
 
 @field_operator
 def difference_k_level_down(
-    half_level_field: fa.CKwpField,
-) -> fa.CKwpField:
+    half_level_field: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     """
     Calculate the difference value of adjacent interface levels.
 
@@ -73,8 +74,8 @@ def difference_k_level_down(
 
 @field_operator
 def difference_k_level_up(
-    half_level_field: fa.CKwpField,
-) -> fa.CKwpField:
+    half_level_field: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     """
     Calculate the difference value of adjacent interface levels.
 
@@ -91,18 +92,18 @@ def difference_k_level_up(
 
 @field_operator
 def grad_fd_norm(
-    psi_c: fa.CKfloatField,
-    inv_dual_edge_length: fa.EfloatField,
-) -> fa.EKfloatField:
+    psi_c: fa.CellKField[float],
+    inv_dual_edge_length: fa.EdgeField[float],
+) -> fa.EdgeKField[float]:
     """
     Calculate the gradient value of adjacent interface levels.
 
     Computes the difference of two offseted values multiplied by a field of the offseted dimension
     Args:
-        psi_c: fa.CKfloatField,
+        psi_c: fa.CellKField[float],
         inv_dual_edge_length: Field[Dims[EdgeDim], float],
 
-    Returns: fa.EKfloatField
+    Returns: fa.EdgeKField[float]
 
     """
     grad_norm_psi_e = (psi_c(E2C[1]) - psi_c(E2C[0])) * inv_dual_edge_length
@@ -112,8 +113,8 @@ def grad_fd_norm(
 @field_operator
 def _grad_fd_tang(
     psi_v: Field[[VertexDim, KDim], float],
-    inv_primal_edge_length: fa.EfloatField,
-    tangent_orientation: fa.EfloatField,
-) -> fa.EKfloatField:
+    inv_primal_edge_length: fa.EdgeField[float],
+    tangent_orientation: fa.EdgeField[float],
+) -> fa.EdgeKField[float]:
     grad_tang_psi_e = tangent_orientation * (psi_v(E2V[1]) - psi_v(E2V[0])) * inv_primal_edge_length
     return grad_tang_psi_e

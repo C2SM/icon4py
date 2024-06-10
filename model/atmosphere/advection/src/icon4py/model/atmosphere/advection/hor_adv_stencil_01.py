@@ -20,14 +20,14 @@ from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim
 
 @field_operator
 def _hor_adv_stencil_01(
-    p_mflx_tracer_h: fa.EKfloatField,
-    deepatmo_divh: fa.KfloatField,
-    tracer_now: fa.CKfloatField,
-    rhodz_now: fa.CKfloatField,
-    rhodz_new: fa.CKfloatField,
+    p_mflx_tracer_h: fa.EdgeKField[float],
+    deepatmo_divh: fa.KField[float],
+    tracer_now: fa.CellKField[float],
+    rhodz_now: fa.CellKField[float],
+    rhodz_new: fa.CellKField[float],
     geofac_div: Field[[CEDim], float],
     p_dtime: float,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     tracer_new_hor = (
         tracer_now * rhodz_now
         - p_dtime
@@ -40,13 +40,13 @@ def _hor_adv_stencil_01(
 
 @program
 def hor_adv_stencil_01(
-    p_mflx_tracer_h: fa.EKfloatField,
-    deepatmo_divh: fa.KfloatField,
-    tracer_now: fa.CKfloatField,
-    rhodz_now: fa.CKfloatField,
-    rhodz_new: fa.CKfloatField,
+    p_mflx_tracer_h: fa.EdgeKField[float],
+    deepatmo_divh: fa.KField[float],
+    tracer_now: fa.CellKField[float],
+    rhodz_now: fa.CellKField[float],
+    rhodz_new: fa.CellKField[float],
     geofac_div: Field[[CEDim], float],
-    tracer_new_hor: fa.CKfloatField,
+    tracer_new_hor: fa.CellKField[float],
     p_dtime: float,
 ):
     _hor_adv_stencil_01(

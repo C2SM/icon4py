@@ -20,10 +20,10 @@ from icon4py.model.common.dimension import E2C
 
 @field_operator
 def _hflx_limiter_mo_stencil_01a(
-    p_mflx_tracer_h: fa.EKfloatField,
-    p_mass_flx_e: fa.EKfloatField,
-    p_cc: fa.CKfloatField,
-) -> tuple[fa.EKfloatField, fa.EKfloatField]:
+    p_mflx_tracer_h: fa.EdgeKField[float],
+    p_mass_flx_e: fa.EdgeKField[float],
+    p_cc: fa.CellKField[float],
+) -> tuple[fa.EdgeKField[float], fa.EdgeKField[float]]:
     z_mflx_low = 0.5 * (
         p_mass_flx_e * (p_cc(E2C[0]) + p_cc(E2C[1]))
         - abs(p_mass_flx_e) * (p_cc(E2C[1]) - p_cc(E2C[0]))
@@ -36,11 +36,11 @@ def _hflx_limiter_mo_stencil_01a(
 
 @program
 def hflx_limiter_mo_stencil_01a(
-    p_mflx_tracer_h: fa.EKfloatField,
-    p_mass_flx_e: fa.EKfloatField,
-    p_cc: fa.CKfloatField,
-    z_mflx_low: fa.EKfloatField,
-    z_anti: fa.EKfloatField,
+    p_mflx_tracer_h: fa.EdgeKField[float],
+    p_mass_flx_e: fa.EdgeKField[float],
+    p_cc: fa.CellKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    z_anti: fa.EdgeKField[float],
 ):
     _hflx_limiter_mo_stencil_01a(
         p_mflx_tracer_h,

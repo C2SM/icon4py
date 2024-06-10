@@ -20,14 +20,14 @@ from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 @field_operator
 def _vert_adv_stencil_01a(
-    tracer_now: fa.CKfloatField,
-    rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_v: fa.CKfloatField,
-    deepatmo_divzl: fa.KfloatField,
-    deepatmo_divzu: fa.KfloatField,
-    rhodz_new: fa.CKfloatField,
+    tracer_now: fa.CellKField[float],
+    rhodz_now: fa.CellKField[float],
+    p_mflx_tracer_v: fa.CellKField[float],
+    deepatmo_divzl: fa.KField[float],
+    deepatmo_divzu: fa.KField[float],
+    rhodz_new: fa.CellKField[float],
     p_dtime: float,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     tracer_new = (
         tracer_now * rhodz_now
         + p_dtime * (p_mflx_tracer_v(Koff[1]) * deepatmo_divzl - p_mflx_tracer_v * deepatmo_divzu)
@@ -38,17 +38,17 @@ def _vert_adv_stencil_01a(
 
 @field_operator
 def _vert_adv_stencil_01(
-    tracer_now: fa.CKfloatField,
-    rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_v: fa.CKfloatField,
-    deepatmo_divzl: fa.KfloatField,
-    deepatmo_divzu: fa.KfloatField,
-    rhodz_new: fa.CKfloatField,
-    k: fa.KintField,
+    tracer_now: fa.CellKField[float],
+    rhodz_now: fa.CellKField[float],
+    p_mflx_tracer_v: fa.CellKField[float],
+    deepatmo_divzl: fa.KField[float],
+    deepatmo_divzu: fa.KField[float],
+    rhodz_new: fa.CellKField[float],
+    k: fa.KField[int32],
     p_dtime: float,
     ivadv_tracer: int32,
     iadv_slev_jt: int32,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     k = broadcast(k, (CellDim, KDim))
 
     tracer_new = (
@@ -74,17 +74,17 @@ def _vert_adv_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def vert_adv_stencil_01(
-    tracer_now: fa.CKfloatField,
-    rhodz_now: fa.CKfloatField,
-    p_mflx_tracer_v: fa.CKfloatField,
-    deepatmo_divzl: fa.KfloatField,
-    deepatmo_divzu: fa.KfloatField,
-    rhodz_new: fa.CKfloatField,
-    k: fa.KintField,
+    tracer_now: fa.CellKField[float],
+    rhodz_now: fa.CellKField[float],
+    p_mflx_tracer_v: fa.CellKField[float],
+    deepatmo_divzl: fa.KField[float],
+    deepatmo_divzu: fa.KField[float],
+    rhodz_new: fa.CellKField[float],
+    k: fa.KField[int32],
     p_dtime: float,
     ivadv_tracer: int32,
     iadv_slev_jt: int32,
-    tracer_new: fa.CKfloatField,
+    tracer_new: fa.CellKField[float],
 ):
     _vert_adv_stencil_01(
         tracer_now,

@@ -23,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-    inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: fa.CKvpField,
-) -> fa.EKvpField:
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    z_exner_ex_pr: fa.CellKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly konwn as _mo_solve_nonhydro_stencil_18."""
     z_gradh_exner_wp = inv_dual_edge_length * astype(
         z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]), wpfloat
@@ -35,9 +35,9 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
-    inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: fa.CKvpField,
-    z_gradh_exner: fa.EKvpField,
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    z_exner_ex_pr: fa.CellKField[vpfloat],
+    z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

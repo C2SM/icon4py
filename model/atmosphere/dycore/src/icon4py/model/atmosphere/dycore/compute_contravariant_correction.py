@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_contravariant_correction(
-    vn: fa.EKwpField,
-    ddxn_z_full: fa.EKvpField,
-    ddxt_z_full: fa.EKvpField,
-    vt: fa.EKvpField,
-) -> fa.EKvpField:
+    vn: fa.EdgeKField[wpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_35 or mo_velocity_advection_stencil_04."""
     ddxn_z_full_wp = astype(ddxn_z_full, wpfloat)
 
@@ -37,11 +37,11 @@ def _compute_contravariant_correction(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_contravariant_correction(
-    vn: fa.EKwpField,
-    ddxn_z_full: fa.EKvpField,
-    ddxt_z_full: fa.EKvpField,
-    vt: fa.EKvpField,
-    z_w_concorr_me: fa.EKvpField,
+    vn: fa.EdgeKField[wpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

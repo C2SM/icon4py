@@ -23,17 +23,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_solver_coefficients_matrix(
-    exner_nnow: fa.CKwpField,
-    rho_nnow: fa.CKwpField,
-    theta_v_nnow: fa.CKwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    vwind_impl_wgt: fa.CwpField,
-    theta_v_ic: fa.CKwpField,
-    rho_ic: fa.CKwpField,
+    exner_nnow: fa.CellKField[wpfloat],
+    rho_nnow: fa.CellKField[wpfloat],
+    theta_v_nnow: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_44."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
@@ -44,15 +44,15 @@ def _compute_solver_coefficients_matrix(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_solver_coefficients_matrix(
-    z_beta: fa.CKvpField,
-    exner_nnow: fa.CKwpField,
-    rho_nnow: fa.CKwpField,
-    theta_v_nnow: fa.CKwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    z_alpha: fa.CKvpField,
-    vwind_impl_wgt: fa.CwpField,
-    theta_v_ic: fa.CKwpField,
-    rho_ic: fa.CKwpField,
+    z_beta: fa.CellKField[vpfloat],
+    exner_nnow: fa.CellKField[wpfloat],
+    rho_nnow: fa.CellKField[wpfloat],
+    theta_v_nnow: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,

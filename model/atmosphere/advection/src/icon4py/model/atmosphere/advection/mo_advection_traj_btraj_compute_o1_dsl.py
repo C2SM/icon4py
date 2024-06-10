@@ -22,8 +22,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _mo_advection_traj_btraj_compute_o1_dsl(
-    p_vn: fa.EKwpField,
-    p_vt: fa.EKwpField,
+    p_vn: fa.EdgeKField[wpfloat],
+    p_vt: fa.EdgeKField[wpfloat],
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
@@ -34,11 +34,11 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
     dual_normal_cell_2: Field[[ECDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[
-    fa.EKintField,
-    fa.EKintField,
-    fa.EKintField,
-    fa.EKvpField,
-    fa.EKvpField,
+    fa.EdgeKField[int32],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     lvn_pos = where(p_vn > 0.0, True, False)
 
@@ -81,8 +81,8 @@ def _mo_advection_traj_btraj_compute_o1_dsl(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def mo_advection_traj_btraj_compute_o1_dsl(
-    p_vn: fa.EKwpField,
-    p_vt: fa.EKwpField,
+    p_vn: fa.EdgeKField[wpfloat],
+    p_vt: fa.EdgeKField[wpfloat],
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
     pos_on_tplane_e_1: Field[[ECDim], wpfloat],
@@ -91,11 +91,11 @@ def mo_advection_traj_btraj_compute_o1_dsl(
     dual_normal_cell_1: Field[[ECDim], wpfloat],
     primal_normal_cell_2: Field[[ECDim], wpfloat],
     dual_normal_cell_2: Field[[ECDim], wpfloat],
-    p_cell_idx: fa.EKintField,
-    p_cell_rel_idx_dsl: fa.EKintField,
-    p_cell_blk: fa.EKintField,
-    p_distv_bary_1: fa.EKvpField,
-    p_distv_bary_2: fa.EKvpField,
+    p_cell_idx: fa.EdgeKField[int32],
+    p_cell_rel_idx_dsl: fa.EdgeKField[int32],
+    p_cell_blk: fa.EdgeKField[int32],
+    p_distv_bary_1: fa.EdgeKField[vpfloat],
+    p_distv_bary_2: fa.EdgeKField[vpfloat],
     p_dthalf: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

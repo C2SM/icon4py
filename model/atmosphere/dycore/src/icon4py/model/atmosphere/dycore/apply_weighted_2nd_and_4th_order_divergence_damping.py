@@ -18,17 +18,17 @@ from gt4py.next.ffront.fbuiltins import astype, broadcast, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_weighted_2nd_and_4th_order_divergence_damping(
-    scal_divdamp: fa.KwpField,
-    bdy_divdamp: fa.KwpField,
-    nudgecoeff_e: fa.EwpField,
-    z_graddiv2_vn: fa.EKvpField,
-    vn: fa.EKwpField,
-) -> fa.EKwpField:
+    scal_divdamp: fa.KField[wpfloat],
+    bdy_divdamp: fa.KField[wpfloat],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    z_graddiv2_vn: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
     """Formelry known as _mo_solve_nonhydro_stencil_27."""
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
 
@@ -40,11 +40,11 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_weighted_2nd_and_4th_order_divergence_damping(
-    scal_divdamp: fa.KwpField,
-    bdy_divdamp: fa.KwpField,
-    nudgecoeff_e: fa.EwpField,
-    z_graddiv2_vn: fa.EKvpField,
-    vn: fa.EKwpField,
+    scal_divdamp: fa.KField[wpfloat],
+    bdy_divdamp: fa.KField[wpfloat],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    z_graddiv2_vn: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

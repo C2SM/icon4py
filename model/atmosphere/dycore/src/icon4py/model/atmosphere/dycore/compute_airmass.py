@@ -17,23 +17,24 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_airmass(
-    rho_in: fa.CKwpField,
-    ddqz_z_full_in: fa.CKwpField,
-    deepatmo_t1mc_in: fa.KwpField,
-) -> fa.CKwpField:
+    rho_in: fa.CellKField[wpfloat],
+    ddqz_z_full_in: fa.CellKField[wpfloat],
+    deepatmo_t1mc_in: fa.KField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     return rho_in * ddqz_z_full_in * deepatmo_t1mc_in
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_airmass(
-    rho_in: fa.CKwpField,
-    ddqz_z_full_in: fa.CKwpField,
-    deepatmo_t1mc_in: fa.KwpField,
-    airmass_out: fa.CKwpField,
+    rho_in: fa.CellKField[wpfloat],
+    ddqz_z_full_in: fa.CellKField[wpfloat],
+    deepatmo_t1mc_in: fa.KField[wpfloat],
+    airmass_out: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

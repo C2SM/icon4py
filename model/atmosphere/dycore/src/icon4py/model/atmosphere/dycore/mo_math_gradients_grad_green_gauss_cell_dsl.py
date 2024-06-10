@@ -23,15 +23,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl(
-    p_ccpr1: fa.CKvpField,
-    p_ccpr2: fa.CKvpField,
+    p_ccpr1: fa.CellKField[vpfloat],
+    p_ccpr2: fa.CellKField[vpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
 ) -> tuple[
-    fa.CKvpField,
-    fa.CKvpField,
-    fa.CKvpField,
-    fa.CKvpField,
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     p_ccpr1_wp, p_ccpr2_wp = astype((p_ccpr1, p_ccpr2), wpfloat)
 
@@ -44,12 +44,12 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_math_gradients_grad_green_gauss_cell_dsl(
-    p_grad_1_u: fa.CKvpField,
-    p_grad_1_v: fa.CKvpField,
-    p_grad_2_u: fa.CKvpField,
-    p_grad_2_v: fa.CKvpField,
-    p_ccpr1: fa.CKvpField,
-    p_ccpr2: fa.CKvpField,
+    p_grad_1_u: fa.CellKField[vpfloat],
+    p_grad_1_v: fa.CellKField[vpfloat],
+    p_grad_2_u: fa.CellKField[vpfloat],
+    p_grad_2_v: fa.CellKField[vpfloat],
+    p_ccpr1: fa.CellKField[vpfloat],
+    p_ccpr2: fa.CellKField[vpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     horizontal_start: int32,

@@ -29,14 +29,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    ddqz_z_half: fa.CKvpField,
-    z_w_con_c: fa.CKvpField,
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
 ) -> tuple[
-    fa.CKboolField,
-    fa.CKvpField,
-    fa.CKvpField,
+    fa.CellKField[bool],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     """Formerly know as _mo_velocity_advection_stencil_14."""
     z_w_con_c_wp, ddqz_z_half_wp = astype((z_w_con_c, ddqz_z_half), wpfloat)
@@ -67,10 +67,10 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
-    ddqz_z_half: fa.CKvpField,
-    z_w_con_c: fa.CKvpField,
-    cfl_clipping: fa.CKboolField,
-    vcfl: fa.CKvpField,
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    vcfl: fa.CellKField[vpfloat],
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
     horizontal_start: int32,

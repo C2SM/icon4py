@@ -22,15 +22,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_nabla2_and_nabla4_to_vn(
-    area_edge: fa.EwpField,
-    kh_smag_e: fa.EKvpField,
-    z_nabla2_e: fa.EKwpField,
-    z_nabla4_e2: fa.EKvpField,
-    diff_multfac_vn: fa.KwpField,
-    nudgecoeff_e: fa.EwpField,
-    vn: fa.EKwpField,
+    area_edge: fa.EdgeField[wpfloat],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
-) -> fa.EKwpField:
+) -> fa.EdgeKField[wpfloat]:
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
     )
@@ -45,13 +45,13 @@ def _apply_nabla2_and_nabla4_to_vn(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_and_nabla4_to_vn(
-    area_edge: fa.EwpField,
-    kh_smag_e: fa.EKvpField,
-    z_nabla2_e: fa.EKwpField,
-    z_nabla4_e2: fa.EKvpField,
-    diff_multfac_vn: fa.KwpField,
-    nudgecoeff_e: fa.EwpField,
-    vn: fa.EKwpField,
+    area_edge: fa.EdgeField[wpfloat],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

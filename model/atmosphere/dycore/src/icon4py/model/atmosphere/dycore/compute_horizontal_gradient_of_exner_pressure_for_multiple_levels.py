@@ -24,13 +24,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-    inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: fa.CKvpField,
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    z_exner_ex_pr: fa.CellKField[vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
-    z_dexner_dz_c_1: fa.CKvpField,
-    z_dexner_dz_c_2: fa.CKvpField,
-) -> fa.EKvpField:
+    z_dexner_dz_c_1: fa.CellKField[vpfloat],
+    z_dexner_dz_c_2: fa.CellKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_20."""
     z_exner_ex_pr_0 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[0])))
     z_exner_ex_pr_1 = z_exner_ex_pr(as_offset(Koff, ikoffset(E2EC[1])))
@@ -62,13 +62,13 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
-    inv_dual_edge_length: fa.EwpField,
-    z_exner_ex_pr: fa.CKvpField,
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    z_exner_ex_pr: fa.CellKField[vpfloat],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
-    z_dexner_dz_c_1: fa.CKvpField,
-    z_dexner_dz_c_2: fa.CKvpField,
-    z_gradh_exner: fa.EKvpField,
+    z_dexner_dz_c_1: fa.CellKField[vpfloat],
+    z_dexner_dz_c_2: fa.CellKField[vpfloat],
+    z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

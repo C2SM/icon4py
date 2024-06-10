@@ -22,14 +22,14 @@ from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
-def _init_cell_kdim_field_with_zero_vp() -> fa.CKvpField:
+def _init_cell_kdim_field_with_zero_vp() -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_03, _mo_solve_nonhydro_stencil_11_lower, _mo_solve_nonhydro_stencil_45, _mo_solve_nonhydro_stencil_45_b, or _mo_velocity_advection_stencil_12."""
     return broadcast(vpfloat("0.0"), (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_cell_kdim_field_with_zero_vp(
-    field_with_zero_vp: fa.CKvpField,
+    field_with_zero_vp: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

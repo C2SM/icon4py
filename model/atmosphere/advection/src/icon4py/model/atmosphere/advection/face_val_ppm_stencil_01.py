@@ -20,9 +20,9 @@ from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 @field_operator
 def _face_val_ppm_stencil_01a(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+) -> fa.CellKField[float]:
     zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
     zfac = (p_cc(Koff[+1]) - p_cc) / (p_cellhgt_mc_now(Koff[+1]) + p_cellhgt_mc_now)
     z_slope = (
@@ -38,9 +38,9 @@ def _face_val_ppm_stencil_01a(
 
 @field_operator
 def _face_val_ppm_stencil_01b(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+) -> fa.CellKField[float]:
     zfac_m1 = (p_cc - p_cc(Koff[-1])) / (p_cellhgt_mc_now + p_cellhgt_mc_now(Koff[-1]))
     zfac = (p_cc - p_cc) / (p_cellhgt_mc_now + p_cellhgt_mc_now)
     z_slope = (
@@ -55,11 +55,11 @@ def _face_val_ppm_stencil_01b(
 
 @field_operator
 def _face_val_ppm_stencil_01(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-    k: fa.KintField,
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+    k: fa.KField[int32],
     elev: int32,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     k = broadcast(k, (CellDim, KDim))
 
     z_slope = where(
@@ -73,11 +73,11 @@ def _face_val_ppm_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_01(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-    k: fa.KintField,
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+    k: fa.KField[int32],
     elev: int32,
-    z_slope: fa.CKfloatField,
+    z_slope: fa.CellKField[float],
 ):
     _face_val_ppm_stencil_01(
         p_cc,

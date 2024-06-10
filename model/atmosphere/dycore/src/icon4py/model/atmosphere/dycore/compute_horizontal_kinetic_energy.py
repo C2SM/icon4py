@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_horizontal_kinetic_energy(
-    vn: fa.EKwpField,
-    vt: fa.EKvpField,
+    vn: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
 ) -> tuple[
-    fa.EKvpField,
-    fa.EKvpField,
-    fa.EKvpField,
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_37 or _mo_velocity_advection_stencil_05."""
     vn_ie_wp = vn
@@ -39,11 +39,11 @@ def _compute_horizontal_kinetic_energy(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_kinetic_energy(
-    vn: fa.EKwpField,
-    vt: fa.EKvpField,
-    vn_ie: fa.EKvpField,
-    z_vt_ie: fa.EKvpField,
-    z_kin_hor_e: fa.EKvpField,
+    vn: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

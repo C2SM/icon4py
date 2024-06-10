@@ -22,12 +22,12 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_nudgecoeffs(
-    refin_ctrl: fa.EintField,
+    refin_ctrl: fa.EdgeField[int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
     nudge_efold_width: wpfloat,
     nudge_zone_width: int32,
-) -> fa.EwpField:
+) -> fa.EdgeField[wpfloat]:
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
         nudge_max_coeffs
@@ -38,8 +38,8 @@ def _compute_nudgecoeffs(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
-    nudgecoeffs_e: fa.EwpField,
-    refin_ctrl: fa.EintField,
+    nudgecoeffs_e: fa.EdgeField[wpfloat],
+    refin_ctrl: fa.EdgeField[int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
     nudge_efold_width: wpfloat,

@@ -23,8 +23,8 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _interpolate_contravariant_vertical_velocity_to_full_levels(
-    z_w_con_c: fa.CKvpField,
-) -> fa.CKvpField:
+    z_w_con_c: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly know as _mo_velocity_advection_stencil_15."""
     z_w_con_c_full_vp = vpfloat("0.5") * (z_w_con_c + z_w_con_c(Koff[1]))
     return z_w_con_c_full_vp
@@ -32,8 +32,8 @@ def _interpolate_contravariant_vertical_velocity_to_full_levels(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_contravariant_vertical_velocity_to_full_levels(
-    z_w_con_c: fa.CKvpField,
-    z_w_con_c_full: fa.CKvpField,
+    z_w_con_c: fa.CellKField[vpfloat],
+    z_w_con_c_full: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -21,12 +21,12 @@ from icon4py.model.common.dimension import Koff
 
 @field_operator
 def _step_advection_stencil_02(
-    p_rhodz_new: fa.CKfloatField,
-    p_mflx_contra_v: fa.CKfloatField,
-    deepatmo_divzl: fa.KfloatField,
-    deepatmo_divzu: fa.KfloatField,
+    p_rhodz_new: fa.CellKField[float],
+    p_mflx_contra_v: fa.CellKField[float],
+    deepatmo_divzl: fa.KField[float],
+    deepatmo_divzu: fa.KField[float],
     p_dtime: float,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     return maximum(0.1 * p_rhodz_new, p_rhodz_new) - p_dtime * (
         p_mflx_contra_v(Koff[1]) * deepatmo_divzl - p_mflx_contra_v * deepatmo_divzu
     )
@@ -34,12 +34,12 @@ def _step_advection_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def step_advection_stencil_02(
-    p_rhodz_new: fa.CKfloatField,
-    p_mflx_contra_v: fa.CKfloatField,
-    deepatmo_divzl: fa.KfloatField,
-    deepatmo_divzu: fa.KfloatField,
+    p_rhodz_new: fa.CellKField[float],
+    p_mflx_contra_v: fa.CellKField[float],
+    deepatmo_divzl: fa.KField[float],
+    deepatmo_divzu: fa.KField[float],
     p_dtime: float,
-    rhodz_ast2: fa.CKfloatField,
+    rhodz_ast2: fa.CellKField[float],
 ):
     _step_advection_stencil_02(
         p_rhodz_new,

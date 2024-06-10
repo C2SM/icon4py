@@ -48,22 +48,22 @@ from icon4py.model.common.settings import backend
 
 @field_operator
 def _fused_stencils_4_5(
-    vn: fa.EKfloatField,
-    vt: fa.EKfloatField,
-    vn_ie: fa.EKfloatField,
-    z_vt_ie: fa.EKfloatField,
-    z_kin_hor_e: fa.EKfloatField,
-    ddxn_z_full: fa.EKfloatField,
-    ddxt_z_full: fa.EKfloatField,
-    z_w_concorr_me: fa.EKfloatField,
-    k_field: fa.KintField,
+    vn: fa.EdgeKField[float],
+    vt: fa.EdgeKField[float],
+    vn_ie: fa.EdgeKField[float],
+    z_vt_ie: fa.EdgeKField[float],
+    z_kin_hor_e: fa.EdgeKField[float],
+    ddxn_z_full: fa.EdgeKField[float],
+    ddxt_z_full: fa.EdgeKField[float],
+    z_w_concorr_me: fa.EdgeKField[float],
+    k_field: fa.KField[int32],
     nflatlev_startindex: int32,
     nlev: int32,
 ) -> tuple[
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
 ]:
     z_w_concorr_me = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
@@ -82,15 +82,15 @@ def _fused_stencils_4_5(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_4_5(
-    vn: fa.EKfloatField,
-    vt: fa.EKfloatField,
-    vn_ie: fa.EKfloatField,
-    z_vt_ie: fa.EKfloatField,
-    z_kin_hor_e: fa.EKfloatField,
-    ddxn_z_full: fa.EKfloatField,
-    ddxt_z_full: fa.EKfloatField,
-    z_w_concorr_me: fa.EKfloatField,
-    k_field: fa.KintField,
+    vn: fa.EdgeKField[float],
+    vt: fa.EdgeKField[float],
+    vn_ie: fa.EdgeKField[float],
+    z_vt_ie: fa.EdgeKField[float],
+    z_kin_hor_e: fa.EdgeKField[float],
+    ddxn_z_full: fa.EdgeKField[float],
+    ddxt_z_full: fa.EdgeKField[float],
+    z_w_concorr_me: fa.EdgeKField[float],
+    k_field: fa.KField[int32],
     nflatlev_startindex: int32,
     nlev: int32,
     horizontal_start: int32,
@@ -120,9 +120,9 @@ def fused_stencils_4_5(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_at_top(
-    wgtfacq_e: fa.EKfloatField,
-    vn: fa.EKfloatField,
-    vn_ie: fa.EKfloatField,
+    wgtfacq_e: fa.EdgeKField[float],
+    vn: fa.EdgeKField[float],
+    vn_ie: fa.EdgeKField[float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -141,15 +141,15 @@ def extrapolate_at_top(
 
 @field_operator
 def _fused_stencils_9_10(
-    z_w_concorr_me: fa.EKfloatField,
+    z_w_concorr_me: fa.EdgeKField[float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_concorr_mc: fa.CKfloatField,
-    wgtfac_c: fa.CKfloatField,
-    w_concorr_c: fa.CKfloatField,
-    k_field: fa.KintField,
+    local_z_w_concorr_mc: fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    k_field: fa.KField[int32],
     nflatlev_startindex: int32,
     nlev: int32,
-) -> tuple[fa.CKfloatField, fa.CKfloatField]:
+) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
     local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
@@ -167,12 +167,12 @@ def _fused_stencils_9_10(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_9_10(
-    z_w_concorr_me: fa.EKfloatField,
+    z_w_concorr_me: fa.EdgeKField[float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_concorr_mc: fa.CKfloatField,
-    wgtfac_c: fa.CKfloatField,
-    w_concorr_c: fa.CKfloatField,
-    k_field: fa.KintField,
+    local_z_w_concorr_mc: fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    k_field: fa.KField[int32],
     nflatlev_startindex: int32,
     nlev: int32,
     horizontal_start: int32,
@@ -199,10 +199,10 @@ def fused_stencils_9_10(
 
 @field_operator
 def _fused_stencils_11_to_13(
-    w: fa.CKfloatField,
-    w_concorr_c: fa.CKfloatField,
-    local_z_w_con_c: fa.CKfloatField,
-    k_field: fa.KintField,
+    w: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    local_z_w_con_c: fa.CellKField[float],
+    k_field: fa.KField[int32],
     nflatlev_startindex: int32,
     nlev: int32,
 ):
@@ -224,10 +224,10 @@ def _fused_stencils_11_to_13(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_11_to_13(
-    w: fa.CKfloatField,
-    w_concorr_c: fa.CKfloatField,
-    local_z_w_con_c: fa.CKfloatField,
-    k_field: fa.KintField,
+    w: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    local_z_w_con_c: fa.CellKField[float],
+    k_field: fa.KField[int32],
     nflatlev_startindex: int32,
     nlev: int32,
     horizontal_start: int32,
@@ -252,8 +252,8 @@ def fused_stencils_11_to_13(
 
 @field_operator
 def _fused_stencil_14(
-    local_z_w_con_c: fa.CKfloatField,
-    ddqz_z_half: fa.CKfloatField,
+    local_z_w_con_c: fa.CellKField[float],
+    ddqz_z_half: fa.CellKField[float],
     cfl_w_limit: float,
     dtime: float,
 ):
@@ -273,10 +273,10 @@ def _fused_stencil_14(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencil_14(
-    local_z_w_con_c: fa.CKfloatField,
-    ddqz_z_half: fa.CKfloatField,
-    local_cfl_clipping: fa.CKboolField,
-    local_vcfl: fa.CKfloatField,
+    local_z_w_con_c: fa.CellKField[float],
+    ddqz_z_half: fa.CellKField[float],
+    local_cfl_clipping: fa.CellKField[bool],
+    local_vcfl: fa.CellKField[float],
     cfl_w_limit: float,
     dtime: float,
     horizontal_start: int32,
@@ -299,13 +299,13 @@ def fused_stencil_14(
 
 @field_operator
 def _fused_stencils_16_to_17(
-    w: fa.CKfloatField,
-    local_z_v_grad_w: fa.EKfloatField,
+    w: fa.CellKField[float],
+    local_z_v_grad_w: fa.EdgeKField[float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_con_c: fa.CKfloatField,
-    coeff1_dwdz: fa.CKfloatField,
-    coeff2_dwdz: fa.CKfloatField,
-) -> fa.CKfloatField:
+    local_z_w_con_c: fa.CellKField[float],
+    coeff1_dwdz: fa.CellKField[float],
+    coeff2_dwdz: fa.CellKField[float],
+) -> fa.CellKField[float]:
     ddt_w_adv = _compute_advective_vertical_wind_tendency(
         local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
     )
@@ -316,13 +316,13 @@ def _fused_stencils_16_to_17(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_16_to_17(
-    w: fa.CKfloatField,
-    local_z_v_grad_w: fa.EKfloatField,
+    w: fa.CellKField[float],
+    local_z_v_grad_w: fa.EdgeKField[float],
     e_bln_c_s: Field[[CEDim], float],
-    local_z_w_con_c: fa.CKfloatField,
-    coeff1_dwdz: fa.CKfloatField,
-    coeff2_dwdz: fa.CKfloatField,
-    ddt_w_adv: fa.CKfloatField,
+    local_z_w_con_c: fa.CellKField[float],
+    coeff1_dwdz: fa.CellKField[float],
+    coeff2_dwdz: fa.CellKField[float],
+    ddt_w_adv: fa.CellKField[float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

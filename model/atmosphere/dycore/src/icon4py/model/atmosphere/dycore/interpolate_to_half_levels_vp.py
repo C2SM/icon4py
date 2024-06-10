@@ -23,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _interpolate_to_half_levels_vp(
-    wgtfac_c: fa.CKvpField,
-    interpolant: fa.CKvpField,
-) -> fa.CKvpField:
+    wgtfac_c: fa.CellKField[vpfloat],
+    interpolant: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known mo_velocity_advection_stencil_10 and as _mo_solve_nonhydro_stencil_05."""
     interpolation_to_half_levels_vp = wgtfac_c * interpolant + (
         vpfloat("1.0") - wgtfac_c
@@ -35,9 +35,9 @@ def _interpolate_to_half_levels_vp(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_to_half_levels_vp(
-    wgtfac_c: fa.CKvpField,
-    interpolant: fa.CKvpField,
-    interpolation_to_half_levels_vp: fa.CKvpField,
+    wgtfac_c: fa.CellKField[vpfloat],
+    interpolant: fa.CellKField[vpfloat],
+    interpolation_to_half_levels_vp: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

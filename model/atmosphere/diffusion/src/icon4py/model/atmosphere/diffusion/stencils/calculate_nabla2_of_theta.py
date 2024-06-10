@@ -23,18 +23,18 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_nabla2_of_theta(
-    z_nabla2_e: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     z_temp_wp = neighbor_sum(z_nabla2_e(C2E) * geofac_div(C2CE), axis=C2EDim)
     return astype(z_temp_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_of_theta(
-    z_nabla2_e: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-    z_temp: fa.CKvpField,
+    z_temp: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

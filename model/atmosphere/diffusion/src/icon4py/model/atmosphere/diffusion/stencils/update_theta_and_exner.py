@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _update_theta_and_exner(
-    z_temp: fa.CKvpField,
-    area: fa.CwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    z_temp: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     rd_o_cvd_wp, z_temp_wp = astype((rd_o_cvd, z_temp), wpfloat)
 
     z_theta = theta_v
@@ -39,10 +39,10 @@ def _update_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_theta_and_exner(
-    z_temp: fa.CKvpField,
-    area: fa.CwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    z_temp: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

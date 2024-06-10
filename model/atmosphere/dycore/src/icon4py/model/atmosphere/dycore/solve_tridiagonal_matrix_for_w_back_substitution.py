@@ -31,8 +31,8 @@ def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def solve_tridiagonal_matrix_for_w_back_substitution(
-    z_q: fa.CKvpField,
-    w: fa.CKwpField,
+    z_q: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

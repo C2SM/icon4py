@@ -11,39 +11,22 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from typing import TypeAlias
+from typing import TypeAlias, TypeVar
 
 from gt4py.next import Dims, Field
-from gt4py.next.ffront.fbuiltins import int32
+from gt4py.next.ffront.fbuiltins import int32, int64
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-CwpField: TypeAlias = Field[Dims[CellDim], wpfloat]  # type: ignore [valid-type]
-EwpField: TypeAlias = Field[Dims[EdgeDim], wpfloat]  # type: ignore [valid-type]
-VwpField: TypeAlias = Field[Dims[VertexDim], wpfloat]  # type: ignore [valid-type]
-KwpField: TypeAlias = Field[Dims[KDim], wpfloat]  # type: ignore [valid-type]
-CKwpField: TypeAlias = Field[Dims[CellDim, KDim], wpfloat]  # type: ignore [valid-type]
-EKwpField: TypeAlias = Field[Dims[EdgeDim, KDim], wpfloat]  # type: ignore [valid-type]
+T = TypeVar("T", wpfloat, vpfloat, float, bool, int32, int64)
 
-CKvpField: TypeAlias = Field[Dims[CellDim, KDim], vpfloat]  # type: ignore [valid-type]
-EKvpField: TypeAlias = Field[Dims[EdgeDim, KDim], vpfloat]  # type: ignore [valid-type]
-VKvpField: TypeAlias = Field[Dims[VertexDim, KDim], vpfloat]  # type: ignore [valid-type]
+CellField: TypeAlias = Field[Dims[CellDim], T]
+EdgeField: TypeAlias = Field[Dims[EdgeDim], T]
+VertexField: TypeAlias = Field[Dims[VertexDim], T]
+KField: TypeAlias = Field[Dims[KDim], T]
 
-CfloatField: TypeAlias = Field[Dims[CellDim], float]  # type: ignore [valid-type]
-EfloatField: TypeAlias = Field[Dims[EdgeDim], float]  # type: ignore [valid-type]
-KfloatField: TypeAlias = Field[Dims[KDim], float]  # type: ignore [valid-type]
-CKfloatField: TypeAlias = Field[Dims[CellDim, KDim], float]  # type: ignore [valid-type]
-EKfloatField: TypeAlias = Field[Dims[EdgeDim, KDim], float]  # type: ignore [valid-type]
-
-CintField: TypeAlias = Field[Dims[CellDim], int32]  # type: ignore [valid-type]
-EintField: TypeAlias = Field[Dims[EdgeDim], int32]  # type: ignore [valid-type]
-KintField: TypeAlias = Field[Dims[KDim], int32]  # type: ignore [valid-type]
-EKintField: TypeAlias = Field[Dims[EdgeDim, KDim], int32]  # type: ignore [valid-type]
-CKintField: TypeAlias = Field[Dims[CellDim, KDim], int32]  # type: ignore [valid-type]
-
-CboolField: TypeAlias = Field[Dims[CellDim], bool]  # type: ignore [valid-type]
-EboolField: TypeAlias = Field[Dims[EdgeDim], bool]  # type: ignore [valid-type]
-CKboolField: TypeAlias = Field[Dims[CellDim, KDim], bool]  # type: ignore [valid-type]
-EKboolField: TypeAlias = Field[Dims[EdgeDim, KDim], bool]  # type: ignore [valid-type]
+CellKField: TypeAlias = Field[Dims[CellDim, KDim], T]
+EdgeKField: TypeAlias = Field[Dims[EdgeDim, KDim], T]
+VertexKField: TypeAlias = Field[Dims[VertexDim, KDim], T]

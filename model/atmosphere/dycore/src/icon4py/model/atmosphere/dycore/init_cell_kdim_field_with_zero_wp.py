@@ -22,14 +22,14 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _init_cell_kdim_field_with_zero_wp() -> fa.CKwpField:
+def _init_cell_kdim_field_with_zero_wp() -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64."""
     return broadcast(wpfloat("0.0"), (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_cell_kdim_field_with_zero_wp(
-    field_with_zero_wp: fa.CKwpField,
+    field_with_zero_wp: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

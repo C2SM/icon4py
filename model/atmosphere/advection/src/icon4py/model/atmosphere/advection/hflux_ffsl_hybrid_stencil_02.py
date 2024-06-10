@@ -19,10 +19,10 @@ from icon4py.model.common import field_type_aliases as fa
 
 @field_operator
 def _hflux_ffsl_hybrid_stencil_02(
-    p_out_e_hybrid_2: fa.EKfloatField,
-    p_mass_flx_e: fa.EKfloatField,
-    z_dreg_area: fa.EKfloatField,
-) -> fa.EKfloatField:
+    p_out_e_hybrid_2: fa.EdgeKField[float],
+    p_mass_flx_e: fa.EdgeKField[float],
+    z_dreg_area: fa.EdgeKField[float],
+) -> fa.EdgeKField[float]:
     p_out_e_hybrid_2 = p_mass_flx_e * p_out_e_hybrid_2 / z_dreg_area
 
     return p_out_e_hybrid_2
@@ -30,9 +30,9 @@ def _hflux_ffsl_hybrid_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflux_ffsl_hybrid_stencil_02(
-    p_out_e_hybrid_2: fa.EKfloatField,
-    p_mass_flx_e: fa.EKfloatField,
-    z_dreg_area: fa.EKfloatField,
+    p_out_e_hybrid_2: fa.EdgeKField[float],
+    p_mass_flx_e: fa.EdgeKField[float],
+    z_dreg_area: fa.EdgeKField[float],
 ):
     _hflux_ffsl_hybrid_stencil_02(
         p_out_e_hybrid_2,

@@ -18,17 +18,17 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _add_analysis_increments_from_data_assimilation(
-    z_rho_expl: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    rho_incr: fa.CKvpField,
-    exner_incr: fa.CKvpField,
+    z_rho_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    rho_incr: fa.CellKField[vpfloat],
+    exner_incr: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_50."""
     rho_incr_wp, exner_incr_wp = astype((rho_incr, exner_incr), wpfloat)
 
@@ -39,10 +39,10 @@ def _add_analysis_increments_from_data_assimilation(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_analysis_increments_from_data_assimilation(
-    z_rho_expl: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    rho_incr: fa.CKvpField,
-    exner_incr: fa.CKvpField,
+    z_rho_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    rho_incr: fa.CellKField[vpfloat],
+    exner_incr: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

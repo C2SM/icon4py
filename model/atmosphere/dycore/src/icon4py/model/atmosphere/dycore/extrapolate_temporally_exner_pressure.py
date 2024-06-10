@@ -22,11 +22,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _extrapolate_temporally_exner_pressure(
-    exner_exfac: fa.CKvpField,
-    exner: fa.CKwpField,
-    exner_ref_mc: fa.CKvpField,
-    exner_pr: fa.CKwpField,
-) -> tuple[fa.CKvpField, fa.CKwpField]:
+    exner_exfac: fa.CellKField[vpfloat],
+    exner: fa.CellKField[wpfloat],
+    exner_ref_mc: fa.CellKField[vpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_02."""
     exner_exfac_wp, exner_ref_mc_wp = astype((exner_exfac, exner_ref_mc), wpfloat)
 
@@ -39,11 +39,11 @@ def _extrapolate_temporally_exner_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_temporally_exner_pressure(
-    exner_exfac: fa.CKvpField,
-    exner: fa.CKwpField,
-    exner_ref_mc: fa.CKvpField,
-    exner_pr: fa.CKwpField,
-    z_exner_ex_pr: fa.CKvpField,
+    exner_exfac: fa.CellKField[vpfloat],
+    exner: fa.CellKField[wpfloat],
+    exner_ref_mc: fa.CellKField[vpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+    z_exner_ex_pr: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -18,17 +18,17 @@ from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_nabla2_to_w(
-    area: fa.CwpField,
-    z_nabla2_c: fa.CKvpField,
+    area: fa.CellField[wpfloat],
+    z_nabla2_c: fa.CellKField[vpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: fa.CKwpField,
+    w: fa.CellKField[wpfloat],
     diff_multfac_w: wpfloat,
-) -> fa.CKwpField:
+) -> fa.CellKField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
 
     w_wp = w - diff_multfac_w * (area * area) * neighbor_sum(
@@ -39,10 +39,10 @@ def _apply_nabla2_to_w(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_to_w(
-    area: fa.CwpField,
-    z_nabla2_c: fa.CKvpField,
+    area: fa.CellField[wpfloat],
+    z_nabla2_c: fa.CellKField[vpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: fa.CKwpField,
+    w: fa.CellKField[wpfloat],
     diff_multfac_w: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

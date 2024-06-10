@@ -18,22 +18,22 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_explicit_part_for_rho_and_exner(
-    rho_nnow: fa.CKwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    z_flxdiv_mass: fa.CKvpField,
-    z_contr_w_fl_l: fa.CKwpField,
-    exner_pr: fa.CKwpField,
-    z_beta: fa.CKvpField,
-    z_flxdiv_theta: fa.CKvpField,
-    theta_v_ic: fa.CKwpField,
-    ddt_exner_phy: fa.CKvpField,
+    rho_nnow: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    z_flxdiv_mass: fa.CellKField[vpfloat],
+    z_contr_w_fl_l: fa.CellKField[wpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    z_flxdiv_theta: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    ddt_exner_phy: fa.CellKField[vpfloat],
     dtime: wpfloat,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_48 or _mo_solve_nonhydro_stencil_49."""
     inv_ddqz_z_full_wp, z_flxdiv_mass_wp, z_beta_wp, z_flxdiv_theta_wp, ddt_exner_phy_wp = astype(
         (inv_ddqz_z_full, z_flxdiv_mass, z_beta, z_flxdiv_theta, ddt_exner_phy), wpfloat
@@ -58,17 +58,17 @@ def _compute_explicit_part_for_rho_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_explicit_part_for_rho_and_exner(
-    z_rho_expl: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    rho_nnow: fa.CKwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    z_flxdiv_mass: fa.CKvpField,
-    z_contr_w_fl_l: fa.CKwpField,
-    exner_pr: fa.CKwpField,
-    z_beta: fa.CKvpField,
-    z_flxdiv_theta: fa.CKvpField,
-    theta_v_ic: fa.CKwpField,
-    ddt_exner_phy: fa.CKvpField,
+    z_rho_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    rho_nnow: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    z_flxdiv_mass: fa.CellKField[vpfloat],
+    z_contr_w_fl_l: fa.CellKField[wpfloat],
+    exner_pr: fa.CellKField[wpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    z_flxdiv_theta: fa.CellKField[vpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    ddt_exner_phy: fa.CellKField[vpfloat],
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

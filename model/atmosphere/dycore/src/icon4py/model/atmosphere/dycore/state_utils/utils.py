@@ -50,21 +50,21 @@ def _allocate_indices(*dims: Dimension, grid, is_halfdim=False, dtype=int32):
 
 
 @field_operator
-def _scale_k(field: fa.KfloatField, factor: float) -> fa.KfloatField:
+def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
     return field * factor
 
 
 @program(backend=backend)
-def scale_k(field: fa.KfloatField, factor: float, scaled_field: fa.KfloatField):
+def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
     _scale_k(field, factor, out=scaled_field)
 
 
 @field_operator
 def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
     tuple[
-        fa.EKwpField,
-        fa.EKwpField,
-        fa.EKwpField,
+        fa.EdgeKField[wpfloat],
+        fa.EdgeKField[wpfloat],
+        fa.EdgeKField[wpfloat],
     ]
 ):
     return (
@@ -76,18 +76,18 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
 
 @field_operator
 def _calculate_bdy_divdamp(
-    scal_divdamp: fa.KfloatField, nudge_max_coeff: float, dbl_eps: float
-) -> fa.KfloatField:
+    scal_divdamp: fa.KField[float], nudge_max_coeff: float, dbl_eps: float
+) -> fa.KField[float]:
     return 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
 
 
 @field_operator
 def _calculate_scal_divdamp(
-    enh_divdamp_fac: fa.KfloatField,
+    enh_divdamp_fac: fa.KField[float],
     divdamp_order: int32,
     mean_cell_area: float,
     divdamp_fac_o2: float,
-) -> fa.KfloatField:
+) -> fa.KField[float]:
     enh_divdamp_fac = (
         maximum(0.0, enh_divdamp_fac - 0.25 * divdamp_fac_o2)
         if divdamp_order == 24
@@ -98,13 +98,13 @@ def _calculate_scal_divdamp(
 
 @field_operator
 def _calculate_divdamp_fields(
-    enh_divdamp_fac: fa.KfloatField,
+    enh_divdamp_fac: fa.KField[float],
     divdamp_order: int32,
     mean_cell_area: float,
     divdamp_fac_o2: float,
     nudge_max_coeff: float,
     dbl_eps: float,
-) -> tuple[fa.KfloatField, fa.KfloatField]:
+) -> tuple[fa.KField[float], fa.KField[float]]:
     scal_divdamp = _calculate_scal_divdamp(
         enh_divdamp_fac, divdamp_order, mean_cell_area, divdamp_fac_o2
     )
@@ -113,10 +113,10 @@ def _calculate_divdamp_fields(
 
 
 @field_operator
-def _compute_z_raylfac(rayleigh_w: fa.KfloatField, dtime: float) -> fa.KfloatField:
+def _compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float) -> fa.KField[float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
 @program(backend=backend)
-def compute_z_raylfac(rayleigh_w: fa.KfloatField, dtime: float, z_raylfac: fa.KfloatField):
+def compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float, z_raylfac: fa.KField[float]):
     _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)

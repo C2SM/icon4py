@@ -21,13 +21,13 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _set_lower_boundary_condition_for_w_and_contravariant_correction(
-    w_concorr_c: fa.CKvpField,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+    w_concorr_c: fa.CellKField[vpfloat],
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_47."""
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
@@ -38,9 +38,9 @@ def _set_lower_boundary_condition_for_w_and_contravariant_correction(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def set_lower_boundary_condition_for_w_and_contravariant_correction(
-    w_nnew: fa.CKwpField,
-    z_contr_w_fl_l: fa.CKwpField,
-    w_concorr_c: fa.CKvpField,
+    w_nnew: fa.CellKField[wpfloat],
+    z_contr_w_fl_l: fa.CellKField[wpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

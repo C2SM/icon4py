@@ -24,9 +24,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _add_interpolated_horizontal_advection_of_w(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: fa.EKvpField,
-    ddt_w_adv: fa.CKvpField,
-) -> fa.CKvpField:
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_17."""
     z_v_grad_w_wp, ddt_w_adv_wp = astype((z_v_grad_w, ddt_w_adv), wpfloat)
     ddt_w_adv_wp = ddt_w_adv_wp + neighbor_sum(z_v_grad_w_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim)
@@ -36,8 +36,8 @@ def _add_interpolated_horizontal_advection_of_w(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_interpolated_horizontal_advection_of_w(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: fa.EKvpField,
-    ddt_w_adv: fa.CKvpField,
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

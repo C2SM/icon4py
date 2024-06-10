@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _temporary_field_for_grid_point_cold_pools_enhancement(
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     theta_ref_mc_wp = astype(theta_ref_mc, wpfloat)
 
     tdiff = theta_v - neighbor_sum(theta_v(C2E2C), axis=C2E2CDim) / wpfloat("3.0")
@@ -45,9 +45,9 @@ def _temporary_field_for_grid_point_cold_pools_enhancement(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def temporary_field_for_grid_point_cold_pools_enhancement(
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
-    enh_diffu_3d: fa.CKvpField,
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
+    enh_diffu_3d: fa.CellKField[vpfloat],
     thresh_tdiff: wpfloat,
     smallest_vpfloat: vpfloat,
     horizontal_start: int32,

@@ -15,7 +15,7 @@ import sys
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, where
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
@@ -28,13 +28,13 @@ sys.setrecursionlimit(5500)
 # Checking turn when travelling along three points, used to check whether lines inters.
 @field_operator
 def ccw(
-    p0_lon: fa.EKfloatField,
-    p0_lat: fa.EKfloatField,
-    p1_lon: fa.EKfloatField,
-    p1_lat: fa.EKfloatField,
-    p2_lon: fa.EKfloatField,
-    p2_lat: fa.EKfloatField,
-) -> fa.EKintField:
+    p0_lon: fa.EdgeKField[float],
+    p0_lat: fa.EdgeKField[float],
+    p1_lon: fa.EdgeKField[float],
+    p1_lat: fa.EdgeKField[float],
+    p2_lon: fa.EdgeKField[float],
+    p2_lat: fa.EdgeKField[float],
+) -> fa.EdgeKField[int32]:
     dx1 = p1_lon - p0_lon
     dy1 = p1_lat - p0_lat
 
@@ -52,15 +52,15 @@ def ccw(
 # Checks whether two lines intersect
 @field_operator
 def lintersect(
-    line1_p1_lon: fa.EKfloatField,
-    line1_p1_lat: fa.EKfloatField,
-    line1_p2_lon: fa.EKfloatField,
-    line1_p2_lat: fa.EKfloatField,
-    line2_p1_lon: fa.EKfloatField,
-    line2_p1_lat: fa.EKfloatField,
-    line2_p2_lon: fa.EKfloatField,
-    line2_p2_lat: fa.EKfloatField,
-) -> fa.EKboolField:
+    line1_p1_lon: fa.EdgeKField[float],
+    line1_p1_lat: fa.EdgeKField[float],
+    line1_p2_lon: fa.EdgeKField[float],
+    line1_p2_lat: fa.EdgeKField[float],
+    line2_p1_lon: fa.EdgeKField[float],
+    line2_p1_lat: fa.EdgeKField[float],
+    line2_p2_lon: fa.EdgeKField[float],
+    line2_p2_lat: fa.EdgeKField[float],
+) -> fa.EdgeKField[bool]:
     intersect1 = ccw(
         line1_p1_lon,
         line1_p1_lat,
@@ -99,15 +99,15 @@ def lintersect(
 # Compute intersection point of two lines in 2D
 @field_operator
 def line_intersect(
-    line1_p1_lon: fa.EKfloatField,
-    line1_p1_lat: fa.EKfloatField,
-    line1_p2_lon: fa.EKfloatField,
-    line1_p2_lat: fa.EKfloatField,
-    line2_p1_lon: fa.EKfloatField,
-    line2_p1_lat: fa.EKfloatField,
-    line2_p2_lon: fa.EKfloatField,
-    line2_p2_lat: fa.EKfloatField,
-) -> tuple[fa.EKfloatField, fa.EKfloatField]:
+    line1_p1_lon: fa.EdgeKField[float],
+    line1_p1_lat: fa.EdgeKField[float],
+    line1_p2_lon: fa.EdgeKField[float],
+    line1_p2_lat: fa.EdgeKField[float],
+    line2_p1_lon: fa.EdgeKField[float],
+    line2_p1_lat: fa.EdgeKField[float],
+    line2_p2_lon: fa.EdgeKField[float],
+    line2_p2_lat: fa.EdgeKField[float],
+) -> tuple[fa.EdgeKField[float], fa.EdgeKField[float]]:
     # avoid division with zero
     d1 = line1_p2_lon - line1_p1_lon
     d1 = where(d1 != 0.0, d1, line1_p2_lon)
@@ -126,44 +126,44 @@ def line_intersect(
 
 @field_operator
 def _divide_flux_area_list_stencil_01(
-    famask_int: fa.EKintField,
-    p_vn: fa.EKfloatField,
+    famask_int: fa.EdgeKField[int32],
+    p_vn: fa.EdgeKField[float],
     ptr_v3_lon: Field[[ECDim], float],
     ptr_v3_lat: Field[[ECDim], float],
-    tangent_orientation_dsl: fa.EfloatField,
-    dreg_patch0_1_lon_dsl: fa.EKfloatField,
-    dreg_patch0_1_lat_dsl: fa.EKfloatField,
-    dreg_patch0_2_lon_dsl: fa.EKfloatField,
-    dreg_patch0_2_lat_dsl: fa.EKfloatField,
-    dreg_patch0_3_lon_dsl: fa.EKfloatField,
-    dreg_patch0_3_lat_dsl: fa.EKfloatField,
-    dreg_patch0_4_lon_dsl: fa.EKfloatField,
-    dreg_patch0_4_lat_dsl: fa.EKfloatField,
+    tangent_orientation_dsl: fa.EdgeField[float],
+    dreg_patch0_1_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_1_lat_dsl: fa.EdgeKField[float],
+    dreg_patch0_2_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_2_lat_dsl: fa.EdgeKField[float],
+    dreg_patch0_3_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_3_lat_dsl: fa.EdgeKField[float],
+    dreg_patch0_4_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_4_lat_dsl: fa.EdgeKField[float],
 ) -> tuple[
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
-    fa.EKfloatField,
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
 ]:
     arrival_pts_1_lon_dsl = dreg_patch0_1_lon_dsl
     arrival_pts_1_lat_dsl = dreg_patch0_1_lat_dsl
@@ -676,35 +676,35 @@ def _divide_flux_area_list_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def divide_flux_area_list_stencil_01(
-    famask_int: fa.EKintField,
-    p_vn: fa.EKfloatField,
+    famask_int: fa.EdgeKField[int32],
+    p_vn: fa.EdgeKField[float],
     ptr_v3_lon: Field[[ECDim], float],
     ptr_v3_lat: Field[[ECDim], float],
-    tangent_orientation_dsl: fa.EfloatField,
-    dreg_patch0_1_lon_dsl: fa.EKfloatField,
-    dreg_patch0_1_lat_dsl: fa.EKfloatField,
-    dreg_patch0_2_lon_dsl: fa.EKfloatField,
-    dreg_patch0_2_lat_dsl: fa.EKfloatField,
-    dreg_patch0_3_lon_dsl: fa.EKfloatField,
-    dreg_patch0_3_lat_dsl: fa.EKfloatField,
-    dreg_patch0_4_lon_dsl: fa.EKfloatField,
-    dreg_patch0_4_lat_dsl: fa.EKfloatField,
-    dreg_patch1_1_lon_vmask: fa.EKfloatField,
-    dreg_patch1_1_lat_vmask: fa.EKfloatField,
-    dreg_patch1_2_lon_vmask: fa.EKfloatField,
-    dreg_patch1_2_lat_vmask: fa.EKfloatField,
-    dreg_patch1_3_lon_vmask: fa.EKfloatField,
-    dreg_patch1_3_lat_vmask: fa.EKfloatField,
-    dreg_patch1_4_lon_vmask: fa.EKfloatField,
-    dreg_patch1_4_lat_vmask: fa.EKfloatField,
-    dreg_patch2_1_lon_vmask: fa.EKfloatField,
-    dreg_patch2_1_lat_vmask: fa.EKfloatField,
-    dreg_patch2_2_lon_vmask: fa.EKfloatField,
-    dreg_patch2_2_lat_vmask: fa.EKfloatField,
-    dreg_patch2_3_lon_vmask: fa.EKfloatField,
-    dreg_patch2_3_lat_vmask: fa.EKfloatField,
-    dreg_patch2_4_lon_vmask: fa.EKfloatField,
-    dreg_patch2_4_lat_vmask: fa.EKfloatField,
+    tangent_orientation_dsl: fa.EdgeField[float],
+    dreg_patch0_1_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_1_lat_dsl: fa.EdgeKField[float],
+    dreg_patch0_2_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_2_lat_dsl: fa.EdgeKField[float],
+    dreg_patch0_3_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_3_lat_dsl: fa.EdgeKField[float],
+    dreg_patch0_4_lon_dsl: fa.EdgeKField[float],
+    dreg_patch0_4_lat_dsl: fa.EdgeKField[float],
+    dreg_patch1_1_lon_vmask: fa.EdgeKField[float],
+    dreg_patch1_1_lat_vmask: fa.EdgeKField[float],
+    dreg_patch1_2_lon_vmask: fa.EdgeKField[float],
+    dreg_patch1_2_lat_vmask: fa.EdgeKField[float],
+    dreg_patch1_3_lon_vmask: fa.EdgeKField[float],
+    dreg_patch1_3_lat_vmask: fa.EdgeKField[float],
+    dreg_patch1_4_lon_vmask: fa.EdgeKField[float],
+    dreg_patch1_4_lat_vmask: fa.EdgeKField[float],
+    dreg_patch2_1_lon_vmask: fa.EdgeKField[float],
+    dreg_patch2_1_lat_vmask: fa.EdgeKField[float],
+    dreg_patch2_2_lon_vmask: fa.EdgeKField[float],
+    dreg_patch2_2_lat_vmask: fa.EdgeKField[float],
+    dreg_patch2_3_lon_vmask: fa.EdgeKField[float],
+    dreg_patch2_3_lat_vmask: fa.EdgeKField[float],
+    dreg_patch2_4_lon_vmask: fa.EdgeKField[float],
+    dreg_patch2_4_lat_vmask: fa.EdgeKField[float],
 ):
     _divide_flux_area_list_stencil_01(
         famask_int,

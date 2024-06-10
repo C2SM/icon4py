@@ -23,14 +23,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_nabla4(
-    u_vert: fa.VKvpField,
-    v_vert: fa.VKvpField,
+    u_vert: fa.VertexKField[vpfloat],
+    v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
-    z_nabla2_e: fa.EKwpField,
-    inv_vert_vert_length: fa.EwpField,
-    inv_primal_edge_length: fa.EwpField,
-) -> fa.EKvpField:
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+) -> fa.EdgeKField[vpfloat]:
     u_vert_wp, v_vert_wp = astype((u_vert, v_vert), wpfloat)
 
     nabv_tang_vp = astype(
@@ -63,14 +63,14 @@ def _calculate_nabla4(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla4(
-    u_vert: fa.VKvpField,
-    v_vert: fa.VKvpField,
+    u_vert: fa.VertexKField[vpfloat],
+    v_vert: fa.VertexKField[vpfloat],
     primal_normal_vert_v1: Field[[ECVDim], wpfloat],
     primal_normal_vert_v2: Field[[ECVDim], wpfloat],
-    z_nabla2_e: fa.EKwpField,
-    inv_vert_vert_length: fa.EwpField,
-    inv_primal_edge_length: fa.EwpField,
-    z_nabla4_e2: fa.EKvpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    inv_vert_vert_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

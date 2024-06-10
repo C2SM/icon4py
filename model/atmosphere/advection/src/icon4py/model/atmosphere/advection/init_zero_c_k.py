@@ -20,10 +20,10 @@ from icon4py.model.common.dimension import CellDim, KDim
 
 
 @field_operator
-def _init_zero_c_k() -> fa.CKfloatField:
+def _init_zero_c_k() -> fa.CellKField[float]:
     return broadcast(0.0, (CellDim, KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def init_zero_c_k(field: fa.CKfloatField):
+def init_zero_c_k(field: fa.CellKField[float]):
     _init_zero_c_k(out=field)

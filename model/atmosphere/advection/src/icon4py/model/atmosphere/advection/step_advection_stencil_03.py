@@ -20,19 +20,19 @@ from icon4py.model.common import field_type_aliases as fa
 
 @field_operator
 def _step_advection_stencil_03(
-    p_tracer_now: fa.CKfloatField,
-    p_grf_tend_tracer: fa.CKfloatField,
+    p_tracer_now: fa.CellKField[float],
+    p_grf_tend_tracer: fa.CellKField[float],
     p_dtime: float,
-) -> fa.CKfloatField:
+) -> fa.CellKField[float]:
     p_tracer_new = maximum(0.0, p_tracer_now + p_dtime * p_grf_tend_tracer)
     return p_tracer_new
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def step_advection_stencil_03(
-    p_tracer_now: fa.CKfloatField,
-    p_grf_tend_tracer: fa.CKfloatField,
-    p_tracer_new: fa.CKfloatField,
+    p_tracer_now: fa.CellKField[float],
+    p_grf_tend_tracer: fa.CellKField[float],
+    p_tracer_new: fa.CellKField[float],
     p_dtime: float,
 ):
     _step_advection_stencil_03(p_tracer_now, p_grf_tend_tracer, p_dtime, out=p_tracer_new)

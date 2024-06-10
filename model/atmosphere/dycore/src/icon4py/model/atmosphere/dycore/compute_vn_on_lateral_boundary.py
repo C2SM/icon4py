@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_vn_on_lateral_boundary(
-    grf_tend_vn: fa.EKwpField,
-    vn_now: fa.EKwpField,
+    grf_tend_vn: fa.EdgeKField[wpfloat],
+    vn_now: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
-) -> fa.EKwpField:
+) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_29."""
     vn_new_wp = vn_now + dtime * grf_tend_vn
     return vn_new_wp
@@ -34,9 +34,9 @@ def _compute_vn_on_lateral_boundary(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_vn_on_lateral_boundary(
-    grf_tend_vn: fa.EKwpField,
-    vn_now: fa.EKwpField,
-    vn_new: fa.EKwpField,
+    grf_tend_vn: fa.EdgeKField[wpfloat],
+    vn_now: fa.EdgeKField[wpfloat],
+    vn_new: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

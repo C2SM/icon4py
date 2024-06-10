@@ -27,14 +27,14 @@ class PrognosticState:
     Corresponds to ICON t_nh_prog
     """
 
-    rho: fa.CKfloatField  # density, rho(nproma, nlev, nblks_c) [m/s]
-    w: fa.CKfloatField  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
+    rho: fa.CellKField[float]  # density, rho(nproma, nlev, nblks_c) [m/s]
+    w: fa.CellKField[float]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
     vn: Field[
         [EdgeDim, KDim], float
     ]  # horizontal wind normal to edges, vn(nproma, nlev, nblks_e)  [m/s]
-    exner: fa.CKfloatField  # exner function, exner(nrpoma, nlev, nblks_c)
-    theta_v: fa.CKfloatField  # virtual temperature, (nproma, nlev, nlbks_c) [K]
+    exner: fa.CellKField[float]  # exner function, exner(nrpoma, nlev, nblks_c)
+    theta_v: fa.CellKField[float]  # virtual temperature, (nproma, nlev, nlbks_c) [K]
 
     @property
-    def w_1(self) -> fa.CfloatField:
+    def w_1(self) -> fa.CellField[float]:
         return as_field((CellDim,), self.w.ndarray[:, 0])

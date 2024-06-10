@@ -34,21 +34,21 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _fused_velocity_advection_stencil_16_to_18(
-    z_w_con_c: fa.CKvpField,
-    w: fa.CKwpField,
-    coeff1_dwdz: fa.CKvpField,
-    coeff2_dwdz: fa.CKvpField,
-    ddt_w_adv: fa.CKvpField,
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: fa.EKvpField,
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     levelmask: Field[[KDim], bool],
-    cfl_clipping: fa.CKboolField,
-    owner_mask: fa.CboolField,
-    ddqz_z_half: fa.CKvpField,
-    area: fa.CwpField,
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    cell: fa.CintField,
-    k: fa.KintField,
+    cell: fa.CellField[int32],
+    k: fa.KField[int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -57,7 +57,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     nlev: int32,
     nrdmax: int32,
     extra_diffu: bool,
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     k = broadcast(k, (CellDim, KDim))
 
     ddt_w_adv = where(
@@ -99,21 +99,21 @@ def _fused_velocity_advection_stencil_16_to_18(
 
 @field_operator
 def _fused_velocity_advection_stencil_15_to_18(
-    z_w_con_c: fa.CKvpField,
-    w: fa.CKwpField,
-    coeff1_dwdz: fa.CKvpField,
-    coeff2_dwdz: fa.CKvpField,
-    ddt_w_adv: fa.CKvpField,
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: fa.EKvpField,
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     levelmask: Field[[KDim], bool],
-    cfl_clipping: fa.CKboolField,
-    owner_mask: fa.CboolField,
-    ddqz_z_half: fa.CKvpField,
-    area: fa.CwpField,
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    cell: fa.CintField,
-    k: fa.KintField,
+    cell: fa.CellField[int32],
+    k: fa.KField[int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -123,7 +123,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     nrdmax: int32,
     lvn_only: bool,
     extra_diffu: bool,
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     z_w_con_c_full = _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c)
     ddt_w_adv = (
         _fused_velocity_advection_stencil_16_to_18(
@@ -160,22 +160,22 @@ def _fused_velocity_advection_stencil_15_to_18(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_15_to_18(
-    z_w_con_c: fa.CKvpField,
-    w: fa.CKwpField,
-    coeff1_dwdz: fa.CKvpField,
-    coeff2_dwdz: fa.CKvpField,
-    ddt_w_adv: fa.CKvpField,
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: fa.EKvpField,
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     levelmask: Field[[KDim], bool],
-    cfl_clipping: fa.CKboolField,
-    owner_mask: fa.CboolField,
-    ddqz_z_half: fa.CKvpField,
-    area: fa.CwpField,
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    z_w_con_c_full: fa.CKvpField,
-    cell: fa.CintField,
-    k: fa.KintField,
+    z_w_con_c_full: fa.CellKField[vpfloat],
+    cell: fa.CellField[int32],
+    k: fa.KField[int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,

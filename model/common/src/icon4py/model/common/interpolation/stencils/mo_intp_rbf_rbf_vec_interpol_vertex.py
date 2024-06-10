@@ -28,7 +28,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _mo_intp_rbf_rbf_vec_interpol_vertex(
-    p_e_in: fa.EKwpField,
+    p_e_in: fa.EdgeKField[wpfloat],
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
     ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
 ) -> tuple[Field[[VertexDim, KDim], wpfloat], Field[[VertexDim, KDim], wpfloat]]:
@@ -39,7 +39,7 @@ def _mo_intp_rbf_rbf_vec_interpol_vertex(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_intp_rbf_rbf_vec_interpol_vertex(
-    p_e_in: fa.EKwpField,
+    p_e_in: fa.EdgeKField[wpfloat],
     ptr_coeff_1: Field[[VertexDim, V2EDim], wpfloat],
     ptr_coeff_2: Field[[VertexDim, V2EDim], wpfloat],
     p_u_out: Field[[VertexDim, KDim], wpfloat],

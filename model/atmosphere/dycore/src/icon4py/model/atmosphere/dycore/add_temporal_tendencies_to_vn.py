@@ -18,19 +18,19 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _add_temporal_tendencies_to_vn(
-    vn_nnow: fa.EKwpField,
-    ddt_vn_apc_ntl1: fa.EKvpField,
-    ddt_vn_phy: fa.EKvpField,
-    z_theta_v_e: fa.EKwpField,
-    z_gradh_exner: fa.EKvpField,
+    vn_nnow: fa.EdgeKField[wpfloat],
+    ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
+    ddt_vn_phy: fa.EdgeKField[vpfloat],
+    z_theta_v_e: fa.EdgeKField[wpfloat],
+    z_gradh_exner: fa.EdgeKField[vpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> fa.EKwpField:
+) -> fa.EdgeKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_24."""
     z_gradh_exner_wp = astype(z_gradh_exner, wpfloat)
 
@@ -44,12 +44,12 @@ def _add_temporal_tendencies_to_vn(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_temporal_tendencies_to_vn(
-    vn_nnow: fa.EKwpField,
-    ddt_vn_apc_ntl1: fa.EKvpField,
-    ddt_vn_phy: fa.EKvpField,
-    z_theta_v_e: fa.EKwpField,
-    z_gradh_exner: fa.EKvpField,
-    vn_nnew: fa.EKwpField,
+    vn_nnow: fa.EdgeKField[wpfloat],
+    ddt_vn_apc_ntl1: fa.EdgeKField[vpfloat],
+    ddt_vn_phy: fa.EdgeKField[vpfloat],
+    z_theta_v_e: fa.EdgeKField[wpfloat],
+    z_gradh_exner: fa.EdgeKField[vpfloat],
+    vn_nnew: fa.EdgeKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
     horizontal_start: int32,

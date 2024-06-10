@@ -21,20 +21,20 @@ from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta impor
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-    wgtfac_c: fa.CKvpField,
-    rho: fa.CKwpField,
-    rho_ref_mc: fa.CKvpField,
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
+    wgtfac_c: fa.CellKField[vpfloat],
+    rho: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
 ) -> tuple[
-    fa.CKwpField,
-    fa.CKvpField,
-    fa.CKvpField,
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     """Formerly known as _mo_solve_nonhydro_stencil_08."""
     wgtfac_c_wp = astype(wgtfac_c, wpfloat)
@@ -48,14 +48,14 @@ def _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
-    wgtfac_c: fa.CKvpField,
-    rho: fa.CKwpField,
-    rho_ref_mc: fa.CKvpField,
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
-    rho_ic: fa.CKwpField,
-    z_rth_pr_1: fa.CKvpField,
-    z_rth_pr_2: fa.CKvpField,
+    wgtfac_c: fa.CellKField[vpfloat],
+    rho: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
+    rho_ic: fa.CellKField[wpfloat],
+    z_rth_pr_1: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

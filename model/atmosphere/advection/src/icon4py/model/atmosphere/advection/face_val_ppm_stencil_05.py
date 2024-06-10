@@ -19,10 +19,10 @@ from icon4py.model.common.dimension import Koff
 
 @field_operator
 def _face_val_ppm_stencil_05(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-    z_slope: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+    z_slope: fa.CellKField[float],
+) -> fa.CellKField[float]:
     zgeo1 = p_cellhgt_mc_now(Koff[-1]) / (p_cellhgt_mc_now(Koff[-1]) + p_cellhgt_mc_now)
     zgeo2 = 1.0 / (
         p_cellhgt_mc_now(Koff[-2])
@@ -53,10 +53,10 @@ def _face_val_ppm_stencil_05(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_05(
-    p_cc: fa.CKfloatField,
-    p_cellhgt_mc_now: fa.CKfloatField,
-    z_slope: fa.CKfloatField,
-    p_face: fa.CKfloatField,
+    p_cc: fa.CellKField[float],
+    p_cellhgt_mc_now: fa.CellKField[float],
+    z_slope: fa.CellKField[float],
+    p_face: fa.CellKField[float],
 ):
     _face_val_ppm_stencil_05(
         p_cc,

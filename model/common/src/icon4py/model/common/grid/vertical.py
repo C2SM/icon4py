@@ -39,7 +39,7 @@ class VerticalModelParams:
     htop_moist_proc: height [m] where moist physics is turned off. Defined in `mo_nonhydrostatic_nml.f90` as `htop_moist_proc`
     """
 
-    vct_a: fa.KfloatField
+    vct_a: fa.KField[float]
     rayleigh_damping_height: Final[float] = 45000.0
     htop_moist_proc: Final[float] = 22500.0
     index_of_damping_layer: Final[int32] = field(init=False)
@@ -91,7 +91,7 @@ class VerticalModelParams:
         )
 
     @property
-    def physical_heights(self) -> fa.KfloatField:
+    def physical_heights(self) -> fa.KField[float]:
         return self.vct_a
 
 

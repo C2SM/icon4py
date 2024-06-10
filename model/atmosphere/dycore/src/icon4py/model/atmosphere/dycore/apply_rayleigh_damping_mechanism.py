@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _apply_rayleigh_damping_mechanism(
-    z_raylfac: fa.KwpField,
-    w_1: fa.CwpField,
-    w: fa.CKwpField,
-) -> fa.CKwpField:
+    z_raylfac: fa.KField[wpfloat],
+    w_1: fa.CellField[wpfloat],
+    w: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_54."""
     z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
     w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
@@ -35,9 +35,9 @@ def _apply_rayleigh_damping_mechanism(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_rayleigh_damping_mechanism(
-    z_raylfac: fa.KwpField,
-    w_1: fa.CwpField,
-    w: fa.CKwpField,
+    z_raylfac: fa.KField[wpfloat],
+    w_1: fa.CellField[wpfloat],
+    w: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

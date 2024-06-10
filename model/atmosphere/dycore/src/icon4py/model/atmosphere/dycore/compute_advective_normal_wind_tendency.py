@@ -33,17 +33,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_advective_normal_wind_tendency(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
-    z_ekinh: fa.CKvpField,
-    zeta: fa.VKvpField,
-    vt: fa.EKvpField,
-    f_e: fa.EwpField,
+    z_ekinh: fa.CellKField[vpfloat],
+    zeta: fa.VertexKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    f_e: fa.EdgeField[wpfloat],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
-    z_w_con_c_full: fa.CKvpField,
-    vn_ie: fa.EKvpField,
-    ddqz_z_full_e: fa.EKvpField,
-) -> fa.EKvpField:
+    z_w_con_c_full: fa.CellKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    ddqz_z_full_e: fa.EdgeKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_19."""
     vt_wp, z_w_con_c_full_wp, ddqz_z_full_e_wp = astype(
         (vt, z_w_con_c_full, ddqz_z_full_e), wpfloat
@@ -67,17 +67,17 @@ def _compute_advective_normal_wind_tendency(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_advective_normal_wind_tendency(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],
-    z_ekinh: fa.CKvpField,
-    zeta: fa.VKvpField,
-    vt: fa.EKvpField,
-    f_e: fa.EwpField,
+    z_ekinh: fa.CellKField[vpfloat],
+    zeta: fa.VertexKField[vpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    f_e: fa.EdgeField[wpfloat],
     c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
-    z_w_con_c_full: fa.CKvpField,
-    vn_ie: fa.EKvpField,
-    ddqz_z_full_e: fa.EKvpField,
-    ddt_vn_apc: fa.EKvpField,
+    z_w_con_c_full: fa.CellKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    ddqz_z_full_e: fa.EdgeKField[vpfloat],
+    ddt_vn_apc: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

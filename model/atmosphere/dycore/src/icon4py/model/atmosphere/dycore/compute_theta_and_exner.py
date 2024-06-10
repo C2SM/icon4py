@@ -23,13 +23,13 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_theta_and_exner(
-    bdy_halo_c: fa.CboolField,
-    rho: fa.CKwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    bdy_halo_c: fa.CellField[bool],
+    rho: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_66."""
     theta_v_wp = where(bdy_halo_c, exner, theta_v)
     exner_wp = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
@@ -38,10 +38,10 @@ def _compute_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_theta_and_exner(
-    bdy_halo_c: fa.CboolField,
-    rho: fa.CKwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    bdy_halo_c: fa.CellField[bool],
+    rho: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
     horizontal_start: int32,

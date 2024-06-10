@@ -18,15 +18,15 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C, EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_nabla2_for_z(
-    kh_smag_e: fa.EKvpField,
-    inv_dual_edge_length: fa.EwpField,
-    theta_v: fa.CKwpField,
-) -> fa.EKwpField:
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
     kh_smag_e_wp = astype(kh_smag_e, wpfloat)
 
     z_nabla2_e_wp = kh_smag_e_wp * inv_dual_edge_length * (theta_v(E2C[1]) - theta_v(E2C[0]))
@@ -35,10 +35,10 @@ def _calculate_nabla2_for_z(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_for_z(
-    kh_smag_e: fa.EKvpField,
-    inv_dual_edge_length: fa.EwpField,
-    theta_v: fa.CKwpField,
-    z_nabla2_e: fa.EKwpField,
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

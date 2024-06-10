@@ -23,19 +23,19 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_l
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    wgtfacq_c: fa.CKvpField,
-    vert_idx: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    vert_idx: fa.KField[int32],
     nlev: int32,
     nflatlev: int32,
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     w_concorr_c = where(
         nflatlev + 1 <= vert_idx < nlev,
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
@@ -49,13 +49,13 @@ def _fused_solve_nonhydro_stencil_39_40(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    wgtfacq_c: fa.CKvpField,
-    vert_idx: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    wgtfacq_c: fa.CellKField[vpfloat],
+    vert_idx: fa.KField[int32],
     nlev: int32,
     nflatlev: int32,
-    w_concorr_c: fa.CKvpField,
+    w_concorr_c: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _temporary_fields_for_turbulence_diagnostics(
-    kh_smag_ec: fa.EKvpField,
-    vn: fa.EKwpField,
+    kh_smag_ec: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_smag_ec_wp, diff_multfac_smag_wp = astype((kh_smag_ec, diff_multfac_smag), wpfloat)
 
     kh_c_wp = neighbor_sum(kh_smag_ec_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim) / diff_multfac_smag_wp
@@ -38,13 +38,13 @@ def _temporary_fields_for_turbulence_diagnostics(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def temporary_fields_for_turbulence_diagnostics(
-    kh_smag_ec: fa.EKvpField,
-    vn: fa.EKwpField,
+    kh_smag_ec: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-    kh_c: fa.CKvpField,
-    div: fa.CKvpField,
+    kh_c: fa.CellKField[vpfloat],
+    div: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

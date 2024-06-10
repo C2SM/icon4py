@@ -20,17 +20,17 @@ from icon4py.model.common.dimension import E2C2E, E2C2EDim, EdgeDim
 
 @field_operator
 def _rbf_intp_edge_stencil_01(
-    p_vn_in: fa.EKfloatField,
+    p_vn_in: fa.EdgeKField[float],
     ptr_coeff: Field[[EdgeDim, E2C2EDim], float],
-) -> fa.EKfloatField:
+) -> fa.EdgeKField[float]:
     p_vt_out = neighbor_sum(p_vn_in(E2C2E) * ptr_coeff, axis=E2C2EDim)
     return p_vt_out
 
 
 @program
 def rbf_intp_edge_stencil_01(
-    p_vn_in: fa.EKfloatField,
+    p_vn_in: fa.EdgeKField[float],
     ptr_coeff: Field[[EdgeDim, E2C2EDim], float],
-    p_vt_out: fa.EKfloatField,
+    p_vt_out: fa.EdgeKField[float],
 ):
     _rbf_intp_edge_stencil_01(p_vn_in, ptr_coeff, out=p_vt_out)

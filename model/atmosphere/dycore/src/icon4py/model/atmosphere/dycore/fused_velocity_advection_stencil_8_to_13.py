@@ -28,26 +28,26 @@ from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_predictor(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    w: fa.CKwpField,
-    z_w_concorr_mc: fa.CKvpField,
-    w_concorr_c: fa.CKvpField,
-    z_ekinh: fa.CKvpField,
-    k: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     nlev: int32,
     nflatlev: int32,
 ) -> tuple[
-    fa.CKvpField,
-    fa.CKvpField,
-    fa.CKvpField,
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     z_ekinh = where(
         k < nlev,
@@ -80,21 +80,21 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_corrector(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    w: fa.CKwpField,
-    z_w_concorr_mc: fa.CKvpField,
-    w_concorr_c: fa.CKvpField,
-    z_ekinh: fa.CKvpField,
-    k: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     nlev: int32,
     nflatlev: int32,
 ) -> tuple[
-    fa.CKvpField,
-    fa.CKvpField,
-    fa.CKvpField,
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     z_ekinh = where(
         k < nlev,
@@ -119,22 +119,22 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    w: fa.CKwpField,
-    z_w_concorr_mc: fa.CKvpField,
-    w_concorr_c: fa.CKvpField,
-    z_ekinh: fa.CKvpField,
-    k: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     nlev: int32,
     nflatlev: int32,
 ) -> tuple[
-    fa.CKvpField,
-    fa.CKvpField,
-    fa.CKvpField,
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     z_ekinh, w_concorr_c, z_w_con_c = (
         _fused_velocity_advection_stencil_8_to_13_predictor(
@@ -171,19 +171,19 @@ def _fused_velocity_advection_stencil_8_to_13(
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_restricted(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    w: fa.CKwpField,
-    z_w_concorr_mc: fa.CKvpField,
-    w_concorr_c: fa.CKvpField,
-    z_ekinh: fa.CKvpField,
-    k: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     nlev: int32,
     nflatlev: int32,
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     return _fused_velocity_advection_stencil_8_to_13(
         z_kin_hor_e,
         e_bln_c_s,
@@ -202,16 +202,16 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_13(
-    z_kin_hor_e: fa.EKvpField,
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: fa.EKvpField,
-    wgtfac_c: fa.CKvpField,
-    w: fa.CKwpField,
-    z_w_concorr_mc: fa.CKvpField,
-    w_concorr_c: fa.CKvpField,
-    z_ekinh: fa.CKvpField,
-    z_w_con_c: fa.CKvpField,
-    k: fa.KintField,
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     nlev: int32,
     nflatlev: int32,

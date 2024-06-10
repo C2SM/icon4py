@@ -67,7 +67,7 @@ class VelocityAdvection:
         interpolation_state: InterpolationState,
         vertical_params: VerticalModelParams,
         edge_params: EdgeParams,
-        owner_mask: fa.CboolField,
+        owner_mask: fa.CellField[bool],
     ):
         self._initialized = False
         self.grid: IconGrid = grid
@@ -105,12 +105,12 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
-        z_w_concorr_me: fa.EKfloatField,
-        z_kin_hor_e: fa.EKfloatField,
-        z_vt_ie: fa.EKfloatField,
+        z_w_concorr_me: fa.EdgeKField[float],
+        z_kin_hor_e: fa.EdgeKField[float],
+        z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
-        cell_areas: fa.CfloatField,
+        cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -416,11 +416,11 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
-        z_kin_hor_e: fa.EKfloatField,
-        z_vt_ie: fa.EKfloatField,
+        z_kin_hor_e: fa.EdgeKField[float],
+        z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
-        cell_areas: fa.CfloatField,
+        cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 

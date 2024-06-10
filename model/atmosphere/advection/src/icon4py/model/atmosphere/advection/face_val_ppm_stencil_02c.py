@@ -20,16 +20,16 @@ from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 @field_operator
 def _face_val_ppm_stencil_02c(
-    p_cc: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+) -> fa.CellKField[float]:
     p_face = p_cc(Koff[-1])
     return p_face
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_02c(
-    p_cc: fa.CKfloatField,
-    p_face: fa.CKfloatField,
+    p_cc: fa.CellKField[float],
+    p_face: fa.CellKField[float],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

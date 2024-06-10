@@ -42,18 +42,18 @@ def _w(
 
 @field_operator
 def _solve_tridiagonal_matrix_for_w_forward_sweep(
-    vwind_impl_wgt: fa.CwpField,
-    theta_v_ic: fa.CKwpField,
-    ddqz_z_half: fa.CKvpField,
-    z_alpha: fa.CKvpField,
-    z_beta: fa.CKvpField,
-    z_w_expl: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    z_q: fa.CKvpField,
-    w: fa.CKwpField,
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    z_w_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    z_q: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
-) -> tuple[fa.CKvpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_52."""
     ddqz_z_half_wp = astype(ddqz_z_half, wpfloat)
 
@@ -71,15 +71,15 @@ def _solve_tridiagonal_matrix_for_w_forward_sweep(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def solve_tridiagonal_matrix_for_w_forward_sweep(
-    vwind_impl_wgt: fa.CwpField,
-    theta_v_ic: fa.CKwpField,
-    ddqz_z_half: fa.CKvpField,
-    z_alpha: fa.CKvpField,
-    z_beta: fa.CKvpField,
-    z_w_expl: fa.CKwpField,
-    z_exner_expl: fa.CKwpField,
-    z_q: fa.CKvpField,
-    w: fa.CKwpField,
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    z_w_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    z_q: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
     dtime: wpfloat,
     cpd: wpfloat,
     horizontal_start: int32,

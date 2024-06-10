@@ -24,14 +24,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_hydrostatic_correction_term(
-    theta_v: fa.CKwpField,
+    theta_v: fa.CellKField[wpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
-    theta_v_ic: fa.CKwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    inv_dual_edge_length: fa.EwpField,
+    theta_v_ic: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
-) -> fa.EKvpField:
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_21."""
     zdiff_gradp_wp = astype(zdiff_gradp, wpfloat)
 
@@ -66,14 +66,14 @@ def _compute_hydrostatic_correction_term(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_hydrostatic_correction_term(
-    theta_v: fa.CKwpField,
+    theta_v: fa.CellKField[wpfloat],
     ikoffset: Field[[ECDim, KDim], int32],
     zdiff_gradp: Field[[ECDim, KDim], vpfloat],
-    theta_v_ic: fa.CKwpField,
-    inv_ddqz_z_full: fa.CKvpField,
-    inv_dual_edge_length: fa.EwpField,
+    theta_v_ic: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
     grav_o_cpd: wpfloat,
-    z_hydro_corr: fa.EKvpField,
+    z_hydro_corr: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

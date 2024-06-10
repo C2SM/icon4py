@@ -18,16 +18,16 @@ from icon4py.model.common import field_type_aliases as fa
 
 @field_operator
 def _face_val_ppm_stencil_02b(
-    p_cc: fa.CKfloatField,
-) -> fa.CKfloatField:
+    p_cc: fa.CellKField[float],
+) -> fa.CellKField[float]:
     p_face = p_cc
     return p_face
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def face_val_ppm_stencil_02b(
-    p_cc: fa.CKfloatField,
-    p_face: fa.CKfloatField,
+    p_cc: fa.CellKField[float],
+    p_face: fa.CellKField[float],
 ):
     _face_val_ppm_stencil_02b(
         p_cc,

@@ -30,27 +30,27 @@ def zero_field(grid, *dims: Dimension, dtype=float):
 
 
 @field_operator
-def _identity_c_k(field: fa.CKfloatField) -> fa.CKfloatField:
+def _identity_c_k(field: fa.CellKField[float]) -> fa.CellKField[float]:
     return field
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def copy_field(old_f: fa.CKfloatField, new_f: fa.CKfloatField):
+def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]):
     _identity_c_k(old_f, out=new_f)
 
 
 @field_operator
-def _identity_e_k(field: fa.EKfloatField) -> fa.EKfloatField:
+def _identity_e_k(field: fa.EdgeKField[float]) -> fa.EdgeKField[float]:
     return field
 
 
 @field_operator
-def _scale_k(field: fa.KfloatField, factor: float) -> fa.KfloatField:
+def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
     return field * factor
 
 
 @program(backend=backend)
-def scale_k(field: fa.KfloatField, factor: float, scaled_field: fa.KfloatField):
+def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
     _scale_k(field, factor, out=scaled_field)
 
 
@@ -65,26 +65,26 @@ def init_zero_v_k(field: Field[[VertexDim, KDim], float]):
 
 
 @field_operator
-def _setup_smag_limit(diff_multfac_vn: fa.KfloatField) -> fa.KfloatField:
+def _setup_smag_limit(diff_multfac_vn: fa.KField[float]) -> fa.KField[float]:
     return 0.125 - 4.0 * diff_multfac_vn
 
 
 @field_operator
-def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> fa.KfloatField:
+def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> fa.KField[float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
     return broadcast(minimum(con, dyn), (KDim,))
 
 
 @field_operator
-def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KfloatField:
+def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KField[float]:
     return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
 
 
 @field_operator
 def _setup_fields_for_initial_step(
     k4: float, hdiff_efdt_ratio: float
-) -> Tuple[fa.KfloatField, fa.KfloatField]:
+) -> Tuple[fa.KField[float], fa.KField[float]]:
     diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     return diff_multfac_vn, smag_limit
@@ -94,8 +94,8 @@ def _setup_fields_for_initial_step(
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
-    diff_multfac_vn: fa.KfloatField,
-    smag_limit: fa.KfloatField,
+    diff_multfac_vn: fa.KField[float],
+    smag_limit: fa.KField[float],
 ):
     _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
 
@@ -112,8 +112,8 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: fa.KfloatField,
-) -> tuple[fa.KfloatField, fa.KfloatField, fa.KfloatField]:
+    vect_a: fa.KField[float],
+) -> tuple[fa.KField[float], fa.KField[float], fa.KField[float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     enh_smag_fac = _en_smag_fac_for_zero_nshift(
@@ -146,10 +146,10 @@ def init_diffusion_local_fields_for_regular_timestep(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: fa.KfloatField,
-    diff_multfac_vn: fa.KfloatField,
-    smag_limit: fa.KfloatField,
-    enh_smag_fac: fa.KfloatField,
+    vect_a: fa.KField[float],
+    diff_multfac_vn: fa.KField[float],
+    smag_limit: fa.KField[float],
+    enh_smag_fac: fa.KField[float],
 ):
     _init_diffusion_local_fields_for_regular_timestemp(
         k4,
@@ -172,8 +172,8 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int, nrdmax: int32, nshift: int, physical_heights: fa.KfloatField
-) -> fa.KfloatField:
+    k_size: int, nrdmax: int32, nshift: int, physical_heights: fa.KField[float]
+) -> fa.KField[float]:
     """
     Calculate diff_multfac_n2w.
 

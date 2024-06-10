@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_horizontal_gradients_for_turbulence(
-    w: fa.CKwpField,
+    w: fa.CellKField[wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     dwdx_wp = neighbor_sum(geofac_grg_x * w(C2E2CO), axis=C2E2CODim)
     dwdy_wp = neighbor_sum(geofac_grg_y * w(C2E2CO), axis=C2E2CODim)
     return astype((dwdx_wp, dwdy_wp), vpfloat)
@@ -34,11 +34,11 @@ def _calculate_horizontal_gradients_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_horizontal_gradients_for_turbulence(
-    w: fa.CKwpField,
+    w: fa.CellKField[wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    dwdx: fa.CKvpField,
-    dwdy: fa.CKvpField,
+    dwdx: fa.CellKField[vpfloat],
+    dwdy: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

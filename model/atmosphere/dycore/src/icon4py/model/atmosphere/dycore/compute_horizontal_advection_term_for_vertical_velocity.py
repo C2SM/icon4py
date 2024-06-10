@@ -23,14 +23,14 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_horizontal_advection_term_for_vertical_velocity(
-    vn_ie: fa.EKvpField,
-    inv_dual_edge_length: fa.EwpField,
-    w: fa.CKwpField,
-    z_vt_ie: fa.EKvpField,
-    inv_primal_edge_length: fa.EwpField,
-    tangent_orientation: fa.EwpField,
-    z_w_v: fa.VKvpField,
-) -> fa.EKvpField:
+    vn_ie: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    w: fa.CellKField[wpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_w_v: fa.VertexKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly know as _mo_velocity_advection_stencil_07."""
     z_vt_ie_wp, vn_ie_wp = astype((z_vt_ie, vn_ie), wpfloat)
 
@@ -44,14 +44,14 @@ def _compute_horizontal_advection_term_for_vertical_velocity(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_term_for_vertical_velocity(
-    vn_ie: fa.EKvpField,
-    inv_dual_edge_length: fa.EwpField,
-    w: fa.CKwpField,
-    z_vt_ie: fa.EKvpField,
-    inv_primal_edge_length: fa.EwpField,
-    tangent_orientation: fa.EwpField,
-    z_w_v: fa.VKvpField,
-    z_v_grad_w: fa.EKvpField,
+    vn_ie: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    w: fa.CellKField[wpfloat],
+    z_vt_ie: fa.EdgeKField[vpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_w_v: fa.VertexKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

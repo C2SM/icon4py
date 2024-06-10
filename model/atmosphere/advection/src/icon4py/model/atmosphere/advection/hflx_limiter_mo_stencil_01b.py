@@ -21,18 +21,18 @@ from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KD
 @field_operator
 def _hflx_limiter_mo_stencil_01b(
     geofac_div: Field[[CEDim], float],
-    p_rhodz_now: fa.CKfloatField,
-    p_rhodz_new: fa.CKfloatField,
-    z_mflx_low: fa.EKfloatField,
-    z_anti: fa.EKfloatField,
-    p_cc: fa.CKfloatField,
+    p_rhodz_now: fa.CellKField[float],
+    p_rhodz_new: fa.CellKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    z_anti: fa.EdgeKField[float],
+    p_cc: fa.CellKField[float],
     p_dtime: float,
 ) -> tuple[
-    fa.CKfloatField,
-    fa.CKfloatField,
-    fa.CKfloatField,
-    fa.CKfloatField,
-    fa.CKfloatField,
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     zero = broadcast(0.0, (CellDim, KDim))
 
@@ -66,17 +66,17 @@ def _hflx_limiter_mo_stencil_01b(
 @program
 def hflx_limiter_mo_stencil_01b(
     geofac_div: Field[[CEDim], float],
-    p_rhodz_now: fa.CKfloatField,
-    p_rhodz_new: fa.CKfloatField,
-    z_mflx_low: fa.EKfloatField,
-    z_anti: fa.EKfloatField,
-    p_cc: fa.CKfloatField,
+    p_rhodz_now: fa.CellKField[float],
+    p_rhodz_new: fa.CellKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    z_anti: fa.EdgeKField[float],
+    p_cc: fa.CellKField[float],
     p_dtime: float,
-    z_mflx_anti_in: fa.CKfloatField,
-    z_mflx_anti_out: fa.CKfloatField,
-    z_tracer_new_low: fa.CKfloatField,
-    z_tracer_max: fa.CKfloatField,
-    z_tracer_min: fa.CKfloatField,
+    z_mflx_anti_in: fa.CellKField[float],
+    z_mflx_anti_out: fa.CellKField[float],
+    z_tracer_new_low: fa.CellKField[float],
+    z_tracer_max: fa.CellKField[float],
+    z_tracer_min: fa.CellKField[float],
 ):
     _hflx_limiter_mo_stencil_01b(
         geofac_div,

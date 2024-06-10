@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _update_dynamical_exner_time_increment(
-    exner: fa.CKwpField,
-    ddt_exner_phy: fa.CKvpField,
-    exner_dyn_incr: fa.CKvpField,
+    exner: fa.CellKField[wpfloat],
+    ddt_exner_phy: fa.CellKField[vpfloat],
+    exner_dyn_incr: fa.CellKField[vpfloat],
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
-) -> fa.CKvpField:
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_60."""
     exner_dyn_incr_wp, ddt_exner_phy_wp = astype((exner_dyn_incr, ddt_exner_phy), wpfloat)
 
@@ -38,9 +38,9 @@ def _update_dynamical_exner_time_increment(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_dynamical_exner_time_increment(
-    exner: fa.CKwpField,
-    ddt_exner_phy: fa.CKvpField,
-    exner_dyn_incr: fa.CKvpField,
+    exner: fa.CellKField[wpfloat],
+    ddt_exner_phy: fa.CellKField[vpfloat],
+    exner_dyn_incr: fa.CellKField[vpfloat],
     ndyn_substeps_var: wpfloat,
     dtime: wpfloat,
     horizontal_start: int32,

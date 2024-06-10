@@ -65,14 +65,14 @@ def square_from_function(
 
 @field_operator
 def _multi_return(
-    z_vn_avg: fa.EKwpField,
-    mass_fl_e: fa.EKwpField,
-    vn_traj: fa.EKwpField,
-    mass_flx_me: fa.EKwpField,
+    z_vn_avg: fa.EdgeKField[wpfloat],
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    vn_traj: fa.EdgeKField[wpfloat],
+    mass_flx_me: fa.EdgeKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
-) -> tuple[fa.EKwpField, fa.EKwpField]:
+) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """accumulate_prep_adv_fields stencil formerly known as _mo_solve_nonhydro_stencil_34."""
     vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
@@ -82,12 +82,12 @@ def _multi_return(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def multi_return(
-    z_vn_avg: fa.EKwpField,
-    mass_fl_e: fa.EKwpField,
-    vn_traj: fa.EKwpField,
-    mass_flx_me: fa.EKwpField,
+    z_vn_avg: fa.EdgeKField[wpfloat],
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    vn_traj: fa.EdgeKField[wpfloat],
+    mass_flx_me: fa.EdgeKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -121,12 +121,12 @@ multi_return_cached = CachedProgram(multi_return)
 
 
 def multi_return_from_function(
-    z_vn_avg: fa.EKwpField,
-    mass_fl_e: fa.EKwpField,
-    vn_traj: fa.EKwpField,
-    mass_flx_me: fa.EKwpField,
+    z_vn_avg: fa.EdgeKField[wpfloat],
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    vn_traj: fa.EdgeKField[wpfloat],
+    mass_flx_me: fa.EdgeKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-    z_nabla2_e: fa.EKwpField,
+    z_nabla2_e: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

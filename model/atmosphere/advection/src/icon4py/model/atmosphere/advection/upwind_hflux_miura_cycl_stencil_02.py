@@ -22,18 +22,18 @@ from icon4py.model.common.dimension import C2E, C2EDim, CellDim
 @field_operator
 def _upwind_hflux_miura_cycl_stencil_02(
     nsub: int32,
-    p_mass_flx_e: fa.EKfloatField,
+    p_mass_flx_e: fa.EdgeKField[float],
     geofac_div: Field[[CellDim, C2EDim], float],
-    z_rhofluxdiv_c: fa.CKfloatField,
-    z_tracer_mflx: fa.EKfloatField,
-    z_rho_now: fa.CKfloatField,
-    z_tracer_now: fa.CKfloatField,
+    z_rhofluxdiv_c: fa.CellKField[float],
+    z_tracer_mflx: fa.EdgeKField[float],
+    z_rho_now: fa.CellKField[float],
+    z_tracer_now: fa.CellKField[float],
     z_dtsub: float,
 ) -> tuple[
-    fa.CKfloatField,
-    fa.CKfloatField,
-    fa.CKfloatField,
-    fa.CKfloatField,
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     z_rhofluxdiv_c_out = (
         neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim) if nsub == 1 else z_rhofluxdiv_c
@@ -51,17 +51,17 @@ def _upwind_hflux_miura_cycl_stencil_02(
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_cycl_stencil_02(
     nsub: int32,
-    p_mass_flx_e: fa.EKfloatField,
+    p_mass_flx_e: fa.EdgeKField[float],
     geofac_div: Field[[CellDim, C2EDim], float],
-    z_rhofluxdiv_c: fa.CKfloatField,
-    z_tracer_mflx: fa.EKfloatField,
-    z_rho_now: fa.CKfloatField,
-    z_tracer_now: fa.CKfloatField,
+    z_rhofluxdiv_c: fa.CellKField[float],
+    z_tracer_mflx: fa.EdgeKField[float],
+    z_rho_now: fa.CellKField[float],
+    z_tracer_now: fa.CellKField[float],
     z_dtsub: float,
-    z_rhofluxdiv_c_out: fa.CKfloatField,
-    z_fluxdiv_c_dsl: fa.CKfloatField,
-    z_rho_new_dsl: fa.CKfloatField,
-    z_tracer_new_dsl: fa.CKfloatField,
+    z_rhofluxdiv_c_out: fa.CellKField[float],
+    z_fluxdiv_c_dsl: fa.CellKField[float],
+    z_rho_new_dsl: fa.CellKField[float],
+    z_tracer_new_dsl: fa.CellKField[float],
 ):
     _upwind_hflux_miura_cycl_stencil_02(
         nsub,

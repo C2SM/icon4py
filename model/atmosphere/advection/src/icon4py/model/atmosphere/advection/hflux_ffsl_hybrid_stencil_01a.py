@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import where
+from gt4py.next.ffront.fbuiltins import int32, where
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import E2C
@@ -21,28 +21,28 @@ from icon4py.model.common.dimension import E2C
 
 @field_operator
 def _hflux_ffsl_hybrid_stencil_01a(
-    z_lsq_coeff_1: fa.CKfloatField,
-    z_lsq_coeff_2: fa.CKfloatField,
-    z_lsq_coeff_3: fa.CKfloatField,
-    z_lsq_coeff_4: fa.CKfloatField,
-    z_lsq_coeff_5: fa.CKfloatField,
-    z_lsq_coeff_6: fa.CKfloatField,
-    z_lsq_coeff_7: fa.CKfloatField,
-    z_lsq_coeff_8: fa.CKfloatField,
-    z_lsq_coeff_9: fa.CKfloatField,
-    z_lsq_coeff_10: fa.CKfloatField,
-    z_quad_vector_sum0_1: fa.EKfloatField,
-    z_quad_vector_sum0_2: fa.EKfloatField,
-    z_quad_vector_sum0_3: fa.EKfloatField,
-    z_quad_vector_sum0_4: fa.EKfloatField,
-    z_quad_vector_sum0_5: fa.EKfloatField,
-    z_quad_vector_sum0_6: fa.EKfloatField,
-    z_quad_vector_sum0_7: fa.EKfloatField,
-    z_quad_vector_sum0_8: fa.EKfloatField,
-    z_quad_vector_sum0_9: fa.EKfloatField,
-    z_quad_vector_sum0_10: fa.EKfloatField,
-    patch0_cell_rel_idx_dsl: fa.EKintField,
-) -> fa.EKfloatField:
+    z_lsq_coeff_1: fa.CellKField[float],
+    z_lsq_coeff_2: fa.CellKField[float],
+    z_lsq_coeff_3: fa.CellKField[float],
+    z_lsq_coeff_4: fa.CellKField[float],
+    z_lsq_coeff_5: fa.CellKField[float],
+    z_lsq_coeff_6: fa.CellKField[float],
+    z_lsq_coeff_7: fa.CellKField[float],
+    z_lsq_coeff_8: fa.CellKField[float],
+    z_lsq_coeff_9: fa.CellKField[float],
+    z_lsq_coeff_10: fa.CellKField[float],
+    z_quad_vector_sum0_1: fa.EdgeKField[float],
+    z_quad_vector_sum0_2: fa.EdgeKField[float],
+    z_quad_vector_sum0_3: fa.EdgeKField[float],
+    z_quad_vector_sum0_4: fa.EdgeKField[float],
+    z_quad_vector_sum0_5: fa.EdgeKField[float],
+    z_quad_vector_sum0_6: fa.EdgeKField[float],
+    z_quad_vector_sum0_7: fa.EdgeKField[float],
+    z_quad_vector_sum0_8: fa.EdgeKField[float],
+    z_quad_vector_sum0_9: fa.EdgeKField[float],
+    z_quad_vector_sum0_10: fa.EdgeKField[float],
+    patch0_cell_rel_idx_dsl: fa.EdgeKField[int32],
+) -> fa.EdgeKField[float]:
     p_out_e_hybrid_1a = (
         where(
             patch0_cell_rel_idx_dsl == 1,
@@ -111,28 +111,28 @@ def _hflux_ffsl_hybrid_stencil_01a(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflux_ffsl_hybrid_stencil_01a(
-    z_lsq_coeff_1: fa.CKfloatField,
-    z_lsq_coeff_2: fa.CKfloatField,
-    z_lsq_coeff_3: fa.CKfloatField,
-    z_lsq_coeff_4: fa.CKfloatField,
-    z_lsq_coeff_5: fa.CKfloatField,
-    z_lsq_coeff_6: fa.CKfloatField,
-    z_lsq_coeff_7: fa.CKfloatField,
-    z_lsq_coeff_8: fa.CKfloatField,
-    z_lsq_coeff_9: fa.CKfloatField,
-    z_lsq_coeff_10: fa.CKfloatField,
-    z_quad_vector_sum0_1: fa.EKfloatField,
-    z_quad_vector_sum0_2: fa.EKfloatField,
-    z_quad_vector_sum0_3: fa.EKfloatField,
-    z_quad_vector_sum0_4: fa.EKfloatField,
-    z_quad_vector_sum0_5: fa.EKfloatField,
-    z_quad_vector_sum0_6: fa.EKfloatField,
-    z_quad_vector_sum0_7: fa.EKfloatField,
-    z_quad_vector_sum0_8: fa.EKfloatField,
-    z_quad_vector_sum0_9: fa.EKfloatField,
-    z_quad_vector_sum0_10: fa.EKfloatField,
-    patch0_cell_rel_idx_dsl: fa.EKintField,
-    p_out_e_hybrid_1a: fa.EKfloatField,
+    z_lsq_coeff_1: fa.CellKField[float],
+    z_lsq_coeff_2: fa.CellKField[float],
+    z_lsq_coeff_3: fa.CellKField[float],
+    z_lsq_coeff_4: fa.CellKField[float],
+    z_lsq_coeff_5: fa.CellKField[float],
+    z_lsq_coeff_6: fa.CellKField[float],
+    z_lsq_coeff_7: fa.CellKField[float],
+    z_lsq_coeff_8: fa.CellKField[float],
+    z_lsq_coeff_9: fa.CellKField[float],
+    z_lsq_coeff_10: fa.CellKField[float],
+    z_quad_vector_sum0_1: fa.EdgeKField[float],
+    z_quad_vector_sum0_2: fa.EdgeKField[float],
+    z_quad_vector_sum0_3: fa.EdgeKField[float],
+    z_quad_vector_sum0_4: fa.EdgeKField[float],
+    z_quad_vector_sum0_5: fa.EdgeKField[float],
+    z_quad_vector_sum0_6: fa.EdgeKField[float],
+    z_quad_vector_sum0_7: fa.EdgeKField[float],
+    z_quad_vector_sum0_8: fa.EdgeKField[float],
+    z_quad_vector_sum0_9: fa.EdgeKField[float],
+    z_quad_vector_sum0_10: fa.EdgeKField[float],
+    patch0_cell_rel_idx_dsl: fa.EdgeKField[int32],
+    p_out_e_hybrid_1a: fa.EdgeKField[float],
 ):
     _hflux_ffsl_hybrid_stencil_01a(
         z_lsq_coeff_1,

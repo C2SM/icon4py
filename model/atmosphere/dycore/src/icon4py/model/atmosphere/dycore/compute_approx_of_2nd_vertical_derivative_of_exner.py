@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat
 
 @field_operator
 def _compute_approx_of_2nd_vertical_derivative_of_exner(
-    z_theta_v_pr_ic: fa.CKvpField,
-    d2dexdz2_fac1_mc: fa.CKvpField,
-    d2dexdz2_fac2_mc: fa.CKvpField,
-    z_rth_pr_2: fa.CKvpField,
-) -> fa.CKvpField:
+    z_theta_v_pr_ic: fa.CellKField[vpfloat],
+    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
+    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_12."""
     z_dexner_dz_c_2_vp = -vpfloat("0.5") * (
         (z_theta_v_pr_ic - z_theta_v_pr_ic(Koff[1])) * d2dexdz2_fac1_mc
@@ -38,11 +38,11 @@ def _compute_approx_of_2nd_vertical_derivative_of_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_approx_of_2nd_vertical_derivative_of_exner(
-    z_theta_v_pr_ic: fa.CKvpField,
-    d2dexdz2_fac1_mc: fa.CKvpField,
-    d2dexdz2_fac2_mc: fa.CKvpField,
-    z_rth_pr_2: fa.CKvpField,
-    z_dexner_dz_c_2: fa.CKvpField,
+    z_theta_v_pr_ic: fa.CellKField[vpfloat],
+    d2dexdz2_fac1_mc: fa.CellKField[vpfloat],
+    d2dexdz2_fac2_mc: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
+    z_dexner_dz_c_2: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

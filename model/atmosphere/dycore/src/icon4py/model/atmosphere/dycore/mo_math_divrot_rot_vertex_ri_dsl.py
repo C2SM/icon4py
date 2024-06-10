@@ -23,18 +23,18 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _mo_math_divrot_rot_vertex_ri_dsl(
-    vec_e: fa.EKwpField,
+    vec_e: fa.EdgeKField[wpfloat],
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
-) -> fa.VKvpField:
+) -> fa.VertexKField[vpfloat]:
     rot_vec_wp = neighbor_sum(vec_e(V2E) * geofac_rot, axis=V2EDim)
     return astype(rot_vec_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_math_divrot_rot_vertex_ri_dsl(
-    vec_e: fa.EKwpField,
+    vec_e: fa.EdgeKField[wpfloat],
     geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
-    rot_vec: fa.VKvpField,
+    rot_vec: fa.VertexKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

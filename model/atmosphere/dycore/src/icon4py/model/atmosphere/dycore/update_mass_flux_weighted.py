@@ -18,20 +18,20 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _update_mass_flux_weighted(
-    rho_ic: fa.CKwpField,
-    vwind_expl_wgt: fa.CwpField,
-    vwind_impl_wgt: fa.CwpField,
-    w_now: fa.CKwpField,
-    w_new: fa.CKwpField,
-    w_concorr_c: fa.CKvpField,
-    mass_flx_ic: fa.CKwpField,
+    rho_ic: fa.CellKField[wpfloat],
+    vwind_expl_wgt: fa.CellField[wpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    w_now: fa.CellKField[wpfloat],
+    w_new: fa.CellKField[wpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    mass_flx_ic: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
-) -> fa.CKwpField:
+) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_65."""
     w_concorr_c_wp = astype(w_concorr_c, wpfloat)
 
@@ -43,13 +43,13 @@ def _update_mass_flux_weighted(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_mass_flux_weighted(
-    rho_ic: fa.CKwpField,
-    vwind_expl_wgt: fa.CwpField,
-    vwind_impl_wgt: fa.CwpField,
-    w_now: fa.CKwpField,
-    w_new: fa.CKwpField,
-    w_concorr_c: fa.CKvpField,
-    mass_flx_ic: fa.CKwpField,
+    rho_ic: fa.CellKField[wpfloat],
+    vwind_expl_wgt: fa.CellField[wpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    w_now: fa.CellKField[wpfloat],
+    w_new: fa.CellKField[wpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    mass_flx_ic: fa.CellKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

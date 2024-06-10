@@ -21,18 +21,21 @@ from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _init_two_cell_kdim_fields_with_zero_wp() -> tuple[fa.CKwpField, fa.CKwpField]:
+def _init_two_cell_kdim_fields_with_zero_wp() -> (
+    tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]
+):
     """Formerly known as _mo_solve_nonhydro_stencil_46."""
     return _init_cell_kdim_field_with_zero_wp(), _init_cell_kdim_field_with_zero_wp()
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_two_cell_kdim_fields_with_zero_wp(
-    cell_kdim_field_with_zero_wp_1: fa.CKwpField,
-    cell_kdim_field_with_zero_wp_2: fa.CKwpField,
+    cell_kdim_field_with_zero_wp_1: fa.CellKField[wpfloat],
+    cell_kdim_field_with_zero_wp_2: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

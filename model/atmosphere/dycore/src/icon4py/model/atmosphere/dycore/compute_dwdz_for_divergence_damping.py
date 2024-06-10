@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_dwdz_for_divergence_damping(
-    inv_ddqz_z_full: fa.CKvpField,
-    w: fa.CKwpField,
-    w_concorr_c: fa.CKvpField,
-) -> fa.CKvpField:
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_56_63."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
@@ -38,10 +38,10 @@ def _compute_dwdz_for_divergence_damping(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_dwdz_for_divergence_damping(
-    inv_ddqz_z_full: fa.CKvpField,
-    w: fa.CKwpField,
-    w_concorr_c: fa.CKvpField,
-    z_dwdz_dd: fa.CKvpField,
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_dwdz_dd: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

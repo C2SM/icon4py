@@ -23,12 +23,12 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _accumulate_prep_adv_fields(
-    z_vn_avg: fa.EKwpField,
-    mass_fl_e: fa.EKwpField,
-    vn_traj: fa.EKwpField,
-    mass_flx_me: fa.EKwpField,
+    z_vn_avg: fa.EdgeKField[wpfloat],
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    vn_traj: fa.EdgeKField[wpfloat],
+    mass_flx_me: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
-) -> tuple[fa.EKwpField, fa.EKwpField]:
+) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     """Formerly kown as _mo_solve_nonhydro_stencil_34."""
     vn_traj_wp = vn_traj + r_nsubsteps * z_vn_avg
     mass_flx_me_wp = mass_flx_me + r_nsubsteps * mass_fl_e
@@ -37,10 +37,10 @@ def _accumulate_prep_adv_fields(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def accumulate_prep_adv_fields(
-    z_vn_avg: fa.EKwpField,
-    mass_fl_e: fa.EKwpField,
-    vn_traj: fa.EKwpField,
-    mass_flx_me: fa.EKwpField,
+    z_vn_avg: fa.EdgeKField[wpfloat],
+    mass_fl_e: fa.EdgeKField[wpfloat],
+    vn_traj: fa.EdgeKField[wpfloat],
+    mass_flx_me: fa.EdgeKField[wpfloat],
     r_nsubsteps: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

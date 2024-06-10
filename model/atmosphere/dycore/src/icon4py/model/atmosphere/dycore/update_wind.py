@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _update_wind(
-    w_now: fa.CKwpField,
-    grf_tend_w: fa.CKwpField,
+    w_now: fa.CellKField[wpfloat],
+    grf_tend_w: fa.CellKField[wpfloat],
     dtime: wpfloat,
-) -> fa.CKwpField:
+) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_62."""
     w_new_wp = w_now + dtime * grf_tend_w
     return w_new_wp
@@ -34,9 +34,9 @@ def _update_wind(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def update_wind(
-    w_now: fa.CKwpField,
-    grf_tend_w: fa.CKwpField,
-    w_new: fa.CKwpField,
+    w_now: fa.CellKField[wpfloat],
+    grf_tend_w: fa.CellKField[wpfloat],
+    w_new: fa.CellKField[wpfloat],
     dtime: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

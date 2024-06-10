@@ -24,8 +24,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _compute_graddiv2_of_vn(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
-    z_graddiv_vn: fa.EKvpField,
-) -> fa.EKvpField:
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_25."""
     z_graddiv_vn_wp = astype(z_graddiv_vn, wpfloat)
 
@@ -36,8 +36,8 @@ def _compute_graddiv2_of_vn(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_graddiv2_of_vn(
     geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
-    z_graddiv_vn: fa.EKvpField,
-    z_graddiv2_vn: fa.EKvpField,
+    z_graddiv_vn: fa.EdgeKField[vpfloat],
+    z_graddiv2_vn: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -21,7 +21,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_reference_atmosphere_edge_fields(
-    z_me: fa.EKwpField,
+    z_me: fa.EdgeKField[wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -30,7 +30,7 @@ def _compute_reference_atmosphere_edge_fields(
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-) -> tuple[fa.EKwpField, fa.EKwpField]:
+) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     denom = t0sl_bg - del_t_bg
     exp_z_me = exp(z_me / h_scal_bg)
     logval = log((exp_z_me * denom + del_t_bg) / t0sl_bg)
@@ -44,9 +44,9 @@ def _compute_reference_atmosphere_edge_fields(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_edge_fields(
-    z_me: fa.EKwpField,
-    rho_ref_me: fa.EKwpField,
-    theta_ref_me: fa.EKwpField,
+    z_me: fa.EdgeKField[wpfloat],
+    rho_ref_me: fa.EdgeKField[wpfloat],
+    theta_ref_me: fa.EdgeKField[wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -77,11 +77,11 @@ def compute_reference_atmosphere_edge_fields(
 
 @field_operator
 def compute_z_temp(
-    z_mc: fa.CKwpField,
+    z_mc: fa.CellKField[wpfloat],
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
-) -> fa.CKwpField:
+) -> fa.CellKField[wpfloat]:
     denom = t0sl_bg - del_t_bg
     z_temp = denom + del_t_bg * exp(-z_mc / h_scal_bg)
     return z_temp
@@ -89,14 +89,14 @@ def compute_z_temp(
 
 @field_operator
 def compute_z_aux1_cell(
-    z_mc: fa.CKwpField,
+    z_mc: fa.CellKField[wpfloat],
     p0sl_bg: wpfloat,
     grav: wpfloat,
     rd: wpfloat,
     h_scal_bg: wpfloat,
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
-) -> fa.CKwpField:
+) -> fa.CellKField[wpfloat]:
     denom = t0sl_bg - del_t_bg
     logval = log((exp(z_mc / h_scal_bg) * denom + del_t_bg) / t0sl_bg)
     return p0sl_bg * exp(-grav / rd * h_scal_bg / denom * logval)
@@ -104,7 +104,7 @@ def compute_z_aux1_cell(
 
 @field_operator
 def _compute_reference_atmosphere_cell_fields(
-    z_mc: fa.CKwpField,
+    z_mc: fa.CellKField[wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -114,9 +114,9 @@ def _compute_reference_atmosphere_cell_fields(
     t0sl_bg: wpfloat,
     del_t_bg: wpfloat,
 ) -> tuple[
-    fa.CKwpField,
-    fa.CKwpField,
-    fa.CKwpField,
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[wpfloat],
 ]:
     z_aux1 = compute_z_aux1_cell(
         z_mc=z_mc,
@@ -142,10 +142,10 @@ def _compute_reference_atmosphere_cell_fields(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_reference_atmosphere_cell_fields(
-    z_height: fa.CKwpField,
-    exner_ref_mc: fa.CKwpField,
-    rho_ref_mc: fa.CKwpField,
-    theta_ref_mc: fa.CKwpField,
+    z_height: fa.CellKField[wpfloat],
+    exner_ref_mc: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[wpfloat],
     p0ref: wpfloat,
     p0sl_bg: wpfloat,
     grav: wpfloat,
@@ -197,8 +197,8 @@ def compute_reference_atmosphere_cell_fields(
 
 @field_operator
 def compute_d_exner_dz_ref_ic(
-    theta_ref_ic: fa.CKwpField, grav: wpfloat, cpd: wpfloat
-) -> fa.CKwpField:
+    theta_ref_ic: fa.CellKField[wpfloat], grav: wpfloat, cpd: wpfloat
+) -> fa.CellKField[wpfloat]:
     """
     Calculate first vertical derivative of reference Exner pressure, half level mass points.
 

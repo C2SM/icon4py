@@ -18,13 +18,14 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim, Koff
 from icon4py.model.common.settings import backend
+from icon4py.model.common.type_alias import vpfloat
 
 
 @field_operator
 def _interpolate_to_surface(
-    wgtfacq_c: fa.CKvpField,
-    interpolant: fa.CKvpField,
-) -> fa.CKvpField:
+    wgtfacq_c: fa.CellKField[vpfloat],
+    interpolant: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_04."""
     interpolation_to_surface = (
         wgtfacq_c(Koff[-1]) * interpolant(Koff[-1])
@@ -36,9 +37,9 @@ def _interpolate_to_surface(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def interpolate_to_surface(
-    wgtfacq_c: fa.CKvpField,
-    interpolant: fa.CKvpField,
-    interpolation_to_surface: fa.CKvpField,
+    wgtfacq_c: fa.CellKField[vpfloat],
+    interpolant: fa.CellKField[vpfloat],
+    interpolation_to_surface: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

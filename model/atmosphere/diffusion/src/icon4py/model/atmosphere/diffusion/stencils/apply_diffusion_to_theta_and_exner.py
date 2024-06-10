@@ -35,20 +35,20 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_diffusion_to_theta_and_exner(
-    kh_smag_e: fa.EKvpField,
-    inv_dual_edge_length: fa.EwpField,
-    theta_v_in: fa.CKwpField,
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    theta_v_in: fa.CellKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-    mask: fa.CKboolField,
+    mask: fa.CellKField[bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_diffcoef: fa.CKwpField,
-    geofac_n2s_c: fa.CwpField,
+    zd_diffcoef: fa.CellKField[wpfloat],
+    geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
-    area: fa.CwpField,
-    exner: fa.CKwpField,
+    area: fa.CellField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
-) -> tuple[fa.CKwpField, fa.CKwpField]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v_in)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
     z_temp = _truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
@@ -67,19 +67,19 @@ def _apply_diffusion_to_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_theta_and_exner(
-    kh_smag_e: fa.EKvpField,
-    inv_dual_edge_length: fa.EwpField,
-    theta_v_in: fa.CKwpField,
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    theta_v_in: fa.CellKField[wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
-    mask: fa.CKboolField,
+    mask: fa.CellKField[bool],
     zd_vertoffset: Field[[CECDim, KDim], int32],
-    zd_diffcoef: fa.CKwpField,
-    geofac_n2s_c: fa.CwpField,
+    zd_diffcoef: fa.CellKField[wpfloat],
+    geofac_n2s_c: fa.CellField[wpfloat],
     geofac_n2s_nbh: Field[[CECDim], wpfloat],
     vcoef: Field[[CECDim, KDim], wpfloat],
-    area: fa.CwpField,
-    theta_v: fa.CKwpField,
-    exner: fa.CKwpField,
+    area: fa.CellField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
 ):
     _apply_diffusion_to_theta_and_exner(

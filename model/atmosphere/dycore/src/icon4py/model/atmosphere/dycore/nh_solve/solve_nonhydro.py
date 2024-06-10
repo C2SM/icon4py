@@ -186,26 +186,26 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    z_gradh_exner: fa.EKfloatField
+    z_gradh_exner: fa.EdgeKField[float]
     z_alpha: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_beta: fa.CKfloatField
+    z_beta: fa.CellKField[float]
     z_w_expl: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_exner_expl: fa.CKfloatField
-    z_q: fa.CKfloatField
+    z_exner_expl: fa.CellKField[float]
+    z_q: fa.CellKField[float]
     z_contr_w_fl_l: Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_rho_e: fa.EKfloatField
-    z_theta_v_e: fa.EKfloatField
-    z_kin_hor_e: fa.EKfloatField
-    z_vt_ie: fa.EKfloatField
-    z_graddiv_vn: fa.EKfloatField
-    z_rho_expl: fa.CKfloatField
-    z_dwdz_dd: fa.CKfloatField
+    z_rho_e: fa.EdgeKField[float]
+    z_theta_v_e: fa.EdgeKField[float]
+    z_kin_hor_e: fa.EdgeKField[float]
+    z_vt_ie: fa.EdgeKField[float]
+    z_graddiv_vn: fa.EdgeKField[float]
+    z_rho_expl: fa.CellKField[float]
+    z_dwdz_dd: fa.CellKField[float]
 
     @classmethod
     def allocate(cls, grid: BaseGrid):
@@ -387,9 +387,9 @@ class SolveNonhydro:
         self.cell_params: Optional[CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac: Optional[fa.KfloatField] = None
-        self.scal_divdamp: Optional[fa.KfloatField] = None
-        self._bdy_divdamp: Optional[fa.KfloatField] = None
+        self.enh_divdamp_fac: Optional[fa.KField[float]] = None
+        self.scal_divdamp: Optional[fa.KField[float]] = None
+        self._bdy_divdamp: Optional[fa.KField[float]] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
@@ -405,7 +405,7 @@ class SolveNonhydro:
         vertical_params: VerticalModelParams,
         edge_geometry: EdgeParams,
         cell_geometry: CellParams,
-        owner_mask: fa.CboolField,
+        owner_mask: fa.CellField[bool],
     ):
         """
         Initialize NonHydrostatic granule with configuration.

@@ -23,10 +23,10 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _calculate_diagnostics_for_turbulence(
-    div: fa.CKvpField,
-    kh_c: fa.CKvpField,
-    wgtfac_c: fa.CKvpField,
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+    div: fa.CellKField[vpfloat],
+    kh_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     wgtfac_c_wp, div_wp, kh_c_wp = astype((wgtfac_c, div, kh_c), wpfloat)
 
     div_ic_wp = astype(wgtfac_c * div, wpfloat) + (wpfloat("1.0") - wgtfac_c_wp) * div_wp(Koff[-1])
@@ -40,10 +40,10 @@ def _calculate_diagnostics_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_diagnostics_for_turbulence(
-    div: fa.CKvpField,
-    kh_c: fa.CKvpField,
-    wgtfac_c: fa.CKvpField,
-    div_ic: fa.CKvpField,
-    hdef_ic: fa.CKvpField,
+    div: fa.CellKField[vpfloat],
+    kh_c: fa.CellKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    div_ic: fa.CellKField[vpfloat],
+    hdef_ic: fa.CellKField[vpfloat],
 ):
     _calculate_diagnostics_for_turbulence(div, kh_c, wgtfac_c, out=(div_ic[:, 1:], hdef_ic[:, 1:]))

@@ -18,18 +18,18 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: fa.EwpField,
-    kh_smag_e: fa.EKvpField,
-    z_nabla2_e: fa.EKwpField,
-    z_nabla4_e2: fa.EKvpField,
-    diff_multfac_vn: fa.KwpField,
-    vn: fa.EKwpField,
-) -> fa.EKwpField:
+    area_edge: fa.EdgeField[wpfloat],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[wpfloat]:
     kh_smag_e_wp, z_nabla4_e2_wp = astype((kh_smag_e, z_nabla4_e2), wpfloat)
 
     vn_wp = vn + area_edge * (
@@ -40,12 +40,12 @@ def _apply_nabla2_and_nabla4_global_to_vn(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_and_nabla4_global_to_vn(
-    area_edge: fa.EwpField,
-    kh_smag_e: fa.EKvpField,
-    z_nabla2_e: fa.EKwpField,
-    z_nabla4_e2: fa.EKvpField,
-    diff_multfac_vn: fa.KwpField,
-    vn: fa.EKwpField,
+    area_edge: fa.EdgeField[wpfloat],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

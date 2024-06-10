@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_perturbation_of_rho_and_theta(
-    rho: fa.CKwpField,
-    rho_ref_mc: fa.CKvpField,
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
-) -> tuple[fa.CKvpField, fa.CKvpField]:
+    rho: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_07 or _mo_solve_nonhydro_stencil_13."""
     rho_ref_mc_wp, theta_ref_mc_wp = astype((rho_ref_mc, theta_ref_mc), wpfloat)
 
@@ -38,12 +38,12 @@ def _compute_perturbation_of_rho_and_theta(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_perturbation_of_rho_and_theta(
-    rho: fa.CKwpField,
-    rho_ref_mc: fa.CKvpField,
-    theta_v: fa.CKwpField,
-    theta_ref_mc: fa.CKvpField,
-    z_rth_pr_1: fa.CKvpField,
-    z_rth_pr_2: fa.CKvpField,
+    rho: fa.CellKField[wpfloat],
+    rho_ref_mc: fa.CellKField[vpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    theta_ref_mc: fa.CellKField[vpfloat],
+    z_rth_pr_1: fa.CellKField[vpfloat],
+    z_rth_pr_2: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

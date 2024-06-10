@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_advective_vertical_wind_tendency(
-    z_w_con_c: fa.CKvpField,
-    w: fa.CKwpField,
-    coeff1_dwdz: fa.CKvpField,
-    coeff2_dwdz: fa.CKvpField,
-) -> fa.CKvpField:
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_16."""
     z_w_con_c_wp = astype(z_w_con_c, wpfloat)
     coeff1_dwdz_wp, coeff2_dwdz_wp = astype((coeff1_dwdz, coeff2_dwdz), wpfloat)
@@ -42,11 +42,11 @@ def _compute_advective_vertical_wind_tendency(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_advective_vertical_wind_tendency(
-    z_w_con_c: fa.CKvpField,
-    w: fa.CKwpField,
-    coeff1_dwdz: fa.CKvpField,
-    coeff2_dwdz: fa.CKvpField,
-    ddt_w_adv: fa.CKvpField,
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
