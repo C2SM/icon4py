@@ -26,6 +26,8 @@ from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 try:
     import ghex
     import mpi4py
+    
+    from ghex import expose_cpp_ptr
     from ghex.context import make_context
     from ghex.unstructured import (
         DomainDescriptor,
