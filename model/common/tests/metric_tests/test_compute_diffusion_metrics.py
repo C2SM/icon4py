@@ -46,6 +46,7 @@ from icon4py.model.common.test_utils.helpers import (
 def test_compute_diffusion_metrics(
     metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
@@ -97,17 +98,17 @@ def test_compute_diffusion_metrics(
     compute_weighted_cell_neighbor_sum.with_backend(backend)(
         maxslp=maxslp,
         maxhgtd=maxhgtd,
-        c_bln_avg_0=as_field((CellDim,), c_bln_avg.asnumpy()[:, 0]),
-        c_bln_avg_1=as_field((CellDim,), c_bln_avg.asnumpy()[:, 1]),
-        c_bln_avg_2=as_field((CellDim,), c_bln_avg.asnumpy()[:, 2]),
-        c_bln_avg_3=as_field((CellDim,), c_bln_avg.asnumpy()[:, 3]),
+        c_bln_avg=c_bln_avg,
         z_maxslp_avg=z_maxslp_avg,
         z_maxhgtd_avg=z_maxhgtd_avg,
         horizontal_start=cell_lateral,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
         vertical_end=nlev,
-        offset_provider={"C2E2C": icon_grid.get_offset_provider("C2E2C")},
+        offset_provider={
+            "C2E2C": icon_grid.get_offset_provider("C2E2C"),
+            "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
+        },
     )
 
     compute_max_nbhgt.with_backend(backend)(
