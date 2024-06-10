@@ -50,8 +50,8 @@ class TestComputeHorizontalGradientOfExnerPressureForFlatCoordinates(StencilTest
             inv_dual_edge_length=inv_dual_edge_length,
             z_exner_ex_pr=z_exner_ex_pr,
             z_gradh_exner=z_gradh_exner,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

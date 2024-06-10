@@ -54,8 +54,8 @@ class TestMoIntpRbfRbfVecInterpolVertex(StencilTest):
             ptr_coeff_2=ptr_coeff_2,
             p_v_out=p_v_out,
             p_u_out=p_u_out,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_vertices),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

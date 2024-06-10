@@ -18,3 +18,4 @@ config = Icon4PyConfig()
 backend = run_dace_cpu_noopt
 xp = config.array_ns
 device = config.device
+limited_area = config.limited_area
