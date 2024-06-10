@@ -757,12 +757,15 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        """
+        r"""
         z_exner_ex_pr (0:nlev):
             Compute the temporal extrapolation of perturbed exner function at full levels (cell center) using the time backward scheme (page 74 in icon tutorial 2023) for horizontal momentum equations.
             Note that it has nlev+1 levels. This last level is underground and set to zero.
         exner_pr (0:nlev-1):
             Store perturbed exner function at full levels of current time step.
+        .. math::
+            \pi_k^{\tilde{n}} = (1 + \gamma)      \pi_k^{n}                  - \gamma      \pi_k^{n-1}
+            \pi_k^{\tilde{n}} = (1 + exner_exfac) (\pi_k^{n} - exner_ref_mc) - exner_exfac \pi_k^{n-1}
         """
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
@@ -780,7 +783,7 @@ class SolveNonhydro:
         )
 
         if self.config.igradp_method == 3:
-            """
+            r"""
             z_exner_ic (1 or flat_lev:nlev):
                 Linearly interpolate the temporal extrapolation of perturbed exner function computed in previous stencil to half levels.
                 The ground level is based on quadratic interpolation (with hydrostatic assumption?).
@@ -788,6 +791,8 @@ class SolveNonhydro:
             z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
                 Vertical derivative of the temporal extrapolation of exner function at full levels is also computed (first order scheme).
             flat_lev is the height (inclusive) above which the grid is not affected by terrain following.
+            .. math::
+                \pi_{k-1/2}^{\tilde{n}} = wgtfac_c \pi_k^{\tilde{n}} + (1 - wgtfac_c) \pi_{k-1}^{\tilde{n}}
             """
             nhsolve_prog.predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
