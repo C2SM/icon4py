@@ -946,7 +946,7 @@ def dace_jit(self):
                     if isinstance(self._exchange, GHexMultiNodeExchange):
                         counter = 0
                         for nested_sdfg in sdfg.all_sdfgs_recursive():
-                            if not hasattr(nested_sdfg, "GT4Py_Program_input_fields"):
+                            if not hasattr(nested_sdfg, "GT4Py_Program_output_fields"):
                                 continue
 
                             if len(nested_sdfg.GT4Py_Program_output_fields) == 0:
@@ -1007,8 +1007,8 @@ def dace_jit(self):
                                         for ind in range(ones_after_nsdfg.stencil_horizontal_start+1, ones_after_nsdfg.stencil_horizontal_end):
                                             inds_to_check = np.concatenate((inds_to_check, op[ind]))
 
+                                        # op returns local indices
                                         halos_inds = self._exchange._decomposition_info.local_index(dest_dim, di.EntryType.HALO)
-
                                         if np.intersect1d(halos_inds, inds_to_check).size > 0:
                                             halo_access = True
                                             break
