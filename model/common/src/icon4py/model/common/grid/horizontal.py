@@ -410,5 +410,3 @@ class RefinCtrlLevel:
             raise ValueError(
                 f"nudging start level only exists for {CellDim} and {EdgeDim}"
             ) from err
-
-

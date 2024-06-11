@@ -34,8 +34,8 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
     _cell_2_edge_interpolation,
     cell_2_edge_interpolation,
 )
-from icon4py.model.common.interpolation.stencils.compute_cells2verts_interpolation import (
-    _compute_cells2verts,
+from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
+    _compute_cell_2_vertex_interpolation,
 )
 from icon4py.model.common.math.helpers import average_cell_kdim_level_up
 from icon4py.model.common.metrics.metric_fields import (
@@ -324,7 +324,7 @@ def test_compute_ddxt_z_full_e(
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
     z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
-    _compute_cells2verts(
+    _compute_cell_2_vertex_interpolation(
         z_ifc,
         as_field((VertexDim, V2CDim), cells_aw_verts),
         out=z_ifv,
@@ -471,7 +471,7 @@ def test_compute_ddxt_z_full(
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
     z_ifv = zero_field(icon_grid, VertexDim, KDim, extend={KDim: 1})
-    _compute_cells2verts(
+    _compute_cell_2_vertex_interpolation(
         z_ifc,
         as_field((VertexDim, V2CDim), cells_aw_verts),
         out=z_ifv,
@@ -581,7 +581,7 @@ def test_compute_vwind_impl_wgt(
         VertexDim,
         HorizontalMarkerIndex.lateral_boundary(VertexDim) - 1,
     )
-    _compute_cells2verts(
+    _compute_cell_2_vertex_interpolation(
         z_ifc,
         interpolation_savepoint.c_intp(),
         out=z_ifv,

@@ -11,20 +11,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next.ffront.fbuiltins as gt_builtins
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
+import icon4py.model.common.test_utils.helpers as test_helpers
+import icon4py.model.common.type_alias as types
 from icon4py.model.common.dimension import CellDim, KDim, V2CDim, VertexDim
-from icon4py.model.common.interpolation.stencils.compute_cells2verts_interpolation import (
-    compute_cells2verts_interpolation,
+from icon4py.model.common.interpolation.stencils.compute_cell_2_vertex_interpolation import (
+    compute_cell_2_vertex_interpolation,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
 
 
-class TestComputeCells2VertsInterpolation(StencilTest):
-    PROGRAM = compute_cells2verts_interpolation
+class TestComputeCells2VertsInterpolation(test_helpers.StencilTest):
+    PROGRAM = compute_cell_2_vertex_interpolation
     OUTPUTS = ("vert_out",)
 
     @staticmethod
@@ -39,16 +39,16 @@ class TestComputeCells2VertsInterpolation(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        cell_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        c_int = random_field(grid, VertexDim, V2CDim, dtype=wpfloat)
-        vert_out = zero_field(grid, VertexDim, KDim, dtype=wpfloat)
+        cell_in = test_helpers.random_field(grid, CellDim, KDim, dtype=types.wpfloat)
+        c_int = test_helpers.random_field(grid, VertexDim, V2CDim, dtype=types.wpfloat)
+        vert_out = test_helpers.zero_field(grid, VertexDim, KDim, dtype=types.wpfloat)
 
         return dict(
             cell_in=cell_in,
             c_int=c_int,
             vert_out=vert_out,
             horizontal_start=0,
-            horizontal_end=int32(grid.num_vertices),
+            horizontal_end=gt_builtins.int32(grid.num_vertices),
             vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            vertical_end=gt_builtins.int32(grid.num_levels),
         )
