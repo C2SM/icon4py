@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import gt4py.next.ffront.fbuiltins as gt_builtins
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -48,7 +48,7 @@ class TestComputeCells2VertsInterpolation(test_helpers.StencilTest):
             c_int=c_int,
             vert_out=vert_out,
             horizontal_start=0,
-            horizontal_end=gt_builtins.int32(grid.num_vertices),
+            horizontal_end=gtx.int32(grid.num_vertices),
             vertical_start=0,
-            vertical_end=gt_builtins.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels),
         )

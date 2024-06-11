@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import gt4py.next as gt
+import gt4py.next as gtx
 from gt4py.next import neighbor_sum
 
 import icon4py.model.common.settings as settings
@@ -19,25 +19,37 @@ import icon4py.model.common.type_alias as types
 from icon4py.model.common.dimension import V2C, CellDim, KDim, V2CDim, VertexDim
 
 
-@gt.field_operator
+@gtx.field_operator
 def _compute_cell_2_vertex_interpolation(
-    cell_in: gt.Field[[CellDim, KDim], types.wpfloat],
-    c_int: gt.Field[[VertexDim, V2CDim], types.wpfloat],
-) -> gt.Field[[VertexDim, KDim], types.wpfloat]:
+    cell_in: gtx.Field[[CellDim, KDim], types.wpfloat],
+    c_int: gtx.Field[[VertexDim, V2CDim], types.wpfloat],
+) -> gtx.Field[[VertexDim, KDim], types.wpfloat]:
     vert_out = neighbor_sum(c_int * cell_in(V2C), axis=V2CDim)
     return vert_out
 
 
-@gt.program(grid_type=gt.GridType.UNSTRUCTURED, backend=settings.backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=settings.backend)
 def compute_cell_2_vertex_interpolation(
-    cell_in: gt.Field[[CellDim, KDim], types.wpfloat],
-    c_int: gt.Field[[VertexDim, V2CDim], types.wpfloat],
-    vert_out: gt.Field[[VertexDim, KDim], types.wpfloat],
-    horizontal_start: gt.int32,
-    horizontal_end: gt.int32,
-    vertical_start: gt.int32,
-    vertical_end: gt.int32,
+    cell_in: gtx.Field[[CellDim, KDim], types.wpfloat],
+    c_int: gtx.Field[[VertexDim, V2CDim], types.wpfloat],
+    vert_out: gtx.Field[[VertexDim, KDim], types.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
+    """
+    Compute the interpolation from cell to vertex field.
+
+    Args:
+        cell_in: input cell field
+        c_int: interpolation coefficients
+        vert_out: (output) vertex field
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
     _compute_cell_2_vertex_interpolation(
         cell_in,
         c_int,
