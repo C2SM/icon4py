@@ -65,6 +65,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 )
 from icon4py.model.common.test_utils.helpers import zero_field
 from icon4py.model.common.constants import EARTH_RADIUS
+from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
@@ -249,7 +250,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start,
         horizontal_start_p2,
     )
-    assert np.allclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
+    assert dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 
 
 @pytest.mark.datatest
