@@ -759,13 +759,25 @@ class SolveNonhydro:
 
         r"""
         z_exner_ex_pr (0:nlev):
-            Compute the temporal extrapolation of perturbed exner function at full levels (cell center) using the time backward scheme (page 74 in icon tutorial 2023) for horizontal momentum equations.
-            Note that it has nlev+1 levels. This last level is underground and set to zero.
+            Compute the temporal extrapolation of perturbed exner function at
+            full levels (cell center) using the time backward scheme (page 74 in
+            icon tutorial 2023) for horizontal momentum equations.
+            Note that it has nlev+1 levels. This last level is underground and
+            set to zero.
+            .. math::
+                \pi'_k^{\tilde{n}} = (1 + \gamma)        \pi'_k^{n}             - \gamma        \pi'_k^{n-1}
+            .. code-block:: python
+                z_exner_ex_pr      = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
+
         exner_pr (0:nlev-1):
             Store perturbed exner function at full levels of current time step.
-        .. math::
-            \pi_k^{\tilde{n}} = (1 + \gamma)      \pi_k^{n}                  - \gamma      \pi_k^{n-1}
-            \pi_k^{\tilde{n}} = (1 + exner_exfac) (\pi_k^{n} - exner_ref_mc) - exner_exfac \pi_k^{n-1}
+            .. code-block:: python
+                exner_pr = exner - exner_ref_mc
+        
+        FIXME:
+        * _extrapolate_temporally_exner_pressure doesn't only do what the name
+            suggests: it also updates exner_pr, which is not what the name
+            implies
         """
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
@@ -785,14 +797,28 @@ class SolveNonhydro:
         if self.config.igradp_method == 3:
             r"""
             z_exner_ic (1 or flat_lev:nlev):
-                Linearly interpolate the temporal extrapolation of perturbed exner function computed in previous stencil to half levels.
-                The ground level is based on quadratic interpolation (with hydrostatic assumption?).
-                WARNING: Its value at the model top level is not updated and assumed to be zero. It should be treated in the same way as the ground level.
+                Linearly interpolate the temporal extrapolation of perturbed
+                exner function computed in previous stencil to half levels.
+                The ground level is based on quadratic interpolation (with
+                hydrostatic assumption?).
+                FIXME: Its value at the model top level is not updated and
+                assumed to be zero. It should be treated in the same way as the
+                ground level.
+                .. math::
+                    \pi'_{k-1/2}^{\tilde{n}} = wgtfac_c   \pi'_k^{\tilde{n}} + (1 - wgtfac_c) \pi'_{k-1}^{\tilde{n}}
+                .. code-block:: python
+                    z_exner_ic               = wgtfac_c * z_exner_ex_pr      + (1 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
+
             z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
-                Vertical derivative of the temporal extrapolation of exner function at full levels is also computed (first order scheme).
-            flat_lev is the height (inclusive) above which the grid is not affected by terrain following.
-            .. math::
-                \pi_{k-1/2}^{\tilde{n}} = wgtfac_c \pi_k^{\tilde{n}} + (1 - wgtfac_c) \pi_{k-1}^{\tilde{n}}
+                Vertical derivative of the temporal extrapolation of exner
+                function at full levels is also computed (first order scheme).
+                .. math::
+                    \frac{\partial \pi'_{k}^{\tilde{n}}}{\partial z} = \frac{\pi'_{k-1/2}^{\tilde{n}} - \pi'_{k+1/2}^{\tilde{n}}}{\Delta z_{k}}
+                .. code-block:: python
+                    z_dexner_dz_c_1                                  = (z_exner_ic                    - z_exner_ic(Koff[1])      ) * inv_ddqz_z_full
+
+            flat_lev
+                height (inclusive) above which the grid is not affected by terrain following.
             """
             nhsolve_prog.predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
@@ -814,7 +840,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        """
+        r"""
         rho_ic & theta_v_ic (1:nlev-1):
             Compute rho and virtual temperature at half levels. rho and virtual temperature at model top boundary and ground are not updated.
         z_rth_pr_1 (0:nlev-1):
