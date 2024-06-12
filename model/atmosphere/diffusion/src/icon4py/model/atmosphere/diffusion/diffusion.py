@@ -963,6 +963,12 @@ def dace_jit(self):
                             dim = {'Cell':CellDim, 'Edge':EdgeDim, 'Vertex':VertexDim}[list(field_dims)[0].value] if len(field_dims) == 1 else None
                             if not dim:
                                 continue
+
+                            if nested_sdfg.stencil_horizontal_start == None or nested_sdfg.stencil_horizontal_end == None:
+                                continue
+
+                            halos_inds = self._exchange._decomposition_info.local_index(dim, di.EntryType.HALO)
+                            intersection = np.intersect1d(halos_inds, np.arange(nested_sdfg.stencil_horizontal_start, nested_sdfg.stencil_horizontal_end))
                             
                             # TODO: Work on asynchronous communication
                             wait = True
@@ -981,11 +987,16 @@ def dace_jit(self):
                                 if cont:
                                     continue
 
+                                if ones_after_nsdfg.stencil_horizontal_start == None or ones_after_nsdfg.stencil_horizontal_end == None:
+                                    continue
+
                                 for sdfg_state in sdfg.states():
                                     if sdfg_state.label == ones_after_nsdfg.parent.label:
                                         break
 
                                 for buffer_name in ones_after_nsdfg.GT4Py_Program_input_fields:
+                                    if ones_after_nsdfg.GT4Py_Program_input_fields[buffer_name] != dim:
+                                        continue
                                     halo_access = False
                                     for op_ in ones_after_nsdfg.offset_providers_per_input_field[buffer_name]:
                                         if halo_access:
@@ -1009,7 +1020,8 @@ def dace_jit(self):
 
                                         # op returns local indices
                                         halos_inds = self._exchange._decomposition_info.local_index(dest_dim, di.EntryType.HALO)
-                                        if np.intersect1d(halos_inds, inds_to_check).size > 0:
+                                        ones_after_intersection = np.intersect1d(halos_inds, inds_to_check)
+                                        if not np.all(np.isin(ones_after_intersection, intersection)):
                                             halo_access = True
                                             break
                                     
