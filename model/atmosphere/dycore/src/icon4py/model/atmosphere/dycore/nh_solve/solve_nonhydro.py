@@ -169,10 +169,39 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import backend
-
+from enum import IntEnum
 
 # flake8: noqa
 log = logging.getLogger(__name__)
+
+
+class SolveNonHydroType(IntEnum):
+    """
+    Order of nabla operator for solve_nonhydro.
+
+    Note: Called in `mo_solve_nonhydro.f90`.
+    """
+
+    itime_optimal = 4  # Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    itime_vertical = 5  # Contravariant vertical velocity is computed in both substeps
+    itime_velocity = (
+        6  # As itime_scheme_vertical, but velocity tendencies are also computed in both substeps
+    )
+    iadv_rhotheta_simple = 1  # simple second - order upwind - biased scheme
+    iadv_rhotheta_miura = 2  # 2nd order Miura horizontal
+    igradp_norm = 1  # conventional discretization with metric correction term
+    igradp_taylor = 2  # Taylor-expansion-based reconstruction of pressure
+    igradp_taylor_hydro = 3  # Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
+    igradp_polynomial = 4  # Cubic / quadratic polynomial interpolation for pressure reconstruction
+    igradp_polynomial_hydro = 5  # Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
+    rayleigh_classic = 1  # classical Rayleigh damping, which makes use of a reference state.
+    rayleigh_klemp = 2  # Klemp (2008) type Rayleigh damping
+    divdamp_order_second = 2  # 2nd order divergence damping
+    divdamp_order_fourth = 4  # 4th order divergence damping
+    divdamp_order_combo = 24  # combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
+    divdamp_type_2d = 2  # divergence damping acting on 2D divergence
+    divdamp_type_3d = 3  # divergence damping acting on 3D divergence
+    divdamp_type_combo = 32  # combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
 
 
 @dataclass
@@ -238,16 +267,16 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
-        itime_scheme: int = 4,
-        iadv_rhotheta: int = 2,
-        igradp_method: int = 3,
+        itime_scheme: SolveNonHydroType = SolveNonHydroType.itime_optimal,
+        iadv_rhotheta: SolveNonHydroType = SolveNonHydroType.iadv_rhotheta_miura,
+        igradp_method: SolveNonHydroType = SolveNonHydroType.igradp_taylor_hydro,
         ndyn_substeps_var: float = 5.0,
-        rayleigh_type: int = 2,
+        rayleigh_type: SolveNonHydroType = SolveNonHydroType.rayleigh_klemp,
         rayleigh_coeff: float = 0.05,
-        divdamp_order: int = 24,  # the ICON default is 4,
+        divdamp_order: SolveNonHydroType = SolveNonHydroType.divdamp_order_combo,  # the ICON default is 4,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
-        divdamp_type: int = 3,
+        divdamp_type: SolveNonHydroType = SolveNonHydroType.divdamp_type_3d,
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
