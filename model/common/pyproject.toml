@@ -32,7 +32,6 @@ requires-python = ">=3.10"
 [project.optional-dependencies]
 all = ["icon4py-common[ghex,io]"]
 ghex = ["ghex", "mpi4py"]
-netcdf = ["netcdf4>=1.6.0"]
 io = [
   "icon4py-common[netcdf]",
   "xarray[complete]>=2024.3.0",
@@ -45,6 +44,7 @@ io = [
   "cartopy>=0.22.0",
   "datashader>=0.16.0"
 ]
+netcdf = ["netcdf4>=1.6.0"]
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"

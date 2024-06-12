@@ -139,4 +139,3 @@ def timeloop_date_init():
 @pytest.fixture
 def timeloop_date_exit():
     return "2021-06-20T12:00:10.000"
-

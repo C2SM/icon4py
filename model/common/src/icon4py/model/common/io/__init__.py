@@ -16,4 +16,3 @@ try:
 except ImportError:
     print("Optional icon4py-common[io] dependencies are missing!")
     SystemExit(1)
-

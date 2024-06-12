@@ -18,4 +18,5 @@ try:
     import xarray as xa
 except ModuleNotFoundError:
     pytest.fail(
-        "Optional icon4py-common[io] dependencies are missing. Please install them using `pip install icon4py-common[io]`.")
+        "Optional icon4py-common[io] dependencies are missing. Please install them using `pip install icon4py-common[io]`."
+    )
