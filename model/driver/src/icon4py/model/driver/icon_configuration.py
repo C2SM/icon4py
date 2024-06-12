@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
+from enum import Enum
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from pathlib import Path
@@ -61,76 +62,141 @@ class VariableAttributes:
     coordinates: str = ' '
     scope: str = ' '
 
-from abc import ABC
-from icon4py.model.common.utils import builder
-class OutputVariableList(ABC):
-    variable_name = (
-        'vn',
-        'w',
-        'rho',
-        'theta_v',
-        'exner'
-    )
-    variable_attribute = {
-        'vn': VariableAttributes(
-            units='m s-1',
-            standard_name='normal velocity',
-            long_name='normal velocity at edge center',
-            CDI_grid_type='unstructured',
-            param='0.0.0',
-            number_of_grid_in_reference='1',
-            coordinates='elat elon',
-            scope= 'prognostic',
-        ),
-        'w': VariableAttributes(
-            units='m s-1',
-            standard_name='normal velocity',
-            long_name='normal velocity at edge center',
-            CDI_grid_type='unstructured',
-            param='0.0.0',
-            number_of_grid_in_reference='1',
-            coordinates='elat elon',
-            scope='prognostic',
-        ),
-        'rho': VariableAttributes(
-            units='m s-1',
-            standard_name='normal velocity',
-            long_name='normal velocity at edge center',
-            CDI_grid_type='unstructured',
-            param='0.0.0',
-            number_of_grid_in_reference='1',
-            coordinates='elat elon',
-            scope='prognostic',
-        ),
-        'theta_v': VariableAttributes(
-            units='m s-1',
-            standard_name='normal velocity',
-            long_name='normal velocity at edge center',
-            CDI_grid_type='unstructured',
-            param='0.0.0',
-            number_of_grid_in_reference='1',
-            coordinates='elat elon',
-            scope='prognostic',
-        ),
-        'exner': VariableAttributes(
-            units='m s-1',
-            standard_name='normal velocity',
-            long_name='normal velocity at edge center',
-            CDI_grid_type='unstructured',
-            param='0.0.0',
-            number_of_grid_in_reference='1',
-            coordinates='elat elon',
-            scope='prognostic',
-        ),
-    }
+
+class OutputDimension(str, Enum):
+    CELL_DIM = 'ncells'
+    EDGE_DIM = 'ncells_2'
+    VERTEX_DIM = 'ncells_3'
+    FULL_LEVEL = 'height'
+    HALF_LEVEL = 'height_2'
+    TIME = 'time'
+
+
+@dataclass(frozen=True)
+class VariableDimension:
+    horizon_dimension: str = None
+    vertical_dimension: str = None
+    time_dimension: str = None
+
+
+class OutputScope(str, Enum):
+    prognostic = 'prognostic'
+    diagnostic = 'diagnostic'
+    diffusion = 'diffusion'
+    solve_nonhydro = 'solve_nonhydro'
+
+
+class OutputVariableList:
+    def __init__(self):
+        self._variable_name = (
+            'vn',
+            'w',
+            'rho',
+            'theta_v',
+            'exner'
+        )
+        self._variable_dimension = {
+            'vn': VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            'w': VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.HALF_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            'rho': VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            'theta_v': VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            'exner': VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+        }
+        self._variable_attribute = {
+            'vn': VariableAttributes(
+                units='m s-1',
+                standard_name='normal velocity',
+                long_name='normal velocity at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope= OutputScope.prognostic,
+            ),
+            'w': VariableAttributes(
+                units='m s-1',
+                standard_name='normal velocity',
+                long_name='normal velocity at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.prognostic,
+            ),
+            'rho': VariableAttributes(
+                units='m s-1',
+                standard_name='normal velocity',
+                long_name='normal velocity at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.prognostic,
+            ),
+            'theta_v': VariableAttributes(
+                units='m s-1',
+                standard_name='normal velocity',
+                long_name='normal velocity at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.prognostic,
+            ),
+            'exner': VariableAttributes(
+                units='m s-1',
+                standard_name='normal velocity',
+                long_name='normal velocity at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.prognostic,
+            ),
+        }
+
+    @property
+    def variable_name_list(self):
+        return self._variable_name
+
+    @property
+    def variable_dim_list(self):
+        return self._variable_dimension
+
+    @property
+    def variable_attr_list(self):
+        return self._variable_attribute
 
     def add_new_variable(
-        self, variable_name: str, variable_attribute: VariableAttributes
+        self, variable_name: str, variable_dimenson: VariableDimension, variable_attribute: VariableAttributes
     ) -> None:
-        if variable_name in self.variable_name:
+        if variable_name in self._variable_name:
+            log.warning(f"Output variable name {variable_name} is already in variable list {self._variable_name}. Nothing to do.")
             return
-        self.variable_name = self.variable_name + (variable_name,)
-        self.variable_attribute[variable_name] = variable_attribute
+        self._variable_name = self._variable_name + (variable_name,)
+        self._variable_attribute[variable_name] = variable_attribute
+        self._variable_dimension[variable_name] = variable_dimenson
+
 
 @dataclass(frozen=True)
 class IconOutputConfig:
@@ -139,6 +205,7 @@ class IconOutputConfig:
     output_path: Path = Path("./")
     output_initial_condition_as_a_separate_file: bool = False
     output_variable_list: OutputVariableList = OutputVariableList()
+
 
 @dataclass
 class IconConfig:
@@ -214,6 +281,11 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         output_variable_list = OutputVariableList()
         output_variable_list.add_new_variable(
             'temperature',
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
             VariableAttributes(
                 units='K',
                 standard_name='temperauture',
@@ -222,11 +294,15 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 param='0.0.0',
                 number_of_grid_in_reference='1',
                 coordinates='clat clon',
-                scope='diagnostic',
+                scope=OutputScope.diagnostic,
             )
         )
         output_variable_list.add_new_variable(
             'pressure_sfc',
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                time_dimension=OutputDimension.TIME,
+            ),
             VariableAttributes(
                 units='Pa',
                 standard_name='surface pressure',
@@ -235,11 +311,16 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 param='0.0.0',
                 number_of_grid_in_reference='1',
                 coordinates='clat clon',
-                scope='diagnostic',
+                scope=OutputScope.diagnostic,
             )
         )
         output_variable_list.add_new_variable(
             'u',
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
             VariableAttributes(
                 units='m s-1',
                 standard_name='zonal wind',
@@ -248,11 +329,16 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 param='0.0.0',
                 number_of_grid_in_reference='1',
                 coordinates='clat clon',
-                scope='diagnostic',
+                scope=OutputScope.diagnostic,
             )
         )
         output_variable_list.add_new_variable(
             'v',
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
             VariableAttributes(
                 units='m s-1',
                 standard_name='meridional wind',
@@ -261,15 +347,16 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 param='0.0.0',
                 number_of_grid_in_reference='1',
                 coordinates='clat clon',
-                scope='diagnostic',
+                scope=OutputScope.diagnostic,
             )
         )
 
-        output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=60),
-            output_file_time_interval=timedelta(seconds=60),
+        jabw_output_config = IconOutputConfig(
+            output_time_interval=timedelta(seconds=300),
+            output_file_time_interval=timedelta(seconds=300),
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
+            output_variable_list=output_variable_list,
         )
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
@@ -282,7 +369,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
         return (
             icon_run_config,
-            output_config,
+            jabw_output_config,
             jabw_diffusion_config,
             jabw_nonhydro_config,
         )
