@@ -19,13 +19,13 @@ import pytest
 
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import base, vertical
-from icon4py.model.common.test_utils import helpers
-from icon4py.model.driver.io import cf_utils, data
-from icon4py.model.driver.io.writers import (
+from icon4py.model.common.io import cf_utils, data
+from icon4py.model.common.io.writers import (
     NETCDFWriter,
     TimeProperties,
     filter_by_standard_name,
 )
+from icon4py.model.common.test_utils import helpers
 
 from . import test_io
 

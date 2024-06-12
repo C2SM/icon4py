@@ -22,7 +22,7 @@ import xarray as xr
 
 from icon4py.model.common.decomposition import definitions as decomp_defs
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
-from icon4py.model.driver.io import cf_utils
+from icon4py.model.common.io import cf_utils
 
 
 log = logging.getLogger(__name__)

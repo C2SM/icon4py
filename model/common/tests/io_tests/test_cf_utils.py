@@ -13,7 +13,7 @@
 
 import pytest
 
-from icon4py.model.driver.io import cf_utils
+from icon4py.model.common.io import cf_utils
 
 from .test_io import state_values
 

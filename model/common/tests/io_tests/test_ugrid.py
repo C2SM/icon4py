@@ -14,14 +14,14 @@ import numpy as np
 import pytest
 import xarray as xa
 
-from icon4py.model.common.test_utils import datatest_utils, grid_utils
-from icon4py.model.driver.io.ugrid import (
+from icon4py.model.common.io.ugrid import (
     FILL_VALUE,
     IconUGridPatcher,
     IconUGridWriter,
     extract_horizontal_coordinates,
     load_data_file,
 )
+from icon4py.model.common.test_utils import datatest_utils, grid_utils
 
 
 def grid_files():

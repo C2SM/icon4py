@@ -25,7 +25,7 @@ from typing_extensions import Required
 
 from icon4py.model.common.components import exceptions, monitor
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
-from icon4py.model.driver.io import cf_utils, ugrid, writers
+from icon4py.model.common.io import cf_utils, ugrid, writers
 
 
 log = logging.getLogger(__name__)

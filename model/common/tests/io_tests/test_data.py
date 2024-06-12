@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import icon4py.model.common.grid.simple as simple_grid
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.io import data, ugrid
 from icon4py.model.common.test_utils import helpers
-from icon4py.model.driver.io import data, ugrid
 
 
 def test_data_array_has_ugrid_and_cf_attributes():

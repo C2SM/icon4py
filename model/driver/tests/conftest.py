@@ -11,9 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import random
 from datetime import datetime, timedelta
-from pathlib import Path
 
 import pytest
 
@@ -142,24 +140,3 @@ def timeloop_date_init():
 def timeloop_date_exit():
     return "2021-06-20T12:00:10.000"
 
-
-@pytest.fixture
-def random_name():
-    return "test" + str(random.randint(0, 100000))
-
-
-def delete_recursive(p: Path):
-    for child in p.iterdir():
-        if child.is_file():
-            child.unlink()
-        else:
-            delete_recursive(child)
-    p.rmdir()
-
-
-@pytest.fixture
-def test_path(tmp_path):
-    base_path = tmp_path.joinpath("io_tests")
-    base_path.mkdir(exist_ok=True, parents=True, mode=0o777)
-    yield base_path
-    delete_recursive(base_path)

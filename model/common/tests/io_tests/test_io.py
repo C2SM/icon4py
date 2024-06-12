@@ -24,9 +24,8 @@ import xarray as xr
 import icon4py.model.common.components.exceptions as errors
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
-from icon4py.model.driver.io import data, ugrid
-from icon4py.model.driver.io.io import (
+from icon4py.model.common.io import data, ugrid
+from icon4py.model.common.io.io import (
     FieldGroupIOConfig,
     FieldGroupMonitor,
     IOConfig,
@@ -34,6 +33,7 @@ from icon4py.model.driver.io.io import (
     generate_name,
     to_delta,
 )
+from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 
 
 UNLIMITED = None

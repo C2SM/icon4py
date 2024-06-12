@@ -11,3 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+try:
+    import xarray as xa
+except ImportError:
+    print("Optional icon4py-common[io] dependencies are missing!")
+    SystemExit(1)
+
