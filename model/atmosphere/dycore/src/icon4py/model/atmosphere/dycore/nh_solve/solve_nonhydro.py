@@ -185,9 +185,9 @@ class SolveNonHydroType(IntEnum):
     itime_optimal = 4  # Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
     itime_vertical = 5  # Contravariant vertical velocity is computed in both substeps
     itime_velocity = (
-        6  # As itime_scheme_vertical, but velocity tendencies are also computed in both substeps
+        6  # As itime_vertical, but velocity tendencies are also computed in both substeps
     )
-    iadv_rhotheta_simple = 1  # simple second - order upwind - biased scheme
+    iadv_rhotheta_simple = 1  # simple 2nd order upwind-biased scheme
     iadv_rhotheta_miura = 2  # 2nd order Miura horizontal
     igradp_norm = 1  # conventional discretization with metric correction term
     igradp_taylor = 2  # Taylor-expansion-based reconstruction of pressure
