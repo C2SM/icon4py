@@ -15,7 +15,7 @@ import logging
 import pathlib
 from typing import Final, Union
 
-import gt4py.next as gt
+import gt4py.next as gtx
 import uxarray
 import xarray as xa
 
@@ -28,19 +28,19 @@ log = logging.getLogger(__name__)
 FILL_VALUE = gm.GridFile.INVALID_INDEX
 MESH = "mesh"
 
-HORIZONTAL_DIMENSION_MAPPING: Final[dict[gt.Dimension, str]] = {
+HORIZONTAL_DIMENSION_MAPPING: Final[dict[gtx.Dimension, str]] = {
     dim.CellDim: "cell",
     dim.EdgeDim: "edge",
     dim.VertexDim: "vertex",
 }
 
-COORDINATES_MAPPING: Final[dict[gt.Dimension, str]] = {
+COORDINATES_MAPPING: Final[dict[gtx.Dimension, str]] = {
     dim.CellDim: "clon clat",
     dim.VertexDim: "vlon vlat",
     dim.EdgeDim: "elon elat",
 }
 
-LOCATION_MAPPING: Final[dict[gt.Dimension, str]] = {
+LOCATION_MAPPING: Final[dict[gtx.Dimension, str]] = {
     dim.CellDim: "face",
     dim.VertexDim: "node",
     dim.EdgeDim: "edge",
@@ -62,19 +62,19 @@ def extract_horizontal_coordinates(
     )
 
 
-def dimension_mapping(dim: gt.Dimension, is_on_interface: bool) -> str:
+def dimension_mapping(dim: gtx.Dimension, is_on_interface: bool) -> str:
     assert dim.kind in (
-        gt.DimensionKind.HORIZONTAL,
-        gt.DimensionKind.VERTICAL,
+        gtx.DimensionKind.HORIZONTAL,
+        gtx.DimensionKind.VERTICAL,
     ), "only horizontal and vertical dimensions are supported."
-    if dim.kind == gt.DimensionKind.VERTICAL:
+    if dim.kind == gtx.DimensionKind.VERTICAL:
         return "interface_level" if is_on_interface else "level"
     else:
         return HORIZONTAL_DIMENSION_MAPPING[dim]
 
 
-def ugrid_attributes(dim: gt.Dimension) -> dict:
-    if dim.kind == gt.DimensionKind.HORIZONTAL:
+def ugrid_attributes(dim: gtx.Dimension) -> dict:
+    if dim.kind == gtx.DimensionKind.HORIZONTAL:
         return dict(
             location=LOCATION_MAPPING[dim],
             coordinates=COORDINATES_MAPPING[dim],

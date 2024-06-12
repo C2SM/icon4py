@@ -13,6 +13,7 @@
 from typing import Final
 
 import gt4py._core.definitions as gt_coredefs
+import gt4py.next as gtx
 import gt4py.next.common as gt_common
 import xarray as xa
 
@@ -74,7 +75,7 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict] = dict(
 
 
 def to_data_array(
-    field: gt_common.Field[gt_common.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
+    field: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT],
     attrs=None,
     is_on_interface: bool = False,
 ) -> xa.DataArray:
@@ -94,5 +95,5 @@ def to_data_array(
     return xa.DataArray(data=field.ndarray, dims=dims, attrs=attrs)
 
 
-def _is_horizontal(dim: gt_common.Dimension) -> bool:
-    return dim.kind == gt_common.DimensionKind.HORIZONTAL
+def _is_horizontal(dim: gtx.Dimension) -> bool:
+    return dim.kind == gtx.DimensionKind.HORIZONTAL
