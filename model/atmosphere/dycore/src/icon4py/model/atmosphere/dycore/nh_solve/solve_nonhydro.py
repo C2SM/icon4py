@@ -175,33 +175,40 @@ from enum import IntEnum
 log = logging.getLogger(__name__)
 
 
-class SolveNonHydroType(IntEnum):
-    """
-    Order of nabla operator for solve_nonhydro.
+class ItimeScheme(IntEnum):
+    OPTIMAL = 4  # Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    VERTICAL = 5  # Contravariant vertical velocity is computed in both substeps
+    VELOCITY = 6  # As itime_vertical, but velocity tendencies are also computed in both substeps
 
-    Note: Called in `mo_solve_nonhydro.f90`.
-    """
 
-    itime_optimal = 4  # Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
-    itime_vertical = 5  # Contravariant vertical velocity is computed in both substeps
-    itime_velocity = (
-        6  # As itime_vertical, but velocity tendencies are also computed in both substeps
-    )
-    iadv_rhotheta_simple = 1  # simple 2nd order upwind-biased scheme
-    iadv_rhotheta_miura = 2  # 2nd order Miura horizontal
-    igradp_norm = 1  # conventional discretization with metric correction term
-    igradp_taylor = 2  # Taylor-expansion-based reconstruction of pressure
-    igradp_taylor_hydro = 3  # Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
-    igradp_polynomial = 4  # Cubic / quadratic polynomial interpolation for pressure reconstruction
-    igradp_polynomial_hydro = 5  # Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
-    rayleigh_classic = 1  # classical Rayleigh damping, which makes use of a reference state.
-    rayleigh_klemp = 2  # Klemp (2008) type Rayleigh damping
-    divdamp_order_second = 2  # 2nd order divergence damping
-    divdamp_order_fourth = 4  # 4th order divergence damping
-    divdamp_order_combo = 24  # combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
-    divdamp_type_2d = 2  # divergence damping acting on 2D divergence
-    divdamp_type_3d = 3  # divergence damping acting on 3D divergence
-    divdamp_type_combo = 32  # combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
+class Rayleigh_Type(IntEnum):
+    CLASSIC = 1  # classical Rayleigh damping, which makes use of a reference state.
+    KLEMP = 2  # Klemp (2008) type Rayleigh damping
+
+
+class DivergenceDamping_Type(IntEnum):
+    TWO_DIMENSIONAL = 2  # divergence damping acting on 2D divergence
+    THREE_DIMENSIONAL = 3  # divergence damping acting on 3D divergence
+    COMBINED = 32  # combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
+
+
+class DivergenceDamping_Order(IntEnum):
+    SECOND_ORDER = 2  # 2nd order divergence damping
+    FOURTH_ORDER = 4  # 4th order divergence damping
+    COMBINED = 24  # combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
+
+
+class IGradp_Method(IntEnum):
+    NORMAL = 1  # conventional discretization with metric correction term
+    TAYLOR = 2  # Taylor-expansion-based reconstruction of pressure
+    TAYLOR_HYDRO = 3  # Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
+    POLYNOMIAL = 4  # Cubic / quadratic polynomial interpolation for pressure reconstruction
+    POLYNOMIAL_HYDRO = 5  # Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
+
+
+class Iadv_RhoTheta(IntEnum):
+    SIMPLE = 1  # simple 2nd order upwind-biased scheme
+    MIURA = 2  # 2nd order Miura horizontal
 
 
 @dataclass
@@ -267,16 +274,16 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
-        itime_scheme: SolveNonHydroType = SolveNonHydroType.itime_optimal,
-        iadv_rhotheta: SolveNonHydroType = SolveNonHydroType.iadv_rhotheta_miura,
-        igradp_method: SolveNonHydroType = SolveNonHydroType.igradp_taylor_hydro,
+        itime_scheme: ItimeScheme = ItimeScheme.OPTIMAL,
+        iadv_rhotheta: Iadv_RhoTheta = Iadv_RhoTheta.MIURA,
+        igradp_method: IGradp_Method = IGradp_Method.TAYLOR_HYDRO,
         ndyn_substeps_var: float = 5.0,
-        rayleigh_type: SolveNonHydroType = SolveNonHydroType.rayleigh_klemp,
+        rayleigh_type: Rayleigh_Type = Rayleigh_Type.KLEMP,
         rayleigh_coeff: float = 0.05,
-        divdamp_order: SolveNonHydroType = SolveNonHydroType.divdamp_order_combo,  # the ICON default is 4,
+        divdamp_order: DivergenceDamping_Order = DivergenceDamping_Order.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
-        divdamp_type: SolveNonHydroType = SolveNonHydroType.divdamp_type_3d,
+        divdamp_type: DivergenceDamping_Type = DivergenceDamping_Type.THREE_DIMENSIONAL,
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
