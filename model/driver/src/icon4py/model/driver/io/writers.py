@@ -120,28 +120,28 @@ class NETCDFWriter:
         time = self.dataset["times"]
         time_pos = len(time)
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
-        for k, new_slice in state_to_append.items():
-            standard_name = new_slice.standard_name
-            new_slice = cf_utils.to_canonical_dim_order(new_slice)
+        for item_key, item_data in state_to_append.items():
+            standard_name = item_data.standard_name
+            item_data = cf_utils.to_canonical_dim_order(item_data)
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
-                dimensions = ("time", *new_slice.dims)
-                new_var = self.dataset.createVariable(k, new_slice.dtype, dimensions)
-                new_var[0, :] = new_slice.data
-                new_var.units = new_slice.units
-                new_var.standard_name = new_slice.standard_name
-                new_var.long_name = new_slice.long_name
-                new_var.coordinates = new_slice.coordinates
-                new_var.mesh = new_slice.mesh
-                new_var.location = new_slice.location
+                dimensions = ("time", *item_data.dims)
+                new_var = self.dataset.createVariable(item_key, item_data.dtype, dimensions)
+                new_var[0, :] = item_data.data
+                new_var.units = item_data.units
+                new_var.standard_name = item_data.standard_name
+                new_var.long_name = item_data.long_name
+                new_var.coordinates = item_data.coordinates
+                new_var.mesh = item_data.mesh
+                new_var.location = item_data.location
 
             else:
-                var_name = ds_var.get(k).name
-                dims = ds_var.get(k).dimensions
-                shape = ds_var.get(k).shape
+                var_name = ds_var.get(item_key).name
+                dims = ds_var.get(item_key).dimensions
+                shape = ds_var.get(item_key).shape
                 assert (
-                    len(new_slice.dims) == len(dims) - 1
+                    len(item_data.dims) == len(dims) - 1
                 ), f"Data variable dimensions do not match for {standard_name}."
 
                 # TODO (magdalena) change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
@@ -152,7 +152,7 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
-                self.dataset.variables[var_name][slices] = new_slice.data
+                self.dataset.variables[var_name][slices] = item_data.data
 
     def close(self) -> None:
         if self.dataset.isopen():
