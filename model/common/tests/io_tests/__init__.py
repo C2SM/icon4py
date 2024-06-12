@@ -10,13 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import importlib.util
 
 import pytest
 
 
-try:
-    import xarray as xa
-except ModuleNotFoundError:
+if not importlib.util.find_spec("xarray"):
     pytest.fail(
         "Optional icon4py-common[io] dependencies are missing. Please install them using `pip install icon4py-common[io]`."
     )

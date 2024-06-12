@@ -10,9 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import importlib
 
-try:
-    import xarray as xa
-except ImportError:
+
+if not importlib.util.find_spec("xarray"):
     print("Optional icon4py-common[io] dependencies are missing!")
     SystemExit(1)
