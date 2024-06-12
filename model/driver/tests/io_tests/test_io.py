@@ -15,6 +15,7 @@ import pathlib
 import re
 from typing import Union
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 import uxarray as ux
@@ -22,7 +23,7 @@ import xarray as xr
 
 import icon4py.model.common.components.exceptions as errors
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid import base, simple
+from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 from icon4py.model.driver.io import data, ugrid
 from icon4py.model.driver.io.io import (
@@ -129,10 +130,13 @@ def is_valid_uxgrid(file: Union[pathlib.Path, str]) -> bool:
 
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
+    vertical_params = v_grid.VerticalModelParams(
+        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1))
+    )
     config = IOConfig(field_groups=[], output_path=path_name)
     monitor = IOMonitor(
         config,
-        simple_grid.config.vertical_config,
+        vertical_params,
         simple_grid.config.horizontal_config,
         grid_file,
         simple_grid.id,
@@ -143,10 +147,14 @@ def test_io_monitor_create_output_path(test_path):
 
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
+    vertical_params = v_grid.VerticalModelParams(
+        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1))
+    )
+
     config = IOConfig(field_groups=[], output_path=path_name)
     monitor = IOMonitor(
         config,
-        simple_grid.config.vertical_config,
+        vertical_params,
         simple_grid.config.horizontal_config,
         grid_file,
         "simple_grid",
@@ -166,6 +174,10 @@ def test_io_monitor_write_ugrid_file(test_path):
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
+    vertical_params = v_grid.VerticalModelParams(
+        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1))
+    )
+
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     field_configs = [
@@ -180,7 +192,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     config = IOConfig(field_groups=field_configs, output_path=path_name)
     monitor = IOMonitor(
         config,
-        grid.config.vertical_config,
+        vertical_params,
         grid.config.horizontal_config,
         grid_file,
         grid.id,
@@ -209,6 +221,10 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
+    vertical_params = v_grid.VerticalModelParams(
+        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1))
+    )
+
     state = model_state(grid)
     configured_output_start = "2024-01-01T12:00:00"
     filename_stub = "icon4py_dummy_output"
@@ -221,7 +237,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     )
     monitor = FieldGroupMonitor(
         config,
-        vertical=grid.config.vertical_config,
+        vertical=vertical_params,
         horizontal=grid.config.horizontal_config,
         grid_id=grid.id,
         output_path=test_path,
@@ -326,10 +342,13 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
         output_interval="1 HOUR",
         variables=["exner_function", "air_density"],
     )
+    vertical_params = v_grid.VerticalModelParams(
+        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1))
+    )
 
     group_monitor = FieldGroupMonitor(
         config,
-        vertical=grid.config.vertical_config,
+        vertical=vertical_params,
         horizontal=grid.config.horizontal_config,
         grid_id=grid.id,
         output_path=test_path,

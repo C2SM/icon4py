@@ -13,11 +13,12 @@
 
 from datetime import datetime, timedelta
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid import base
+from icon4py.model.common.grid import base, vertical
 from icon4py.model.common.test_utils import helpers
 from icon4py.model.driver.io import cf_utils, data
 from icon4py.model.driver.io.writers import (
@@ -50,12 +51,15 @@ def test_filter_by_standard_name_non_existing_name():
 def initialized_writer(
     test_path, random_name, grid=test_io.simple_grid
 ) -> tuple[NETCDFWriter, base.BaseGrid]:
-    vertical = grid.config.vertical_config
+    vertical_config = grid.config.vertical_config
+    num_levels = vertical_config.num_lev
+    heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
+    vertical_params = vertical.VerticalModelParams(gtx.as_field((KDim,), heights))
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
     writer = NETCDFWriter(
         fname,
-        vertical,
+        vertical_params,
         horizontal,
         TimeProperties(cf_utils.DEFAULT_TIME_UNIT, cf_utils.DEFAULT_CALENDAR),
         global_attrs={"title": "test", "institution": "EXCLAIM - ETH Zurich"},
@@ -80,8 +84,8 @@ def test_initialize_writer_vertical_model_levels(test_path, random_name):
     vertical = dataset.variables["levels"]
     assert vertical.units == "1"
     assert vertical.dimensions == ("level",)
-    assert vertical.long_name == "model full levels"
-    assert vertical.standard_name == cf_utils.LEVEL_NAME
+    assert vertical.long_name == "model full level index"
+    assert vertical.standard_name == cf_utils.LEVEL_STANDARD_NAME
     assert vertical.datatype == np.int32
     assert len(vertical) == grid.num_levels
     assert np.all(vertical == np.arange(grid.num_levels))
@@ -92,10 +96,22 @@ def test_initialize_writer_interface_levels(test_path, random_name):
     interface_levels = dataset.variables["interface_levels"]
     assert interface_levels.units == "1"
     assert interface_levels.datatype == np.int32
-    assert interface_levels.long_name == "model interface levels"
-    assert interface_levels.standard_name == cf_utils.INTERFACE_LEVEL_NAME
+    assert interface_levels.long_name == "model interface level index"
+    assert interface_levels.standard_name == cf_utils.INTERFACE_LEVEL_STANDARD_NAME
     assert len(interface_levels) == grid.num_levels + 1
     assert np.all(interface_levels == np.arange(grid.num_levels + 1))
+
+
+def test_initialize_writer_heights(test_path, random_name):
+    dataset, grid = initialized_writer(test_path, random_name)
+    heights = dataset.variables["height"]
+    assert heights.units == "m"
+    assert heights.datatype == np.float64
+    assert heights.long_name == "height value of half levels for flat topography"
+    assert heights.standard_name == cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
+    assert len(heights) == grid.num_levels + 1
+    assert heights[0] == 12000.0
+    assert heights[-1] == 0.0
 
 
 def test_writer_append_timeslice(test_path, random_name):

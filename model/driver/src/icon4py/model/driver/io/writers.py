@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
+import functools
 import logging
 import pathlib
 from datetime import datetime
@@ -46,7 +47,7 @@ class NETCDFWriter:
     def __init__(
         self,
         file_name: pathlib.Path,
-        vertical: v_grid.VerticalGridSize,
+        vertical: v_grid.VerticalModelParams,
         horizontal: h_grid.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: dict,
@@ -55,13 +56,23 @@ class NETCDFWriter:
         self._file_name = str(file_name)
         self._process_properties = process_properties
         self._time_properties = time_properties
-        self.num_levels = vertical.num_lev
-        self.horizontal_size = horizontal
+        self._vertical_params = vertical
+        self._horizontal_size = horizontal
         self.attrs = global_attrs
         self.dataset = None
 
     def __getitem__(self, item):
         return self.dataset.getncattr(item)
+
+    @functools.cached_property
+    def num_levels(self) -> int:
+        # TODO (@halungge) fix once PR 470 (https://github.com/C2SM/icon4py/pull/470) is merged
+        return self._vertical_params.vct_a.ndarray.shape[0] - 1
+
+    @functools.cached_property
+    def num_interfaces(self) -> int:
+        # TODO (@halungge) fix once PR 470 (https://github.com/C2SM/icon4py/pull/470) is merged
+        return self._vertical_params.vct_a.ndarray.shape[0]
 
     def initialize_dataset(self) -> None:
         self.dataset = nc.Dataset(
@@ -77,10 +88,10 @@ class NETCDFWriter:
         ## create dimensions all except time are fixed
         self.dataset.createDimension("time", None)
         self.dataset.createDimension("level", self.num_levels)
-        self.dataset.createDimension("interface_level", self.num_levels + 1)
-        self.dataset.createDimension("cell", self.horizontal_size.num_cells)
-        self.dataset.createDimension("vertex", self.horizontal_size.num_vertices)
-        self.dataset.createDimension("edge", self.horizontal_size.num_edges)
+        self.dataset.createDimension("interface_level", self.num_interfaces)
+        self.dataset.createDimension("cell", self._horizontal_size.num_cells)
+        self.dataset.createDimension("vertex", self._horizontal_size.num_vertices)
+        self.dataset.createDimension("edge", self._horizontal_size.num_edges)
         log.debug(f"Creating dimensions {self.dataset.dimensions} in {self._file_name}")
         # create time variables
         times = self.dataset.createVariable("times", "f8", ("time",))
@@ -91,19 +102,26 @@ class NETCDFWriter:
         # create vertical coordinates:
         levels = self.dataset.createVariable("levels", np.int32, ("level",))
         levels.units = "1"
-        levels.long_name = "model full levels"
-        levels.standard_name = cf_utils.LEVEL_NAME
+        levels.positive = "down"
+        levels.long_name = "model full level index"
+        levels.standard_name = cf_utils.LEVEL_STANDARD_NAME
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
 
         interface_levels = self.dataset.createVariable(
             "interface_levels", np.int32, ("interface_level",)
         )
         interface_levels.units = "1"
-        interface_levels.long_name = "model interface levels"
-        interface_levels.standard_name = cf_utils.INTERFACE_LEVEL_NAME
+        interface_levels.positive = "down"
+        interface_levels.long_name = "model interface level index"
+        interface_levels.standard_name = cf_utils.INTERFACE_LEVEL_STANDARD_NAME
         interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
-        # TODO (magdalena) add vct_a as vertical coordinate?
+        heights = self.dataset.createVariable("height", np.float64, ("interface_level",))
+        heights.units = "m"
+        heights.positive = "up"
+        heights.long_name = "height value of half levels for flat topography"
+        heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
+        heights[:] = self._vertical_params.vct_a.ndarray
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: datetime) -> None:
         """
@@ -120,28 +138,28 @@ class NETCDFWriter:
         time = self.dataset["times"]
         time_pos = len(time)
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
-        for item_key, item_data in state_to_append.items():
-            standard_name = item_data.standard_name
-            item_data = cf_utils.to_canonical_dim_order(item_data)
+        for var_name, new_slice in state_to_append.items():
+            standard_name = new_slice.standard_name
+            new_slice = cf_utils.to_canonical_dim_order(new_slice)
             assert standard_name is not None, f"No short_name provided for {standard_name}."
             ds_var = filter_by_standard_name(self.dataset.variables, standard_name)
             if not ds_var:
-                dimensions = ("time", *item_data.dims)
-                new_var = self.dataset.createVariable(item_key, item_data.dtype, dimensions)
-                new_var[0, :] = item_data.data
-                new_var.units = item_data.units
-                new_var.standard_name = item_data.standard_name
-                new_var.long_name = item_data.long_name
-                new_var.coordinates = item_data.coordinates
-                new_var.mesh = item_data.mesh
-                new_var.location = item_data.location
+                dimensions = ("time", *new_slice.dims)
+                new_var = self.dataset.createVariable(var_name, new_slice.dtype, dimensions)
+                new_var[0, :] = new_slice.data
+                new_var.units = new_slice.units
+                new_var.standard_name = new_slice.standard_name
+                new_var.long_name = new_slice.long_name
+                new_var.coordinates = new_slice.coordinates
+                new_var.mesh = new_slice.mesh
+                new_var.location = new_slice.location
 
             else:
-                var_name = ds_var.get(item_key).name
-                dims = ds_var.get(item_key).dimensions
-                shape = ds_var.get(item_key).shape
+                var_name = ds_var.get(var_name).name
+                dims = ds_var.get(var_name).dimensions
+                shape = ds_var.get(var_name).shape
                 assert (
-                    len(item_data.dims) == len(dims) - 1
+                    len(new_slice.dims) == len(dims) - 1
                 ), f"Data variable dimensions do not match for {standard_name}."
 
                 # TODO (magdalena) change for parallel/distributed case: where we write at `global_index` field on the node for the horizontal dim.
@@ -152,7 +170,7 @@ class NETCDFWriter:
                     slice(shape[cf_utils.COARDS_T_POS] - 1, shape[cf_utils.COARDS_T_POS]),
                 )
                 slices = expand_slice + right
-                self.dataset.variables[var_name][slices] = item_data.data
+                self.dataset.variables[var_name][slices] = new_slice.data
 
     def close(self) -> None:
         if self.dataset.isopen():

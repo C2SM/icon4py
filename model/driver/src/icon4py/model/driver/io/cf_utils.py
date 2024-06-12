@@ -16,10 +16,18 @@ import cftime
 import xarray
 
 
-LEVEL_NAME: Final[str] = "model_level_number"
-INTERFACE_LEVEL_NAME: Final[str] = "interface_model_level_number"
+#: from standard name table https://cfconventions.org/Data/cf-standard-names/current/build/cf-standard-name-table.html
+SLEVE_COORD_STANDARD_NAME: Final[str] = "atmosphere_sleve_coordinate"
+LEVEL_STANDARD_NAME: Final[str] = "model_level_number"
+
+
 DEFAULT_CALENDAR: Final[str] = "proleptic_gregorian"
 DEFAULT_TIME_UNIT: Final[str] = "seconds since 1970-01-01 00:00:00"
+
+#: icon4py specific CF extensions:
+INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "interface_model_level"
+INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
+
 
 """
 CF conventions encourage to use the COARDS conventions for the order of the dimensions: 
@@ -49,7 +57,7 @@ def to_canonical_dim_order(data: xarray.DataArray) -> xarray.DataArray:
     dims = data.dims
     if len(dims) >= 2:
         if dims[0] in ("cell", "edge", "vertex") and dims[1] in (
-            "height",
+            INTERFACE_LEVEL_HEIGHT_STANDARD_NAME,
             "level",
             "interface_level",
         ):

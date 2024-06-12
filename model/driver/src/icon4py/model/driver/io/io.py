@@ -151,7 +151,7 @@ class IOMonitor(monitor.Monitor):
     def __init__(
         self,
         config: IOConfig,
-        vertical_size: v_grid.VerticalGridSize,
+        vertical_size: v_grid.VerticalModelParams,
         horizontal_size: h_grid.HorizontalGridSize,
         grid_file_name: str,
         grid_id: uuid.UUID,
@@ -257,7 +257,7 @@ class FieldGroupMonitor(monitor.Monitor):
     def __init__(
         self,
         config: FieldGroupIOConfig,
-        vertical: v_grid.VerticalGridSize,
+        vertical: v_grid.VerticalModelParams,
         horizontal: h_grid.HorizontalGridSize,
         grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
@@ -301,7 +301,7 @@ class FieldGroupMonitor(monitor.Monitor):
 
     def _init_dataset(
         self,
-        vertical_grid: v_grid.VerticalGridSize,
+        vertical_params: v_grid.VerticalModelParams,
         horizontal_size: h_grid.HorizontalGridSize,
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.
@@ -317,7 +317,7 @@ class FieldGroupMonitor(monitor.Monitor):
         filename = self._output_path.joinpath(filename)
         df = writers.NETCDFWriter(
             filename,
-            vertical_grid,
+            vertical_params,
             horizontal_size,
             self._time_properties,
             self._global_attrs,
