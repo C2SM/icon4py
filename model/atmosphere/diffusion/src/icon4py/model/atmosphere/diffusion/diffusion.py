@@ -942,8 +942,11 @@ def dace_jit(self):
                     # Parse SDFG
                     sdfg = daceP._parse(args, kwargs)
 
-                    # HALO EXCHANGE
+                    # Insert halo exchange nodes (only if needed) in the fused SDFG
                     if isinstance(self._exchange, GHexMultiNodeExchange):
+                        # TODO: Work on asynchronous communication
+                        wait = True
+                        
                         counter = 0
                         for nested_sdfg in sdfg.all_sdfgs_recursive():
                             if not hasattr(nested_sdfg, "GT4Py_Program_output_fields"):
@@ -968,107 +971,105 @@ def dace_jit(self):
                                 continue
 
                             halos_inds = self._exchange._decomposition_info.local_index(dim, di.EntryType.HALO)
-                            intersection = np.intersect1d(halos_inds, np.arange(nested_sdfg.stencil_horizontal_start, nested_sdfg.stencil_horizontal_end))
-                            
-                            # TODO: Work on asynchronous communication
-                            wait = True
+                            # Consider overcomputing, i.e. computational update of the halo elements and not through communication.
+                            updated_halo_inds = np.intersect1d(halos_inds, np.arange(nested_sdfg.stencil_horizontal_start, nested_sdfg.stencil_horizontal_end))
 
-                            # Gather all input fields for the all stencils below the current one
-                            input_fields = set() # global names (refer to the fused sdfg) and not local ones (nested sdfgs)
-                            cont = True
-                            for ones_after_nsdfg in sdfg.all_sdfgs_recursive():
-                                if not hasattr(ones_after_nsdfg, "GT4Py_Program_input_fields"):
-                                    continue
-
-                                if ones_after_nsdfg is nested_sdfg:
-                                    cont = False
-                                    continue
-
-                                if cont:
-                                    continue
-
-                                if ones_after_nsdfg.stencil_horizontal_start == None or ones_after_nsdfg.stencil_horizontal_end == None:
-                                    continue
-
-                                for sdfg_state in sdfg.states():
-                                    if sdfg_state.label == ones_after_nsdfg.parent.label:
-                                        break
-
-                                for buffer_name in ones_after_nsdfg.GT4Py_Program_input_fields:
-                                    if ones_after_nsdfg.GT4Py_Program_input_fields[buffer_name] != dim:
-                                        continue
-                                    halo_access = False
-                                    for op_ in ones_after_nsdfg.offset_providers_per_input_field[buffer_name]:
-                                        if halo_access:
-                                            continue
-                                        if len(op_) == 0:
-                                            continue
-                                        offset_literal_value = op_[0].value
-                                        if not hasattr(self.grid.offset_providers[offset_literal_value], 'table'):
-                                            continue
-                                        op = self.grid.offset_providers[offset_literal_value].table
-
-                                        source_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[0]]
-                                        dest_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[-2] if offset_literal_value[-1] == 'O' else offset_literal_value[-1]]
-                                        
-                                        if source_dim != list(ones_after_nsdfg.GT4Py_Program_output_fields.values())[0]:
-                                           continue
-                                        
-                                        inds_to_check = op[ones_after_nsdfg.stencil_horizontal_start]
-                                        for ind in range(ones_after_nsdfg.stencil_horizontal_start+1, ones_after_nsdfg.stencil_horizontal_end):
-                                            inds_to_check = np.concatenate((inds_to_check, op[ind]))
-
-                                        # op returns local indices
-                                        halos_inds = self._exchange._decomposition_info.local_index(dest_dim, di.EntryType.HALO)
-                                        ones_after_intersection = np.intersect1d(halos_inds, inds_to_check)
-                                        if not np.all(np.isin(ones_after_intersection, intersection)):
-                                            halo_access = True
-                                            break
-                                    
-                                    all_bools = mpi4py.MPI.COMM_WORLD.allgather(halo_access)
-                                    if len(set(all_bools)) == 2:
-                                        halo_access = True
-                                    else:
-                                        halo_access = all_bools[0]
-
-                                    if not halo_access:
-                                        continue
-
-                                    global_buffer_name = None
-                                    for edge in sdfg_state.all_edges_recursive():
-                                        # global_buffer_name [src] --> local buffer_name [dst]
-                                        if hasattr(edge[0], "dst_conn") and (edge[0].dst_conn == buffer_name):
-                                            global_buffer_name = edge[0].src.label
-                                            break
-                                    if not global_buffer_name:
-                                        raise ValueError("Could not link the local buffer_name to the global one.")
-                                    input_fields.add(global_buffer_name)
-
-                            for sdfg_state in sdfg.states():
-                                if sdfg_state.label == nested_sdfg.parent.label:
+                            for nested_sdfg_state in sdfg.states():
+                                if nested_sdfg_state.label == nested_sdfg.parent.label:
                                     break
 
-                            global_buffers = {}
+                            global_buffers = {} # the elements of this dictionary are going to be exchanged
                             for buffer_name in nested_sdfg.GT4Py_Program_output_fields:
                                 global_buffer_name = None
-                                for edge in sdfg_state.all_edges_recursive():
+                                for edge in nested_sdfg_state.all_edges_recursive():
                                     # local buffer_name [src] --> global_buffer_name [dst]
                                     if hasattr(edge[0], "src_conn") and (edge[0].src_conn == buffer_name):
                                         global_buffer_name = edge[0].dst.label
                                         break
                                 if not global_buffer_name:
                                     raise ValueError("Could not link the local buffer_name to the global one (coming from the closure).")
-                                if global_buffer_name not in input_fields and global_buffer_name != '__g_prognostic_state_vn':
-                                    # An output field that is not an input field to another nested sdfg below, does not need to be exchanged
-                                    continue
-                                global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name]
+                                
+                                # Visit all stencils/sdfgs below the current one (nested_sdfg), and see if halo update is needed for the specific (buffer_name) output field.
+                                halo_update = False
+                                cont = True
+                                for ones_after_nsdfg in sdfg.all_sdfgs_recursive():
+                                    if halo_update:
+                                        break
+                                    
+                                    if not hasattr(ones_after_nsdfg, "GT4Py_Program_input_fields"):
+                                        continue
+
+                                    if ones_after_nsdfg is nested_sdfg:
+                                        cont = False
+                                        continue
+
+                                    if cont:
+                                        continue
+
+                                    if ones_after_nsdfg.stencil_horizontal_start == None or ones_after_nsdfg.stencil_horizontal_end == None:
+                                        continue
+
+                                    for ones_after_nsdfg_state in sdfg.states():
+                                        if ones_after_nsdfg_state.label == ones_after_nsdfg.parent.label:
+                                            break
+
+                                    for buffer_name_ in ones_after_nsdfg.GT4Py_Program_input_fields:
+                                        if halo_update:
+                                            break
+                                        
+                                        global_buffer_name_ = None
+                                        for edge in ones_after_nsdfg_state.all_edges_recursive():
+                                            # global_buffer_name_ [src] --> local buffer_name_ [dst]
+                                            if hasattr(edge[0], "dst_conn") and (edge[0].dst_conn == buffer_name_):
+                                                global_buffer_name_ = edge[0].src.label
+                                                break
+                                        if not global_buffer_name_:
+                                            raise ValueError("Could not link the local buffer_name_ to the global one.")
+                                        
+                                        if global_buffer_name_ != global_buffer_name:
+                                            continue
+
+                                        for op_ in ones_after_nsdfg.offset_providers_per_input_field[buffer_name_]:
+                                            if len(op_) == 0:
+                                                continue
+                                            offset_literal_value = op_[0].value
+                                            if not hasattr(self.grid.offset_providers[offset_literal_value], 'table'):
+                                                continue
+                                            op = self.grid.offset_providers[offset_literal_value].table
+
+                                            source_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[0]]
+                                            dest_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[-2] if offset_literal_value[-1] == 'O' else offset_literal_value[-1]]
+                                            
+                                            if source_dim != list(ones_after_nsdfg.GT4Py_Program_output_fields.values())[0]:
+                                                continue
+                                            
+                                            accessed_inds = op[ones_after_nsdfg.stencil_horizontal_start]
+                                            for ind in range(ones_after_nsdfg.stencil_horizontal_start+1, ones_after_nsdfg.stencil_horizontal_end):
+                                                accessed_inds = np.concatenate((accessed_inds, op[ind]))
+
+                                            halos_inds = self._exchange._decomposition_info.local_index(dest_dim, di.EntryType.HALO)
+                                            accessed_halo_inds = np.intersect1d(halos_inds, accessed_inds)
+                                            if not np.all(np.isin(accessed_halo_inds, updated_halo_inds)):
+                                                # TODO : Communicate only the non-accesed halo elements
+                                                halo_update = True
+                                                break
+                                
+                                # sync MPI ranks, otherwise deadlock
+                                all_bools = mpi4py.MPI.COMM_WORLD.allgather(halo_update)
+                                if len(set(all_bools)) == 2:
+                                    halo_update = True
+                                else:
+                                    halo_update = all_bools[0]
+
+                                if halo_update or global_buffer_name == '__g_prognostic_state_vn':
+                                    global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name]
                             
                             if len(global_buffers) == 0:
                                 # There is no field to exchange
                                 continue
 
                             # Start buidling the halo exchange node
-                            state = sdfg.add_state_after(sdfg_state, label='_halo_exchange_')
+                            state = sdfg.add_state_after(nested_sdfg_state, label='_halo_exchange_')
 
                             tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
                                                             inputs=None,
