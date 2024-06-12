@@ -14,120 +14,71 @@ import logging
 from dataclasses import dataclass
 from typing import Final, Optional
 
+import icon4py.model.common.constants as constants
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import int32
-
-import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
-import icon4py.model.common.constants as constants
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
-    init_cell_kdim_field_with_zero_wp,
-)
-
-from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
+from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     accumulate_prep_adv_fields,
-)
-from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
-)
-from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn,
-)
-from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
-)
-from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
-)
-from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping,
 )
 from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
-)
-from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism,
-)
-from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
-)
-from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
-from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+    compute_avg_vn,
     compute_avg_vn_and_graddiv_vn_and_vt,
-)
-from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
-)
-from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
-)
-from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
     compute_graddiv2_of_vn,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
-)
-from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
-)
-from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+    compute_mass_flux,
     compute_perturbation_of_rho_and_theta,
-)
-from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables,
-)
-from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
-)
-from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
     compute_theta_and_exner,
-)
-from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
-)
-from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp,
-)
-from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
-)
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
-    init_two_cell_kdim_fields_with_zero_vp,
-)
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
-    init_two_cell_kdim_fields_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
-    init_two_edge_kdim_fields_with_zero_wp,
-)
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
-)
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
+    update_dynamical_exner_time_increment,
+    update_mass_volume_flux,
+    update_mass_flux_weighted,
+    update_theta_v,
+    en_smag_fac_for_zero_nshift,
+    init_cell_kdim_field_with_zero_wp,
+    init_two_cell_kdim_fields_with_zero_vp,
+    init_two_cell_kdim_fields_with_zero_wp,
+    init_two_edge_kdim_fields_with_zero_wp,
+    init_test_fields,
+    predictor_stencils_2_3,
+    predictor_stencils_4_5_6,
+    predictor_stencils_7_8_9,
+    predictor_stencils_11_lower_upper,
+    compute_horizontal_advection_of_rho_and_theta,
+    predictor_stencils_35_36,
+    predictor_stencils_37_38,
+    stencils_39_40,
+    stencils_43_44_45_45b,
+    stencils_47_48_49,
+    stencils_61_62,
+    stencils_42_44_45_45b,
+    compute_z_raylfac,
 )
+
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
@@ -138,18 +89,8 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
     _allocate_indices,
     _calculate_divdamp_fields,
-    compute_z_raylfac,
 )
-from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
-    update_dynamical_exner_time_increment,
-)
-from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
-    update_mass_volume_flux,
-)
-from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
-    update_mass_flux_weighted,
-)
-from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
+
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
     VelocityAdvection,
 )
@@ -166,10 +107,7 @@ from icon4py.model.common.grid.horizontal import (
 )
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.settings import backend
-
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -546,7 +484,7 @@ class SolveNonhydro:
         end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
-            nhsolve_prog.init_test_fields(
+            init_test_fields(
                 self.intermediate_fields.z_rho_e,
                 self.intermediate_fields.z_theta_v_e,
                 self.intermediate_fields.z_dwdz_dd,
@@ -782,16 +720,16 @@ class SolveNonhydro:
         exner_pr (0:nlev-1):
             Store perturbed exner function at full levels of current time step.
         """
-        nhsolve_prog.predictor_stencils_2_3(
+        predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
             exner_ref_mc=self.metric_state_nonhydro.exner_ref_mc,
             exner_pr=diagnostic_state_nh.exner_pr,
             z_exner_ex_pr=self.z_exner_ex_pr,
-            horizontal_start=start_cell_lb_plus2,
-            horizontal_end=end_cell_halo,
             k_field=self.k_field,
             nlev=self.grid.num_levels,
+            horizontal_start=start_cell_lb_plus2,
+            horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels + 1,
             offset_provider={},
@@ -807,7 +745,7 @@ class SolveNonhydro:
         flat_lev is the height (inclusive) above which the grid is not affected by terrain following.
         """
         if self.config.igradp_method == 3:
-            nhsolve_prog.predictor_stencils_4_5_6(
+            predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
                 z_exner_ex_pr=self.z_exner_ex_pr,
                 z_exner_ic=self.z_exner_ic,
@@ -842,7 +780,7 @@ class SolveNonhydro:
             eta_impl = 0.5 + vwind_offctr = vwind_impl_wgt
             eta_expl = 1.0 - eta_impl = vwind_expl_wgt
         """
-        nhsolve_prog.predictor_stencils_7_8_9(
+        predictor_stencils_7_8_9(
             rho=prognostic_state[nnow].rho,
             rho_ref_mc=self.metric_state_nonhydro.rho_ref_mc,
             theta_v=prognostic_state[nnow].theta_v,
@@ -875,7 +813,7 @@ class SolveNonhydro:
             virtual temperature at half level at the ground level is computed by adding theta_ref_ic to z_theta_v_pr_ic.
         """
         # Perturbation theta at top and surface levels
-        nhsolve_prog.predictor_stencils_11_lower_upper(
+        predictor_stencils_11_lower_upper(
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             z_rth_pr=self.z_rth_pr_2,
             theta_ref_ic=self.metric_state_nonhydro.theta_ref_ic,
@@ -1033,7 +971,7 @@ class SolveNonhydro:
                 # Note: the length of the backward trajectory should be 0.5*dtime*(vn,vt) in order to arrive
                 # at a second-order accurate FV discretization, but twice the length is needed for numerical stability
 
-                nhsolve_prog.compute_horizontal_advection_of_rho_and_theta(
+                compute_horizontal_advection_of_rho_and_theta(
                     p_vn=prognostic_state[nnow].vn,
                     p_vt=diagnostic_state_nh.vt,
                     pos_on_tplane_e_1=self.interpolation_state.pos_on_tplane_e_1,
@@ -1145,17 +1083,17 @@ class SolveNonhydro:
                 theta_v_ic=diagnostic_state_nh.theta_v_ic,
                 inv_ddqz_z_full=self.metric_state_nonhydro.inv_ddqz_z_full,
                 inv_dual_edge_length=self.edge_geometry.inverse_dual_edge_lengths,
-                z_hydro_corr=self.z_hydro_corr,
                 grav_o_cpd=self.params.grav_o_cpd,
+                z_hydro_corr=self.z_hydro_corr,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
-                vertical_start=self.grid.num_levels - 1,
-                vertical_end=self.grid.num_levels,
+                vertical_start=int32(self.grid.num_levels) - int32(1),
+                vertical_end=int32(self.grid.num_levels),
                 offset_provider=self.grid.offset_providers,
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
+        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
 
         if self.config.igradp_method == 3:
             """
@@ -1287,7 +1225,7 @@ class SolveNonhydro:
             Compute tangential velocity at half levels (edge center) simply by interpolating two neighboring
             tangential velocity at full levels.
         """
-        nhsolve_prog.predictor_stencils_35_36(
+        predictor_stencils_35_36(
             vn=prognostic_state[nnew].vn,
             ddxn_z_full=self.metric_state_nonhydro.ddxn_z_full,
             ddxt_z_full=self.metric_state_nonhydro.ddxt_z_full,
@@ -1327,7 +1265,7 @@ class SolveNonhydro:
                 The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
                 then obtained by quadratic interpolation polynomial based on these three points.
             """
-            nhsolve_prog.predictor_stencils_37_38(
+            predictor_stencils_37_38(
                 vn=prognostic_state[nnew].vn,
                 vt=diagnostic_state_nh.vt,
                 vn_ie=diagnostic_state_nh.vn_ie,
@@ -1359,7 +1297,7 @@ class SolveNonhydro:
             The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
             then obtained by quadratic interpolation polynomial based on these three points.
         """
-        nhsolve_prog.stencils_39_40(
+        stencils_39_40(
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             z_w_concorr_me=self.z_w_concorr_me,
             wgtfac_c=self.metric_state_nonhydro.wgtfac_c,
@@ -1433,7 +1371,7 @@ class SolveNonhydro:
             Note that it also only has nlev levels because the model top w is not updated, although it is a half-level variable.
             z_q_{k-1/2} = 0
         """
-        nhsolve_prog.stencils_43_44_45_45b(
+        stencils_43_44_45_45b(
             z_w_expl=z_fields.z_w_expl,
             w_nnow=prognostic_state[nnow].w,
             ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
@@ -1514,7 +1452,7 @@ class SolveNonhydro:
             physics_tendency is represented by ddt_exner_phy.
             TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
         """
-        nhsolve_prog.stencils_47_48_49(
+        stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -1530,11 +1468,11 @@ class SolveNonhydro:
             ddt_exner_phy=diagnostic_state_nh.ddt_exner_phy,
             k_field=self.k_field,
             dtime=dtime,
-            nlev=self.grid.num_levels,
+            nlev=int32(self.grid.num_levels),
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
+            vertical_start=int32(0),
+            vertical_end=int32(self.grid.num_levels) + int32(1),
             offset_provider=self.grid.offset_providers,
         )
 
@@ -1699,7 +1637,7 @@ class SolveNonhydro:
             w (0:nlev):
                 Add the boundary tendency to the vertical velocity at full levels (cell center) for limited area simulations.
             """
-            nhsolve_prog.stencils_61_62(
+            stencils_61_62(
                 rho_now=prognostic_state[nnow].rho,
                 grf_tend_rho=diagnostic_state_nh.grf_tend_rho,
                 theta_v_now=prognostic_state[nnow].theta_v,
@@ -1771,6 +1709,7 @@ class SolveNonhydro:
         # Coefficient for reduced fourth-order divergence d
         scal_divdamp_o2 = divdamp_fac_o2 * self.cell_params.mean_cell_area
 
+        # TODO: to cached program
         _calculate_divdamp_fields(
             self.enh_divdamp_fac,
             int32(self.config.divdamp_order),
@@ -2164,7 +2103,7 @@ class SolveNonhydro:
                 Note that it also only has nlev levels because the model top w is not updated, although it is a half-level variable.
                 z_q_{k-1/2} = 0
             """
-            nhsolve_prog.stencils_42_44_45_45b(
+            stencils_42_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
@@ -2238,7 +2177,7 @@ class SolveNonhydro:
                 Note that it also only has nlev levels because the model top w is not updated, although it is a half-level variable.
                 z_q_{k-1/2} = 0
             """
-            nhsolve_prog.stencils_43_44_45_45b(
+            stencils_43_44_45_45b(
                 z_w_expl=z_fields.z_w_expl,
                 w_nnow=prognostic_state[nnow].w,
                 ddt_w_adv_ntl1=diagnostic_state_nh.ddt_w_adv_pc[self.ntl1],
@@ -2310,7 +2249,7 @@ class SolveNonhydro:
             physics_tendency is represented by ddt_exner_phy.
             TODO (Chia Rui): Why /dz_{k} factor is included in divergence term?
         """
-        nhsolve_prog.stencils_47_48_49(
+        stencils_47_48_49(
             w_nnew=prognostic_state[nnew].w,
             z_contr_w_fl_l=z_fields.z_contr_w_fl_l,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
@@ -2329,8 +2268,8 @@ class SolveNonhydro:
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
+            vertical_start=int32(0),
+            vertical_end=int32(self.grid.num_levels) + int32(1),
             offset_provider=self.grid.offset_providers,
         )
 

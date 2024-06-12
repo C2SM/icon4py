@@ -11,40 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
 from gt4py.next import as_field
 from gt4py.next.common import Field
 from gt4py.next.iterator.builtins import int32
 
-import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
-    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
-    compute_advective_normal_wind_tendency,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
-    interpolate_contravariant_vertical_velocity_to_full_levels,
-)
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    interpolate_vn_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
-    interpolate_vt_to_interface_edges,
-)
-from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
-    mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -52,10 +24,29 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
+from icon4py.model.atmosphere.dycore.velocity.helpers import (
+    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
+    add_extra_diffusion_for_w_con_approaching_cfl,
+    compute_advective_normal_wind_tendency,
+    compute_horizontal_advection_term_for_vertical_velocity,
+    compute_tangential_wind,
+    extrapolate_at_top,
+    fused_stencil_14,
+    fused_stencils_4_5,
+    fused_stencils_9_10,
+    fused_stencils_11_to_13,
+    fused_stencils_16_to_17,
+    interpolate_contravariant_vertical_velocity_to_full_levels,
+    interpolate_to_cell_center,
+    interpolate_vn_to_ie_and_compute_ekin_on_edges,
+    interpolate_vt_to_interface_edges,
+    mo_math_divrot_rot_vertex_ri_dsl,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.settings import xp
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
@@ -248,7 +239,7 @@ class VelocityAdvection:
         z_kin_hor_e (0):
             Compute the horizontal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
         """
-        velocity_prog.fused_stencils_4_5(
+        fused_stencils_4_5(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
@@ -280,7 +271,7 @@ class VelocityAdvection:
             The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
             then obtained by quadratic interpolation polynomial based on these three points.
         """
-        velocity_prog.extrapolate_at_top(
+        extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
@@ -341,7 +332,7 @@ class VelocityAdvection:
             Interpolate contravariant correction at cell center from full levels, which is
             z_w_concorr_mc computed above, to half levels using simple linear interpolation.
         """
-        velocity_prog.fused_stencils_9_10(
+        fused_stencils_9_10(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             local_z_w_concorr_mc=self.z_w_concorr_mc,
@@ -365,7 +356,7 @@ class VelocityAdvection:
             From flat_lev+1 to nlev-1, it is subtracted from contravariant correction, which is w_concorr_c computed
             previously, at half levels at cell center. TODO (Chia Rui): Check why is it subtraction.
         """
-        velocity_prog.fused_stencils_11_to_13(
+        fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -394,9 +385,9 @@ class VelocityAdvection:
             When both cfl_clipping is True and vcfl_dsl > 0.85 (vcfl_dsl < -0.85), it is modified to
             0.85 * dz / dt (-0.85 * dz / dt).
         """
-        velocity_prog.fused_stencil_14(
-            ddqz_z_half=self.metric_state.ddqz_z_half,
+        fused_stencil_14(
             local_z_w_con_c=self.z_w_con_c,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
             local_cfl_clipping=self.cfl_clipping,
             local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
@@ -433,7 +424,7 @@ class VelocityAdvection:
                 The vertical derivative is obtained by first order discretization.
                 vn dw/dn + vt dw/dt at cell center is linearly interpolated from values at neighboring edge centers (z_v_grad_w).
             """
-            velocity_prog.fused_stencils_16_to_17(
+            fused_stencils_16_to_17(
                 w=prognostic_state.w,
                 local_z_v_grad_w=self.z_v_grad_w,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -559,7 +550,7 @@ class VelocityAdvection:
 
     def _update_levmask_from_cfl_clipping(self):
         self.levmask = as_field(
-            domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
+            domain=(KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -690,7 +681,7 @@ class VelocityAdvection:
             From flat_lev+1 to nlev-1, it is subtracted from contravariant correction, which is w_concorr_c computed
             previously, at half levels at cell center. TODO (Chia Rui): Check why is it subtraction.
         """
-        velocity_prog.fused_stencils_11_to_13(
+        fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -719,9 +710,9 @@ class VelocityAdvection:
             When both cfl_clipping is True and vcfl_dsl > 0.85 (vcfl_dsl < -0.85), it is modified to
             0.85 * dz / dt (-0.85 * dz / dt).
         """
-        velocity_prog.fused_stencil_14(
-            ddqz_z_half=self.metric_state.ddqz_z_half,
+        fused_stencil_14(
             local_z_w_con_c=self.z_w_con_c,
+            ddqz_z_half=self.metric_state.ddqz_z_half,
             local_cfl_clipping=self.cfl_clipping,
             local_vcfl=self.vcfl_dsl,
             cfl_w_limit=cfl_w_limit,
@@ -757,7 +748,7 @@ class VelocityAdvection:
             The vertical derivative is obtained by first order discretization.
             vn dw/dn + vt dw/dt at cell center is linearly interpolated from values at neighboring edge centers (z_v_grad_w).
         """
-        velocity_prog.fused_stencils_16_to_17(
+        fused_stencils_16_to_17(
             w=prognostic_state.w,
             local_z_v_grad_w=self.z_v_grad_w,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
