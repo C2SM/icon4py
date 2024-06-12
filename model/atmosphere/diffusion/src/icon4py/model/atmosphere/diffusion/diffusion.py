@@ -1038,8 +1038,6 @@ def dace_jit(self):
                                             op = self.grid.offset_providers[offset_literal_value].table
 
                                             source_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[0]]
-                                            dest_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[-2] if offset_literal_value[-1] == 'O' else offset_literal_value[-1]]
-                                            
                                             if source_dim != list(ones_after_nsdfg.GT4Py_Program_output_fields.values())[0]:
                                                 continue
                                             
@@ -1047,7 +1045,6 @@ def dace_jit(self):
                                             for ind in range(ones_after_nsdfg.stencil_horizontal_start+1, ones_after_nsdfg.stencil_horizontal_end):
                                                 accessed_inds = np.concatenate((accessed_inds, op[ind]))
 
-                                            halos_inds = self._exchange._decomposition_info.local_index(dest_dim, di.EntryType.HALO)
                                             accessed_halo_inds = np.intersect1d(halos_inds, accessed_inds)
                                             if not np.all(np.isin(accessed_halo_inds, updated_halo_inds)):
                                                 # TODO : Communicate only the non-accesed halo elements
