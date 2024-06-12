@@ -230,10 +230,10 @@ diffusion_run(
 # profiling run time
 num_timesteps = 6
 
-# Time the execution of diffusion_run 6 times
-start_time = time.perf_counter()
-
+# Measure the time for each timestep individually
+individual_times = []
 for _ in range(num_timesteps):
+    start_time = time.perf_counter()
     diffusion_run(
         w=w,
         vn=vn,
@@ -247,8 +247,12 @@ for _ in range(num_timesteps):
         dtime=dtime,
         linit=False,
     )
+    end_time = time.perf_counter()
+    individual_times.append(end_time - start_time)
 
-end_time = time.perf_counter()
-elapsed_time = end_time - start_time
-print("Elapsed time (6 executions):", elapsed_time)
-print("Elapsed time (per timestep):", elapsed_time / num_timesteps)
+# Calculate total elapsed time and average per timestep
+total_elapsed_time = sum(individual_times)
+average_time_per_timestep = total_elapsed_time / num_timesteps
+
+print("Total elapsed time (6 executions):", total_elapsed_time)
+print("Average time per timestep:", average_time_per_timestep)
