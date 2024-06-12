@@ -27,12 +27,12 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field, _allocate
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, VertexDim, KDim, C2E2C2EDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
+from icon4py.model.common.states.diagnostic_state import DiagnosticState, DiagnosticMetricState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -357,6 +357,7 @@ def test_run_timeloop_single_step(
         prep_adv,
         sp.divdamp_fac_o2(),
         do_prep_adv,
+        profile=False,
     )
 
     rho_sp = savepoint_nonhydro_exit.rho_new()
@@ -387,55 +388,55 @@ def test_run_timeloop_single_step(
                         f.write("\n")
 
         printing(
-            rho_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
+            rho_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].rho.ndarray,
             "rho",
         )
         printing(
-            exner_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
+            exner_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].exner.ndarray,
             "exner",
         )
         printing(
-            theta_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
+            theta_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].theta_v.ndarray,
             "theta_v",
         )
         printing(
-            w_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
+            w_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].w.ndarray,
             "w",
         )
         printing(
-            vn_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
+            vn_sp.ndarray,
+            prognostic_state_list[timeloop.prognostic_now].vn.ndarray,
             "vn",
         )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-        vn_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].vn.ndarray,
+        vn_sp.ndarray,
         atol=6e-12,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-        w_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].w.ndarray,
+        w_sp.ndarray,
         atol=8e-14,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-        exner_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].exner.ndarray,
+        exner_sp.ndarray,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-        theta_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].theta_v.ndarray,
+        theta_sp.ndarray,
         atol=4e-12,
     )
 
     assert dallclose(
-        prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-        rho_sp.asnumpy(),
+        prognostic_state_list[timeloop.prognostic_now].rho.ndarray,
+        rho_sp.ndarray,
     )

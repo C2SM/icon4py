@@ -25,8 +25,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.helpers import (
     add_temporal_tendencies_to_vn,
     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
     add_vertical_wind_derivative_to_divergence_damping,
-)
-from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
     apply_4th_order_divergence_damping,
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,

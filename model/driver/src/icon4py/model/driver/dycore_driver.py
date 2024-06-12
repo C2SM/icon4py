@@ -10,9 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import cProfile
 import logging
 import math
 from datetime import datetime, timedelta
+import pstats
 from pathlib import Path
 from typing import Callable, Optional
 
@@ -40,14 +42,14 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
-    diagnose_temperature,
-)
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
+)
+from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
+    diagnose_temperature,
 )
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
@@ -60,12 +62,14 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.interpolation.stencils.mo_rbf_vec_interpol_cell import (
-    mo_rbf_vec_interpol_cell,
+from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
+    edge_2_cell_vector_rbf_interpolation,
 )
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.driver.icon_configuration import IconOutputConfig, IconRunConfig, read_config, OutputVariableList, OutputDimension, OutputScope
+from icon4py.model.common.settings import device
+from icon4py.model.common.config import Device
 from icon4py.model.driver.initialization_utils import (
     ExperimentType,
     SerializationType,
@@ -82,7 +86,19 @@ from icon4py.model.driver.testcase_functions import mo_rbf_vec_interpol_cell_num
 log = logging.getLogger(__name__)
 
 
+def retract_data(input_data):
+    if device == Device.GPU:
+        return input_data.ndarray.get()
+    return input_data.ndarray
+
+def retract_data_array(input_data):
+    if device == Device.GPU:
+        return input_data.get()
+    return input_data
+
+
 class NewOutputState:
+
     def __init__(
         self,
         output_config: IconOutputConfig,
@@ -247,6 +263,7 @@ class NewOutputState:
             vertex_longitudes.units = "radian"
             vertex_lat_bounds.units = "radian"
             vertex_lon_bounds.units = "radian"
+
             levels.units = "m"
             half_levels.units = "m"
             levels.axis = "Z"
@@ -307,43 +324,43 @@ class NewOutputState:
         for i in range(self._number_of_files):
             self._nf4_basegrp[i].variables["clat"][
                 :
-            ] = diagnostic_metric_state.cell_center_lat.asnumpy()
+            ] = retract_data(diagnostic_metric_state.cell_center_lat)
             self._nf4_basegrp[i].variables["clon"][
                 :
-            ] = diagnostic_metric_state.cell_center_lon.asnumpy()
+            ] = retract_data(diagnostic_metric_state.cell_center_lon)
             self._nf4_basegrp[i].variables["clat_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[C2VDim]]
+            ] = retract_data(diagnostic_metric_state.v_lat)[retract_data_array(grid.connectivities[C2VDim])]
             self._nf4_basegrp[i].variables["clon_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[C2VDim]]
+            ] = retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[C2VDim])]
 
-            self._nf4_basegrp[i].variables["elat"][:] = diagnostic_metric_state.e_lat.asnumpy()
-            self._nf4_basegrp[i].variables["elon"][:] = diagnostic_metric_state.e_lon.asnumpy()
+            self._nf4_basegrp[i].variables["elat"][:] = retract_data(diagnostic_metric_state.e_lat)
+            self._nf4_basegrp[i].variables["elon"][:] = retract_data(diagnostic_metric_state.e_lon)
             self._nf4_basegrp[i].variables["elat_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[E2C2VDim]]
+            ] = retract_data(diagnostic_metric_state.v_lat)[retract_data_array(grid.connectivities[E2C2VDim])]
             self._nf4_basegrp[i].variables["elon_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]]
+            ] = retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[E2C2VDim])]
             log.info(
-                f"E2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[E2C2VDim]].shape}"
+                f"E2C2VDim dimension: {retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[E2C2VDim])].shape}"
             )
             log.info(
-                f"V2C2VDim dimension: {diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]].shape}"
+                f"V2C2VDim dimension: {retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[V2C2VDim])].shape}"
             )
 
-            self._nf4_basegrp[i].variables["vlat"][:] = diagnostic_metric_state.v_lat.asnumpy()
-            self._nf4_basegrp[i].variables["vlon"][:] = diagnostic_metric_state.v_lon.asnumpy()
+            self._nf4_basegrp[i].variables["vlat"][:] = retract_data(diagnostic_metric_state.v_lat)
+            self._nf4_basegrp[i].variables["vlon"][:] = retract_data(diagnostic_metric_state.v_lon)
             self._nf4_basegrp[i].variables["vlat_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lat.asnumpy()[grid.connectivities[V2C2VDim]]
+            ] = retract_data(diagnostic_metric_state.v_lat)[retract_data_array(grid.connectivities[V2C2VDim])]
             self._nf4_basegrp[i].variables["vlon_bnds"][
                 :, :
-            ] = diagnostic_metric_state.v_lon.asnumpy()[grid.connectivities[V2C2VDim]]
+            ] = retract_data(diagnostic_metric_state.v_lon)[retract_data_array(grid.connectivities[V2C2VDim])]
 
             full_height = np.zeros(grid.num_levels, dtype=float)
-            half_height = diagnostic_metric_state.vct_a.asnumpy()
+            half_height = retract_data(diagnostic_metric_state.vct_a)
             full_height_bnds = np.zeros((grid.num_levels, 2), dtype=float)
             for k in range(grid.num_levels):
                 full_height[k] = 0.5 * (half_height[k] + half_height[k + 1])
@@ -414,11 +431,11 @@ class NewOutputState:
         vert_vert_edge_lengths.coordinates = "elat elon"
         dual_edge_lengths.coordinates = "elat elon"
 
-        cell_areas[:] = cell_geometry.area.asnumpy()
-        edge_areas[:] = edge_geometry.edge_areas.asnumpy()
-        primal_edge_lengths[:] = edge_geometry.primal_edge_lengths.asnumpy()
-        vert_vert_edge_lengths[:] = edge_geometry.vertex_vertex_lengths.asnumpy()
-        dual_edge_lengths[:] = edge_geometry.dual_edge_lengths.asnumpy()
+        cell_areas[:] = retract_data(cell_geometry.area)
+        edge_areas[:] = retract_data(edge_geometry.edge_areas)
+        primal_edge_lengths[:] = retract_data(edge_geometry.primal_edge_lengths)
+        vert_vert_edge_lengths[:] = retract_data(edge_geometry.vertex_vertex_lengths)
+        dual_edge_lengths[:] = retract_data(edge_geometry.dual_edge_lengths)
 
     def write_to_netcdf(
         self,
@@ -431,7 +448,7 @@ class NewOutputState:
         for var_name in output_dict.keys():
             if var_name in self._variable_list.variable_name_list:
                 if self._check_list[var_name] == 0:
-                    self._nf4_basegrp[self._current_file_number].variables[var_name][self._current_write_step] = output_dict[var_name].asnumpy().transpose()
+                    self._nf4_basegrp[self._current_file_number].variables[var_name][self._current_write_step] = retract_data(output_dict[var_name]).transpose()
                     self._check_list[var_name] = 1
                 else:
                     log.warning(f"Data {var_name} already existed in file no. {self._current_file_number} at {self._current_write_step}")
@@ -634,6 +651,20 @@ class NewOutputState:
             '''
 
 
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
+
+
 class TimeLoop:
     @classmethod
     def name(cls):
@@ -667,6 +698,10 @@ class TimeLoop:
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
+
+        self._timer1 = Timer(self._full_name(self._integrate_one_time_step), dp=5)
+        self._timer2 = Timer(self._full_name(self._do_dyn_substepping), dp=5)
+        self._timer3 = Timer("Diffusion", dp=5)
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -735,7 +770,71 @@ class TimeLoop:
         diagnostic_state: DiagnosticState,
         diagnostic_metric_state: DiagnosticMetricState,
     ):
-        mo_rbf_vec_interpol_cell(
+        edge_2_cell_vector_rbf_interpolation(
+            prognostic_state.vn,
+            diagnostic_metric_state.rbf_vec_coeff_c1,
+            diagnostic_metric_state.rbf_vec_coeff_c2,
+            diagnostic_state.u,
+            diagnostic_state.v,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            0,
+            self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
+        log.debug(
+            f"max min v: {diagnostic_state.v.ndarray.max()} {diagnostic_state.v.ndarray.min()}"
+        )
+
+        diagnose_temperature(
+            prognostic_state.theta_v,
+            prognostic_state.exner,
+            diagnostic_state.temperature,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            0,
+            self.grid.num_levels,
+            offset_provider={},
+        )
+
+        diagnose_surface_pressure(
+            prognostic_state.exner,
+            diagnostic_state.temperature,
+            diagnostic_metric_state.ddqz_z_full,
+            diagnostic_state.pressure_ifc,
+            CPD_O_RD,
+            P0REF,
+            GRAV_O_RD,
+            horizontal_start=self.grid.get_start_index(
+                CellDim, HorizontalMarkerIndex.interior(CellDim)
+            ),
+            horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            vertical_start=self.grid.num_levels,
+            vertical_end=self.grid.num_levels + 1,
+            offset_provider=self.grid.offset_providers,
+        )
+
+        diagnose_pressure(
+            diagnostic_metric_state.ddqz_z_full,
+            diagnostic_state.temperature,
+            diagnostic_state.pressure_sfc,
+            diagnostic_state.pressure,
+            diagnostic_state.pressure_ifc,
+            GRAV_O_RD,
+            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            0,
+            self.grid.num_levels,
+            offset_provider={},
+        )
+
+    def _diagnose_for_output_and_physics(
+        self,
+        prognostic_state: PrognosticState,
+        diagnostic_state: DiagnosticState,
+        diagnostic_metric_state: DiagnosticMetricState,
+    ):
+        edge_2_cell_vector_rbf_interpolation(
             prognostic_state.vn,
             diagnostic_metric_state.rbf_vec_coeff_c1,
             diagnostic_metric_state.rbf_vec_coeff_c2,
@@ -804,6 +903,7 @@ class TimeLoop:
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
         output_state: NewOutputState = None,
+        profile: bool = False,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -820,7 +920,12 @@ class TimeLoop:
 
             log.info(f"Debugging U (before diffusion): {np.max(diagnostic_state.u.asnumpy())}")
 
-        # TODO (Chia Rui): Initialize exner_pr used in solve_nh (compute_exner_pert subroutine)
+        log.info("Initialization of diagnostic variables for output.")
+
+        if output_state is not None:
+            self._diagnose_for_output_and_physics(
+                prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
+            )
 
         if (
             self.diffusion.config.apply_to_horizontal_wind
@@ -836,14 +941,17 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        timer = Timer(self._full_name(self._integrate_one_time_step))
+        self._next_simulation_date()
+        if profile:
+            profile_enable()
+
         for time_step in range(self._n_time_steps):
             log.info(f"simulation date : {self._simulation_date} run timestep : {time_step}")
             log.info(
-                f" MAX VN: {prognostic_state_list[self._now].vn.asnumpy().max():.15e} , MAX W: {prognostic_state_list[self._now].w.asnumpy().max():.15e}"
+                f" MAX VN: {prognostic_state_list[self._now].vn.ndarray.max():.15e} , MAX W: {prognostic_state_list[self._now].w.ndarray.max():.15e}"
             )
             log.info(
-                f" MAX RHO: {prognostic_state_list[self._now].rho.asnumpy().max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.asnumpy().max():.15e}"
+                f" MAX RHO: {prognostic_state_list[self._now].rho.ndarray.max():.15e} , MAX THETA_V: {prognostic_state_list[self._now].theta_v.ndarray.max():.15e}"
             )
             # TODO (Chia Rui): check with Anurag about printing of max and min of variables.
 
@@ -875,7 +983,7 @@ class TimeLoop:
 
             # update boundary condition
 
-            timer.start()
+            self._timer1.start()
             self._integrate_one_time_step(
                 diffusion_diagnostic_state,
                 solve_nonhydro_diagnostic_state,
@@ -884,7 +992,7 @@ class TimeLoop:
                 inital_divdamp_fac_o2,
                 do_prep_adv,
             )
-            timer.capture()
+            self._timer1.capture()
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
@@ -909,7 +1017,13 @@ class TimeLoop:
                 output_data['pressure_sfc'] = diagnostic_state.pressure_sfc
                 output_state.write_to_netcdf(self._simulation_date, output_data)
 
-        timer.summary(True)
+        self._timer1.summary(True)
+        self._timer2.summary(True)
+        self._timer3.summary(True)
+
+        if profile:
+            profile_disable()
+
 
     def time_integration_speed_test(
         self,
@@ -942,7 +1056,7 @@ class TimeLoop:
         log.info(
             f"starting speed-test time loop for gt4py-version rbf interpolation with n_timesteps={self._n_time_steps}"
         )
-        fo = mo_rbf_vec_interpol_cell
+        fo = edge_2_cell_vector_rbf_interpolation
         timer = Timer(self._full_name(self._integrate_one_time_step))
         for time_step in range(self._n_time_steps):
             log.info(f"run timestep : {time_step}")
@@ -988,7 +1102,22 @@ class TimeLoop:
             diagnostic_state.u = as_field((CellDim, KDim), test_u_np)
             diagnostic_state.v = as_field((CellDim, KDim), test_v_np)
 
+            if output_state is not None:
+                self._diagnose_for_output_and_physics(
+                    prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
+                )
+
+                output_state.output_data(
+                    self._simulation_date,
+                    prognostic_state_list[self._now],
+                    diagnostic_state,
+                    solve_nonhydro=self.solve_nonhydro,
+                    nh_diagnostic_state=solve_nonhydro_diagnostic_state,
+                    diffusion=self.diffusion,
+                )
+
         timer.summary(True)
+
 
     def _integrate_one_time_step(
         self,
@@ -1001,6 +1130,7 @@ class TimeLoop:
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
 
+        self._timer2.start()
         self._do_dyn_substepping(
             solve_nonhydro_diagnostic_state,
             prognostic_state_list,
@@ -1008,11 +1138,14 @@ class TimeLoop:
             inital_divdamp_fac_o2,
             do_prep_adv,
         )
+        self._timer2.capture()
 
         if self.diffusion.config.apply_to_horizontal_wind:
+            self._timer3.start()
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
+            self._timer3.capture()
 
         self._swap()
 
@@ -1070,6 +1203,7 @@ def initialize(
     experiment_type: ExperimentType,
     grid_root,
     grid_level,
+    enable_output: bool,
 ):
     """
     Inititalize the driver run.
@@ -1235,7 +1369,10 @@ def initialize(
 @click.option("--experiment_type", default="any", help="experiment selection")
 @click.option("--grid_root", default=2, help="experiment selection")
 @click.option("--grid_level", default=4, help="experiment selection")
-def main(input_path, run_path, mpi, speed_test, serialization_type, experiment_type, grid_root, grid_level):
+@click.option("--profile", default=False, help="Whether to profile code using cProfile.")
+@click.option("--disable-logging", is_flag=True, help="Disable all logging output.")
+@click.option("--enable_output", is_flag=True, help="Enable output.")
+def main(input_path, run_path, mpi, speed_test, serialization_type, experiment_type, grid_root, grid_level, profile, disable_logging, enable_output):
     """
     Run the driver.
 
@@ -1259,7 +1396,7 @@ def main(input_path, run_path, mpi, speed_test, serialization_type, experiment_t
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
-    configure_logging(run_path, experiment_type, parallel_props)
+    configure_logging(run_path, experiment_type, parallel_props, disable_logging)
     (
         timeloop,
         diffusion_diagnostic_state,
@@ -1271,7 +1408,7 @@ def main(input_path, run_path, mpi, speed_test, serialization_type, experiment_t
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(
-        Path(input_path), parallel_props, serialization_type, experiment_type, grid_root, grid_level
+        Path(input_path), parallel_props, serialization_type, experiment_type, grid_root, grid_level, enable_output
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(
@@ -1300,6 +1437,7 @@ def main(input_path, run_path, mpi, speed_test, serialization_type, experiment_t
             inital_divdamp_fac_o2,
             do_prep_adv=False,
             output_state=output_state,
+            profile=profile,
         )
 
     log.info("timeloop:  DONE")

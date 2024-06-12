@@ -16,6 +16,7 @@ import numpy as np
 from icon4py.model.common.constants import CPD_O_RD, CVD_O_RD, GRAV_O_RD, P0REF, RD
 from icon4py.model.common.dimension import E2CDim
 from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.settings import xp
 
 
 def mo_rbf_vec_interpol_cell_numpy(
@@ -92,16 +93,16 @@ def mo_u2vn_jabw_numpy(
     return vn
 
 
-def hydrostatic_adjustment_numpy(
-    wgtfac_c: np.array,
-    ddqz_z_half: np.array,
-    exner_ref_mc: np.array,
-    d_exner_dz_ref_ic: np.array,
-    theta_ref_mc: np.array,
-    theta_ref_ic: np.array,
-    rho: np.array,
-    exner: np.array,
-    theta_v: np.array,
+def hydrostatic_adjustment_ndarray(
+    wgtfac_c: np.ndarray,
+    ddqz_z_half: np.ndarray,
+    exner_ref_mc: np.ndarray,
+    d_exner_dz_ref_ic: np.ndarray,
+    theta_ref_mc: np.ndarray,
+    theta_ref_ic: np.ndarray,
+    rho: np.ndarray,
+    exner: np.ndarray,
+    theta_v: np.ndarray,
     num_levels: int,
 ):
     # virtual temperature
@@ -121,7 +122,7 @@ def hydrostatic_adjustment_numpy(
         )
         quadratic_c = -(fac2 * fac3 / ddqz_z_half[:, k + 1] + fac2 * d_exner_dz_ref_ic[:, k + 1])
 
-        exner[:, k] = (quadratic_b + np.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
+        exner[:, k] = (quadratic_b + xp.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]

@@ -136,6 +136,7 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program import (
     init_test_fields as init_test_fields_orig,
     predictor_stencils_2_3 as predictor_stencils_2_3_orig,
     predictor_stencils_4_5_6 as predictor_stencils_4_5_6_orig,
+    predictor_stencils_7_8_9 as predictor_stencils_7_8_9_orig,
     predictor_stencils_7_8_9_firststep as predictor_stencils_7_8_9_firststep_orig,
     predictor_stencils_7_8_9_secondstep as predictor_stencils_7_8_9_secondstep_orig,
     predictor_stencils_11_lower_upper as predictor_stencils_11_lower_upper_orig,
@@ -376,6 +377,8 @@ init_test_fields = CachedProgram(init_test_fields_orig)
 predictor_stencils_2_3 = CachedProgram(predictor_stencils_2_3_orig)
 
 predictor_stencils_4_5_6 = CachedProgram(predictor_stencils_4_5_6_orig)
+
+predictor_stencils_7_8_9 = CachedProgram(predictor_stencils_7_8_9_orig)
 
 predictor_stencils_7_8_9_firststep = CachedProgram(predictor_stencils_7_8_9_firststep_orig)
 

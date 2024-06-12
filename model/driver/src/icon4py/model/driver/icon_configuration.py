@@ -207,6 +207,15 @@ class IconOutputConfig:
     output_variable_list: OutputVariableList = OutputVariableList()
 
 
+@dataclass(frozen=True)
+class IconOutputConfig:
+    output_do: bool = False
+    output_time_interval: timedelta = timedelta(minutes=1)
+    output_file_time_interval: timedelta = timedelta(minutes=1)
+    output_path: Path = Path("./")
+    output_initial_condition_as_a_separate_file: bool = False
+
+
 @dataclass
 class IconConfig:
     run_config: IconRunConfig
@@ -249,7 +258,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
             smagorinski_scaling_factor=0.025,
-            zdiffu_t=True,
+            zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.075,
         )
@@ -273,6 +282,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
             ),
+            IconOutputConfig(),
             _mch_ch_r04b09_diffusion_config(),
             _mch_ch_r04b09_nonhydro_config(),
         )
@@ -360,10 +370,17 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime(1, 1, 1, 1, 0, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
+        )
+        output_config = IconOutputConfig(
+            output_do=True,
+            output_time_interval=timedelta(seconds=3600),
+            output_file_time_interval=timedelta(seconds=3600),
+            output_path=Path("./"),
+            output_initial_condition_as_a_separate_file=True,
         )
         jabw_diffusion_config = _jabw_diffusion_config(icon_run_config.n_substeps)
         jabw_nonhydro_config = _jabw_nonhydro_config(icon_run_config.n_substeps)
@@ -387,6 +404,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
         (
             model_run_config,
+            model_output_config,
             diffusion_config,
             nonhydro_config,
         ) = _mch_ch_r04b09_config()

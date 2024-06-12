@@ -130,7 +130,7 @@ class BaseGrid(ABC):
             raise MissingConnectivity()
 
         return NeighborTableOffsetProvider(
-            xp.asarray(self.connectivities[dim]),
+            self.connectivities[dim],
             from_dim,
             to_dim,
             self.size[dim],
