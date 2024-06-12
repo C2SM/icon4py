@@ -192,38 +192,14 @@ def model_initialization_gauss3d(
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), eta_v_e_numpy.shape[1], axis=1)
 
     # Define test case parameters
-    enr = 0
     # The topography can only be read from serialized data for now
     # mount_lon     = 0.0    # (0.0) # At present the mountain is at position lat=0,lon=0 (given in meters)
     # mount_lat     = 0.0    # (0.0)
     # mount_height  = 100.0  # (100)
     # mount_width   = 1000.0 # (1000)
     nh_t0         = 300.0
-    nh_u0         = 0.0
-    nh_brunt_vais = 0.0
-    if enr == 0:
-        ename = 'mountain_default'
-        nh_brunt_vais = 0.01
-    elif enr == 1:
-        ename = 'four_velocity'
-        nh_u0         = 4.0
-    elif enr == 2:
-        ename = 'zero_everything'
-    else:
-        raise NotImplementedError('Selected wrong experiment name')
-
-    # take care of directories
-    import os
-    try:
-        os.remove('gauss3d_output')
-    except:
-        log.warning("Missing gauss3d_output link.")
-    try:
-        os.remove('ser_data')
-    except:
-        log.warning("Missing ser_data link.")
-    os.symlink('gauss3d_output.'+ename, 'gauss3d_output')
-    os.symlink('icon-exclaim-data/torus_exclaim.'+ename+'/ser_data', 'ser_data')
+    nh_u0         = 1.0
+    nh_brunt_vais = 0.01
 
     log.warning("Topography can only be read from serialized data for now.")
 
@@ -255,20 +231,6 @@ def model_initialization_gauss3d(
         theta_v_numpy,
         num_levels,
     )
-
-    # theta_v_numpy_ser = data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).theta_v_now().asnumpy()
-    # rho_numpy_ser     = data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).rho_now().asnumpy()
-    # exner_numpy_ser   = data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).exner_now().asnumpy()
-    # test_theta = np.allclose(theta_v_numpy, theta_v_numpy_ser, rtol=1e-12, atol=0)
-    # test_rho   = np.allclose(rho_numpy,     rho_numpy_ser,     rtol=1e-12, atol=0)
-    # test_exner = np.allclose(exner_numpy,   exner_numpy_ser,   rtol=1e-12, atol=0)
-    # print("Test theta_v: ", test_theta)
-    # print("Test rho: ", test_rho)
-    # print("Test exner: ", test_exner)
-    # print(np.max(np.abs(theta_v_numpy - theta_v_numpy_ser)))
-    # print(np.max(np.abs(rho_numpy - rho_numpy_ser)))
-    # print(np.max(np.abs(exner_numpy - exner_numpy_ser)))
-
     log.info("Hydrostatic adjustment computation completed.")
 
     u = np.where(mask, nh_u0, 0.0)
