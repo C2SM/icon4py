@@ -199,7 +199,8 @@ class DivergenceDamping_Order(IntEnum):
     COMBINED = 24  # combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
 
 
-class IGradp_Method(IntEnum):
+class HorizontalPressureDiscretizationType(IntEnum):
+""" Parameter called igradp_method in ICON namelist. """
     NORMAL = 1  # conventional discretization with metric correction term
     TAYLOR = 2  # Taylor-expansion-based reconstruction of pressure
     TAYLOR_HYDRO = 3  # Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
