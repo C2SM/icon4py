@@ -182,7 +182,7 @@ class ItimeScheme(IntEnum):
     VELOCITY = 6  # As itime_vertical, but velocity tendencies are also computed in both substeps
 
 
-class Rayleigh_Type(IntEnum):
+class RayleighType(enum.IntEnum):
     CLASSIC = 1  # classical Rayleigh damping, which makes use of a reference state.
     KLEMP = 2  # Klemp (2008) type Rayleigh damping
 
