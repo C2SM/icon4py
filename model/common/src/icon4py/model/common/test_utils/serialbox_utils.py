@@ -105,14 +105,6 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return as_field(dimensions, buffer)
 
-    def _get_reciprocal_field(self, name, *dimensions, dtype=float):
-        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
-        buffer = self._reduce_to_dim_size(buffer, dimensions)
-        buffer = np.reciprocal(buffer)
-
-        self.log.debug(f"{name} {buffer.shape}")
-        return as_field(dimensions, buffer)
-
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[Dimension, Dimension]):
         buffer = self.serializer.read(name, self.savepoint).astype(float)
         buffer = xp.asarray(buffer)
@@ -191,9 +183,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def vert_vert_length(self):
         return self._get_reciprocal_field("inv_vert_vert_length", EdgeDim)
-
-    def primal_edge_lengths(self):
-        return self._get_reciprocal_field("inv_primal_edge_length", EdgeDim)
 
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", EdgeDim)

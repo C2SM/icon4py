@@ -1102,20 +1102,6 @@ class TimeLoop:
             diagnostic_state.u = as_field((CellDim, KDim), test_u_np)
             diagnostic_state.v = as_field((CellDim, KDim), test_v_np)
 
-            if output_state is not None:
-                self._diagnose_for_output_and_physics(
-                    prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
-                )
-
-                output_state.output_data(
-                    self._simulation_date,
-                    prognostic_state_list[self._now],
-                    diagnostic_state,
-                    solve_nonhydro=self.solve_nonhydro,
-                    nh_diagnostic_state=solve_nonhydro_diagnostic_state,
-                    diffusion=self.diffusion,
-                )
-
         timer.summary(True)
 
 
