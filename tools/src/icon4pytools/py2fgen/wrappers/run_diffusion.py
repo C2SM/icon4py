@@ -254,6 +254,6 @@ for _ in range(num_timesteps):
 total_elapsed_time = sum(individual_times)
 average_time_per_timestep = total_elapsed_time / num_timesteps
 
-print("Total elapsed time (6 executions):", total_elapsed_time)
+print("Total elapsed time (100 executions):", total_elapsed_time)
 print("Average time per timestep:", average_time_per_timestep)
 
