@@ -187,7 +187,7 @@ class RayleighType(enum.IntEnum):
     KLEMP = 2  # Klemp (2008) type Rayleigh damping
 
 
-class DivergenceDamping_Type(IntEnum):
+class DivergenceDampingType(enum.IntEnum):
     TWO_DIMENSIONAL = 2  # divergence damping acting on 2D divergence
     THREE_DIMENSIONAL = 3  # divergence damping acting on 3D divergence
     COMBINED = 32  # combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
