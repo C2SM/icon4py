@@ -18,6 +18,7 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import RayleighType
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
     CellDim,
@@ -205,8 +206,8 @@ def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backen
         vct_a=grid_savepoint.vct_a(),
         damping_height=damping_height,
         rayleigh_type=rayleigh_type,
-        rayleigh_classic=constants.RayleighType.RAYLEIGH_CLASSIC,
-        rayleigh_klemp=constants.RayleighType.RAYLEIGH_KLEMP,
+        rayleigh_classic=RayleighType.CLASSIC,
+        rayleigh_klemp=RayleighType.KLEMP,
         rayleigh_coeff=rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
