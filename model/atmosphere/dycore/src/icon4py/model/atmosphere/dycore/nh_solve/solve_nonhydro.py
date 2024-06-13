@@ -176,7 +176,8 @@ log = logging.getLogger(__name__)
 
 
 class ItimeScheme(IntEnum):
-    OPTIMAL = 4  # Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    #: Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    OPTIMAL = 4
     VERTICAL = 5  # Contravariant vertical velocity is computed in both substeps
     VELOCITY = 6  # As itime_vertical, but velocity tendencies are also computed in both substeps
 
