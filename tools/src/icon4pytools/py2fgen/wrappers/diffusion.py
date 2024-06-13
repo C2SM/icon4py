@@ -23,6 +23,7 @@ Fortran granule interfaces:
 import cProfile
 import os
 import pstats
+import time
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
