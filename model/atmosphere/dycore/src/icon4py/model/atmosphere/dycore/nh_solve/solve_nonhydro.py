@@ -207,7 +207,8 @@ class IGradp_Method(IntEnum):
     POLYNOMIAL_HYDRO = 5  # Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
 
 
-class Iadv_RhoTheta(IntEnum):
+class RhoThetaAdvectionType(enum.IntEnum):
+""" Parameter called iadv_rhotheta in ICON namelist."""
     SIMPLE = 1  # simple 2nd order upwind-biased scheme
     MIURA = 2  # 2nd order Miura horizontal
 
