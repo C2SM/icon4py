@@ -175,7 +175,8 @@ from enum import IntEnum
 log = logging.getLogger(__name__)
 
 
-class ItimeScheme(IntEnum):
+class TimeSteppingScheme(enum.IntEnum):
+""" Parameter called `itime_scheme` in ICON namelist."""
     #: Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
     OPTIMAL = 4
     VERTICAL = 5  # Contravariant vertical velocity is computed in both substeps
