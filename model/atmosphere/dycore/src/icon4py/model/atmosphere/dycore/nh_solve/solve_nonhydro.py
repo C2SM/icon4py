@@ -186,13 +186,6 @@ class TimeSteppingScheme(enum.IntEnum):
     EXPENSIVE = 6
 
 
-class RayleighType(enum.IntEnum):
-    #: classical Rayleigh damping, which makes use of a reference state.
-    CLASSIC = 1
-    #: Klemp (2008) type Rayleigh damping
-    KLEMP = 2
-
-
 class DivergenceDampingType(enum.IntEnum):
     #: divergence damping acting on 2D divergence
     TWO_DIMENSIONAL = 2
@@ -302,7 +295,7 @@ class NonHydrostaticConfig:
         iadv_rhotheta: RhoThetaAdvectionType = RhoThetaAdvectionType.MIURA,
         igradp_method: HorizontalPressureDiscretizationType = HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         ndyn_substeps_var: float = 5.0,
-        rayleigh_type: RayleighType = RayleighType.KLEMP,
+        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
         divdamp_order: DivergenceDampingOrder = DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,

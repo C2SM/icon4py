@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import enum
 import sys
 from typing import Final
 
@@ -74,3 +75,10 @@ dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
 #: default physics to dynamics time step ratio
 # TODO (magdalena) not a constant, this is a default config parameter
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
+
+
+class RayleighType(enum.IntEnum):
+    #: classical Rayleigh damping, which makes use of a reference state.
+    CLASSIC = 1
+    #: Klemp (2008) type Rayleigh damping
+    KLEMP = 2
