@@ -68,7 +68,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device, xp, limited_area
+from icon4py.model.common.settings import device, xp, limited_area as lam
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import (
     construct_icon_grid,
@@ -248,8 +248,8 @@ def diffusion_init(
         .with_dimension(EdgeDim, e_glb_index_np, e_owner_mask_np)
         .with_dimension(VertexDim, v_glb_index_np, v_owner_mask_np)
     )
-    #processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
-    #exchange = definitions.create_exchange(processor_props, decomposition_info)
+    processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     # log.debug("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
     # log.debug("icon_grid:cell_end:%s", icon_grid.end_indices[CellDim])
@@ -308,7 +308,7 @@ def diffusion_init(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     # )
 
-    #diffusion_granule.set_exchange(exchange)
+    diffusion_granule.set_exchange(exchange)
 
     # Edge geometry
     edge_params = EdgeParams(
