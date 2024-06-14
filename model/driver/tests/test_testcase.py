@@ -13,11 +13,17 @@
 
 import pytest
 
-from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
+from icon4py.model.common.test_utils.datatest_utils import (
+    JABW_EXPERIMENT,
+    GAUSS3D_EXPERIMENT,
+)
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
 )
-from icon4py.model.driver.initialization_utils import model_initialization_jabw
+from icon4py.model.driver.initialization_utils import (
+    model_initialization_jabw,
+    model_initialization_gauss3d,
+)
 
 
 @pytest.mark.datatest
@@ -94,4 +100,55 @@ def test_jabw_initial_condition(
         solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
         data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
         atol=1.0e-14,
+    )
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, rank",
+    [
+        (GAUSS3D_EXPERIMENT, 0),
+    ],
+)
+def test_gauss3d_initial_condition(
+    experiment,
+    ranked_data_path,
+    rank,
+    data_provider,
+    grid_savepoint,
+    icon_grid,
+):
+    edge_geometry = grid_savepoint.construct_edge_geometry()
+    cell_geometry = grid_savepoint.construct_cell_geometry()
+
+    (
+        diffusion_diagnostic_state,
+        solve_nonhydro_diagnostic_state,
+        prep_adv,
+        divdamp_fac_o2,
+        diagnostic_state,
+        prognostic_state_now,
+        prognostic_state_next,
+    ) = model_initialization_gauss3d(
+        icon_grid,
+        cell_geometry,
+        edge_geometry,
+        ranked_data_path.joinpath(f"{experiment}/ser_data"),
+        rank,
+    )
+
+    # only verifying those assigned in the IC rather than all (at least for now)
+    assert dallclose(
+        prognostic_state_now.rho.asnumpy(),
+        data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).rho_now().asnumpy()
+    )
+
+    assert dallclose(
+        prognostic_state_now.exner.asnumpy(),
+        data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).exner_now().asnumpy()
+    )
+
+    assert dallclose(
+        prognostic_state_now.theta_v.asnumpy(),
+        data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).theta_v_now().asnumpy()
     )

@@ -19,8 +19,10 @@ from .datatest_utils import (
     DATA_URIS,
     DATA_URIS_APE,
     DATA_URIS_JABW,
+    DATA_URIS_GAUSS3D,
     GLOBAL_EXPERIMENT,
     JABW_EXPERIMENT,
+    GAUSS3D_EXPERIMENT,
     REGIONAL_EXPERIMENT,
     SERIALIZED_DATA_PATH,
     create_icon_serial_data_provider,
@@ -65,6 +67,8 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             uri = DATA_URIS_APE[processor_props.comm_size]
         elif experiment == JABW_EXPERIMENT:
             uri = DATA_URIS_JABW[processor_props.comm_size]
+        elif experiment == GAUSS3D_EXPERIMENT:
+            uri = DATA_URIS_GAUSS3D[processor_props.comm_size]
         else:
             uri = DATA_URIS[processor_props.comm_size]
 
