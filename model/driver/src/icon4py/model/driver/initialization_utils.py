@@ -485,16 +485,14 @@ def model_initialization_gauss3d(
     d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().asnumpy()
     geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
 
-    cell_lat = cell_param.cell_center_lat.asnumpy()
-    edge_lat = edge_param.edge_center[0].asnumpy()
     primal_normal_x = edge_param.primal_normal[0].asnumpy()
 
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
-    cell_size = cell_lat.size # TODO: get these from variables that are actually used
-    edge_size = edge_lat.size #       rather than lat
+    num_cells = icon_grid.num_cells
+    num_edges = icon_grid.num_edges
     num_levels = icon_grid.num_levels
 
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
@@ -509,15 +507,15 @@ def model_initialization_gauss3d(
     )
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
-    w_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
-    exner_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    rho_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    temperature_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    eta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    w_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    rho_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    temperature_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    pressure_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    theta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    eta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
 
-    mask_array_edge_start_plus1_to_edge_end = np.ones(edge_size, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end = np.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
     mask = np.repeat(np.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1)
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
@@ -589,7 +587,7 @@ def model_initialization_gauss3d(
     temperature = as_field((CellDim, KDim), temperature_numpy)
     pressure = as_field((CellDim, KDim), pressure_numpy)
     theta_v = as_field((CellDim, KDim), theta_v_numpy)
-    pressure_ifc_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
+    pressure_ifc_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
     pressure_ifc_numpy[:, -1] = P0REF # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
     pressure_ifc = as_field((CellDim, KDim), pressure_ifc_numpy)
 
