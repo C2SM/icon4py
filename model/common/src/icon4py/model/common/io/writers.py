@@ -30,7 +30,7 @@ VERTEX = "vertex"
 CELL = "cell"
 MODEL_INTERFACE_LEVEL = "interface_level"
 MODEL_LEVEL = "level"
-TIME_DIMENSION = "time"
+TIME = "time"
 
 log = logging.getLogger(__name__)
 processor_properties = decomp_defs.SingleNodeProcessProperties()
@@ -93,7 +93,7 @@ class NETCDFWriter:
         log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
         self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
         ## create dimensions all except time are fixed
-        self.dataset.createDimension(TIME_DIMENSION, None)
+        self.dataset.createDimension(TIME, None)
         self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
         self.dataset.createDimension(MODEL_INTERFACE_LEVEL, self.num_interfaces)
         self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
@@ -101,12 +101,12 @@ class NETCDFWriter:
         self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
         log.debug(f"Creating dimensions {self.dataset.dimensions} in {self._file_name}")
         # create time variables
-        times = self.dataset.createVariable(TIME_DIMENSION, "f8", (TIME_DIMENSION,))
+        times = self.dataset.createVariable(TIME, "f8", (TIME,))
         times.units = self._time_properties.units
         times.axis = cf_utils.COARDS_TIME_COORDINATE_NAME
         times.calendar = self._time_properties.calendar
-        times.standard_name = TIME_DIMENSION
-        times.long_name = TIME_DIMENSION
+        times.standard_name = TIME
+        times.long_name = TIME
         # create vertical coordinates:
         levels = self.dataset.createVariable(MODEL_LEVEL, np.int32, (MODEL_LEVEL,))
         levels.units = "1"
@@ -144,7 +144,7 @@ class NETCDFWriter:
         Returns:
 
         """
-        time = self.dataset[TIME_DIMENSION]
+        time = self.dataset[TIME]
         time_pos = len(time)
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
         for var_name, new_slice in state_to_append.items():
