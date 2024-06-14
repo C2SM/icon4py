@@ -372,7 +372,7 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
-
+    global diffusion_granule
     diffusion_granule = Diffusion(exchange=exchange)
 
     diffusion_granule.init(
