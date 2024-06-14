@@ -25,6 +25,13 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
 
+EDGE = "edge"
+VERTEX = "vertex"
+CELL = "cell"
+MODEL_INTERFACE_LEVEL = "interface_level"
+MODEL_LEVEL = "level"
+TIME_DIMENSION = "time"
+
 log = logging.getLogger(__name__)
 processor_properties = decomp_defs.SingleNodeProcessProperties()
 
@@ -86,21 +93,22 @@ class NETCDFWriter:
         log.info(f"Creating file {self._file_name} at {self.dataset.filepath()}")
         self.dataset.setncatts({k: str(v) for (k, v) in self.attrs.items()})
         ## create dimensions all except time are fixed
-        self.dataset.createDimension("time", None)
-        self.dataset.createDimension("level", self.num_levels)
-        self.dataset.createDimension("interface_level", self.num_interfaces)
-        self.dataset.createDimension("cell", self._horizontal_size.num_cells)
-        self.dataset.createDimension("vertex", self._horizontal_size.num_vertices)
-        self.dataset.createDimension("edge", self._horizontal_size.num_edges)
+        self.dataset.createDimension(TIME_DIMENSION, None)
+        self.dataset.createDimension(MODEL_LEVEL, self.num_levels)
+        self.dataset.createDimension(MODEL_INTERFACE_LEVEL, self.num_interfaces)
+        self.dataset.createDimension(CELL, self._horizontal_size.num_cells)
+        self.dataset.createDimension(VERTEX, self._horizontal_size.num_vertices)
+        self.dataset.createDimension(EDGE, self._horizontal_size.num_edges)
         log.debug(f"Creating dimensions {self.dataset.dimensions} in {self._file_name}")
         # create time variables
-        times = self.dataset.createVariable("times", "f8", ("time",))
+        times = self.dataset.createVariable(TIME_DIMENSION, "f8", (TIME_DIMENSION,))
         times.units = self._time_properties.units
+        times.axis = cf_utils.COARDS_TIME_COORDINATE_NAME
         times.calendar = self._time_properties.calendar
-        times.standard_name = "time"
-        times.long_name = "time"
+        times.standard_name = TIME_DIMENSION
+        times.long_name = TIME_DIMENSION
         # create vertical coordinates:
-        levels = self.dataset.createVariable("levels", np.int32, ("level",))
+        levels = self.dataset.createVariable(MODEL_LEVEL, np.int32, (MODEL_LEVEL,))
         levels.units = "1"
         levels.positive = "down"
         levels.long_name = "model full level index"
@@ -108,7 +116,7 @@ class NETCDFWriter:
         levels[:] = np.arange(self.num_levels, dtype=np.int32)
 
         interface_levels = self.dataset.createVariable(
-            "interface_levels", np.int32, ("interface_level",)
+            MODEL_INTERFACE_LEVEL, np.int32, (MODEL_INTERFACE_LEVEL,)
         )
         interface_levels.units = "1"
         interface_levels.positive = "down"
@@ -116,9 +124,10 @@ class NETCDFWriter:
         interface_levels.standard_name = cf_utils.INTERFACE_LEVEL_STANDARD_NAME
         interface_levels[:] = np.arange(self.num_levels + 1, dtype=np.int32)
 
-        heights = self.dataset.createVariable("height", np.float64, ("interface_level",))
+        heights = self.dataset.createVariable("height", np.float64, (MODEL_INTERFACE_LEVEL,))
         heights.units = "m"
         heights.positive = "up"
+        heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
         heights.long_name = "height value of half levels for flat topography"
         heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
         heights[:] = self._vertical_params.vct_a.ndarray
@@ -135,7 +144,7 @@ class NETCDFWriter:
         Returns:
 
         """
-        time = self.dataset["times"]
+        time = self.dataset[TIME_DIMENSION]
         time_pos = len(time)
         time[time_pos] = cf_utils.date2num(model_time, units=time.units, calendar=time.calendar)
         for var_name, new_slice in state_to_append.items():
