@@ -84,7 +84,7 @@ from icon4pytools.common.logger import setup_logger
 log = setup_logger(__name__)
 
 # global diffusion object
-diffusion_granule: Diffusion = Diffusion()
+diffusion_granule: Diffusion = None
 
 # global profiler object
 profiler = cProfile.Profile()
@@ -177,10 +177,7 @@ def diffusion_init(
     log.info(f"Using Device = {device}")
 
     # ICON grid
-    if device.name == "GPU":
-        on_gpu = True
-    else:
-        on_gpu = False
+    on_gpu = True if device.name == "GPU" else False
 
     cells_start_index_np = fortran_grid_indices_to_numpy_offset(cells_start_index)
     vert_start_index_np = fortran_grid_indices_to_numpy_offset(vert_start_index)
@@ -199,17 +196,11 @@ def diffusion_init(
     log.debug(
         " shape of glb %s %s %s", c_glb_index_np.shape, e_glb_index_np.shape, v_glb_index_np.shape
     )
-    # c_glb_index_np = np.pad(c_glb_index_np, (0,nproma-num_cells), mode='constant', constant_values=0)
-    # e_glb_index_np = np.pad(e_glb_index_np, (0,nproma-num_edges), mode='constant', constant_values=0)
-    # v_glb_index_np = np.pad(v_glb_index_np, (0,nproma-num_verts), mode='constant', constant_values=0)
 
     c_owner_mask_np = c_owner_mask.ndarray.copy(order="F")[0:num_cells]
     e_owner_mask_np = e_owner_mask.ndarray.copy(order="F")[0:num_edges]
     v_owner_mask_np = v_owner_mask.ndarray.copy(order="F")[0:num_verts]
 
-    #c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray, order="F").copy(order="F")[0:num_cells]
-    #e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray, order="F").copy(order="F")[0:num_edges]
-    #v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray, order="F").copy(order="F")[0:num_verts]
 
     log.debug(
         " shape of glb %s %s %s", c_glb_index_np.shape, e_glb_index_np.shape, v_glb_index_np.shape
@@ -308,7 +299,7 @@ def diffusion_init(
     #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
     # )
 
-    diffusion_granule.set_exchange(exchange)
+    #diffusion_granule.set_exchange(exchange)
 
     # Edge geometry
     edge_params = EdgeParams(
@@ -381,6 +372,8 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
+
+    diffusion_granule = Diffusion(exchange=exchange)
 
     diffusion_granule.init(
         grid=icon_grid,
