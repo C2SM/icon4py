@@ -126,7 +126,7 @@ class OutputVariableList:
             'vn': VariableAttributes(
                 units='m s-1',
                 standard_name='normal velocity',
-                long_name='normal velocity at edge center',
+                long_name='normal wind speed at edge center',
                 CDI_grid_type='unstructured',
                 param='0.0.0',
                 number_of_grid_in_reference='1',
@@ -135,42 +135,42 @@ class OutputVariableList:
             ),
             'w': VariableAttributes(
                 units='m s-1',
-                standard_name='normal velocity',
-                long_name='normal velocity at edge center',
+                standard_name='vertical velocity',
+                long_name='vertical wind speed at half levels',
                 CDI_grid_type='unstructured',
                 param='0.0.0',
                 number_of_grid_in_reference='1',
-                coordinates='elat elon',
+                coordinates='clat clon',
                 scope=OutputScope.prognostic,
             ),
             'rho': VariableAttributes(
-                units='m s-1',
-                standard_name='normal velocity',
-                long_name='normal velocity at edge center',
+                units='kg m-3',
+                standard_name='density',
+                long_name='air density',
                 CDI_grid_type='unstructured',
                 param='0.0.0',
                 number_of_grid_in_reference='1',
-                coordinates='elat elon',
+                coordinates='clat clon',
                 scope=OutputScope.prognostic,
             ),
             'theta_v': VariableAttributes(
-                units='m s-1',
-                standard_name='normal velocity',
-                long_name='normal velocity at edge center',
+                units='K',
+                standard_name='virtual temperature',
+                long_name='virtual temperature',
                 CDI_grid_type='unstructured',
                 param='0.0.0',
                 number_of_grid_in_reference='1',
-                coordinates='elat elon',
+                coordinates='clat clon',
                 scope=OutputScope.prognostic,
             ),
             'exner': VariableAttributes(
-                units='m s-1',
-                standard_name='normal velocity',
-                long_name='normal velocity at edge center',
+                units='',
+                standard_name='exner function',
+                long_name='exner function',
                 CDI_grid_type='unstructured',
                 param='0.0.0',
                 number_of_grid_in_reference='1',
-                coordinates='elat elon',
+                coordinates='clat clon',
                 scope=OutputScope.prognostic,
             ),
         }
@@ -299,6 +299,24 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             )
         )
         output_variable_list.add_new_variable(
+            'pressure',
+            VariableDimension(
+                horizon_dimension=OutputDimension.CELL_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='Pa',
+                standard_name='pressure',
+                long_name='air pressure',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='clat clon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
             'pressure_sfc',
             VariableDimension(
                 horizon_dimension=OutputDimension.CELL_DIM,
@@ -355,14 +373,14 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 1, 1, 1, 0, 0),
+            end_date=datetime(1, 2, 8, 0, 0, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
         )
         jabw_output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=300),
-            output_file_time_interval=timedelta(seconds=300),
+            output_time_interval=timedelta(seconds=14400),
+            output_file_time_interval=timedelta(seconds=14400),
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
             output_variable_list=output_variable_list,

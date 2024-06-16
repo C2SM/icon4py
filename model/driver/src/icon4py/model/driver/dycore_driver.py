@@ -452,7 +452,7 @@ class NewOutputState:
                     self._check_list[var_name] = 1
                 else:
                     log.warning(f"Data {var_name} already existed in file no. {self._current_file_number} at {self._current_write_step}")
-                    raise ValueError
+                    #raise ValueError
 
 
     def advance_time(
@@ -776,70 +776,6 @@ class TimeLoop:
             diagnostic_metric_state.rbf_vec_coeff_c2,
             diagnostic_state.u,
             diagnostic_state.v,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider=self.grid.offset_providers,
-        )
-        log.debug(
-            f"max min v: {diagnostic_state.v.ndarray.max()} {diagnostic_state.v.ndarray.min()}"
-        )
-
-        diagnose_temperature(
-            prognostic_state.theta_v,
-            prognostic_state.exner,
-            diagnostic_state.temperature,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider={},
-        )
-
-        diagnose_surface_pressure(
-            prognostic_state.exner,
-            diagnostic_state.temperature,
-            diagnostic_metric_state.ddqz_z_full,
-            diagnostic_state.pressure_ifc,
-            CPD_O_RD,
-            P0REF,
-            GRAV_O_RD,
-            horizontal_start=self.grid.get_start_index(
-                CellDim, HorizontalMarkerIndex.interior(CellDim)
-            ),
-            horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            vertical_start=self.grid.num_levels,
-            vertical_end=self.grid.num_levels + 1,
-            offset_provider=self.grid.offset_providers,
-        )
-
-        diagnose_pressure(
-            diagnostic_metric_state.ddqz_z_full,
-            diagnostic_state.temperature,
-            diagnostic_state.pressure_sfc,
-            diagnostic_state.pressure,
-            diagnostic_state.pressure_ifc,
-            GRAV_O_RD,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
-            offset_provider={},
-        )
-
-    def _diagnose_for_output_and_physics(
-        self,
-        prognostic_state: PrognosticState,
-        diagnostic_state: DiagnosticState,
-        diagnostic_metric_state: DiagnosticMetricState,
-    ):
-        edge_2_cell_vector_rbf_interpolation(
-            prognostic_state.vn,
-            diagnostic_metric_state.rbf_vec_coeff_c1,
-            diagnostic_metric_state.rbf_vec_coeff_c2,
-            diagnostic_state.u,
-            diagnostic_state.v,
             horizontal_start=self.grid.get_start_index(CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1),
             horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
             vertical_start=0,
@@ -883,10 +819,10 @@ class TimeLoop:
             diagnostic_state.pressure,
             diagnostic_state.pressure_ifc,
             GRAV_O_RD,
-            self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
-            self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
-            0,
-            self.grid.num_levels,
+            horizontal_start=self.grid.get_start_index(CellDim, HorizontalMarkerIndex.interior(CellDim)),
+            horizontal_end=self.grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim)),
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
             offset_provider={},
         )
 
@@ -913,20 +849,14 @@ class TimeLoop:
             f"apply_to_horizontal_wind={self.diffusion.config.apply_to_horizontal_wind} initial_stabilization={self.run_config.apply_initial_stabilization} dtime={self.dtime_in_seconds} s, substep_timestep={self._substep_timestep}"
         )
 
+        log.info("Initialization of diagnostic variables for output.")
         if output_state is not None:
             self._diagnose_for_output_and_physics(
                 prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
             )
 
             log.info(f"Debugging U (before diffusion): {np.max(diagnostic_state.u.asnumpy())}")
-
-        log.info("Initialization of diagnostic variables for output.")
-
-        if output_state is not None:
-            self._diagnose_for_output_and_physics(
-                prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
-            )
-
+        
         if (
             self.diffusion.config.apply_to_horizontal_wind
             and self.run_config.apply_initial_stabilization
@@ -941,7 +871,6 @@ class TimeLoop:
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
-        self._next_simulation_date()
         if profile:
             profile_enable()
 
