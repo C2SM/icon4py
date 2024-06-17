@@ -175,6 +175,7 @@ def model_initialization_jabw(
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
     cell_size = cell_lat.size
+    edge_size = edge_lat.size
     num_levels = icon_grid.num_levels
 
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
@@ -281,6 +282,78 @@ def model_initialization_jabw(
         temperature_ndarray[:, k_index] = temperature_jw
     log.info("Newton iteration completed!")
 
+    '''
+    sin_lat_edge = xp.sin(edge_lat)
+    cos_lat_edge = xp.cos(edge_lat)
+    fac1_edge = 1.0 / 6.3 - 2.0 * (sin_lat_edge**6) * (cos_lat_edge**2 + 1.0 / 3.0)
+    fac2_edge = (
+        (8.0 / 5.0 * (cos_lat_edge**3) * (sin_lat_edge**2 + 2.0 / 3.0) - 0.25 * math.pi)
+        * EARTH_RADIUS
+        * EARTH_ANGULAR_VELOCITY
+    )
+    for k_index in range(num_levels - 1, -1, -1):
+        eta_old_edge = xp.full(edge_size, fill_value=1.0e-7, dtype=float)
+        log.info(f"In Newton iteration (edge), k = {k_index}")
+        # Newton iteration to determine zeta
+        for _ in range(100):
+            eta_v_edge_ndarray[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
+            cos_etav_edge = xp.cos(eta_v_edge_ndarray[:, k_index])
+            sin_etav_edge = xp.sin(eta_v_edge_ndarray[:, k_index])
+
+            temperature_avg_edge = jw_temp0 * (eta_old_edge**lapse_rate)
+            geopot_avg_edge = jw_temp0 * GRAV / gamma * (1.0 - eta_old_edge**lapse_rate)
+            temperature_avg_edge = xp.where(
+                eta_old_edge < eta_t, temperature_avg_edge + dtemp * ((eta_t - eta_old_edge) ** 5), temperature_avg_edge
+            )
+            geopot_avg_edge = xp.where(
+                eta_old_edge < eta_t,
+                geopot_avg_edge
+                - RD
+                * dtemp
+                * (
+                    (xp.log(eta_old_edge / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                    - 5.0 * (eta_t**4) * eta_old_edge
+                    + 5.0 * (eta_t**3) * (eta_old_edge**2)
+                    - 10.0 / 3.0 * (eta_t**2) * (eta_old_edge**3)
+                    + 1.25 * eta_t * (eta_old_edge**4)
+                    - 0.2 * (eta_old_edge**5)
+                ),
+                geopot_avg,
+            )
+
+            geopot_jw_edge = geopot_avg_edge + jw_u0 * (cos_etav_edge**1.5) * (
+                fac1_edge * jw_u0 * (cos_etav_edge**1.5) + fac2_edge
+            )
+            temperature_jw_edge = (
+                temperature_avg_edge
+                + 0.75
+                * eta_old_edge
+                * math.pi
+                * jw_u0
+                / RD
+                * sin_etav_edge
+                * xp.sqrt(cos_etav_edge)
+                * (2.0 * jw_u0 * fac1_edge * (cos_etav_edge**1.5) + fac2_edge)
+            )
+            newton_function_edge = geopot_jw_edge - geopot_edge[:, k_index]
+            newton_function_prime_edge = -RD / eta_old_edge * temperature_jw_edge
+            eta_old_edge = eta_old_edge - newton_function_edge / newton_function_prime_edge
+
+        # Final update for zeta_v
+        eta_v_edge_ndarray[:, k_index] = (eta_old_edge - eta_0) * math.pi * 0.5
+        # Use analytic expressions at all model level
+        exner_edge_ndarray[:, k_index] = (eta_old_edge * ps_o_p0ref) ** RD_O_CPD
+        theta_v_edge_ndarray[:, k_index] = temperature_jw_edge / exner_edge_ndarray[:, k_index]
+        rho_ndarray_edge[:, k_index] = (
+            exner_edge_ndarray[:, k_index] ** CVD_O_RD * P0REF / RD / theta_v_edge_ndarray[:, k_index]
+        )
+        # initialize diagnose pressure and temperature variables
+        pressure_edge_ndarray[:, k_index] = P0REF * exner_edge_ndarray[:, k_index] ** CPD_O_RD
+        temperature_edge_ndarray[:, k_index] = temperature_jw_edge
+    eta_v_edge = as_field((CellDim, KDim), eta_v_edge_ndarray)
+    log.info("Newton iteration completed (edge)!")
+    '''
+
     eta_v = as_field((CellDim, KDim), eta_v_ndarray)
     eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
     cell_2_edge_interpolation(
@@ -305,6 +378,7 @@ def model_initialization_jabw(
         edge_lon,
         primal_normal_x,
         eta_v_e.ndarray,
+        #eta_v_edge.ndarray,
     )
     log.info("U2vn computation completed.")
 

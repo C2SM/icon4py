@@ -240,8 +240,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _jabw_diffusion_config(n_substeps: int):
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=True,
-            hdiff_vn=True,
+            hdiff_w=False,
+            hdiff_vn=False,
             hdiff_temp=False,
             n_substeps=n_substeps,
             type_t_diffu=2,
