@@ -306,6 +306,17 @@ def {{ func.name }}_wrapper(
         {% endif %}
         {% endfor %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} unpacking arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
+        {% endif %}
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        allocate_start_time = time.perf_counter()
+        {% endif %}
+
         # Allocate GT4Py Fields
         {% for arg in func.args %}
         {% if arg.is_array %}
@@ -321,8 +332,8 @@ def {{ func.name }}_wrapper(
 
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
-        unpack_end_time = time.perf_counter()
-        logging.critical('{{ func.name }} unpacking and allocating arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
+        allocate_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} allocating to gt4py fields time per timestep: %s' % str(allocate_end_time - allocate_start_time))
         {% endif %}
 
         {% if _this_node.profile %}
