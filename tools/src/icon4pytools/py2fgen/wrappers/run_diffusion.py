@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 # type: ignore
 import time
-
+import cupy as cp
 from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
 from icon4py.model.common.dimension import (
@@ -233,6 +233,10 @@ num_timesteps = 100
 # Measure the time for each timestep individually
 individual_times = []
 for _ in range(num_timesteps):
+
+    # Ensure all GPU work is done before starting the timer
+    cp.cuda.Stream.null.synchronize()
+    
     start_time = time.perf_counter()
     diffusion_run(
         w=w,
@@ -247,6 +251,10 @@ for _ in range(num_timesteps):
         dtime=dtime,
         linit=False,
     )
+
+    # Ensure all GPU work is done before stopping the timer
+    cp.cuda.Stream.null.synchronize()
+
     end_time = time.perf_counter()
     individual_times.append(end_time - start_time)
 
