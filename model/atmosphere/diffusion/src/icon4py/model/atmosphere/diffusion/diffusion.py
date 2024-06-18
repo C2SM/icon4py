@@ -51,7 +51,6 @@ from icon4py.model.atmosphere.diffusion.cached import (
 
 from icon4py.model.common.constants import (
     CPD,
-    DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
     dbl_eps,
 )
@@ -297,7 +296,7 @@ class DiffusionParams:
         object.__setattr__(
             self,
             "scaled_nudge_max_coeff",
-            config.nudge_max_coeff,  # * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+            config.nudge_max_coeff,  # * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: this is already done in ICON for us.
         )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
