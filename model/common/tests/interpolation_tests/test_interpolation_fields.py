@@ -85,7 +85,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
         horizontal_start,
     )
 
-    assert np.allclose(c_lin_e, c_lin_e_ref.asnumpy())
+    assert dallclose(c_lin_e, c_lin_e_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -104,7 +104,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid):
         offset_provider={"C2E": mesh.get_offset_provider("C2E")},
     )
 
-    assert np.allclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
+    assert dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -128,7 +128,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
         offset_provider={"V2E": mesh.get_offset_provider("V2E")},
     )
 
-    assert np.allclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
+    assert dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -151,7 +151,7 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
         c2e2c,
         horizontal_start,
     )
-    assert np.allclose(geofac_n2s, geofac_n2s_ref.asnumpy())
+    assert dallclose(geofac_n2s, geofac_n2s_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -212,7 +212,7 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
         e2c2e,
         horizontal_start,
     )
-    assert np.allclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
+    assert dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -246,9 +246,9 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         owner_mask,
         c2e2c,
         cell_areas,
-        1000,
         horizontal_start,
         horizontal_start_p2,
+        1000,
     )
     assert dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 
@@ -289,7 +289,7 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start_p3,
         horizontal_start_p4,
     )
-    assert np.allclose(e_flx_avg, e_flx_avg_ref)
+    assert dallclose(e_flx_avg, e_flx_avg_ref)
 
 
 @pytest.mark.datatest
@@ -318,7 +318,7 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
         e2c,
         horizontal_start,
     )
-    assert np.allclose(cells_aw_verts, cells_aw_verts_ref)
+    assert dallclose(cells_aw_verts, cells_aw_verts_ref)
 
 
 @pytest.mark.datatest

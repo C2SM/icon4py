@@ -42,12 +42,12 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: numpy array, representing a Field[[EdgeDim, E2CDim], float]
-        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[[EdgeDim], float]
+        edge_cell_length: numpy array, representing a Field[[EdgeDim, E2CDim], wpfloat]
+        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[[EdgeDim], wpfloat]
         owner_mask: numpy array, representing a Field[[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
-    Returns: c_lin_e: numpy array  representing Field[[EdgeDim, E2CDim], float]
+    Returns: c_lin_e: numpy array  representing Field[[EdgeDim, E2CDim], wpfloat]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
@@ -59,10 +59,10 @@ def compute_c_lin_e(
 
 @field_operator
 def compute_geofac_div(
-    primal_edge_length: Field[[EdgeDim], float],
-    edge_orientation: Field[[CellDim, C2EDim], float],
-    area: Field[[CellDim], float],
-) -> Field[[CellDim, C2EDim], float]:
+    primal_edge_length: Field[[EdgeDim], wpfloat],
+    edge_orientation: Field[[CellDim, C2EDim], wpfloat],
+    area: Field[[CellDim], wpfloat],
+) -> Field[[CellDim, C2EDim], wpfloat]:
     """
     Compute geometrical factor for divergence.
 
@@ -77,11 +77,11 @@ def compute_geofac_div(
 
 @field_operator
 def compute_geofac_rot(
-    dual_edge_length: Field[[EdgeDim], float],
-    edge_orientation: Field[[VertexDim, V2EDim], float],
-    dual_area: Field[[VertexDim], float],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    edge_orientation: Field[[VertexDim, V2EDim], wpfloat],
+    dual_area: Field[[VertexDim], wpfloat],
     owner_mask: Field[[VertexDim], bool],
-) -> Field[[VertexDim, V2EDim], float]:
+) -> Field[[VertexDim, V2EDim], wpfloat]:
     """
     Compute geometrical factor for curl.
 
@@ -104,10 +104,9 @@ def compute_geofac_n2s(
     horizontal_start: np.int32,
 ) -> np.array:
     """
-    Compute geofac_n2s.
+    Compute geometric factor for nabla2-scalar.
 
     Args:
-        geofac_n2s:
         dual_edge_length:
         geofac_div:
         c2e:
@@ -153,6 +152,17 @@ def compute_primal_normal_ec(
     e2c: np.array,
     horizontal_start: np.int32,
 ) -> np.array:
+    """
+    Compute primal_normal_ec.
+
+    Args:
+        primal_normal_cell_x:
+        primal_normal_cell_y:
+        owner_mask:
+        c2e:
+        e2c:
+        horizontal_start:
+    """
     llb = horizontal_start
     primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
     index = np.transpose(
@@ -188,7 +198,6 @@ def compute_geofac_grg(
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        geofac_grg:
         primal_normal_ec:
         geofac_div:
         c_lin_e:
@@ -243,7 +252,6 @@ def compute_geofac_grdiv(
     Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
-        geofac_grdiv:
         geofac_div:
         inv_dual_edge_length:
         owner_mask:
@@ -289,6 +297,15 @@ def rotate_latlon(
     pollat: np.array,
     pollon: np.array,
 ) -> (np.array, np.array):
+    """
+    Compute rotation of lattitude and longitude.
+
+    Args:
+        lat:
+        lon:
+        pollat:
+        pollon:
+    """
     rotlat = np.arcsin(
         np.sin(lat) * np.sin(pollat) + np.cos(lat) * np.cos(pollat) * np.cos(lon - pollon)
     )
@@ -307,6 +324,16 @@ def weighting_factors(
     xloc: np.array,
     wgt_loc: wpfloat,
 ) -> np.array:
+    """
+    Compute weighting factors.
+
+    Args:
+        ytemp:
+        xtemp:
+        yloc:
+        xloc:
+        wgt_loc:
+    """
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
     (yloc, xloc) = rotate_latlon(yloc, xloc, pollat, pollon)
@@ -406,9 +433,9 @@ def compute_force_mass_conservation_to_c_bln_avg(
     owner_mask: np.array,
     c2e2c: np.array,
     cell_areas: np.array,
-    niter: np.array,
     horizontal_start: np.int32,
     horizontal_start_p3: np.int32,
+    niter: np.array,
 ) -> np.array:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
@@ -423,12 +450,10 @@ def compute_force_mass_conservation_to_c_bln_avg(
         divavg_cntrwgt:
         owner_mask:
         c2e2c:
-        lat:
-        lon:
         cell_areas:
-        niter: number of iterations until convergence is assumed
         horizontal_start:
         horizontal_start_p3:
+        niter: number of iterations until convergence is assumed
 
     """
     llb = horizontal_start
@@ -496,6 +521,21 @@ def compute_e_flx_avg(
     horizontal_start_p3: np.int32,
     horizontal_start_p4: np.int32,
 ) -> np.array:
+    """
+    Compute edge flux average
+
+    Args:
+        c_bln_avg: np.array,
+        geofac_div:
+        owner_mask:
+        primal_cart_normal:
+        e2c:
+        c2e:
+        c2e2c:
+        e2c2e:
+        horizontal_start_p3:
+        horizontal_start_p4:
+    """
     llb = 0
     e_flx_avg = np.zeros([e2c.shape[0], 5])
     index = np.arange(llb, c2e.shape[0])
@@ -619,6 +659,20 @@ def compute_cells_aw_verts(
     e2c: np.array,
     horizontal_start: np.int32,
 ) -> np.array:
+    """
+    Compute cells_aw_verts.
+
+    Args:
+        dual_area:
+        edge_vert_length:
+        edge_cell_length:
+        owner_mask:
+        v2e:
+        e2v:
+        v2c:
+        e2c:
+        horizontal_start:
+    """
     llb = horizontal_start
     cells_aw_verts = np.zeros([v2e.shape[0], 6])
     for i in range(e2c.shape[1]):
@@ -651,6 +705,17 @@ def compute_e_bln_c_s(
     edges_lat: np.array,
     edges_lon: np.array,
 ) -> np.array:
+    """
+    Compute e_bln_c_s.
+
+    Args:
+        owner_mask:
+        c2e:
+        cells_lat:
+        cells_lon:
+        edges_lat:
+        edges_lon:
+    """
     llb = 0
     num_cells = c2e.shape[0]
     e_bln_c_s = np.zeros([num_cells, c2e.shape[1]])
@@ -727,6 +792,27 @@ def compute_pos_on_tplane_e_x_y(
     e2c2e: np.array,
     horizontal_start: np.int32,
 ) -> np.array:
+    """
+    Compute pos_on_tplane_e_x_y.
+
+    Args:
+        grid_sphere_radius:
+        primal_normal_v1:
+        primal_normal_v2:
+        dual_normal_v1:
+        dual_normal_v2:
+        cells_lon:
+        cells_lat:
+        edges_lon:
+        edges_lat:
+        vertex_lon:
+        vertex_lat:
+        owner_mask:
+        e2c:
+        e2v:
+        e2c2e:
+        horizontal_start:
+    """
     llb = horizontal_start
     pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
     #     get geographical coordinates of edge midpoint
