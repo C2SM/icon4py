@@ -23,6 +23,7 @@ htmlcov/
 .nox/
 .pytest_cache
 .mypy_cache
+.ruff_cache
 
 # Distribution / packaging
 *.egg-info/
@@ -41,3 +42,6 @@ Thumbs.db
 
 # Git directory
 .git/
+
+# serialized data
+testdata

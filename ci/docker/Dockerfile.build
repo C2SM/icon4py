@@ -1,4 +1,5 @@
-FROM docker.io/nvidia/cuda:11.2.2-devel-ubuntu20.04
+FROM ubuntu:20.04
+
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
 
@@ -29,7 +30,29 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
     htop && \
     rm -rf /var/lib/apt/lists/*
 
-RUN wget --quiet -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
+# Install NVIDIA HPC SDK for nvfortran
+ARG HPC_SDK_VERSION=22.11
+ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_11.8
+ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/22.11/${HPC_SDK_NAME}.tar.gz
+
+RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
+    mkdir -p /opt/nvidia && \
+    tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
+    rm /tmp/nvhpc.tar.gz
+
+ENV NVHPC_DEFAULT_CUDA=11.8
+ENV NVHPC_SILENT=1
+RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
+
+# Set environment variables
+ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}
+
+ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
+    MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
+    LD_LIBRARY_PATH=${HPC_SDK_PATH}/cuda/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
+
+# Install Boost
+RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
     echo c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f boost_1_72_0.tar.gz > boost_hash.txt && \
     sha256sum -c boost_hash.txt && \
     tar xzf boost_1_72_0.tar.gz && \
@@ -37,10 +60,9 @@ RUN wget --quiet -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/f
     rm boost_1_72_0.tar.gz boost_hash.txt
 
 ENV BOOST_ROOT /usr/local/
-ENV CUDA_HOME /usr/local/cuda
 
-ARG PYVERSION
-
+# Install pyenv and Python version specified by PYVERSION
+ENV PYVERSION 3.10.9
 RUN curl https://pyenv.run | bash
 
 ENV PYENV_ROOT /root/.pyenv
@@ -54,6 +76,6 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
+# Install Python packages
 COPY . /icon4py
-
-RUN pip install --upgrade pip setuptools wheel tox cupy-cuda11x clang-format
+RUN pip install --upgrade pip setuptools wheel tox clang-format cupy-cuda11x
