@@ -50,22 +50,25 @@ from icon4py.model.common.dimension import (
     CECDim,
     CEDim,
     CellDim,
-    CellIndexDim,
     E2C2VDim,
     E2CDim,
     ECVDim,
     EdgeDim,
-    EdgeIndexDim,
     KDim,
     KHalfDim,
+    V2EDim,
+    VertexDim,
+)
+from icon4pytools.py2fgen.utils.dimension import (
     SingletonDim,
     SpecialADim,
     SpecialBDim,
     SpecialCDim,
-    V2EDim,
-    VertexDim,
+    CellIndexDim,
+    EdgeIndexDim,
     VertexIndexDim,
 )
+
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.settings import device, xp, limited_area as lam
@@ -73,7 +76,6 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import (
     construct_icon_grid,
     fortran_grid_connectivities_to_xp_offset,
-    fortran_grid_indices_to_numpy,
     fortran_grid_indices_to_numpy_offset,
 )
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
@@ -183,17 +185,17 @@ def diffusion_init(
     vert_start_index_np = fortran_grid_indices_to_numpy_offset(vert_start_index)
     edge_start_index_np = fortran_grid_indices_to_numpy_offset(edge_start_index)
 
-    cells_end_index_np = fortran_grid_indices_to_numpy(cells_end_index)
-    vert_end_index_np = fortran_grid_indices_to_numpy(vert_end_index)
-    edge_end_index_np = fortran_grid_indices_to_numpy(edge_end_index)
+    cells_end_index_np = cells_end_index.asnumpy()
+    vert_end_index_np = vert_end_index.asnumpy()
+    edge_end_index_np = edge_end_index.asnumpy()
 
     c_glb_index_np = fortran_grid_indices_to_numpy_offset(c_glb_index)
     e_glb_index_np = fortran_grid_indices_to_numpy_offset(e_glb_index)
     v_glb_index_np = fortran_grid_indices_to_numpy_offset(v_glb_index)
 
-    c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray.copy(order="F"))[0:num_cells]
-    e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray.copy(order="F"))[0:num_edges]
-    v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray.copy(order="F"))[0:num_verts]
+    c_owner_mask_np = c_owner_mask.asnumpy()[0:num_cells]
+    e_owner_mask_np = e_owner_mask.asnumpy()[0:num_edges]
+    v_owner_mask_np = v_owner_mask.asnumpy()[0:num_verts]
 
     c2e_loc = fortran_grid_connectivities_to_xp_offset(c2e)
     c2e2c_loc = fortran_grid_connectivities_to_xp_offset(c2e2c)

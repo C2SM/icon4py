@@ -24,26 +24,26 @@ from icon4py.model.common.decomposition.definitions import SingleNodeExchange
 from icon4py.model.common.settings import device
 
 
-#try:
-import ghex
-import mpi4py
-from ghex.context import make_context
-from ghex.unstructured import (
-    DomainDescriptor,
-    HaloGenerator,
-    make_communication_object,
-    make_field_descriptor,
-    make_pattern,
-)
-from ghex.util import Architecture
+try:
+    import ghex
+    import mpi4py
+    from ghex.context import make_context
+    from ghex.unstructured import (
+        DomainDescriptor,
+        HaloGenerator,
+        make_communication_object,
+        make_field_descriptor,
+        make_pattern,
+    )
+    from ghex.util import Architecture
 
-mpi4py.rc.initialize = False
-mpi4py.rc.finalize = True
+    mpi4py.rc.initialize = False
+    mpi4py.rc.finalize = True
 
-# except ImportError:
-#     mpi4py = None
-#     ghex = None
-#     unstructured = None
+except ImportError:
+    mpi4py = None
+    ghex = None
+    unstructured = None
 
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim

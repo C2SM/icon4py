@@ -370,9 +370,6 @@ class Diffusion:
         self.cell_params: Optional[CellParams] = None
         self._horizontal_start_index_w_diffusion: int32 = 0
 
-    def set_exchange(self, exchange):
-        self._exchange = exchange
-
     def init(
         self,
         grid: IconGrid,
