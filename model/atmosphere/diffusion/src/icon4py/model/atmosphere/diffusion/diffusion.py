@@ -21,11 +21,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 
 
-
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states, cached
-
-# cached program import
-import icon4py.model.atmosphere.diffusion.cached 
 
 
 from icon4py.model.common import constants
@@ -244,7 +240,7 @@ class DiffusionParams:
     K4W: Final[float] = dataclasses.field(init=False)
     smagorinski_factor: Final[float] = dataclasses.field(init=False)
     smagorinski_height: Final[float] = dataclasses.field(init=False)
-    scaled_nudge_max_coeff: Final[float] =dataclasses.field(init=False)
+    scaled_nudge_max_coeff: Final[float] = dataclasses.field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
@@ -321,10 +317,14 @@ def diffusion_type_5_smagorinski_factor(config: DiffusionConfig):
 class Diffusion:
     """Class that configures diffusion and does one diffusion step."""
 
-    def __init__(self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()):
+    def __init__(
+        self, exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange()
+    ):
         self._exchange = exchange
         self._initialized = False
-        self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (constants.CPD - constants.GAS_CONSTANT_DRY_AIR)
+        self.rd_o_cvd: float = constants.GAS_CONSTANT_DRY_AIR / (
+            constants.CPD - constants.GAS_CONSTANT_DRY_AIR
+        )
         #: threshold temperature deviation from neighboring grid points hat activates extra diffusion against runaway cooling
         self.thresh_tdiff: float = -5.0
         self.grid: Optional[icon_grid.IconGrid] = None
@@ -554,7 +554,9 @@ class Diffusion:
         cell_start_nudging = self.grid.get_start_index(
             CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
         )
-        cell_end_local = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.local(CellDim))
+        cell_end_local = self.grid.get_end_index(
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+        )
         cell_end_halo = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.halo(CellDim))
 
         edge_start_nudging_plus_one = self.grid.get_start_index(
@@ -566,7 +568,9 @@ class Diffusion:
         edge_start_lb_plus4 = self.grid.get_start_index(
             EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
-        edge_end_local = self.grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim))
+        edge_end_local = self.grid.get_end_index(
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+        )
         edge_end_local_minus2 = self.grid.get_end_index(
             EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
         )
