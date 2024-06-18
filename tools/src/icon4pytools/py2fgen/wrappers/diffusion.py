@@ -23,6 +23,7 @@ Fortran granule interfaces:
 import cProfile
 import os
 import pstats
+import cupy as cp
 import time
 
 from gt4py.next.common import Field
@@ -272,6 +273,14 @@ def diffusion_run(
             dtime,
         )
     else:
+        # Ensure all GPU work is done before starting the timer
+        cp.cuda.Stream.null.synchronize()
+    
+        start_time = time.perf_counter()
         diffusion_granule.run(
             prognostic_state=prognostic_state, diagnostic_state=diagnostic_state, dtime=dtime
         )
+        # Ensure all GPU work is done before starting the timer
+        cp.cuda.Stream.null.synchronize()
+        end_time = time.perf_counter()
+        logger.info(f"Diffusion Granule Runtime: {end_time-start_time}")
