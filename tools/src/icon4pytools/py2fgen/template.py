@@ -107,8 +107,8 @@ def build_array_size_args() -> dict[str, str]:
     from icon4py.model.common import dimension
     from icon4pytools.py2fgen.wrapper_utils import dimension as wrapper_dimensions
 
-    combined_dims = dict(dimension)
-    combined_dims.update(wrapper_dimensions)
+    combined_dims = dict(vars(dimension))
+    combined_dims.update(vars(wrapper_dimensions))
 
     for var_name, var in vars(combined_dims).items():
         if isinstance(var, Dimension):
