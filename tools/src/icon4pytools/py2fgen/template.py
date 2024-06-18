@@ -84,6 +84,7 @@ class CffiPlugin(Node):
 class PythonWrapper(CffiPlugin):
     backend: str
     debug_mode: bool
+    profile: bool
     limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
@@ -272,6 +273,11 @@ def {{ func.name }}_wrapper(
         logging.info("Python Execution Context Start")
         {% endif %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_start_time = time.perf_counter()
+        {% endif %}
+
         # Unpack pointers into Ndarrays
         {% for arg in func.args %}
         {% if arg.is_array %}
@@ -312,6 +318,17 @@ def {{ func.name }}_wrapper(
         {% endif %}
         {% endfor %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_end_time = time.perf_counter()
+        logging.info('{{ func.name }} unpacking and allocating arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
+        {% endif %}
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        func_start_time = time.perf_counter()
+        {% endif %}
+
         {{ func.name }}
         {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
         {%- for arg in func.args -%}
@@ -321,6 +338,13 @@ def {{ func.name }}_wrapper(
         offset_provider=grid.offset_providers
         {%- endif -%}
         )
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        func_end_time = time.perf_counter()
+        logging.info('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
+        {% endif %}
+
 
         {% if _this_node.debug_mode %}
         # debug info
