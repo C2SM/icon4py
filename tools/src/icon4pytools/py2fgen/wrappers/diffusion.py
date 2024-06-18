@@ -59,7 +59,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4pytools.py2fgen.utils.dimension import (
+from icon4pytools.py2fgen.wrapper_utils.dimension import (
     SingletonDim,
     SpecialADim,
     SpecialBDim,
