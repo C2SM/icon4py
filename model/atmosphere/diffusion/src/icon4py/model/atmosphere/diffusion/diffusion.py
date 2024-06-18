@@ -297,7 +297,7 @@ class DiffusionParams:
         object.__setattr__(
             self,
             "scaled_nudge_max_coeff",
-            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+            config.nudge_max_coeff,  # * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):

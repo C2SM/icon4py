@@ -214,6 +214,7 @@ class PythonWrapperGenerator(TemplatedGenerator):
         """\
 # imports for generated wrapper code
 import logging
+{% if _this_node.profile %}import time{% endif %}
 import math
 from {{ plugin_name }} import ffi
 import numpy as np
