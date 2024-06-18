@@ -14,6 +14,7 @@ import dace
 import sys
 from dace.frontend.python.common import SDFGConvertible
 from typing import Any, Dict, Optional, Sequence, Tuple
+import site
 
 import numpy as np
 import dace
@@ -35,14 +36,29 @@ except ImportError:
 
 from icon4py.model.common.settings import backend
 
+
 class DummyNestedSDFG(SDFGConvertible):
     '''
     Replace manually placed halo exchanges
     '''
     def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
-        sdfg = dace.SDFG('DummyNestedSDFG')
-        sdfg.add_state()
-        return sdfg
+            sdfg = dace.SDFG('DummyNestedSDFG')
+            state = sdfg.add_state()
+
+            sdfg.add_scalar(name='__return', dtype=dace.bool)
+
+            tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
+                                              inputs=None,
+                                              outputs=None,
+                                              code="",
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=False,)
+            state.add_node(tasklet)
+
+            state.add_edge(tasklet, '__out', state.add_write('__return'), None, dace.Memlet(data='__return', subset='0'))
+            tasklet.out_connectors = {'__out':dace.bool}
+
+            return sdfg
 
     def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
         return {}
@@ -50,7 +66,6 @@ class DummyNestedSDFG(SDFGConvertible):
     def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
         return ([],[])
 
-import site
 
 @dace.library.environment
 class DaceGHEX:
@@ -72,13 +87,17 @@ class DaceGHEX:
     finalize_code = ""
     dependencies = []
 
+
 def orchestration(self):
     def decorator(fuse_func):
         def wrapper(*args, **kwargs):
             if backend == run_dace_cpu_noopt:
                 
-                tmp = self._exchange.exchange_and_wait
+                tmp_self__exchange_exchange_and_wait = self._exchange.exchange_and_wait
+                tmp_self__exchange_exchange = self._exchange.exchange
+                
                 self._exchange.exchange_and_wait = DummyNestedSDFG()
+                self._exchange.exchange = DummyNestedSDFG()
 
                 kwargs.update({
                                 # GHEX C++ ptrs
@@ -432,7 +451,8 @@ def orchestration(self):
                         # Call SDFG
                         result = binaryobj(**sdfg_args)
 
-                    self._exchange.exchange_and_wait = tmp
+                    self._exchange.exchange_and_wait = tmp_self__exchange_exchange_and_wait
+                    self._exchange.exchange = tmp_self__exchange_exchange
                     return result
             else:
                 fuse_func(*args, **kwargs)

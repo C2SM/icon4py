@@ -658,7 +658,6 @@ class Diffusion:
                 offset_provider=self.grid.offset_providers,
             )
             log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
-
             if (
                 self.config.shear_type
                 >= TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_WIND
@@ -689,7 +688,7 @@ class Diffusion:
             # TODO (magdalena) move this up and do asynchronous exchange
             if self.config.type_vn_diffu > 1:
                 log.debug("communication rbf extrapolation of z_nable2_e - start")
-                #self._exchange(self.z_nabla2_e, dim=EdgeDim, wait=True)
+                self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
                 log.debug("communication rbf extrapolation of z_nable2_e - end")
 
             log.debug("2nd rbf interpolation: start")
@@ -709,7 +708,7 @@ class Diffusion:
 
             # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            #self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
+            self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
             log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
@@ -738,9 +737,8 @@ class Diffusion:
                 offset_provider=self.grid.offset_providers,
             )
             log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
-
             log.debug("communication of prognistic.vn : start")
-            #handle_edge_comm = self._exchange(prognostic_state.vn, dim=EdgeDim, wait=False)
+            handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
             log.debug(
                 "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -780,6 +778,7 @@ class Diffusion:
             log.debug(
                 "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
             )
+
             calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
                 theta_v=prognostic_state.theta_v,
                 theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -810,7 +809,6 @@ class Diffusion:
                 offset_provider=self.grid.offset_providers,
             )
             log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
-
             log.debug(
                 "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
             )
@@ -834,7 +832,6 @@ class Diffusion:
                 log.debug(
                     "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
                 )
-            
             log.debug("running stencil 16 (update_theta_and_exner): start")
             update_theta_and_exner(
                 z_temp=self.z_temp,
@@ -849,10 +846,7 @@ class Diffusion:
                 offset_provider={},
             )
             log.debug("running stencil 16 (update_theta_and_exner): end")
-            
-            #dummy = wait_on_comm_handle(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
+            #handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
             log.debug("communication of prognogistic.vn - end")
         
-            #return dummy
-
         fuse()
