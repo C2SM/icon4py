@@ -170,17 +170,18 @@ def construct_icon_grid(
 
 
 def fortran_grid_indices_to_numpy_offset(inp) -> np.ndarray:
-    return np.subtract(xp.asnumpy(inp.ndarray, order="F").copy(order="F"), 1)
-    #return np.subtract(inp.ndarray.copy(order="F"), 1)
+    #return np.subtract(xp.asnumpy(inp.ndarray, order="F").copy(order="F"), 1)
+    return np.subtract(inp.asnumpy(), 1)
 
 
-def fortran_grid_connectivities_to_xp_offset(inp) -> np.ndarray:
-    return xp.squeeze(xp.subtract(inp.ndarray.copy(order="F"), 1))
+def fortran_grid_connectivities_to_xp_offset(inp) -> xp.ndarray:
+    #return xp.squeeze(xp.subtract(inp.ndarray.copy(order="F"), 1))
+    return xp.squeeze(xp.subtract(inp.ndarray, 1))
 
 
 def fortran_grid_indices_to_numpy(inp) -> np.ndarray:
-    return xp.asnumpy(inp.ndarray, order="F").copy(order="F")
-    #return inp.ndarray.copy(order="F")
+    #return xp.asnumpy(inp.ndarray, order="F").copy(order="F")
+    return inp.asnumpy()
 
 def _download_and_load_from_gridfile(
     file_path: str, filename: str, num_levels: int, on_gpu: bool, limited_area: bool
