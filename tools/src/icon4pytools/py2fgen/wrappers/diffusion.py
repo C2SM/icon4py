@@ -191,9 +191,9 @@ def diffusion_init(
     e_glb_index_np = fortran_grid_indices_to_numpy_offset(e_glb_index)
     v_glb_index_np = fortran_grid_indices_to_numpy_offset(v_glb_index)
 
-    c_owner_mask_np = c_owner_mask.ndarray.copy(order="F")[0:num_cells]
-    e_owner_mask_np = e_owner_mask.ndarray.copy(order="F")[0:num_edges]
-    v_owner_mask_np = v_owner_mask.ndarray.copy(order="F")[0:num_verts]
+    c_owner_mask_np = xp.asnumpy(c_owner_mask.ndarray.copy(order="F"))[0:num_cells]
+    e_owner_mask_np = xp.asnumpy(e_owner_mask.ndarray.copy(order="F"))[0:num_edges]
+    v_owner_mask_np = xp.asnumpy(v_owner_mask.ndarray.copy(order="F"))[0:num_verts]
 
     c2e_loc = fortran_grid_connectivities_to_xp_offset(c2e)
     c2e2c_loc = fortran_grid_connectivities_to_xp_offset(c2e2c)
