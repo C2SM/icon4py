@@ -322,7 +322,7 @@ def {{ func.name }}_wrapper(
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
         unpack_end_time = time.perf_counter()
-        logging.info('{{ func.name }} unpacking and allocating arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
+        logging.critical('{{ func.name }} unpacking and allocating arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
         {% endif %}
 
         {% if _this_node.profile %}
@@ -343,7 +343,7 @@ def {{ func.name }}_wrapper(
         {% if _this_node.profile %}
         cp.cuda.Stream.null.synchronize()
         func_end_time = time.perf_counter()
-        logging.info('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
+        logging.critical('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
         {% endif %}
 
 
@@ -360,7 +360,7 @@ def {{ func.name }}_wrapper(
         {% endif %}
 
         {%- if _this_node.debug_mode %}
-        logging.info("Python Execution Context End")
+        logging.critical("Python Execution Context End")
         {% endif %}
 
     except Exception as e:
