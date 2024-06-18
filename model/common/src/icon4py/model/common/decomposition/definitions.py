@@ -17,16 +17,13 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Protocol, Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Protocol
 
 import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
 from icon4py.model.common.utils import builder
-
-import dace
-from dace.frontend.python.common import SDFGConvertible
 
 
 log = logging.getLogger(__name__)
@@ -151,9 +148,7 @@ class ExchangeRuntime(Protocol):
 
 
 @dataclass
-class SingleNodeExchange(SDFGConvertible):
-    return_sdfg = False
-
+class SingleNodeExchange:
     def exchange(self, dim: Dimension, *fields: tuple) -> ExchangeResult:
         return SingleNodeResult()
 
@@ -165,90 +160,6 @@ class SingleNodeExchange(SDFGConvertible):
 
     def get_size(self):
         return 1
-
-    def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
-        dim = kwargs.get('dim', None)
-        wait = kwargs.get('wait', True)
-
-        if self.return_sdfg:
-            sdfg = dace.SDFG('_halo_exchange_')
-            state = sdfg.add_state()
-
-            # Dummy return: preserve same interface with non-DaCe version
-            sdfg.add_scalar(name='__return', dtype=dace.int32)
-
-            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_',
-                                              inputs=None,
-                                              outputs=None,
-                                              code='__out = 1234;',
-                                              language=dace.dtypes.Language.CPP,
-                                              side_effects=False,)
-            state.add_node(tasklet)
-
-            ret = state.add_write('__return')
-            state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
-            tasklet.out_connectors = {'__out':dace.int32}
-
-            self.return_sdfg = False # reset
-            return sdfg
-        else:
-            res = self.exchange(dim, *args)
-            if wait:
-                res.wait()
-            else:
-                return res
-
-    def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
-        self.return_sdfg = True
-        sdfg = self.__call__(*args, **kwargs)
-        return sdfg
-    
-    def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        return {}
-
-    def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
-        return ([],[])
-
-
-@dataclass
-class WaitOnComm(SDFGConvertible):
-    return_sdfg : bool = False
-
-    def __call__(self, *args, **kwargs) -> Optional[dace.SDFG]:
-        if self.return_sdfg:
-            sdfg = dace.SDFG('_halo_exchange_wait_')
-            state = sdfg.add_state()
-
-            # Dummy return, otherwise dead-dataflow-elimination kicks in. Return something to generate code.
-            sdfg.add_scalar(name='__return', dtype=dace.int32)
-
-            tasklet = dace.sdfg.nodes.Tasklet('_halo_exchange_wait_',
-                                              inputs=None,
-                                              outputs=None,
-                                              code='__out = 1234;',
-                                              language=dace.dtypes.Language.CPP,
-                                              side_effects=False,)
-            state.add_node(tasklet)
-
-            ret = state.add_write('__return')
-            state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
-            tasklet.out_connectors = {'__out':dace.int32}
-
-            self.return_sdfg = False # reset
-            return sdfg
-        else:
-            args[0].wait()
-
-    def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
-        self.return_sdfg = True
-        sdfg = self.__call__(*args, **kwargs)
-        return sdfg
-
-    def __sdfg_closure__(self, reevaluate: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
-        return {}
-    
-    def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
-        return ([],[])
 
 
 class SingleNodeResult:
