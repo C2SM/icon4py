@@ -110,7 +110,7 @@ def build_array_size_args() -> dict[str, str]:
     combined_dims = dict(vars(dimension))
     combined_dims.update(vars(wrapper_dimensions))
 
-    for var_name, var in vars(combined_dims).items():
+    for var_name, var in combined_dims.items():
         if isinstance(var, Dimension):
             dim_name = var_name.replace(
                 "Dim", ""
