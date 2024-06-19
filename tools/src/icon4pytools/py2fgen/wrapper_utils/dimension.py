@@ -14,6 +14,7 @@
 
 from gt4py.next.ffront.fbuiltins import Dimension
 
+
 SingletonDim = Dimension("Singleton")
 SpecialADim = Dimension("SpecialA")
 SpecialBDim = Dimension("SpecialB")

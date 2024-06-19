@@ -51,7 +51,6 @@ from icon4py.model.atmosphere.diffusion.cached import (
 
 from icon4py.model.common.constants import (
     CPD,
-    DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
     dbl_eps,
 )
@@ -293,7 +292,7 @@ class DiffusionParams:
         ) = self._determine_smagorinski_factor(config)
         object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
         object.__setattr__(self, "smagorinski_height", smagorinski_height)
-        # see mo_interpol_nml.f90:
+        # nudge_max_coeff is already multiplied by factor of 5 in mo_interpol_nml.f90
         object.__setattr__(
             self,
             "scaled_nudge_max_coeff",
@@ -607,19 +606,6 @@ class Diffusion:
         )
         vertex_end_halo = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.halo(VertexDim))
 
-        loc_rank = self._exchange.my_rank()
-        # log.debug("cell_start_interior for rank",loc_rank," is ..",cell_start_interior)
-        # log.debug("cell_start_nudging for rank", loc_rank, " is ..", cell_start_nudging)
-        # log.debug("cell_end_local for rank", loc_rank, " is ..", cell_end_local)
-        # log.debug("cell_end_halo for rank", loc_rank, " is ..", cell_end_halo)
-        # log.debug("edge_start_nudging_plus_one for rank", loc_rank, " is ..", edge_start_nudging_plus_one)
-        # log.debug("edge_start_lb_plus4 for rank", loc_rank, " is ..", edge_start_lb_plus4)
-        # log.debug("edge_end_local for rank", loc_rank, " is ..", edge_end_local)
-        # log.debug("edge_end_local_minus2 for rank", loc_rank, " is ..", edge_end_local_minus2)
-        # log.debug("edge_end_halo for rank", loc_rank, " is ..", edge_end_halo)
-        # log.debug("vertex_start_lb_plus1 for rank", loc_rank, " is ..", vertex_start_lb_plus1)
-        # log.debug("vertex_end_local for rank", loc_rank, " is ..", vertex_end_local)
-        # log.debug("vertex_end_halo for rank", loc_rank, " is ..", vertex_end_halo)
         # dtime dependent: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
@@ -638,36 +624,13 @@ class Diffusion:
         )
         log.debug("rbf interpolation 1: end")
 
-        # loc_ind_verts=self._exchange._decomposition_info.local_index(VertexDim,DecompositionInfo.EntryType.HALO)
-        # log.debug("loc_ind_verts rank %s", loc_rank, " loc_ind_verts: %s",loc_ind_verts," shape: %s",loc_ind_verts.shape)
-        # log.debug("after rbf rank %s", loc_rank, " u_vert max: %s min: %s",
-        #      xp.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]),
-        #      xp.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]))
-        # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
-        # log.debug("halo....after rbf rank %s", loc_rank, " u_vert max: %s min: %s",
-        #      self.u_vert.ndarray[loc_ind_verts, 0],
-        #      self.u_vert.ndarray[loc_ind_verts, 0])
         log.debug("communication rbf extrapolation of vn - start")
-        log.debug(
-            "size of u_vert %s v_vert %s", self.u_vert.ndarray.shape, self.v_vert.ndarray.shape
-        )
-        log.debug(
-            "edge_start_lb_plus4 %s edge_end_local_minus2 %s",
-            edge_start_lb_plus4,
-            edge_end_local_minus2,
-        )
         self._exchange.exchange_and_wait(
             VertexDim,
             self.u_vert.ndarray[0 : self.grid.num_vertices, :],
             self.v_vert.ndarray[0 : self.grid.num_vertices, :],
         )
         log.debug("communication rbf extrapolation of vn - end")
-        # log.debug("after exchange rank %s", loc_rank, " u_vert max: %s min: %s",
-        #      xp.max(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]),
-        #      xp.min(self.u_vert.ndarray[vertex_start_lb_plus1:vertex_end_local, 0:klevels]))
-        # log.debug("halo....after exchange rank %s", loc_rank, " u_vert max: %s min: %s",
-        #      self.u_vert.ndarray[loc_ind_verts, 0],
-        #      self.u_vert.ndarray[loc_ind_verts, 0])
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
         calculate_nabla2_and_smag_coefficients_for_vn(
@@ -722,18 +685,12 @@ class Diffusion:
 
         # HALO EXCHANGE  IF (discr_vn > 1) THEN CALL sync_patch_array
         # TODO (magdalena) move this up and do asynchronous exchange
-        # loc_ind_edges=self._exchange._decomposition_info.local_index(EdgeDim,DecompositionInfo.EntryType.HALO)
-        # log.debug("loc_ind_edges rank %s", loc_rank, " loc_ind_edges: %s",loc_ind_edges," shape: %s",loc_ind_edges.shape)
-        # log.debug("halo..z_nabla2_e..before exchange rank %s", loc_rank, " z_nabla2_e: %s",
-        #      self.z_nabla2_e.ndarray[loc_ind_verts, 0])
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
             self._exchange.exchange_and_wait(
                 EdgeDim, self.z_nabla2_e.ndarray[0 : self.grid.num_edges, :]
             )
             log.debug("communication rbf extrapolation of z_nable2_e - end")
-        # log.debug("halo..z_nabla2_e..after exchange rank %s", loc_rank, " z_nabla2_e: %s",
-        #      self.z_nabla2_e.ndarray[loc_ind_verts, 0])
 
         log.debug("2nd rbf interpolation: start")
         mo_intp_rbf_rbf_vec_interpol_vertex(
@@ -751,9 +708,6 @@ class Diffusion:
         log.debug("2nd rbf interpolation: end")
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
-        # log.debug("halo....after 2nd... rbf rank %s", loc_rank, " u_vert %s",
-        #      self.u_vert.ndarray[loc_ind_verts, 0], " v_vert:",
-        #      self.u_vert.ndarray[loc_ind_verts, 0])
         log.debug("communication rbf extrapolation of z_nable2_e - start")
         self._exchange.exchange_and_wait(
             VertexDim,
@@ -761,9 +715,6 @@ class Diffusion:
             self.v_vert.ndarray[0 : self.grid.num_vertices, :],
         )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
-        # log.debug("halo....after 2nd... after exchange rank %s", loc_rank, " u_vert %s",
-        #      self.u_vert.ndarray[loc_ind_verts, 0], " v_vert:",
-        #      self.u_vert.ndarray[loc_ind_verts, 0])
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
         apply_diffusion_to_vn(
@@ -792,14 +743,9 @@ class Diffusion:
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
-        # log.debug("halo..vn..before exchange rank %s", loc_rank, " vn: %s",
-        #      prognostic_state.vn.ndarray[loc_ind_verts, 0])
         handle_edge_comm = self._exchange.exchange(
             EdgeDim, prognostic_state.vn.ndarray[0 : self.grid.num_edges, :]
         )
-        # handle_edge_comm = self._exchange.exchange_and_wait(EdgeDim, prognostic_state.vn.ndarray[0:self.grid.num_edges,:])
-        # log.debug("halo..vn..after exchange rank %s", loc_rank, " vn: %s",
-        #      prognostic_state.vn.ndarray[loc_ind_verts, 0])
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"

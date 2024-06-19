@@ -105,6 +105,7 @@ def get_uninitialised_arrays(limited_area: bool):
 def build_array_size_args() -> dict[str, str]:
     array_size_args = {}
     from icon4py.model.common import dimension
+
     from icon4pytools.py2fgen.wrapper_utils import dimension as wrapper_dimensions
 
     combined_dims = dict(vars(dimension))

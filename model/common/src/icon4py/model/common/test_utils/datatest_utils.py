@@ -74,24 +74,6 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         ) from err
 
 
-def get_global_grid_params(experiment: str) -> tuple[int, int]:
-    """Get the grid root and level from the experiment name.
-
-    Reads the level and root parameters from a string in the canonical ICON gridfile format
-        RxyBab where 'xy' and 'ab' are numbers and denote the root and level of the icosahedron grid construction.
-
-        Args: experiment: str: The experiment name.
-        Returns: tuple[int, int]: The grid root and level.
-    """
-    try:
-        root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
-        return root, level
-    except AttributeError as err:
-        raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
-        ) from err
-
-
 def get_processor_properties_for_run(run_instance):
     return get_processor_properties(run_instance)
 

@@ -14,7 +14,6 @@ from dataclasses import dataclass
 from functools import cached_property
 
 import numpy as np
-from icon4py.model.common.settings import xp
 from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 
@@ -91,8 +90,7 @@ class IconGrid(BaseGrid):
 
     @builder
     def with_start_end_indices(
-        self, dim: Dimension, start_indices: xp.ndarray, end_indices: xp.ndarray
-        #self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
+        self, dim: Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
         self.start_indices[dim] = start_indices.astype(int32)
         self.end_indices[dim] = end_indices.astype(int32)

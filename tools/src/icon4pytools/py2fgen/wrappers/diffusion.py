@@ -21,7 +21,6 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import cProfile
-import os
 import pstats
 
 from gt4py.next.common import Field
@@ -59,28 +58,29 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.settings import device
+from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
+
+from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.wrapper_utils.debug_output import print_grid_decomp_info
 from icon4pytools.py2fgen.wrapper_utils.dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
     SingletonDim,
     SpecialADim,
     SpecialBDim,
     SpecialCDim,
-    CellIndexDim,
-    EdgeIndexDim,
     VertexIndexDim,
 )
-
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device, xp, limited_area as lam
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import (
+from icon4pytools.py2fgen.wrapper_utils.grid_utils import (
     construct_icon_grid,
     fortran_grid_connectivities_to_xp_offset,
     fortran_grid_indices_to_numpy_offset,
 )
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-
-from icon4pytools.common.logger import setup_logger
 
 
 log = setup_logger(__name__)
@@ -232,65 +232,11 @@ def diffusion_init(
     processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    # log.debug("icon_grid:cell_start%s", icon_grid.start_indices[CellDim])
-    # log.debug("icon_grid:cell_end:%s", icon_grid.end_indices[CellDim])
-    # log.debug("icon_grid:vert_start:%s", icon_grid.start_indices[VertexDim])
-    # log.debug("icon_grid:vert_end:%s", icon_grid.end_indices[VertexDim])
-    # log.debug("icon_grid:edge_start:%s", icon_grid.start_indices[EdgeDim])
-    # log.debug("icon_grid:edge_end:%s", icon_grid.end_indices[EdgeDim])
-    # log.debug("icon_grid:c2e:%s", icon_grid.connectivities[C2EDim])
-    # log.debug("icon_grid:c2e2c:%s", icon_grid.connectivities[C2E2CDim])
-    # log.debug("icon_grid:v2e:%s", icon_grid.connectivities[V2EDim])
-    # log.debug("icon_grid:e2c2v:%s", icon_grid.connectivities[E2C2VDim])
-    # log.debug("icon_grid:e2c:%s", icon_grid.connectivities[E2CDim])
+    check_comm_size(processor_props)
 
-    # log.debug("icon_grid:cell_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[CellDim])
-    # log.debug("icon_grid:cell_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[CellDim])
-    # log.debug("icon_grid:vert_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[VertexDim])
-    # log.debug("icon_grid:vert_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[VertexDim])
-    # log.debug("icon_grid:edge_start for rank %s is.... %s",processor_props.rank, icon_grid.start_indices[EdgeDim])
-    # log.debug("icon_grid:edge_end for rank %s is.... %s",processor_props.rank, icon_grid.end_indices[EdgeDim])
-    # log.debug("icon_grid:c2e for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[C2EDim])
-    # log.debug("icon_grid:c2e2c for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[C2E2CDim])
-    # log.debug("icon_grid:v2e for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[V2EDim])
-    # log.debug("icon_grid:e2c2v for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[E2C2VDim])
-    # log.debug("icon_grid:e2c for rank %s is.... %s",processor_props.rank, icon_grid.connectivities[E2CDim])
-
-    # xp.set_log.debugoptions(edgeitems=20)
-    # log.debug("c_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(CellDim)[0:num_cells])
-    # log.debug("e_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(EdgeDim)[0:num_edges])
-    # log.debug("v_glb_index for rank %s is.... %s", processor_props.rank, decomposition_info.global_index(VertexDim)[0:num_verts])
-
-    # log.debug("c_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(CellDim)[0:num_cells])
-    # log.debug("e_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(EdgeDim)[0:num_edges])
-    # log.debug("v_owner_mask for rank %s is.... %s", processor_props.rank, decomposition_info.owner_mask(VertexDim)[0:num_verts])
-
-    # check_comm_size(processor_props)
-    # log.debug(
-    #    f"rank={processor_props.rank}/{processor_props.comm_size}: inializing dycore for experiment 'mch_ch_r04_b09_dsl"
-    # )
-    # log.debug(
-    #    f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels} "
-    #    f"local cells = {decomposition_info.global_index(CellDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
-    #    f"local edges = {decomposition_info.global_index(EdgeDim, definitions.DecompositionInfo.EntryType.ALL).shape} "
-    #    f"local vertices = {decomposition_info.global_index(VertexDim, definitions.DecompositionInfo.EntryType.ALL).shape}"
-    # )
-    # owned_cells = decomposition_info.owner_mask(CellDim)
-    # log.debug(
-    #    f"rank={processor_props.rank}/{processor_props.comm_size}:  GHEX context setup: from {processor_props.comm_name} with {processor_props.comm_size} nodes"
-    # )
-    # log.debug(
-    #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
-    # )
-    # log.debug(
-    #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo edges {np.count_nonzero(np.invert(decomposition_info.owner_mask(EdgeDim)))}"
-    # )
-    # log.debug(
-    #    f"rank={processor_props.rank}/{processor_props.comm_size}: number of halo cells {np.count_nonzero(np.invert(owned_cells))}"
-    # )
-
-    #diffusion_granule.set_exchange(exchange)
-
+    print_grid_decomp_info(
+        icon_grid, processor_props, decomposition_info, num_cells, num_edges, num_verts
+    )
     # Edge geometry
     edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
@@ -362,6 +308,8 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
+
+    # We need the global keyword here
     global diffusion_granule
     diffusion_granule = Diffusion(exchange=exchange)
 

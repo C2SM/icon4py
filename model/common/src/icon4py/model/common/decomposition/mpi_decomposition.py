@@ -52,11 +52,7 @@ from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, Vert
 if TYPE_CHECKING:
     import mpi4py.MPI
 
-
-if device.name == "GPU":
-    ghex_arch = Architecture.GPU
-else:
-    ghex_arch = Architecture.CPU
+ghex_arch = Architecture.GPU if device.name == "GPU" else Architecture.CPU
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)

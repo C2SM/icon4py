@@ -22,7 +22,6 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     neighbor_axis: Dimension,
     has_skip_values: bool,
 ):
-
     table = xp.asarray(xp.arange(old_shape[0] * old_shape[1]).reshape(old_shape))
     return NeighborTableOffsetProvider(
         table,
