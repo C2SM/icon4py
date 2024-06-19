@@ -14,11 +14,13 @@ import functools
 import logging
 import math
 import sys
-import dataclasses
-import enum
+from dataclasses import InitVar, dataclass, field
+from enum import Enum
 from typing import Final, Optional
 
-import gt4py.next as gtx
+from gt4py.next import as_field
+from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -82,7 +84,7 @@ Supports only diffusion_type (=hdiff_order) 5 from the diffusion namelist.
 log = logging.getLogger(__name__)
 
 
-class DiffusionType(int, enum.Enum):
+class DiffusionType(int, Enum):
     """
     Order of nabla operator for diffusion.
 
@@ -97,7 +99,7 @@ class DiffusionType(int, enum.Enum):
     SMAGORINSKY_4TH_ORDER = 5  #: Smagorinsky diffusion with fourth-order background diffusion
 
 
-class TurbulenceShearForcingType(int, enum.Enum):
+class TurbulenceShearForcingType(int, Enum):
     """
     Type of shear forcing used in turbulance.
 
@@ -269,18 +271,18 @@ class DiffusionConfig:
         return float(self.ndyn_substeps)
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class DiffusionParams:
     """Calculates derived quantities depending on the diffusion config."""
 
-    config: dataclasses.InitVar[DiffusionConfig]
-    K2: Final[float] = dataclasses.field(init=False)
-    K4: Final[float] = dataclasses.field(init=False)
-    K6: Final[float] = dataclasses.field(init=False)
-    K4W: Final[float] = dataclasses.field(init=False)
-    smagorinski_factor: Final[float] = dataclasses.field(init=False)
-    smagorinski_height: Final[float] = dataclasses.field(init=False)
-    scaled_nudge_max_coeff: Final[float] = dataclasses.field(init=False)
+    config: InitVar[DiffusionConfig]
+    K2: Final[float] = field(init=False)
+    K4: Final[float] = field(init=False)
+    K6: Final[float] = field(init=False)
+    K4W: Final[float] = field(init=False)
+    smagorinski_factor: Final[float] = field(init=False)
+    smagorinski_height: Final[float] = field(init=False)
+    scaled_nudge_max_coeff: Final[float] = field(init=False)
 
     def __post_init__(self, config):
         object.__setattr__(
@@ -370,14 +372,14 @@ class Diffusion:
         self.interpolation_state: DiffusionInterpolationState = None
         self.metric_state: DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
-        self.diff_multfac_n2w: gtx.Field[[KDim], float] = None
+        self.diff_multfac_n2w: Field[[KDim], float] = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
         self.edge_params: Optional[EdgeParams] = None
         self.cell_params: Optional[CellParams] = None
-        self._horizontal_start_index_w_diffusion: gtx.int32 = 0
+        self._horizontal_start_index_w_diffusion: int32 = 0
 
     def init(
         self,
@@ -416,7 +418,7 @@ class Diffusion:
 
         self._allocate_temporary_fields()
 
-        def _get_start_index_for_w_diffusion() -> gtx.int32:
+        def _get_start_index_for_w_diffusion() -> int32:
             return self.grid.get_start_index(
                 CellDim,
                 (
@@ -462,12 +464,12 @@ class Diffusion:
         return self._initialized
 
     def _allocate_temporary_fields(self):
-        def _allocate(*dims: gtx.Dimension):
+        def _allocate(*dims: Dimension):
             return zero_field(self.grid, *dims)
 
-        def _index_field(dim: gtx.Dimension, size=None):
+        def _index_field(dim: Dimension, size=None):
             size = size if size else self.grid.size[dim]
-            return gtx.as_field((dim,), xp.arange(size, dtype=gtx.int32))
+            return as_field((dim,), xp.arange(size, dtype=int32))
 
         self.diff_multfac_vn = _allocate(KDim)
 
@@ -484,7 +486,7 @@ class Diffusion:
         self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
-        self.w_tmp = gtx.as_field(
+        self.w_tmp = as_field(
             (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
 
@@ -567,8 +569,8 @@ class Diffusion:
         diagnostic_state: DiffusionDiagnosticState,
         prognostic_state: PrognosticState,
         dtime: float,
-        diff_multfac_vn: gtx.Field[[KDim], float],
-        smag_limit: gtx.Field[[KDim], float],
+        diff_multfac_vn: Field[[KDim], float],
+        smag_limit: Field[[KDim], float],
         smag_offset: float,
     ):
         """
@@ -733,7 +735,7 @@ class Diffusion:
             edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_nudging_plus_one),
+            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
             limited_area=self.grid.limited_area,
             horizontal_start=edge_start_lb_plus4,
             horizontal_end=edge_end_local,
@@ -750,6 +752,7 @@ class Diffusion:
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
         copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+
         apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
@@ -757,18 +760,18 @@ class Diffusion:
             geofac_grg_y=self.interpolation_state.geofac_grg_y,
             w_old=self.w_tmp,
             w=prognostic_state.w,
-            type_shear=gtx.int32(self.config.shear_type.value),
+            type_shear=int32(self.config.shear_type.value),
             dwdx=diagnostic_state.dwdx,
             dwdy=diagnostic_state.dwdy,
             diff_multfac_w=self.diff_multfac_w,
             diff_multfac_n2w=self.diff_multfac_n2w,
             k=self.vertical_index,
             cell=self.horizontal_cell_index,
-            nrdmax=gtx.int32(
+            nrdmax=int32(
                 self.vertical_params.end_index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
-            interior_idx=gtx.int32(cell_start_interior),
-            halo_idx=gtx.int32(cell_end_local),
+            interior_idx=int32(cell_start_interior),
+            halo_idx=int32(cell_end_local),
             horizontal_start=self._horizontal_start_index_w_diffusion,
             horizontal_end=cell_end_halo,
             vertical_start=0,
@@ -782,6 +785,7 @@ class Diffusion:
         log.debug(
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
+
         calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
@@ -797,6 +801,7 @@ class Diffusion:
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
+
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
         calculate_nabla2_for_theta(
             kh_smag_e=self.kh_smag_e,
