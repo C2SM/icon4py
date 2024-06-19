@@ -17,12 +17,12 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import Callable, Dict
 
-import numpy as np
 from gt4py.next.common import Dimension
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
+from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
 
 
@@ -68,7 +68,7 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[Dimension, np.ndarray] = {}
+        self.connectivities: Dict[Dimension, xp.ndarray] = {}
         self.size: Dict[Dimension, int] = {}
         self.offset_provider_mapping: Dict[str, tuple[Callable, Dimension, ...]] = {}
 
@@ -109,7 +109,7 @@ class BaseGrid(ABC):
         return offset_providers
 
     @builder
-    def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
+    def with_connectivities(self, connectivity: Dict[Dimension, xp.ndarray]):
         self.connectivities.update({d: k.astype(int) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
@@ -127,11 +127,6 @@ class BaseGrid(ABC):
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
-
-        if self.config.on_gpu:
-            import cupy as xp
-        else:
-            xp = np
 
         return NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),

@@ -118,7 +118,7 @@ def dummy_plugin():
 
 
 def test_fortran_interface(dummy_plugin):
-    interface = generate_f90_interface(dummy_plugin)
+    interface = generate_f90_interface(dummy_plugin, limited_area=True)
     expected = """
     module libtest_plugin
    use, intrinsic :: iso_c_binding
@@ -238,15 +238,18 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, "GPU", False)
+    interface = generate_python_wrapper(dummy_plugin, "GPU", False, limited_area=True)
     expected = '''
 # imports for generated wrapper code
 import logging
+import math
 from libtest_plugin import ffi
 import numpy as np
 import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import int32
+from icon4py.model.common.settings import xp
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
@@ -282,11 +285,10 @@ def unpack_gpu(ptr, *sizes: int):
                     This array shares the underlying data with the original Fortran code, allowing
                     modifications made through the array to affect the original data.
     """
-
     if not sizes:
         raise ValueError("Sizes must be provided to determine the array shape.")
 
-    length = np.prod(sizes)
+    length = math.prod(sizes)
     c_type = ffi.getctype(ffi.typeof(ptr).item)
 
     dtype_map = {
@@ -306,7 +308,6 @@ def unpack_gpu(ptr, *sizes: int):
     mem = cp.cuda.UnownedMemory(ptr_val, total_size, owner=ptr, device_id=current_device.id)
     memptr = cp.cuda.MemoryPointer(mem, 0)
     arr = cp.ndarray(shape=sizes, dtype=dtype, memptr=memptr, order="F")
-
     return arr
 
 def int_array_to_bool_array(int_array: NDArray) -> NDArray:

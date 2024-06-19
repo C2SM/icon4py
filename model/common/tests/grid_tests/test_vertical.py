@@ -18,11 +18,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.grid.vertical import (
-    VerticalGridConfig,
-    VerticalGridParams,
-    get_vct_a_and_vct_b,
-)
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -37,12 +33,12 @@ from icon4py.model.common.test_utils.helpers import dallclose
 def test_nrdmax_calculation(max_h, damping_height, delta, flat_height, grid_savepoint):
     vct_a = np.arange(0, max_h, delta)
     vct_a_field = gtx.as_field((KDim,), data=vct_a[::-1])
-    vertical_config = VerticalGridConfig(
+    vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(KDim),
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalGridParams(
+    vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=vct_a_field,
         vct_b=None,
@@ -62,12 +58,12 @@ def test_nrdmax_calculation_from_icon_input(
     a = grid_savepoint.vct_a()
     b = grid_savepoint.vct_b()
     nrdmax = grid_savepoint.nrdmax()
-    vertical_config = VerticalGridConfig(
+    vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(KDim),
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalGridParams(
+    vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=a,
         vct_b=b,
@@ -91,7 +87,7 @@ def test_grid_size(grid_savepoint):
 def test_kmoist_calculation(grid_savepoint, experiment, kmoist_level):
     threshold = 22500.0
     vct_a = grid_savepoint.vct_a().asnumpy()
-    assert kmoist_level == VerticalGridParams._determine_kstart_moist(
+    assert kmoist_level == v_grid.VerticalGridParams._determine_kstart_moist(
         vct_a, threshold, nshift_total=0
     )
 
@@ -100,7 +96,7 @@ def test_kmoist_calculation(grid_savepoint, experiment, kmoist_level):
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
 def test_kflat_calculation(grid_savepoint, experiment, flat_height):
     vct_a = grid_savepoint.vct_a().asnumpy()
-    assert grid_savepoint.nflatlev() == VerticalGridParams._determine_kstart_flat(
+    assert grid_savepoint.nflatlev() == v_grid.VerticalGridParams._determine_kstart_flat(
         vct_a, flat_height
     )
 
@@ -119,7 +115,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     damping_height,
     htop_moist_proc,
 ):
-    vertical_config = VerticalGridConfig(
+    vertical_config = v_grid.VerticalGridConfig(
         num_levels=grid_savepoint.num(KDim),
         maximal_layer_thickness=maximal_layer_thickness,
         top_height_limit_for_maximal_layer_thickness=top_height_limit_for_maximal_layer_thickness,
@@ -130,7 +126,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
         rayleigh_damping_height=damping_height,
         htop_moist_proc=htop_moist_proc,
     )
-    vct_a, vct_b = get_vct_a_and_vct_b(vertical_config)
+    vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_config)
 
     assert dallclose(vct_a.asnumpy(), grid_savepoint.vct_a().asnumpy())
     assert dallclose(vct_b.asnumpy(), grid_savepoint.vct_b().asnumpy())
