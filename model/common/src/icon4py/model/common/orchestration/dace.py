@@ -13,7 +13,7 @@
 import dace
 import sys
 from dace.frontend.python.common import SDFGConvertible
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 import site
 
 import numpy as np
@@ -23,8 +23,9 @@ from dace.config import Config
 from dace.memlet import Memlet
 from dace.properties import CodeBlock
 from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
-from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-from icon4py.model.common.decomposition.definitions import DecompositionInfo as di
+from gt4py.next import Dimension
+from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange, MultiNodeResult
+from icon4py.model.common.decomposition.definitions import DecompositionInfo as di, SingleNodeResult
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 try:
     from ghex import expose_cpp_ptr
@@ -38,9 +39,7 @@ from icon4py.model.common.settings import backend
 
 
 class DummyNestedSDFG(SDFGConvertible):
-    '''
-    Replace manually placed halo exchanges
-    '''
+    """Option 1 for replacing manually placed halo exchanges"""
     def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
             sdfg = dace.SDFG('DummyNestedSDFG')
             state = sdfg.add_state()
@@ -50,7 +49,7 @@ class DummyNestedSDFG(SDFGConvertible):
             tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
                                               inputs=None,
                                               outputs=None,
-                                              code="",
+                                              code="__out = true;",
                                               language=dace.dtypes.Language.CPP,
                                               side_effects=False,)
             state.add_node(tasklet)
@@ -65,6 +64,27 @@ class DummyNestedSDFG(SDFGConvertible):
 
     def __sdfg_signature__(self) -> Tuple[Sequence[str], Sequence[str]]:
         return ([],[])
+
+
+def dace_inhibitor(f: Callable):
+    """Triggers callback generation wrapping `func` while doing DaCe parsing."""
+    return f
+
+
+@dace_inhibitor
+def dummy_exchange(*args, **kwargs):
+    """Option 2 for replacing manually placed halo exchanges"""
+    return SingleNodeResult()
+
+
+@dace_inhibitor
+def dummy_exchange_and_wait(*args, **kwargs):
+    pass
+
+
+@dace_inhibitor
+def wait(comm_handle: Union[SingleNodeResult, MultiNodeResult]):
+    comm_handle.wait()
 
 
 @dace.library.environment
@@ -96,8 +116,8 @@ def orchestration(self):
                 tmp_self__exchange_exchange_and_wait = self._exchange.exchange_and_wait
                 tmp_self__exchange_exchange = self._exchange.exchange
                 
-                self._exchange.exchange_and_wait = DummyNestedSDFG()
-                self._exchange.exchange = DummyNestedSDFG()
+                self._exchange.exchange_and_wait = dummy_exchange_and_wait # or DummyNestedSDFG()
+                self._exchange.exchange = dummy_exchange # or DummyNestedSDFG()
 
                 kwargs.update({
                                 # GHEX C++ ptrs

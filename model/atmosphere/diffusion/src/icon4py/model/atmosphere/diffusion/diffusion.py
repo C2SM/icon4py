@@ -63,7 +63,7 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import xp
 
-from icon4py.model.common.orchestration.dace import orchestration
+from icon4py.model.common.orchestration.dace import orchestration, wait
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -846,7 +846,7 @@ class Diffusion:
                 offset_provider={},
             )
             log.debug("running stencil 16 (update_theta_and_exner): end")
-            #handle_edge_comm.wait()  # need to do this here, since we currently only use 1 communication object.
+            wait(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
             log.debug("communication of prognogistic.vn - end")
         
         fuse()
