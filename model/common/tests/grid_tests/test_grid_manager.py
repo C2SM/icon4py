@@ -624,7 +624,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = GridManager(IndexTransformation(), fname, VerticalGridConfig(num_lev=80))
+        gm = GridManager(IndexTransformation(), fname, VerticalGridConfig(num_levels=80))
         gm()
         assert error.type == SystemExit
         assert error.value == 1

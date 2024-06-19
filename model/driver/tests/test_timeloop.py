@@ -30,7 +30,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -157,11 +157,11 @@ def test_run_timeloop_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalModelParams(
+    vertical_params = VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     additional_parameters = DiffusionParams(diffusion_config)
 

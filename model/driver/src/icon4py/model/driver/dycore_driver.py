@@ -10,9 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import datetime
 import logging
-from datetime import datetime
-from pathlib import Path
+import pathlib
 from typing import Callable
 
 import click
@@ -290,7 +290,7 @@ class TimeLoop:
 
 
 def initialize(
-    file_path: Path,
+    file_path: pathlib.Path,
     props: ProcessProperties,
     serialization_type: SerializationType,
     experiment_type: ExperimentType,
@@ -466,7 +466,12 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type, grid_ro
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(
-        Path(input_path), parallel_props, serialization_type, experiment_type, grid_root, grid_level
+        pathlib.Path(input_path),
+        parallel_props,
+        serialization_type,
+        experiment_type,
+        grid_root,
+        grid_level,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

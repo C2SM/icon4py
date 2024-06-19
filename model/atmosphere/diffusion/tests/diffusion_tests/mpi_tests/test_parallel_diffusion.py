@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
@@ -50,6 +50,9 @@ def test_parallel_diffusion(
     grid_savepoint,
     metrics_savepoint,
     interpolation_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
 ):
     check_comm_size(processor_props)
@@ -73,6 +76,13 @@ def test_parallel_diffusion(
     cell_geometry = grid_savepoint.construct_cell_geometry()
     edge_geometry = grid_savepoint.construct_edge_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
     config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     diffusion_params = DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
@@ -87,7 +97,7 @@ def test_parallel_diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=VerticalModelParams(grid_savepoint.vct_a(), damping_height),
+        vertical_params=VerticalGridParams(vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,

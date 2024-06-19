@@ -37,7 +37,7 @@ from icon4py.model.common.grid.horizontal import (
     EdgeParams,
     HorizontalMarkerIndex,
 )
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -495,11 +495,11 @@ def construct_diagnostics(init_savepoint: IconNonHydroInitSavepoint):
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
-    return VerticalModelParams(
+    return VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 
 

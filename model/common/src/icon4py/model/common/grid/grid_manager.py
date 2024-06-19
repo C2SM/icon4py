@@ -394,7 +394,7 @@ class GridManager:
 
         config = GridConfig(
             horizontal_config=grid_size,
-            vertical_size=grid_level,
+            vertical_size=self._config.num_levels,
             on_gpu=on_gpu,
             limited_area=limited_area,
         )

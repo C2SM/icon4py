@@ -10,9 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import dataclasses
+import datetime
 import logging
-from dataclasses import dataclass
-from datetime import datetime, timedelta
 
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
@@ -25,11 +25,11 @@ log = logging.getLogger(__name__)
 n_substeps_reduced = 2
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class IconRunConfig:
-    dtime: timedelta = timedelta(seconds=600.0)  # length of a time step
-    start_date: datetime = datetime(1, 1, 1, 0, 0, 0)
-    end_date: datetime = datetime(1, 1, 1, 1, 0, 0)
+    dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
+    start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
+    end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
 
     # TODO (Chia Rui): check ICON code if we need to define extra ndyn_substeps in timeloop that changes in runtime
     n_substeps: int = 5
@@ -45,7 +45,7 @@ class IconRunConfig:
     restart_mode: bool = False
 
 
-@dataclass
+@dataclasses.dataclass
 class IconConfig:
     run_config: IconRunConfig
     vertical_grid_config: VerticalGridConfig
@@ -56,7 +56,7 @@ class IconConfig:
 def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconConfig:
     def _mch_ch_r04b09_vertical_config():
         return VerticalGridConfig(
-            num_lev=65,
+            num_levels=65,
             lowest_layer_thickness=20.0,
             model_top_height=23000.0,
             stretch_factor=0.65,
@@ -86,7 +86,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
     def _jabw_vertical_config():
         return VerticalGridConfig(
-            num_lev=35,
+            num_levels=35,
             rayleigh_damping_height=45000.0,
         )
 
@@ -119,9 +119,9 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _mch_ch_r04b09_config():
         return (
             IconRunConfig(
-                dtime=timedelta(seconds=10.0),
-                start_date=datetime(2021, 6, 20, 12, 0, 0),
-                end_date=datetime(2021, 6, 20, 12, 0, 10),
+                dtime=datetime.timedelta(seconds=10.0),
+                start_date=datetime.datetime(2021, 6, 20, 12, 0, 0),
+                end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
                 n_substeps=n_substeps_reduced,
                 apply_initial_stabilization=True,
             ),
@@ -132,8 +132,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
     def _jablownoski_Williamson_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 1, 1, 0, 30, 0),
+            dtime=datetime.timedelta(seconds=300.0),
+            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
         )

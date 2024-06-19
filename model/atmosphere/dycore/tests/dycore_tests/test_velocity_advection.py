@@ -12,18 +12,26 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.state_utils.states import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.dimension import CellDim, EdgeDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 
 from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metric_state
+
+
+def create_vertical_params(vertical_config, grid_savepoint):
+    return VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
 
 
 @pytest.mark.datatest
@@ -65,12 +73,7 @@ def test_velocity_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalModelParams(
-        vertical_config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -121,12 +124,7 @@ def test_verify_velocity_init_against_regular_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalModelParams(
-        vertical_config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -218,12 +216,7 @@ def test_velocity_predictor_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalModelParams(
-        vertical_config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -392,12 +385,7 @@ def test_velocity_corrector_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalModelParams(
-        vertical_config=vertical_config,
-        vct_a=grid_savepoint.vct_a(),
-        vct_b=grid_savepoint.vct_b(),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
