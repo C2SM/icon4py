@@ -73,3 +73,7 @@ class Icon4PyConfig:
     @cached_property
     def limited_area(self):
         return os.environ.get("ICON4PY_LAM", False)
+
+    @cached_property
+    def parallel_run(self):
+        return os.environ.get("ICON4PY_PARALLEL", False)

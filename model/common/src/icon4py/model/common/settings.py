@@ -18,3 +18,4 @@ backend = config.gt4py_runner
 xp = config.array_ns
 device = config.device
 limited_area = config.limited_area
+parallel_run = config.parallel_run

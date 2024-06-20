@@ -14,6 +14,12 @@
 import logging
 
 import numpy as np
+from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.decomposition.definitions import (
+    DecompositionInfo,
+    MultiNodeRun,
+)
+from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -61,6 +67,20 @@ def construct_icon_grid(
     log.debug("num_vertices:%s", num_vertices)
     log.debug("num_levels:%s", num_levels)
 
+    cells_start_index_np = offset_fortran_indices_return_numpy(cells_start_index)
+    vertex_start_index_np = offset_fortran_indices_return_numpy(vertex_start_index)
+    edge_start_index_np = offset_fortran_indices_return_numpy(edge_start_index)
+
+    cells_end_index_np = cells_end_index.asnumpy()
+    vertex_end_index_np = vertex_end_index.asnumpy()
+    edge_end_index_np = edge_end_index.asnumpy()
+
+    c2e_loc = offset_squeeze_fortran_indices_return_xp(c2e)
+    c2e2c_loc = offset_squeeze_fortran_indices_return_xp(c2e2c)
+    v2e_loc = offset_squeeze_fortran_indices_return_xp(v2e)
+    e2c2v_loc = offset_squeeze_fortran_indices_return_xp(e2c2v)
+    e2c_loc = offset_squeeze_fortran_indices_return_xp(e2c)
+
     config = GridConfig(
         horizontal_config=HorizontalGridSize(
             num_vertices=num_vertices,
@@ -71,28 +91,28 @@ def construct_icon_grid(
         limited_area=limited_area,
         on_gpu=on_gpu,
     )
-    log.debug(" c2e2c.shape[0] %s", c2e2c.shape[0])
-    log.debug(" xp.asarray(range(c2e2c.shape[0]))) %s", xp.asarray(range(c2e2c.shape[0])).shape)
-    c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
+    log.debug(" c2e2c.shape[0] %s", c2e2c_loc.shape[0])
+    log.debug(" xp.asarray(range(c2e2c.shape[0]))) %s", xp.asarray(range(c2e2c_loc.shape[0])).shape)
+    c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c_loc.shape[0]))), c2e2c_loc))
 
     grid = (
         IconGrid()
         .with_config(config)
-        .with_start_end_indices(VertexDim, vertex_start_index, vertex_end_index)
-        .with_start_end_indices(EdgeDim, edge_start_index, edge_end_index)
-        .with_start_end_indices(CellDim, cells_start_index, cells_end_index)
+        .with_start_end_indices(VertexDim, vertex_start_index_np, vertex_end_index_np)
+        .with_start_end_indices(EdgeDim, edge_start_index_np, edge_end_index_np)
+        .with_start_end_indices(CellDim, cells_start_index_np, cells_end_index_np)
         .with_connectivities(
             {
-                C2EDim: c2e,
-                E2CDim: e2c,
-                C2E2CDim: c2e2c,
+                C2EDim: c2e_loc,
+                E2CDim: e2c_loc,
+                C2E2CDim: c2e2c_loc,
                 C2E2CODim: c2e2c0,
             }
         )
         .with_connectivities(
             {
-                V2EDim: v2e,
-                E2C2VDim: e2c2v,
+                V2EDim: v2e_loc,
+                E2C2VDim: e2c2v_loc,
             }
         )
     )
@@ -108,13 +128,42 @@ def construct_icon_grid(
     return grid
 
 
-def fortran_grid_indices_to_numpy_offset(inp) -> np.ndarray:
+def construct_decomposition(
+    c_glb_index,
+    e_glb_index,
+    v_glb_index,
+    c_owner_mask,
+    e_owner_mask,
+    v_owner_mask,
+    num_cells: int,
+    num_edges: int,
+    num_verts: int,
+    num_levels: int,
+    comm_id: int,
+):
+    c_glb_index_np = offset_fortran_indices_return_numpy(c_glb_index)
+    e_glb_index_np = offset_fortran_indices_return_numpy(e_glb_index)
+    v_glb_index_np = offset_fortran_indices_return_numpy(v_glb_index)
+
+    c_owner_mask_np = c_owner_mask.asnumpy()[0:num_cells]
+    e_owner_mask_np = e_owner_mask.asnumpy()[0:num_edges]
+    v_owner_mask_np = v_owner_mask.asnumpy()[0:num_verts]
+
+    decomposition_info = (
+        DecompositionInfo(klevels=num_levels)
+        .with_dimension(CellDim, c_glb_index_np, c_owner_mask_np)
+        .with_dimension(EdgeDim, e_glb_index_np, e_owner_mask_np)
+        .with_dimension(VertexDim, v_glb_index_np, v_owner_mask_np)
+    )
+    processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
+    exchange = definitions.create_exchange(processor_props, decomposition_info)
+
+    return processor_props, decomposition_info, exchange
+
+
+def offset_fortran_indices_return_numpy(inp) -> np.ndarray:
     return np.subtract(inp.asnumpy(), 1)
 
 
-def fortran_grid_connectivities_to_xp_offset(inp) -> xp.ndarray:
+def offset_squeeze_fortran_indices_return_xp(inp) -> xp.ndarray:
     return xp.squeeze(xp.subtract(inp.ndarray, 1))
-
-
-def fortran_grid_indices_to_numpy(inp) -> np.ndarray:
-    return inp.asnumpy()

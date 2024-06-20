@@ -21,6 +21,7 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import cProfile
+import os
 import pstats
 
 from gt4py.next.common import Field
@@ -36,12 +37,6 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
-from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.decomposition.definitions import (
-    DecompositionInfo,
-    MultiNodeRun,
-)
-from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -60,12 +55,14 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device
+from icon4py.model.common.settings import device, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
 
 from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 from icon4pytools.py2fgen.wrapper_utils.debug_output import print_grid_decomp_info
 from icon4pytools.py2fgen.wrapper_utils.dimension import (
     CellIndexDim,
@@ -77,9 +74,8 @@ from icon4pytools.py2fgen.wrapper_utils.dimension import (
     VertexIndexDim,
 )
 from icon4pytools.py2fgen.wrapper_utils.grid_utils import (
+    construct_decomposition,
     construct_icon_grid,
-    fortran_grid_connectivities_to_xp_offset,
-    fortran_grid_indices_to_numpy_offset,
 )
 
 
@@ -181,62 +177,56 @@ def diffusion_init(
     # ICON grid
     on_gpu = True if device.name == "GPU" else False
 
-    cells_start_index_np = fortran_grid_indices_to_numpy_offset(cells_start_index)
-    vert_start_index_np = fortran_grid_indices_to_numpy_offset(vert_start_index)
-    edge_start_index_np = fortran_grid_indices_to_numpy_offset(edge_start_index)
+    if parallel_run:
+        icon_grid = construct_icon_grid(
+            cells_start_index,
+            cells_end_index,
+            vert_start_index,
+            vert_end_index,
+            edge_start_index,
+            edge_end_index,
+            num_cells,
+            num_edges,
+            num_verts,
+            num_levels,
+            c2e,
+            c2e2c,
+            v2e,
+            e2c2v,
+            e2c,
+            True,
+            on_gpu,
+        )
 
-    cells_end_index_np = cells_end_index.asnumpy()
-    vert_end_index_np = vert_end_index.asnumpy()
-    edge_end_index_np = edge_end_index.asnumpy()
+        processor_props, decomposition_info, exchange = construct_decomposition(
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
+            num_cells,
+            num_edges,
+            num_verts,
+            num_levels,
+            comm_id,
+        )
 
-    c_glb_index_np = fortran_grid_indices_to_numpy_offset(c_glb_index)
-    e_glb_index_np = fortran_grid_indices_to_numpy_offset(e_glb_index)
-    v_glb_index_np = fortran_grid_indices_to_numpy_offset(v_glb_index)
+        check_comm_size(processor_props)
 
-    c_owner_mask_np = c_owner_mask.asnumpy()[0:num_cells]
-    e_owner_mask_np = e_owner_mask.asnumpy()[0:num_edges]
-    v_owner_mask_np = v_owner_mask.asnumpy()[0:num_verts]
+        print_grid_decomp_info(
+            icon_grid, processor_props, decomposition_info, num_cells, num_edges, num_verts
+        )
+    else:
+        grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
 
-    c2e_loc = fortran_grid_connectivities_to_xp_offset(c2e)
-    c2e2c_loc = fortran_grid_connectivities_to_xp_offset(c2e2c)
-    v2e_loc = fortran_grid_connectivities_to_xp_offset(v2e)
-    e2c2v_loc = fortran_grid_connectivities_to_xp_offset(e2c2v)
-    e2c_loc = fortran_grid_connectivities_to_xp_offset(e2c)
+        icon_grid = load_grid_from_file(
+            grid_file=grid_file_path,
+            num_levels=num_levels,
+            on_gpu=on_gpu,
+            limited_area=True if limited_area else False,
+        )
 
-    icon_grid = construct_icon_grid(
-        cells_start_index_np,
-        cells_end_index_np,
-        vert_start_index_np,
-        vert_end_index_np,
-        edge_start_index_np,
-        edge_end_index_np,
-        num_cells,
-        num_edges,
-        num_verts,
-        num_levels,
-        c2e_loc,
-        c2e2c_loc,
-        v2e_loc,
-        e2c2v_loc,
-        e2c_loc,
-        True,
-        on_gpu,
-    )
-
-    decomposition_info = (
-        DecompositionInfo(klevels=num_levels)
-        .with_dimension(CellDim, c_glb_index_np, c_owner_mask_np)
-        .with_dimension(EdgeDim, e_glb_index_np, e_owner_mask_np)
-        .with_dimension(VertexDim, v_glb_index_np, v_owner_mask_np)
-    )
-    processor_props = get_multinode_properties(MultiNodeRun(), comm_id)
-    exchange = definitions.create_exchange(processor_props, decomposition_info)
-
-    check_comm_size(processor_props)
-
-    print_grid_decomp_info(
-        icon_grid, processor_props, decomposition_info, num_cells, num_edges, num_verts
-    )
     # Edge geometry
     edge_params = EdgeParams(
         tangent_orientation=tangent_orientation,
@@ -311,7 +301,10 @@ def diffusion_init(
 
     # We need the global keyword here
     global diffusion_granule
-    diffusion_granule = Diffusion(exchange=exchange)
+    if parallel_run:
+        diffusion_granule = Diffusion(exchange=exchange)
+    else:
+        diffusion_granule = Diffusion()
 
     diffusion_granule.init(
         grid=icon_grid,

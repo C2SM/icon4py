@@ -108,7 +108,8 @@ def print_grid_decomp_info(
         icon_grid.connectivities[E2CDim],
     )
 
-    xp.set_log.debugoptions(edgeitems=20)
+    xp.set_printoptions(edgeitems=20)
+
     log.debug(
         "c_glb_index for rank %s is.... %s",
         processor_props.rank,
