@@ -21,13 +21,16 @@ DEFAULT_TEST_DATA_FOLDER = "testdata"
 GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
+GAUSS_3D_EXPERIMENT = "gauss_3d"
 JABW_EXPERIMENT = "jabw_R02B04"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
+TORUS_50000_50000_500_GRID_URI = "https://polybox.ethz.ch/index.php/s/eclzK00TM9nnLtE/download"
 GRID_URIS = {
     REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
+    GAUSS_3D_EXPERIMENT: TORUS_50000_50000_500_GRID_URI,
 }
 
 

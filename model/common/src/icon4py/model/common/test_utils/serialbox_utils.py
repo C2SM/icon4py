@@ -145,8 +145,7 @@ class IconSavepoint:
 class IconGridSavepoint(IconSavepoint):
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int):
         super().__init__(sp, ser, size)
-        self.global_grid_params = \
-            (root, level)
+        self.global_grid_params = (root, level)
 
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)
@@ -475,11 +474,11 @@ class IconGridSavepoint(IconSavepoint):
         )
 
     def construct_cell_geometry(self) -> CellParams:
-        return CellParams.from_global_num_cells(
+        return CellParams(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
-            global_num_cells=self.global_grid_params.num_cells,
+            mean_cell_area=self.global_grid_params.mean_cell_area,
             length_rescale_factor=1.0,
         )
 

@@ -20,10 +20,8 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
-from icon4py.model.common.test_utils.datatest_utils import (
-    GLOBAL_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
-)
+from icon4py.model.common.grid import horizontal as h_grid, icon, simple, vertical as v_grid
+from icon4py.model.common.test_utils import datatest_utils as dt
 
 
 if typing.TYPE_CHECKING:
@@ -54,11 +52,8 @@ from icon4py.model.common.grid.grid_manager import (
     IndexTransformation,
     ToGt4PyTransformation,
 )
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize
 
-from .utils import R02B04_GLOBAL, resolve_file_from_gridfile_name
+from . import utils
 
 
 SIMPLE_GRID_NC = "simple_grid.nc"
@@ -71,6 +66,7 @@ MCH_CH_04B09_NUM_VERTICES = 10663
 MCH_CH_R04B09_LOCAL_NUM_EDGES = 31558
 MCH_CH_RO4B09_LOCAL_NUM_CELLS = 20896
 MCH_CH_RO4B09_GLOBAL_NUM_CELLS = 83886080
+GAUSS_3D_NUM_CELLS = 1056
 
 
 MCH_CH_R04B09_CELL_DOMAINS = {
@@ -113,12 +109,15 @@ MCH_CH_R04B09_EDGE_DOMAINS = {
 @pytest.fixture
 def simple_grid_gridfile(tmp_path):
     path = tmp_path.joinpath(SIMPLE_GRID_NC).absolute()
-    grid = SimpleGrid()
+    grid = simple.SimpleGrid()
 
     dataset = netCDF4.Dataset(path, "w", format="NETCDF4")
     dataset.setncattr(GridFile.PropertyName.GRID_ID, str(uuid4()))
+    # set dummy values used in the torus grid files
     dataset.setncattr(GridFile.PropertyName.LEVEL, 0)
-    dataset.setncattr(GridFile.PropertyName.ROOT, 0)
+    dataset.setncattr(GridFile.PropertyName.ROOT, 2)
+    dataset.setncattr(GridFile.PropertyName.GEOMETRY, 2)
+    dataset.setncattr(GridFile.PropertyName.EDGE_LENGTH, 200.0)
     dataset.createDimension(GridFile.DimensionName.VERTEX_NAME, size=grid.num_vertices)
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=grid.num_edges)
@@ -281,7 +280,7 @@ def _add_to_dataset(
 def test_gridparser_dimension(simple_grid_gridfile):
     data = netCDF4.Dataset(simple_grid_gridfile, "r")
     grid_parser = GridFile(data)
-    grid = SimpleGrid()
+    grid = simple.SimpleGrid()
     assert grid_parser.dimension(GridFile.DimensionName.CELL_NAME) == grid.num_cells
     assert grid_parser.dimension(GridFile.DimensionName.VERTEX_NAME) == grid.num_vertices
     assert grid_parser.dimension(GridFile.DimensionName.EDGE_NAME) == grid.num_edges
@@ -291,10 +290,10 @@ def test_gridparser_dimension(simple_grid_gridfile):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     dataset = netCDF4.Dataset(file, "r")
     grid_file = GridFile(dataset)
 
@@ -307,7 +306,7 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
 def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
     caplog.set_level(logging.DEBUG)
     data = netCDF4.Dataset(simple_grid_gridfile, "r")
-    grid = SimpleGrid()
+    grid = simple.SimpleGrid()
     grid_parser = GridFile(data)
 
     assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), grid.connectivities[C2EDim])
@@ -325,11 +324,11 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices, :]
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
@@ -347,11 +346,11 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices, :]
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
@@ -397,11 +396,11 @@ def reset_invalid_index(index_array: np.ndarray):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
 
     serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges, :]
@@ -420,8 +419,8 @@ def invalid_index(ar):
     return np.where(ar == GridFile.INVALID_INDEX)
 
 
-def _is_local(grid_file: str):
-    return grid_file == REGIONAL_EXPERIMENT
+def _is_limited_area(grid_file: str):
+    return grid_file == dt.REGIONAL_EXPERIMENT
 
 
 def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
@@ -439,7 +438,7 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
         grid_file: name of grid file used
 
     """
-    if _is_local(grid_file):
+    if _is_limited_area(grid_file):
         assert has_invalid_index(e2c_table)
     else:
         assert not has_invalid_index(e2c_table)
@@ -450,11 +449,11 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges, :]
     e2c_table = grid.get_offset_provider("E2C").table
@@ -468,11 +467,11 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
 
     serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells, :]
@@ -489,11 +488,11 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     assert np.allclose(
         grid.get_offset_provider("C2E2C").table,
@@ -505,11 +504,11 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
@@ -523,11 +522,11 @@ def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").table
@@ -553,11 +552,11 @@ def assert_unless_invalid(table, serialized_ref):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(EdgeDim) + 1) to end(EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
@@ -570,11 +569,11 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(REGIONAL_EXPERIMENT, REGIONAL_EXPERIMENT), (R02B04_GLOBAL, GLOBAL_EXPERIMENT)],
+    [(dt.REGIONAL_EXPERIMENT, dt.REGIONAL_EXPERIMENT), (dt.R02B04_GLOBAL, dt.GLOBAL_EXPERIMENT)],
 )
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file).get_grid()
     c2v = grid.get_offset_provider("C2V").table
     assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells, :])
@@ -584,7 +583,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
 def init_grid_manager(fname, num_levels=65, transformation=None):
     if transformation is None:
         transformation = ToGt4PyTransformation()
-    grid_manager = GridManager(transformation, fname, VerticalGridSize(num_levels))
+    grid_manager = GridManager(transformation, fname, v_grid.VerticalGridSize(num_levels))
     grid_manager()
     return grid_manager
 
@@ -608,7 +607,7 @@ def assert_up_to_order(table, diamond_table):
 
 @pytest.mark.with_netcdf
 def test_grid_manager_diamond_offset(simple_grid_gridfile):
-    simple_grid = SimpleGrid()
+    simple_grid = simple.SimpleGrid()
     gm = init_grid_manager(
         simple_grid_gridfile,
         num_levels=simple_grid.num_levels,
@@ -624,7 +623,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = GridManager(IndexTransformation(), fname, VerticalGridSize(num_lev=80))
+        gm = GridManager(IndexTransformation(), fname, v_grid.VerticalGridSize(num_lev=80))
         gm()
         assert error.type == SystemExit
         assert error.value == 1
@@ -647,227 +646,227 @@ def test_gt4py_transform_offset_by_1_where_valid(size):
     [
         (
             CellDim,
-            HorizontalMarkerIndex.interior(CellDim),
+            h_grid.HorizontalMarkerIndex.interior(CellDim),
             MCH_CH_R04B09_CELL_DOMAINS["INTERIOR"],
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.interior(CellDim) + 1,
+            h_grid.HorizontalMarkerIndex.interior(CellDim) + 1,
             0,
             MCH_CH_R04B09_CELL_DOMAINS["2ND_BOUNDARY_LINE"],
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.local(CellDim) - 2,
+            h_grid.HorizontalMarkerIndex.local(CellDim) - 2,
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.local(CellDim) - 1,
+            h_grid.HorizontalMarkerIndex.local(CellDim) - 1,
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.local(CellDim),
+            h_grid.HorizontalMarkerIndex.local(CellDim),
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
             MCH_CH_RO4B09_LOCAL_NUM_CELLS,
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.nudging(CellDim),
+            h_grid.HorizontalMarkerIndex.nudging(CellDim),
             MCH_CH_R04B09_CELL_DOMAINS["NUDGING"],
             MCH_CH_R04B09_CELL_DOMAINS["INTERIOR"],
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 3,
             MCH_CH_R04B09_CELL_DOMAINS["4TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_CELL_DOMAINS["NUDGING"],
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
             MCH_CH_R04B09_CELL_DOMAINS["3D_BOUNDARY_LINE"],
             MCH_CH_R04B09_CELL_DOMAINS["4TH_BOUNDARY_LINE"],
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
             MCH_CH_R04B09_CELL_DOMAINS["2ND_BOUNDARY_LINE"],
             MCH_CH_R04B09_CELL_DOMAINS["3D_BOUNDARY_LINE"],
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.lateral_boundary(CellDim) + 0,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 0,
             0,
             MCH_CH_R04B09_CELL_DOMAINS["2ND_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.interior(EdgeDim),
+            h_grid.HorizontalMarkerIndex.interior(EdgeDim),
             MCH_CH_R04B09_EDGE_DOMAINS["INTERIOR"],
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.local(EdgeDim) - 2,
+            h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2,
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.local(EdgeDim) - 1,
+            h_grid.HorizontalMarkerIndex.local(EdgeDim) - 1,
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.local(EdgeDim),
+            h_grid.HorizontalMarkerIndex.local(EdgeDim),
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
             MCH_CH_R04B09_LOCAL_NUM_EDGES,
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim),
+            h_grid.HorizontalMarkerIndex.nudging(EdgeDim),
             MCH_CH_R04B09_EDGE_DOMAINS["NUDGING"],
             MCH_CH_R04B09_EDGE_DOMAINS["2ND_NUDGING"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.nudging(EdgeDim) + 1,
+            h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1,
             MCH_CH_R04B09_EDGE_DOMAINS["2ND_NUDGING"],
             MCH_CH_R04B09_EDGE_DOMAINS["INTERIOR"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 7,
             MCH_CH_R04B09_EDGE_DOMAINS["8TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["NUDGING"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6,
             MCH_CH_R04B09_EDGE_DOMAINS["7TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["8TH_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 5,
             MCH_CH_R04B09_EDGE_DOMAINS["6TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["7TH_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
             MCH_CH_R04B09_EDGE_DOMAINS["5TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["6TH_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
             MCH_CH_R04B09_EDGE_DOMAINS["4TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["5TH_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 2,
             MCH_CH_R04B09_EDGE_DOMAINS["3D_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["4TH_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
             MCH_CH_R04B09_EDGE_DOMAINS["2ND_BOUNDARY_LINE"],
             MCH_CH_R04B09_EDGE_DOMAINS["3D_BOUNDARY_LINE"],
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 0,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 0,
             0,
             MCH_CH_R04B09_EDGE_DOMAINS["2ND_BOUNDARY_LINE"],
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.interior(VertexDim),
+            h_grid.HorizontalMarkerIndex.interior(VertexDim),
             MCH_CH_R04B09_VERTEX_DOMAINS["INTERIOR"],
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.local(VertexDim) - 2,
+            h_grid.HorizontalMarkerIndex.local(VertexDim) - 2,
             MCH_CH_04B09_NUM_VERTICES,
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.local(VertexDim) - 1,
+            h_grid.HorizontalMarkerIndex.local(VertexDim) - 1,
             MCH_CH_04B09_NUM_VERTICES,
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.local(VertexDim),
+            h_grid.HorizontalMarkerIndex.local(VertexDim),
             MCH_CH_04B09_NUM_VERTICES,
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.nudging(VertexDim) + 1,
+            h_grid.HorizontalMarkerIndex.nudging(VertexDim) + 1,
             MCH_CH_04B09_NUM_VERTICES,
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.nudging(VertexDim),
+            h_grid.HorizontalMarkerIndex.nudging(VertexDim),
             MCH_CH_04B09_NUM_VERTICES,
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.end(VertexDim),
+            h_grid.HorizontalMarkerIndex.end(VertexDim),
             MCH_CH_04B09_NUM_VERTICES,
             MCH_CH_04B09_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 4,
             MCH_CH_R04B09_VERTEX_DOMAINS["5TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_VERTEX_DOMAINS["INTERIOR"],
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 3,
             MCH_CH_R04B09_VERTEX_DOMAINS["4TH_BOUNDARY_LINE"],
             MCH_CH_R04B09_VERTEX_DOMAINS["5TH_BOUNDARY_LINE"],
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 2,
             MCH_CH_R04B09_VERTEX_DOMAINS["3D_BOUNDARY_LINE"],
             MCH_CH_R04B09_VERTEX_DOMAINS["4TH_BOUNDARY_LINE"],
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
             MCH_CH_R04B09_VERTEX_DOMAINS["2ND_BOUNDARY_LINE"],
             MCH_CH_R04B09_VERTEX_DOMAINS["3D_BOUNDARY_LINE"],
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0,
+            h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 0,
             0,
             MCH_CH_R04B09_VERTEX_DOMAINS["2ND_BOUNDARY_LINE"],
         ),
     ],
 )
-@pytest.mark.parametrize("grid_file, num_levels", [(REGIONAL_EXPERIMENT, 65)])
+@pytest.mark.parametrize("grid_file, num_levels", [(dt.REGIONAL_EXPERIMENT, 65)])
 def test_get_start_end_index_for_local_grid(
     grid_file, num_levels, dim, marker, start_index, end_index
 ):
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
@@ -877,78 +876,101 @@ def test_get_start_end_index_for_local_grid(
 @pytest.mark.parametrize(
     "dim, marker,start_index,end_index",
     [
-        (CellDim, HorizontalMarkerIndex.interior(CellDim), 0, 0),
-        (CellDim, HorizontalMarkerIndex.local(CellDim), 0, R02B04_GLOBAL_NUM_CELLS),
-        (CellDim, HorizontalMarkerIndex.nudging(CellDim), 0, 0),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim), 0, 0),
+        (CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim), 0, 0),
+        (CellDim, h_grid.HorizontalMarkerIndex.local(CellDim), 0, R02B04_GLOBAL_NUM_CELLS),
+        (CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim), 0, 0),
+        (CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim), 0, 0),
         (
             CellDim,
-            HorizontalMarkerIndex.end(CellDim),
+            h_grid.HorizontalMarkerIndex.end(CellDim),
             R02B04_GLOBAL_NUM_CELLS,
             R02B04_GLOBAL_NUM_CELLS,
         ),
         (
             CellDim,
-            HorizontalMarkerIndex.halo(CellDim),
+            h_grid.HorizontalMarkerIndex.halo(CellDim),
             R02B04_GLOBAL_NUM_CELLS,
             R02B04_GLOBAL_NUM_CELLS,
         ),
-        (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 0, 0),
-        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 0, R02B04_GLOBAL_NUM_EDGES),
-        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 0, 0),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim), 0, 0),
+        (EdgeDim, h_grid.HorizontalMarkerIndex.interior(EdgeDim), 0, 0),
+        (EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim), 0, R02B04_GLOBAL_NUM_EDGES),
+        (EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim), 0, 0),
+        (EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim), 0, 0),
         (
             EdgeDim,
-            HorizontalMarkerIndex.end(EdgeDim),
+            h_grid.HorizontalMarkerIndex.end(EdgeDim),
             R02B04_GLOBAL_NUM_EDGES,
             R02B04_GLOBAL_NUM_EDGES,
         ),
         (
             EdgeDim,
-            HorizontalMarkerIndex.halo(EdgeDim),
+            h_grid.HorizontalMarkerIndex.halo(EdgeDim),
             R02B04_GLOBAL_NUM_EDGES,
             R02B04_GLOBAL_NUM_EDGES,
         ),
-        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 0, 0),
+        (VertexDim, h_grid.HorizontalMarkerIndex.interior(VertexDim), 0, 0),
         (
             VertexDim,
-            HorizontalMarkerIndex.local(VertexDim),
+            h_grid.HorizontalMarkerIndex.local(VertexDim),
             0,
             R02B04_GLOBAL_NUM_VERTICES,
         ),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 0, 0),
+        (VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim), 0, 0),
         (
             VertexDim,
-            HorizontalMarkerIndex.end(VertexDim),
+            h_grid.HorizontalMarkerIndex.end(VertexDim),
             R02B04_GLOBAL_NUM_VERTICES,
             R02B04_GLOBAL_NUM_VERTICES,
         ),
         (
             VertexDim,
-            HorizontalMarkerIndex.halo(VertexDim),
+            h_grid.HorizontalMarkerIndex.halo(VertexDim),
             R02B04_GLOBAL_NUM_VERTICES,
             R02B04_GLOBAL_NUM_VERTICES,
         ),
     ],
 )
-@pytest.mark.parametrize("grid_file, num_levels", [(R02B04_GLOBAL, 80)])
+@pytest.mark.parametrize("grid_file, num_levels", [(dt.R02B04_GLOBAL, 80)])
 def test_get_start_end_index_for_global_grid(
     grid_file, num_levels, dim, marker, start_index, end_index
 ):
-    file = resolve_file_from_gridfile_name(grid_file)
+    file = utils.resolve_file_from_gridfile_name(grid_file)
     from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
 
 
 @pytest.mark.parametrize(
-    "grid_file, global_num_cells",
+    "experiment, global_num_cells",
     [
-        (R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
-        (REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (dt.R02B04_GLOBAL, R02B04_GLOBAL_NUM_CELLS),
+        (dt.REGIONAL_EXPERIMENT, MCH_CH_RO4B09_GLOBAL_NUM_CELLS),
+        (dt.GAUSS_3D_EXPERIMENT, GAUSS_3D_NUM_CELLS),
     ],
 )
-def test_grid_level_and_root(grid_file, global_num_cells):
-    file = resolve_file_from_gridfile_name(grid_file)
+def test_grid_level_and_root(experiment, global_num_cells):
+    file = utils.resolve_file_from_gridfile_name(experiment)
     grid = init_grid_manager(file, num_levels=10).get_grid()
     assert global_num_cells == grid.global_num_cells
+
+
+@pytest.mark.parametrize(
+    "experiment, geometry_type",
+    [
+        (dt.R02B04_GLOBAL, icon.GridGeometryType.ICOSAHEDRON),
+        (dt.REGIONAL_EXPERIMENT, icon.GridGeometryType.ICOSAHEDRON),
+        (dt.GAUSS_3D_EXPERIMENT, icon.GridGeometryType.TORUS),
+    ],
+)
+def test_grid_geometry_type(experiment, geometry_type):
+    file = utils.resolve_file_from_gridfile_name(experiment)
+    grid = init_grid_manager(file, num_levels=10).get_grid()
+    assert geometry_type == grid.global_properties.type
+
+
+@pytest.mark.xfail("TODO fix simple grid connectivity construction")
+def test_torus_grid_on_simple_grid(simple_grid_gridfile):
+    grid = init_grid_manager(simple_grid_gridfile, num_levels=10).get_grid()
+    assert grid.num_cells == 18
+    assert grid.global_num_cells == 18
+    assert pytest.approx(17320.5080757, abs=1e-7) == grid.global_properties.edge_length

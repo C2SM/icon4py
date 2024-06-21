@@ -246,7 +246,9 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
-        self.inverse_vertex_vertex_lengths: gtx.Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
+        self.inverse_vertex_vertex_lengths: gtx.Field[
+            [EdgeDim], float
+        ] = inverse_vertex_vertex_lengths
         """
         Inverse distance between outer vertices of adjacent cells.
 
@@ -383,9 +385,6 @@ class CellParams:
     @functools.cached_property
     def mean_cell_area(self):
         return self.mean_cell_area
-
-
-
 
 
 class RefinCtrlLevel:

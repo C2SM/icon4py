@@ -20,6 +20,7 @@ import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
     C2E2C2EDim,
@@ -49,33 +50,38 @@ from icon4py.model.common.utils import builder
 
 
 class GridGeometryType(enum.IntEnum):
-    ICOSAHEDRON=1,
+    ICOSAHEDRON = (1,)
     TORUS = 2
+
 
 class GlobalGridParams(ABC):
     @abstractmethod
     def type(self):
         pass
-   
-    @abstractmethod 
+
+    @abstractmethod
     def num_cells(self):
         pass
-    
+
+
 @dataclasses.dataclass(frozen=True)
 class Icosahedron(GlobalGridParams):
     #: R of the RxBy construction of the icosahedral grid
-    root:int
+    root: int
     #: B of the RxBy construction of the icosahedral grid
-    level:int
-    
+    level: int
+    rescale_factor: float = 1.0
+
+    @functools.cached_property
     def type(self):
         return GridGeometryType.ICOSAHEDRON
+
     @functools.cached_property
     def num_cells(self):
-        return 20.0 * self.root ** 2 * 4.0 ** self.level
-    
-    @functools.cache
-    def mean_cell_area(self, radius:float)->float:
+        return 20.0 * self.root**2 * 4.0**self.level
+
+    @functools.cached_property
+    def mean_cell_area(self) -> float:
         """
         Compute the mean cell area on a sphere.
 
@@ -87,15 +93,33 @@ class Icosahedron(GlobalGridParams):
             num_cells: number of cells on the global grid
         Returns: mean area of one cell [m^2]
         """
+        radius = constants.EARTH_RADIUS * self.rescale_factor
         return 4.0 * math.pi * radius**2 / self.num_cells
-    
+
+
 @dataclasses.dataclass(frozen=True)
 class Torus(GlobalGridParams):
+    #: Edge length of the torus
+    edge_length: float
     #: Number of cells in the torus
-    num_cells:int
+    num_cells: int
+
+    @functools.cached_property
+    def num_cells(self):
+        return self.num_cells
+
     @functools.cached_property
     def type(self):
         return GridGeometryType.TORUS
+
+    @functools.cached_property
+    def mean_cell_area(self) -> float:
+        """
+        Compute the mean cell area on a torus.
+
+        The torus grid consists of equilateral triangles with height sqrt{3}/2 * edge_length.
+        """
+        return self.edge_length**2 * math.sqrt(3) / 4.0
 
 
 class IconGrid(BaseGrid):
