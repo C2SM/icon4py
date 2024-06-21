@@ -12,8 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
 import enum
+import functools
+import math
 from abc import ABC, abstractmethod
-from functools import cached_property
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
@@ -69,15 +70,30 @@ class Icosahedron(GlobalGridParams):
     
     def type(self):
         return GridGeometryType.ICOSAHEDRON
-    @cached_property
+    @functools.cached_property
     def num_cells(self):
         return 20.0 * self.root ** 2 * 4.0 ** self.level
+    
+    @functools.cache
+    def mean_cell_area(self, radius:float)->float:
+        """
+        Compute the mean cell area on a sphere.
+
+        Computes the mean cell area by dividing the sphere by the number of cells in the
+        global grid.
+
+        Args:
+            radius: average earth radius, might be rescaled by a scaling parameter
+            num_cells: number of cells on the global grid
+        Returns: mean area of one cell [m^2]
+        """
+        return 4.0 * math.pi * radius**2 / self.num_cells
     
 @dataclasses.dataclass(frozen=True)
 class Torus(GlobalGridParams):
     #: Number of cells in the torus
     num_cells:int
-    @cached_property
+    @functools.cached_property
     def type(self):
         return GridGeometryType.TORUS
 

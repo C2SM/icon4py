@@ -10,12 +10,13 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import dataclasses
+import functools
 import math
-from dataclasses import dataclass
-from functools import cached_property
 from typing import ClassVar, Final
 
-from gt4py.next import Dimension, Field, field_operator, neighbor_sum
+import gt4py.next as gtx
+from gt4py.next import neighbor_sum  # throws an error with model level import
 
 from icon4py.model.common import constants, dimension
 from icon4py.model.common.dimension import (
@@ -126,7 +127,7 @@ class HorizontalMarkerIndex:
     }
 
     @classmethod
-    def lateral_boundary(cls, dim: Dimension) -> int:
+    def lateral_boundary(cls, dim: gtx.Dimension) -> int:
         """Indicate lateral boundary.
 
         These points correspond to the sorted points in ICON, the marker can be incremented in order
@@ -135,35 +136,35 @@ class HorizontalMarkerIndex:
         return cls._lateral_boundary[dim]
 
     @classmethod
-    def local(cls, dim: Dimension) -> int:
+    def local(cls, dim: gtx.Dimension) -> int:
         """Indicate points that are owned by the processing unit, i.e. no halo points."""
         return cls._local[dim]
 
     @classmethod
-    def halo(cls, dim: Dimension) -> int:
+    def halo(cls, dim: gtx.Dimension) -> int:
         return cls._halo[dim]
 
     @classmethod
-    def nudging(cls, dim: Dimension) -> int:
+    def nudging(cls, dim: gtx.Dimension) -> int:
         """Indicate the nudging zone."""
         return cls._nudging[dim]
 
     @classmethod
-    def nudging_2nd_level(cls, dim: Dimension) -> int:
+    def nudging_2nd_level(cls, dim: gtx.Dimension) -> int:
         """Indicate the nudging zone for 2nd level."""
         return cls.nudging(dim) + 1
 
     @classmethod
-    def interior(cls, dim: Dimension) -> int:
+    def interior(cls, dim: gtx.Dimension) -> int:
         """Indicate interior i.e. unordered prognostic cells in ICON."""
         return cls._interior[dim]
 
     @classmethod
-    def end(cls, dim: Dimension) -> int:
+    def end(cls, dim: gtx.Dimension) -> int:
         return cls._end[dim]
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int
     num_edges: int
@@ -194,7 +195,7 @@ class EdgeParams:
         primal_normal_x=None,
         primal_normal_y=None,
     ):
-        self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
+        self.tangent_orientation: gtx.Field[[EdgeDim], float] = tangent_orientation
         """
         Orientation of vector product of the edge and the adjacent cell centers
              v3
@@ -214,21 +215,21 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
         """
 
-        self.primal_edge_lengths: Field[[EdgeDim], float] = primal_edge_lengths
+        self.primal_edge_lengths: gtx.Field[[EdgeDim], float] = primal_edge_lengths
         """
         Length of the triangle edge.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
         """
 
-        self.inverse_primal_edge_lengths: Field[[EdgeDim], float] = inverse_primal_edge_lengths
+        self.inverse_primal_edge_lengths: gtx.Field[[EdgeDim], float] = inverse_primal_edge_lengths
         """
         Inverse of the triangle edge length: 1.0/primal_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
         """
 
-        self.dual_edge_lengths: Field[[EdgeDim], float] = dual_edge_lengths
+        self.dual_edge_lengths: gtx.Field[[EdgeDim], float] = dual_edge_lengths
         """
         Length of the hexagon/pentagon edge.
         vertices of the hexagon/pentagon are cell centers and its center
@@ -238,14 +239,14 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
         """
 
-        self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
+        self.inverse_dual_edge_lengths: gtx.Field[[EdgeDim], float] = inverse_dual_edge_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
-        self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
+        self.inverse_vertex_vertex_lengths: gtx.Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
         """
         Inverse distance between outer vertices of adjacent cells.
 
@@ -262,7 +263,7 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
         """
 
-        self.primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
+        self.primal_normal_vert: tuple[gtx.Field[[ECVDim], float], gtx.Field[[ECVDim], float]] = (
             primal_normal_vert_x,
             primal_normal_vert_y,
         )
@@ -274,7 +275,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
+        self.dual_normal_vert: tuple[gtx.Field[[ECVDim], float], gtx.Field[[ECVDim], float]] = (
             dual_normal_vert_x,
             dual_normal_vert_y,
         )
@@ -286,7 +287,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+        self.primal_normal_cell: tuple[gtx.Field[[ECDim], float], gtx.Field[[ECDim], float]] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
         )
@@ -298,7 +299,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+        self.dual_normal_cell: tuple[gtx.Field[[ECDim], float], gtx.Field[[ECDim], float]] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
         )
@@ -310,7 +311,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.edge_areas: Field[[EdgeDim], float] = edge_areas
+        self.edge_areas: gtx.Field[[EdgeDim], float] = edge_areas
         """
         Area of the quadrilateral whose edges are the primal edge and
         the associated dual edge.
@@ -319,12 +320,12 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.f_e: Field[[EdgeDim], float] = f_e
+        self.f_e: gtx.Field[[EdgeDim], float] = f_e
         """
         Coriolis parameter at cell edges
         """
 
-        self.edge_center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
+        self.edge_center: tuple[gtx.Field[[EdgeDim], float], gtx.Field[[EdgeDim], float]] = (
             edge_center_lat,
             edge_center_lon,
         )
@@ -334,7 +335,7 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%center
         """
 
-        self.primal_normal: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+        self.primal_normal: tuple[gtx.Field[[ECDim], float], gtx.Field[[ECDim], float]] = (
             primal_normal_x,
             primal_normal_y,
         )
@@ -345,14 +346,14 @@ class EdgeParams:
         """
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class CellParams:
     #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
-    cell_center_lat: Field[[CellDim], float] = None
+    cell_center_lat: gtx.Field[[CellDim], float] = None
     #: Longitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
-    cell_center_lon: Field[[CellDim], float] = None
+    cell_center_lon: gtx.Field[[CellDim], float] = None
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
-    area: Field[[CellDim], float] = None
+    area: gtx.Field[[CellDim], float] = None
     #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
     mean_cell_area: float = None
     length_rescale_factor: float = 1.0
@@ -360,9 +361,9 @@ class CellParams:
     @classmethod
     def from_global_num_cells(
         cls,
-        cell_center_lat: Field[[CellDim], float],
-        cell_center_lon: Field[[CellDim], float],
-        area: Field[[CellDim], float],
+        cell_center_lat: gtx.Field[[CellDim], float],
+        cell_center_lon: gtx.Field[[CellDim], float],
+        area: gtx.Field[[CellDim], float],
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
@@ -375,28 +376,16 @@ class CellParams:
             length_rescale_factor=length_rescale_factor,
         )
 
-    @cached_property
+    @functools.cached_property
     def characteristic_length(self):
         return math.sqrt(self.mean_cell_area)
 
-    @cached_property
+    @functools.cached_property
     def mean_cell_area(self):
         return self.mean_cell_area
 
-    @staticmethod
-    def _compute_mean_cell_area(radius, num_cells):
-        """
-        Compute the mean cell area.
 
-        Computes the mean cell area by dividing the sphere by the number of cells in the
-        global grid.
 
-        Args:
-            radius: average earth radius, might be rescaled by a scaling parameter
-            num_cells: number of cells on the global grid
-        Returns: mean area of one cell [m^2]
-        """
-        return 4.0 * math.pi * radius**2 / num_cells
 
 
 class RefinCtrlLevel:
@@ -406,7 +395,7 @@ class RefinCtrlLevel:
     }
 
     @classmethod
-    def boundary_nudging_start(cls, dim: Dimension) -> int:
+    def boundary_nudging_start(cls, dim: gtx.Dimension) -> int:
         """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
         try:
             return cls._boundary_nudging_start[dim]
@@ -416,10 +405,10 @@ class RefinCtrlLevel:
             ) from err
 
 
-@field_operator
+@gtx.field_operator
 def _compute_cells2verts(
-    p_cell_in: Field[[CellDim, KDim], float],
-    c_int: Field[[VertexDim, V2CDim], float],
-) -> Field[[VertexDim, KDim], float]:
+    p_cell_in: gtx.Field[[CellDim, KDim], float],
+    c_int: gtx.Field[[VertexDim, V2CDim], float],
+) -> gtx.Field[[VertexDim, KDim], float]:
     p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)
     return p_vert_out
