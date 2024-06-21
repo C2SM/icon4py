@@ -20,7 +20,8 @@ classifiers = [
 ]
 dependencies = [
   "gt4py>=1.0.1",
-  "nanobind<2.0.0"
+  "nanobind<2.0.0",
+  "xarray[complete]>=2024.3.0"
 ]
 description = "Shared code for the icon4py model."
 dynamic = ['version']
