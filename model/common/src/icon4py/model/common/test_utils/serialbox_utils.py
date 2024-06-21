@@ -46,7 +46,7 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
@@ -145,7 +145,8 @@ class IconSavepoint:
 class IconGridSavepoint(IconSavepoint):
     def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int):
         super().__init__(sp, ser, size)
-        self.global_grid_params = GlobalGridParams(root, level)
+        self.global_grid_params = \
+            (root, level)
 
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)

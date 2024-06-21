@@ -11,13 +11,13 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
+import enum
 import logging
-from enum import Enum
+import uuid
 from typing import Optional
-from uuid import UUID
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind
 
 
 try:
@@ -52,10 +52,10 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid.icon import IconGrid, Icosahedron
 
 
-class GridFileName(str, Enum):
+class GridFileName(str, enum.Enum):
     pass
 
 
@@ -315,8 +315,8 @@ class GridManager:
     def get_grid(self):
         return self._grid
 
-    def _get_index(self, dim: Dimension, start_marker: int, index_dict):
-        if dim.kind != DimensionKind.HORIZONTAL:
+    def _get_index(self, dim: gtx.Dimension, start_marker: int, index_dict):
+        if dim.kind != gtx.DimensionKind.HORIZONTAL:
             msg = f"getting start index in horizontal domain with non - horizontal dimension {dim}"
             self._log.warning(msg)
             raise IconGridError(msg)
@@ -329,11 +329,11 @@ class GridManager:
 
     def _constuct_grid(
         self, dataset: Dataset, on_gpu: bool, limited_area: bool
-    ) -> tuple[UUID, IconGrid]:
-        grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
+    ) -> tuple[uuid.UUID, IconGrid]:
+        grid_id = uuid.UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
         return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
 
-    def get_size(self, dim: Dimension):
+    def get_size(self, dim: gtx.Dimension):
         if dim == VertexDim:
             return self._grid.config.num_vertices
         elif dim == CellDim:
@@ -364,7 +364,7 @@ class GridManager:
         num_vertices = reader.dimension(GridFile.DimensionName.VERTEX_NAME)
         grid_level = dataset.getncattr(GridFile.PropertyName.LEVEL)
         grid_root = dataset.getncattr(GridFile.PropertyName.ROOT)
-        global_params = GlobalGridParams(level=grid_level, root=grid_root)
+        global_params = Icosahedron(level=grid_level, root=grid_root)
 
         grid_size = HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells

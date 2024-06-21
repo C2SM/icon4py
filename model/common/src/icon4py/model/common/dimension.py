@@ -38,6 +38,7 @@ E2C2EODim = Dimension("E2C2EO", DimensionKind.LOCAL)
 E2C2EDim = Dimension("E2C2E", DimensionKind.LOCAL)
 C2E2CDim = Dimension("C2E2C", DimensionKind.LOCAL)
 C2E2C2EDim = Dimension("C2E2C2E", DimensionKind.LOCAL)
+
 C2E2C2E2CDim = Dimension("C2E2C2E2C", DimensionKind.LOCAL)
 E2C = FieldOffset("E2C", source=CellDim, target=(EdgeDim, E2CDim))
 C2E = FieldOffset("C2E", source=EdgeDim, target=(CellDim, C2EDim))

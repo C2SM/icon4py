@@ -10,7 +10,9 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from dataclasses import dataclass
+import dataclasses
+import enum
+from abc import ABC, abstractmethod
 from functools import cached_property
 
 import numpy as np
@@ -45,14 +47,39 @@ from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
 
 
-@dataclass(frozen=True)
-class GlobalGridParams:
-    root: int
-    level: int
+class GridGeometryType(enum.IntEnum):
+    ICOSAHEDRON=1,
+    TORUS = 2
 
+class GlobalGridParams(ABC):
+    @abstractmethod
+    def type(self):
+        pass
+   
+    @abstractmethod 
+    def num_cells(self):
+        pass
+    
+@dataclasses.dataclass(frozen=True)
+class Icosahedron(GlobalGridParams):
+    #: R of the RxBy construction of the icosahedral grid
+    root:int
+    #: B of the RxBy construction of the icosahedral grid
+    level:int
+    
+    def type(self):
+        return GridGeometryType.ICOSAHEDRON
     @cached_property
     def num_cells(self):
-        return 20.0 * self.root**2 * 4.0**self.level
+        return 20.0 * self.root ** 2 * 4.0 ** self.level
+    
+@dataclasses.dataclass(frozen=True)
+class Torus(GlobalGridParams):
+    #: Number of cells in the torus
+    num_cells:int
+    @cached_property
+    def type(self):
+        return GridGeometryType.TORUS
 
 
 class IconGrid(BaseGrid):
