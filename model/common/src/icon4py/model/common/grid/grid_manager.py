@@ -14,6 +14,7 @@ import dataclasses
 import enum
 import logging
 import uuid
+from abc import ABC, abstractmethod
 from typing import Optional
 
 import gt4py.next as gtx
@@ -203,11 +204,19 @@ class IconGridError(RuntimeError):
     pass
 
 
-class IndexTransformation:
+class IndexTransformation(ABC):
+    @abstractmethod
     def get_offset_for_index_field(
         self,
         array: np.ndarray,
     ):
+        pass
+
+
+class IdentityTransformation(IndexTransformation):
+    """Apply no transformation at all."""
+
+    def get_offset_for_index_field(self, array: np.ndarray):
         return np.zeros(array.shape, dtype=np.int32)
 
 

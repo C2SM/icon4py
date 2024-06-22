@@ -144,7 +144,15 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
-    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int, edge_length:float = 0.0):
+    def __init__(
+        self,
+        sp: ser.Savepoint,
+        ser: ser.Serializer,
+        size: dict,
+        root: int,
+        level: int,
+        edge_length: float = 0.0,
+    ):
         super().__init__(sp, ser, size)
         # workaround dealing with torus grid
         if root == 2 and level == 0:
@@ -153,8 +161,8 @@ class IconGridSavepoint(IconSavepoint):
                 raise ValueError("edge length must be provided for torus grid")
             num_cells = self.sizes[CellDim]
             self.global_grid_params = icon.Torus(edge_length, num_cells)
-        else: 
-            self.global_grid_params = icon.Icosahedron(root, level) 
+        else:
+            self.global_grid_params = icon.Icosahedron(root, level)
 
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)

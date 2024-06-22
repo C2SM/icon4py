@@ -49,7 +49,7 @@ from icon4py.model.common.grid.grid_manager import (
     GridFile,
     GridFileName,
     GridManager,
-    IndexTransformation,
+    IdentityTransformation,
     ToGt4PyTransformation,
 )
 
@@ -593,7 +593,7 @@ def init_grid_manager(fname, num_levels=65, transformation=None):
 def test_grid_manager_getsize(simple_grid_gridfile, dim, size, caplog):
     caplog.set_level(logging.DEBUG)
     gm = init_grid_manager(
-        simple_grid_gridfile, num_levels=10, transformation=IndexTransformation()
+        simple_grid_gridfile, num_levels=10, transformation=IdentityTransformation()
     )
     gm()
     assert size == gm.get_size(dim)
@@ -611,7 +611,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
     gm = init_grid_manager(
         simple_grid_gridfile,
         num_levels=simple_grid.num_levels,
-        transformation=IndexTransformation(),
+        transformation=IdentityTransformation(),
     )
     gm()
     icon_grid = gm.get_grid()
@@ -623,7 +623,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = GridManager(IndexTransformation(), fname, v_grid.VerticalGridSize(num_lev=80))
+        gm = GridManager(IdentityTransformation(), fname, v_grid.VerticalGridSize(num_lev=80))
         gm()
         assert error.type == SystemExit
         assert error.value == 1
@@ -968,7 +968,6 @@ def test_grid_geometry_type(experiment, geometry_type):
     assert geometry_type == grid.global_properties.type
 
 
-@pytest.mark.xfail("TODO fix simple grid connectivity construction")
 def test_torus_grid_on_simple_grid(simple_grid_gridfile):
     grid = init_grid_manager(simple_grid_gridfile, num_levels=10).get_grid()
     assert grid.num_cells == 18
