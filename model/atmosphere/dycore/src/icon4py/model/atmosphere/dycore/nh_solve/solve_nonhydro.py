@@ -84,6 +84,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     InterpolationState,
     MetricStateNonHydro,
     PrepAdvection,
+    OutputIntermediateFields,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _allocate,
@@ -164,24 +165,6 @@ class IntermediateFields:
             z_vt_ie=_allocate(EdgeDim, KDim, grid=grid),
         )
 
-
-@dataclass
-class OutputIntermediateFields:
-    """
-    For intermediate output fields
-    """
-
-    output_predictor_theta_v_e: Field[[EdgeDim, KDim], float]
-    output_predictor_gradh_exner: Field[[EdgeDim, KDim], float]
-    output_predictor_ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float]
-
-    @classmethod
-    def allocate(cls, grid: BaseGrid):
-        return OutputIntermediateFields(
-            output_predictor_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
-            output_predictor_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
-            output_predictor_ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=grid),
-        )
 
 class NonHydrostaticConfig:
     """
@@ -321,6 +304,7 @@ class NonHydrostaticParams:
         #: stability in extreme situations
         self.wgt_nnow_vel: Final[float] = 0.5 - config.veladv_offctr
         self.wgt_nnew_vel: Final[float] = 0.5 + config.veladv_offctr
+        log.info(f"wgt_nnow_vel and wgt_nnew_vel: {self.wgt_nnow_vel} {self.wgt_nnew_vel}")
 
         #: Weighting coefficients for rho and theta at interface levels in the corrector step
         #: This empirically determined weighting minimizes the vertical wind off-centering
@@ -627,6 +611,7 @@ class SolveNonhydro:
                 dtime=dtime,
                 ntnd=self.ntl1,
                 cell_areas=self.cell_params.area,
+                output_intermediate_fields=self.output_intermediate_fields,
             )
 
         p_dthalf = 0.5 * dtime
@@ -1161,6 +1146,9 @@ class SolveNonhydro:
             vn = vn + dt * (advection - cpd * theta_v * dpi/dz)
             advection is computed in velocity_advection.
         """
+        self.output_intermediate_fields.output_predictor_gradh_exner = z_fields.z_gradh_exner
+        self.output_intermediate_fields.output_predictor_theta_v_e = z_fields.z_theta_v_e
+        self.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1 = diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1]
         add_temporal_tendencies_to_vn(
             vn_nnow=prognostic_state[nnow].vn,
             ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
@@ -1809,6 +1797,7 @@ class SolveNonhydro:
             dtime=dtime,
             ntnd=self.ntl2,
             cell_areas=self.cell_params.area,
+            output_intermediate_fields=self.output_intermediate_fields,
         )
 
         nvar = nnew
@@ -1905,6 +1894,9 @@ class SolveNonhydro:
                 wgt_nnew_vel = 0.5 + veladv_offctr
                 wgt_nnow_vel = 1.0 - wgt_nnew_vel
             """
+            self.output_intermediate_fields.output_corrector_gradh_exner = z_fields.z_gradh_exner
+            self.output_intermediate_fields.output_corrector_theta_v_e = z_fields.z_theta_v_e
+            self.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2 = diagnostic_state_nh.ddt_vn_apc_pc[self.ntl2]
             add_temporal_tendencies_to_vn_by_interpolating_between_time_levels(
                 vn_nnow=prognostic_state[nnow].vn,
                 ddt_vn_apc_ntl1=diagnostic_state_nh.ddt_vn_apc_pc[self.ntl1],
@@ -1988,9 +1980,17 @@ class SolveNonhydro:
                     Apply the higher order divergence damping to vn at full levels (edge center).
                     vn = vn + scal_divdamp * Del(normal_direction) Div( Del(normal_direction) Div(vn) )
                 """
+                self.output_intermediate_fields.output_graddiv2_vn = self.z_graddiv2_vn
+                self.output_intermediate_fields.output_graddiv_vn = z_fields.z_graddiv_vn
+                self.output_intermediate_fields.output_scal_divdamp = self.scal_divdamp
+                log.info(f"{z_fields.z_graddiv_vn.ndarray.min():.15e} {z_fields.z_graddiv_vn.ndarray.max():.15e}")
+                log.info(f"{self.z_graddiv2_vn.ndarray.min():.15e} {self.z_graddiv2_vn.ndarray.max():.15e}")
+                log.info(f"{self.scal_divdamp.ndarray.min():.15e} {self.scal_divdamp.ndarray.max():.15e}")
+                #for k in range(self.grid.num_levels):
+                #    log.info(f"{self.scal_divdamp.ndarray[k]:.15e}")
                 apply_4th_order_divergence_damping(
                     scal_divdamp=self.scal_divdamp,
-                    z_graddiv2_vn=self.z_graddiv2_vn,
+                    z_graddiv2_vn=z_fields.z_graddiv_vn,
                     vn=prognostic_state[nnew].vn,
                     horizontal_start=start_edge_nudging_plus1,
                     horizontal_end=end_edge_local,

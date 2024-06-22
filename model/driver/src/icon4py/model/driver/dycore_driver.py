@@ -305,7 +305,14 @@ class NewOutputState:
             """
             for var_name in self._variable_list.variable_name_list:
                 var_dimension = self._variable_list.variable_dim_list[var_name]
-                netcdf_dimension = (var_dimension.time_dimension, var_dimension.horizon_dimension,) if var_dimension.vertical_dimension is None else (var_dimension.time_dimension, var_dimension.vertical_dimension, var_dimension.horizon_dimension,)
+                if var_dimension.vertical_dimension is None:
+                    netcdf_dimension = (var_dimension.time_dimension, var_dimension.horizon_dimension,)
+                elif var_dimension.horizon_dimension is None:
+                    netcdf_dimension = (var_dimension.time_dimension, var_dimension.vertical_dimension,)
+                else:
+                    netcdf_dimension = (var_dimension.time_dimension, var_dimension.vertical_dimension, var_dimension.horizon_dimension,)
+                if i == 0:
+                    log.info(f"Creating {var_name} with dimension {netcdf_dimension} in netcdf files.")
                 var = self._nf4_basegrp[i].createVariable(
                     var_name,
                     "f8",
@@ -944,6 +951,23 @@ class TimeLoop:
                 output_data['pressure'] = diagnostic_state.pressure
                 output_data['temperature'] = diagnostic_state.temperature
                 output_data['pressure_sfc'] = diagnostic_state.pressure_sfc
+                output_data['predictor_theta_v_e'] = self.solve_nonhydro.output_intermediate_fields.output_predictor_theta_v_e
+                output_data['predictor_pressure_grad'] = self.solve_nonhydro.output_intermediate_fields.output_predictor_gradh_exner
+                output_data['predictor_advection'] = self.solve_nonhydro.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1
+                output_data['corrector_theta_v_e'] = self.solve_nonhydro.output_intermediate_fields.output_corrector_theta_v_e
+                output_data['corrector_pressure_grad'] = self.solve_nonhydro.output_intermediate_fields.output_corrector_gradh_exner
+                output_data['corrector_advection'] = self.solve_nonhydro.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2
+                output_data['predictor_hgrad_kinetic'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e
+                output_data['predictor_total_vorticity'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_total_vorticity_e
+                output_data['predictor_vertical_wind'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vertical_wind_e
+                output_data['predictor_vgrad_vn'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vgrad_vn_e
+                output_data['corrector_hgrad_kinetic'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e
+                output_data['corrector_total_vorticity'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_total_vorticity_e
+                output_data['corrector_vertical_wind'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vertical_wind_e
+                output_data['corrector_vgrad_vn'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
+                output_data['graddiv_vn'] = self.solve_nonhydro.output_intermediate_fields.output_graddiv_vn
+                output_data['graddiv2_vn'] = self.solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
+                output_data['scal_divdamp'] = self.solve_nonhydro.output_intermediate_fields.output_scal_divdamp
                 output_state.write_to_netcdf(self._simulation_date, output_data)
 
         self._timer1.summary(True)
@@ -1055,12 +1079,12 @@ class TimeLoop:
         )
         self._timer2.capture()
 
+        self._timer3.start()
         if self.diffusion.config.apply_to_horizontal_wind:
-            self._timer3.start()
             self.diffusion.run(
                 diffusion_diagnostic_state, prognostic_state_list[self._next], self.dtime_in_seconds
             )
-            self._timer3.capture()
+        self._timer3.capture()
 
         self._swap()
 
@@ -1241,6 +1265,23 @@ def initialize(
     output_data['pressure'] = diagnostic_state.pressure
     output_data['temperature'] = diagnostic_state.temperature
     output_data['pressure_sfc'] = diagnostic_state.pressure_sfc
+    output_data['predictor_theta_v_e'] = solve_nonhydro.output_intermediate_fields.output_predictor_theta_v_e
+    output_data['predictor_pressure_grad'] = solve_nonhydro.output_intermediate_fields.output_predictor_gradh_exner
+    output_data['predictor_advection'] = solve_nonhydro.output_intermediate_fields.output_predictor_ddt_vn_apc_ntl1
+    output_data['corrector_theta_v_e'] = solve_nonhydro.output_intermediate_fields.output_corrector_theta_v_e
+    output_data['corrector_pressure_grad'] = solve_nonhydro.output_intermediate_fields.output_corrector_gradh_exner
+    output_data['corrector_advection'] = solve_nonhydro.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2
+    output_data['predictor_hgrad_kinetic'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e
+    output_data['predictor_total_vorticity'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_total_vorticity_e
+    output_data['predictor_vertical_wind'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vertical_wind_e
+    output_data['predictor_vgrad_vn'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vgrad_vn_e
+    output_data['corrector_hgrad_kinetic'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e
+    output_data['corrector_total_vorticity'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_total_vorticity_e
+    output_data['corrector_vertical_wind'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vertical_wind_e
+    output_data['corrector_vgrad_vn'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
+    output_data['graddiv_vn'] = solve_nonhydro.output_intermediate_fields.output_graddiv_vn
+    output_data['graddiv2_vn'] = solve_nonhydro.output_intermediate_fields.output_graddiv2_vn
+    output_data['scal_divdamp'] = solve_nonhydro.output_intermediate_fields.output_scal_divdamp
     output_state = NewOutputState(
         config.output_config,
         config.run_config.start_date,

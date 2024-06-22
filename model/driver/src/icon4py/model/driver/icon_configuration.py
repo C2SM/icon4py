@@ -369,18 +369,330 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 scope=OutputScope.diagnostic,
             )
         )
-
         
+        ######################################################################################
+        output_variable_list.add_new_variable(
+            'predictor_theta_v_e',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='K',
+                standard_name='virtual temperature at edge',
+                long_name='virtual temperature at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'predictor_pressure_grad',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-2',
+                standard_name='pressure gradient',
+                long_name='horizontal gradient of pressure in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'predictor_advection',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-2',
+                standard_name='advection',
+                long_name='advection term in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        ######################################################################################
+        output_variable_list.add_new_variable(
+            'corrector_theta_v_e',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='K',
+                standard_name='virtual temperature at edge',
+                long_name='virtual temperature at edge center',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'corrector_pressure_grad',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-2',
+                standard_name='pressure gradient',
+                long_name='horizontal gradient of pressure in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'corrector_advection',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-2',
+                standard_name='advection',
+                long_name='advection term in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        ######################################################################################
+        output_variable_list.add_new_variable(
+            'predictor_hgrad_kinetic',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-2',
+                standard_name='hgrad_kinetic',
+                long_name='horizontal gradient of kinetic energy in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'predictor_total_vorticity',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='total vorticity',
+                long_name='total vorticity in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'predictor_vertical_wind',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='vertical wind speed at edge',
+                long_name='vertical wind speed in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'predictor_vgrad_vn',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='vertical gradient of normal wind at edge',
+                long_name='vertical gradient of normal wind in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        ######################################################################################
+        output_variable_list.add_new_variable(
+            'corrector_hgrad_kinetic',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-2',
+                standard_name='hgrad_kinetic',
+                long_name='horizontal gradient of kinetic energy in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'corrector_total_vorticity',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='total vorticity',
+                long_name='total vorticity in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'corrector_vertical_wind',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='vertical wind speed at edge',
+                long_name='vertical wind speed in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'corrector_vgrad_vn',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='vertical gradient of normal wind at edge',
+                long_name='vertical gradient of normal wind in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        ######################################################################################
+        output_variable_list.add_new_variable(
+            'graddiv_vn',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='s-1',
+                standard_name='laplacian of normal wind',
+                long_name='laplacian of normal wind in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'graddiv2_vn',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m-1 s-1',
+                standard_name='double laplacian of normal wind',
+                long_name='double laplacian of normal wind in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'scal_divdamp',
+            VariableDimension(
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m2',
+                standard_name='4th order divdamp scaling factor',
+                long_name='fourth order divergence damping scaling factor in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        
+
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=300.0),
-            end_date=datetime(1, 2, 8, 0, 0, 0),
+            dtime=timedelta(seconds=60.0),
+            #end_date=datetime(1, 2, 8, 0, 0, 0),
+            end_date=datetime(1, 1, 1, 1, 0, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
-            n_substeps=5,
+            n_substeps=1,
         )
         jabw_output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=14400),
-            output_file_time_interval=timedelta(seconds=14400),
+            output_time_interval=timedelta(seconds=60),
+            output_file_time_interval=timedelta(seconds=60),
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
             output_variable_list=output_variable_list,

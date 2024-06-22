@@ -28,6 +28,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid.base import BaseGrid
+from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 
 
 @dataclass
@@ -163,3 +165,50 @@ class PrepAdvection:
     mass_flx_me: Field[[EdgeDim, KDim], float]
     mass_flx_ic: Field[[CellDim, KDim], float]
     vol_flx_ic: Field[[CellDim, KDim], float]
+
+
+@dataclass
+class OutputIntermediateFields:
+    """
+    For intermediate output fields
+    """
+
+    output_predictor_theta_v_e: Field[[EdgeDim, KDim], float]
+    output_predictor_gradh_exner: Field[[EdgeDim, KDim], float]
+    output_predictor_ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float]
+    output_corrector_theta_v_e: Field[[EdgeDim, KDim], float]
+    output_corrector_gradh_exner: Field[[EdgeDim, KDim], float]
+    output_corrector_ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float]
+    output_velocity_predictor_hgrad_kinetic_e: Field[[EdgeDim, KDim], float]
+    output_velocity_predictor_total_vorticity_e: Field[[EdgeDim, KDim], float]
+    output_velocity_predictor_vertical_wind_e: Field[[EdgeDim, KDim], float]
+    output_velocity_predictor_vgrad_vn_e: Field[[EdgeDim, KDim], float]
+    output_velocity_corrector_hgrad_kinetic_e: Field[[EdgeDim, KDim], float]
+    output_velocity_corrector_total_vorticity_e: Field[[EdgeDim, KDim], float]
+    output_velocity_corrector_vertical_wind_e: Field[[EdgeDim, KDim], float]
+    output_velocity_corrector_vgrad_vn_e: Field[[EdgeDim, KDim], float]
+    output_graddiv_vn: Field[[EdgeDim, KDim], float]
+    output_graddiv2_vn: Field[[EdgeDim, KDim], float]
+    output_scal_divdamp: Field[[KDim], float]
+
+    @classmethod
+    def allocate(cls, grid: BaseGrid):
+        return OutputIntermediateFields(
+            output_predictor_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_predictor_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
+            output_predictor_ddt_vn_apc_ntl1=_allocate(EdgeDim, KDim, grid=grid),
+            output_corrector_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_corrector_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
+            output_corrector_ddt_vn_apc_ntl2=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_predictor_hgrad_kinetic_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_predictor_total_vorticity_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_predictor_vertical_wind_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_predictor_vgrad_vn_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_corrector_hgrad_kinetic_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_corrector_total_vorticity_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_corrector_vertical_wind_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_corrector_vgrad_vn_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
+            output_graddiv2_vn=_allocate(EdgeDim, KDim, grid=grid),
+            output_scal_divdamp=_allocate(KDim, grid=grid),
+        )

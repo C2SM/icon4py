@@ -44,12 +44,27 @@ def _compute_advective_normal_wind_tendency(
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> tuple[
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat],
+    Field[[EdgeDim, KDim], vpfloat]
+    ]:
     """Formerly known as _mo_velocity_advection_stencil_19."""
     vt_wp, z_w_con_c_full_wp, ddqz_z_full_e_wp = astype(
         (vt, z_w_con_c_full, ddqz_z_full_e), wpfloat
     )
 
+    output_hgrad_kinetic_e = astype(
+        z_kin_hor_e * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
+        + coeff_gradekin(E2EC[1]) * z_ekinh(E2C[1])
+        - coeff_gradekin(E2EC[0]) * z_ekinh(E2C[0]),
+        wpfloat,
+    )
+    output_total_vorticity_e = f_e + astype(vpfloat("0.5") * neighbor_sum(zeta(E2V), axis=E2VDim), wpfloat)
+    output_vertical_wind_e = neighbor_sum(c_lin_e * z_w_con_c_full_wp(E2C), axis=E2CDim)
+    output_vgrad_vn_e = astype((vn_ie - vn_ie(Koff[1])), wpfloat) / ddqz_z_full_e_wp
     ddt_vn_apc_wp = -(
         astype(
             z_kin_hor_e * (coeff_gradekin(E2EC[0]) - coeff_gradekin(E2EC[1]))
@@ -63,7 +78,7 @@ def _compute_advective_normal_wind_tendency(
         / ddqz_z_full_e_wp
     )
 
-    return astype(ddt_vn_apc_wp, vpfloat)
+    return astype(output_hgrad_kinetic_e, vpfloat), astype(output_total_vorticity_e, vpfloat), astype(output_vertical_wind_e, vpfloat), astype(output_vgrad_vn_e, vpfloat), astype(ddt_vn_apc_wp, vpfloat)
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -78,6 +93,10 @@ def compute_advective_normal_wind_tendency(
     z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
     vn_ie: Field[[EdgeDim, KDim], vpfloat],
     ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
+    output_hgrad_kinetic_e: Field[[EdgeDim, KDim], vpfloat],
+    output_total_vorticity_e: Field[[EdgeDim, KDim], vpfloat],
+    output_vertical_wind_e: Field[[EdgeDim, KDim], vpfloat],
+    output_vgrad_vn_e: Field[[EdgeDim, KDim], vpfloat],
     ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
@@ -95,7 +114,13 @@ def compute_advective_normal_wind_tendency(
         z_w_con_c_full,
         vn_ie,
         ddqz_z_full_e,
-        out=ddt_vn_apc,
+        out=(
+            output_hgrad_kinetic_e,
+            output_total_vorticity_e,
+            output_vertical_wind_e,
+            output_vgrad_vn_e,
+            ddt_vn_apc,
+        ),
         domain={
             EdgeDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

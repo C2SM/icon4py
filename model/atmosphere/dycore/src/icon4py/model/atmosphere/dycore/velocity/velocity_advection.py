@@ -22,6 +22,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
     MetricStateNonHydro,
+    OutputIntermediateFields,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.atmosphere.dycore.velocity.helpers import (
@@ -90,6 +91,10 @@ class VelocityAdvection:
         self.levmask = _allocate(KDim, grid=self.grid, dtype=bool)
         self.vcfl_dsl = _allocate(CellDim, KDim, grid=self.grid)
         self.k_field = _allocate_indices(KDim, grid=self.grid, is_halfdim=True)
+        self.output_hgrad_kinetic_e = _allocate(EdgeDim, KDim, grid=self.grid)
+        self.output_total_vorticity_e = _allocate(EdgeDim, KDim, grid=self.grid)
+        self.output_vertical_wind_e = _allocate(EdgeDim, KDim, grid=self.grid)
+        self.output_vgrad_vn_e = _allocate(EdgeDim, KDim, grid=self.grid)
 
     def run_predictor_step(
         self,
@@ -102,6 +107,7 @@ class VelocityAdvection:
         dtime: float,
         ntnd: int,
         cell_areas: Field[[CellDim], float],
+        output_intermediate_fields: OutputIntermediateFields,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -497,6 +503,10 @@ class VelocityAdvection:
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
+            output_hgrad_kinetic_e=self.output_hgrad_kinetic_e,
+            output_total_vorticity_e=self.output_total_vorticity_e,
+            output_vertical_wind_e=self.output_vertical_wind_e,
+            output_vgrad_vn_e=self.output_vgrad_vn_e,
             ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
@@ -504,6 +514,10 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
+        output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e = self.output_hgrad_kinetic_e
+        output_intermediate_fields.output_velocity_predictor_total_vorticity_e = self.output_total_vorticity_e
+        output_intermediate_fields.output_velocity_predictor_vertical_wind_e = self.output_vertical_wind_e
+        output_intermediate_fields.output_velocity_predictor_vgrad_vn_e = self.output_vgrad_vn_e
 
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
@@ -568,6 +582,7 @@ class VelocityAdvection:
         dtime: float,
         ntnd: int,
         cell_areas: Field[[CellDim], float],
+        output_intermediate_fields: OutputIntermediateFields,
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -803,7 +818,7 @@ class VelocityAdvection:
         """
         ddt_vn_apc_pc[ntnd] (0:nlev-1):
             Compute the advection of normal wind at full levels (edge center).
-            ddt_vn_apc_pc[ntnd] = dKEH/dn + vt * (vorticity + coriolis) + wdvn/dz,
+            ddt_vn_apc_pc[ntnd] = dKEH/dn + vt * (vorticity + coriolis) + w dvn/dz,
             where vn is normal wind, vt is tangential wind, KEH is horizontal kinetic energy.
             z_kin_hor_e is KEH at full levels (edge center).
             zeta is vorticity at full levels (vertex). Its value at edge center is simply taken as average of vorticity at neighboring vertices.
@@ -822,6 +837,10 @@ class VelocityAdvection:
             z_w_con_c_full=self.z_w_con_c_full,
             vn_ie=diagnostic_state.vn_ie,
             ddqz_z_full_e=self.metric_state.ddqz_z_full_e,
+            output_hgrad_kinetic_e=self.output_hgrad_kinetic_e,
+            output_total_vorticity_e=self.output_total_vorticity_e,
+            output_vertical_wind_e=self.output_vertical_wind_e,
+            output_vgrad_vn_e=self.output_vgrad_vn_e,
             ddt_vn_apc=diagnostic_state.ddt_vn_apc_pc[ntnd],
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
@@ -829,6 +848,10 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
+        output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e = self.output_hgrad_kinetic_e
+        output_intermediate_fields.output_velocity_corrector_total_vorticity_e = self.output_total_vorticity_e
+        output_intermediate_fields.output_velocity_corrector_vertical_wind_e = self.output_vertical_wind_e
+        output_intermediate_fields.output_velocity_corrector_vgrad_vn_e = self.output_vgrad_vn_e
 
         """
         ddt_vn_apc_pc[ntnd] (max(3,damp_lev-2)-1:nlev-5):
