@@ -18,7 +18,7 @@ from typing import ClassVar, Final
 import gt4py.next as gtx
 from gt4py.next import neighbor_sum  # throws an error with model level import
 
-from icon4py.model.common import constants, dimension
+from icon4py.model.common import dimension
 from icon4py.model.common.dimension import (
     V2C,
     CellDim,
@@ -356,27 +356,8 @@ class CellParams:
     cell_center_lon: gtx.Field[[CellDim], float] = None
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
     area: gtx.Field[[CellDim], float] = None
-    #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
+    #: Mean area of a cell [m^2]
     mean_cell_area: float = None
-    length_rescale_factor: float = 1.0
-
-    @classmethod
-    def from_global_num_cells(
-        cls,
-        cell_center_lat: gtx.Field[[CellDim], float],
-        cell_center_lon: gtx.Field[[CellDim], float],
-        area: gtx.Field[[CellDim], float],
-        global_num_cells: int,
-        length_rescale_factor: float = 1.0,
-    ):
-        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
-        return cls(
-            cell_center_lat=cell_center_lat,
-            cell_center_lon=cell_center_lon,
-            area=area,
-            mean_cell_area=mean_cell_area,
-            length_rescale_factor=length_rescale_factor,
-        )
 
     @functools.cached_property
     def characteristic_length(self):

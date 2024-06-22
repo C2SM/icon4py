@@ -63,6 +63,10 @@ class GlobalGridParams(ABC):
     def num_cells(self):
         pass
 
+    @abstractmethod
+    def mean_cell_area(self):
+        pass
+
 
 @dataclasses.dataclass(frozen=True)
 class Icosahedron(GlobalGridParams):

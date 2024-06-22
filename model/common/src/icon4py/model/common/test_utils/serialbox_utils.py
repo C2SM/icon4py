@@ -44,6 +44,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.grid import icon
 from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.icon import IconGrid
@@ -143,9 +144,17 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
-    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int):
+    def __init__(self, sp: ser.Savepoint, ser: ser.Serializer, size: dict, root: int, level: int, edge_length:float = 0.0):
         super().__init__(sp, ser, size)
-        self.global_grid_params = (root, level)
+        # workaround dealing with torus grid
+        if root == 2 and level == 0:
+            log.warning("most likey torus grid, no mean_cell_area available")
+            if edge_length == 0.0:
+                raise ValueError("edge length must be provided for torus grid")
+            num_cells = self.sizes[CellDim]
+            self.global_grid_params = icon.Torus(edge_length, num_cells)
+        else: 
+            self.global_grid_params = icon.Icosahedron(root, level) 
 
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)
@@ -287,7 +296,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def c2e2c2e(self):
         if self._c2e2c2e() is None:
-            return np.zeros((self.sizes[CellDim], 9), dtype=int)
+            return np.zeros((self.sizes[CellDim], 9), dtype=int32)
         else:
             return self._c2e2c2e()
 
@@ -479,7 +488,6 @@ class IconGridSavepoint(IconSavepoint):
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
             mean_cell_area=self.global_grid_params.mean_cell_area,
-            length_rescale_factor=1.0,
         )
 
 
