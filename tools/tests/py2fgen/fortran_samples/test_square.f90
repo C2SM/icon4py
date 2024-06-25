@@ -41,14 +41,13 @@ program call_square_wrapper_cffi_plugin
    call square_error(input, result, rc)
 #elif PROFILE_SQUARE_FROM_FUNCTION
 
-    call square_from_function(input, result, rc)
 
+    call square_from_function(input, result, rc)
     call profile_enable(rc)
     do n = 1, 100
     call square_from_function(input, result, rc)
     end do
     call profile_disable(rc)
-
 #else
    call square(input, result, rc)
 #endif
