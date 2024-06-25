@@ -29,7 +29,7 @@ from gt4py.next.ffront.fbuiltins import float64, int32
 
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     NonHydrostaticParams,
-    SolveNonhydro,
+    SolveNonhydro, NonHydrostaticConfig,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
@@ -79,14 +79,14 @@ from icon4pytools.py2fgen.wrapper_utils.dimension import (
 )
 from icon4pytools.py2fgen.wrapper_utils.grid_utils import (
     construct_decomposition,
-    construct_icon_grid,
+    construct_icon_grid_solve_nh,
 )
 
 
 log = setup_logger(__name__)
 
 # global diffusion object
-solve_nonhydro: Diffusion = None
+solve_nonhydro: SolveNonhydro = None
 
 # global profiler object
 profiler = cProfile.Profile()
@@ -112,12 +112,8 @@ def solve_nh_init(
     num_edges: int32,
     num_verts: int32,
     num_levels: int32,
-    nshift_total: int32,
-    nshift: int32,
     mean_cell_area: float64,
     cell_areas: Field[[CellDim], float64],
-    cell_center_lat: Field[[CellDim], float64] ,
-    cell_center_lon: Field[[CellDim], float64],
     c2e: Field[[CellDim, SingletonDim, C2EDim], int32],
     c2e2c: Field[[CellDim, SingletonDim, C2E2CDim], int32],
     c2v: Field[[CellDim, SingletonDim, C2VDim], int32],
@@ -141,8 +137,6 @@ def solve_nh_init(
     dual_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
     e2v: Field[[EdgeDim, SingletonDim, E2VDim], int32],
     e2c2v: Field[[EdgeDim, SingletonDim, E2C2VDim], int32],
-    edges_center_lat: Field[[EdgeDim], float64] ,
-    edges_center_lon: Field[[EdgeDim], float64] ,
     e2c: Field[[EdgeDim, SingletonDim, E2CDim], int32],
     e_owner_mask: Field[[EdgeDim], bool],
     e_glb_index: Field[[SpecialBDim], int32],
@@ -205,13 +199,39 @@ def solve_nh_init(
     coeff1_dwdz: Field[[CellDim, KDim], float64],
     coeff2_dwdz: Field[[CellDim, KDim], float64],
     coeff_gradekin: Field[[EdgeDim, E2CDim], float64],
+    rayleigh_damping_height: float64,
+    itime_scheme: int32,
+    iadv_rhotheta: int32,
+    igradp_method: int32,
+    ndyn_substeps_var: float64,
+    rayleigh_type: int32,
+    rayleigh_coeff: float64,
+    divdamp_order: int32,  # the ICON default is 4,
+    is_iau_active: bool,
+    iau_wgt_dyn: float64,
+    divdamp_type: int32,
+    divdamp_trans_start: float64,
+    divdamp_trans_end: float64,
+    l_vert_nested: bool,
+    rhotheta_offctr: float64,
+    veladv_offctr: float64,
+    max_nudging_coeff: float64,
+    divdamp_fac: float64,
+    divdamp_fac2: float64,
+    divdamp_fac3: float64,
+    divdamp_fac4: float64,
+    divdamp_z: float64,
+    divdamp_z2: float64,
+    divdamp_z3: float64,
+    divdamp_z4: float64,
+    htop_moist_proc: float64,
     comm_id: int32,
 ):
 # ICON grid
     on_gpu = True if device.name == "GPU" else False
 
     if parallel_run:
-        icon_grid = construct_icon_grid( #TODO add more for solve_nh
+        icon_grid = construct_icon_grid_solve_nh( #TODO add more for solve_nh
             cells_start_index,
             cells_end_index,
             vert_start_index,
@@ -227,6 +247,10 @@ def solve_nh_init(
             v2e,
             e2c2v,
             e2c,
+            e2c2e,
+            e2v,
+            v2c,
+            c2v,
             True,
             on_gpu,
         )
@@ -260,6 +284,33 @@ def solve_nh_init(
             limited_area=True if limited_area else False,
         )
 
+    config = NonHydrostaticConfig(
+        itime_scheme,
+        iadv_rhotheta,
+        igradp_method,
+        ndyn_substeps_var,
+        rayleigh_type,
+        rayleigh_coeff,
+        divdamp_order,
+        is_iau_active,
+        iau_wgt_dyn,
+        divdamp_type,
+        divdamp_trans_start,
+        divdamp_trans_end,
+        l_vert_nested,
+        rhotheta_offctr,
+        veladv_offctr,
+        max_nudging_coeff,
+        divdamp_fac,
+        divdamp_fac2,
+        divdamp_fac3,
+        divdamp_fac4,
+        divdamp_z,
+        divdamp_z2,
+        divdamp_z3,
+        divdamp_z4,
+        htop_moist_proc,
+    )
     nonhydro_params = NonHydrostaticParams(config)
 
     # Edge geometry
@@ -278,14 +329,10 @@ def solve_nh_init(
         dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECVDim),
         edge_areas=edge_areas,
         f_e=f_e,
-        edge_center_lat=edges_center_lat,
-        edge_center_lon=edges_center_lon,
-        primal_normal_x=,
-        primal_normal_y=,
     )
 
     # cell geometry
-    cell_geometry = CellParams(cell_center_lat=cell_center_lat,cell_center_lon=cell_center_lon,area=cell_areas, global_num_cells=global_num_cells,)
+    cell_geometry = CellParams(area=cell_areas, mean_cell_area=mean_cell_area,length_rescale_factor=1.0)
 
     interpolation_state = InterpolationState(
         c_lin_e=c_lin_e,
