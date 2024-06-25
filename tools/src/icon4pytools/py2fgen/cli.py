@@ -76,7 +76,9 @@ def main(
     python_wrapper = generate_python_wrapper(plugin, backend, debug_mode, limited_area)
     f90_interface = generate_f90_interface(plugin, limited_area)
 
-    generate_and_compile_cffi_plugin(plugin.plugin_name, c_header, python_wrapper, output_path)
+    generate_and_compile_cffi_plugin(
+        plugin.plugin_name, c_header, python_wrapper, output_path, backend
+    )
     write_string(f90_interface, output_path, f"{plugin.plugin_name}.f90")
     write_string(python_wrapper, output_path, f"{plugin.plugin_name}.py")
 
