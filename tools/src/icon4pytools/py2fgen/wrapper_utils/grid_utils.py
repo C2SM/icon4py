@@ -21,18 +21,25 @@ from icon4py.model.common.decomposition.definitions import (
 )
 from icon4py.model.common.decomposition.mpi_decomposition import get_multinode_properties
 from icon4py.model.common.dimension import (
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CECDim,
     CEDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
     E2C2VDim,
     E2CDim,
+    E2VDim,
+    ECDim,
     ECVDim,
     EdgeDim,
+    V2CDim,
     V2EDim,
-    VertexDim, C2E2C2EDim, E2C2EDim, E2C2EODim, E2VDim, V2CDim, C2VDim, ECDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
 from icon4py.model.common.grid.icon import IconGrid
@@ -229,6 +236,7 @@ def construct_icon_grid_solve_nh(
     )
 
     return grid
+
 
 def construct_decomposition(
     c_glb_index,

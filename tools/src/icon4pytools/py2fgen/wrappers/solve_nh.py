@@ -13,9 +13,9 @@
 # type: ignore
 
 """
-Wrapper module for diffusion granule.
+Wrapper module for dycore granule.
 
-Module contains a diffusion_init and diffusion_run function that follow the architecture of
+Module contains a solve_nh_init and solve_nh_run function that follow the architecture of
 Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
@@ -26,43 +26,48 @@ import pstats
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
-
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
+    NonHydrostaticConfig,
     NonHydrostaticParams,
-    SolveNonhydro, NonHydrostaticConfig,
+    SolveNonhydro,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
-    PrepAdvection, MetricStateNonHydro, InterpolationState,
-)
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.grid.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMarkerIndex,
+    InterpolationState,
+    MetricStateNonHydro,
+    PrepAdvection,
 )
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
     C2EDim,
-    CECDim,
+    C2VDim,
     CEDim,
     CellDim,
+    E2C2EDim,
+    E2C2EODim,
     E2C2VDim,
     E2CDim,
+    E2VDim,
+    ECDim,
     ECVDim,
     EdgeDim,
     KDim,
     KHalfDim,
+    V2CDim,
     V2EDim,
-    VertexDim, C2VDim, E2VDim, V2CDim, E2C2EODim,
+    VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.settings import device, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.helpers import (
+    as_1D_sparse_field,
+    flatten_first_two_dims,
+    zero_field,
+)
 from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
 
 from icon4pytools.common.logger import setup_logger
@@ -88,6 +93,9 @@ log = setup_logger(__name__)
 # global diffusion object
 solve_nonhydro: SolveNonhydro = None
 
+# global grid object
+icon_grid = None
+
 # global profiler object
 profiler = cProfile.Profile()
 
@@ -103,8 +111,8 @@ def profile_disable():
 
 
 def solve_nh_init(
-    vct_a: Field[[KHalfDim], float64],
-    vct_b: Field[[KHalfDim], float64],
+    vct_a: Field[[KDim], float64],
+    vct_b: Field[[KDim], float64],
     nrdmax: int32,
     nflat_gradp: int32,
     nflatlev: int32,
@@ -114,14 +122,6 @@ def solve_nh_init(
     num_levels: int32,
     mean_cell_area: float64,
     cell_areas: Field[[CellDim], float64],
-    c2e: Field[[CellDim, SingletonDim, C2EDim], int32],
-    c2e2c: Field[[CellDim, SingletonDim, C2E2CDim], int32],
-    c2v: Field[[CellDim, SingletonDim, C2VDim], int32],
-    cells_start_index: Field[[CellIndexDim], int32],
-    cells_end_index: Field[[CellIndexDim], int32],
-    refin_ctrl: Field[[CellDim], int32],
-    c_owner_mask: Field[[CellDim], bool],
-    c_glb_index: Field[[SpecialADim], int32],
     primal_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
@@ -135,21 +135,7 @@ def solve_nh_init(
     primal_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
     dual_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
     dual_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
-    e2v: Field[[EdgeDim, SingletonDim, E2VDim], int32],
-    e2c2v: Field[[EdgeDim, SingletonDim, E2C2VDim], int32],
-    e2c: Field[[EdgeDim, SingletonDim, E2CDim], int32],
-    e_owner_mask: Field[[EdgeDim], bool],
-    e_glb_index: Field[[SpecialBDim], int32],
-    edge_start_index: Field[[EdgeIndexDim], int32],
-    edge_end_index: Field[[EdgeIndexDim], int32],
-    e2c2e:,
     f_e: Field[[EdgeDim], float64],
-    v2e: Field[[VertexDim, SingletonDim, V2EDim], int32],
-    v2c: Field[[VertexDim, SingletonDim, V2CDim], int32],
-    vert_start_index: Field[[VertexIndexDim], int32],
-    vert_end_index: Field[[VertexIndexDim], int32],
-    v_owner_mask: Field[[VertexDim], bool],
-    v_glb_index: Field[[SpecialCDim], int32],
     c_lin_e: Field[[EdgeDim, E2CDim], float64],
     c_intp: Field[[VertexDim, V2CDim], float64],
     e_flx_avg: Field[[EdgeDim, E2C2EODim], float64],
@@ -157,7 +143,7 @@ def solve_nh_init(
     geofac_rot: Field[[VertexDim, V2EDim], float64],
     pos_on_tplane_e_1: Field[[EdgeDim, E2CDim], float64],
     pos_on_tplane_e_2: Field[[EdgeDim, E2CDim], float64],
-    rbf_vec_coeff_e: Field[[EdgeDim, RBFVecDim], float64],
+    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], float64],
     e_bln_c_s: Field[[CellDim, C2EDim], float64],
     rbf_coeff_1: Field[[VertexDim, V2EDim], float64],
     rbf_coeff_2: Field[[VertexDim, V2EDim], float64],
@@ -199,11 +185,12 @@ def solve_nh_init(
     coeff1_dwdz: Field[[CellDim, KDim], float64],
     coeff2_dwdz: Field[[CellDim, KDim], float64],
     coeff_gradekin: Field[[EdgeDim, E2CDim], float64],
+    c_owner_mask: Field[[CellDim], bool],
     rayleigh_damping_height: float64,
     itime_scheme: int32,
     iadv_rhotheta: int32,
     igradp_method: int32,
-    ndyn_substeps_var: float64,
+    ndyn_substeps: float64,
     rayleigh_type: int32,
     rayleigh_coeff: float64,
     divdamp_order: int32,  # the ICON default is 4,
@@ -226,12 +213,35 @@ def solve_nh_init(
     divdamp_z4: float64,
     htop_moist_proc: float64,
     comm_id: int32,
+    limited_area: bool,
+    c2e: Field[[CellDim, SingletonDim, C2EDim], int32] = None,
+    c2e2c: Field[[CellDim, SingletonDim, C2E2CDim], int32] = None,
+    c2v: Field[[CellDim, SingletonDim, C2VDim], int32] = None,
+    cells_start_index: Field[[CellIndexDim], int32] = None,
+    cells_end_index: Field[[CellIndexDim], int32] = None,
+    refin_ctrl: Field[[CellDim], int32] = None,
+    c_glb_index: Field[[SpecialADim], int32] = None,
+    e2v: Field[[EdgeDim, SingletonDim, E2VDim], int32] = None,
+    e2c2v: Field[[EdgeDim, SingletonDim, E2C2VDim], int32] = None,
+    e2c: Field[[EdgeDim, SingletonDim, E2CDim], int32] = None,
+    e_owner_mask: Field[[EdgeDim], bool] = None,
+    e_glb_index: Field[[SpecialBDim], int32] = None,
+    edge_start_index: Field[[EdgeIndexDim], int32] = None,
+    edge_end_index: Field[[EdgeIndexDim], int32] = None,
+    e2c2e: Field[[EdgeDim], int32] = None,
+    v2e: Field[[VertexDim, SingletonDim, V2EDim], int32] = None,
+    v2c: Field[[VertexDim, SingletonDim, V2CDim], int32] = None,
+    vert_start_index: Field[[VertexIndexDim], int32] = None,
+    vert_end_index: Field[[VertexIndexDim], int32] = None,
+    v_owner_mask: Field[[VertexDim], bool] = None,
+    v_glb_index: Field[[SpecialCDim], int32] = None,
 ):
-# ICON grid
+    # ICON grid
     on_gpu = True if device.name == "GPU" else False
 
+    global icon_grid
     if parallel_run:
-        icon_grid = construct_icon_grid_solve_nh( #TODO add more for solve_nh
+        icon_grid = construct_icon_grid_solve_nh(  # TODO add more for solve_nh
             cells_start_index,
             cells_end_index,
             vert_start_index,
@@ -288,7 +298,7 @@ def solve_nh_init(
         itime_scheme,
         iadv_rhotheta,
         igradp_method,
-        ndyn_substeps_var,
+        ndyn_substeps,
         rayleigh_type,
         rayleigh_coeff,
         divdamp_order,
@@ -323,16 +333,18 @@ def solve_nh_init(
         primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, ECVDim),
         dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, ECVDim),
         dual_normal_vert_y=as_1D_sparse_field(dual_normal_vert_y, ECVDim),
-        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, ECVDim),
-        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, ECVDim),
-        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, ECVDim),
-        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECVDim),
+        primal_normal_cell_x=as_1D_sparse_field(primal_normal_cell_x, ECDim),
+        primal_normal_cell_y=as_1D_sparse_field(primal_normal_cell_y, ECDim),
+        dual_normal_cell_x=as_1D_sparse_field(dual_normal_cell_x, ECDim),
+        dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
     )
 
     # cell geometry
-    cell_geometry = CellParams(area=cell_areas, mean_cell_area=mean_cell_area,length_rescale_factor=1.0)
+    cell_geometry = CellParams(
+        area=cell_areas, mean_cell_area=mean_cell_area, length_rescale_factor=1.0
+    )
 
     interpolation_state = InterpolationState(
         c_lin_e=c_lin_e,
@@ -340,8 +352,8 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=pos_on_tplane_e_1,
-        pos_on_tplane_e_2=pos_on_tplane_e_2,
+        pos_on_tplane_e_1=as_1D_sparse_field(pos_on_tplane_e_1, ECDim),
+        pos_on_tplane_e_2=as_1D_sparse_field(pos_on_tplane_e_2, ECDim),
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -373,20 +385,20 @@ def solve_nh_init(
         rho_ref_me=rho_ref_me,
         theta_ref_me=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
-        zdiff_gradp=zdiff_gradp,
-        vertoffset_gradp=vertoffset_gradp,
+        zdiff_gradp=flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp),
+        vertoffset_gradp=flatten_first_two_dims(ECDim, KDim, field=vertoffset_gradp),
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,
-        wgtfacq_e=wgtfacq_e_dsl(num_k_lev),
+        wgtfacq_e=wgtfacq_e,  # todo: wgtfacq_e_dsl(num_k_lev),
         vwind_impl_wgt=vwind_impl_wgt,
         hmask_dd3d=hmask_dd3d,
         scalfac_dd3d=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=coeff_gradekin,
+        coeff_gradekin=as_1D_sparse_field(coeff_gradekin, ECDim),
     )
 
     # vertical parameters
@@ -411,9 +423,8 @@ def solve_nh_init(
         vertical_params=vertical_params,
         edge_geometry=edge_geometry,
         cell_geometry=cell_geometry,
-        owner_mask=grid_c_owner_mask,
+        owner_mask=c_owner_mask,
     )
-
 
 
 def solve_nh_run(
@@ -428,8 +439,10 @@ def solve_nh_run(
     vn_now: Field[[EdgeDim, KDim], float64],
     vn_new: Field[[EdgeDim, KDim], float64],
     w_concorr_c: Field[[CellDim, KHalfDim], float64],
-    ddt_vn_apc_pc: Field[[CellDim, KDim,1_3Dim], float64],
-    ddt_w_adv_pc: Field[[CellDim, KDim,1_3Dim], float64],
+    ddt_vn_apc_ntl1: Field[[EdgeDim, KDim], float64],
+    ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float64],
+    ddt_w_adv_ntl1: Field[[CellDim, KDim], float64],
+    ddt_w_adv_ntl2: Field[[CellDim, KDim], float64],
     theta_v_ic: Field[[CellDim, KHalfDim], float64],
     rho_ic: Field[[CellDim, KHalfDim], float64],
     exner_pr: Field[[CellDim, KDim], float64],
@@ -443,29 +456,23 @@ def solve_nh_run(
     grf_tend_vn: Field[[EdgeDim, KDim], float64],
     vn_ie: Field[[EdgeDim, KHalfDim], float64],
     vt: Field[[EdgeDim, KDim], float64],
-    mass_flx_me: Field[[EdgeDim, KDim], float64], #change
-    mass_flx_ic: Field[[EdgeDim, KDim], float64], #change
-    vn_traj: Field[[EdgeDim, KDim], float64], #change
-    vn_incr: Field[[EdgeDim, KDim], float64], #change
-    rho_incr: Field[[EdgeDim, KDim], float64], #change
-    exner_incr: Field[[EdgeDim, KDim], float64], #change
+    mass_flx_me: Field[[EdgeDim, KDim], float64],
+    mass_flx_ic: Field[[CellDim, KDim], float64],
+    vn_traj: Field[[EdgeDim, KDim], float64],
     dtime: float64,
     lprep_adv: bool,
     clean_mflx: bool,
     recompute: bool,
     linit: bool,
     divdamp_fac_o2: float64,
-    limited_area: bool,
+    ndyn_substeps: float64,
 ):
     log.info(f"Using Device = {device}")
 
-    # ICON grid
-    on_gpu = True if device.name == "GPU" else False
-
     prep_adv = PrepAdvection(
-        vn_traj=sp.vn_traj,
-        mass_flx_me=sp.mass_flx_me,
-        mass_flx_ic=sp.mass_flx_ic,
+        vn_traj=vn_traj,
+        mass_flx_me=mass_flx_me,
+        mass_flx_ic=mass_flx_ic,
         vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
 
@@ -483,10 +490,10 @@ def solve_nh_run(
         mass_fl_e=mass_fl_e,
         ddt_vn_phy=ddt_vn_phy,
         grf_tend_vn=grf_tend_vn,
-        ddt_vn_apc_ntl1=ddt_vn_apc_pc(1),
-        ddt_vn_apc_ntl2=ddt_vn_apc_pc(2),
-        ddt_w_adv_ntl1=ddt_w_adv_pc(1),
-        ddt_w_adv_ntl2=ddt_w_adv_pc(2),
+        ddt_vn_apc_ntl1=ddt_vn_apc_ntl1,
+        ddt_vn_apc_ntl2=ddt_vn_apc_ntl2,
+        ddt_w_adv_ntl1=ddt_w_adv_ntl1,
+        ddt_w_adv_ntl2=ddt_w_adv_ntl2,
         vt=vt,
         vn_ie=vn_ie,
         w_concorr_c=w_concorr_c,
@@ -495,8 +502,6 @@ def solve_nh_run(
         exner_incr=None,  # sp.exner_incr,
         exner_dyn_incr=exner_dyn_incr,
     )
-
-
 
     prognostic_state_nnow = PrognosticState(
         w=w_now,
@@ -514,15 +519,14 @@ def solve_nh_run(
     )
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
 
-    initial_divdamp_fac =
-
+    jstep_init = 0
 
     global solve_nonhydro
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
         prep_adv=prep_adv,
-        divdamp_fac_o2=initial_divdamp_fac,
+        divdamp_fac_o2=divdamp_fac_o2,
         dtime=dtime,
         l_recompute=recompute,
         l_init=linit,
@@ -533,4 +537,3 @@ def solve_nh_run(
         at_first_substep=jstep_init == 0,
         at_last_substep=jstep_init == (ndyn_substeps - 1),
     )
-    prognostic_state_nnew = prognostic_state_ls[1]

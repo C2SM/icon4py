@@ -40,6 +40,8 @@ try:
     mpi4py.rc.initialize = False
     mpi4py.rc.finalize = True
 
+    ghex_arch = Architecture.GPU if device.name == "GPU" else Architecture.CPU
+
 except ImportError:
     mpi4py = None
     ghex = None
@@ -52,7 +54,6 @@ from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, Vert
 if TYPE_CHECKING:
     import mpi4py.MPI
 
-ghex_arch = Architecture.GPU if device.name == "GPU" else Architecture.CPU
 
 CommId = Union[int, "mpi4py.MPI.Comm", None]
 log = logging.getLogger(__name__)
