@@ -26,6 +26,7 @@ from gt4py.next import (
     minimum,
     neighbor_sum,
     program,
+    scan_operator,
     sin,
     tanh,
     where,
@@ -1144,3 +1145,27 @@ def compute_max_nbhgt(
     _compute_max_nbhgt(
         z_mc_nlev=z_mc_nlev, out=max_nbhgt, domain={CellDim: (horizontal_start, horizontal_end)}
     )
+
+
+@scan_operator(axis=KDim, forward=True, init=(0, False))
+def _compute_param(
+    param: tuple[int32, bool],
+    z_me_jk: float,
+    z_ifc_off: float,
+    z_ifc_off_koff: float,
+    lower: int32,
+    nlev: int32,
+) -> tuple[int32, bool]:
+    param_0, param_1 = param
+    if param_0 >= lower:
+        if (param_0 == nlev) | (z_me_jk <= z_ifc_off) & (z_me_jk >= z_ifc_off_koff):
+            param_1 = True
+    return param_0 + 1, param_1
+
+
+@field_operator(grid_type=GridType.UNSTRUCTURED)
+def _compute_z_ifc_off_koff(
+    z_ifc_off: Field[[EdgeDim, KDim], wpfloat],
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    n = z_ifc_off(Koff[1])
+    return n
