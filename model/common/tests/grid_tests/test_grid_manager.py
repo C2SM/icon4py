@@ -969,7 +969,10 @@ def test_grid_geometry_type(experiment, geometry_type):
 
 
 def test_torus_grid_on_simple_grid(simple_grid_gridfile):
-    grid = init_grid_manager(simple_grid_gridfile, num_levels=10).get_grid()
+    grid = init_grid_manager(
+        simple_grid_gridfile, num_levels=10, transformation=IdentityTransformation()
+    ).get_grid()
     assert grid.num_cells == 18
     assert grid.global_num_cells == 18
-    assert pytest.approx(17320.5080757, abs=1e-7) == grid.global_properties.edge_length
+    assert grid.global_properties.type == icon.GridGeometryType.TORUS
+    assert pytest.approx(17320.5080757, abs=1e-7) == grid.global_properties.mean_cell_area

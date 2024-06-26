@@ -50,7 +50,7 @@ from icon4py.model.common.utils import builder
 
 
 class GridGeometryType(enum.IntEnum):
-    ICOSAHEDRON = (1,)
+    ICOSAHEDRON = 1
     TORUS = 2
 
 
