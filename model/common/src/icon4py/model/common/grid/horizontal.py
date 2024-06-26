@@ -366,7 +366,11 @@ class CellParams:
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
-        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        if (global_num_cells == 0):
+            # Compute from the area array (should be a torus grid)
+            mean_cell_area = area.asnumpy().mean()
+        else:
+            mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
         return cls(
             cell_center_lat=cell_center_lat,
             cell_center_lon=cell_center_lon,
