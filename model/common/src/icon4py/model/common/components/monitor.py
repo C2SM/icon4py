@@ -27,7 +27,7 @@ class Monitor(ABC):
     """
 
     def __str__(self):
-        return "instance of {}(Monitor)".format(self.__class__)
+        return f"instance of {self.__class__}(Monitor)"
 
     # TODO (halungge) rename __call__ and make it callable, as the other components?
     @abc.abstractmethod
