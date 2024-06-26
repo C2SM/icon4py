@@ -12,11 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import abc
-from abc import ABC
-from datetime import datetime
+import datetime
 
 
-class Monitor(ABC):
+class Monitor(abc.ABC):
     """
     Monitor component of the model.
 
@@ -31,7 +30,7 @@ class Monitor(ABC):
 
     # TODO (halungge) rename __call__ and make it callable, as the other components?
     @abc.abstractmethod
-    def store(self, state: dict, model_time: datetime, *args, **kwargs) -> None:
+    def store(self, state: dict, model_time: datetime.datetime, *args, **kwargs) -> None:
         """Store state and perform class specific actions on it.
 
         Args:
