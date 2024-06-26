@@ -34,7 +34,6 @@ class Monitor(ABC):
     def store(self, state: dict, model_time: datetime, *args, **kwargs) -> None:
         """Store state and perform class specific actions on it.
 
-
         Args:
             state: dict  model state dictionary
             model_time: current simulation time
