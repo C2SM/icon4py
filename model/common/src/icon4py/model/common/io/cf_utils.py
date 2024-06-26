@@ -29,6 +29,9 @@ INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "interface_model_level"
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
 
+COARDS_T_POS: Final[int] = 0
+COARDS_Z_POS: Final[int] = 1
+HORIZONTAL_POS: Final[int] = 2
 """
 CF conventions encourage to use the COARDS conventions for the order of the dimensions: 
     `T` (time), 
@@ -37,9 +40,6 @@ CF conventions encourage to use the COARDS conventions for the order of the dime
     `X` (longitude).
 In the unstructured case `Y` and `X`  combine to the horizontal dimension.
 """
-COARDS_T_POS: Final[int] = 0
-COARDS_Z_POS: Final[int] = 1
-HORIZONTAL_POS: Final[int] = 2
 
 COARDS_VERTICAL_COORDINATE_NAME: Final[str] = "Z"
 COARDS_TIME_COORDINATE_NAME: Final[str] = "T"
