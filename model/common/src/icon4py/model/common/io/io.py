@@ -23,7 +23,8 @@ from typing import Optional, Sequence, TypedDict
 
 from typing_extensions import Required
 
-from icon4py.model.common.components import exceptions, monitor
+import icon4py.model.common.exceptions as exceptions
+from icon4py.model.common.components import monitor
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils, ugrid, writers
 
@@ -341,11 +342,11 @@ class FieldGroupMonitor(monitor.Monitor):
             try:
                 state_to_store = {field: state[field] for field in self._field_names}
             except KeyError as e:
-                logging.error(f"Field '{e.args[0]}' is missing in state.")
+                log.error(f"Field '{e.args[0]}' is missing in state.")
                 self.close()
                 raise exceptions.IncompleteStateError(e.args[0]) from e
 
-            logging.info(f"Storing fields {state_to_store.keys()} at {model_time}")
+            log.info(f"Storing fields {state_to_store.keys()} at {model_time}")
             self._update_fetch_times()
 
             if self._do_initialize_new_file():

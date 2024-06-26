@@ -233,19 +233,19 @@ class IconUGridWriter:
         self.original_filename = pathlib.Path(original_filename)
         self.output_path = pathlib.Path(output_path)
 
-    @staticmethod
-    def dump_ugrid_file(
-        ds: xa.Dataset, original_filename: pathlib.Path, output_path: pathlib.Path
-    ) -> None:
-        stem = original_filename.stem
-        filename = output_path.joinpath(stem + "_ugrid.nc")
-        ds.to_netcdf(filename, format="NETCDF4", engine="netcdf4")
+
+def dump_ugrid_file(
+    ds: xa.Dataset, original_filename: pathlib.Path, output_path: pathlib.Path
+) -> None:
+    stem = original_filename.stem
+    filename = output_path.joinpath(stem + "_ugrid.nc")
+    ds.to_netcdf(filename, format="NETCDF4", engine="netcdf4")
 
     def __call__(self, validate: bool = False):
         patch = IconUGridPatcher()
         with load_data_file(self.original_filename) as ds:
             patched_ds = patch(ds, validate)
-            self.dump_ugrid_file(patched_ds, self.original_filename, self.output_path)
+            dump_ugrid_file(patched_ds, self.original_filename, self.output_path)
 
 
 @contextlib.contextmanager
