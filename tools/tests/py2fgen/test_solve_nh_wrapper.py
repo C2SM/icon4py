@@ -11,6 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import logging
+
 import numpy as np
 from gt4py.next import as_field
 from icon4py.model.common.dimension import (
@@ -32,13 +34,10 @@ from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 from icon4pytools.py2fgen.wrappers.solve_nh import solve_nh_init, solve_nh_run
 
 
-if __name__ == "__main__":
-    import logging
+logging.basicConfig(level=logging.INFO)
 
-    # Set up logging configuration (if not already done)
-    logging.basicConfig(level=logging.INFO)
-    log = logging.getLogger(__name__)
 
+def test_solve_nh_wrapper():
     # Grid parameters
     num_cells = 20896
     num_edges = 31558
