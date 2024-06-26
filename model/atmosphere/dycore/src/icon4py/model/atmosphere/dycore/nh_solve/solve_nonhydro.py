@@ -749,7 +749,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
-            vertical_end=self.grid.num_levels + 1,
+            vertical_end=self.grid.num_levels,  # todo: num_levels + 1 breaks fortran integration
             offset_provider={},
         )
 
@@ -1341,9 +1341,13 @@ class SolveNonhydro:
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
-                vertical_end=int32(self.grid.num_levels + 1),
+                vertical_end=int32(
+                    self.grid.num_levels
+                ),  # todo: num_levels + 1 breaks fortran integration
                 offset_provider={},
             )
+
+        log.info("stencils_61_62")
 
         if self.config.divdamp_type >= 3:
             compute_dwdz_for_divergence_damping(

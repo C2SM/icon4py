@@ -32,7 +32,13 @@ from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 from icon4pytools.py2fgen.wrappers.solve_nh import solve_nh_init, solve_nh_run
 
 
-def test_dycore_wrapper_interface():
+if __name__ == "__main__":
+    import logging
+
+    # Set up logging configuration (if not already done)
+    logging.basicConfig(level=logging.INFO)
+    log = logging.getLogger(__name__)
+
     # Grid parameters
     num_cells = 20896
     num_edges = 31558
@@ -43,6 +49,7 @@ def test_dycore_wrapper_interface():
     num_c2e = 3
     num_e2c2v = 4
     num_e2c = 2
+    num_e2c2eo = 3  # todo: check
     mean_cell_area = 24907282236.708576
 
     # Other configuration parameters
@@ -79,8 +86,11 @@ def test_dycore_wrapper_interface():
     divdamp_z3 = 3.0
     divdamp_z4 = 4.0
     htop_moist_proc = 1000.0
-    comm_id = 0
     limited_area = True
+    lprep_adv = False
+    clean_mflx = True
+    recompute = False
+    linit = False
 
     # Input data - numpy
     rng = np.random.default_rng()
@@ -124,8 +134,8 @@ def test_dycore_wrapper_interface():
     cell_areas = rng.uniform(low=0, high=1, size=(num_cells))
     c_lin_e = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
     c_intp = rng.uniform(low=0, high=1, size=(num_verts, num_e2c))
-    e_flx_avg = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    geofac_grdiv = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
+    e_flx_avg = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2eo))
+    geofac_grdiv = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2eo))
     geofac_rot = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
     pos_on_tplane_e_1 = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
     pos_on_tplane_e_2 = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
@@ -345,7 +355,6 @@ def test_dycore_wrapper_interface():
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
         htop_moist_proc=htop_moist_proc,
-        comm_id=comm_id,
         limited_area=limited_area,
     )
 
@@ -427,10 +436,10 @@ def test_dycore_wrapper_interface():
         mass_flx_ic=mass_flx_ic,
         vn_traj=vn_traj,
         dtime=dtime,
-        lprep_adv=False,
-        clean_mflx=True,
-        recompute=False,
-        linit=False,
+        lprep_adv=lprep_adv,
+        clean_mflx=clean_mflx,
+        recompute=recompute,
+        linit=linit,
         divdamp_fac_o2=divdamp_fac_o2,
         ndyn_substeps=ndyn_substeps,
     )
