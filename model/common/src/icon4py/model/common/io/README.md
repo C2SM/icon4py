@@ -19,7 +19,7 @@ which installs all `ICON4Py` packages.
 
 ### General concept
 
-The module provides a `IoMonitor` that captures fields from the model state and writes them to file
+The module provides an `IOMonitor` that captures fields from the model state and writes them to a file
 if called at the configured output time of the field. Upon each call the monitor decides on its own
 what fields it needs to write.
 
@@ -66,7 +66,7 @@ As we have no general handling of configuration files in `ICON4Py` yet, the conf
 be instantiated as Python dataclasses for now. A valid configuration could look like this:
 
 ```python
-prognostic_group = FieldGroupIoConfig(
+prognostic_group = FieldGroupIOConfig(
             start_time="2024-01-01T12:00:00",
             output_interval="2 HOURS",
             filename="icon4py_prognostics",
@@ -76,7 +76,7 @@ prognostic_group = FieldGroupIoConfig(
             nc_comment="Writing prognostic fields data from icon4py ",
         )
 
-wind_group = FieldGroupIoConfig(
+wind_group = FieldGroupIOConfig(
             output_interval="1 HOUR",
             filename="icon4py_diagnostics",
             timsteps_per_file=24,
@@ -84,17 +84,17 @@ wind_group = FieldGroupIoConfig(
             nc_comment="Writing additional wind fields data from icon4py",
         )
 
-io_config = IoConfig(
+io_config = IOConfig(
     output_path="simulation1/output",
     field_groups=[prognostic_group, wind_group],
 )
 ```
 
-This configuration must then be passed to an instance of the `IoMonitor`, which will decide upon a
-call to `IoMonitor.store` what fields of the model state need to be written at that time:
+This configuration must then be passed to an instance of the `IOMonitor`, which will decide upon a
+call to `IOMonitor.store` what fields of the model state need to be written at that time:
 
 ```
-io_monitor = IoMonitor(io_config)
+io_monitor = IOMonitor(io_config)
 (...)
 monitor.store(model_state, time)
 ```
