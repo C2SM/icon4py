@@ -14,7 +14,6 @@
 import numpy as np
 from gt4py.next import as_field
 from icon4py.model.common.dimension import (
-    C2E2CDim,
     C2E2CODim,
     C2EDim,
     CellDim,
@@ -33,7 +32,7 @@ from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 from icon4pytools.py2fgen.wrappers.solve_nh import solve_nh_init, solve_nh_run
 
 
-if __name__ == "__main__":
+def test_dycore_wrapper_interface():
     # Grid parameters
     num_cells = 20896
     num_edges = 31558
@@ -43,7 +42,6 @@ if __name__ == "__main__":
     num_v2e = 6
     num_c2e = 3
     num_e2c2v = 4
-    num_c2e2c = 3
     num_e2c = 2
     mean_cell_area = 24907282236.708576
 
@@ -82,7 +80,7 @@ if __name__ == "__main__":
     divdamp_z4 = 4.0
     htop_moist_proc = 1000.0
     comm_id = 0
-    limited_area = False
+    limited_area = True
 
     # Input data - numpy
     rng = np.random.default_rng()
@@ -99,10 +97,6 @@ if __name__ == "__main__":
     nudgecoeff_e = np.zeros((num_edges,))
     rbf_coeff_1 = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
     rbf_coeff_2 = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
-    dwdx = np.zeros((num_cells, num_levels))
-    dwdy = np.zeros((num_cells, num_levels))
-    hdef_ic = np.zeros((num_cells, num_levels + 1))
-    div_ic = np.zeros((num_cells, num_levels + 1))
     w_now = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
     w_new = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
     vn_now = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
@@ -136,11 +130,6 @@ if __name__ == "__main__":
     pos_on_tplane_e_1 = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
     pos_on_tplane_e_2 = rng.uniform(low=0, high=1, size=(num_edges, num_e2c))
     rbf_vec_coeff_e = rng.uniform(low=0, high=1, size=(num_edges, num_e2c2v))
-    zd_diffcoef = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    zd_vertoffset = np.round(
-        rng.uniform(low=0, high=1, size=(num_cells, num_c2e2c, num_levels))
-    ).astype(np.int32)
-    zd_intcoef = rng.uniform(low=0, high=1, size=(num_cells, num_c2e2c, num_levels))
     rayleigh_w = rng.uniform(low=0, high=1, size=(num_levels,))
     exner_exfac = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
     exner_ref_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
@@ -186,10 +175,6 @@ if __name__ == "__main__":
     nudgecoeff_e = as_field((EdgeDim,), nudgecoeff_e)
     rbf_coeff_1 = as_field((VertexDim, V2EDim), rbf_coeff_1)
     rbf_coeff_2 = as_field((VertexDim, V2EDim), rbf_coeff_2)
-    dwdx = as_field((CellDim, KDim), dwdx)  # todo: not needed?
-    dwdy = as_field((CellDim, KDim), dwdy)  # todo: not needed?
-    hdef_ic = as_field((CellDim, KDim), hdef_ic)  # todo: not needed?
-    div_ic = as_field((CellDim, KDim), div_ic)  # todo: not needed?
     w_now = as_field((CellDim, KDim), w_now)
     w_new = as_field((CellDim, KDim), w_new)
     vn_now = as_field((EdgeDim, KDim), vn_now)
@@ -223,9 +208,6 @@ if __name__ == "__main__":
     pos_on_tplane_e_1 = as_field((EdgeDim, E2CDim), pos_on_tplane_e_1)
     pos_on_tplane_e_2 = as_field((EdgeDim, E2CDim), pos_on_tplane_e_2)
     rbf_vec_coeff_e = as_field((EdgeDim, E2C2EDim), rbf_vec_coeff_e)
-    zd_diffcoef = as_field((CellDim, KDim), zd_diffcoef)  # todo: not needed?
-    zd_vertoffset = as_field((CellDim, C2E2CDim, KDim), zd_vertoffset)  # todo: not needed?
-    zd_intcoef = as_field((CellDim, C2E2CDim, KDim), zd_intcoef)  # todo: not needed?
     rayleigh_w = as_field((KDim,), rayleigh_w)
     exner_exfac = as_field((CellDim, KDim), exner_exfac)
     exner_ref_mc = as_field((CellDim, KDim), exner_ref_mc)
@@ -368,8 +350,6 @@ if __name__ == "__main__":
     )
 
     w_concorr_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
-    ddt_vn_apc_pc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
-    ddt_w_adv_pc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
     theta_v_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
     rho_ic = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
     exner_pr = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
