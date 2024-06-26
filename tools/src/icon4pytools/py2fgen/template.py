@@ -224,6 +224,7 @@ import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
 
 {% if _this_node.is_gt4py_program_present %}
