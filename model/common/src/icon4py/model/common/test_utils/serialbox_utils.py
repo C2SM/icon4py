@@ -154,7 +154,7 @@ class IconGridSavepoint(IconSavepoint):
         edge_length: float = 0.0,
     ):
         super().__init__(sp, ser, size)
-        # workaround dealing with torus grid
+        #TODO (@halungge) workaround dealing with torus grid
         if root == 2 and level == 0:
             log.warning("most likey torus grid, no mean_cell_area available")
             if edge_length == 0.0:
