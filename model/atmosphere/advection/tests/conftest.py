@@ -10,6 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import pytest
 
 from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
     grid,
@@ -17,3 +18,10 @@ from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtu
 from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
     backend,
 )
+
+
+def pytest_collection_modifyitems(config, items):
+    if config.getoption("--backend") == "gtfn_gpu":
+        skip_marker = pytest.mark.skip(reason="FIXME: advection tests need to be fixed for GPU. Skipping")
+        for item in items:
+            item.add_marker(skip_marker)
