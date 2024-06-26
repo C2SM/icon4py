@@ -22,6 +22,8 @@ from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures
 
 def pytest_collection_modifyitems(config, items):
     if config.getoption("--backend") == "gtfn_gpu":
-        skip_marker = pytest.mark.skip(reason="FIXME: advection tests need to be fixed for GPU. Skipping")
+        skip_marker = pytest.mark.skip(
+            reason="FIXME: advection tests need to be fixed for GPU. Skipping"
+        )
         for item in items:
             item.add_marker(skip_marker)
