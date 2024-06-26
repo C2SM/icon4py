@@ -18,7 +18,6 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import RayleighType
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
     CellDim,
