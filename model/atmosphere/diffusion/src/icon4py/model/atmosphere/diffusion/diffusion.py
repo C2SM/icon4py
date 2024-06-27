@@ -625,14 +625,14 @@ class Diffusion:
                   vertex_start_lb_plus1,
                   vertex_end_local,)
 
-    @orchestration
+    @orchestration(method=True)
     def _do_diffusion_step_stencils(
-        self: dace.compiletime,
+        self: dace.compiletime, # TODO(kotsaloscv): Once DaCe supports nested Structures (Structures of Structures of Arrays), we can avoid using dace.compiletime (unblock distributed compilation)
         diagnostic_state: DiffusionDiagnosticState_dace_t,
         prognostic_state: PrognosticState_dace_t,
         dtime: dace.float64,
-        diff_multfac_vn: dace.float64[KDim_sym],
-        smag_limit: dace.float64[KDim_sym],
+        diff_multfac_vn: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
+        smag_limit: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
         smag_offset: dace.float64,
         #
         klevels: dace.int32,
