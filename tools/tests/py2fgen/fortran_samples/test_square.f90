@@ -3,7 +3,7 @@ program call_square_wrapper_cffi_plugin
    use square_plugin
    implicit none
    character(len=100) :: str_buffer
-   integer(c_int) :: cdim, kdim, i, j, rc
+   integer(c_int) :: cdim, kdim, i, j, rc, n
    logical :: computation_correct
    real(c_double), dimension(:, :), allocatable :: input, result
 
@@ -40,15 +40,12 @@ program call_square_wrapper_cffi_plugin
 #elif USE_SQUARE_ERROR
    call square_error(input, result, rc)
 #elif PROFILE_SQUARE_FROM_FUNCTION
-
     call square_from_function(input, result, rc)
-
-    call profile_enable(rc)
     do n = 1, 100
+    call profile_enable(rc)
     call square_from_function(input, result, rc)
-    end do
     call profile_disable(rc)
-
+    end do
 #else
    call square(input, result, rc)
 #endif
