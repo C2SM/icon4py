@@ -101,20 +101,20 @@ program diffusion_simulation
    integer(c_int) :: n
 
    ! Constants and types
-   integer(c_int), parameter :: num_cells = 20480
-   integer(c_int), parameter :: num_edges = 30720
-   integer(c_int), parameter :: num_vertices = 10242
-   integer(c_int), parameter :: num_levels = 60
+   integer(c_int), parameter :: num_cells = 20896
+   integer(c_int), parameter :: num_edges = 31558
+   integer(c_int), parameter :: num_vertices = 10663
+   integer(c_int), parameter :: num_levels = 65
    integer(c_int), parameter :: num_c2ec2o = 4
    integer(c_int), parameter :: num_v2e = 6
-   integer(c_int), parameter :: num_c2e = 2
+   integer(c_int), parameter :: num_c2e = 3
    integer(c_int), parameter :: num_e2c2v = 4
    integer(c_int), parameter :: num_c2e2c = 3
-   integer(c_int), parameter :: num_e2c = 3
+   integer(c_int), parameter :: num_e2c = 2
    real(c_double), parameter :: mean_cell_area = 24907282236.708576
    integer(c_int), parameter :: ndyn_substeps = 2
-   real(c_double), parameter :: dtime = 2.0
-   real(c_double), parameter :: rayleigh_damping_height = 50000
+   real(c_double), parameter :: dtime = 10.0
+   real(c_double), parameter :: rayleigh_damping_height = 12500.0
    integer(c_int), parameter :: nflatlev = 30
    integer(c_int), parameter :: nflat_gradp = 59
    integer(c_int), parameter :: diffusion_type = 5 ! Assuming DiffusionType.SMAGORINSKY_4TH_ORDER is represented by 5
@@ -127,6 +127,11 @@ program diffusion_simulation
    real(c_double), parameter :: smagorinski_scaling_factor = 0.025
    logical(c_int), parameter :: hdiff_temp = .true.
    logical(c_int), parameter :: linit = .false.
+   real(c_double), parameter :: denom_diffu_v = 150.0
+   real(c_double), parameter :: thslp_zdiffu = 0.02
+   real(c_double), parameter :: thhgtd_zdiffu = 125.0
+   integer(c_int), parameter :: itype_sher = 2
+   real(c_double), parameter :: nudge_max_coeff = 0.075
 
    ! Declaring arrays for diffusion_init and diffusion_run
    real(c_double), dimension(:), allocatable :: vct_a
@@ -224,7 +229,7 @@ program diffusion_simulation
 
    ! Fill arrays with random numbers
    ! For 1D arrays
-   call fill_random_1d(vct_a, 0.0_c_double, 75000.0_c_double) ! needs to be above 50000 damping height restriction
+   call fill_random_1d(vct_a, 0.0_c_double, 75000.0_c_double) ! needs to be above 12500 damping height restriction
    call fill_random_1d(nudgecoeff_e, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(tangent_orientation, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(inverse_primal_edge_lengths, 0.0_c_double, 1.0_c_double)
@@ -281,30 +286,71 @@ program diffusion_simulation
     !$acc mask_hdiff)
 
    ! Call diffusion_init
-   call diffusion_init(vct_a, theta_ref_mc, wgtfac_c, e_bln_c_s, geofac_div, &
-                       geofac_grg_x, geofac_grg_y, geofac_n2s, nudgecoeff_e, rbf_coeff_1, &
-                       rbf_coeff_2, mask_hdiff, zd_diffcoef, zd_vertoffset, zd_intcoef, &
-                       num_levels, mean_cell_area, ndyn_substeps, rayleigh_damping_height, &
-                       nflatlev, nflat_gradp, diffusion_type, &
-                       hdiff_w, hdiff_vn, zdiffu_t, type_t_diffu, type_vn_diffu, &
-                       hdiff_efdt_ratio, smagorinski_scaling_factor, hdiff_temp, &
-                       tangent_orientation, inverse_primal_edge_lengths, inv_dual_edge_length, &
-                       inv_vert_vert_length, edge_areas, f_e, cell_areas, primal_normal_vert_x, &
-                       primal_normal_vert_y, dual_normal_vert_x, dual_normal_vert_y, &
-                       primal_normal_cell_x, primal_normal_cell_y, dual_normal_cell_x, &
-                       dual_normal_cell_y, rc)
+   call diffusion_init(vct_a, &
+                      theta_ref_mc, &
+                      wgtfac_c, &
+                      e_bln_c_s, &
+                      geofac_div, &
+                      geofac_grg_x, &
+                      geofac_grg_y, &
+                      geofac_n2s, &
+                      nudgecoeff_e, &
+                      rbf_coeff_1, &
+                      rbf_coeff_2, &
+                      mask_hdiff, &
+                      zd_diffcoef, &
+                      zd_vertoffset, &
+                      zd_intcoef, &
+                      num_levels, &
+                      mean_cell_area, &
+                      ndyn_substeps, &
+                      rayleigh_damping_height, &
+                      nflatlev, &
+                      nflat_gradp, &
+                      diffusion_type, &
+                      hdiff_w, &
+                      hdiff_vn, &
+                      zdiffu_t, &
+                      type_t_diffu, &
+                      type_vn_diffu, &
+                      hdiff_efdt_ratio, &
+                      smagorinski_scaling_factor, &
+                      hdiff_temp, &
+                      thslp_zdiffu, &
+                      thhgtd_zdiffu, &
+                      denom_diffu_v, &
+                      nudge_max_coeff, &
+                      itype_sher, &
+                      tangent_orientation, &
+                      inverse_primal_edge_lengths, &
+                      inv_dual_edge_length, &
+                      inv_vert_vert_length, &
+                      edge_areas, &
+                      f_e, &
+                      cell_areas, &
+                      primal_normal_vert_x, &
+                      primal_normal_vert_y, &
+                      dual_normal_vert_x, &
+                      dual_normal_vert_y, &
+                      primal_normal_cell_x, &
+                      primal_normal_cell_y, &
+                      dual_normal_cell_x, &
+                      dual_normal_cell_y, &
+                      rc)
 
    print *, "Python exit code = ", rc
    if (rc /= 0) then
        call exit(1)
    end if
 
-   do n = 1, 60
+   ! initial run
+   call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit, rc)
+   print *, "Initial diffusion run done"
+
    ! Call diffusion_run
    call profile_enable(rc)
    call diffusion_run(w, vn, exner, theta_v, rho, hdef_ic, div_ic, dwdx, dwdy, dtime, linit, rc)
    call profile_disable(rc)
-   end do
 
    print *, "Python exit code = ", rc
    if (rc /= 0) then
