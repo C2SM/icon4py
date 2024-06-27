@@ -611,19 +611,19 @@ class Diffusion:
         )
 
         self._do_diffusion_step_stencils(diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, smag_offset,
-                  klevels,
-                  cell_start_interior,
-                  cell_start_nudging,
-                  cell_end_local,
-                  cell_end_halo,
-                  edge_start_nudging_plus_one,
-                  edge_start_nudging,
-                  edge_start_lb_plus4,
-                  edge_end_local,
-                  edge_end_local_minus2,
-                  edge_end_halo,
-                  vertex_start_lb_plus1,
-                  vertex_end_local,)
+            klevels,
+            cell_start_interior,
+            cell_start_nudging,
+            cell_end_local,
+            cell_end_halo,
+            edge_start_nudging_plus_one,
+            edge_start_nudging,
+            edge_start_lb_plus4,
+            edge_end_local,
+            edge_end_local_minus2,
+            edge_end_halo,
+            vertex_start_lb_plus1,
+            vertex_end_local)
 
     @orchestration(method=True)
     def _do_diffusion_step_stencils(
@@ -634,20 +634,20 @@ class Diffusion:
         diff_multfac_vn: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
         smag_limit: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
         smag_offset: dace.float64,
-        #
-        klevels: dace.int32,
-        cell_start_interior: dace.int32,
-        cell_start_nudging: dace.int32,
-        cell_end_local: dace.int32,
-        cell_end_halo: dace.int32,
-        edge_start_nudging_plus_one: dace.int32,
-        edge_start_nudging: dace.int32,
-        edge_start_lb_plus4: dace.int32,
-        edge_end_local: dace.int32,
-        edge_end_local_minus2: dace.int32,
-        edge_end_halo: dace.int32,
-        vertex_start_lb_plus1: dace.int32,
-        vertex_end_local: dace.int32,
+        # Compile-time constants and not dace.int32: Needed to decide whether to perform communication or not
+        klevels: dace.compiletime,
+        cell_start_interior: dace.compiletime,
+        cell_start_nudging: dace.compiletime,
+        cell_end_local: dace.compiletime,
+        cell_end_halo: dace.compiletime,
+        edge_start_nudging_plus_one: dace.compiletime,
+        edge_start_nudging: dace.compiletime,
+        edge_start_lb_plus4: dace.compiletime,
+        edge_end_local: dace.compiletime,
+        edge_end_local_minus2: dace.compiletime,
+        edge_end_halo: dace.compiletime,
+        vertex_start_lb_plus1: dace.compiletime,
+        vertex_end_local: dace.compiletime,
     ):
         # dtime dependent: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})

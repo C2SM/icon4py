@@ -113,11 +113,6 @@ def orchestration(method=True):
                     raise ValueError("The orchestration decorator is only for methods -at least for now-.")
 
                 flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
-                KDim_sym_concretized = 0 # dummy value
-                for k_v in flattened_xargs_type_value:
-                    if k_v[0] is DiffusionDiagnosticState_dace_t:
-                        KDim_sym_concretized = k_v[1].hdef_ic.ndarray.shape[1]
-                        break
 
                 kwargs.update({
                     # GHEX C++ ptrs
@@ -130,7 +125,7 @@ def orchestration(method=True):
                     #
                     **{f"__gids_{ind.name}_{dim.value}":self._exchange._decomposition_info.global_index(dim, ind) if isinstance(self._exchange, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (di.EntryType.ALL, di.EntryType.OWNED, di.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
                     #
-                    **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": KDim_sym_concretized},
+                    **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
                     #
                     **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_dace_t},
                     #
@@ -196,7 +191,7 @@ def orchestration(method=True):
 
                     # Insert halo exchange nodes (only if needed) in the fused SDFG
                     if isinstance(self._exchange, GHexMultiNodeExchange):
-                        # TODO: Work on asynchronous communication
+                        # TODO(kotsaloscv): Work on asynchronous communication
                         wait = True
                         
                         counter = 0
