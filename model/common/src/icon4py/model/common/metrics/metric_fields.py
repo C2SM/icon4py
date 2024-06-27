@@ -30,6 +30,7 @@ from gt4py.next import (
     where,
 )
 
+from icon4py.model.common import settings
 from icon4py.model.common.dimension import (
     C2E,
     E2C,
@@ -64,7 +65,7 @@ class MetricsConfig:
     exner_expol: Final[wpfloat] = 0.333
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
 def compute_z_mc(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     z_mc: Field[[CellDim, KDim], wpfloat],
@@ -82,7 +83,7 @@ def compute_z_mc(
     Args:
         z_ifc: Field[[CellDim, KDim], wpfloat] geometric height on half levels
         z_mc: Field[[CellDim, KDim], wpfloat] output, geometric height defined on full levels
-        horizontal_start:int32 start index of horizontal domain
+        horizontal_start:
         horizontal_end:int32 end index of horizontal domain
         vertical_start:int32 start index of vertical domain
         vertical_end:int32 end index of vertical domain
@@ -109,7 +110,7 @@ def _compute_ddqz_z_half(
     return ddqz_z_half
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=None)
+@program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
 def compute_ddqz_z_half(
     z_ifc: Field[[CellDim, KDim], wpfloat],
     z_mc: Field[[CellDim, KDim], wpfloat],

@@ -115,7 +115,7 @@ def test_compute_ddq_z_half(icon_grid, metrics_savepoint, backend):
         pytest.skip("skipping: unsupported backend")
     ddq_z_half_ref = metrics_savepoint.ddqz_z_half()
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    z_mc = zero_field(icon_grid, CellDim, KDim)
     nlevp1 = icon_grid.num_levels + 1
     k_index = as_field((KDim,), np.arange(nlevp1, dtype=int32))
     compute_z_mc.with_backend(backend)(
