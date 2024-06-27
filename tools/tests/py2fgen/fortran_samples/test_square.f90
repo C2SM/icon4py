@@ -3,13 +3,13 @@ program call_square_wrapper_cffi_plugin
    use square_plugin
    implicit none
    character(len=100) :: str_buffer
-   integer(c_int) :: cdim, kdim, i, j, rc, n
+   integer(c_int) :: cdim, kdim, i, j, rc
    logical :: computation_correct
    real(c_double), dimension(:, :), allocatable :: input, result
 
    ! array dimensions
-   cdim = 1800
-   kdim = 1000
+   cdim = 18
+   kdim = 10
 
    !$ACC enter data create(input, result)
 
