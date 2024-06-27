@@ -17,10 +17,10 @@ import sys
 from dataclasses import InitVar, dataclass, field
 from enum import Enum
 from typing import Final, Optional
-
 from gt4py.next import as_field
 from gt4py.next.common import Dimension
 from gt4py.next.ffront.fbuiltins import Field, int32
+from icon4py.model.common.decomposition.definitions import DecompositionInfo
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -51,7 +51,6 @@ from icon4py.model.atmosphere.diffusion.cached import (
 
 from icon4py.model.common.constants import (
     CPD,
-    DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
     GAS_CONSTANT_DRY_AIR,
     dbl_eps,
 )
@@ -293,11 +292,11 @@ class DiffusionParams:
         ) = self._determine_smagorinski_factor(config)
         object.__setattr__(self, "smagorinski_factor", smagorinski_factor)
         object.__setattr__(self, "smagorinski_height", smagorinski_height)
-        # see mo_interpol_nml.f90:
+        # nudge_max_coeff is already multiplied by factor of 5 in mo_interpol_nml.f90
         object.__setattr__(
             self,
             "scaled_nudge_max_coeff",
-            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
+            config.nudge_max_coeff,
         )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
@@ -547,9 +546,9 @@ class Diffusion:
         log.debug("communication of prognostic cell fields: theta, w, exner - start")
         self._exchange.exchange_and_wait(
             CellDim,
-            prognostic_state.w,
-            prognostic_state.theta_v,
-            prognostic_state.exner,
+            prognostic_state.w.ndarray[0 : self.grid.num_cells, :],
+            prognostic_state.theta_v.ndarray[0 : self.grid.num_cells, :],
+            prognostic_state.exner.ndarray[0 : self.grid.num_cells, :],
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
 
@@ -605,6 +604,7 @@ class Diffusion:
         vertex_end_local = self.grid.get_end_index(
             VertexDim, HorizontalMarkerIndex.local(VertexDim)
         )
+        vertex_end_halo = self.grid.get_end_index(VertexDim, HorizontalMarkerIndex.halo(VertexDim))
 
         # dtime dependent: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
@@ -624,9 +624,12 @@ class Diffusion:
         )
         log.debug("rbf interpolation 1: end")
 
-        # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange.exchange_and_wait(
+            VertexDim,
+            self.u_vert.ndarray[0 : self.grid.num_vertices, :],
+            self.v_vert.ndarray[0 : self.grid.num_vertices, :],
+        )
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -684,7 +687,9 @@ class Diffusion:
         # TODO (magdalena) move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
+            self._exchange.exchange_and_wait(
+                EdgeDim, self.z_nabla2_e.ndarray[0 : self.grid.num_edges, :]
+            )
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -704,7 +709,11 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange.exchange_and_wait(
+            VertexDim,
+            self.u_vert.ndarray[0 : self.grid.num_vertices, :],
+            self.v_vert.ndarray[0 : self.grid.num_vertices, :],
+        )
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
@@ -734,7 +743,9 @@ class Diffusion:
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
+        handle_edge_comm = self._exchange.exchange(
+            EdgeDim, prognostic_state.vn.ndarray[0 : self.grid.num_edges, :]
+        )
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"

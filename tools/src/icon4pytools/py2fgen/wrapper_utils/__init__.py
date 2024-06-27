@@ -11,22 +11,3 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Dimension, NeighborTableOffsetProvider
-
-from icon4py.model.common.settings import xp
-
-
-def neighbortable_offset_provider_for_1d_sparse_fields(
-    old_shape: tuple[int, int],
-    origin_axis: Dimension,
-    neighbor_axis: Dimension,
-    has_skip_values: bool,
-):
-    table = xp.asarray(xp.arange(old_shape[0] * old_shape[1]).reshape(old_shape))
-    return NeighborTableOffsetProvider(
-        table,
-        origin_axis,
-        neighbor_axis,
-        table.shape[1],
-        has_skip_values=has_skip_values,
-    )

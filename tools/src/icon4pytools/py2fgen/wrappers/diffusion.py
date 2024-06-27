@@ -55,19 +55,34 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device, limited_area
+from icon4py.model.common.settings import device, parallel_run
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
+from icon4py.model.common.test_utils.parallel_helpers import check_comm_size
 
 from icon4pytools.common.logger import setup_logger
 from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+from icon4pytools.py2fgen.wrapper_utils.debug_output import print_grid_decomp_info
+from icon4pytools.py2fgen.wrapper_utils.dimension import (
+    CellIndexDim,
+    EdgeIndexDim,
+    SingletonDim,
+    SpecialADim,
+    SpecialBDim,
+    SpecialCDim,
+    VertexIndexDim,
+)
+from icon4pytools.py2fgen.wrapper_utils.grid_utils import (
+    construct_decomposition,
+    construct_icon_grid,
+)
 
 
-logger = setup_logger(__name__)
+log = setup_logger(__name__)
 
 # global diffusion object
-diffusion_granule: Diffusion = Diffusion()
+diffusion_granule: Diffusion = None
 
 # global profiler object
 profiler = cProfile.Profile()
@@ -134,23 +149,83 @@ def diffusion_init(
     primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     dual_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
+    limited_area: bool,
+    num_cells: int32,
+    num_edges: int32,
+    num_verts: int32,
+    cells_start_index: Field[[CellIndexDim], int32],
+    cells_end_index: Field[[CellIndexDim], int32],
+    edge_start_index: Field[[EdgeIndexDim], int32],
+    edge_end_index: Field[[EdgeIndexDim], int32],
+    vert_start_index: Field[[VertexIndexDim], int32],
+    vert_end_index: Field[[VertexIndexDim], int32],
+    c2e: Field[[CellDim, SingletonDim, C2EDim], int32],
+    c2e2c: Field[[CellDim, SingletonDim, C2E2CDim], int32],
+    v2e: Field[[VertexDim, SingletonDim, V2EDim], int32],
+    e2c2v: Field[[EdgeDim, SingletonDim, E2C2VDim], int32],
+    e2c: Field[[EdgeDim, SingletonDim, E2CDim], int32],
+    c_owner_mask: Field[[CellDim], bool],
+    e_owner_mask: Field[[EdgeDim], bool],
+    v_owner_mask: Field[[VertexDim], bool],
+    c_glb_index: Field[[SpecialADim], int32],
+    e_glb_index: Field[[SpecialBDim], int32],
+    v_glb_index: Field[[SpecialCDim], int32],
+    comm_id: int32,
 ):
-    logger.info(f"Using Device = {device}")
+    log.info(f"Using Device = {device}")
 
     # ICON grid
-    if device.name == "GPU":
-        on_gpu = True
+    on_gpu = True if device.name == "GPU" else False
+
+    if parallel_run:
+        icon_grid = construct_icon_grid(
+            cells_start_index,
+            cells_end_index,
+            vert_start_index,
+            vert_end_index,
+            edge_start_index,
+            edge_end_index,
+            num_cells,
+            num_edges,
+            num_verts,
+            num_levels,
+            c2e,
+            c2e2c,
+            v2e,
+            e2c2v,
+            e2c,
+            True,
+            on_gpu,
+        )
+
+        processor_props, decomposition_info, exchange = construct_decomposition(
+            c_glb_index,
+            e_glb_index,
+            v_glb_index,
+            c_owner_mask,
+            e_owner_mask,
+            v_owner_mask,
+            num_cells,
+            num_edges,
+            num_verts,
+            num_levels,
+            comm_id,
+        )
+
+        check_comm_size(processor_props)
+
+        print_grid_decomp_info(
+            icon_grid, processor_props, decomposition_info, num_cells, num_edges, num_verts
+        )
     else:
-        on_gpu = False
+        grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
 
-    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
-
-    icon_grid = load_grid_from_file(
-        grid_file=grid_file_path,
-        num_levels=num_levels,
-        on_gpu=on_gpu,
-        limited_area=True if limited_area else False,
-    )
+        icon_grid = load_grid_from_file(
+            grid_file=grid_file_path,
+            num_levels=num_levels,
+            on_gpu=on_gpu,
+            limited_area=True if limited_area else False,
+        )
 
     # Edge geometry
     edge_params = EdgeParams(
@@ -223,6 +298,14 @@ def diffusion_init(
         geofac_grg_y=geofac_grg_y,
         nudgecoeff_e=nudgecoeff_e,
     )
+
+    # We need the global keyword here
+    global diffusion_granule
+    if parallel_run:
+        diffusion_granule = Diffusion(exchange=exchange)
+    else:
+        diffusion_granule = Diffusion()
+
     diffusion_granule.init(
         grid=icon_grid,
         config=config,
