@@ -52,12 +52,12 @@ ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH}
     LD_LIBRARY_PATH=${HPC_SDK_PATH}/cuda/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
 
 # Install Boost
-RUN wget -q -O boost_1_72_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.72.0/boost_1_72_0.tar.gz/download && \
-    echo c66e88d5786f2ca4dbebb14e06b566fb642a1a6947ad8cc9091f9f445134143f boost_1_72_0.tar.gz > boost_hash.txt && \
+RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
+    echo be0d91732d5b0cc6fbb275c7939974457e79b54d6f07ce2e3dfdd68bef883b0b boost_1_85_0.tar.gz > boost_hash.txt && \
     sha256sum -c boost_hash.txt && \
-    tar xzf boost_1_72_0.tar.gz && \
-    mv boost_1_72_0/boost /usr/local/include/ && \
-    rm boost_1_72_0.tar.gz boost_hash.txt
+    tar xzf boost_1_85_0.tar.gz && \
+    mv boost_1_85_0/boost /usr/local/include/ && \
+    rm boost_1_85_0.tar.gz boost_hash.txt
 
 ENV BOOST_ROOT /usr/local/
 
