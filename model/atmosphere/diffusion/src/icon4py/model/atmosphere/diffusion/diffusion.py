@@ -519,6 +519,7 @@ class Diffusion:
             0.0,
         )
         self._sync_cell_fields(prognostic_state)
+        self._sync_edge_fields(prognostic_state)
 
     def run(
         self,
@@ -556,6 +557,14 @@ class Diffusion:
             prognostic_state.exner,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
+
+    def _sync_edge_fields(self, prognostic_state):
+        log.debug("communication of prognostic edge fields: vn - start")
+        self._exchange.exchange_and_wait(
+            EdgeDim,
+            prognostic_state.vn
+        )
+        log.debug("ccommunication of prognostic edge fields: vn - done")
 
     def _do_diffusion_step(
         self,

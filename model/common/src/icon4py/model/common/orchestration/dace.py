@@ -306,7 +306,7 @@ def orchestration(method=True):
                                 else:
                                     halo_update = all_bools[0]
 
-                                if halo_update or global_buffer_name == 'prognostic_state.vn':
+                                if halo_update:
                                     global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name]
                             
                             if len(global_buffers) == 0:
