@@ -483,7 +483,8 @@ def orchestration(method=True):
                         daceP._cache.add(cachekey, sdfg, binaryobj)
 
                         # Call SDFG
-                        del sdfg_args[self_name]
+                        if method:
+                            del sdfg_args[self_name]
                         result = binaryobj(**sdfg_args)
 
                     self._exchange.exchange_and_wait = tmp_self__exchange_exchange_and_wait
