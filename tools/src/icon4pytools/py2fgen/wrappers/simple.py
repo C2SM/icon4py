@@ -16,8 +16,7 @@ import pstats
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, float64, int32, neighbor_sum
-from icon4py.model.common import field_type_aliases as fa
+from gt4py.next.ffront.fbuiltins import Field, float64
 from icon4py.model.common.caching import CachedProgram
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid.simple import SimpleGrid
