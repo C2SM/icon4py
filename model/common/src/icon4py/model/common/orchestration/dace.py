@@ -16,6 +16,7 @@ from dace.frontend.python.common import SDFGConvertible
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
 import site
 import inspect
+import copy
 
 import numpy as np
 import dace
@@ -305,7 +306,7 @@ def orchestration(method=True):
                                 else:
                                     halo_update = all_bools[0]
 
-                                if halo_update or global_buffer_name == '__g_prognostic_state_vn':
+                                if halo_update or global_buffer_name == 'prognostic_state.vn':
                                     global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name]
                             
                             if len(global_buffers) == 0:
@@ -363,7 +364,10 @@ def orchestration(method=True):
                             fields_desc_glob_vars = '\n'
                             fields_desc = '\n'
                             descr_unique_names = []
-                            for i, arg in enumerate(global_buffers.values()):
+                            for i, arg in enumerate(copy.deepcopy(list(global_buffers.values()))):
+                                if isinstance(arg.shape[0], dace.symbolic.symbol):
+                                    arg.shape   = (kwargs[str(arg.shape[0])]  , kwargs[str(arg.shape[1])])
+                                    arg.strides = (kwargs[str(arg.strides[0])], kwargs[str(arg.strides[1])])
                                 # https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
                                 if len(arg.shape) > 2:
                                     raise ValueError("field has too many dimensions")
