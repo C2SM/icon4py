@@ -359,6 +359,7 @@ def weighting_factors(
         wgt_loc:
 
     Returns:
+        wgt: numpy array of size [[3, flexible], wpfloat]
     """
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
@@ -458,7 +459,7 @@ def compute_c_bln_avg(
 
 def compute_force_mass_conservation_to_c_bln_avg(
     c_bln_avg: np.array,
-    divavg_cntrwgt: np.array,
+    divavg_cntrwgt: wpfloat,
     owner_mask: np.array,
     c2e2c: np.array,
     cell_areas: np.array,
@@ -475,16 +476,17 @@ def compute_force_mass_conservation_to_c_bln_avg(
 
     force_mass_conservation_to_bilinear_cellavg_wgt
     Args:
-        c_bln_avg: bilinear cellavg wgt
+        c_bln_avg: bilinear cellavg wgt, numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
         divavg_cntrwgt:
-        owner_mask:
-        c2e2c:
-        cell_areas:
+        owner_mask: numpy array, representing a Field[[CellDim], bool]
+        c2e2c: numpy array, representing a Field[[EdgeDim, C2E2CDim], int32]
+        cell_areas: numpy array, representing a Field[[CellDim], wpfloat]
         horizontal_start:
         horizontal_start_p3:
         niter: number of iterations until convergence is assumed
 
     Returns:
+        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
     """
     llb = horizontal_start
     llb2 = horizontal_start_p3
@@ -555,18 +557,19 @@ def compute_e_flx_avg(
     Compute edge flux average
 
     Args:
-        c_bln_avg: np.array,
-        geofac_div:
-        owner_mask:
-        primal_cart_normal:
-        e2c:
-        c2e:
-        c2e2c:
-        e2c2e:
+        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
+        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
+        owner_mask: numpy array, representing a Field[[EdgeDim], bool]
+        primal_cart_normal: numpy array, representing a Field[[EdgeDim], wpfloat]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
+        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
+        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
         horizontal_start_p3:
         horizontal_start_p4:
 
     Returns:
+        e_flx_avg: numpy array, representing a Field[[EdgeDim, E2C2EODim], wpfloat]
     """
     llb = 0
     e_flx_avg = np.zeros([e2c.shape[0], 5])
@@ -695,17 +698,18 @@ def compute_cells_aw_verts(
     Compute cells_aw_verts.
 
     Args:
-        dual_area:
-        edge_vert_length:
-        edge_cell_length:
-        owner_mask:
-        v2e:
-        e2v:
-        v2c:
-        e2c:
+        dual_area: numpy array, representing a Field[[VertexDim], wpfloat]
+        edge_vert_length: \\ numpy array, representing a Field[[EdgeDim, E2CDim], wpfloat]
+        edge_cell_length: //
+        owner_mask: numpy array, representing a Field[[VertexDim], bool]
+        v2e: numpy array, representing a Field[[VertexDim, V2EDim], int32]
+        e2v: numpy array, representing a Field[[EdgeDim, E2VDim], int32]
+        v2c: numpy array, representing a Field[[VertexDim, V2CDim], int32]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
         horizontal_start:
 
     Returns:
+        aw_verts: numpy array, representing a Field[[VertexDim, 6], wpfloat]
     """
     llb = horizontal_start
     cells_aw_verts = np.zeros([v2e.shape[0], 6])
@@ -743,14 +747,15 @@ def compute_e_bln_c_s(
     Compute e_bln_c_s.
 
     Args:
-        owner_mask:
-        c2e:
-        cells_lat:
-        cells_lon:
-        edges_lat:
-        edges_lon:
+        owner_mask: numpy array, representing a Field[[CellDim], bool]
+        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
+        cells_lat: \\ numpy array, representing a Field[[CellDim], wpfloat]
+        cells_lon: //
+        edges_lat: \\ numpy array, representing a Field[[EdgeDim], wpfloat]
+        edges_lon: //
 
     Returns:
+        e_bln_c_s: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
     """
     llb = 0
     num_cells = c2e.shape[0]
@@ -850,6 +855,7 @@ def compute_pos_on_tplane_e_x_y(
         horizontal_start:
 
     Returns:
+        pos_on_tplane_e_x_y:
     """
     llb = horizontal_start
     pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
