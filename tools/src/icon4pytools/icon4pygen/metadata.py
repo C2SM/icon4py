@@ -208,7 +208,7 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
 
     return DummyConnectivity(
         max_neighbors=IcoChainSize.get(location_chain)
-        + include_center,  # we already have a function calc_num_neighbors
+        + include_center,  # TODO: we already have a function calc_num_neighbors that does this
         has_skip_values=skip_values,
         origin_axis=offset.target[0],
         neighbor_axis=offset.source,
