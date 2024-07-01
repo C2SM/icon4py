@@ -1,4 +1,5 @@
 import functools
+import operator
 from enum import IntEnum
 from typing import Optional, Protocol, Sequence, TypeAlias, TypeVar, Union
 
@@ -144,7 +145,7 @@ class MetricsFieldsFactory:
         def evaluate(self):
             self._fields = self._allocate()
 
-            domain = functools.reduce(lambda x, y: x + y, self._compute_domain.values())
+            domain = functools.reduce(operator.add, self._compute_domain.values())
             # args = {k: provider.get(k) for k, provider in self._dependencies.items()}
             args = [self._dependencies[k].get(k) for k in self._dependencies.keys()]
             params = [p for p in self._params.values()]
