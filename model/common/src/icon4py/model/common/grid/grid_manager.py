@@ -32,6 +32,7 @@ except ImportError:
 
 
 from icon4py.model.common.dimension import (
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -383,6 +384,7 @@ class GridManager:
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
+        c2e2c2e = self._construct_triangle_edges(c2e2c, c2e)
         c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
         (
             start_indices,
@@ -411,6 +413,7 @@ class GridManager:
                     C2VDim: c2v,
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
+                    C2E2C2EDim: c2e2c2e,
                     E2C2VDim: e2c2v,
                     V2E2VDim: v2e2v,
                     E2C2EDim: e2c2e,
@@ -509,6 +512,19 @@ class GridManager:
             var = flattened[i, (~np.in1d(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
             e2c2e[i, : var.shape[0]] = var
         return e2c2e
+
+    def _construct_triangle_edges(self, c2e2c, c2e):
+        """Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
+
+        Args:
+            c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
+            c2e: shape (n_cell, 2), connectivity table from a cell to its neighboring edges
+        Returns:
+            np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring edges of its cell neighbors
+        """
+        dummy_c2e = _patch_with_dummy_lastline(c2e)
+        table = np.reshape(dummy_c2e[c2e2c], (c2e2c.shape[0], 9))
+        return table
 
 
 def _patch_with_dummy_lastline(ar):
