@@ -17,6 +17,7 @@ import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
+import icon4py.model.common.dimension
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
@@ -163,8 +164,6 @@ def provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | 
         return provide_neighbor_table(offset, is_global)
 
 
-import icon4py.model.common.dimension
-
 def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     """Build an offset provider based on connectivity chain string.
 
@@ -183,14 +182,14 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
     new_sparse_field = any(len(token) > 1 for token in chain.split("2")) and not chain.endswith("O")
     if new_sparse_field:
-        chain = chain.split("2")[1] # E2EC -> EC
+        chain = chain.split("2")[1]
 
     skip_values = False
     if is_global and "V" in chain:
         if chain.count("V") > 1 or not chain.endswith("V"):
             skip_values = True
 
-    # TODO(notme): this algorithm is duplicated in MultiLocation.to_dim_list
+    # TODO: this algorithm is duplicated in MultiLocation.to_dim_list
     location_chain = []
     include_center = False
     for letter in chain:
@@ -208,7 +207,8 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
             raise InvalidConnectivityException(location_chain)
 
     return DummyConnectivity(
-        max_neighbors=IcoChainSize.get(location_chain) + include_center,  # we already have a function calc_num_neighbors
+        max_neighbors=IcoChainSize.get(location_chain)
+        + include_center,  # we already have a function calc_num_neighbors
         has_skip_values=skip_values,
         origin_axis=offset.target[0],
         neighbor_axis=offset.source,
