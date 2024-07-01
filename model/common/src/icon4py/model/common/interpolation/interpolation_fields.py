@@ -47,7 +47,7 @@ def compute_c_lin_e(
         owner_mask: numpy array, representing a Field[[EdgeDim], bool]boolean field, True for all edges owned by this compute node
         horizontal_start: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
-    Returns: c_lin_e: numpy array  representing Field[[EdgeDim, E2CDim], wpfloat]
+    Returns: c_lin_e: numpy array, representing Field[[EdgeDim, E2CDim], wpfloat]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length
@@ -70,6 +70,8 @@ def compute_geofac_div(
         primal_edge_length:
         edge_orientation:
         area:
+
+    Returns:
     """
     geofac_div = primal_edge_length(C2E) * edge_orientation / area
     return geofac_div
@@ -90,6 +92,8 @@ def compute_geofac_rot(
         edge_orientation:
         dual_area:
         owner_mask:
+
+    Returns:
     """
     geofac_rot = where(owner_mask, dual_edge_length(V2E) * edge_orientation / dual_area, 0.0)
     return geofac_rot
@@ -107,12 +111,15 @@ def compute_geofac_n2s(
     Compute geometric factor for nabla2-scalar.
 
     Args:
-        dual_edge_length:
-        geofac_div:
-        c2e:
-        e2c:
-        c2e2c:
+        dual_edge_length: numpy array, representing a Field[[EdgeDim], wpfloat]
+        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
+        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
         horizontal_start:
+
+    Returns:
+        geometric factor for nabla2-scalar, Field[CellDim, C2E2CODim]
     """
     llb = horizontal_start
     geofac_n2s = np.zeros([c2e.shape[0], 4])
@@ -156,12 +163,15 @@ def compute_primal_normal_ec(
     Compute primal_normal_ec.
 
     Args:
-        primal_normal_cell_x:
-        primal_normal_cell_y:
-        owner_mask:
-        c2e:
-        e2c:
+        primal_normal_cell_x: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        primal_normal_cell_y: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        owner_mask: numpy array, representing a Field[[CellDim], bool]
+        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
         horizontal_start:
+
+    Returns:
+        primal_normal_ec: numpy array, representing a Field[[CellDim, C2EDim, 2], wpfloat]
     """
     llb = horizontal_start
     primal_normal_ec = np.zeros([c2e.shape[0], c2e.shape[1], 2])
@@ -198,13 +208,16 @@ def compute_geofac_grg(
     Compute geometrical factor for Green-Gauss gradient.
 
     Args:
-        primal_normal_ec:
-        geofac_div:
-        c_lin_e:
-        c2e:
-        e2c:
-        c2e2c:
+        primal_normal_ec: numpy array, representing a Field[[CellDim, C2EDim, 2], wpfloat]
+        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
+        c_lin_e: numpy array, representing a Field[[EdgeDim, E2CDim], wpfloat]
+        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        c2e2c: numpy array, representing a Field[[CellDim, C2E2CDim], int32]
         horizontal_start:
+
+    Returns:
+        geofac_grg: numpy array, representing a Field[[CellDim, C2EDim + 1, 2], wpfloat]
     """
     llb = horizontal_start
     num_cells = c2e.shape[0]
@@ -252,13 +265,16 @@ def compute_geofac_grdiv(
     Compute geometrical factor for gradient of divergence (triangles only).
 
     Args:
-        geofac_div:
-        inv_dual_edge_length:
-        owner_mask:
-        c2e:
-        e2c:
-        c2e2c:
+        geofac_div: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
+        inv_dual_edge_length: numpy array, representing a Field[[EdgeDim], wpfloat]
+        owner_mask: numpy array, representing a Field[[CellDim], bool]
+        c2e: numpy array, representing a Field[[CellDim, C2EDim], int32]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
         horizontal_start:
+
+    Returns:
+        geofac_grdiv: numpy array, representing a Field[[EdgeDim, E2C2EODim], wpfloat]
     """
     llb = horizontal_start
     num_edges = e2c.shape[0]
@@ -298,13 +314,21 @@ def rotate_latlon(
     pollon: np.array,
 ) -> (np.array, np.array):
     """
-    Compute rotation of lattitude and longitude.
+    (Compute rotation of lattitude and longitude.)
+    Rotates latitude and longitude for more accurate computation.
+
+    Rotates latitude and longitude for more accurate computation
+    of bilinear interpolation
 
     Args:
-        lat:
-        lon:
-        pollat:
-        pollon:
+        lat: scalar or numpy array
+        lon: scalar or numpy array
+        pollat: scalar or numpy array
+        pollon: scalar or numpy array
+
+    Returns:
+        rotlat:
+        rotlon:
     """
     rotlat = np.arcsin(
         np.sin(lat) * np.sin(pollat) + np.cos(lat) * np.cos(pollat) * np.cos(lon - pollon)
@@ -328,11 +352,13 @@ def weighting_factors(
     Compute weighting factors.
 
     Args:
-        ytemp:
-        xtemp:
-        yloc:
-        xloc:
+        ytemp:  \\   numpy array of size [[3, flexible], wpfloat]
+        xtemp:  //
+        yloc:   \\   numpy array of size [[flexible], wpfloat]
+        xloc:   //
         wgt_loc:
+
+    Returns:
     """
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
@@ -379,7 +405,7 @@ def weighting_factors(
 
 
 def compute_c_bln_avg(
-    divavg_cntrwgt: np.int32,
+    divavg_cntrwgt: wpfloat,
     owner_mask: np.array,
     c2e2c: np.array,
     lat: np.array,
@@ -391,11 +417,14 @@ def compute_c_bln_avg(
 
     Args:
         divavg_cntrwgt:
-        owner_mask:
-        c2e2c:
-        lat:
-        lon:
+        owner_mask: numpy array, representing a Field[[CellDim], bool]
+        c2e2c: numpy array, representing a Field[[EdgeDim, C2E2CDim], int32]
+        lat: \\ numpy array, representing a Field[[CellDim], wpfloat]
+        lon: //
         horizontal_start:
+
+    Returns:
+        c_bln_avg: numpy array, representing a Field[[CellDim, C2EDim], wpfloat]
     """
     llb = horizontal_start
     num_cells = c2e2c.shape[0]
@@ -455,6 +484,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
         horizontal_start_p3:
         niter: number of iterations until convergence is assumed
 
+    Returns:
     """
     llb = horizontal_start
     llb2 = horizontal_start_p3
@@ -535,6 +565,8 @@ def compute_e_flx_avg(
         e2c2e:
         horizontal_start_p3:
         horizontal_start_p4:
+
+    Returns:
     """
     llb = 0
     e_flx_avg = np.zeros([e2c.shape[0], 5])
@@ -672,6 +704,8 @@ def compute_cells_aw_verts(
         v2c:
         e2c:
         horizontal_start:
+
+    Returns:
     """
     llb = horizontal_start
     cells_aw_verts = np.zeros([v2e.shape[0], 6])
@@ -715,6 +749,8 @@ def compute_e_bln_c_s(
         cells_lon:
         edges_lat:
         edges_lon:
+
+    Returns:
     """
     llb = 0
     num_cells = c2e.shape[0]
@@ -812,6 +848,8 @@ def compute_pos_on_tplane_e_x_y(
         e2v:
         e2c2e:
         horizontal_start:
+
+    Returns:
     """
     llb = horizontal_start
     pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
