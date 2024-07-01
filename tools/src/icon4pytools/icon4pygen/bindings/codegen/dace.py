@@ -178,7 +178,7 @@ class CppDefGenerator(TemplatedGenerator):
 
         handle_ = __dace_init_{{ funcname }}(
         {%- for param in _this_node.sdfg_arglist -%}
-            {{_this_node.sdfg_symbols[param] if param not in _this_node.sdfg_scalars else 0}}{%- if not loop.last -%}, {%- endif -%}
+            0{%- if not loop.last -%}, {%- endif -%}
         {%- endfor -%});
         __set_stream_{{ funcname }}(handle_, stream);
         }
@@ -203,7 +203,11 @@ class CppDefGenerator(TemplatedGenerator):
 
     StenClassRunFun = as_jinja(
         """
-      void run(const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) {
+      void run(
+        {%- for field in _this_node.out_fields -%}
+        const int {{ field.name }}_k_size,
+        {%- endfor -%}
+      const int verticalStart, const int verticalEnd, const int horizontalStart, const int horizontalEnd) {
         if (!is_setup_) {
             printf("{{ stencil_name }} has not been set up! make sure setup() is called before run!\\n");
             return;
@@ -224,7 +228,11 @@ class CppDefGenerator(TemplatedGenerator):
         {{run_func_declaration }} {
         cuda_ico::{{ funcname }} s;
         s.copy_pointers({{ params }});
-        s.run(verticalStart, verticalEnd, horizontalStart, horizontalEnd);
+        s.run(
+        {%- for field in _this_node.run_func_declaration.out_fields -%}
+          {{ field.name }}_k_size,
+        {%- endfor -%}
+        verticalStart, verticalEnd, horizontalStart, horizontalEnd);
         return;
         }
         """
@@ -419,6 +427,7 @@ class GpuTriMesh(Node):
 
 class StenClassRunFun(Node):
     stencil_name: str
+    out_fields: Sequence[Field]
     sdfg_arglist: list[str]
     sdfg_args: dict[str, str]
 
@@ -606,6 +615,7 @@ class CppDefTemplate(Node):
             ),
             run_fun=StenClassRunFun(
                 stencil_name=self.stencil_name,
+                out_fields=fields["output"],
                 sdfg_arglist=self.arglist_run,
                 sdfg_args=(array_args | symbol_args),
             ),
