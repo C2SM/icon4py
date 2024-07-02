@@ -816,7 +816,7 @@ def gnomonic_proj(
 
 
 def compute_pos_on_tplane_e_x_y(
-    grid_sphere_radius: np.array,
+    grid_sphere_radius: wpfloat,
     primal_normal_v1: np.array,
     primal_normal_v2: np.array,
     dual_normal_v1: np.array,
@@ -838,24 +838,25 @@ def compute_pos_on_tplane_e_x_y(
 
     Args:
         grid_sphere_radius:
-        primal_normal_v1:
-        primal_normal_v2:
-        dual_normal_v1:
-        dual_normal_v2:
-        cells_lon:
-        cells_lat:
-        edges_lon:
-        edges_lat:
-        vertex_lon:
-        vertex_lat:
-        owner_mask:
-        e2c:
-        e2v:
-        e2c2e:
+        primal_normal_v1: \\
+        primal_normal_v2:  \\ numpy array, representing a Field[[EdgeDim], wpfloat]
+        dual_normal_v1:    //
+        dual_normal_v2:   //
+        cells_lon: \\ numpy array, representing a Field[[CellDim], wpfloat]
+        cells_lat: //
+        edges_lon: \\ numpy array, representing a Field[[EdgeDim], wpfloat]
+        edges_lat: //
+        vertex_lon: \\ numpy array, representing a Field[[VertexDim], wpfloat]
+        vertex_lat: //
+        owner_mask: numpy array, representing a Field[[EdgeDim], bool]
+        e2c: numpy array, representing a Field[[EdgeDim, E2CDim], int32]
+        e2v: numpy array, representing a Field[[EdgeDim, E2VDim], int32]
+        e2c2e: numpy array, representing a Field[[EdgeDim, E2C2EDim], int32]
         horizontal_start:
 
     Returns:
-        pos_on_tplane_e_x_y:
+        pos_on_tplane_e_x: \\ numpy array, representing a Field[[EdgeDim, E2CDim], wpfloat]
+        pos_on_tplane_e_y: //
     """
     llb = horizontal_start
     pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])

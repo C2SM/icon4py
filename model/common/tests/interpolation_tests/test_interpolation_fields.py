@@ -186,8 +186,8 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         c2e2c,
         horizontal_start,
     )
-    assert np.allclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy())
-    assert np.allclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy())
+    assert dallclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7)
+    assert dallclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7)
 
 
 @pytest.mark.datatest
@@ -338,7 +338,7 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
         edges_lat,
         edges_lon,
     )
-    assert np.allclose(e_bln_c_s, e_bln_c_s_ref)
+    assert dallclose(e_bln_c_s, e_bln_c_s_ref, atol=1e-6, rtol=1e-7)
 
 
 @pytest.mark.datatest
@@ -382,5 +382,5 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
         e2c2e,
         horizontal_start,
     )
-    assert np.allclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref)
-    assert np.allclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref)
+    assert dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-6, rtol=1e-7)
+    assert dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-6, rtol=1e-7)
