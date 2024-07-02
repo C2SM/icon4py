@@ -129,7 +129,7 @@ class VerticalGridParams:
         vertical_params_properties = ["Model interface height properties:"]
         for key, value in self._vct_a_xarray.attrs.items():
             vertical_params_properties.append(f"    {key}: {value}")
-        vertical_params_properties.append("Vertical   Coordinate    Thickness:")
+        vertical_params_properties.append("Level   Coordinate    Thickness:")
         vct_a_array = self._vct_a_xarray.values
         dvct = self._vct_a_xarray.values[:-1] - self._vct_a_xarray.values[1:]
         array_value = [f"    0   {vct_a_array[0]:12.3f}"]
