@@ -502,7 +502,7 @@ class GridManager:
                  on the diamond
         """
         dummy_c2e = _patch_with_dummy_lastline(c2e)
-        expanded = dummy_c2e[e2c, :]
+        expanded = dummy_c2e[e2c[:, :], :]
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
 
@@ -531,19 +531,19 @@ class GridManager:
 
         Args:
             c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
-            c2e: shape (n_cell, 2), connectivity table from a cell to its neighboring edges
+            c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
         Returns:
             np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
                 edges of its cell neighbors
         """
         dummy_c2e = _patch_with_dummy_lastline(c2e)
-        table = np.reshape(dummy_c2e[c2e2c], (c2e2c.shape[0], 9))
+        table = np.reshape(dummy_c2e[c2e2c[:, :], :], (c2e2c.shape[0], 9))
         return table
 
 
 def _patch_with_dummy_lastline(ar):
     """
-    Patch an array for easy access with an another offset containing invalid indices (-1).
+    Patch an array for easy access with another offset containing invalid indices (-1).
 
     Enlarges this table to contain a fake last line to account for numpy wrap around when
     encountering a -1 = GridFile.INVALID_INDEX value
