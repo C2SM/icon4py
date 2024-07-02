@@ -129,12 +129,12 @@ class VerticalGridParams:
         vertical_params_properties = ["Model interface height properties:"]
         for key, value in self._vct_a_xarray.attrs.items():
             vertical_params_properties.append(f"    {key}: {value}")
-        vertical_params_properties.append("Coordinate and thickness:")
+        vertical_params_properties.append("Vertical   Coordinate    Thickness:")
         vct_a_array = self._vct_a_xarray.values
         dvct = self._vct_a_xarray.values[:-1] - self._vct_a_xarray.values[1:]
-        array_value = [f"{vct_a_array[0]:12.3f}"]
+        array_value = [f"    0   {vct_a_array[0]:12.3f}"]
         for k in range(vct_a_array.shape[0] - 1):
-            array_value.append(f"{k:3d} {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
+            array_value.append(f"{k+1:5d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
         array_value[self._end_index_of_flat_layer] += " End of flat layer "
         array_value[self._end_index_of_damping_layer] += " End of damping layer "
         array_value[self._start_index_for_moist_physics] += " Start of moist physics"
