@@ -21,7 +21,7 @@ import pytest
 import uxarray as ux
 import xarray as xr
 
-import icon4py.model.common.components.exceptions as errors
+import icon4py.model.common.exceptions as errors
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.io import data, ugrid

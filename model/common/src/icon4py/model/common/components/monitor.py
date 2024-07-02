@@ -11,11 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import abc
 import datetime
+from typing import Protocol
 
 
-class Monitor(abc.ABC):
+class Monitor(Protocol):
     """
     Monitor component of the model.
 
@@ -28,8 +28,6 @@ class Monitor(abc.ABC):
     def __str__(self):
         return f"instance of {self.__class__}(Monitor)"
 
-    # TODO (halungge) rename __call__ and make it callable, as the other components?
-    @abc.abstractmethod
     def store(self, state: dict, model_time: datetime.datetime, *args, **kwargs) -> None:
         """Store state and perform class specific actions on it.
 
