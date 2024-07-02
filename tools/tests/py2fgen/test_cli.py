@@ -247,3 +247,16 @@ def test_py2fgen_compilation_and_execution_diffusion(cli_runner, samples_path):
         "test_diffusion",
         limited_area=True,
     )
+
+
+def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path):
+    run_test_case(
+        cli_runner,
+        "icon4pytools.py2fgen.wrappers.dycore",
+        "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
+        "dycore_plugin",
+        "CPU",
+        samples_path,
+        "test_dycore",
+        limited_area=True,
+    )
