@@ -515,6 +515,19 @@ class GridManager:
 
     def _construct_triangle_edges(self, c2e2c, c2e):
         """Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
+        
+           ____e3________e7____
+           \   c1  / \   c3  /
+            \     /   \     /
+            e4   e2    e1  e8
+              \ /   c0  \ /
+                ----e0----
+                \   c2  /
+                 e5    e6
+                  \   /
+                   \ /
+
+        For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
 
         Args:
             c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
