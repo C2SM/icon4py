@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import abc
 import datetime
 from typing import Protocol
 
@@ -28,6 +28,7 @@ class Monitor(Protocol):
     def __str__(self):
         return f"instance of {self.__class__}(Monitor)"
 
+    @abc.abstractmethod
     def store(self, state: dict, model_time: datetime.datetime, *args, **kwargs) -> None:
         """Store state and perform class specific actions on it.
 
