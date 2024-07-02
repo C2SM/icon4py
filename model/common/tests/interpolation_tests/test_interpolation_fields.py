@@ -248,7 +248,6 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         cell_areas,
         horizontal_start,
         horizontal_start_p2,
-        1000,
     )
     assert dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 

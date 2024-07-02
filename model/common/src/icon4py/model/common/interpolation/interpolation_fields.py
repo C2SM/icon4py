@@ -357,6 +357,9 @@ def weighting_factors(
     directed cells. The third condition is sum(w(i)) = 1., and the weight
     of the local point is 0.5 (see above). Analytical elimination yields...
 
+# TODO (Andreas J) computation different for Torus grids see mo_intp_coeffs.f90
+# The function weighting_factors does not exist in the Fortran code, the
+# Fortran is organised differently with code duplication
 
     Args:
         ytemp:  \\   numpy array of size [[3, flexible], wpfloat]
@@ -466,7 +469,7 @@ def compute_force_mass_conservation_to_c_bln_avg(
     cell_areas: np.ndarray,
     horizontal_start: np.int32,
     horizontal_start_p3: np.int32,
-    niter: np.ndarray,
+    niter: np.ndarray = 1000,
 ) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
