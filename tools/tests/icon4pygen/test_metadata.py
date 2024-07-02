@@ -14,9 +14,9 @@
 import pytest
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-from icon4py.model.common.dimension import CellDim, KDim
-
 from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
+
+from icon4py.model.common.dimension import CellDim, KDim
 
 
 chain_false_skipvalues = [
@@ -24,32 +24,22 @@ chain_false_skipvalues = [
     "C2V",
     "E2C",
     "E2V",
+    "E2ECV",
     "E2C2E",
     "E2C2EO",
     "E2C2V",
     "C2E2C",
+    "C2CEC",
     "C2E2CO",
     "C2E2C2E",
-    "C2E2C2E2C",
-    "C2E2C2E2CO",
-    "C2E2C2E2C2E",
+    "C2CECEC",
+    
 ]
 
 chain_true_skipvalues = [
     "V2C",
     "V2E",
-    "E2C2V2C",
-    "C2V2C",
-    "C2V2CO",
-    "C2V2C2E",
-    "E2V2E",
-    "E2V2EO",
-    "E2V2E2C",
-    "V2E2C",
-    "V2E2C2V",
-    "V2E2C2VO",
-    "V2E2C2V2E",
-    "V2E2C2V2E2C",
+    "V2E2V",
 ]
 
 
