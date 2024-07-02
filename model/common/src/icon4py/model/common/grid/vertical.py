@@ -134,9 +134,9 @@ class VerticalGridParams:
         dvct = self._vct_a_xarray.values[:-1] - self._vct_a_xarray.values[1:]
         array_value = [f"{vct_a_array[0]:12.3f}"]
         for k in range(vct_a_array.shape[0] - 1):
-            array_value.append(f"{vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
+            array_value.append(f"{k:3d} {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
         array_value[self._end_index_of_flat_layer] += " End of flat layer "
-        array_value[self._end_index_of_damping_layer] += " End of damping layer  "
+        array_value[self._end_index_of_damping_layer] += " End of damping layer "
         array_value[self._start_index_for_moist_physics] += " Start of moist physics"
         vertical_params_properties.extend(array_value)
         return "\n".join(vertical_params_properties)
