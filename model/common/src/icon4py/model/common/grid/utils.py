@@ -26,8 +26,8 @@ def neighbortable_offset_provider_for_1d_sparse_fields(
     table = xp.asarray(np.arange(old_shape[0] * old_shape[1], dtype=np.int32).reshape(old_shape))
     assert (
         table.dtype == xp.int32
-    ), 'Neighbor table\'s ("{}" to "{}") data type for 1d sparse fields must be int32'.format(
-        origin_axis, neighbor_axis
+    ), 'Neighbor table\'s ("{}" to "{}") data type for 1d sparse fields must be int32. Instead it\'s "{}"'.format(
+        origin_axis, neighbor_axis, table.dtype
     )
     return NeighborTableOffsetProvider(
         table,

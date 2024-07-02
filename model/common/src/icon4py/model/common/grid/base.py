@@ -130,7 +130,7 @@ class BaseGrid(ABC):
             raise MissingConnectivity()
         assert (
             self.connectivities[dim].dtype == np.int32
-        ), 'Neighbor table\'s "{}" data type must be int32'.format(dim)
+        ), 'Neighbor table\'s "{}" data type must be int32. Instead it\'s "{}"'.format(dim, self.connectivities[dim].dtype)
         return NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),
             from_dim,
