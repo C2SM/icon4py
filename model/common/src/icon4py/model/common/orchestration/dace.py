@@ -242,14 +242,14 @@ def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
     
     counter = 0
     for nested_sdfg in sdfg.all_sdfgs_recursive():
-        if not hasattr(nested_sdfg, "GT4Py_Program_output_fields"):
+        if not hasattr(nested_sdfg, "gt4py_program_output_fields"):
             continue
 
-        if len(nested_sdfg.GT4Py_Program_output_fields) == 0:
+        if len(nested_sdfg.gt4py_program_output_fields) == 0:
             continue
 
         field_dims = set()
-        for dim in nested_sdfg.GT4Py_Program_output_fields.values():
+        for dim in nested_sdfg.gt4py_program_output_fields.values():
             field_dims.add(dim)
 
         if len(field_dims) > 1:
@@ -260,19 +260,19 @@ def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
         if not dim:
             continue
 
-        if nested_sdfg.stencil_horizontal_start == None or nested_sdfg.stencil_horizontal_end == None:
+        if nested_sdfg.gt4py_program_kwargs.get('horizontal_start', None) == None or nested_sdfg.gt4py_program_kwargs.get('horizontal_end', None) == None:
             continue
 
         halos_inds = exchange._decomposition_info.local_index(dim, di.EntryType.HALO)
         # Consider overcomputing, i.e. computational update of the halo elements and not through communication.
-        updated_halo_inds = np.intersect1d(halos_inds, np.arange(nested_sdfg.stencil_horizontal_start, nested_sdfg.stencil_horizontal_end))
+        updated_halo_inds = np.intersect1d(halos_inds, np.arange(nested_sdfg.gt4py_program_kwargs['horizontal_start'], nested_sdfg.gt4py_program_kwargs['horizontal_end']))
 
         for nested_sdfg_state in sdfg.states():
             if nested_sdfg_state.label == nested_sdfg.parent.label:
                 break
 
         global_buffers = {} # the elements of this dictionary are going to be exchanged
-        for buffer_name in nested_sdfg.GT4Py_Program_output_fields:
+        for buffer_name in nested_sdfg.gt4py_program_output_fields:
             global_buffer_name = None
             for edge in nested_sdfg_state.all_edges_recursive():
                 # local buffer_name [src] --> global_buffer_name [dst]
@@ -289,7 +289,7 @@ def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
                 if halo_update:
                     break
                 
-                if not hasattr(ones_after_nsdfg, "GT4Py_Program_input_fields"):
+                if not hasattr(ones_after_nsdfg, "gt4py_program_input_fields"):
                     continue
 
                 if ones_after_nsdfg is nested_sdfg:
@@ -299,14 +299,14 @@ def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
                 if cont:
                     continue
 
-                if ones_after_nsdfg.stencil_horizontal_start == None or ones_after_nsdfg.stencil_horizontal_end == None:
+                if ones_after_nsdfg.gt4py_program_kwargs.get('horizontal_start', None) == None or ones_after_nsdfg.gt4py_program_kwargs.get('horizontal_end', None) == None:
                     continue
 
                 for ones_after_nsdfg_state in sdfg.states():
                     if ones_after_nsdfg_state.label == ones_after_nsdfg.parent.label:
                         break
 
-                for buffer_name_ in ones_after_nsdfg.GT4Py_Program_input_fields:
+                for buffer_name_ in ones_after_nsdfg.gt4py_program_input_fields:
                     if halo_update:
                         break
                     
@@ -331,11 +331,11 @@ def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
                         op = offset_providers[offset_literal_value].table
 
                         source_dim = {'C':CellDim, 'E':EdgeDim, 'V':VertexDim}[offset_literal_value[0]]
-                        if source_dim != list(ones_after_nsdfg.GT4Py_Program_output_fields.values())[0]:
+                        if source_dim != list(ones_after_nsdfg.gt4py_program_output_fields.values())[0]:
                             continue
                         
-                        accessed_inds = op[ones_after_nsdfg.stencil_horizontal_start]
-                        for ind in range(ones_after_nsdfg.stencil_horizontal_start+1, ones_after_nsdfg.stencil_horizontal_end):
+                        accessed_inds = op[ones_after_nsdfg.gt4py_program_kwargs['horizontal_start']]
+                        for ind in range(ones_after_nsdfg.gt4py_program_kwargs['horizontal_start']+1, ones_after_nsdfg.gt4py_program_kwargs['horizontal_end']):
                             accessed_inds = np.concatenate((accessed_inds, op[ind]))
 
                         accessed_halo_inds = np.intersect1d(halos_inds, accessed_inds)
