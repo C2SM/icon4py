@@ -515,7 +515,7 @@ class GridManager:
 
     def _construct_triangle_edges(self, c2e2c, c2e):
         """Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
-        
+
            ____e3________e7____
            \   c1  / \   c3  /
             \     /   \     /
@@ -533,7 +533,8 @@ class GridManager:
             c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
             c2e: shape (n_cell, 2), connectivity table from a cell to its neighboring edges
         Returns:
-            np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring edges of its cell neighbors
+            np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
+                edges of its cell neighbors
         """
         dummy_c2e = _patch_with_dummy_lastline(c2e)
         table = np.reshape(dummy_c2e[c2e2c], (c2e2c.shape[0], 9))
