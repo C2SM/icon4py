@@ -13,9 +13,7 @@
 
 import pytest
 
-from icon4py.model.common import constants
-from icon4py.model.common.grid.horizontal import CellParams
-from icon4py.model.common.grid.icon import GlobalGridParams
+from icon4py.model.common.grid import icon
 
 
 @pytest.mark.parametrize(
@@ -25,6 +23,19 @@ from icon4py.model.common.grid.icon import GlobalGridParams
         (4, 9, 6080879.45232143),
     ],
 )
-def test_mean_cell_area_calculation(grid_root, grid_level, expected):
-    params = GlobalGridParams(grid_root, grid_level)
-    assert expected == CellParams._compute_mean_cell_area(constants.EARTH_RADIUS, params.num_cells)
+def test_mean_cell_area_calculation_on_sphere(grid_root, grid_level, expected):
+    icosahedron = icon.Icosahedron(grid_root, grid_level)
+    assert expected == icosahedron.mean_cell_area
+
+
+@pytest.mark.parametrize(
+    "edge_length, expected_area",
+    [
+        (33333.3333333333, 481125224.324688),
+        (291.545189504373, 36805.4723705445),
+        (3125.0, 4228639.6669162),
+    ],
+)
+def test_mean_cell_area_calculation_on_torus(edge_length, expected_area):
+    torus = icon.Torus(edge_length, 1000)
+    assert expected_area == pytest.approx(torus.mean_cell_area, 1e-12)
