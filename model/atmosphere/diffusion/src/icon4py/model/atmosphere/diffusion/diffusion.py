@@ -450,6 +450,39 @@ class Diffusion:
             nrdmax=self.vertical_params.index_of_damping_layer,
         )
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
+
+        self.klevels: int = self.grid.num_levels
+        self.cell_start_interior: int = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.interior(CellDim)
+        )
+        self.cell_start_nudging: int = self.grid.get_start_index(
+            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+        )
+        self.cell_end_local: int = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        self.cell_end_halo: int = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
+
+        self.edge_start_nudging_plus_one: int = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        )
+        self.edge_start_nudging: int = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim)
+        )
+        self.edge_start_lb_plus4: int = self.grid.get_start_index(
+            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+        )
+        self.edge_end_local: int = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+        self.edge_end_local_minus2: int = self.grid.get_end_index(
+            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+        )
+        self.edge_end_halo: int = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.halo(EdgeDim))
+
+        self.vertex_start_lb_plus1: int = self.grid.get_start_index(
+            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+        )
+        self.vertex_end_local: int = self.grid.get_end_index(
+            VertexDim, HorizontalMarkerIndex.local(VertexDim)
+        )
+
         self._initialized = True
 
     @property
@@ -587,76 +620,17 @@ class Diffusion:
             smag_offset:
 
         """
-        klevels = self.grid.num_levels
-        cell_start_interior = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.interior(CellDim)
-        )
-        cell_start_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
-        )
-        cell_end_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-        cell_end_halo = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.halo(CellDim))
-
-        edge_start_nudging_plus_one = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
-        )
-        edge_start_nudging = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim)
-        )
-        edge_start_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
-        )
-        edge_end_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
-        edge_end_local_minus2 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
-        )
-        edge_end_halo = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.halo(EdgeDim))
-
-        vertex_start_lb_plus1 = self.grid.get_start_index(
-            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
-        )
-        vertex_end_local = self.grid.get_end_index(
-            VertexDim, HorizontalMarkerIndex.local(VertexDim)
-        )
-
-        self._do_diffusion_step_stencils(diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, smag_offset,
-            klevels,
-            cell_start_interior,
-            cell_start_nudging,
-            cell_end_local,
-            cell_end_halo,
-            edge_start_nudging_plus_one,
-            edge_start_nudging,
-            edge_start_lb_plus4,
-            edge_end_local,
-            edge_end_local_minus2,
-            edge_end_halo,
-            vertex_start_lb_plus1,
-            vertex_end_local)
+        self._do_diffusion_step_stencils(diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, smag_offset)
 
     @orchestration(method=True)
     def _do_diffusion_step_stencils(
-        self: dace.compiletime, # TODO(kotsaloscv): Once DaCe supports nested Structures (Structures of Structures of Arrays), we can avoid using dace.compiletime (unblock distributed compilation)
+        self: dace.compiletime,
         diagnostic_state: DiffusionDiagnosticState_dace_t,
         prognostic_state: PrognosticState_dace_t,
         dtime: dace.float64,
         diff_multfac_vn: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
         smag_limit: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
-        smag_offset: dace.float64,
-        # Compile-time constants and not dace.int32: Needed to decide whether to perform communication or not
-        klevels: dace.compiletime,
-        cell_start_interior: dace.compiletime,
-        cell_start_nudging: dace.compiletime,
-        cell_end_local: dace.compiletime,
-        cell_end_halo: dace.compiletime,
-        edge_start_nudging_plus_one: dace.compiletime,
-        edge_start_nudging: dace.compiletime,
-        edge_start_lb_plus4: dace.compiletime,
-        edge_end_local: dace.compiletime,
-        edge_end_local_minus2: dace.compiletime,
-        edge_end_halo: dace.compiletime,
-        vertex_start_lb_plus1: dace.compiletime,
-        vertex_end_local: dace.compiletime,
+        smag_offset: dace.float64
     ):
         # dtime dependent: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
@@ -668,10 +642,10 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
-            horizontal_end=vertex_end_local,
+            horizontal_start=self.vertex_start_lb_plus1,
+            horizontal_end=self.vertex_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
@@ -699,10 +673,10 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local_minus2,
+            horizontal_start=self.edge_start_lb_plus4,
+            horizontal_end=self.edge_end_local_minus2,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
@@ -722,10 +696,10 @@ class Diffusion:
                 wgtfac_c=self.metric_state.wgtfac_c,
                 div_ic=diagnostic_state.div_ic,
                 hdef_ic=diagnostic_state.hdef_ic,
-                horizontal_start=cell_start_nudging,
-                horizontal_end=cell_end_local,
+                horizontal_start=self.cell_start_nudging,
+                horizontal_end=self.cell_end_local,
                 vertical_start=1,
-                vertical_end=klevels,
+                vertical_end=self.klevels,
                 offset_provider=self.grid.offset_providers,
             )
             log.debug(
@@ -746,10 +720,10 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
-            horizontal_end=vertex_end_local,
+            horizontal_start=self.vertex_start_lb_plus1,
+            horizontal_end=self.vertex_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
@@ -776,12 +750,12 @@ class Diffusion:
             edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=int32(edge_start_nudging_plus_one),
+            start_2nd_nudge_line_idx_e=int32(self.edge_start_nudging_plus_one),
             limited_area=self.grid.limited_area,
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local,
+            horizontal_start=self.edge_start_lb_plus4,
+            horizontal_end=self.edge_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
@@ -811,12 +785,12 @@ class Diffusion:
             nrdmax=int32(
                 self.vertical_params.index_of_damping_layer + 1
             ),  # +1 since Fortran includes boundaries
-            interior_idx=int32(cell_start_interior),
-            halo_idx=int32(cell_end_local),
+            interior_idx=int32(self.cell_start_interior),
+            halo_idx=int32(self.cell_end_local),
             horizontal_start=self._horizontal_start_index_w_diffusion,
-            horizontal_end=cell_end_halo,
+            horizontal_end=self.cell_end_halo,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
@@ -833,10 +807,10 @@ class Diffusion:
             thresh_tdiff=self.thresh_tdiff,
             smallest_vpfloat=dbl_eps,
             kh_smag_e=self.kh_smag_e,
-            horizontal_start=edge_start_nudging,
-            horizontal_end=edge_end_halo,
-            vertical_start=(klevels - 2),
-            vertical_end=klevels,
+            horizontal_start=self.edge_start_nudging,
+            horizontal_end=self.edge_end_halo,
+            vertical_start=(self.klevels - 2),
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
@@ -850,10 +824,10 @@ class Diffusion:
             theta_v=prognostic_state.theta_v,
             geofac_div=self.interpolation_state.geofac_div,
             z_temp=self.z_temp,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
+            horizontal_start=self.cell_start_nudging,
+            horizontal_end=self.cell_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
@@ -870,10 +844,10 @@ class Diffusion:
                 vcoef=self.metric_state.zd_intcoef,
                 theta_v=prognostic_state.theta_v,
                 z_temp=self.z_temp,
-                horizontal_start=cell_start_nudging,
-                horizontal_end=cell_end_local,
+                horizontal_start=self.cell_start_nudging,
+                horizontal_end=self.cell_end_local,
                 vertical_start=0,
-                vertical_end=klevels,
+                vertical_end=self.klevels,
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -887,10 +861,10 @@ class Diffusion:
             theta_v=prognostic_state.theta_v,
             exner=prognostic_state.exner,
             rd_o_cvd=self.rd_o_cvd,
-            horizontal_start=cell_start_nudging,
-            horizontal_end=cell_end_local,
+            horizontal_start=self.cell_start_nudging,
+            horizontal_end=self.cell_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=self.klevels,
             offset_provider={},
         )
         log.debug("running stencil 16 (update_theta_and_exner): end")
