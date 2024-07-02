@@ -95,7 +95,7 @@ def main(
 
     os.environ["FLOAT_PRECISION"] = "mixed" if enable_mixed_precision else "double"
     program = import_definition(fencil)
-    stencil_info = get_stencil_info(program, is_global)
+    stencil_info = get_stencil_info(program, dace, is_global)
     if dace:
         from icon4pytools.icon4pygen.backend import DaceCodegen
         from icon4pytools.icon4pygen.bindings.workflow import DacePyBindGen

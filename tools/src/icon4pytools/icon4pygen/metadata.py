@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
 from gt4py import eve
-from gt4py.next.common import Connectivity, Dimension, DimensionKind
+from gt4py.next.common import Connectivity, Dimension, DimensionKind, NeighborIndexProvider
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
 from gt4py.next.iterator import ir as itir
@@ -154,13 +154,23 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
     return fvprog
 
 
-def provide_offset(offset: str, is_global: bool = False) -> tuple[DummyConnectivity | Dimension, Optional[str]]:
+def provide_offset(offset: str, is_dace_backend: bool, is_global: bool = False) -> DummyConnectivity | NeighborIndexProvider:
     if offset == Koff.value:
         assert len(Koff.target) == 1
         assert Koff.source == Koff.target[0]
-        return Koff.source, None
+        return Koff.source
     else:
-        return provide_neighbor_table(offset, is_global)
+        connectivity, compound_offset = provide_neighbor_table(offset, is_global)
+        if is_dace_backend and compound_offset:
+            offset_dim = "2".join(list(compound_offset))
+            return NeighborIndexProvider(
+                connectivity.max_neighbors,
+                connectivity.origin_axis,
+                connectivity.neighbor_axis,
+                offset_dim,
+            )
+        else:
+            return connectivity
 
 
 def provide_neighbor_table(chain: str, is_global: bool) -> tuple[DummyConnectivity, Optional[str]]:
@@ -266,6 +276,7 @@ def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
 
 def get_stencil_info(
     fencil_def: Program | FieldOperator | types.FunctionType | FendefDispatcher,
+    is_dace_backend: bool,
     is_global: bool = False,
 ) -> StencilInfo:
     """Generate StencilInfo dataclass from a fencil definition."""
@@ -277,9 +288,6 @@ def get_stencil_info(
 
     offset_provider = {}
     for offset in offsets:
-        connectivity, compound_offset = provide_offset(offset, is_global)
-        offset_provider[offset] = connectivity
-        if compound_offset:
-            offset_provider[compound_offset] = connectivity
+        offset_provider[offset] = provide_offset(offset, is_dace_backend, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
     return StencilInfo(fendef, fields, connectivity_chains, offset_provider)
