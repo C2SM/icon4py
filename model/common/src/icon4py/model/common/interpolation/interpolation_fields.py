@@ -30,14 +30,15 @@ from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import C2E, V2E, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim
 from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.math.projection import gnomonic_proj
 
 
 def compute_c_lin_e(
-    edge_cell_length: np.array,
-    inv_dual_edge_length: np.array,
-    owner_mask: np.array,
+    edge_cell_length: np.ndarray,
+    inv_dual_edge_length: np.ndarray,
+    owner_mask: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute E2C average inverse distance.
 
@@ -100,13 +101,13 @@ def compute_geofac_rot(
 
 
 def compute_geofac_n2s(
-    dual_edge_length: np.array,
-    geofac_div: np.array,
-    c2e: np.array,
-    e2c: np.array,
-    c2e2c: np.array,
+    dual_edge_length: np.ndarray,
+    geofac_div: np.ndarray,
+    c2e: np.ndarray,
+    e2c: np.ndarray,
+    c2e2c: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute geometric factor for nabla2-scalar.
 
@@ -152,13 +153,13 @@ def compute_geofac_n2s(
 
 
 def compute_primal_normal_ec(
-    primal_normal_cell_x: np.array,
-    primal_normal_cell_y: np.array,
-    owner_mask: np.array,
-    c2e: np.array,
-    e2c: np.array,
+    primal_normal_cell_x: np.ndarray,
+    primal_normal_cell_y: np.ndarray,
+    owner_mask: np.ndarray,
+    c2e: np.ndarray,
+    e2c: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute primal_normal_ec.
 
@@ -196,14 +197,14 @@ def compute_primal_normal_ec(
 
 
 def compute_geofac_grg(
-    primal_normal_ec: np.array,
-    geofac_div: np.array,
-    c_lin_e: np.array,
-    c2e: np.array,
-    e2c: np.array,
-    c2e2c: np.array,
+    primal_normal_ec: np.ndarray,
+    geofac_div: np.ndarray,
+    c_lin_e: np.ndarray,
+    c2e: np.ndarray,
+    e2c: np.ndarray,
+    c2e2c: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute geometrical factor for Green-Gauss gradient.
 
@@ -253,14 +254,14 @@ def compute_geofac_grg(
 
 
 def compute_geofac_grdiv(
-    geofac_div: np.array,
-    inv_dual_edge_length: np.array,
-    owner_mask: np.array,
-    c2e: np.array,
-    e2c: np.array,
-    e2c2e: np.array,
+    geofac_div: np.ndarray,
+    inv_dual_edge_length: np.ndarray,
+    owner_mask: np.ndarray,
+    c2e: np.ndarray,
+    e2c: np.ndarray,
+    e2c2e: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute geometrical factor for gradient of divergence (triangles only).
 
@@ -308,11 +309,11 @@ def compute_geofac_grdiv(
 
 
 def rotate_latlon(
-    lat: np.array,
-    lon: np.array,
-    pollat: np.array,
-    pollon: np.array,
-) -> (np.array, np.array):
+    lat: np.ndarray,
+    lon: np.ndarray,
+    pollat: np.ndarray,
+    pollon: np.ndarray,
+) -> (np.ndarray, np.ndarray):
     """
     (Compute rotation of lattitude and longitude.)
     Rotates latitude and longitude for more accurate computation.
@@ -342,14 +343,20 @@ def rotate_latlon(
 
 
 def weighting_factors(
-    ytemp: np.array,
-    xtemp: np.array,
-    yloc: np.array,
-    xloc: np.array,
+    ytemp: np.ndarray,
+    xtemp: np.ndarray,
+    yloc: np.ndarray,
+    xloc: np.ndarray,
     wgt_loc: wpfloat,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute weighting factors.
+    The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+    and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
+    are not aliased into a checkerboard pattern between upward- and downward
+    directed cells. The third condition is sum(w(i)) = 1., and the weight
+    of the local point is 0.5 (see above). Analytical elimination yields...
+
 
     Args:
         ytemp:  \\   numpy array of size [[3, flexible], wpfloat]
@@ -376,12 +383,6 @@ def weighting_factors(
         x[i] = np.where(x[i] > 3.5, x[i] - np.pi * 2, x[i])
         x[i] = np.where(x[i] < -3.5, x[i] + np.pi * 2, x[i])
 
-    # The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
-    # and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
-    # are not aliased into a checkerboard pattern between upward- and downward
-    # directed cells. The third condition is sum(w(i)) = 1., and the weight
-    # of the local point is 0.5 (see above). Analytical elimination yields...
-
     mask = np.logical_and(abs(x[1] - x[0]) > 1.0e-11, abs(y[2] - y[0]) > 1.0e-11)
     wgt[2] = np.where(
         mask,
@@ -407,12 +408,12 @@ def weighting_factors(
 
 def compute_c_bln_avg(
     divavg_cntrwgt: wpfloat,
-    owner_mask: np.array,
-    c2e2c: np.array,
-    lat: np.array,
-    lon: np.array,
+    owner_mask: np.ndarray,
+    c2e2c: np.ndarray,
+    lat: np.ndarray,
+    lon: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute bilinear cell average weight.
 
@@ -458,15 +459,15 @@ def compute_c_bln_avg(
 
 
 def compute_force_mass_conservation_to_c_bln_avg(
-    c_bln_avg: np.array,
+    c_bln_avg: np.ndarray,
     divavg_cntrwgt: wpfloat,
-    owner_mask: np.array,
-    c2e2c: np.array,
-    cell_areas: np.array,
+    owner_mask: np.ndarray,
+    c2e2c: np.ndarray,
+    cell_areas: np.ndarray,
     horizontal_start: np.int32,
     horizontal_start_p3: np.int32,
-    niter: np.array,
-) -> np.array:
+    niter: np.ndarray,
+) -> np.ndarray:
     """
     Compute the weighting coefficients for cell averaging with variable interpolation factors.
 
@@ -542,17 +543,17 @@ def compute_force_mass_conservation_to_c_bln_avg(
 
 
 def compute_e_flx_avg(
-    c_bln_avg: np.array,
-    geofac_div: np.array,
-    owner_mask: np.array,
-    primal_cart_normal: np.array,
-    e2c: np.array,
-    c2e: np.array,
-    c2e2c: np.array,
-    e2c2e: np.array,
+    c_bln_avg: np.ndarray,
+    geofac_div: np.ndarray,
+    owner_mask: np.ndarray,
+    primal_cart_normal: np.ndarray,
+    e2c: np.ndarray,
+    c2e: np.ndarray,
+    c2e2c: np.ndarray,
+    e2c2e: np.ndarray,
     horizontal_start_p3: np.int32,
     horizontal_start_p4: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute edge flux average
 
@@ -684,16 +685,16 @@ def compute_e_flx_avg(
 
 
 def compute_cells_aw_verts(
-    dual_area: np.array,
-    edge_vert_length: np.array,
-    edge_cell_length: np.array,
-    owner_mask: np.array,
-    v2e: np.array,
-    e2v: np.array,
-    v2c: np.array,
-    e2c: np.array,
+    dual_area: np.ndarray,
+    edge_vert_length: np.ndarray,
+    edge_cell_length: np.ndarray,
+    owner_mask: np.ndarray,
+    v2e: np.ndarray,
+    e2v: np.ndarray,
+    v2c: np.ndarray,
+    e2c: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute cells_aw_verts.
 
@@ -736,13 +737,13 @@ def compute_cells_aw_verts(
 
 
 def compute_e_bln_c_s(
-    owner_mask: np.array,
-    c2e: np.array,
-    cells_lat: np.array,
-    cells_lon: np.array,
-    edges_lat: np.array,
-    edges_lon: np.array,
-) -> np.array:
+    owner_mask: np.ndarray,
+    c2e: np.ndarray,
+    cells_lat: np.ndarray,
+    cells_lon: np.ndarray,
+    edges_lat: np.ndarray,
+    edges_lon: np.ndarray,
+) -> np.ndarray:
     """
     Compute e_bln_c_s.
 
@@ -782,59 +783,32 @@ def compute_e_bln_c_s(
     return e_bln_c_s
 
 
-def gnomonic_proj(
-    lon_c: np.array,
-    lat_c: np.array,
-    lon: np.array,
-    lat: np.array,
-) -> (np.array, np.array):
-    """
-    Compute gnomonic projection.
-
-    gnomonic_proj
-    Args:
-        lon_c, lat_c: center on tangent plane
-        lat, lon: point to be projected
-    Return values:
-        x, y: coordinates of projected point
-
-    Variables:
-        zk: scale factor perpendicular to the radius from the center of the map
-        cosc: cosine of the angular distance of the given point (lat,lon) from the center of projection
-    LITERATURE:
-        Map Projections: A Working Manual, Snyder, 1987, p. 165
-    TODO:
-        replace this with a suitable library call
-    """
-    cosc = np.sin(lat_c) * np.sin(lat) + np.cos(lat_c) * np.cos(lat) * np.cos(lon - lon_c)
-    zk = 1.0 / cosc
-
-    x = zk * np.cos(lat) * np.sin(lon - lon_c)
-    y = zk * (np.cos(lat_c) * np.sin(lat) - np.sin(lat_c) * np.cos(lat) * np.cos(lon - lon_c))
-
-    return x, y
-
-
 def compute_pos_on_tplane_e_x_y(
     grid_sphere_radius: wpfloat,
-    primal_normal_v1: np.array,
-    primal_normal_v2: np.array,
-    dual_normal_v1: np.array,
-    dual_normal_v2: np.array,
-    cells_lon: np.array,
-    cells_lat: np.array,
-    edges_lon: np.array,
-    edges_lat: np.array,
-    vertex_lon: np.array,
-    vertex_lat: np.array,
-    owner_mask: np.array,
-    e2c: np.array,
-    e2v: np.array,
-    e2c2e: np.array,
+    primal_normal_v1: np.ndarray,
+    primal_normal_v2: np.ndarray,
+    dual_normal_v1: np.ndarray,
+    dual_normal_v2: np.ndarray,
+    cells_lon: np.ndarray,
+    cells_lat: np.ndarray,
+    edges_lon: np.ndarray,
+    edges_lat: np.ndarray,
+    vertex_lon: np.ndarray,
+    vertex_lat: np.ndarray,
+    owner_mask: np.ndarray,
+    e2c: np.ndarray,
+    e2v: np.ndarray,
+    e2c2e: np.ndarray,
     horizontal_start: np.int32,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute pos_on_tplane_e_x_y.
+    get geographical coordinates of edge midpoint
+    get line and block indices of neighbour cells
+    get geographical coordinates of first cell center
+    projection first cell center into local \\lambda-\\Phi-system
+    get geographical coordinates of second cell center
+    projection second cell center into local \\lambda-\\Phi-system
 
     Args:
         grid_sphere_radius:
@@ -860,12 +834,6 @@ def compute_pos_on_tplane_e_x_y(
     """
     llb = horizontal_start
     pos_on_tplane_e = np.zeros([e2c.shape[0], 8, 2])
-    #     get geographical coordinates of edge midpoint
-    #     get line and block indices of neighbour cells
-    #     get geographical coordinates of first cell center
-    #     projection first cell center into local \lambda-\Phi-system
-    #     get geographical coordinates of second cell center
-    #     projection second cell center into local \lambda-\Phi-system
     xyloc_plane_n1 = np.zeros([2, e2c.shape[0]])
     xyloc_plane_n2 = np.zeros([2, e2c.shape[0]])
     xyloc_plane_n1[0, llb:], xyloc_plane_n1[1, llb:] = gnomonic_proj(
