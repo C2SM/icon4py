@@ -63,9 +63,8 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import xp
 
-from icon4py.model.common.orchestration.dace import orchestration, wait
+from icon4py.model.common.orchestration.decorator import orchestration, wait
 from icon4py.model.common.orchestration.dtypes import *
-import dace
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -624,13 +623,13 @@ class Diffusion:
 
     @orchestration(method=True)
     def _do_diffusion_step_stencils(
-        self: dace.compiletime,
-        diagnostic_state: DiffusionDiagnosticState_dace_t,
-        prognostic_state: PrognosticState_dace_t,
-        dtime: dace.float64,
-        diff_multfac_vn: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
-        smag_limit: dace.data.Array(dtype=dace.float64, shape=[KDim_sym]),
-        smag_offset: dace.float64
+        self: self_t,
+        diagnostic_state: DiffusionDiagnosticState_t,
+        prognostic_state: PrognosticState_t,
+        dtime: float64_t,
+        diff_multfac_vn: Field_f64_KDim_t,
+        smag_limit: Field_f64_KDim_t,
+        smag_offset: float64_t
     ):
         # dtime dependent: enh_smag_factor,
         scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})

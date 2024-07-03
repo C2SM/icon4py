@@ -10,7 +10,6 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import dace
 import sys
 from dace.frontend.python.common import SDFGConvertible
 from typing import Any, Callable, Dict, Optional, Sequence, Tuple, Union
@@ -139,19 +138,19 @@ def orchestration(method=True):
                     #
                     **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
                     #
-                    **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_dace_t},
+                    **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
                     #
-                    **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_dace_t},
+                    **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
                     })
 
                 # Modify the args to support DaCe Structures
-                new_args = [DiffusionDiagnosticState_dace_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_dace_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
-                new_args = [PrognosticState_dace_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_dace_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+                new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
+                new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
                 for new_arg_ in new_args:
-                    if isinstance(new_arg_, DiffusionDiagnosticState_dace_t.dtype._typeclass.as_ctypes()):
-                        new_arg_.descriptor = DiffusionDiagnosticState_dace_t
-                    if isinstance(new_arg_, PrognosticState_dace_t.dtype._typeclass.as_ctypes()):
-                        new_arg_.descriptor = PrognosticState_dace_t
+                    if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):
+                        new_arg_.descriptor = DiffusionDiagnosticState_t
+                    if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):
+                        new_arg_.descriptor = PrognosticState_t
                 args = tuple(new_args)
 
                 tmp_self__exchange_exchange_and_wait = self._exchange.exchange_and_wait
@@ -420,10 +419,9 @@ def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
                     memlet_ =  Memlet(buffer_name, subset='0')
                     state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, memlet_)
 
-
         tasklet.in_connectors = in_connectors
         tasklet.out_connectors = out_connectors
-        tasklet.environments = ['icon4py.model.common.orchestration.dace.DaceGHEX']
+        tasklet.environments = ['icon4py.model.common.orchestration.decorator.DaceGHEX']
 
         pattern_type = exchange._patterns[dim].__cpp_type__
         domain_descriptor_type = exchange._domain_descriptors[dim].__cpp_type__
