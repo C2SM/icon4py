@@ -126,9 +126,7 @@ def compile_and_run_fortran(
     "backend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("ROUNDTRIP", ""),
-        ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("ROUNDTRIP", ""),
+        ("CPU", ""),
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
