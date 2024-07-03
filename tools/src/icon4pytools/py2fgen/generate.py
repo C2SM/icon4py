@@ -46,7 +46,7 @@ def generate_c_header(plugin: CffiPlugin) -> str:
 
 
 def generate_python_wrapper(
-    plugin: CffiPlugin, backend: Optional[str], debug_mode: bool, limited_area: str
+    plugin: CffiPlugin, backend: Optional[str], debug_mode: bool, limited_area: str, profile: bool
 ) -> str:
     """
     Generate Python wrapper code.
@@ -55,6 +55,8 @@ def generate_python_wrapper(
         plugin: The CffiPlugin instance containing information for code generation.
         backend: Optional gt4py backend specification.
         debug_mode: Flag indicating if debug mode is enabled.
+        limited_area: Optional gt4py limited area specification.
+        profile: Flag indicate if code should be profiled.
 
     Returns:
         Formatted Python wrapper code as a string.
@@ -68,6 +70,7 @@ def generate_python_wrapper(
         backend=backend,
         debug_mode=debug_mode,
         limited_area=limited_area,
+        profile=profile,
     )
 
     generated_code = PythonWrapperGenerator.apply(python_wrapper)
