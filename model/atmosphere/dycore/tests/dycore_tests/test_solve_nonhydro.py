@@ -91,7 +91,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     _calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp,
         config.nudge_max_coeff,
-        constants.dbl_eps,
+        constants.DBL_EPS,
         out=bdy_divdamp,
         offset_provider={},
     )

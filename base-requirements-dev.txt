@@ -1,5 +1,5 @@
 # VCS
--e git+https://github.com/GridTools/gt4py.git@main#egg=gt4py
+-e git+https://github.com/GridTools/gt4py.git@b8f7f7273e3a4b4770f163f4c244e4c3a2065dbe#egg=gt4py
 git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serialbox-python
 
 # PyPI
