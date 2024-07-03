@@ -26,8 +26,20 @@ from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
-from icon4pytools.py2fgen.wrappers.experiments import UNINITIALISED_ARRAYS
 
+
+# these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
+# therefore unpacking needs to be skipped as otherwise it will trigger an error.
+UNINITIALISED_ARRAYS = [
+    "mask_hdiff",
+    "zd_diffcoef",
+    "zd_vertoffset",
+    "zd_intcoef",
+    "hdef_ic",
+    "div_ic",
+    "dwdx",
+    "dwdy",
+]
 
 CFFI_DECORATOR = "@ffi.def_extern()"
 PROGRAM_DECORATOR = "@program"
@@ -84,6 +96,7 @@ class CffiPlugin(Node):
 class PythonWrapper(CffiPlugin):
     backend: str
     debug_mode: bool
+    profile: bool
     limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
@@ -213,12 +226,14 @@ class PythonWrapperGenerator(TemplatedGenerator):
         """\
 # imports for generated wrapper code
 import logging
+{% if _this_node.profile %}import time{% endif %}
 import math
 from {{ plugin_name }} import ffi
 import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
 
 {% if _this_node.is_gt4py_program_present %}
@@ -272,6 +287,11 @@ def {{ func.name }}_wrapper(
         logging.info("Python Execution Context Start")
         {% endif %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_start_time = time.perf_counter()
+        {% endif %}
+
         # Unpack pointers into Ndarrays
         {% for arg in func.args %}
         {% if arg.is_array %}
@@ -299,6 +319,17 @@ def {{ func.name }}_wrapper(
         {% endif %}
         {% endfor %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} unpacking arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
+        {% endif %}
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        allocate_start_time = time.perf_counter()
+        {% endif %}
+
         # Allocate GT4Py Fields
         {% for arg in func.args %}
         {% if arg.is_array %}
@@ -312,6 +343,17 @@ def {{ func.name }}_wrapper(
         {% endif %}
         {% endfor %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        allocate_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} allocating to gt4py fields time per timestep: %s' % str(allocate_end_time - allocate_start_time))
+        {% endif %}
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        func_start_time = time.perf_counter()
+        {% endif %}
+
         {{ func.name }}
         {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
         {%- for arg in func.args -%}
@@ -321,6 +363,13 @@ def {{ func.name }}_wrapper(
         offset_provider=grid.offset_providers
         {%- endif -%}
         )
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        func_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
+        {% endif %}
+
 
         {% if _this_node.debug_mode %}
         # debug info
@@ -335,7 +384,7 @@ def {{ func.name }}_wrapper(
         {% endif %}
 
         {%- if _this_node.debug_mode %}
-        logging.info("Python Execution Context End")
+        logging.critical("Python Execution Context End")
         {% endif %}
 
     except Exception as e:
