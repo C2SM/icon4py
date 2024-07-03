@@ -12,13 +12,12 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import abc
+import dataclasses
+import datetime as dt
 import enum
 import logging
 import pathlib
 import uuid
-from abc import ABC
-from dataclasses import dataclass
-from datetime import datetime, timedelta
 from typing import Optional, Sequence, TypedDict
 
 from typing_extensions import Required
@@ -39,7 +38,7 @@ class OutputInterval(str, enum.Enum):
     DAY = "DAY"
 
 
-def to_delta(value: str) -> timedelta:
+def to_delta(value: str) -> dt.timedelta:
     vals = value.split(" ")
     num = 1 if not vals[0].isnumeric() else int(vals[0])
     assert num >= 0, f"Delta value must be positive: {num}"
@@ -48,18 +47,18 @@ def to_delta(value: str) -> timedelta:
     value = value[:-1] if value.endswith("S") else value
 
     if value == OutputInterval.HOUR:
-        return timedelta(hours=num)
+        return dt.timedelta(hours=num)
     elif value == OutputInterval.DAY:
-        return timedelta(days=num)
+        return dt.timedelta(days=num)
     elif value == OutputInterval.MINUTE:
-        return timedelta(minutes=num)
+        return dt.timedelta(minutes=num)
     elif value == OutputInterval.SECOND:
-        return timedelta(seconds=num)
+        return dt.timedelta(seconds=num)
     else:
         raise NotImplementedError(f" Delta '{value}' is not supported.")
 
 
-class Config(ABC):
+class Config(abc.ABC):
     """
     Base class for all config classes.
 
@@ -81,7 +80,7 @@ class Config(ABC):
         pass
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class FieldGroupIOConfig(Config):
     """
     Structured config for IO of a field group.
@@ -118,7 +117,7 @@ class FieldGroupIOConfig(Config):
         self._validate_filename()
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class IOConfig(Config):
     """
     Structured and hierarchical config for IO.
@@ -195,9 +194,9 @@ class IOMonitor(monitor.Monitor):
     def path(self):
         return self._output_path
 
-    def store(self, state: dict, model_time: datetime, **kwargs) -> None:
+    def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
         for m in self._group_monitors:
-            m.store(state, model_time, **kwargs)
+            m.store(state, model_time, *args, **kwargs)
 
     def close(self):
         for m in self._group_monitors:
@@ -273,7 +272,7 @@ class FieldGroupMonitor(monitor.Monitor):
             "source": "https://icon4py.github.io",
             "history": output_path.absolute().as_posix()
             + " "
-            + datetime.now().isoformat(),  # TODO (halungge) this is actually the path to the binary in ICON not the output path
+            + dt.datetime.now().isoformat(),  # TODO (halungge) this is actually the path to the binary in ICON not the output path
             "references": "https://icon4py.github.io",
             "uuidOfHGrid": grid_id,
         }
@@ -283,7 +282,7 @@ class FieldGroupMonitor(monitor.Monitor):
         self._horizontal_size = horizontal
         self._field_names = config.variables
         self._handle_output_path(output_path, config.filename)
-        self._next_output_time = datetime.fromisoformat(config.start_time)
+        self._next_output_time = dt.datetime.fromisoformat(config.start_time)
         self._time_delta = to_delta(config.output_interval)
         self._file_counter = 0
         self._current_timesteps_in_file = 0
@@ -329,7 +328,7 @@ class FieldGroupMonitor(monitor.Monitor):
     def _update_fetch_times(self) -> None:
         self._next_output_time = self._next_output_time + self._time_delta
 
-    def store(self, state: dict, model_time: datetime, **kwargs) -> None:
+    def store(self, state: dict, model_time: dt.datetime, *args, **kwargs) -> None:
         """Pick fields from the state dictionary to be written to disk.
 
         Args:
@@ -366,7 +365,7 @@ class FieldGroupMonitor(monitor.Monitor):
     def _is_file_limit_reached(self) -> bool:
         return 0 < self.config.timesteps_per_file == self._current_timesteps_in_file
 
-    def _append_data(self, state_to_store: dict, model_time: datetime) -> None:
+    def _append_data(self, state_to_store: dict, model_time: dt.datetime) -> None:
         self._dataset.append(state_to_store, model_time)
 
     def _at_capture_time(self, model_time) -> bool:
