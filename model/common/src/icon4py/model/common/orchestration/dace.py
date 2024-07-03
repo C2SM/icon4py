@@ -27,7 +27,7 @@ from dace.properties import CodeBlock
 from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
 from gt4py._core import definitions as core_defs
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange, MultiNodeResult
-from icon4py.model.common.decomposition.definitions import DecompositionInfo as di, SingleNodeResult
+from icon4py.model.common.decomposition.definitions import DecompositionInfo as di, SingleNodeResult, SingleNodeExchange
 from icon4py.model.common.orchestration.dtypes import *
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 try:
@@ -113,6 +113,16 @@ def orchestration(method=True):
                     self_name = [param.name for param in inspect.signature(fuse_func).parameters.values()][0]
                 else:
                     raise ValueError("The orchestration decorator is only for methods -at least for now-.")
+
+                has_exchange = False
+                for attr_name, attr_value in self.__dict__.items():
+                    if isinstance(attr_value, GHexMultiNodeExchange) or isinstance(attr_value, SingleNodeExchange):
+                        has_exchange = True
+                        break
+                
+                if not has_exchange:
+                    fuse_func(*args, **kwargs)
+                    return
 
                 flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
 
