@@ -10,13 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-try:
-    import dace
-except ImportError:
-    from typing import Optional
-    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+from icon4py.model.common.settings import backend
 
-if dace:
+if "dace" in backend.executor.name:
+     import dace
+
      # Define DaCe Symbols
      CellDim_sym = dace.symbol('CellDim_sym')
      EdgeDim_sym = dace.symbol('EdgeDim_sym')
