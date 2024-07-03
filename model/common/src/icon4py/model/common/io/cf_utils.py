@@ -25,7 +25,7 @@ DEFAULT_CALENDAR: Final[str] = "proleptic_gregorian"
 DEFAULT_TIME_UNIT: Final[str] = "seconds since 1970-01-01 00:00:00"
 
 #: icon4py specific CF extensions:
-INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "interface_model_level"
+INTERFACE_LEVEL_HEIGHT_STANDARD_NAME: Final[str] = "model_interface_height"
 INTERFACE_LEVEL_STANDARD_NAME: Final[str] = "interface_model_level_number"
 
 

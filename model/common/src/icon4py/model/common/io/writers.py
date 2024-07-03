@@ -26,12 +26,12 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
 
-EDGE:Final[str] = "edge"
-VERTEX:Final[str] = "vertex"
-CELL:Final[str] = "cell"
-MODEL_INTERFACE_LEVEL:Final[str] = "interface_level"
-MODEL_LEVEL:Final[str] = "level"
-TIME:Final[str] = "time"
+EDGE: Final[str] = "edge"
+VERTEX: Final[str] = "vertex"
+CELL: Final[str] = "cell"
+MODEL_INTERFACE_LEVEL: Final[str] = "interface_level"
+MODEL_LEVEL: Final[str] = "level"
+TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
 processor_properties = decomp_defs.SingleNodeProcessProperties()

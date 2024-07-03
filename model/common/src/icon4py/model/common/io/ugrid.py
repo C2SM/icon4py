@@ -132,7 +132,6 @@ class IconUGridPatcher:
         # "child_cell_index",
         # "child_edge_index",
 
-
     def _add_mesh_var(self, ds: xa.Dataset) -> None:
         """Add the `mesh` variable and mappings for coordinates and connectivities to the ICON grid file."""
         ds["mesh"] = xa.DataArray(
@@ -200,7 +199,6 @@ class IconUGridPatcher:
                     coords=ds[name].coords,
                     attrs=ds[name].attrs,
                 )
-
 
     def _validate(self, ds: xa.Dataset) -> None:
         grid = uxarray.open_grid(ds)
