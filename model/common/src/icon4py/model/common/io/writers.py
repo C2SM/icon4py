@@ -11,10 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
+import datetime as dt
 import functools
 import logging
 import pathlib
-from datetime import datetime
+from typing import Final
 
 import netCDF4 as nc
 import numpy as np
@@ -25,12 +26,12 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
 
-EDGE = "edge"
-VERTEX = "vertex"
-CELL = "cell"
-MODEL_INTERFACE_LEVEL = "interface_level"
-MODEL_LEVEL = "level"
-TIME = "time"
+EDGE:Final[str] = "edge"
+VERTEX:Final[str] = "vertex"
+CELL:Final[str] = "cell"
+MODEL_INTERFACE_LEVEL:Final[str] = "interface_level"
+MODEL_LEVEL:Final[str] = "level"
+TIME:Final[str] = "time"
 
 log = logging.getLogger(__name__)
 processor_properties = decomp_defs.SingleNodeProcessProperties()
@@ -132,7 +133,7 @@ class NETCDFWriter:
         heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
         heights[:] = self._vertical_params.vct_a.ndarray
 
-    def append(self, state_to_append: dict[str, xr.DataArray], model_time: datetime) -> None:
+    def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """
         Append the fields to the dataset.
 
