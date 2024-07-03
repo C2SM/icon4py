@@ -132,8 +132,8 @@ class IconUGridPatcher:
         # "child_cell_index",
         # "child_edge_index",
 
-    @staticmethod
-    def _add_mesh_var(ds: xa.Dataset) -> None:
+
+    def _add_mesh_var(self, ds: xa.Dataset) -> None:
         """Add the `mesh` variable and mappings for coordinates and connectivities to the ICON grid file."""
         ds["mesh"] = xa.DataArray(
             -1,  # A dummy value for creating the DataArray with the actual attributes
@@ -201,8 +201,8 @@ class IconUGridPatcher:
                     attrs=ds[name].attrs,
                 )
 
-    @staticmethod
-    def _validate(ds: xa.Dataset) -> None:
+
+    def _validate(self, ds: xa.Dataset) -> None:
         grid = uxarray.open_grid(ds)
         try:
             grid.validate()
