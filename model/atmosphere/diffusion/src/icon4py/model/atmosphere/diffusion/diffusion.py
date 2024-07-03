@@ -53,6 +53,7 @@ from icon4py.model.common.constants import (
     CPD,
     GAS_CONSTANT_DRY_AIR,
     dbl_eps,
+    DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
 )
 from icon4py.model.common.decomposition.definitions import ExchangeRuntime, SingleNodeExchange
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -296,7 +297,7 @@ class DiffusionParams:
         object.__setattr__(
             self,
             "scaled_nudge_max_coeff",
-            config.nudge_max_coeff,  # * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: this is already done in ICON for us.
+            config.nudge_max_coeff * DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,
         )
 
     def _determine_smagorinski_factor(self, config: DiffusionConfig):
