@@ -130,10 +130,10 @@ class VerticalGridParams:
     @property
     def metadata_interface_physical_height(self):
         return dict(
-            standard_name="model_interface_level",
+            standard_name="model_interface_height",
             long_name="height of half levels in the native computational domain",
-            units="meters",
-            positive="down",
+            units="m",
+            positive="up",
             icon_var_name="vct_a",
         )
 
