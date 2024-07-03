@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 """
-Module containing the IO monitor for ICON4Py.
+Module containing the IO functionality for ICON4Py.
 
 
 The module provides an `IOMonitor` that captures fields from the model state and writes them to a file
