@@ -668,9 +668,9 @@ def test_compute_pg_exdist_dsl(
         pytest.skip("skipping: slow backend")
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     nlev = icon_grid.num_levels
-    k_lev = gtx.as_field((KDim,), np.arange(nlev, dtype=int32))
-    pg_edgeidx = zero_field(icon_grid, EdgeDim, KDim, dtype=int32)
-    pg_vertidx = zero_field(icon_grid, EdgeDim, KDim, dtype=int32)
+    k_lev = gtx.as_field((KDim,), np.arange(nlev, dtype=gtx.int32))
+    pg_edgeidx = zero_field(icon_grid, EdgeDim, KDim, dtype=gtx.int32)
+    pg_vertidx = zero_field(icon_grid, EdgeDim, KDim, dtype=gtx.int32)
     pg_exdist_dsl = zero_field(icon_grid, EdgeDim, KDim)
     z_me = zero_field(icon_grid, EdgeDim, KDim)
     z_aux2 = zero_field(icon_grid, EdgeDim)
@@ -725,7 +725,7 @@ def test_compute_pg_exdist_dsl(
         z_aux2=z_aux2,
         z_me=z_me,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=int32),
+        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=gtx.int32),
         k_lev=k_lev,
         pg_exdist_dsl=pg_exdist_dsl,
         horizontal_start=start_edge_nudging,
@@ -740,7 +740,7 @@ def test_compute_pg_exdist_dsl(
         z_ifc=z_ifc,
         z_aux2=z_aux2,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=int32),
+        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=gtx.int32),
         e_lev=e_lev,
         k_lev=k_lev,
         pg_edgeidx=pg_edgeidx,
