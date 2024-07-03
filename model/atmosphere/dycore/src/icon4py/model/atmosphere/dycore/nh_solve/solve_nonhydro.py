@@ -1450,7 +1450,7 @@ class SolveNonhydro:
             self.cell_params.mean_cell_area,
             divdamp_fac_o2,
             self.config.nudge_max_coeff,
-            constants.dbl_eps,
+            constants.DBL_EPS,
             out=(self.scal_divdamp, self._bdy_divdamp),
             offset_provider={},
         )
