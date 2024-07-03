@@ -106,7 +106,7 @@ class DaceGHEX:
 def orchestration(method=True):
     def decorator(fuse_func, *args, **kwargs):
         def wrapper(*args, **kwargs):
-            if backend == run_dace_cpu_noopt:
+            if "dace" in backend.executor.name:
                 if method:
                     # self is used to retrieve the _exchange object -on the fly halo exchanges- and the grid object -offset providers-
                     self = args[0]
