@@ -964,8 +964,7 @@ def test_c2e2c2e(simple_grid_gridfile):
         transformation=IndexTransformation(),
     )
     gm()
-    mesh = gm.get_grid()
-    table = mesh.get_offset_provider("C2E2C2E").table
+    table = gm.grid.get_offset_provider("C2E2C2E").table
     assert_up_to_order(table, simple.SimpleGridData.c2e2c2e_table)
 
 
@@ -978,7 +977,7 @@ def test_c2e2c2e(simple_grid_gridfile):
 def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
         grid.get_offset_provider("C2E2C2E").table,
