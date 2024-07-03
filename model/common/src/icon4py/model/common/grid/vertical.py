@@ -17,7 +17,6 @@ import pathlib
 from typing import Final
 
 import gt4py.next as gtx
-import xarray as xr
 
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.settings import xp
@@ -75,11 +74,9 @@ class VerticalGridParams:
     vct_b: dataclasses.InitVar[gtx.Field[[KDim], float]]
     _vct_a: gtx.Field[[KDim], float] = dataclasses.field(init=False)
     _vct_b: gtx.Field[[KDim], float] = dataclasses.field(init=False)
-    _vct_a_xarray: xr.DataArray = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
-    # TODO: @nfarabullini: check this value # according to mo_init_vgrid.f90 line 329
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
     def __post_init__(self, vertical_config, vct_a, vct_b):
@@ -94,7 +91,6 @@ class VerticalGridParams:
             vct_b,
         )
         vct_a_array = self._vct_a.ndarray
-        vct_a_xarray = self._construct_physical_height_xarray()
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
@@ -112,29 +108,19 @@ class VerticalGridParams:
             "_end_index_of_flat_layer",
             self._determine_kstart_flat(vct_a_array, vertical_config.flat_height),
         )
-        object.__setattr__(
-            self,
-            "_vct_a_xarray",
-            vct_a_xarray,
-        )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
 
-    def _construct_physical_height_xarray(self):
-        return xr.DataArray(
-            self._vct_a.ndarray, dims="height", attrs=self.metadata_interface_physical_height
-        )
-
     def __str__(self):
         vertical_params_properties = ["Model interface height properties:"]
-        for key, value in self._vct_a_xarray.attrs.items():
+        for key, value in self.metadata_interface_physical_height.items():
             vertical_params_properties.append(f"    {key}: {value}")
-        vertical_params_properties.append("Level   Coordinate    Thickness:")
-        vct_a_array = self._vct_a_xarray.values
-        dvct = self._vct_a_xarray.values[:-1] - self._vct_a_xarray.values[1:]
-        array_value = [f"    0   {vct_a_array[0]:12.3f}"]
+        vertical_params_properties.append("Level    Coordinate    Thickness:")
+        vct_a_array = self._vct_a.ndarray
+        dvct = vct_a_array[:-1] - vct_a_array[1:]
+        array_value = [f"   0   {vct_a_array[0]:12.3f}"]
         for k in range(vct_a_array.shape[0] - 1):
-            array_value.append(f"{k+1:5d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
+            array_value.append(f"{k+1:4d}   {vct_a_array[k+1]:12.3f} {dvct[k]:12.3f}")
         array_value[self._end_index_of_flat_layer] += " End of flat layer "
         array_value[self._end_index_of_damping_layer] += " End of damping layer "
         array_value[self._start_index_for_moist_physics] += " Start of moist physics"
@@ -154,10 +140,6 @@ class VerticalGridParams:
     @property
     def inteface_physical_height(self) -> gtx.Field[[KDim], float]:
         return self._vct_a
-
-    @property
-    def inteface_physical_height_xarray(self) -> xr.DataArray:
-        return self._vct_a_xarray
 
     @property
     def kstart_moist(self):
