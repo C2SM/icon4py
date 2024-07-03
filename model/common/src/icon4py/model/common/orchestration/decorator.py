@@ -43,6 +43,8 @@ if "dace" in backend.executor.name:
 
 def orchestration(method=True):
     def decorator(fuse_func, *args, **kwargs):
+        if "dace" in backend.executor.name:
+            pass
         def wrapper(*args, **kwargs):
             if "dace" in backend.executor.name:
                 if method:
@@ -99,28 +101,7 @@ def orchestration(method=True):
                 self._exchange.exchange = DummyNestedSDFG()
                 
                 with dace.config.temporary_config():
-                    dace.config.Config.set("cache", value="unique") # no caching or clashes can happen between different processes (MPI)
-                    dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
-                    dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
-                    dace.config.Config.set("optimizer", "autooptimize", value=False)
-                    device_type = backend.executor.otf_workflow.step.translation.device_type
-                    if device_type == core_defs.DeviceType.CPU:
-                        device = "cpu"
-                        compiler_args = dace.config.Config.get("compiler", "cpu", "args")
-                        compiler_args = compiler_args.replace("-std=c++14", "-std=c++17") # needed for GHEX
-                        # disable finite-math-only in order to support isfinite/isinf/isnan builtins
-                        if "-ffast-math" in compiler_args:
-                            compiler_args += " -fno-finite-math-only"
-                        if "-ffinite-math-only" in compiler_args:
-                            compiler_args = compiler_args.replace("-ffinite-math-only", "")
-                    elif device_type == core_defs.DeviceType.CUDA:
-                        device = "cuda"
-                        compiler_args = dace.config.Config.get("compiler", "cuda", "args")
-                        compiler_args = compiler_args.replace("-Xcompiler", "-Xcompiler -std=c++17")
-                        compiler_args += " -std=c++17"
-                    else:
-                        raise ValueError("The device type is not supported.")
-                    dace.config.Config.set("compiler", device, "args", value=compiler_args)
+                    configure_dace_env()
 
                     daceP = dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)
 
@@ -208,6 +189,31 @@ def wait(comm_handle: Union[bool, SingleNodeResult, MultiNodeResult]):
 
 
 if "dace" in backend.executor.name:
+    def configure_dace_env():
+        dace.config.Config.set("cache", value="unique") # no caching or clashes can happen between different processes (MPI)
+        dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
+        dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
+        dace.config.Config.set("optimizer", "autooptimize", value=False)
+        device_type = backend.executor.otf_workflow.step.translation.device_type
+        if device_type == core_defs.DeviceType.CPU:
+            device = "cpu"
+            compiler_args = dace.config.Config.get("compiler", "cpu", "args")
+            compiler_args = compiler_args.replace("-std=c++14", "-std=c++17") # needed for GHEX
+            # disable finite-math-only in order to support isfinite/isinf/isnan builtins
+            if "-ffast-math" in compiler_args:
+                compiler_args += " -fno-finite-math-only"
+            if "-ffinite-math-only" in compiler_args:
+                compiler_args = compiler_args.replace("-ffinite-math-only", "")
+        elif device_type == core_defs.DeviceType.CUDA:
+            device = "cuda"
+            compiler_args = dace.config.Config.get("compiler", "cuda", "args")
+            compiler_args = compiler_args.replace("-Xcompiler", "-Xcompiler -std=c++17")
+            compiler_args += " -std=c++17"
+        else:
+            raise ValueError("The device type is not supported.")
+        dace.config.Config.set("compiler", device, "args", value=compiler_args)
+
+
     class DummyNestedSDFG(SDFGConvertible):
         """Dummy replacement of the manually placed halo exchanges"""
         def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
