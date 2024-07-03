@@ -19,6 +19,7 @@ from typing import Callable, Dict
 
 import numpy as np
 from gt4py.next.common import Dimension
+from gt4py.next.ffront.fbuiltins import int32
 from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
@@ -111,7 +112,7 @@ class BaseGrid(ABC):
 
     @builder
     def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
-        self.connectivities.update({d: k.astype(np.int32) for d, k in connectivity.items()})
+        self.connectivities.update({d: k.astype(int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @builder
@@ -129,7 +130,7 @@ class BaseGrid(ABC):
         if dim not in self.connectivities:
             raise MissingConnectivity()
         assert (
-            self.connectivities[dim].dtype == np.int32
+            self.connectivities[dim].dtype == int32
         ), 'Neighbor table\'s "{}" data type must be int32. Instead it\'s "{}"'.format(
             dim, self.connectivities[dim].dtype
         )

@@ -15,6 +15,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from gt4py.next import Dimension
+from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -86,7 +87,7 @@ class SimpleGridData:
             [7, 1, 2],
             [8, 2, 0],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     e2c2v_table = np.asarray(
@@ -119,7 +120,7 @@ class SimpleGridData:
             [8, 0, 6, 2],  # 25
             [8, 2, 7, 0],  # 26
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     e2c_table = np.asarray(
@@ -152,7 +153,7 @@ class SimpleGridData:
             [14, 17],
             [13, 17],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     e2v_table = np.asarray(
@@ -185,7 +186,7 @@ class SimpleGridData:
             [8, 0],
             [8, 2],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     e2c2e_table = np.asarray(
@@ -218,7 +219,7 @@ class SimpleGridData:
             [24, 20, 26, 6],
             [25, 6, 21, 22],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     e2c2eO_table = np.asarray(
@@ -251,7 +252,7 @@ class SimpleGridData:
             [24, 25, 20, 26, 6],
             [25, 26, 6, 21, 22],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     c2e_table = np.asarray(
@@ -275,7 +276,7 @@ class SimpleGridData:
             [22, 23, 3],  # cell 16
             [25, 26, 6],  # cell 17
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     v2c_table = np.asarray(
@@ -290,7 +291,7 @@ class SimpleGridData:
             [12, 16, 13, 10, 6, 9],
             [13, 17, 14, 11, 7, 10],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     v2e_table = np.asarray(
@@ -305,7 +306,7 @@ class SimpleGridData:
             [21, 22, 23, 18, 10, 14],
             [24, 25, 26, 21, 13, 17],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     c2e2cO_table = np.asarray(
@@ -329,7 +330,7 @@ class SimpleGridData:
             [13, 1, 12, 16],
             [14, 2, 13, 17],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     c2e2c_table = np.asarray(
@@ -353,7 +354,7 @@ class SimpleGridData:
             [13, 1, 12],
             [14, 2, 13],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     c2e2c2e_table = np.asarray(
@@ -377,7 +378,7 @@ class SimpleGridData:
             [21, 22, 26, 18, 19, 23, 3, 4, 8],
             [24, 25, 20, 21, 22, 26, 6, 7, 2],  # 17c
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
     c2e2c2e2c_table = np.asarray(
@@ -401,7 +402,7 @@ class SimpleGridData:
             [13, 1, 12, 9, 15, 10, 17, 4, 5],
             [14, 2, 13, 10, 16, 5, 3, 11, 15],
         ],
-        dtype=np.int32,
+        dtype=int32,
     )
 
 
