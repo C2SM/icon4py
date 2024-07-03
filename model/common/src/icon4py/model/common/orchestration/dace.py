@@ -25,6 +25,7 @@ from dace.config import Config
 from dace.memlet import Memlet
 from dace.properties import CodeBlock
 from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
+from gt4py._core import definitions as core_defs
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange, MultiNodeResult
 from icon4py.model.common.decomposition.definitions import DecompositionInfo as di, SingleNodeResult
 from icon4py.model.common.orchestration.dtypes import *
@@ -150,15 +151,28 @@ def orchestration(method=True):
                 self._exchange.exchange = DummyNestedSDFG()
                 
                 with dace.config.temporary_config():
-                    dace.config.Config.set("compiler", "build_type", value="RelWithDebInfo")
-                    dace.config.Config.set("compiler", "allow_view_arguments", value=True)
-                    dace.config.Config.set("frontend", "check_args", value=True)
-                    compiler_args ="-std=c++17 -fPIC -Wall -Wextra -O3 -march=native -ffast-math -Wno-unused-parameter -Wno-unused-label -fno-finite-math-only"
-                    on_gpu = False
-                    dace.config.Config.set("compiler", "cuda" if on_gpu else "cpu", "args", value=compiler_args)
-
-                    dace.config.Config.set("optimizer", "automatic_simplification", value=False)
-                    dace.config.Config.set("cache", value="unique")
+                    dace.config.Config.set("cache", value="unique") # no caching or clashes can happen between different processes (MPI)
+                    dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
+                    dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
+                    dace.config.Config.set("optimizer", "autooptimize", value=False)
+                    device_type = backend.executor.otf_workflow.step.translation.device_type
+                    if device_type == core_defs.DeviceType.CPU:
+                        device = "cpu"
+                        compiler_args = dace.config.Config.get("compiler", "cpu", "args")
+                        compiler_args = compiler_args.replace("-std=c++14", "-std=c++17") # needed for GHEX
+                        # disable finite-math-only in order to support isfinite/isinf/isnan builtins
+                        if "-ffast-math" in compiler_args:
+                            compiler_args += " -fno-finite-math-only"
+                        if "-ffinite-math-only" in compiler_args:
+                            compiler_args = compiler_args.replace("-ffinite-math-only", "")
+                    elif device_type == core_defs.DeviceType.CUDA:
+                        device = "cuda"
+                        compiler_args = dace.config.Config.get("compiler", "cuda", "args")
+                        compiler_args = compiler_args.replace("-Xcompiler", "-Xcompiler -std=c++17")
+                        compiler_args += " -std=c++17"
+                    else:
+                        raise ValueError("The device type is not supported.")
+                    dace.config.Config.set("compiler", device, "args", value=compiler_args)
 
                     daceP = dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)
 
