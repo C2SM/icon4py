@@ -2,6 +2,7 @@ include:
   - remote: 'https://gitlab.com/cscs-ci/recipes/-/raw/master/templates/v2/.ci-ext.yml'
 
 stages:
+  - baseimage
   - build
   - test
   - benchmark
@@ -10,17 +11,36 @@ stages:
   PYVERSION_PREFIX: py310
   PYVERSION: 3.10.9
 
-variables:
-  PYTHON_VERSION: "3.10"
-  PERSIST_IMAGE_NAME: "${CSCS_REGISTRY_PATH}/icon4py:${CI_COMMIT_SHORT_SHA}"
+# Base image build step with SHA256 checksum for caching
+build baseimage:
+  extends: .container-builder-cscs-zen2
+  stage: baseimage
+  before_script:
+    - DOCKER_TAG=`sha256sum ci/docker/base.Dockerfile | head -c 16`
+    - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/base/icon4py:$DOCKER_TAG-$PYVERSION
+    - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
+  artifacts:
+    reports:
+      dotenv: build.env
+  variables:
+    DOCKERFILE: ci/docker/base.Dockerfile
+    CSCS_REBUILD_POLICY: if-not-exists
+    DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
+    <<: *py310
 
 .build_template:
   stage: build
   extends: .container-builder-cscs-zen2
+  needs: ["build baseimage"]
   variables:
-    DOCKERFILE: ci/docker/Dockerfile.build
-    DOCKER_BUILD_ARGS: '["PYVERSION=${PYVERSION}"]'
+    # Unique image name based on commit SHA
+    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
+    DOCKERFILE: ci/docker/checkout.Dockerfile
+    DOCKER_BUILD_ARGS: '["PYVERSION=${PYVERSION}", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
     <<: *py310
+  artifacts:
+    reports:
+      dotenv: build.env
 
 .test_template:
   extends: .container-runner-daint-gpu
@@ -48,3 +68,7 @@ variables:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+
+build image:
+  extends: .build_template
+  needs: ["build baseimage"]

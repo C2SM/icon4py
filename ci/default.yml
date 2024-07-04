@@ -3,10 +3,12 @@ include:
 
 build:
   extends: .build_template
+  needs: ["build baseimage"]
 
 test_model_stencils:
   extends: .test_template
   stage: test
+  needs: ["build image"]
   script:
     - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
   parallel:
@@ -22,16 +24,17 @@ test_model_stencils:
 test_tools:
   extends: .test_template
   stage: test
+  needs: ["build image"]
   script:
     - tox -r -c tools/ --verbose
 
-
 test_model_datatests:
-    extends: .test_template
-    stage: test
-    script:
-        - tox -r -e run_model_tests -c model/ --verbose -- --backend=$BACKEND $COMPONENT
-    parallel:
-        matrix:
-            - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, common/tests, driver/tests]
-              BACKEND: [gtfn_cpu]
+  extends: .test_template
+  stage: test
+  needs: ["build image"]
+  script:
+    - tox -r -e run_model_tests -c model/ --verbose -- --backend=$BACKEND $COMPONENT
+  parallel:
+    matrix:
+    - COMPONENT: [atmosphere/diffusion/tests/diffusion_tests, atmosphere/dycore/tests/dycore_tests, common/tests, driver/tests]
+      BACKEND: [gtfn_cpu]
