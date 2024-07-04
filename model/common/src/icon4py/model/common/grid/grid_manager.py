@@ -18,6 +18,7 @@ from uuid import UUID
 
 import numpy as np
 from gt4py.next.common import Dimension, DimensionKind
+from gt4py.next.ffront.fbuiltins import int32
 
 
 try:
@@ -185,7 +186,7 @@ class GridFile:
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
 
-    def int_field(self, name: GridFileName, transpose=True, dtype=np.int32) -> np.ndarray:
+    def int_field(self, name: GridFileName, transpose=True, dtype=int32) -> np.ndarray:
         try:
             nc_variable = self._dataset.variables[name]
 
@@ -208,7 +209,7 @@ class IndexTransformation:
         self,
         array: np.ndarray,
     ):
-        return np.zeros(array.shape, dtype=np.int32)
+        return np.zeros(array.shape, dtype=int32)
 
 
 class ToGt4PyTransformation(IndexTransformation):
@@ -219,7 +220,7 @@ class ToGt4PyTransformation(IndexTransformation):
         Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
         INVALID values which are marked with -1 in the grid file and are kept such.
         """
-        return np.where(array == GridFile.INVALID_INDEX, 0, -1)
+        return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=int32)
 
 
 class GridManager:
@@ -278,13 +279,13 @@ class GridManager:
                 reader,
                 GridFile.GridRefinementName.START_INDEX_EDGES,
                 transpose=False,
-                dtype=np.int64,
+                dtype=int32,
             )[_CHILD_DOM],
             VertexDim: self._get_index_field(
                 reader,
                 GridFile.GridRefinementName.START_INDEX_VERTICES,
                 transpose=False,
-                dtype=np.int64,
+                dtype=int32,
             )[_CHILD_DOM],
         }
         end_indices = {
@@ -293,21 +294,21 @@ class GridManager:
                 GridFile.GridRefinementName.END_INDEX_CELLS,
                 transpose=False,
                 apply_offset=False,
-                dtype=np.int64,
+                dtype=int32,
             )[_CHILD_DOM],
             EdgeDim: self._get_index_field(
                 reader,
                 GridFile.GridRefinementName.END_INDEX_EDGES,
                 transpose=False,
                 apply_offset=False,
-                dtype=np.int64,
+                dtype=int32,
             )[_CHILD_DOM],
             VertexDim: self._get_index_field(
                 reader,
                 GridFile.GridRefinementName.END_INDEX_VERTICES,
                 transpose=False,
                 apply_offset=False,
-                dtype=np.int64,
+                dtype=int32,
             )[_CHILD_DOM],
         }
 
@@ -351,7 +352,7 @@ class GridManager:
         field: GridFileName,
         transpose=True,
         apply_offset=True,
-        dtype=np.int32,
+        dtype=int32,
     ):
         field = reader.int_field(field, transpose=transpose, dtype=dtype)
         if apply_offset:
@@ -507,7 +508,7 @@ class GridManager:
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
 
         diamond_sides = 4
-        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=np.int32)
+        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=int32)
         for i in range(sh[0]):
             var = flattened[i, (~np.in1d(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
             e2c2e[i, : var.shape[0]] = var
@@ -556,7 +557,7 @@ def _patch_with_dummy_lastline(ar):
     """
     patched_ar = np.append(
         ar,
-        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=np.int32),
+        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=int32),
         axis=0,
     )
     return patched_ar
