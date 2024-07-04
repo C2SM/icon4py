@@ -102,9 +102,14 @@ def orchestration(method=True):
                 exchange_obj.exchange = DummyNestedSDFG()
                 
                 with dace.config.temporary_config():
-                    configure_dace_temp_env()
+                    device_type = configure_dace_temp_env()
 
-                    daceP = dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)
+                    daceP = dace.program(auto_optimize=False,
+                                         device=dev_type_from_gt4py_to_dace(device_type),
+                                         recreate_sdfg=False,
+                                         regenerate_code=False,
+                                         recompile=False,
+                                         distributed_compilation=False)(fuse_func)
 
                     ################################################################################
                     # Copy of the __call__ function of DaceProgram class
@@ -213,6 +218,17 @@ if "dace" in backend.executor.name:
         else:
             raise ValueError("The device type is not supported.")
         dace.config.Config.set("compiler", device, "args", value=compiler_args)
+
+        return device_type
+
+
+    def dev_type_from_gt4py_to_dace(device_type: core_defs.DeviceType) -> dace.dtypes.DeviceType:
+        if device_type == core_defs.DeviceType.CPU:
+            return dace.dtypes.DeviceType.CPU
+        elif device_type == core_defs.DeviceType.CUDA:
+            return dace.dtypes.DeviceType.GPU
+        else:
+            raise ValueError("The device type is not supported.")
 
 
     class DummyNestedSDFG(SDFGConvertible):
