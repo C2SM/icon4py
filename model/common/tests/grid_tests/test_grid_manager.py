@@ -20,8 +20,10 @@ from uuid import uuid4
 import numpy as np
 import pytest
 
+from icon4py.model.common.grid import simple
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
+    JABW_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
 
@@ -952,3 +954,34 @@ def test_grid_level_and_root(grid_file, global_num_cells):
     file = resolve_file_from_gridfile_name(grid_file)
     grid = init_grid_manager(file, num_levels=10).get_grid()
     assert global_num_cells == grid.global_num_cells
+
+
+def test_c2e2c2e(simple_grid_gridfile):
+    simple_grid = SimpleGrid()
+    gm = init_grid_manager(
+        simple_grid_gridfile,
+        num_levels=simple_grid.num_levels,
+        transformation=IndexTransformation(),
+    )
+    gm()
+    mesh = gm.get_grid()
+    table = mesh.get_offset_provider("C2E2C2E").table
+    assert_up_to_order(table, simple.SimpleGridData.c2e2c2e_table)
+
+
+@pytest.mark.datatest
+@pytest.mark.with_netcdf
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [(R02B04_GLOBAL, JABW_EXPERIMENT)],
+)
+def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
+    caplog.set_level(logging.DEBUG)
+    file = resolve_file_from_gridfile_name(grid_file)
+    grid = init_grid_manager(file).get_grid()
+    serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
+    assert np.allclose(
+        grid.get_offset_provider("C2E2C2E").table,
+        serialized_grid.get_offset_provider("C2E2C2E").table,
+    )
+    assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)

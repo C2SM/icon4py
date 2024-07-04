@@ -1,9 +1,6 @@
 include:
   - local: 'ci/base.yml'
 
-build:
-  extends: .build_template
-
 benchmark_model_stencils:
   extends: .test_template
   stage: benchmark

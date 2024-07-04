@@ -1,3 +1,3 @@
 # VCS
-gt4py @ git+https://github.com/GridTools/gt4py.git@main
+gt4py @ git+https://github.com/GridTools/gt4py.git@b8f7f7273e3a4b4770f163f4c244e4c3a2065dbe
 

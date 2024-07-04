@@ -238,7 +238,9 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, "GPU", False, limited_area=True)
+    interface = generate_python_wrapper(
+        dummy_plugin, "GPU", False, limited_area=True, profile=False
+    )
     expected = '''
 # imports for generated wrapper code
 import logging
@@ -248,6 +250,7 @@ import numpy as np
 import cupy as cp
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
 
 # logger setup
