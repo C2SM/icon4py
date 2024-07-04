@@ -68,7 +68,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Returns: tuple[int, int]: The grid root and level.
     """
     if "torus" in experiment:
-        return -1,1
+        return 0,2
 
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
