@@ -92,17 +92,6 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             max_nudging_coeff=0.075,
         )
 
-    def _gauss3d_diffusion_config(n_substeps: int):
-        return DiffusionConfig(
-            # diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            # hdiff_w=False,
-            # hdiff_vn=False,
-            # hdiff_temp=False,
-            # n_substeps=n_substeps,
-            # smagorinski_scaling_factor=0.025,
-            # zdiffu_t=False,
-        )
-
     def _jabw_nonhydro_config(n_substeps: int):
         return NonHydrostaticConfig(
             # original igradp_method is 2
@@ -110,11 +99,6 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             ndyn_substeps_var=n_substeps,
             max_nudging_coeff=0.02,
             divdamp_fac=0.0025,
-        )
-
-    def _gauss3d_nonhydro_config(n_substeps: int):
-        return NonHydrostaticConfig(
-            ndyn_substeps_var=n_substeps,
         )
 
     def _mch_ch_r04b09_config():
@@ -147,10 +131,21 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             jabw_nonhydro_config,
         )
 
+    def _gauss3d_diffusion_config(n_substeps: int):
+        return DiffusionConfig()
+
+    def _gauss3d_nonhydro_config(n_substeps: int):
+        return NonHydrostaticConfig(
+            igradp_method=3,
+            ndyn_substeps_var=n_substeps,
+            max_nudging_coeff=0.02,
+            divdamp_fac=0.0025,
+        )
+
     def _gauss3d_config():
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=4.0),
-            end_date=datetime(1, 1, 1, 0, 1, 0),
+            end_date=datetime(1, 1, 1, 0, 0, 4),
             damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=5,
