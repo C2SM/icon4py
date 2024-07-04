@@ -39,6 +39,7 @@ if "dace" in backend.executor.name:
     from icon4py.model.common.decomposition.definitions import DecompositionInfo, SingleNodeExchange
     from icon4py.model.common.orchestration.dtypes import *
     from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+    from icon4py.model.common.grid.icon import IconGrid
     from ghex import expose_cpp_ptr
     import mpi4py
 
@@ -70,22 +71,15 @@ def orchestration(method=True):
                 flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
 
                 kwargs.update({
-                    # GHEX C++ ptrs
-                    "__context_ptr":expose_cpp_ptr(exchange_obj._context) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
-                    "__comm_ptr":expose_cpp_ptr(exchange_obj._comm) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
-                    **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
-                    **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
-                    # offset providers
-                    **{f"{connectivity_identifier(k)}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
-                    #
-                    **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
                     # Symbols concretization
                     **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
                     **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
                     **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
+                    # GHEX C++ ptrs, connectivity tables, etc.
+                    **dace_specific_kwargs(exchange_obj, self.grid),
                     })
 
-                # Modify the args to support DaCe Structures
+                # Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the GT4Py structures
                 new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
                 new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
                 for new_arg_ in new_args:
@@ -111,65 +105,19 @@ def orchestration(method=True):
                                          recompile=False,
                                          distributed_compilation=False)(fuse_func)
 
-                    ################################################################################
-                    # Copy of the __call__ function of DaceProgram class
-                    # Expose the generated SDFG and modify it
-                    ################################################################################
+                    sdfg = daceP.to_sdfg(*args, **kwargs, simplify=False, validate=True, use_cache=True)
 
-                    # Update global variables with current closure
-                    daceP.global_vars = dace.frontend.python.parser._get_locals_and_globals(daceP.f)
+                    add_halo_exchanges(sdfg, exchange_obj, self.grid.offset_providers, **kwargs)
+                    
+                    #sdfg.simplify(validate=True)
 
-                    argtypes, arg_mapping, constant_args, specified = daceP._get_type_annotations(args, kwargs)
-
-                    # Add constant arguments to globals for caching
-                    daceP.global_vars.update(constant_args)
-
-                    # Cache key
-                    cachekey = daceP._cache.make_key(argtypes, specified, daceP.closure_array_keys, daceP.closure_constant_keys,
-                                                    constant_args)
-
-                    if daceP._cache.has(cachekey):
-                        entry = daceP._cache.get(cachekey)
-                        # If the cache does not just contain a parsed SDFG
-                        if entry.compiled_sdfg is not None:
-                            kwargs.update(arg_mapping)
-                            entry.compiled_sdfg.clear_return_values()
-                            return entry.compiled_sdfg(**daceP._create_sdfg_args(entry.sdfg, args, kwargs))
-
-                    # Parse SDFG
-                    sdfg = daceP._parse(args, kwargs)
-
-                    # Automatically add halo exchange nodes
-                    halo_exchange(sdfg, exchange_obj, self.grid.offset_providers, **kwargs)
-
-                    #sdfg.simplify(validate=False)
-
-                    # Add named arguments to the call
-                    kwargs.update(arg_mapping)
                     sdfg_args = daceP._create_sdfg_args(sdfg, args, kwargs)
-
-                    if daceP.recreate_sdfg:
-                        # Invoke auto-optimization as necessary
-                        if Config.get_bool('optimizer', 'autooptimize') or daceP.autoopt:
-                            sdfg = daceP.auto_optimize(sdfg, symbols=sdfg_args)
-                            sdfg.simplify()
+                    if method:
+                        del sdfg_args[self_name]
 
                     with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg:
-                        if daceP.distributed_compilation and mpi4py:
-                            binaryobj = distributed_compile(sdfg, mpi4py.MPI.COMM_WORLD, validate=daceP.validate)
-                        else:
-                            # Compile SDFG (note: this is done after symbol inference due to shape
-                            # altering transformations such as Vectorization)
-                            binaryobj = sdfg.compile(validate=daceP.validate)
-
-                        # Recreate key and add to cache
-                        cachekey = daceP._cache.make_key(argtypes, specified, daceP.closure_array_keys, daceP.closure_constant_keys,
-                                                        constant_args)
-                        daceP._cache.add(cachekey, sdfg, binaryobj)
-
-                        # Call SDFG
-                        if method:
-                            del sdfg_args[self_name]
+                        # TODO(kotsaloscv): Re-think the distributed compilation
+                        binaryobj = sdfg.compile(validate=daceP.validate)
                         result = binaryobj(**sdfg_args)
 
                     exchange_obj.exchange_and_wait = tmp_self__exchange_exchange_and_wait
@@ -195,6 +143,20 @@ def wait(comm_handle: Union[bool, SingleNodeResult, MultiNodeResult]):
 
 
 if "dace" in backend.executor.name:
+    def dace_specific_kwargs(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid) -> dict[str, Any]:
+        return {
+            # GHEX C++ ptrs
+            "__context_ptr":expose_cpp_ptr(exchange_obj._context) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
+            "__comm_ptr":expose_cpp_ptr(exchange_obj._comm) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
+            **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+            **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+            # offset providers
+            **{f"{connectivity_identifier(k)}":v.table for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            # TODO(kotsaloscv): Possibly needed for future feature, i.e., build GHEX patterns on the fly
+            **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
+        }
+
+
     def configure_dace_temp_env():
         dace.config.Config.set("cache", value="unique") # no caching or clashes can happen between different processes (MPI)
         dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
@@ -259,7 +221,7 @@ if "dace" in backend.executor.name:
             return ([],[])
 
 
-    def halo_exchange(sdfg, exchange, offset_providers, **kwargs):
+    def add_halo_exchanges(sdfg, exchange, offset_providers, **kwargs):
         '''Add halo exchange nodes to the SDFG only where needed.'''
         if not isinstance(exchange, GHexMultiNodeExchange):
             return
@@ -367,7 +329,7 @@ if "dace" in backend.executor.name:
 
                             accessed_halo_inds = np.intersect1d(halos_inds, accessed_inds)
                             if not np.all(np.isin(accessed_halo_inds, updated_halo_inds)):
-                                # TODO : Communicate only the non-accesed halo elements
+                                # TODO(kotsaloscv): Communicate only the non-accesed halo elements
                                 halo_update = True
                                 break
                 
