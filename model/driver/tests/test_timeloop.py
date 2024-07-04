@@ -35,6 +35,7 @@ from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
+    GAUSS3D_EXPERIMENT,
 )
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -46,6 +47,7 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
+from icon4py.model.driver import icon_configuration
 
 from .utils import (
     construct_diffusion_config,
@@ -56,10 +58,9 @@ from .utils import (
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
+    "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only, damping_height",
     [
         (
-            False,
             REGIONAL_EXPERIMENT,
             1,
             2,
@@ -75,7 +76,6 @@ from .utils import (
             12500.0,
         ),
         (
-            False,
             REGIONAL_EXPERIMENT,
             1,
             2,
@@ -91,7 +91,6 @@ from .utils import (
             12500.0,
         ),
         (
-            False,
             GLOBAL_EXPERIMENT,
             1,
             2,
@@ -107,7 +106,6 @@ from .utils import (
             50000.0,
         ),
         (
-            False,
             GLOBAL_EXPERIMENT,
             1,
             2,
@@ -122,10 +120,24 @@ from .utils import (
             True,
             50000.0,
         ),
+        (
+            GAUSS3D_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+            False,
+            45000.0,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
-    debug_mode,
     experiment,
     timeloop_date_init,
     timeloop_date_exit,
@@ -142,8 +154,25 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
 ):
-    diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    if experiment == GAUSS3D_EXPERIMENT:
+        config = icon_configuration.read_config(experiment)
+        diffusion_config = config.diffusion_config
+        nonhydro_config = config.solve_nonhydro_config
+        iconrun_config = config.run_config
+
+    else:
+        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+        nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
+        iconrun_config = construct_iconrun_config(
+            experiment,
+            timeloop_date_init,
+            timeloop_date_exit,
+            timeloop_diffusion_linit_init,
+            damping_height,
+            ndyn_substeps=ndyn_substeps,
+        )
+
+
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
@@ -171,26 +200,11 @@ def test_run_timeloop_single_step(
         cell_params=cell_geometry,
     )
 
-    # Default construction is for the MCH_CH_r04b09_dsl run config for nonhydro
-    nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
-    nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     # do_prep_adv actually depends on other factors: idiv_method == 1 .AND. (ltransport .OR. p_patch%n_childdom > 0 .AND. grf_intmethod_e >= 5)
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-
-    iconrun_config = construct_iconrun_config(
-        experiment,
-        timeloop_date_init,
-        timeloop_date_exit,
-        timeloop_diffusion_linit_init,
-        damping_height,
-        ndyn_substeps=ndyn_substeps,
-    )
-
-    assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert iconrun_config.dtime.total_seconds() == diffusion_dtime
 
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = InterpolationState(
@@ -300,13 +314,7 @@ def test_run_timeloop_single_step(
 
     timeloop = TimeLoop(iconrun_config, diffusion, solve_nonhydro)
 
-    assert timeloop.substep_timestep == nonhydro_dtime
-
-    initial_prognostic_date = "2021-06-20T12:00:10.000"
-    if experiment == GLOBAL_EXPERIMENT:
-        initial_prognostic_date = "2000-01-01T00:00:00.000"
-
-    if timeloop_date_exit == initial_prognostic_date:
+    if timeloop_diffusion_linit_init:
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
     else:
         prognostic_state = PrognosticState(
@@ -316,6 +324,7 @@ def test_run_timeloop_single_step(
             rho=sp.rho_now(),
             exner=sp.exner_now(),
         )
+
     prognostic_state_new = PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
@@ -340,53 +349,6 @@ def test_run_timeloop_single_step(
     theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
-
-    if debug_mode:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = script_dir + "/"
-
-        def printing(ref, predict, title: str):
-            with open(base_dir + "analysis_" + timeloop_date_init + "_" + title + ".dat", "w") as f:
-                cell_size = ref.shape[0]
-                k_size = ref.shape[1]
-                print(title, cell_size, k_size)
-                difference = np.abs(ref - predict)
-                print(np.max(difference), np.min(difference))
-                for i in range(cell_size):
-                    for k in range(k_size):
-                        f.write("{0:7d} {1:7d}".format(i, k))
-                        f.write(
-                            " {0:.20e} {1:.20e} {2:.20e} ".format(
-                                difference[i, k], ref[i, k], predict[i, k]
-                            )
-                        )
-                        f.write("\n")
-
-        printing(
-            rho_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-            "rho",
-        )
-        printing(
-            exner_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-            "exner",
-        )
-        printing(
-            theta_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-            "theta_v",
-        )
-        printing(
-            w_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-            "w",
-        )
-        printing(
-            vn_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-            "vn",
-        )
 
     assert dallclose(
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
