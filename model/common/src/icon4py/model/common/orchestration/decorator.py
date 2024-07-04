@@ -202,15 +202,15 @@ if "dace" in backend.executor.name:
             sdfg.add_scalar(name='__return', dtype=dace.int32)
 
             tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
-                                            inputs=None,
-                                            outputs=None,
-                                            code="__out = 1;",
-                                            language=dace.dtypes.Language.CPP,
-                                            side_effects=False,)
+                                              inputs=None,
+                                              outputs=None,
+                                              code="__out = 1;",
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=False,)
             state.add_node(tasklet)
 
             state.add_edge(tasklet, '__out', state.add_write('__return'), None, dace.Memlet(data='__return', subset='0'))
-            tasklet.out_connectors = {'__out':dace.bool}
+            tasklet.out_connectors = {'__out':dace.int32}
 
             return sdfg
 
