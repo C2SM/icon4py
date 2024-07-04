@@ -34,6 +34,7 @@ if "dace" in backend.executor.name:
     from dace.memlet import Memlet
     from dace.properties import CodeBlock
     from gt4py._core import definitions as core_defs
+    from gt4py.next.program_processors.runners.dace_iterator.utility import connectivity_identifier
     from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
     from icon4py.model.common.decomposition.definitions import DecompositionInfo, SingleNodeExchange
     from icon4py.model.common.orchestration.dtypes import *
@@ -75,14 +76,12 @@ def orchestration(method=True):
                     **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
                     **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
                     # offset providers
-                    **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
+                    **{f"{connectivity_identifier(k)}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
                     #
                     **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
-                    #
+                    # Symbols concretization
                     **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
-                    #
                     **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
-                    #
                     **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
                     })
 
