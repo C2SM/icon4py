@@ -105,7 +105,7 @@ def orchestration(method=True):
                                          recompile=False,
                                          distributed_compilation=False)(fuse_func)
 
-                    sdfg = daceP.to_sdfg(*args, **kwargs, simplify=False, validate=True, use_cache=True)
+                    sdfg = daceP.to_sdfg(self, simplify=False, validate=True, use_cache=True)
 
                     add_halo_exchanges(sdfg, exchange_obj, self.grid.offset_providers, **kwargs)
                     
