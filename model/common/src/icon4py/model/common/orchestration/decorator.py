@@ -109,7 +109,7 @@ def orchestration(method=True):
 
                     add_halo_exchanges(sdfg, exchange_obj, self.grid.offset_providers, **kwargs)
                     
-                    #sdfg.simplify(validate=True)
+                    sdfg.simplify(validate=True)
 
                     sdfg_args = daceP._create_sdfg_args(sdfg, args, kwargs)
                     if method:
@@ -135,8 +135,8 @@ def dace_inhibitor(f: Callable):
 
 
 @dace_inhibitor
-def wait(comm_handle: Union[bool, SingleNodeResult, MultiNodeResult]):
-    if isinstance(comm_handle, bool):
+def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
+    if isinstance(comm_handle, int):
         pass
     else:
         comm_handle.wait()
@@ -196,23 +196,23 @@ if "dace" in backend.executor.name:
     class DummyNestedSDFG(SDFGConvertible):
         """Dummy replacement of the manually placed halo exchanges"""
         def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
-                sdfg = dace.SDFG('DummyNestedSDFG')
-                state = sdfg.add_state()
+            sdfg = dace.SDFG('DummyNestedSDFG')
+            state = sdfg.add_state()
 
-                sdfg.add_scalar(name='__return', dtype=dace.bool)
+            sdfg.add_scalar(name='__return', dtype=dace.int32)
 
-                tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
-                                                inputs=None,
-                                                outputs=None,
-                                                code="__out = true;",
-                                                language=dace.dtypes.Language.CPP,
-                                                side_effects=False,)
-                state.add_node(tasklet)
+            tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
+                                            inputs=None,
+                                            outputs=None,
+                                            code="__out = 1;",
+                                            language=dace.dtypes.Language.CPP,
+                                            side_effects=False,)
+            state.add_node(tasklet)
 
-                state.add_edge(tasklet, '__out', state.add_write('__return'), None, dace.Memlet(data='__return', subset='0'))
-                tasklet.out_connectors = {'__out':dace.bool}
+            state.add_edge(tasklet, '__out', state.add_write('__return'), None, dace.Memlet(data='__return', subset='0'))
+            tasklet.out_connectors = {'__out':dace.bool}
 
-                return sdfg
+            return sdfg
 
         def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
             return {}
