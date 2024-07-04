@@ -52,7 +52,6 @@ build image:
     - apt-get update
     - python3 -m pip install --upgrade pip setuptools wheel
     - cd /icon4py
-    - pyversion_no_dot="${PYTHON_VERSION//./}"
     - pip install tox clang-format
     - python -c "import cupy"
     - ls "${TEST_DATA_PATH}"
@@ -70,3 +69,4 @@ build image:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
+    <<: *py310
