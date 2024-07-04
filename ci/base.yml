@@ -34,18 +34,23 @@ build baseimage:
   needs: ["build baseimage"]
   variables:
     # Unique image name based on commit SHA
-    PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py:$CI_COMMIT_SHORT_SHA
-    DOCKERFILE: ci/docker/checkout.Dockerfile
-    DOCKER_BUILD_ARGS: '["PYVERSION=${PYVERSION}", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
-    <<: *py310
+      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+      DOCKERFILE: ci/checkout.Dockerfile
+      DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
+      <<: *py310
   artifacts:
     reports:
       dotenv: build.env
 
+build image:
+  extends: .build_template
+  needs: ["build baseimage"]
+
 .test_template:
   extends: .container-runner-daint-gpu
+  needs: ["build image"]
   timeout: 8h
-  image: $PERSIST_IMAGE_NAME
+  image: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
     - apt-get update
     - python3 -m pip install --upgrade pip setuptools wheel
