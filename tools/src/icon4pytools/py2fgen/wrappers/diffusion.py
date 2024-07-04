@@ -208,6 +208,7 @@ def diffusion_init(
         vertical_config=vertical_config,
         vct_a=vct_a,
         vct_b=None,
+        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
     # metric state
