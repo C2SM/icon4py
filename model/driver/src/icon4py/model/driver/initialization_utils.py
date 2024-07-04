@@ -525,7 +525,7 @@ def model_initialization_gauss3d(
     # mount_lon     = 0.0    # (0.0)
     # mount_lat     = 0.0    # (0.0)
     # mount_height  = 100.0  # (100)
-    # mount_width   = 2000.0 # (1000)
+    # mount_width   = 1000.0 # (1000)
     nh_t0         = 300.0
     nh_u0         = 0.0
     nh_brunt_vais = 0.01
