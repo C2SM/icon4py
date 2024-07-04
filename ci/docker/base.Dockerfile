@@ -62,7 +62,7 @@ RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.ta
 ENV BOOST_ROOT /usr/local/
 
 # Install pyenv and Python version specified by PYVERSION
-ENV PYVERSION 3.10.9
+ARG PYVERSION
 RUN curl https://pyenv.run | bash
 
 ENV PYENV_ROOT /root/.pyenv

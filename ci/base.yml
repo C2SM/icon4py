@@ -12,11 +12,11 @@ stages:
   PYVERSION: 3.10.9
 
 # Base image build step with SHA256 checksum for caching
-build baseimage:
+build_baseimage:
   extends: .container-builder-cscs-zen2
   stage: baseimage
   before_script:
-    - DOCKER_TAG=`sha256sum ci/docker/base.Dockerfile | head -c 16`
+    - DOCKER_TAG=`sha256sum $DOCKERFILE | head -c 16`
     - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/base/icon4py:$DOCKER_TAG-$PYVERSION
     - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
@@ -28,10 +28,10 @@ build baseimage:
     DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "CI_PROJECT_DIR=$CI_PROJECT_DIR"]'
     <<: *py310
 
-.build_template:
+build_image:
   stage: build
   extends: .container-builder-cscs-zen2
-  needs: ["build baseimage"]
+  needs: ["build_baseimage"]
   variables:
       # Unique image name based on commit SHA
       PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
@@ -39,21 +39,14 @@ build baseimage:
       DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
       <<: *py310
 
-build image:
-  extends: .build_template
-  needs: ["build baseimage"]
-
 .test_template:
   extends: .container-runner-daint-gpu
-  needs: ["build image"]
+  needs: ["build_image"]
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
-    - apt-get update
-    - python3 -m pip install --upgrade pip setuptools wheel
-    - cd /icon4py
-    - pip install tox clang-format
     - python -c "import cupy"
+    - cd /icon4py
     - ls "${TEST_DATA_PATH}"
   variables:
     SLURM_JOB_NUM_NODES: 1
