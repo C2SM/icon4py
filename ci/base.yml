@@ -35,7 +35,7 @@ build baseimage:
   variables:
     # Unique image name based on commit SHA
       PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
-      DOCKERFILE: ci/checkout.Dockerfile
+      DOCKERFILE: ci/docker/checkout.Dockerfile
       DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
       <<: *py310
   artifacts:
