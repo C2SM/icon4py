@@ -37,6 +37,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -188,7 +189,9 @@ def diffusion_init(
         thslp_zdiffu=thslp_zdiffu,
         thhgtd_zdiffu=thhgtd_zdiffu,
         velocity_boundary_diffusion_denom=denom_diffu_v,
-        max_nudging_coeff=nudge_max_coeff,
+        max_nudging_coeff=nudge_max_coeff
+        / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,  # ICON already scales this, we
+        # need to unscale it as it will be rescaled in diffusion.py
         shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
