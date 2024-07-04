@@ -1,7 +1,7 @@
 include:
   - local: 'ci/base.yml'
 
-build:
+build image:
   extends: .build_template
   needs: ["build baseimage"]
 
