@@ -12,13 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from icon4py.model.common.settings import backend
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from typing import Union
 from icon4py.model.common.decomposition.definitions import SingleNodeResult
 from icon4py.model.common.decomposition.mpi_decomposition import MultiNodeResult
 
 if "dace" in backend.executor.name:
     import sys
+    from collections.abc import Sequence
     from dace.frontend.python.common import SDFGConvertible
     from typing import Any, Optional
     import site
@@ -101,7 +102,7 @@ def orchestration(method=True):
                 self._exchange.exchange = DummyNestedSDFG()
                 
                 with dace.config.temporary_config():
-                    configure_dace_env()
+                    configure_dace_temp_env()
 
                     daceP = dace.program(recreate_sdfg=False, regenerate_code=False, recompile=False, distributed_compilation=False)(fuse_func)
 
@@ -189,7 +190,7 @@ def wait(comm_handle: Union[bool, SingleNodeResult, MultiNodeResult]):
 
 
 if "dace" in backend.executor.name:
-    def configure_dace_env():
+    def configure_dace_temp_env():
         dace.config.Config.set("cache", value="unique") # no caching or clashes can happen between different processes (MPI)
         dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
         dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
