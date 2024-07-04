@@ -59,6 +59,7 @@ def orchestration(method=True):
                 for attr_name, attr_value in self.__dict__.items():
                     if isinstance(attr_value, GHexMultiNodeExchange) or isinstance(attr_value, SingleNodeExchange):
                         has_exchange = True
+                        exchange_obj = getattr(self, attr_name)
                         break
                 
                 if not has_exchange:
@@ -69,14 +70,14 @@ def orchestration(method=True):
 
                 kwargs.update({
                     # GHEX C++ ptrs
-                    "__context_ptr":expose_cpp_ptr(self._exchange._context) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
-                    "__comm_ptr":expose_cpp_ptr(self._exchange._comm) if isinstance(self._exchange, GHexMultiNodeExchange) else 0,
-                    **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(self._exchange._patterns[dim]) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
-                    **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(self._exchange._domain_descriptors[dim].__wrapped__) if isinstance(self._exchange, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+                    "__context_ptr":expose_cpp_ptr(exchange_obj._context) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
+                    "__comm_ptr":expose_cpp_ptr(exchange_obj._comm) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
+                    **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+                    **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
                     # offset providers
                     **{f"__connectivity_{k}":v.table for k,v in self.grid.offset_providers.items() if hasattr(v, "table")},
                     #
-                    **{f"__gids_{ind.name}_{dim.value}":self._exchange._decomposition_info.global_index(dim, ind) if isinstance(self._exchange, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
+                    **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
                     #
                     **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
                     #
@@ -95,11 +96,11 @@ def orchestration(method=True):
                         new_arg_.descriptor = PrognosticState_t
                 args = tuple(new_args)
 
-                tmp_self__exchange_exchange_and_wait = self._exchange.exchange_and_wait
-                tmp_self__exchange_exchange = self._exchange.exchange
+                tmp_self__exchange_exchange_and_wait = exchange_obj.exchange_and_wait
+                tmp_self__exchange_exchange = exchange_obj.exchange
                 
-                self._exchange.exchange_and_wait = DummyNestedSDFG()
-                self._exchange.exchange = DummyNestedSDFG()
+                exchange_obj.exchange_and_wait = DummyNestedSDFG()
+                exchange_obj.exchange = DummyNestedSDFG()
                 
                 with dace.config.temporary_config():
                     configure_dace_temp_env()
@@ -135,7 +136,7 @@ def orchestration(method=True):
                     sdfg = daceP._parse(args, kwargs)
 
                     # Automatically add halo exchange nodes
-                    halo_exchange(sdfg, self._exchange, self.grid.offset_providers, **kwargs)
+                    halo_exchange(sdfg, exchange_obj, self.grid.offset_providers, **kwargs)
 
                     #sdfg.simplify(validate=False)
 
@@ -167,8 +168,8 @@ def orchestration(method=True):
                             del sdfg_args[self_name]
                         result = binaryobj(**sdfg_args)
 
-                    self._exchange.exchange_and_wait = tmp_self__exchange_exchange_and_wait
-                    self._exchange.exchange = tmp_self__exchange_exchange
+                    exchange_obj.exchange_and_wait = tmp_self__exchange_exchange_and_wait
+                    exchange_obj.exchange = tmp_self__exchange_exchange
                     return result
             else:
                 fuse_func(*args, **kwargs)
