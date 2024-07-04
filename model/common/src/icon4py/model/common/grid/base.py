@@ -17,8 +17,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import Callable, Dict
 
-import gt4py.next.common as gt_common
-import gt4py.next.iterator.embedded as gt_embedded
+import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.common.utils as common_utils
@@ -68,9 +67,9 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[gt_common.Dimension, np.ndarray] = {}
-        self.size: Dict[gt_common.Dimension, int] = {}
-        self.offset_provider_mapping: Dict[str, tuple[Callable, gt_common.Dimension, ...]] = {}
+        self.connectivities: Dict[gtx.Dimension, np.ndarray] = {}
+        self.size: Dict[gtx.Dimension, int] = {}
+        self.offset_provider_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
 
     @property
     @abstractmethod
@@ -103,7 +102,7 @@ class BaseGrid(ABC):
         pass
 
     @abstractmethod
-    def _has_skip_values(self, dimension: gt_common.Dimension) -> bool:
+    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         pass
 
     @functools.cached_property
@@ -119,8 +118,8 @@ class BaseGrid(ABC):
         return offset_providers
 
     @common_utils.builder
-    def with_connectivities(self, connectivity: Dict[gt_common.Dimension, np.ndarray]):
-        self.connectivities.update({d: k.astype(int) for d, k in connectivity.items()})
+    def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
+        self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
     @common_utils.builder
@@ -137,8 +136,12 @@ class BaseGrid(ABC):
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
-
-        return gt_embedded.NeighborTableOffsetProvider(
+        assert (
+            self.connectivities[dim].dtype == gtx.int32
+        ), 'Neighbor table\'s "{}" data type must be int32. Instead it\'s "{}"'.format(
+            dim, self.connectivities[dim].dtype
+        )
+        return gtx.NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),
             from_dim,
             to_dim,
