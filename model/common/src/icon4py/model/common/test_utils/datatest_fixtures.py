@@ -258,7 +258,7 @@ def vn_only():
 
 @pytest.fixture
 def lowest_layer_thickness(experiment):
-    if experiment == REGIONAL_EXPERIMENT:
+    if experiment == utils.REGIONAL_EXPERIMENT:
         return 20.0
     else:
         return 50.0
@@ -266,9 +266,9 @@ def lowest_layer_thickness(experiment):
 
 @pytest.fixture
 def model_top_height(experiment):
-    if experiment == REGIONAL_EXPERIMENT:
+    if experiment == utils.REGIONAL_EXPERIMENT:
         return 23000.0
-    elif experiment == GLOBAL_EXPERIMENT:
+    elif experiment == utils.GLOBAL_EXPERIMENT:
         return 75000.0
     else:
         return 23500.0
@@ -281,9 +281,9 @@ def flat_height():
 
 @pytest.fixture
 def stretch_factor(experiment):
-    if experiment == REGIONAL_EXPERIMENT:
+    if experiment == utils.REGIONAL_EXPERIMENT:
         return 0.65
-    elif experiment == GLOBAL_EXPERIMENT:
+    elif experiment == utils.GLOBAL_EXPERIMENT:
         return 0.9
     else:
         return 1.0
@@ -291,9 +291,9 @@ def stretch_factor(experiment):
 
 @pytest.fixture
 def damping_height(experiment):
-    if experiment == REGIONAL_EXPERIMENT:
+    if experiment == utils.REGIONAL_EXPERIMENT:
         return 12500.0
-    elif experiment == GLOBAL_EXPERIMENT:
+    elif experiment == utils.GLOBAL_EXPERIMENT:
         return 50000.0
     else:
         return 45000.0
