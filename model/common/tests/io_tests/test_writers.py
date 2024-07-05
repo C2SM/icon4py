@@ -107,7 +107,7 @@ def test_initialize_writer_heights(test_path, random_name):
     heights = dataset.variables["height"]
     assert heights.units == "m"
     assert heights.datatype == np.float64
-    assert heights.long_name == "height value of half levels for flat topography"
+    assert heights.long_name == "height value of half levels without topography"
     assert heights.standard_name == cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
     assert len(heights) == grid.num_levels + 1
     assert heights[0] == 12000.0
