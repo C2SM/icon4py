@@ -12,7 +12,6 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-
 from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.metadata import provide_offset
 
@@ -47,7 +46,7 @@ def test_chainsize_neighbors(chain, expected):
 
 
 @pytest.mark.xfail(
-    reason="test will fail with an Attribute error as InvalidConnectivityException has becom unreachable"
+    reason="Test will fail with an AttributeError as InvalidConnectivityException has become unreachable."
 )
 def test_unsupported_connectivity_type():
     with pytest.raises(InvalidConnectivityException):
