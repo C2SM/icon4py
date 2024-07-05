@@ -332,7 +332,7 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     seralized_v2e = grid_savepoint.v2e()[0 : grid.num_vertices, :]
     # there are vertices at the boundary of a local domain or at a pentagon point that have less than
     # 6 neighbors hence there are "Missing values" in the grid file
@@ -354,7 +354,7 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     serialized_v2c = grid_savepoint.v2c()[0 : grid.num_vertices, :]
     # there are vertices that have less than 6 neighboring cells: either pentagon points or
     # vertices at the boundary of the domain for a limited area mode
@@ -404,7 +404,7 @@ def reset_invalid_index(index_array: np.ndarray):
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
 
     serialized_e2v = grid_savepoint.e2v()[0 : grid.num_edges, :]
     # all vertices in the system have to neighboring edges, there no edges that point nowhere
@@ -457,7 +457,7 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     serialized_e2c = grid_savepoint.e2c()[0 : grid.num_edges, :]
     e2c_table = grid.get_offset_provider("E2C").table
     assert_invalid_indices(serialized_e2c, grid_file)
@@ -475,7 +475,7 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
 
     serialized_c2e = grid_savepoint.c2e()[0 : grid.num_cells, :]
     # no cells with less than 3 neighboring edges exist, otherwise the cell is not there in the
@@ -496,7 +496,7 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
 def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     assert np.allclose(
         grid.get_offset_provider("C2E2C").table,
         grid_savepoint.c2e2c()[0 : grid.num_cells, :],
@@ -512,7 +512,7 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
 def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
         grid.get_offset_provider("C2E2CO").table,
@@ -530,7 +530,7 @@ def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     serialized_e2c2e = serialized_grid.get_offset_provider("E2C2E").table
     serialized_e2c2eO = serialized_grid.get_offset_provider("E2C2EO").table
@@ -560,7 +560,7 @@ def assert_unless_invalid(table, serialized_ref):
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     # the "far" (adjacent to edge normal ) is not always there, because ICON only calculates those starting from
     #   (lateral_boundary(EdgeDim) + 1) to end(EdgeDim)  (see mo_intp_coeffs.f90) and only for owned cells
     serialized_ref = grid_savepoint.e2c2v()[: grid.num_edges, :]
@@ -577,7 +577,7 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     c2v = grid.get_offset_provider("C2V").table
     assert np.allclose(c2v, grid_savepoint.c2v()[0 : grid.num_cells, :])
 
@@ -617,7 +617,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
         transformation=IndexTransformation(),
     )
     gm()
-    icon_grid = gm.get_grid()
+    icon_grid = gm.grid
     table = icon_grid.get_offset_provider("E2C2V").table
     assert_up_to_order(table, simple_grid.diamond_table)
 
@@ -870,7 +870,7 @@ def test_get_start_end_index_for_local_grid(
     grid_file, num_levels, dim, marker, start_index, end_index
 ):
     file = resolve_file_from_gridfile_name(grid_file)
-    from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
+    from_grid_file = init_grid_manager(file, num_levels=num_levels).grid
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
 
@@ -938,7 +938,7 @@ def test_get_start_end_index_for_global_grid(
     grid_file, num_levels, dim, marker, start_index, end_index
 ):
     file = resolve_file_from_gridfile_name(grid_file)
-    from_grid_file = init_grid_manager(file, num_levels=num_levels).get_grid()
+    from_grid_file = init_grid_manager(file, num_levels=num_levels).grid
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
 
@@ -952,7 +952,7 @@ def test_get_start_end_index_for_global_grid(
 )
 def test_grid_level_and_root(grid_file, global_num_cells):
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file, num_levels=10).get_grid()
+    grid = init_grid_manager(file, num_levels=10).grid
     assert global_num_cells == grid.global_num_cells
 
 
@@ -964,8 +964,7 @@ def test_c2e2c2e(simple_grid_gridfile):
         transformation=IndexTransformation(),
     )
     gm()
-    mesh = gm.get_grid()
-    table = mesh.get_offset_provider("C2E2C2E").table
+    table = gm.grid.get_offset_provider("C2E2C2E").table
     assert_up_to_order(table, simple.SimpleGridData.c2e2c2e_table)
 
 
@@ -978,7 +977,7 @@ def test_c2e2c2e(simple_grid_gridfile):
 def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
     file = resolve_file_from_gridfile_name(grid_file)
-    grid = init_grid_manager(file).get_grid()
+    grid = init_grid_manager(file).grid
     serialized_grid = grid_savepoint.construct_icon_grid(on_gpu=False)
     assert np.allclose(
         grid.get_offset_provider("C2E2C2E").table,
