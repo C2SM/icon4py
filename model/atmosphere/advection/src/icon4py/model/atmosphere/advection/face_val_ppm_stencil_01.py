@@ -77,6 +77,10 @@ def face_val_ppm_stencil_01(
     k: Field[[KDim], int32],
     elev: int32,
     z_slope: Field[[CellDim, KDim], float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _face_val_ppm_stencil_01(
         p_cc,
@@ -84,4 +88,5 @@ def face_val_ppm_stencil_01(
         k,
         elev,
         out=z_slope,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
