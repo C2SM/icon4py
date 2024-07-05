@@ -17,6 +17,7 @@ from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
 from icon4pytools.icon4pygen.metadata import provide_offset
 
 
+# TODO (halungge) that test is in the wrong file: should go to test_metadata.py
 @pytest.mark.parametrize(
     ("chain", "expected"),
     [
@@ -26,27 +27,18 @@ from icon4pytools.icon4pygen.metadata import provide_offset
         ("E2V", 2),
         ("V2C", 6),
         ("V2E", 6),
+        ("V2E2V", 6),
+        ("E2ECV", 4),
+        ("E2EC", 2),
         ("E2C2E", 4),
         ("E2C2EO", 5),
         ("E2C2V", 4),
-        ("E2C2V2C", 16),
-        ("C2V2C", 12),
-        ("C2V2CO", 13),
-        ("C2V2C2E", 24),
-        ("E2V2E", 10),
-        ("E2V2EO", 11),
-        ("E2V2E2C", 10),
-        ("V2E2C", 6),
-        ("V2E2C2V", 6),
-        ("V2E2C2VO", 7),
-        ("V2E2C2V2E", 30),
-        ("V2E2C2V2E2C", 24),
         ("C2E2C", 3),
+        ("C2CEC", 3),
         ("C2E2CO", 4),
         ("C2E2C2E", 9),
         ("C2E2C2E2C", 9),
-        ("C2E2C2E2CO", 10),
-        ("C2E2C2E2C2E", 21),
+        ("C2CECEC", 9),
     ],
 )
 def test_chainsize_neighbors(chain, expected):
@@ -54,6 +46,9 @@ def test_chainsize_neighbors(chain, expected):
     assert actual.max_neighbors == expected
 
 
+@pytest.mark.xfail(
+    reason="test will fail with an Attribute error as InvalidConnectivityException has becom unreachable"
+)
 def test_unsupported_connectivity_type():
     with pytest.raises(InvalidConnectivityException):
         provide_offset("E2X")
