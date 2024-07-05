@@ -31,7 +31,7 @@ requires-python = ">=3.10"
 
 [project.optional-dependencies]
 all = ["icon4py-common[ghex,netcdf]"]
-ghex = ["ghex", "mpi4py", "xugrid", "pymetis>2022.1", "scipy"]
+ghex = ["ghex", "mpi4py>=3.1.4", "xugrid", "pymetis>2022.1", "scipy"]
 netcdf = ["netcdf4>=1.6.0"]
 
 [project.urls]

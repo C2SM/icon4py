@@ -126,6 +126,7 @@ def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # noqa: F
         rank_mapping=simple_distribution,
         num_lev=1,
         face_face_connectivity=simple.SimpleGridData.c2e2c_table,
+        node_face_connectivity=simple.SimpleGridData.v2c_table,
     )
     my_owned_cells = halo_generator.owned_cells()
 
@@ -134,36 +135,45 @@ def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # noqa: F
     assert xp.setdiff1d(my_owned_cells, cell_own[processor_props.rank]).size == 0
 
 
-@pytest.mark.skip(reason="mpi.GATHER ???")
+@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-def test_cell_ownership_is_unique(processor_props, simple_ugrid):  # noqa: F811  # fixture
+def test_cell_ownership_is_unique(dim, processor_props, simple_ugrid):  # noqa: F811  # fixture
     grid = simple_ugrid
-    num_cells = simple.SimpleGrid._CELLS
     halo_generator = HaloGenerator(
         ugrid=grid,
         rank_info=processor_props,
         rank_mapping=simple_distribution,
         num_lev=1,
         face_face_connectivity=simple.SimpleGridData.c2e2c_table,
+        node_face_connectivity=simple.SimpleGridData.v2c_table,
     )
-    my_owned_cells = halo_generator.owned_cells()
-    print(f"rank {processor_props.rank} owns {my_owned_cells} ")
-    # assert that each cell is only owned by one rank
+    assert processor_props.comm.Get_size() == 4, "This test requires 4 MPI ranks."
+
+    decomposition_info = halo_generator.construct_decomposition_info()
+    owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     if not mpi4py.MPI.Is_initialized():
         mpi4py.MPI.Init()
+    # assert that each cell is only owned by one rank
+    comm = processor_props.comm
+
+    my_size = owned.shape[0]
+    local_sizes = xp.array(comm.gather(my_size, root=0))
+
     if processor_props.rank == 0:
-        gathered = -1 * xp.ones([processor_props.comm_size, num_cells], dtype=xp.int64)
+        gathered = xp.empty(sum(local_sizes), dtype=int)
+
     else:
         gathered = None
-    processor_props.comm.Gather(my_owned_cells, gathered, root=0)
+    comm.Gatherv(sendbuf=owned, recvbuf=(gathered, local_sizes), root=0)
     if processor_props.rank == 0:
-        print(gathered.shape)
-        print(gathered)
-    gathered = xp.where(gathered.reshape(processor_props.comm_size * 18) > 0)
-    assert gathered == simple_distribution.size - 1
-    assert gathered.size == len(xp.unique(gathered))
+        # check there are no duplicates
+        assert gathered.size == len(xp.unique(gathered))
+        # check the buffer has all global indices
+        assert xp.all(xp.sort(gathered) == global_indices(dim))
 
 
+# TODO (@halungge) this test can be run on 4MPI ranks or should we rather switch to a single node
+# that parametrizes the rank number
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim):  # noqa: F811  # fixture
     grid = simple_ugrid
@@ -209,3 +219,8 @@ def simple_ugrid() -> xu.Ugrid2d:
     )
 
     return grid
+
+
+def global_indices(dim: dims.Dimension) -> int:
+    mesh = simple.SimpleGrid()
+    return xp.arange(mesh.size[dim], dtype=xp.int32)
