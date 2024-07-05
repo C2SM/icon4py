@@ -129,7 +129,7 @@ class NETCDFWriter:
         heights.units = "m"
         heights.positive = "up"
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
-        heights.long_name = "height value of half levels for flat topography"
+        heights.long_name = "height value of half levels without topography"
         heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
         heights[:] = self._vertical_params.vct_a.ndarray
 
