@@ -66,46 +66,10 @@ def orchestration(method=True):
                 if not has_exchange:
                     return fuse_func(*args, **kwargs)
 
-                flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
-                kwargs.update({
-                    # DaCe symbols concretization
-                    **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
-                    **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
-                    **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
-                    # [misc] GHEX C++ ptrs, connectivity tables, etc.
-                    **dace_specific_kwargs(exchange_obj, self.grid),
-                    })
+                dace_symbols_concretization(self, exchange_obj, fuse_func, args, kwargs)
 
-                if id(self) not in compiled_sdfgs:
-                    compiled_sdfgs[id(self)] = {}
-
-                    tmp_exchange_and_wait = exchange_obj.exchange_and_wait
-                    tmp_exchange = exchange_obj.exchange
-
-                    # Replace the manually placed halo exchanges with dummy sdfgs
-                    exchange_obj.exchange_and_wait = DummyNestedSDFG()
-                    exchange_obj.exchange = DummyNestedSDFG()
-
-                    with dace.config.temporary_config():
-                        device_type = configure_dace_temp_env()
-
-                        compiled_sdfgs[id(self)]['dace_program'] = dace.program(auto_optimize=False,
-                                                                                device=dev_type_from_gt4py_to_dace(device_type),
-                                                                                distributed_compilation=False)(fuse_func)
-
-                        compiled_sdfgs[id(self)]['sdfg'] = compiled_sdfgs[id(self)]['dace_program'].to_sdfg(self, simplify=False, validate=True)
-
-                        add_halo_exchanges(compiled_sdfgs[id(self)]['sdfg'], exchange_obj, self.grid.offset_providers, **kwargs)
-                        
-                        compiled_sdfgs[id(self)]['sdfg'].simplify(validate=True)
-
-                        with hooks.invoke_sdfg_call_hooks(compiled_sdfgs[id(self)]['sdfg']) as sdfg:
-                            # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
-                            compiled_sdfgs[id(self)]['compiled_sdfg'] = sdfg.compile(validate=compiled_sdfgs[id(self)]['dace_program'].validate)
-
-                    # Restore the original exchange methods
-                    exchange_obj.exchange_and_wait = tmp_exchange_and_wait
-                    exchange_obj.exchange = tmp_exchange
+                # Parse and compile the fused SDFG -caches it-, i.e. every time the same fused function is called, the same SDFG is used
+                parse_and_compile_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs)
 
                 with dace.config.temporary_config():
                     configure_dace_temp_env()
@@ -114,11 +78,8 @@ def orchestration(method=True):
                     sdfg_args = compiled_sdfgs[id(self)]['dace_program']._create_sdfg_args(compiled_sdfgs[id(self)]['sdfg'], args, kwargs)
                     if method:
                         del sdfg_args[self_name]
-
-                    with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg:
-                        result = compiled_sdfgs[id(self)]['compiled_sdfg'](**sdfg_args)
-
-                    return result
+                    
+                    return compiled_sdfgs[id(self)]['compiled_sdfg'](**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
         return wrapper
@@ -139,6 +100,18 @@ def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
 
 
 if "dace" in backend.executor.name:
+    def dace_symbols_concretization(self, exchange_obj, fuse_func, args, kwargs):
+        flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
+        kwargs.update({
+            # DaCe symbols concretization
+            **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
+            **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
+            **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
+            # [misc] GHEX C++ ptrs, connectivity tables, etc.
+            **dace_specific_kwargs(exchange_obj, self.grid),
+            })
+
+
     def dace_specific_kwargs(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid) -> dict[str, Any]:
         return {
             # GHEX C++ ptrs
@@ -151,6 +124,40 @@ if "dace" in backend.executor.name:
             # TODO(kotsaloscv): Possibly needed for future feature, i.e., build GHEX patterns on the fly
             **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
         }
+
+
+    def parse_and_compile_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs):
+        """Function that parses and compiles the fused SDFG along with adding the halo exchanges."""
+        if id(self) not in compiled_sdfgs:
+            compiled_sdfgs[id(self)] = {}
+
+            tmp_exchange_and_wait = exchange_obj.exchange_and_wait
+            tmp_exchange = exchange_obj.exchange
+
+            # Replace the manually placed halo exchanges with dummy sdfgs
+            exchange_obj.exchange_and_wait = DummyNestedSDFG()
+            exchange_obj.exchange = DummyNestedSDFG()
+
+            with dace.config.temporary_config():
+                device_type = configure_dace_temp_env()
+
+                compiled_sdfgs[id(self)]['dace_program'] = dace.program(auto_optimize=False,
+                                                                        device=dev_type_from_gt4py_to_dace(device_type),
+                                                                        distributed_compilation=False)(fuse_func)
+
+                compiled_sdfgs[id(self)]['sdfg'] = compiled_sdfgs[id(self)]['dace_program'].to_sdfg(self, simplify=False, validate=True)
+
+                add_halo_exchanges(compiled_sdfgs[id(self)]['sdfg'], exchange_obj, self.grid.offset_providers, **kwargs)
+                
+                compiled_sdfgs[id(self)]['sdfg'].simplify(validate=True)
+
+                with hooks.invoke_sdfg_call_hooks(compiled_sdfgs[id(self)]['sdfg']) as sdfg:
+                    # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
+                    compiled_sdfgs[id(self)]['compiled_sdfg'] = sdfg.compile(validate=compiled_sdfgs[id(self)]['dace_program'].validate)
+
+            # Restore the original exchange methods
+            exchange_obj.exchange_and_wait = tmp_exchange_and_wait
+            exchange_obj.exchange = tmp_exchange
 
 
     def mod_args_for_dace_structures(fuse_func, args):
