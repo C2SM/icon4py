@@ -11,9 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import os
 
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
@@ -33,21 +31,21 @@ from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
+    GAUSS3D_EXPERIMENT,
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
-    GAUSS3D_EXPERIMENT,
 )
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     dallclose,
 )
+from icon4py.model.driver import icon_configuration
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.driver import icon_configuration
 
 from .utils import (
     construct_diffusion_config,
@@ -171,7 +169,6 @@ def test_run_timeloop_single_step(
             damping_height,
             ndyn_substeps=ndyn_substeps,
         )
-
 
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()

@@ -14,15 +14,15 @@
 import pytest
 
 from icon4py.model.common.test_utils.datatest_utils import (
-    JABW_EXPERIMENT,
     GAUSS3D_EXPERIMENT,
+    JABW_EXPERIMENT,
 )
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
 )
 from icon4py.model.driver.initialization_utils import (
-    model_initialization_jabw,
     model_initialization_gauss3d,
+    model_initialization_jabw,
 )
 
 
@@ -140,15 +140,21 @@ def test_gauss3d_initial_condition(
     # only verifying those assigned in the IC rather than all (at least for now)
     assert dallclose(
         prognostic_state_now.rho.asnumpy(),
-        data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).rho_now().asnumpy()
+        data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
+        .rho_now()
+        .asnumpy(),
     )
 
     assert dallclose(
         prognostic_state_now.exner.asnumpy(),
-        data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).exner_now().asnumpy()
+        data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
+        .exner_now()
+        .asnumpy(),
     )
 
     assert dallclose(
         prognostic_state_now.theta_v.asnumpy(),
-        data_provider.from_savepoint_nonhydro_init(1, '2001-01-01T00:00:04.000', 0).theta_v_now().asnumpy()
+        data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
+        .theta_v_now()
+        .asnumpy(),
     )

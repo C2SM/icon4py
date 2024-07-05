@@ -72,15 +72,13 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_metric_state_for_diffusion,
 )
 from icon4py.model.driver.testcase_functions import (
-    hydrostatic_adjustment_numpy,
     hydrostatic_adjustment_constant_thetav_numpy,
+    hydrostatic_adjustment_numpy,
 )
 
 
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
-INITIALIZATION_ERROR_MSG = (
-    "The requested experiment type is not implemented."
-)
+INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
 
 SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
@@ -445,6 +443,7 @@ def model_initialization_jabw(
         prognostic_state_next,
     )
 
+
 def model_initialization_gauss3d(
     icon_grid: IconGrid,
     cell_param: CellParams,
@@ -517,17 +516,21 @@ def model_initialization_gauss3d(
 
     mask_array_edge_start_plus1_to_edge_end = np.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
-    mask = np.repeat(np.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1)
+    mask = np.repeat(
+        np.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
+    )
     primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
     # Define test case parameters
-    # The topography can only be read from serialized data for now
-    # mount_lon     = 0.0    # (0.0)
-    # mount_lat     = 0.0    # (0.0)
-    # mount_height  = 100.0  # (100)
-    # mount_width   = 1000.0 # (1000)
-    nh_t0         = 300.0
-    nh_u0         = 0.0
+    # The topography can only be read from serialized data for now, then these
+    # variables should be defined here and used to compute the idealized
+    # topography:
+    # - mount_lon
+    # - mount_lat
+    # - mount_height
+    # - mount_width
+    nh_t0 = 300.0
+    nh_u0 = 0.0
     nh_brunt_vais = 0.01
     log.info("Topography can only be read from serialized data for now.")
 
@@ -538,16 +541,18 @@ def model_initialization_gauss3d(
 
     # Vertical temperature profile
     for k_index in range(num_levels - 1, -1, -1):
-        z_help = (nh_brunt_vais / GRAV)**2 * geopot[:, k_index]
+        z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, k_index]
         # profile of theta is explicitly given
         theta_v_numpy[:, k_index] = nh_t0 * np.exp(z_help)
 
     # Lower boundary condition for exner pressure
-    if (nh_brunt_vais != 0.0):
-        z_help = (nh_brunt_vais / GRAV)**2 * geopot[:, num_levels-1]
-        exner_numpy[:, num_levels-1] = (GRAV / nh_brunt_vais)**2 / nh_t0 / CPD * (np.exp(-z_help)-1.0)+1.0
+    if nh_brunt_vais != 0.0:
+        z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, num_levels - 1]
+        exner_numpy[:, num_levels - 1] = (GRAV / nh_brunt_vais) ** 2 / nh_t0 / CPD * (
+            np.exp(-z_help) - 1.0
+        ) + 1.0
     else:
-        exner_numpy[:, num_levels-1] = 1.0 - geopot[:, num_levels-1] / CPD / nh_t0
+        exner_numpy[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / CPD / nh_t0
     log.info("Vertical computations completed.")
 
     # Compute hydrostatically balanced exner, by integrating the (discretized!)
@@ -588,7 +593,9 @@ def model_initialization_gauss3d(
     pressure = as_field((CellDim, KDim), pressure_numpy)
     theta_v = as_field((CellDim, KDim), theta_v_numpy)
     pressure_ifc_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
-    pressure_ifc_numpy[:, -1] = P0REF # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
+    pressure_ifc_numpy[
+        :, -1
+    ] = P0REF  # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
     pressure_ifc = as_field((CellDim, KDim), pressure_ifc_numpy)
 
     vn_next = as_field((EdgeDim, KDim), vn_numpy)
@@ -691,7 +698,7 @@ def model_initialization_gauss3d(
         diffusion_diagnostic_state,
         solve_nonhydro_diagnostic_state,
         prep_adv,
-        0.0, # divdamp_fac_o2 only != 0 for data assimilation
+        0.0,  # divdamp_fac_o2 only != 0 for data assimilation
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
