@@ -107,19 +107,10 @@ def orchestration(method=True):
                     exchange_obj.exchange_and_wait = tmp_exchange_and_wait
                     exchange_obj.exchange = tmp_exchange
 
-                # Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures
-                new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
-                new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
-                for new_arg_ in new_args:
-                    if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):
-                        new_arg_.descriptor = DiffusionDiagnosticState_t
-                    if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):
-                        new_arg_.descriptor = PrognosticState_t
-                args = tuple(new_args)
-                
                 with dace.config.temporary_config():
                     configure_dace_temp_env()
 
+                    args = mod_args_for_dace_structures(fuse_func, args)
                     sdfg_args = compiled_sdfgs[id(self)]['dace_program']._create_sdfg_args(compiled_sdfgs[id(self)]['sdfg'], args, kwargs)
                     if method:
                         del sdfg_args[self_name]
@@ -160,6 +151,18 @@ if "dace" in backend.executor.name:
             # TODO(kotsaloscv): Possibly needed for future feature, i.e., build GHEX patterns on the fly
             **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
         }
+
+
+    def mod_args_for_dace_structures(fuse_func, args):
+        """Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures"""
+        new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
+        new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+        for new_arg_ in new_args:
+            if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = DiffusionDiagnosticState_t
+            if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = PrognosticState_t
+        return tuple(new_args)
 
 
     def configure_dace_temp_env():
