@@ -69,7 +69,7 @@ DEL_T_BG: Final[wpfloat] = DELTA_TEMPERATURE
 _H_SCAL_BG: Final[wpfloat] = 10000.0
 
 # Math constants
-dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
+DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 
 # Implementation constants
 #: default physics to dynamics time step ratio

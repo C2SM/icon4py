@@ -30,7 +30,10 @@ def square_wrapper_module():
     return "icon4pytools.py2fgen.wrappers.simple"
 
 
-def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags):
+def compile_fortran_code(
+    plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
+):
+    shared_library = f"{plugin_name}_{backend.lower()}"
     command = [
         f"{compiler}",
         "-cpp",
@@ -39,7 +42,7 @@ def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, ex
         "-L.",
         f"{plugin_name}.f90",
         str(samples_path / f"{fortran_driver}.f90"),
-        f"-l{plugin_name}",
+        f"-l{shared_library}",
         "-o",
         plugin_name,
         *list(extra_compiler_flags),
@@ -82,6 +85,7 @@ def run_test_case(
             extra_compiler_flags,
             expected_error_code,
             env_vars,
+            backend=backend,
         )
 
 
@@ -101,10 +105,11 @@ def compile_and_run_fortran(
     extra_compiler_flags,
     expected_error_code,
     env_vars,
+    backend,
 ):
     try:
         compile_fortran_code(
-            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags
+            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Compilation failed: {e}\n{e.stderr}\n{e.stdout}")
@@ -126,9 +131,7 @@ def compile_and_run_fortran(
     "backend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("ROUNDTRIP", ""),
-        ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("ROUNDTRIP", ""),
+        ("CPU", ""),
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
