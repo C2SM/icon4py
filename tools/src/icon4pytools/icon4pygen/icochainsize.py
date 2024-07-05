@@ -212,17 +212,17 @@ class IcoChainSize:
         for element in chain[1::]:
             current_location_type = element
             current_locations = set()
-            assert current_location_type != previous_location_type
-            connection = Connection(previous_location_type, current_location_type)
+            if current_location_type != previous_location_type:
+                connection = Connection(previous_location_type, current_location_type)
 
-            for func_name, dims in cls._CHAIN_DISPATCHER.items():
-                start, end = dims
-                if connection.start == start and connection.end == end:
-                    for previous_location in previous_locations:
-                        func = globals()[func_name]
-                        neighbors = func(previous_location)
-                        for neighbor in neighbors:
-                            current_locations.add(neighbor)
+                for func_name, dims in cls._CHAIN_DISPATCHER.items():
+                    start, end = dims
+                    if connection.start == start and connection.end == end:
+                        for previous_location in previous_locations:
+                            func = globals()[func_name]
+                            neighbors = func(previous_location)
+                            for neighbor in neighbors:
+                                current_locations.add(neighbor)
 
             previous_locations = current_locations
             previous_location_type = current_location_type
