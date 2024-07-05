@@ -1,7 +1,7 @@
-git+https://github.com/ghex-org/GHEX.git#subdirectory=bindings/python
+git+https://github.com/ghex-org/GHEX.git@master#subdirectory=bindings/python
 -r base-requirements-dev.txt
 # icon4py model
--e ./model/common'[all]'
+-e ./model/common[all]
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
 -e ./model/atmosphere/diffusion

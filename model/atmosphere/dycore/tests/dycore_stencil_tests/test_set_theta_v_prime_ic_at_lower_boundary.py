@@ -25,7 +25,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 from .test_interpolate_to_surface import interpolate_to_surface_numpy
 
 
-class TestMoSolveNonhydroStencil11Upper(StencilTest):
+class TestInitThetaVPrimeIcAtLowerBoundary(StencilTest):
     PROGRAM = set_theta_v_prime_ic_at_lower_boundary
     OUTPUTS = ("z_theta_v_pr_ic", "theta_v_ic")
 
@@ -62,8 +62,8 @@ class TestMoSolveNonhydroStencil11Upper(StencilTest):
             theta_ref_ic=theta_ref_ic,
             z_theta_v_pr_ic=z_theta_v_pr_ic,
             theta_v_ic=theta_v_ic,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(3),
+            vertical_start=3,
             vertical_end=int32(grid.num_levels),
         )

@@ -1,3 +1,7 @@
+# nvidia
+*.ncu-rep
+
+
 ### Custom ####
 _build
 _local
@@ -7,6 +11,7 @@ tmp
 testdata
 simple_mesh*.nc
 /prof
+.profile
 
 ### GT4Py ####
 .gt_cache/

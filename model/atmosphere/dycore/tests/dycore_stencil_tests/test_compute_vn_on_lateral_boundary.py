@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil29(StencilTest):
+class TestComputeVnOnLateralBoundary(StencilTest):
     PROGRAM = compute_vn_on_lateral_boundary
     OUTPUTS = ("vn_new",)
 
@@ -44,8 +44,8 @@ class TestMoSolveNonhydroStencil29(StencilTest):
             vn_now=vn_now,
             vn_new=vn_new,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

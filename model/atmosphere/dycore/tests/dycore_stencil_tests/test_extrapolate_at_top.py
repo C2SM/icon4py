@@ -56,7 +56,7 @@ class TestExtrapolateAtTop(StencilTest):
             wgtfacq_e=wgtfacq_e,
             vn=vn,
             vn_ie=vn_ie,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
             vertical_start=int32(grid.num_levels),
             vertical_end=int32(grid.num_levels + 1),

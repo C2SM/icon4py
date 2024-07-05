@@ -13,7 +13,6 @@
 
 import numpy as np
 from gt4py.next.ffront.fbuiltins import int32
-from gt4py.next.program_processors.runners.gtfn import run_gtfn
 
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
@@ -23,10 +22,8 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
-
-
-backend = run_gtfn
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):
@@ -35,7 +32,7 @@ def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: 
 
 
 def bdy_divdamp_numpy(coeff: float, field: np.array):
-    return 0.75 / (coeff + constants.dbl_eps) * np.abs(field)
+    return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
 def test_caclulate_scal_divdamp_order_24():
@@ -85,7 +82,7 @@ def test_calculate_bdy_divdamp():
     out = zero_field(grid, KDim)
     coeff = 0.3
     _calculate_bdy_divdamp.with_backend(backend)(
-        scal_divdamp, coeff, constants.dbl_eps, out=out, offset_provider={}
+        scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
     )
     assert dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
 
@@ -112,7 +109,7 @@ def test_calculate_divdamp_fields():
         mean_cell_area,
         divdamp_fac_o2,
         nudge_max_coeff,
-        constants.dbl_eps,
+        constants.DBL_EPS,
         out=(scal_divdamp, boundary_divdamp),
         offset_provider={},
     )

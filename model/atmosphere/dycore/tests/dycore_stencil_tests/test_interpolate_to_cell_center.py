@@ -30,15 +30,16 @@ def interpolate_to_cell_center_numpy(
     grid, interpolant: np.array, e_bln_c_s: np.array, **kwargs
 ) -> np.array:
     e_bln_c_s = np.expand_dims(e_bln_c_s, axis=-1)
+    c2ce = grid.get_offset_provider("C2CE").table
+
     interpolation = np.sum(
-        interpolant[grid.connectivities[C2EDim]]
-        * e_bln_c_s[grid.get_offset_provider("C2CE").table],
+        interpolant[grid.connectivities[C2EDim]] * e_bln_c_s[c2ce],
         axis=1,
     )
     return interpolation
 
 
-class TestMoVelocityAdvectionStencil09(StencilTest):
+class TestInterpolateToCellCenter(StencilTest):
     PROGRAM = interpolate_to_cell_center
     OUTPUTS = ("interpolation",)
 
@@ -57,8 +58,8 @@ class TestMoVelocityAdvectionStencil09(StencilTest):
             interpolant=interpolant,
             e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
             interpolation=interpolation,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

@@ -95,7 +95,7 @@ def _prep_gauss_quadrature_c_list_stencil(
     z_eta_3_4 = 1.0 + zeta_3
     z_eta_4_4 = 1.0 + zeta_4
 
-    famask_bool = where(famask_int == int32(1), True, False)
+    famask_bool = where(famask_int == 1, True, False)
     p_coords_dreg_v_1_x = where(famask_bool, p_coords_dreg_v_1_x, 0.0)
     p_coords_dreg_v_2_x = where(famask_bool, p_coords_dreg_v_2_x, 0.0)
     p_coords_dreg_v_3_x = where(famask_bool, p_coords_dreg_v_3_x, 0.0)

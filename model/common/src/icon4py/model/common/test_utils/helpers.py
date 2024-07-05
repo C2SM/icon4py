@@ -24,14 +24,10 @@ from gt4py.next import as_field
 from hypothesis import strategies as st
 from hypothesis import target
 from hypothesis.extra.numpy import arrays as hypothesis_array
-from gt4py.next.program_processors.otf_compile_executor import (
-    CachedOTFCompileExecutor,
-    OTFCompileExecutor,
-)
+
+from ..grid.simple import SimpleGrid
 
 from ..grid.base import BaseGrid
-from ..grid.simple import SimpleGrid
-from ..grid.icon import IconGrid
 from ..type_alias import wpfloat
 
 
@@ -56,6 +52,20 @@ def objShape(
         return obj
     if isinstance(obj, np.ndarray):
         return obj.shape
+
+def is_python(backend) -> bool:
+    # want to exclude python backends:
+    #   - cannot run on embedded: because of slicing
+    #   - roundtrip is very slow on large grid
+    return is_embedded(backend) or is_roundtrip(backend)
+
+
+def is_embedded(backend) -> bool:
+    return backend is None
+
+
+def is_roundtrip(backend) -> bool:
+    return backend.__name__ == "roundtrip" if backend else False
 
 
 def _shape(
@@ -127,7 +137,8 @@ def constant_field(
     grid: BaseGrid, value: float, *dims: gt_common.Dimension, dtype=wpfloat
 ) -> gt_common.Field:
     return as_field(
-        dims, value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype)
+        dims,
+        value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
 
 
@@ -160,7 +171,7 @@ def maximizeTendency(fld, refFld, varname):
 
 def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
     """Convert a 2D sparse field to a 1D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     return numpy_to_1D_sparse_field(buffer, target_dim)
 
 
@@ -174,7 +185,7 @@ def numpy_to_1D_sparse_field(field: np.ndarray, dim: gt_common.Dimension) -> gt_
 
 def flatten_first_two_dims(*dims: gt_common.Dimension, field: gt_common.Field) -> gt_common.Field:
     """Convert a n-D sparse field to a (n-1)-D flattened (Felix-style) sparse field."""
-    buffer = field.asnumpy()
+    buffer = field.ndarray
     old_shape = buffer.shape
     assert len(old_shape) >= 2
     flattened_size = old_shape[0] * old_shape[1]
@@ -234,7 +245,9 @@ def _test_validation(self, grid, backend, input_data):
         )
 
         assert np.allclose(
-            input_data[name].asnumpy()[gtslice], reference_outputs[name][refslice], equal_nan=True
+            input_data[name].asnumpy()[gtslice],
+            reference_outputs[name][refslice],
+            equal_nan=True,
         ), f"Validation failed for '{name}'"
 
 
@@ -279,7 +292,7 @@ class StencilTest:
     """
 
     PROGRAM: ClassVar[Program]
-    OUTPUTS: ClassVar[tuple[str, ...]]
+    OUTPUTS: ClassVar[tuple[str | Output, ...]]
 
     def __init_subclass__(cls, **kwargs):
         # Add two methods for verification and benchmarking. In order to have names that
@@ -288,25 +301,6 @@ class StencilTest:
         super().__init_subclass__(**kwargs)
         setattr(cls, f"test_{cls.__name__}", _test_validation)
         setattr(cls, f"test_{cls.__name__}_benchmark", _test_execution_benchmark)
-
-
-@pytest.fixture
-def uses_icon_grid_with_otf(backend, grid):
-    """Check whether we are using a compiled backend with the icon_grid.
-
-    Is needed to skip certain stencils where the execution domain needs to be restricted or boundary taken into account.
-    """
-    if hasattr(backend, "executor") and isinstance(grid, IconGrid):
-        if isinstance(backend.executor, (OTFCompileExecutor, CachedOTFCompileExecutor)):
-            return True
-        try:
-            from gt4py.next.program_processors.runners import dace_iterator
-
-            if backend in {dace_iterator.run_dace_cpu, dace_iterator.run_dace_gpu}:
-                return True
-        except ImportError:
-            pass
-    return False
 
 
 def reshape(arr: np.array, shape: tuple[int, ...]):

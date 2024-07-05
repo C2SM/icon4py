@@ -16,5 +16,4 @@ from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtu
 )
 from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
     backend,
-    uses_icon_grid_with_otf,
 )

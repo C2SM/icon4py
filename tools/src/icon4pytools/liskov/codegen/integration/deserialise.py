@@ -53,6 +53,10 @@ from icon4pytools.liskov.parsing.utils import (
 TOLERANCE_ARGS = ["abs_tol", "rel_tol"]
 DEFAULT_DECLARE_IDENT_TYPE = "REAL(wp)"
 DEFAULT_DECLARE_SUFFIX = "before"
+DEFAULT_STARTSTENCIL_ACC_PRESENT = "true"
+DEFAULT_STARTSTENCIL_MERGECOPY = "false"
+DEFAULT_STARTSTENCIL_COPIES = "true"
+DEFAULT_STARTSTENCIL_OPTIONAL_MODULE = "None"
 
 logger = setup_logger(__name__)
 
@@ -286,12 +290,13 @@ class StartStencilDataFactoryBase(DataFactoryBase):
         for i, directive in enumerate(directives):
             named_args = parsed["content"][directive_cls.__name__][i]
             additional_attrs = self._pop_additional_attributes(dtype, named_args)
-            acc_present = string_to_bool(pop_item_from_dict(named_args, "accpresent", "true"))
+            acc_present = string_to_bool(
+                pop_item_from_dict(named_args, "accpresent", DEFAULT_STARTSTENCIL_ACC_PRESENT)
+            )
             stencil_name = _extract_stencil_name(named_args, directive)
             bounds = self._make_bounds(named_args)
             fields = self._make_fields(named_args, field_dimensions)
             fields_w_tolerance = self._update_tolerances(named_args, fields)
-
             deserialised.append(
                 dtype(
                     name=stencil_name,
@@ -305,14 +310,27 @@ class StartStencilDataFactoryBase(DataFactoryBase):
         return deserialised
 
     def _pop_additional_attributes(
-        self, dtype: Type[StartStencilData | StartFusedStencilData], named_args: dict[str, Any]
+        self,
+        dtype: Type[StartStencilData | StartFusedStencilData],
+        named_args: dict[str, Any],
     ) -> dict:
         """Pop and return additional attributes specific to StartStencilData."""
         additional_attrs = {}
         if dtype == StartStencilData:
-            mergecopy = string_to_bool(pop_item_from_dict(named_args, "mergecopy", "false"))
-            copies = string_to_bool(pop_item_from_dict(named_args, "copies", "true"))
-            additional_attrs = {"mergecopy": mergecopy, "copies": copies}
+            mergecopy = string_to_bool(
+                pop_item_from_dict(named_args, "mergecopy", DEFAULT_STARTSTENCIL_MERGECOPY)
+            )
+            copies = string_to_bool(
+                pop_item_from_dict(named_args, "copies", DEFAULT_STARTSTENCIL_COPIES)
+            )
+            optional_module = pop_item_from_dict(
+                named_args, "optional_module", DEFAULT_STARTSTENCIL_OPTIONAL_MODULE
+            )
+            additional_attrs = {
+                "mergecopy": mergecopy,
+                "copies": copies,
+                "optional_module": optional_module,
+            }
         return additional_attrs
 
     @staticmethod

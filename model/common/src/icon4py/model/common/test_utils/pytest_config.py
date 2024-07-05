@@ -16,6 +16,11 @@ import os
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
 
+from icon4py.model.common.test_utils.datatest_utils import (
+    GLOBAL_EXPERIMENT,
+    REGIONAL_EXPERIMENT,
+)
+
 
 def pytest_configure(config):
     config.addinivalue_line("markers", "datatest: this test uses binary data")
@@ -95,7 +100,7 @@ def pytest_generate_tests(metafunc):
         gpu_backends = ["gtfn_gpu"]
 
         try:
-            from gt4py.next.program_processors.runners.dace_iterator import (
+            from gt4py.next.program_processors.runners.dace import (
                 run_dace_cpu,
                 run_dace_gpu,
             )
@@ -136,12 +141,24 @@ def pytest_generate_tests(metafunc):
 
                 grid_instance = SimpleGrid()
             elif selected_grid_type == "icon_grid":
-                from icon4py.model.common.test_utils.grid_utils import get_icon_grid
+                from icon4py.model.common.test_utils.grid_utils import (
+                    get_icon_grid_from_gridfile,
+                )
 
-                grid_instance = get_icon_grid(on_gpu)
+                grid_instance = get_icon_grid_from_gridfile(REGIONAL_EXPERIMENT, on_gpu)
+            elif selected_grid_type == "icon_grid_global":
+                from icon4py.model.common.test_utils.grid_utils import (
+                    get_icon_grid_from_gridfile,
+                )
+
+                grid_instance = get_icon_grid_from_gridfile(GLOBAL_EXPERIMENT, on_gpu)
             else:
                 raise ValueError(f"Unknown grid type: {selected_grid_type}")
             metafunc.parametrize("grid", [grid_instance], ids=[f"grid={selected_grid_type}"])
         except ValueError as err:
-            available_grids = ["simple_grid", "icon_grid"]
+            available_grids = [
+                "simple_grid",
+                "icon_grid",
+                "icon_grid_global",
+            ]
             raise Exception(f"{err}. Select from: {available_grids}") from err

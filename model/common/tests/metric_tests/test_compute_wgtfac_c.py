@@ -28,24 +28,12 @@ import pytest
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate_indices
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
-from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
-    data_provider,
-    datapath,
-    download_ser_data,
-    experiment,
-    grid_savepoint,
-    icon_grid,
-    interpolation_savepoint,
-    metrics_savepoint,
-    processor_props,
-    ranked_data_path,
-)
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
-def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # noqa: F811  # fixture
+def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # fixture
     wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
     z_ifc = metrics_savepoint.z_ifc()

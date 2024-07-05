@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil27(StencilTest):
+class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
     PROGRAM = apply_weighted_2nd_and_4th_order_divergence_damping
     OUTPUTS = ("vn",)
 
@@ -55,8 +55,8 @@ class TestMoSolveNonhydroStencil27(StencilTest):
             nudgecoeff_e=nudgecoeff_e,
             z_graddiv2_vn=z_graddiv2_vn,
             vn=vn,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

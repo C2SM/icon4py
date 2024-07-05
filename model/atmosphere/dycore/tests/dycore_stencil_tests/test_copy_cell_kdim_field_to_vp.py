@@ -26,7 +26,7 @@ def copy_cell_kdim_field_to_vp_numpy(field: np.array) -> np.array:
     return field_copy
 
 
-class TestMoVelocityAdvectionStencil11(StencilTest):
+class TestCopyCellKdimFieldToVp(StencilTest):
     PROGRAM = copy_cell_kdim_field_to_vp
     OUTPUTS = ("field_copy",)
 
@@ -42,8 +42,8 @@ class TestMoVelocityAdvectionStencil11(StencilTest):
         return dict(
             field=field,
             field_copy=field_copy,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

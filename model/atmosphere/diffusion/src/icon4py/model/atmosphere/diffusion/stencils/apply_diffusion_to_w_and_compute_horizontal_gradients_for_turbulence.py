@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
@@ -25,6 +26,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -53,11 +55,11 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     k = broadcast(k, (CellDim, KDim))
     dwdx, dwdy = (
         where(
-            int32(0) < k,
+            0 < k,
             _calculate_horizontal_gradients_for_turbulence(w_old, geofac_grg_x, geofac_grg_y),
             (dwdx, dwdy),
         )
-        if type_shear == int32(2)
+        if type_shear == 2
         else (dwdx, dwdy)
     )
 
@@ -70,7 +72,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     )
 
     w = where(
-        (int32(0) < k) & (k < nrdmax) & (interior_idx <= cell) & (cell < halo_idx),
+        (0 < k) & (k < nrdmax) & (interior_idx <= cell) & (cell < halo_idx),
         _apply_nabla2_to_w_in_upper_damping_layer(w, diff_multfac_n2w, area, z_nabla2_c),
         w,
     )
@@ -78,7 +80,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     return w, dwdx, dwdy
 
 
-@program
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     area: Field[[CellDim], wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],

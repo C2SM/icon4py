@@ -71,7 +71,7 @@ def add_extra_diffusion_for_w_con_approaching_cfl_numpy(
     return ddt_w_adv
 
 
-class TestMoVelocityAdvectionStencil18(StencilTest):
+class TestAddExtraDiffusionForWConApproachingCfl(StencilTest):
     PROGRAM = add_extra_diffusion_for_w_con_approaching_cfl
     OUTPUTS = ("ddt_w_adv",)
 
@@ -137,8 +137,8 @@ class TestMoVelocityAdvectionStencil18(StencilTest):
             scalfac_exdiff=scalfac_exdiff,
             cfl_w_limit=cfl_w_limit,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

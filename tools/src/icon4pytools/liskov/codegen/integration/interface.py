@@ -89,6 +89,7 @@ class BaseStartStencilData(CodeGenInput):
 class StartStencilData(BaseStartStencilData):
     mergecopy: Optional[bool]
     copies: Optional[bool]
+    optional_module: Optional[str]
 
 
 @dataclass

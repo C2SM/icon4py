@@ -12,14 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import warnings
 from pathlib import Path
-from typing import Any, Iterable, List, Optional
+from typing import Any, Iterable, List
 
-from gt4py.next import common
 from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
-from icon4py.model.common.dimension import Koff
+from gt4py.next.type_system import type_specifications as ts
+from icon4py.model.common.dimension import KDim, Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
 from icon4pytools.icon4pygen.metadata import StencilInfo
@@ -33,10 +33,14 @@ V_END = "vertical_end"
 DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
 GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 
+_SIZE_TYPE = ts.ScalarType(kind=ts.ScalarKind.INT32)
 
-def transform_and_configure_fencil(fencil: itir.FencilDefinition) -> itir.FencilDefinition:
+
+def transform_and_configure_fencil(
+    fencil: itir.FencilDefinition,
+) -> itir.FencilDefinition:
     """Transform the domain representation and configure the FencilDefinition parameters."""
-    grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
+    grid_size_symbols = [itir.Sym(id=arg, type=_SIZE_TYPE) for arg in GRID_SIZE_ARGS]
 
     for closure in fencil.closures:
         if not len(closure.domain.args) == 2:
@@ -97,7 +101,7 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
     """Get domain limit params that are not present in param list."""
     param_ids = [p.id for p in params]
     missing_args = [s for s in DOMAIN_ARGS if s not in param_ids]
-    return (itir.Sym(id=p) for p in missing_args)
+    return (itir.Sym(id=p, type=_SIZE_TYPE) for p in missing_args)
 
 
 def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
@@ -118,7 +122,6 @@ def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
 def generate_gtheader(
     fencil: itir.FencilDefinition,
     offset_provider: dict[str, Connectivity | Dimension],
-    column_axis: Optional[common.Dimension],
     imperative: bool,
     temporaries: bool,
     **kwargs: Any,
@@ -146,7 +149,7 @@ def generate_gtheader(
     return translation.generate_stencil_source(
         transformed_fencil,
         offset_provider=offset_provider,
-        column_axis=column_axis,
+        column_axis=KDim,  # only used for ScanOperator
         **kwargs,
     )
 
@@ -160,10 +163,9 @@ class GTHeader:
     def __call__(self, outpath: Path, imperative: bool, temporaries: bool) -> None:
         """Generate C++ code using the GTFN backend and write it to a file."""
         gtheader = generate_gtheader(
-            fencil=self.stencil_info.itir,
+            fencil=self.stencil_info.fendef,
             offset_provider=self.stencil_info.offset_provider,
-            column_axis=self.stencil_info.column_axis,
             imperative=imperative,
             temporaries=temporaries,
         )
-        write_string(gtheader, outpath, f"{self.stencil_info.itir.id}.hpp")
+        write_string(gtheader, outpath, f"{self.stencil_info.fendef.id}.hpp")

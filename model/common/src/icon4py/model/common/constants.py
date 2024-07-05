@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import sys
+from enum import IntEnum
 from typing import Final
 
 from icon4py.model.common.type_alias import wpfloat
@@ -29,6 +30,8 @@ CPD = SPECIFIC_HEAT_CONSTANT_PRESSURE
 SPECIFIC_HEAT_CONSTANT_VOLUME: Final[wpfloat] = CPD - RD
 CVD: Final[wpfloat] = SPECIFIC_HEAT_CONSTANT_VOLUME
 CVD_O_RD: Final[wpfloat] = CVD / RD
+RD_O_CPD: Final[wpfloat] = RD / CPD
+CPD_O_RD: Final[wpfloat] = CPD / RD
 
 #: Gas constant for water vapor [J/K/kg], rv in ICON.
 GAS_CONSTANT_WATER_VAPOR: Final[wpfloat] = 461.51
@@ -37,6 +40,7 @@ RV: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR
 #: Av. gravitational acceleration [m/s^2]
 GRAVITATIONAL_ACCELERATION: Final[wpfloat] = 9.80665
 GRAV: Final[wpfloat] = GRAVITATIONAL_ACCELERATION
+GRAV_O_RD: Final[wpfloat] = GRAV / RD
 
 #: reference pressure for Exner function [Pa]
 REFERENCE_PRESSURE: Final[wpfloat] = 100000.0
@@ -45,6 +49,12 @@ P0REF: Final[wpfloat] = REFERENCE_PRESSURE
 #: sea level pressure [Pa]
 SEAL_LEVEL_PRESSURE: Final[wpfloat] = 101325.0
 P0SL_BG: Final[wpfloat] = SEAL_LEVEL_PRESSURE
+
+# average earth radius in [m]
+EARTH_RADIUS: Final[float] = 6.371229e6
+
+#: Earth angular velocity [rad/s]
+EARTH_ANGULAR_VELOCITY: Final[wpfloat] = 7.29212e-5
 
 #: sea level temperature for reference atmosphere [K]
 SEA_LEVEL_TEMPERATURE: Final[wpfloat] = 288.15
@@ -59,16 +69,12 @@ DEL_T_BG: Final[wpfloat] = DELTA_TEMPERATURE
 _H_SCAL_BG: Final[wpfloat] = 10000.0
 
 # Math constants
-dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
+DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 
 # Implementation constants
 #: default physics to dynamics time step ratio
 # TODO (magdalena) not a constant, this is a default config parameter
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
-
-#: Klemp (2008) type Rayleigh damping
-# TODO (magdalena) not a constant, move somewhere else, convert to enum
-RAYLEIGH_KLEMP: Final[int] = 2
 
 # Constants for physics schemes
 #: Melting temperature of ice/snow [K]
@@ -94,4 +100,8 @@ RCPD = 1.0 / CPD
 #: Inverse of specific heat at constant volume [K*kg/J]
 RCVD = 1.0 / CVD
 
-
+class RayleighType(IntEnum):
+    RAYLEIGH_CLASSIC: Final[
+        int
+    ] = 1  # classical Rayleigh damping, which makes use of a reference state.
+    RAYLEIGH_KLEMP: Final[int] = 2  # Klemp (2008) type Rayleigh damping

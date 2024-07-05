@@ -17,10 +17,12 @@ import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
+import icon4py.model.common.dimension
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
+from gt4py.next.ffront.fbuiltins import FieldOffset
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
@@ -40,11 +42,10 @@ SPECIAL_DOMAIN_MARKERS = [H_START, H_END, V_START, V_END]
 
 @dataclass(frozen=True)
 class StencilInfo:
-    itir: itir.FencilDefinition
+    fendef: itir.FencilDefinition
     fields: dict[str, FieldInfo]
     connectivity_chains: list[eve.concepts.SymbolRef]
     offset_provider: dict
-    column_axis: Optional[Dimension]
 
 
 @dataclass(frozen=True)
@@ -93,11 +94,11 @@ def _ignore_subscript(node: past.Expr) -> past.Name:
 def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
     """Extract and format the in/out fields from a Program."""
     assert all(
-        is_list_of_names(body.args) for body in fvprog.past_node.body
+        is_list_of_names(body.args) for body in fvprog.past_stage.past_node.body
     ), "Found unsupported expression in input arguments."
-    input_arg_ids = set(arg.id for body in fvprog.past_node.body for arg in body.args)  # type: ignore[attr-defined] # Checked in the assert
+    input_arg_ids = set(arg.id for body in fvprog.past_stage.past_node.body for arg in body.args)  # type: ignore[attr-defined] # Checked in the assert
 
-    out_args = (body.kwargs["out"] for body in fvprog.past_node.body)
+    out_args = (body.kwargs["out"] for body in fvprog.past_stage.past_node.body)
     output_fields = []
     for out_arg in out_args:
         if isinstance(out_arg, past.TupleExpr):
@@ -113,7 +114,7 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
             inp=(field_node.id in input_arg_ids),
             out=(field_node.id in output_arg_ids),
         )
-        for field_node in fvprog.past_node.params
+        for field_node in fvprog.past_stage.past_node.params
         if field_node.id not in SPECIAL_DOMAIN_MARKERS
     }
 
@@ -123,8 +124,8 @@ def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
 def _get_domain_arg_ids(fvprog: Program) -> set[Optional[eve.concepts.SymbolRef]]:
     """Collect all argument names that are used within the 'domain' keyword argument."""
     domain_arg_ids = []
-    if "domain" in fvprog.past_node.body[0].kwargs.keys():
-        domain_arg = fvprog.past_node.body[0].kwargs["domain"]
+    if "domain" in fvprog.past_stage.past_node.body[0].kwargs.keys():
+        domain_arg = fvprog.past_stage.past_node.body[0].kwargs["domain"]
         assert isinstance(domain_arg, past.Dict)
         for arg in domain_arg.values_:
             for arg_elt in arg.elts:
@@ -140,8 +141,8 @@ def import_definition(name: str) -> Program | FieldOperator | types.FunctionType
         The stencil program and module are assumed to have the same name.
     """
     module_name, member_name = name.split(":")
-    fencil = getattr(importlib.import_module(module_name), member_name)
-    return fencil
+    program = getattr(importlib.import_module(module_name), member_name)
+    return program
 
 
 def get_fvprog(fencil_def: Program | Any) -> Program:
@@ -175,14 +176,20 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
     and pass the tokens after to the algorithm below
     """
+    offset = getattr(icon4py.model.common.dimension, chain)
+    assert isinstance(offset, FieldOffset)
+
     # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
     new_sparse_field = any(len(token) > 1 for token in chain.split("2")) and not chain.endswith("O")
     if new_sparse_field:
         chain = chain.split("2")[1]
+
     skip_values = False
     if is_global and "V" in chain:
         if chain.count("V") > 1 or not chain.endswith("V"):
             skip_values = True
+
+    # TODO: this algorithm is duplicated in MultiLocation.to_dim_list
     location_chain = []
     include_center = False
     for letter in chain:
@@ -198,23 +205,34 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
             pass
         else:
             raise InvalidConnectivityException(location_chain)
+
     return DummyConnectivity(
-        max_neighbors=IcoChainSize.get(location_chain) + include_center,
+        max_neighbors=IcoChainSize.get(location_chain)
+        + include_center,  # TODO: we already have a function calc_num_neighbors that does this
         has_skip_values=skip_values,
-        origin_axis=location_chain[0],
-        neighbor_axis=location_chain[-1],
+        origin_axis=offset.target[0],
+        neighbor_axis=offset.source,
     )
 
 
 def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     """Scan PAST node for offsets and return a set of all offsets."""
-    all_types = fvprog.past_node.pre_walk_values().if_isinstance(past.Symbol).getattr("type")
+    all_types = (
+        fvprog.past_stage.past_node.pre_walk_values()
+        .if_isinstance(past.Symbol)
+        .getattr("type")
+        .to_list()
+    )
     all_field_types = [
         symbol_type for symbol_type in all_types if isinstance(symbol_type, ts.FieldType)
     ]
+
     all_dims = set(i for j in all_field_types for i in j.dims)
+
+    fendef = fvprog.itir
+
     all_offset_labels = (
-        fvprog.itir.pre_walk_values()
+        fendef.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .if_isinstance(str)
@@ -234,12 +252,12 @@ def get_stencil_info(
     """Generate StencilInfo dataclass from a fencil definition."""
     fvprog = get_fvprog(fencil_def)
     offsets = scan_for_offsets(fvprog)
-    itir = fvprog.itir
+    fendef = fvprog.itir
+
     fields = _get_field_infos(fvprog)
-    column_axis = fvprog._column_axis
 
     offset_provider = {}
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset, is_global)
     connectivity_chains = [offset for offset in offsets if offset != Koff.value]
-    return StencilInfo(itir, fields, connectivity_chains, offset_provider, column_axis)
+    return StencilInfo(fendef, fields, connectivity_chains, offset_provider)

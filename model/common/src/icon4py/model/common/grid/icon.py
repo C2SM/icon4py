@@ -10,13 +10,16 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+from dataclasses import dataclass
+from functools import cached_property
 
 import numpy as np
-from gt4py.next.common import Dimension
+from gt4py.next.common import Dimension, DimensionKind
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -42,17 +45,29 @@ from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
 
 
+@dataclass(frozen=True)
+class GlobalGridParams:
+    root: int
+    level: int
+
+    @cached_property
+    def num_cells(self):
+        return 20.0 * self.root**2 * 4.0**self.level
+
+
 class IconGrid(BaseGrid):
     def __init__(self):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self.start_indices = {}
         self.end_indices = {}
+        self.global_properties = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
             "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
             "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
             "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
+            "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
             "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
             "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
@@ -80,6 +95,10 @@ class IconGrid(BaseGrid):
         self.start_indices[dim] = start_indices.astype(int32)
         self.end_indices[dim] = end_indices.astype(int32)
 
+    @builder
+    def with_global_params(self, global_params: GlobalGridParams):
+        self.global_properties = global_params
+
     @property
     def num_levels(self):
         return self.config.num_levels if self.config else 0
@@ -87,6 +106,16 @@ class IconGrid(BaseGrid):
     @property
     def num_cells(self):
         return self.config.num_cells if self.config else 0
+
+    @property
+    def global_num_cells(self):
+        """
+        Return the number of cells in the global grid.
+
+        If the global grid parameters are not set, it assumes that we are in a one node scenario
+        and returns the local number of cells.
+        """
+        return self.global_properties.num_cells if self.global_properties else self.num_cells
 
     @property
     def num_vertices(self):
@@ -100,6 +129,31 @@ class IconGrid(BaseGrid):
     def limited_area(self):
         # defined in mo_grid_nml.f90
         return self.config.limited_area
+
+    def _has_skip_values(self, dimension: Dimension) -> bool:
+        """
+        Determine whether a sparse dimension has skip values.
+
+        For the icosahedral global grid skip values are only present for the pentagon points. In the local area model there are also skip values at the boundaries when
+        accessing neighbouring cells or edges from vertices.
+        """
+        assert dimension.kind == DimensionKind.LOCAL, "only local dimensions can have skip values"
+        if dimension in (V2EDim, V2CDim):
+            return True
+        elif self.limited_area:
+            if dimension in (
+                C2E2C2E2CDim,
+                C2E2C2EDim,
+                E2CDim,
+                C2E2CDim,
+                C2E2CODim,
+                E2C2VDim,
+                E2C2EDim,
+                E2C2EODim,
+            ):
+                return True
+        else:
+            return False
 
     @property
     def n_shift(self):

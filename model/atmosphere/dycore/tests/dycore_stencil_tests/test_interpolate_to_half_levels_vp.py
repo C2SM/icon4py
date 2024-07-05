@@ -35,7 +35,7 @@ def interpolate_to_half_levels_vp_numpy(
     return interpolation_to_half_levels_vp
 
 
-class TestMoSolveNonhydroStencil05(StencilTest):
+class TestInterpolateToHalfLevelsVp(StencilTest):
     PROGRAM = interpolate_to_half_levels_vp
     OUTPUTS = ("interpolation_to_half_levels_vp",)
 
@@ -56,8 +56,8 @@ class TestMoSolveNonhydroStencil05(StencilTest):
             wgtfac_c=wgtfac_c,
             interpolant=interpolant,
             interpolation_to_half_levels_vp=interpolation_to_half_levels_vp,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(1),
+            vertical_start=1,
             vertical_end=int32(grid.num_levels),
         )

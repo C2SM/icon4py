@@ -59,7 +59,7 @@ def compute_advective_normal_wind_tendency_numpy(
     return ddt_vn_apc
 
 
-class TestMoVelocityAdvectionStencil19(StencilTest):
+class TestComputeAdvectiveNormalWindTendency(StencilTest):
     PROGRAM = compute_advective_normal_wind_tendency
     OUTPUTS = ("ddt_vn_apc",)
 
@@ -123,8 +123,8 @@ class TestMoVelocityAdvectionStencil19(StencilTest):
             z_w_con_c_full=z_w_con_c_full,
             ddqz_z_full_e=ddqz_z_full_e,
             ddt_vn_apc=ddt_vn_apc,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

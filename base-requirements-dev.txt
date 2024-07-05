@@ -6,9 +6,10 @@ git+https://github.com/GridTools/serialbox#egg=serialbox&subdirectory=src/serial
 #-e git+https://github.com/nfarabullini/gt4py.git@temp_patch_tuple_fields_scan#egg=gt4py
 
 # PyPI
+numpy<2.0.0
 bump2version>=1.0.1
 coverage[toml]>=5.0
-mypy>=0.942
+mypy>=1.7.0
 pre-commit~=2.15
 pytest>=6.1
 pytest-benchmark>=4.0.0
@@ -21,7 +22,7 @@ ruff>=0.2.2
 setuptools>=40.8.0
 tox >= 3.25
 hypothesis >= 6.75.3
-typing-extensions==4.5.0
+typing-extensions>=4.6.0
 types-cffi>=1.15
 wheel>=0.37.1
 wget>=3.2

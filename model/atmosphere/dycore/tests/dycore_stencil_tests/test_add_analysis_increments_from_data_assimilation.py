@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil50(StencilTest):
+class TestAddAnalysisIncrementsFromDataAssimilation(StencilTest):
     PROGRAM = add_analysis_increments_from_data_assimilation
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
@@ -55,8 +55,8 @@ class TestMoSolveNonhydroStencil50(StencilTest):
             rho_incr=rho_incr,
             exner_incr=exner_incr,
             iau_wgt_dyn=iau_wgt_dyn,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

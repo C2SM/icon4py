@@ -28,6 +28,7 @@ from icon4py.model.common.dimension import (
     Koff,
     VertexDim,
 )
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -65,7 +66,7 @@ def _compute_advective_normal_wind_tendency(
     return astype(ddt_vn_apc_wp, vpfloat)
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_advective_normal_wind_tendency(
     z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
     coeff_gradekin: Field[[ECDim], vpfloat],

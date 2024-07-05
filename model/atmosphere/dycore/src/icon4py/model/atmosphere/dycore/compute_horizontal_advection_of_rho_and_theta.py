@@ -16,6 +16,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 
 from icon4py.model.common.dimension import E2C, E2EC, CellDim, ECDim, EdgeDim, KDim
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -175,7 +176,7 @@ def _compute_horizontal_advection_of_rho_and_theta(
     return z_rho_e, z_theta_v_e
 
 
-@program(grid_type=GridType.UNSTRUCTURED)
+@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: Field[[EdgeDim, KDim], wpfloat],
     p_vt: Field[[EdgeDim, KDim], vpfloat],

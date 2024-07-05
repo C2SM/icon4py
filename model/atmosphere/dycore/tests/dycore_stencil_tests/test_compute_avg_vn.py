@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil31(StencilTest):
+class TestComputeAvgVn(StencilTest):
     PROGRAM = compute_avg_vn
     OUTPUTS = ("z_vn_avg",)
 
@@ -44,8 +44,8 @@ class TestMoSolveNonhydroStencil31(StencilTest):
             e_flx_avg=e_flx_avg,
             vn=vn,
             z_vn_avg=z_vn_avg,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_edges),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

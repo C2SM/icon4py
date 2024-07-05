@@ -65,6 +65,29 @@ def test_directive_semantics_validation_unbalanced_stencil_directives(
 
 
 @mark.parametrize(
+    "stencil, directive",
+    [
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START STENCIL( name = foo ; x = bar )\n!$DSL END STENCIL(name = foo)",
+        ),
+        (
+            SINGLE_STENCIL_WITH_COMMENTS,
+            "!$DSL START FUSED STENCIL( name = foo ; x = bar )\n!$DSL END FUSED STENCIL(name = foo)",
+        ),
+    ],
+)
+def test_directive_semantics_validation_allow_whitespaces_in_name_arg(
+    make_f90_tmpfile, stencil, directive
+):
+    fpath = make_f90_tmpfile(stencil + directive)
+    opath = fpath.with_suffix(".gen")
+    directives = scan_for_directives(fpath)
+    parser = DirectivesParser(fpath, opath)
+    parser(directives)
+
+
+@mark.parametrize(
     "directive",
     (
         [StartStencil("!$DSL START STENCIL(name=foo, x=bar)", 0, 0)],
@@ -106,11 +129,11 @@ def test_directive_semantics_validation_repeated_directives(make_f90_tmpfile, di
     [
         (
             SINGLE_STENCIL_WITH_COMMENTS,
-            "!$DSL START STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END STENCIL(name=mo_nh_diffusion_stencil_06)",
+            "!$DSL START STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)\n!$DSL END STENCIL(name=apply_nabla2_to_vn_in_lateral_boundary)",
         ),
         (
             SINGLE_FUSED,
-            "!$DSL START FUSED STENCIL(name=mo_nh_diffusion_stencil_06)\n!$DSL END FUSED STENCIL(name=mo_nh_diffusion_stencil_06)",
+            "!$DSL START FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)\n!$DSL END FUSED STENCIL(name=calculate_diagnostic_quantities_for_turbulence)",
         ),
     ],
 )
