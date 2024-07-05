@@ -13,6 +13,7 @@
 import datetime
 import logging
 import pathlib
+import uuid
 from typing import Callable
 
 import click
@@ -76,7 +77,7 @@ class TimeLoop:
         self._validate_config()
 
         # current simulation date
-        self._simulation_date: datetime = self.run_config.start_date
+        self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
@@ -294,6 +295,7 @@ def initialize(
     props: ProcessProperties,
     serialization_type: SerializationType,
     experiment_type: ExperimentType,
+    grid_id: uuid.UUID,
     grid_root,
     grid_level,
 ):
@@ -325,13 +327,16 @@ def initialize(
     log.info(f"reading configuration: experiment {experiment_type}")
     config = read_config(experiment_type)
 
-    decomp_info = read_decomp_info(file_path, props, serialization_type, grid_root, grid_level)
+    decomp_info = read_decomp_info(
+        file_path, props, serialization_type, grid_id, grid_root, grid_level
+    )
 
     log.info(f"initializing the grid from '{file_path}'")
     icon_grid = read_icon_grid(
         file_path,
         rank=props.rank,
         ser_type=serialization_type,
+        grid_id=grid_id,
         grid_root=grid_root,
         grid_level=grid_level,
     )
@@ -341,6 +346,7 @@ def initialize(
         vertical_grid_config=config.vertical_grid_config,
         rank=props.rank,
         ser_type=serialization_type,
+        grid_id=grid_id,
         grid_root=grid_root,
         grid_level=grid_level,
     )
@@ -434,7 +440,14 @@ def initialize(
 @click.option("--experiment_type", default="any", help="experiment selection")
 @click.option("--grid_root", default=2, help="experiment selection")
 @click.option("--grid_level", default=4, help="experiment selection")
-def main(input_path, run_path, mpi, serialization_type, experiment_type, grid_root, grid_level):
+@click.option(
+    "--grid_id",
+    default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
+    help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
+)
+def main(
+    input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
+):
     """
     Run the driver.
 
@@ -456,6 +469,7 @@ def main(input_path, run_path, mpi, serialization_type, experiment_type, grid_ro
     2. run time loop
     """
     parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
+    grid_id = uuid.UUID(grid_id)
     configure_logging(run_path, experiment_type, parallel_props)
     (
         timeloop,
