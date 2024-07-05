@@ -362,7 +362,7 @@ class CellParams:
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
-        if (global_num_cells == 0):
+        if global_num_cells == 0:
             # Compute from the area array (should be a torus grid)
             mean_cell_area = area.asnumpy().mean()
         else:

@@ -18,11 +18,11 @@ from .data_handling import download_and_extract
 from .datatest_utils import (
     DATA_URIS,
     DATA_URIS_APE,
-    DATA_URIS_JABW,
     DATA_URIS_GAUSS3D,
+    DATA_URIS_JABW,
+    GAUSS3D_EXPERIMENT,
     GLOBAL_EXPERIMENT,
     JABW_EXPERIMENT,
-    GAUSS3D_EXPERIMENT,
     REGIONAL_EXPERIMENT,
     SERIALIZED_DATA_PATH,
     create_icon_serial_data_provider,
