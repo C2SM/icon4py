@@ -103,8 +103,8 @@ class ParallelLogger(logging.Filter):
 def get_multinode_properties(s: definitions.MultiNodeRun) -> definitions.ProcessProperties:
     return _get_processor_properties(with_mpi=True)
 
-
-@dataclass(frozen=True)
+# TODO (@halungge) changed for dev/testing set back to frozen
+@dataclass(frozen=False)
 class MPICommProcessProperties(definitions.ProcessProperties):
     comm: mpi4py.MPI.Comm = None
 
