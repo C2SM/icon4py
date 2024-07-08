@@ -33,7 +33,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=22.11
 ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_11.8
-ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/22.11/${HPC_SDK_NAME}.tar.gz
+ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     mkdir -p /opt/nvidia && \
@@ -76,4 +76,5 @@ RUN pyenv update && \
 
 ENV PATH="/root/.pyenv/shims:${PATH}"
 
-RUN pip install --upgrade pip setuptools wheel tox clang-format cupy-cuda11x
+ARG CUPY_PACKAGE=cupy-cuda11x
+RUN pip install --upgrade pip setuptools wheel tox clang-format ${CUPY_PACKAGE}
