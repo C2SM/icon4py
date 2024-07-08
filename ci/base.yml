@@ -15,7 +15,11 @@ variables:
 .build_baseimage:
   stage: baseimage
   before_script:
-    - DOCKER_TAG=`sha256sum $DOCKERFILE | head -c 16`
+    - DATA_TAG=`mktemp`
+    - cat $DOCKERFILE > $DATA_TAG
+    - echo $DOCKER_BUILD_ARGS >> $DATA_TAG
+    - DOCKER_TAG=`sha256sum $DATA_TAG | head -c 16`
+    - rm -f $DATA_TAG
     - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION
     - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
@@ -83,12 +87,7 @@ build_image_aarch64:
 .test_template_aarch64:
   extends: [.container-runner-todi-gh200, .test_template]
   needs: [build_image_aarch64]
-  before_script:
-  # TODO: remove start of CUDA MPS daemon once CI-CD can handle CRAY_CUDA_MPS
-  - CUDA_MPS_PIPE_DIRECTORY="/tmp/nvidia-mps" nvidia-cuda-mps-control -d
   variables:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
-    # limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage
-    NUM_PROCESSES: 32
