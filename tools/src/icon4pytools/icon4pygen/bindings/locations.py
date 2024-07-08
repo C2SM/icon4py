@@ -15,7 +15,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from gt4py.next.ffront.fbuiltins import Dimension
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import global_dimensions
 
 from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
 
@@ -73,8 +73,7 @@ class MultiLocation(metaclass=ABCMeta):
         return self.chain[item]
 
     def to_dim_list(self) -> list[Dimension]:
-        map_to_dim = {Cell: CellDim, Edge: EdgeDim, Vertex: VertexDim}
-        return [map_to_dim[c.__class__] for c in self.chain]
+        return [global_dimensions[c.__class__] for c in self.chain]
 
 
 class CompoundLocation(MultiLocation):
