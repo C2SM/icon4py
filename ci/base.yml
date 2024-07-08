@@ -45,7 +45,7 @@ build_baseimage_aarch64:
   stage: image
   variables:
       # Unique image name based on commit SHA
-      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
       DOCKERFILE: ci/docker/checkout.Dockerfile
       DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
 build_image_x86_64:
@@ -57,7 +57,7 @@ build_image_aarch64:
 
 .test_template:
   timeout: 8h
-  image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  image: $CSCS_REGISTRY_PATH/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
     - python -c "import cupy"
     - cd /icon4py
