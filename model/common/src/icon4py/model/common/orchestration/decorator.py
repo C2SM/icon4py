@@ -132,7 +132,7 @@ if "dace" in backend.executor.name:
         }
 
 
-    def parse_and_compile_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs):
+    def parse_and_compile_sdfg(compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, kwargs: Any):
         """Function that parses and compiles the fused SDFG along with adding the halo exchanges."""
         if id(self) not in compiled_sdfgs:
             compiled_sdfgs[id(self)] = {}
@@ -242,7 +242,7 @@ if "dace" in backend.executor.name:
             return ([],[])
 
 
-    def add_halo_exchanges(sdfg, exchange, offset_providers, **kwargs):
+    def add_halo_exchanges(sdfg: dace.SDFG, exchange: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Any], **kwargs: Any):
         '''Add halo exchange nodes to the SDFG only where needed.'''
         if not isinstance(exchange, GHexMultiNodeExchange):
             return
