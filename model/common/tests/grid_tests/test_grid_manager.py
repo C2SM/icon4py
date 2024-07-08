@@ -58,7 +58,7 @@ from icon4py.model.common.grid.grid_manager import (
 )
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.simple import SimpleGrid
-from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 
 from .utils import R02B04_GLOBAL, resolve_file_from_gridfile_name
 
@@ -586,7 +586,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
 def init_grid_manager(fname, num_levels=65, transformation=None):
     if transformation is None:
         transformation = ToGt4PyTransformation()
-    grid_manager = GridManager(transformation, fname, VerticalGridSize(num_levels))
+    grid_manager = GridManager(transformation, fname, VerticalGridConfig(num_levels))
     grid_manager()
     return grid_manager
 
@@ -626,7 +626,7 @@ def test_grid_manager_diamond_offset(simple_grid_gridfile):
 def test_gridmanager_given_file_not_found_then_abort():
     fname = "./unknown_grid.nc"
     with pytest.raises(SystemExit) as error:
-        gm = GridManager(IndexTransformation(), fname, VerticalGridSize(num_lev=80))
+        gm = GridManager(IndexTransformation(), fname, VerticalGridConfig(num_levels=80))
         gm()
         assert error.type == SystemExit
         assert error.value == 1

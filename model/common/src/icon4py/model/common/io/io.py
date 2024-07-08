@@ -151,7 +151,7 @@ class IOMonitor(monitor.Monitor):
     def __init__(
         self,
         config: IOConfig,
-        vertical_size: v_grid.VerticalModelParams,
+        vertical_size: v_grid.VerticalGridParams,
         horizontal_size: h_grid.HorizontalGridSize,
         grid_file_name: str,
         grid_id: uuid.UUID,
@@ -257,7 +257,7 @@ class FieldGroupMonitor(monitor.Monitor):
     def __init__(
         self,
         config: FieldGroupIOConfig,
-        vertical: v_grid.VerticalModelParams,
+        vertical: int,
         horizontal: h_grid.HorizontalGridSize,
         grid_id: uuid.UUID,
         time_units: str = cf_utils.DEFAULT_TIME_UNIT,
@@ -301,7 +301,7 @@ class FieldGroupMonitor(monitor.Monitor):
 
     def _init_dataset(
         self,
-        vertical_params: v_grid.VerticalModelParams,
+        vertical_params: v_grid.VerticalGridParams,
         horizontal_size: h_grid.HorizontalGridSize,
     ) -> None:
         """Initialise the dataset with global attributes and dimensions.

@@ -60,7 +60,7 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridS
 # |20e  \   |23e  \   |26e  \
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
-from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 
 
 @dataclasses.dataclass
@@ -472,10 +472,10 @@ class SimpleGrid(BaseGrid):
         horizontal_grid_size = HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
-        vertical_grid_size = VerticalGridSize(num_lev=10)
+        vertical_grid_config = VerticalGridConfig(num_levels=10)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
-            vertical_config=vertical_grid_size,
+            vertical_size=vertical_grid_config.num_levels,
         )
 
         connectivity_dict = {

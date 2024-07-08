@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid import base, vertical
+from icon4py.model.common.grid import base as grid_def, vertical as v_grid
 from icon4py.model.common.io import cf_utils, data, writers
 from icon4py.model.common.io.writers import (
     NETCDFWriter,
@@ -50,11 +50,15 @@ def test_filter_by_standard_name_non_existing_name():
 
 def initialized_writer(
     test_path, random_name, grid=test_io.simple_grid
-) -> tuple[NETCDFWriter, base.BaseGrid]:
-    vertical_config = grid.config.vertical_config
-    num_levels = vertical_config.num_lev
+) -> tuple[NETCDFWriter, grid_def.BaseGrid]:
+    num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
-    vertical_params = vertical.VerticalModelParams(gtx.as_field((KDim,), heights))
+    vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config,
+        vct_a=gtx.as_field((KDim,), heights),
+        vct_b=None,
+    )
     horizontal = grid.config.horizontal_config
     fname = str(test_path.absolute()) + "/" + random_name + ".nc"
     writer = NETCDFWriter(

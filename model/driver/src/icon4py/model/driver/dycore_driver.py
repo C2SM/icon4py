@@ -10,10 +10,10 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import datetime
 import logging
+import pathlib
 import uuid
-from datetime import datetime
-from pathlib import Path
 from typing import Callable
 
 import click
@@ -77,7 +77,7 @@ class TimeLoop:
         self._validate_config()
 
         # current simulation date
-        self._simulation_date: datetime = self.run_config.start_date
+        self._simulation_date: datetime.datetime = self.run_config.start_date
 
         self._is_first_step_in_simulation: bool = not self.run_config.restart_mode
 
@@ -291,7 +291,7 @@ class TimeLoop:
 
 
 def initialize(
-    file_path: Path,
+    file_path: pathlib.Path,
     props: ProcessProperties,
     serialization_type: SerializationType,
     experiment_type: ExperimentType,
@@ -343,7 +343,7 @@ def initialize(
     log.info(f"reading input fields from '{file_path}'")
     (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
         file_path,
-        damping_height=config.run_config.damping_height,
+        vertical_grid_config=config.vertical_grid_config,
         rank=props.rank,
         ser_type=serialization_type,
         grid_id=grid_id,
@@ -480,7 +480,12 @@ def main(
         prep_adv,
         inital_divdamp_fac_o2,
     ) = initialize(
-        Path(input_path), parallel_props, serialization_type, experiment_type, grid_root, grid_level
+        pathlib.Path(input_path),
+        parallel_props,
+        serialization_type,
+        experiment_type,
+        grid_root,
+        grid_level,
     )
     log.info(f"Starting ICON dycore run: {timeloop.simulation_date.isoformat()}")
     log.info(

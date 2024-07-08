@@ -55,7 +55,7 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
@@ -197,12 +197,18 @@ def diffusion_init(
 
     diffusion_params = DiffusionParams(config)
 
-    # vertical parameters
-    vertical_params = VerticalModelParams(
-        vct_a=vct_a,
+    # vertical grid config
+    vertical_config = VerticalGridConfig(
+        num_levels=num_levels,
         rayleigh_damping_height=rayleigh_damping_height,
-        nflatlev=nflatlev,
-        nflat_gradp=nflat_gradp,
+    )
+
+    # vertical parameters
+    vertical_params = VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=vct_a,
+        vct_b=None,
+        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
     # metric state

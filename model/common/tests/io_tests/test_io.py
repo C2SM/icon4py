@@ -130,8 +130,11 @@ def is_valid_uxgrid(file: Union[pathlib.Path, str]) -> bool:
 
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    vertical_params = v_grid.VerticalModelParams(
-        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1))
+    vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        vct_b=None,
     )
     config = IOConfig(field_groups=[], output_path=path_name)
     monitor = IOMonitor(
@@ -147,8 +150,11 @@ def test_io_monitor_create_output_path(test_path):
 
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
-    vertical_params = v_grid.VerticalModelParams(
-        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1))
+    vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        vct_b=None,
     )
 
     config = IOConfig(field_groups=[], output_path=path_name)
@@ -174,8 +180,11 @@ def test_io_monitor_write_ugrid_file(test_path):
 def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
-    vertical_params = v_grid.VerticalModelParams(
-        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1))
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
+        vct_b=None,
     )
 
     state = model_state(grid)
@@ -221,8 +230,11 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
-    vertical_params = v_grid.VerticalModelParams(
-        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1))
+    vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
+        vct_b=None,
     )
 
     state = model_state(grid)
@@ -342,8 +354,11 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
         output_interval="1 HOUR",
         variables=["exner_function", "air_density"],
     )
-    vertical_params = v_grid.VerticalModelParams(
-        gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1))
+    vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        vct_b=None,
     )
 
     group_monitor = FieldGroupMonitor(
@@ -407,7 +422,7 @@ def test_fieldgroup_monitor_constructs_output_path_and_filepattern(test_path):
         output_interval="1 HOUR",
         variables=["exner_function", "air_density"],
     )
-    vertical_size = simple_grid.config.vertical_config
+    vertical_size = simple_grid.config.vertical_size
     horizontal_size = simple_grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,
@@ -429,7 +444,7 @@ def test_fieldgroup_monitor_throw_exception_on_missing_field(test_path):
         output_interval="1 HOUR",
         variables=["exner_function", "air_density", "foo"],
     )
-    vertical_size = simple_grid.config.vertical_config
+    vertical_size = simple_grid.config.vertical_size
     horizontal_size = simple_grid.config.horizontal_config
     group_monitor = FieldGroupMonitor(
         config,
