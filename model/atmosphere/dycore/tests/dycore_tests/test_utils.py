@@ -32,7 +32,7 @@ def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: 
 
 
 def bdy_divdamp_numpy(coeff: float, field: np.array):
-    return 0.75 / (coeff + constants.dbl_eps) * np.abs(field)
+    return 0.75 / (coeff + constants.DBL_EPS) * np.abs(field)
 
 
 def test_caclulate_scal_divdamp_order_24():
@@ -82,7 +82,7 @@ def test_calculate_bdy_divdamp():
     out = zero_field(grid, KDim)
     coeff = 0.3
     _calculate_bdy_divdamp.with_backend(backend)(
-        scal_divdamp, coeff, constants.dbl_eps, out=out, offset_provider={}
+        scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
     )
     assert dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
 
@@ -109,7 +109,7 @@ def test_calculate_divdamp_fields():
         mean_cell_area,
         divdamp_fac_o2,
         nudge_max_coeff,
-        constants.dbl_eps,
+        constants.DBL_EPS,
         out=(scal_divdamp, boundary_divdamp),
         offset_provider={},
     )
