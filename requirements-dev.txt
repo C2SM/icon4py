@@ -4,7 +4,7 @@
 # icon4py model
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
--e ./model/common[netcdf]
+-e ./model/common[io]
 -e ./model/atmosphere/diffusion
 -e ./model/atmosphere/physics_schemes
 -e ./model/driver

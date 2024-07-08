@@ -6,7 +6,7 @@
 ./model/atmosphere/diffusion
 ./model/atmosphere/advection
 ./model/atmosphere/physics_schemes
-./model/common[netcdf]
+./model/common[io]
 ./model/driver
 
 # icon4pytools
