@@ -22,7 +22,7 @@ import numpy as np
 
 import icon4py.model.common.utils as common_utils
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid import utils as grid_utils, vertical as v_grid
+from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
 
 
@@ -40,7 +40,8 @@ class HorizontalGridSize:
 @dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    vertical_config: v_grid.VerticalGridSize
+    # TODO (Magdalena): Decouple the vertical from horizontal grid.
+    vertical_size: int
     limited_area: bool = True
     n_shift_total: int = 0
     length_rescale_factor: float = 1.0
@@ -49,7 +50,7 @@ class GridConfig:
 
     @property
     def num_levels(self):
-        return self.vertical_config.num_lev
+        return self.vertical_size
 
     @property
     def num_vertices(self):
