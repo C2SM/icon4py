@@ -28,7 +28,7 @@ from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_state
 from icon4py.model.common.decomposition import definitions as decomp_def
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.driver import (
-    icon_configuration as driver_config,
+    icon4py_configuration as driver_config,
     initialization_utils as driver_init,
 )
 

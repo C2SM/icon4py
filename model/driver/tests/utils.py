@@ -13,13 +13,9 @@
 
 from datetime import datetime, timedelta
 
-from icon4py.model.atmosphere.diffusion.diffusion import (
-    DiffusionConfig,
-    DiffusionType,
-    TurbulenceShearForcingType,
-)
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
-from icon4py.model.driver.icon_configuration import IconRunConfig
+from icon4py.model.atmosphere.diffusion import diffusion as diffus
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.driver import icon4py_configuration as driver_config
 
 
 # TODO (Chia Rui): The diffusion and solve_nonhydro configs are duplication of the same functions in

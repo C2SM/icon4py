@@ -13,18 +13,18 @@
 
 import pytest
 
-from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
 )
-from icon4py.model.driver.initialization_utils import model_initialization_jabw
+from icon4py.model.driver import initialization_utils as driver_init
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (JABW_EXPERIMENT, 0),
+        (dt_utils.JABW_EXPERIMENT, 0),
     ],
 )
 def test_jabw_initial_condition(
@@ -46,7 +46,7 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = model_initialization_jabw(
+    ) = driver_init.model_initialization_jabw(
         icon_grid,
         cell_geometry,
         edge_geometry,
