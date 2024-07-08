@@ -81,7 +81,6 @@ class Offset(Node, OffsetEntity):
     def _make_target(
         chain_ls: list, source: BasicLocation | CompoundLocation
     ) -> tuple[BasicLocation, ChainedLocation]:
-
         target_0 = chain_from_str(chain_ls[0])[0]
         if isinstance(source, CompoundLocation):
             target_1 = ChainedLocation(chain_from_str(str(source)))
