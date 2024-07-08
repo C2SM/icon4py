@@ -14,6 +14,7 @@ from icon4py.model.common.settings import backend
 
 from collections.abc import Callable
 from typing import Union
+import warnings
 from icon4py.model.common.decomposition.definitions import SingleNodeResult
 from icon4py.model.common.decomposition.mpi_decomposition import MultiNodeResult
 
@@ -54,19 +55,24 @@ def orchestration(method=True):
                     self = args[0]
                     self_name = [param.name for param in inspect.signature(fuse_func).parameters.values()][0]
                 else:
-                    raise ValueError("The orchestration decorator is only for methods -at least for now-.")
-
-                has_exchange = False
-                for attr_name, attr_value in self.__dict__.items():
-                    if isinstance(attr_value, GHexMultiNodeExchange) or isinstance(attr_value, SingleNodeExchange):
-                        has_exchange = True
-                        exchange_obj = getattr(self, attr_name)
-                        break
-                
-                if not has_exchange:
+                    warnings.warn("The orchestration decorator is only for methods -at least for now-. Returning the original function.")
                     return fuse_func(*args, **kwargs)
 
-                dace_symbols_concretization(self, exchange_obj, fuse_func, args, kwargs)
+                has_exchange = False
+                has_grid = False
+                for attr_name, attr_value in self.__dict__.items():
+                    if isinstance(attr_value, GHexMultiNodeExchange) or isinstance(attr_value, SingleNodeExchange) and not has_exchange:
+                        has_exchange = True
+                        exchange_obj = getattr(self, attr_name)
+                    if isinstance(attr_value, IconGrid) and not has_grid:
+                        has_grid = True
+                        grid = getattr(self, attr_name)
+                
+                if not has_exchange or not has_grid:
+                    warnings.warn("No exchnage/grid object found. Returning the original function.")
+                    return fuse_func(*args, **kwargs)
+
+                dace_symbols_concretization(exchange_obj, grid, fuse_func, args, kwargs)
 
                 # Parse and compile the fused SDFG -caches it-, i.e. every time the same fused function is called, the same SDFG is used
                 parse_and_compile_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs)
@@ -100,15 +106,15 @@ def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
 
 
 if "dace" in backend.executor.name:
-    def dace_symbols_concretization(self, exchange_obj, fuse_func, args, kwargs):
+    def dace_symbols_concretization(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid, fuse_func: Callable, args: Any, kwargs: Any):
         flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
         kwargs.update({
             # DaCe symbols concretization
-            **{"CellDim_sym": self.grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": self.grid.offset_providers['E2C'].table.shape[0], "KDim_sym": self.grid.num_levels},
+            **{"CellDim_sym": grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": grid.offset_providers['E2C'].table.shape[0], "KDim_sym": grid.num_levels},
             **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
             **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
             # [misc] GHEX C++ ptrs, connectivity tables, etc.
-            **dace_specific_kwargs(exchange_obj, self.grid),
+            **dace_specific_kwargs(exchange_obj, grid),
             })
 
 
@@ -160,7 +166,7 @@ if "dace" in backend.executor.name:
             exchange_obj.exchange = tmp_exchange
 
 
-    def mod_args_for_dace_structures(fuse_func, args):
+    def mod_args_for_dace_structures(fuse_func: Callable, args: Any) -> tuple:
         """Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures"""
         new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
         new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
