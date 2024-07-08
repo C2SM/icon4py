@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.correct_contravariant_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.stencils.correct_contravariant_vertical_velocity import (
     correct_contravariant_vertical_velocity,
 )
 from icon4py.model.common.dimension import CellDim, KDim

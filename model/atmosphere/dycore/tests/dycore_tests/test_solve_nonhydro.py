@@ -25,11 +25,10 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
-    _allocate,
     _calculate_bdy_divdamp,
     _calculate_scal_divdamp,
-    zero_field,
 )
+from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import (
@@ -64,9 +63,9 @@ def test_validate_divdamp_fields_against_savepoint_values(
     config = NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    scal_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
-    bdy_divdamp = _allocate(KDim, is_halfdim=False, dtype=float, grid=icon_grid)
+    enh_divdamp_fac = field_alloc.allocate_zero_field(KDim, grid=icon_grid, is_halfdim=False)
+    scal_divdamp = field_alloc.allocate_zero_field(KDim, grid=icon_grid, is_halfdim=False)
+    bdy_divdamp = field_alloc.allocate_zero_field(KDim, grid=icon_grid, is_halfdim=False)
     en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
@@ -559,7 +558,7 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
     )
 
     nnow = 0
@@ -764,7 +763,7 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
     )
 
     nnow = 0
@@ -890,7 +889,7 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
     )
 
     nnow = 0

@@ -15,10 +15,10 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_13 import (
+from icon4py.model.atmosphere.dycore.stencils.fused_velocity_advection_stencil_8_to_13 import (
     fused_velocity_advection_stencil_8_to_13,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
+from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
@@ -116,7 +116,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         w = random_field(grid, CellDim, KDim, extend={KDim: 1})
         z_w_con_c = zero_field(grid, CellDim, KDim, extend={KDim: 1})
 
-        k = indices_field(KDim, grid, is_halfdim=True, dtype=int32)
+        k = field_alloc.allocate_indices(KDim, grid=grid, is_halfdim=True)
 
         nlev = grid.num_levels
         nflatlev = 4

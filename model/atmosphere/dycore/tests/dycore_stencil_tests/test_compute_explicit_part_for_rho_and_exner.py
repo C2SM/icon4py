@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_explicit_part_for_rho_and_exner import (
+from icon4py.model.atmosphere.dycore.stencils.compute_explicit_part_for_rho_and_exner import (
     compute_explicit_part_for_rho_and_exner,
 )
 from icon4py.model.common.dimension import CellDim, KDim

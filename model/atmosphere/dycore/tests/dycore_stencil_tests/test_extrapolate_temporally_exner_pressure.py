@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.extrapolate_temporally_exner_pressure import (
+from icon4py.model.atmosphere.dycore.stencils.extrapolate_temporally_exner_pressure import (
     extrapolate_temporally_exner_pressure,
 )
 from icon4py.model.common.dimension import CellDim, KDim

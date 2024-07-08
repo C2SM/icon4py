@@ -16,7 +16,7 @@ import pytest as pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_index_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_index_with_zero_vp import (
     init_two_cell_kdim_fields_index_with_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim

@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     compute_perturbation_of_rho_and_theta,
 )
 from icon4py.model.common.dimension import CellDim, KDim

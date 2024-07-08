@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_vp import (
     init_cell_kdim_field_with_zero_vp,
 )
 from icon4py.model.common.dimension import CellDim, KDim

@@ -27,7 +27,6 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     MetricStateNonHydro,
     PrepAdvection,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
@@ -40,6 +39,7 @@ from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     dallclose,
 )
+from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 from icon4py.model.driver.dycore_driver import TimeLoop
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
@@ -274,7 +274,7 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
     )
 
     nonhydro_diagnostic_state = DiagnosticStateNonHydro(

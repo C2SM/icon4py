@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
+from icon4py.model.atmosphere.dycore.stencils.compute_contravariant_correction import (
     compute_contravariant_correction,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim
