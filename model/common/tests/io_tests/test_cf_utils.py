@@ -11,9 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
-    grid,
-)
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-)
+import pytest
+
+from icon4py.model.common.io import cf_utils
+
+from .test_io import state_values
+
+
+@pytest.mark.parametrize("input_", state_values())
+def test_to_canonical_dim_order(input_):
+    input_dims = input_.dims
+    output = cf_utils.to_canonical_dim_order(input_)
+    assert output.dims == (input_dims[1], input_dims[0])

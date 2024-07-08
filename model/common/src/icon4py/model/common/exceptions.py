@@ -11,9 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
-    grid,
-)
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-)
+
+class InvalidConfigError(Exception):
+    pass
+
+
+class IncompleteStateError(Exception):
+    def __init__(self, field_name):
+        super().__init__(f"Field '{field_name}' is missing in state.")

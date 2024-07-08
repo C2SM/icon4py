@@ -47,7 +47,7 @@ def test_chainsize_neighbors(chain, expected):
 
 
 @pytest.mark.xfail(
-    reason="test will fail with an Attribute error as InvalidConnectivityException has becom unreachable"
+    reason="Test will fail with an AttributeError as InvalidConnectivityException has become unreachable."
 )
 def test_unsupported_connectivity_type():
     with pytest.raises(InvalidConnectivityException):

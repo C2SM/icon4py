@@ -10,10 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import importlib.util
 
-from icon4py.model.common.test_utils.grid_utils import (  # noqa : F401  # fixtures from test_utils
-    grid,
-)
-from icon4py.model.common.test_utils.helpers import (  # noqa : F401  # fixtures from test_utils
-    backend,
-)
+import pytest
+
+
+if not importlib.util.find_spec("xarray"):
+    pytest.fail(
+        "Optional icon4py-common[io] dependencies are missing. Please install them using `pip install icon4py-common[io]`."
+    )
