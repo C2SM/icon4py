@@ -34,7 +34,7 @@ build_image:
   needs: ["build_baseimage"]
   variables:
       # Unique image name based on commit SHA
-      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+      PERSIST_IMAGE_NAME: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
       DOCKERFILE: ci/docker/checkout.Dockerfile
       DOCKER_BUILD_ARGS: '["PYVERSION=$PYVERSION", "BASE_IMAGE=${BASE_IMAGE_${PYVERSION_PREFIX}}"]'
       <<: *py310
@@ -43,7 +43,7 @@ build_image:
   extends: .container-runner-daint-gpu
   needs: ["build_image"]
   timeout: 8h
-  image: $CSCS_REGISTRY_PATH/public/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
+  image: $CSCS_REGISTRY_PATH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
   before_script:
     - python -c "import cupy"
     - cd /icon4py
