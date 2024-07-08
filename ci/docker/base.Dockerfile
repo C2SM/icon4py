@@ -33,14 +33,14 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=22.11
 ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_11.8
-ARG HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
+ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
     mkdir -p /opt/nvidia && \
     tar -xzf /tmp/nvhpc.tar.gz -C /opt/nvidia && \
     rm /tmp/nvhpc.tar.gz
 
-ENV NVHPC_DEFAULT_CUDA=11.8
+ARG NVHPC_DEFAULT_CUDA=11.8
 ENV NVHPC_SILENT=1
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
