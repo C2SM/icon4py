@@ -37,7 +37,7 @@ build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
     HPC_SDK_VERSION: 24.5
-    HPC_SDK_NAME: nvhpc_2024_245_Linux_x86_64_cuda_12.4
+    HPC_SDK_NAME: nvhpc_2024_245_Linux_aarch64_cuda_12.4
     NVHPC_DEFAULT_CUDA: 12.4
     CUPY_PACKAGE: cupy-cuda12x
 
