@@ -15,46 +15,48 @@ import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
-    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
-    add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
-    compute_advective_normal_wind_tendency,
-)
-from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
-    compute_horizontal_advection_term_for_vertical_velocity,
-)
-from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
-    interpolate_contravariant_vertical_velocity_to_full_levels,
-)
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
-from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
-    interpolate_vn_to_ie_and_compute_ekin_on_edges,
-)
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
-    interpolate_vt_to_interface_edges,
-)
-from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
-    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
-)
-from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
-    mo_math_divrot_rot_vertex_ri_dsl,
-)
 from icon4py.model.atmosphere.dycore.state_utils.states import (
     DiagnosticStateNonHydro,
     InterpolationState,
     MetricStateNonHydro,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
+from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
+)
+from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
+    add_extra_diffusion_for_w_con_approaching_cfl,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
+    compute_advective_normal_wind_tendency,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
+    compute_horizontal_advection_term_for_vertical_velocity,
+)
+from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels import (
+    interpolate_contravariant_vertical_velocity_to_full_levels,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
+    interpolate_to_cell_center,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+    interpolate_vn_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
+    interpolate_vt_to_interface_edges,
+)
+from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+)
+from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
+    mo_math_divrot_rot_vertex_ri_dsl,
+)
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 
 
 class VelocityAdvection:
@@ -86,17 +88,23 @@ class VelocityAdvection:
         return self._initialized
 
     def _allocate_local_fields(self):
-        self.z_w_v = _allocate(VertexDim, KDim, is_halfdim=True, grid=self.grid)
-        self.z_v_grad_w = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.z_ekinh = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_w_concorr_mc = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_w_con_c = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
-        self.zeta = _allocate(VertexDim, KDim, grid=self.grid)
-        self.z_w_con_c_full = _allocate(CellDim, KDim, grid=self.grid)
-        self.cfl_clipping = _allocate(CellDim, KDim, grid=self.grid, dtype=bool)
-        self.levmask = _allocate(KDim, grid=self.grid, dtype=bool)
-        self.vcfl_dsl = _allocate(CellDim, KDim, grid=self.grid)
-        self.k_field = _allocate_indices(KDim, grid=self.grid, is_halfdim=True)
+        self.z_w_v = field_alloc.allocate_zero_field(
+            VertexDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.z_v_grad_w = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_ekinh = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_w_concorr_mc = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_w_con_c = field_alloc.allocate_zero_field(
+            CellDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.zeta = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
+        self.z_w_con_c_full = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.cfl_clipping = field_alloc.allocate_zero_field(
+            CellDim, KDim, grid=self.grid, dtype=bool
+        )
+        self.levmask = field_alloc.allocate_zero_field(KDim, grid=self.grid, dtype=bool)
+        self.vcfl_dsl = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.k_field = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
 
     def run_predictor_step(
         self,

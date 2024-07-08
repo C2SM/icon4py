@@ -18,112 +18,112 @@ import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
-from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
+from icon4py.model.atmosphere.dycore.stencils.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
 )
 
-from icon4py.model.atmosphere.dycore.accumulate_prep_adv_fields import (
+from icon4py.model.atmosphere.dycore.stencils.accumulate_prep_adv_fields import (
     accumulate_prep_adv_fields,
 )
-from icon4py.model.atmosphere.dycore.add_analysis_increments_from_data_assimilation import (
+from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_from_data_assimilation import (
     add_analysis_increments_from_data_assimilation,
 )
-from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
+from icon4py.model.atmosphere.dycore.stencils.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn,
 )
-from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
+from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
 )
-from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
+from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn_by_interpolating_between_time_levels import (
     add_temporal_tendencies_to_vn_by_interpolating_between_time_levels,
 )
-from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
+from icon4py.model.atmosphere.dycore.stencils.add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
+from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
+from icon4py.model.atmosphere.dycore.stencils.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
+from icon4py.model.atmosphere.dycore.stencils.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure,
 )
-from icon4py.model.atmosphere.dycore.apply_rayleigh_damping_mechanism import (
+from icon4py.model.atmosphere.dycore.stencils.apply_rayleigh_damping_mechanism import (
     apply_rayleigh_damping_mechanism,
 )
-from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
+from icon4py.model.atmosphere.dycore.stencils.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.compute_approx_of_2nd_vertical_derivative_of_exner import (
+from icon4py.model.atmosphere.dycore.stencils.compute_approx_of_2nd_vertical_derivative_of_exner import (
     compute_approx_of_2nd_vertical_derivative_of_exner,
 )
-from icon4py.model.atmosphere.dycore.compute_avg_vn import compute_avg_vn
-from icon4py.model.atmosphere.dycore.compute_avg_vn_and_graddiv_vn_and_vt import (
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn import compute_avg_vn
+from icon4py.model.atmosphere.dycore.stencils.compute_avg_vn_and_graddiv_vn_and_vt import (
     compute_avg_vn_and_graddiv_vn_and_vt,
 )
-from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
+from icon4py.model.atmosphere.dycore.stencils.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
+from icon4py.model.atmosphere.dycore.stencils.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
 )
-from icon4py.model.atmosphere.dycore.compute_exner_from_rhotheta import (
+from icon4py.model.atmosphere.dycore.stencils.compute_exner_from_rhotheta import (
     compute_exner_from_rhotheta,
 )
-from icon4py.model.atmosphere.dycore.compute_graddiv2_of_vn import (
+from icon4py.model.atmosphere.dycore.stencils.compute_graddiv2_of_vn import (
     compute_graddiv2_of_vn,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
-from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
 )
-from icon4py.model.atmosphere.dycore.compute_hydrostatic_correction_term import (
+from icon4py.model.atmosphere.dycore.stencils.compute_hydrostatic_correction_term import (
     compute_hydrostatic_correction_term,
 )
-from icon4py.model.atmosphere.dycore.compute_mass_flux import compute_mass_flux
-from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
+from icon4py.model.atmosphere.dycore.stencils.compute_mass_flux import compute_mass_flux
+from icon4py.model.atmosphere.dycore.stencils.compute_perturbation_of_rho_and_theta import (
     compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.atmosphere.dycore.compute_results_for_thermodynamic_variables import (
+from icon4py.model.atmosphere.dycore.stencils.compute_results_for_thermodynamic_variables import (
     compute_results_for_thermodynamic_variables,
 )
-from icon4py.model.atmosphere.dycore.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
+from icon4py.model.atmosphere.dycore.stencils.compute_rho_virtual_potential_temperatures_and_pressure_gradient import (
     compute_rho_virtual_potential_temperatures_and_pressure_gradient,
 )
-from icon4py.model.atmosphere.dycore.compute_theta_and_exner import (
+from icon4py.model.atmosphere.dycore.stencils.compute_theta_and_exner import (
     compute_theta_and_exner,
 )
-from icon4py.model.atmosphere.dycore.compute_vn_on_lateral_boundary import (
+from icon4py.model.atmosphere.dycore.stencils.compute_vn_on_lateral_boundary import (
     compute_vn_on_lateral_boundary,
 )
-from icon4py.model.atmosphere.dycore.copy_cell_kdim_field_to_vp import (
+from icon4py.model.atmosphere.dycore.stencils.copy_cell_kdim_field_to_vp import (
     copy_cell_kdim_field_to_vp,
 )
-from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
+from icon4py.model.atmosphere.dycore.stencils.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_vp import (
+from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_vp import (
     init_two_cell_kdim_fields_with_zero_vp,
 )
-from icon4py.model.atmosphere.dycore.init_two_cell_kdim_fields_with_zero_wp import (
+from icon4py.model.atmosphere.dycore.stencils.init_two_cell_kdim_fields_with_zero_wp import (
     init_two_cell_kdim_fields_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
+from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
 )
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
 )
-from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_forward_sweep import (
+from icon4py.model.atmosphere.dycore.stencils.solve_tridiagonal_matrix_for_w_forward_sweep import (
     solve_tridiagonal_matrix_for_w_forward_sweep,
 )
 from icon4py.model.atmosphere.dycore.state_utils.states import (
@@ -133,21 +133,19 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import (
-    _allocate,
-    _allocate_indices,
     _calculate_divdamp_fields,
     compute_z_raylfac,
 )
-from icon4py.model.atmosphere.dycore.update_dynamical_exner_time_increment import (
+from icon4py.model.atmosphere.dycore.stencils.update_dynamical_exner_time_increment import (
     update_dynamical_exner_time_increment,
 )
-from icon4py.model.atmosphere.dycore.update_mass_volume_flux import (
+from icon4py.model.atmosphere.dycore.stencils.update_mass_volume_flux import (
     update_mass_volume_flux,
 )
-from icon4py.model.atmosphere.dycore.update_mass_flux_weighted import (
+from icon4py.model.atmosphere.dycore.stencils.update_mass_flux_weighted import (
     update_mass_flux_weighted,
 )
-from icon4py.model.atmosphere.dycore.update_theta_v import update_theta_v
+from icon4py.model.atmosphere.dycore.stencils.update_theta_v import update_theta_v
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
     VelocityAdvection,
 )
@@ -166,6 +164,7 @@ from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 
 
 # flake8: noqa
@@ -207,20 +206,22 @@ class IntermediateFields:
     @classmethod
     def allocate(cls, grid: BaseGrid):
         return IntermediateFields(
-            z_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
-            z_alpha=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
-            z_beta=_allocate(CellDim, KDim, grid=grid),
-            z_w_expl=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
-            z_exner_expl=_allocate(CellDim, KDim, grid=grid),
-            z_q=_allocate(CellDim, KDim, grid=grid),
-            z_contr_w_fl_l=_allocate(CellDim, KDim, is_halfdim=True, grid=grid),
-            z_rho_e=_allocate(EdgeDim, KDim, grid=grid),
-            z_theta_v_e=_allocate(EdgeDim, KDim, grid=grid),
-            z_graddiv_vn=_allocate(EdgeDim, KDim, grid=grid),
-            z_rho_expl=_allocate(CellDim, KDim, grid=grid),
-            z_dwdz_dd=_allocate(CellDim, KDim, grid=grid),
-            z_kin_hor_e=_allocate(EdgeDim, KDim, grid=grid),
-            z_vt_ie=_allocate(EdgeDim, KDim, grid=grid),
+            z_gradh_exner=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+            z_alpha=field_alloc.allocate_zero_field(CellDim, KDim, is_halfdim=True, grid=grid),
+            z_beta=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+            z_w_expl=field_alloc.allocate_zero_field(CellDim, KDim, is_halfdim=True, grid=grid),
+            z_exner_expl=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+            z_q=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+            z_contr_w_fl_l=field_alloc.allocate_zero_field(
+                CellDim, KDim, is_halfdim=True, grid=grid
+            ),
+            z_rho_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+            z_theta_v_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+            z_graddiv_vn=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+            z_rho_expl=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+            z_dwdz_dd=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+            z_kin_hor_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+            z_vt_ie=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
         )
 
 
@@ -453,33 +454,39 @@ class SolveNonhydro:
         return self._initialized
 
     def _allocate_local_fields(self):
-        self.z_exner_ex_pr = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
-        self.z_exner_ic = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
-        self.z_dexner_dz_c_1 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_theta_v_pr_ic = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
-        self.z_th_ddz_exner_c = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_rth_pr_1 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_rth_pr_2 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_1 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_2 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_3 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_4 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_dexner_dz_c_2 = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_hydro_corr = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.z_vn_avg = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.z_theta_v_fl_e = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.z_flxdiv_mass = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_flxdiv_theta = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_rho_v = _allocate(VertexDim, KDim, grid=self.grid)
-        self.z_theta_v_v = _allocate(VertexDim, KDim, grid=self.grid)
-        self.z_graddiv2_vn = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.k_field = _allocate_indices(KDim, grid=self.grid, is_halfdim=True)
-        self.z_w_concorr_me = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.z_hydro_corr_horizontal = _allocate(EdgeDim, grid=self.grid)
-        self.z_raylfac = _allocate(KDim, grid=self.grid)
-        self.enh_divdamp_fac = _allocate(KDim, grid=self.grid)
-        self._bdy_divdamp = _allocate(KDim, grid=self.grid)
-        self.scal_divdamp = _allocate(KDim, grid=self.grid)
+        self.z_exner_ex_pr = field_alloc.allocate_zero_field(
+            CellDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.z_exner_ic = field_alloc.allocate_zero_field(
+            CellDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.z_dexner_dz_c_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_theta_v_pr_ic = field_alloc.allocate_zero_field(
+            CellDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.z_th_ddz_exner_c = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_rth_pr_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_rth_pr_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_grad_rth_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_grad_rth_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_grad_rth_3 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_grad_rth_4 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_hydro_corr = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_vn_avg = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_theta_v_fl_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_flxdiv_mass = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_flxdiv_theta = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_rho_v = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
+        self.z_theta_v_v = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
+        self.z_graddiv2_vn = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.k_field = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
+        self.z_w_concorr_me = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_hydro_corr_horizontal = field_alloc.allocate_zero_field(EdgeDim, grid=self.grid)
+        self.z_raylfac = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.enh_divdamp_fac = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self._bdy_divdamp = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.scal_divdamp = field_alloc.allocate_zero_field(KDim, grid=self.grid)
         self.intermediate_fields = IntermediateFields.allocate(self.grid)
 
     def set_timelevels(self, nnow, nnew):
