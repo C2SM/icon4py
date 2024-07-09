@@ -187,9 +187,9 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         skip_values = True
 
     include_center = True if chain.count("O") > 0 else False
-    dims_initials = [key.startswith for key in global_dimensions.keys()]
+    dims_initials = [key[0] for key in global_dimensions.keys()]
     map_to_dim = {d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)}
-    location_chain = [map_to_dim[c] for c in chain if c not in ("2", "O")]
+    location_chain = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]
 
     return DummyConnectivity(
         max_neighbors=calc_num_neighbors(location_chain, include_center),

@@ -73,7 +73,9 @@ class MultiLocation(metaclass=ABCMeta):
         return self.chain[item]
 
     def to_dim_list(self) -> list[Dimension]:
-        return [global_dimensions[c.__class__] for c in self.chain]
+        dims_initials = [key[0] for key in global_dimensions.keys()]
+        map_to_dim = {d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)}
+        return [map_to_dim[str(c)] for c in self.chain]
 
 
 class CompoundLocation(MultiLocation):
