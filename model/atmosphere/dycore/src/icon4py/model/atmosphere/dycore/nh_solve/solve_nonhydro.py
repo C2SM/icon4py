@@ -167,6 +167,8 @@ from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
+from icon4py.model.atmosphere.ibm.ibm import ImmersedBoundaryMethod
+
 
 # flake8: noqa
 log = logging.getLogger(__name__)
@@ -506,6 +508,7 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
+        ibm: Optional[ImmersedBoundaryMethod] = None,
     ):
         log.info(
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
@@ -535,6 +538,10 @@ class SolveNonhydro:
 
         self.set_timelevels(nnow, nnew)
 
+        ibm.set_boundary_conditions(
+            loc='before_predictor',
+        )
+
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls,
@@ -545,6 +552,10 @@ class SolveNonhydro:
             at_first_substep=at_first_substep,
             nnow=nnow,
             nnew=nnew,
+        )
+
+        ibm.set_boundary_conditions(
+            loc='before_corrector',
         )
 
         self.run_corrector_step(

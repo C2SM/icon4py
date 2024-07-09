@@ -5,6 +5,7 @@
 -e ./model/atmosphere/advection
 -e ./model/common[io]
 -e ./model/atmosphere/diffusion
+-e ./model/atmosphere/ibm
 -e ./model/driver
 
 # icon4pytools
