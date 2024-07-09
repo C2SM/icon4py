@@ -3,8 +3,9 @@
 # icon4py model
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
--e ./model/common[io]
 -e ./model/atmosphere/diffusion
+-e ./model/atmosphere/physics/microphysics
+-e ./model/common[io]
 -e ./model/driver
 
 # icon4pytools

@@ -36,6 +36,13 @@ repos:
         pass_filenames: false
         always_run: true
 
+      - id: run-atmosphere-microphysics-precommit
+        name: Run Model Atmosphere Microphysics Pre-commit
+        entry: pre-commit run --config model/atmosphere/physics/microphysics/.pre-commit-config.yaml --all-files
+        language: system
+        pass_filenames: false
+        always_run: true
+
       - id: run-tools-precommit
         name: Run Tools Pre-commit
         entry: pre-commit run --config tools/.pre-commit-config.yaml --all-files
