@@ -40,4 +40,12 @@ class TestFaceValPpmStencil02a(StencilTest):
         p_face = random_field(grid, CellDim, KDim)
         p_cc = random_field(grid, CellDim, KDim)
         p_cellhgt_mc_now = random_field(grid, CellDim, KDim)
-        return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, p_face=p_face)
+        return dict(
+            p_cc=p_cc,
+            p_cellhgt_mc_now=p_cellhgt_mc_now,
+            p_face=p_face,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=1,
+            vertical_end=grid.num_levels,
+        )

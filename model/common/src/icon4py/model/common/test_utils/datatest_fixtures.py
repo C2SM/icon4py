@@ -13,39 +13,24 @@
 
 import pytest
 
-from ..decomposition.definitions import SingleNodeRun
-from .data_handling import download_and_extract
-from .datatest_utils import (
-    DATA_URIS,
-    DATA_URIS_APE,
-    DATA_URIS_GAUSS3D,
-    DATA_URIS_JABW,
-    GAUSS3D_EXPERIMENT,
-    GLOBAL_EXPERIMENT,
-    JABW_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
-    SERIALIZED_DATA_PATH,
-    create_icon_serial_data_provider,
-    get_datapath_for_experiment,
-    get_global_grid_params,
-    get_processor_properties_for_run,
-    get_ranked_data_path,
-)
+import icon4py.model.common.decomposition.definitions as decomposition
+
+from . import data_handling as data, datatest_utils as utils
 
 
 @pytest.fixture
 def experiment():
-    return REGIONAL_EXPERIMENT
+    return utils.REGIONAL_EXPERIMENT
 
 
 @pytest.fixture(params=[False], scope="session")
 def processor_props(request):
-    return get_processor_properties_for_run(SingleNodeRun())
+    return utils.get_processor_properties_for_run(decomposition.SingleNodeRun())
 
 
 @pytest.fixture(scope="session")
 def ranked_data_path(processor_props):
-    return get_ranked_data_path(SERIALIZED_DATA_PATH, processor_props)
+    return utils.get_ranked_data_path(utils.SERIALIZED_DATA_PATH, processor_props)
 
 
 @pytest.fixture
@@ -62,21 +47,21 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
         pass
 
     try:
-        destination_path = get_datapath_for_experiment(ranked_data_path, experiment)
-        if experiment == GLOBAL_EXPERIMENT:
-            uri = DATA_URIS_APE[processor_props.comm_size]
-        elif experiment == JABW_EXPERIMENT:
-            uri = DATA_URIS_JABW[processor_props.comm_size]
-        elif experiment == GAUSS3D_EXPERIMENT:
-            uri = DATA_URIS_GAUSS3D[processor_props.comm_size]
+        destination_path = utils.get_datapath_for_experiment(ranked_data_path, experiment)
+        if experiment == utils.GLOBAL_EXPERIMENT:
+            uri = utils.DATA_URIS_APE[processor_props.comm_size]
+        elif experiment == utils.JABW_EXPERIMENT:
+            uri = utils.DATA_URIS_JABW[processor_props.comm_size]
+        elif experiment == utils.GAUSS3D_EXPERIMENT:
+            uri = utils.DATA_URIS_GAUSS3D[processor_props.comm_size]
         else:
-            uri = DATA_URIS[processor_props.comm_size]
+            uri = utils.DATA_URIS[processor_props.comm_size]
 
         data_file = ranked_data_path.joinpath(
             f"{experiment}_mpitask{processor_props.comm_size}.tar.gz"
         ).name
         if processor_props.rank == 0:
-            download_and_extract(uri, ranked_data_path, destination_path, data_file)
+            data.download_and_extract(uri, ranked_data_path, destination_path, data_file)
         if processor_props.comm:
             processor_props.comm.barrier()
     except KeyError as err:
@@ -87,18 +72,19 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
 
 @pytest.fixture
 def data_provider(download_ser_data, ranked_data_path, experiment, processor_props):
-    data_path = get_datapath_for_experiment(ranked_data_path, experiment)
-    return create_icon_serial_data_provider(data_path, processor_props)
+    data_path = utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    return utils.create_icon_serial_data_provider(data_path, processor_props)
 
 
 @pytest.fixture
 def grid_savepoint(data_provider, experiment):
-    root, level = get_global_grid_params(experiment)
-    return data_provider.from_savepoint_grid(root, level)
+    root, level = utils.get_global_grid_params(experiment)
+    grid_id = utils.get_grid_id_for_experiment(experiment)
+    return data_provider.from_savepoint_grid(grid_id, root, level)
 
 
 def is_regional(experiment_name):
-    return experiment_name == REGIONAL_EXPERIMENT
+    return experiment_name == utils.REGIONAL_EXPERIMENT
 
 
 @pytest.fixture
@@ -113,15 +99,11 @@ def icon_grid(grid_savepoint):
 
 @pytest.fixture
 def decomposition_info(data_provider, experiment):
-    root, level = get_global_grid_params(experiment)
+    root, level = utils.get_global_grid_params(experiment)
+    grid_id = utils.get_grid_id_for_experiment(experiment)
     return data_provider.from_savepoint_grid(
-        grid_root=root, grid_level=level
+        grid_id=grid_id, grid_root=root, grid_level=level
     ).construct_decomposition_info()
-
-
-@pytest.fixture
-def damping_height():
-    return 12500
 
 
 @pytest.fixture
@@ -274,3 +256,61 @@ def ntnd(savepoint_velocity_init):
 @pytest.fixture
 def vn_only():
     return False
+
+
+@pytest.fixture
+def lowest_layer_thickness(experiment):
+    if experiment == utils.REGIONAL_EXPERIMENT:
+        return 20.0
+    else:
+        return 50.0
+
+
+@pytest.fixture
+def model_top_height(experiment):
+    if experiment == utils.REGIONAL_EXPERIMENT:
+        return 23000.0
+    elif experiment == utils.GLOBAL_EXPERIMENT:
+        return 75000.0
+    else:
+        return 23500.0
+
+
+@pytest.fixture
+def flat_height():
+    return 16000.0
+
+
+@pytest.fixture
+def stretch_factor(experiment):
+    if experiment == utils.REGIONAL_EXPERIMENT:
+        return 0.65
+    elif experiment == utils.GLOBAL_EXPERIMENT:
+        return 0.9
+    else:
+        return 1.0
+
+
+@pytest.fixture
+def damping_height(experiment):
+    if experiment == utils.REGIONAL_EXPERIMENT:
+        return 12500.0
+    elif experiment == utils.GLOBAL_EXPERIMENT:
+        return 50000.0
+    else:
+        return 45000.0
+
+
+@pytest.fixture
+def htop_moist_proc():
+    return 22500.0
+
+
+@pytest.fixture
+def maximal_layer_thickness():
+    return 25000.0
+
+
+@pytest.fixture
+def top_height_limit_for_maximal_layer_thickness():
+    return 15000.0

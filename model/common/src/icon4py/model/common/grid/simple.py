@@ -10,12 +10,11 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import dataclasses
+import uuid
 
-from dataclasses import dataclass
-
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import Dimension
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
@@ -61,10 +60,10 @@ from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridS
 # |20e  \   |23e  \   |26e  \
 # |  15c  \ | 16c   \ | 17c  \
 # 0v       1v         2v        0v
-from icon4py.model.common.grid.vertical import VerticalGridSize
+from icon4py.model.common.grid.vertical import VerticalGridConfig
 
 
-@dataclass
+@dataclasses.dataclass
 class SimpleGridData:
     c2v_table = np.asarray(
         [
@@ -87,7 +86,7 @@ class SimpleGridData:
             [7, 1, 2],
             [8, 2, 0],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     e2c2v_table = np.asarray(
@@ -120,7 +119,7 @@ class SimpleGridData:
             [8, 0, 6, 2],  # 25
             [8, 2, 7, 0],  # 26
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     e2c_table = np.asarray(
@@ -153,7 +152,7 @@ class SimpleGridData:
             [14, 17],
             [13, 17],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     e2v_table = np.asarray(
@@ -186,7 +185,7 @@ class SimpleGridData:
             [8, 0],
             [8, 2],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     e2c2e_table = np.asarray(
@@ -219,7 +218,7 @@ class SimpleGridData:
             [24, 20, 26, 6],
             [25, 6, 21, 22],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     e2c2eO_table = np.asarray(
@@ -252,7 +251,7 @@ class SimpleGridData:
             [24, 25, 20, 26, 6],
             [25, 26, 6, 21, 22],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     c2e_table = np.asarray(
@@ -276,7 +275,7 @@ class SimpleGridData:
             [22, 23, 3],  # cell 16
             [25, 26, 6],  # cell 17
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     v2c_table = np.asarray(
@@ -291,7 +290,7 @@ class SimpleGridData:
             [12, 16, 13, 10, 6, 9],
             [13, 17, 14, 11, 7, 10],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     v2e_table = np.asarray(
@@ -306,7 +305,7 @@ class SimpleGridData:
             [21, 22, 23, 18, 10, 14],
             [24, 25, 26, 21, 13, 17],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     c2e2cO_table = np.asarray(
@@ -330,7 +329,7 @@ class SimpleGridData:
             [13, 1, 12, 16],
             [14, 2, 13, 17],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     c2e2c_table = np.asarray(
@@ -354,7 +353,7 @@ class SimpleGridData:
             [13, 1, 12],
             [14, 2, 13],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     c2e2c2e_table = np.asarray(
@@ -378,7 +377,7 @@ class SimpleGridData:
             [21, 22, 26, 18, 19, 23, 3, 4, 8],
             [24, 25, 20, 21, 22, 26, 6, 7, 2],  # 17c
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
     c2e2c2e2c_table = np.asarray(
@@ -402,7 +401,7 @@ class SimpleGridData:
             [13, 1, 12, 9, 15, 10, 17, 4, 5],
             [14, 2, 13, 10, 16, 5, 3, 11, 15],
         ],
-        dtype=int32,
+        dtype=gtx.int32,
     )
 
 
@@ -414,6 +413,7 @@ class SimpleGrid(BaseGrid):
     def __init__(self):
         """Instantiate a SimpleGrid used for testing purposes."""
         super().__init__()
+
         self._configure()
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
@@ -461,17 +461,21 @@ class SimpleGrid(BaseGrid):
     def num_levels(self) -> int:
         return self.config.num_levels
 
-    def _has_skip_values(self, dimension: Dimension) -> bool:
+    @property
+    def id(self) -> uuid.UUID:
+        return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
+
+    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         return False
 
     def _configure(self):
         horizontal_grid_size = HorizontalGridSize(
             num_vertices=self._VERTICES, num_edges=self._EDGES, num_cells=self._CELLS
         )
-        vertical_grid_size = VerticalGridSize(num_lev=10)
+        vertical_grid_config = VerticalGridConfig(num_levels=10)
         config = GridConfig(
             horizontal_config=horizontal_grid_size,
-            vertical_config=vertical_grid_size,
+            vertical_size=vertical_grid_config.num_levels,
         )
 
         connectivity_dict = {

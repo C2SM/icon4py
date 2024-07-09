@@ -11,14 +11,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import enum
+import functools
 import logging
 import math
-from enum import Enum
-from pathlib import Path
+import pathlib
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import as_field
-from gt4py.next.common import Field
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -54,7 +54,11 @@ from icon4py.model.common.dimension import (
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import (
+    VerticalGridConfig,
+    VerticalGridParams,
+    get_vct_a_and_vct_b,
+)
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
@@ -63,7 +67,7 @@ from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpol
 )
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
 from icon4py.model.driver.jablonowski_willamson_testcase import zonalwind_2_normalwind_jabw_numpy
 from icon4py.model.driver.serialbox_helpers import (
@@ -77,6 +81,10 @@ from icon4py.model.driver.testcase_functions import (
 )
 
 
+GRID_LEVEL = 4
+GRID_ROOT = 2
+GLOBAL_GRID_ID = dt_utils.GRID_IDS[dt_utils.GLOBAL_EXPERIMENT]
+
 SB_ONLY_MSG = "Only ser_type='sb' is implemented so far."
 INITIALIZATION_ERROR_MSG = "The requested experiment type is not implemented."
 
@@ -84,12 +92,12 @@ SIMULATION_START_DATE = "2021-06-20T12:00:10.000"
 log = logging.getLogger(__name__)
 
 
-class SerializationType(str, Enum):
+class SerializationType(str, enum.Enum):
     SB = "serialbox"
     NC = "netcdf"
 
 
-class ExperimentType(str, Enum):
+class ExperimentType(str, enum.Enum):
     JABW = "jabw"
     """initial condition of Jablonowski-Williamson test"""
     GAUSS3D = "gauss3d_torus"
@@ -99,9 +107,10 @@ class ExperimentType(str, Enum):
 
 
 def read_icon_grid(
-    path: Path,
+    path: pathlib.Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
+    grid_id=GLOBAL_GRID_ID,
     grid_root=2,
     grid_level=4,
 ) -> IconGrid:
@@ -111,8 +120,8 @@ def read_icon_grid(
     Args:
         path: path where to find the input data
         rank: mpi rank of the current compute node
-        ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads
-        from ppser serialized test data
+        ser_type: type of input data. Currently only 'sb (serialbox)' is supported. It reads from ppser serialized test data
+        grid_id: id (uuid) of the horizontal grid
         grid_root: global grid root division number
         grid_level: global grid refinement number
     Returns:  IconGrid parsed from a given input type.
@@ -120,7 +129,7 @@ def read_icon_grid(
     if ser_type == SerializationType.SB:
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(grid_root, grid_level)
+            .from_savepoint_grid(grid_id, grid_root, grid_level)
             .construct_icon_grid(on_gpu=False)
         )
     else:
@@ -131,7 +140,7 @@ def model_initialization_jabw(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
-    path: Path,
+    path: pathlib.Path,
     rank=0,
 ) -> tuple[
     DiffusionDiagnosticState,
@@ -177,7 +186,7 @@ def model_initialization_jabw(
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
-    cell_size = cell_lat.size
+    cell_size = icon_grid.num_cells
     num_levels = icon_grid.num_levels
 
     grid_idx_edge_start_plus1 = icon_grid.get_end_index(
@@ -284,7 +293,7 @@ def model_initialization_jabw(
         temperature_numpy[:, k_index] = temperature_jw
     log.info("Newton iteration completed!")
 
-    eta_v = as_field((CellDim, KDim), eta_v_numpy)
+    eta_v = gtx.as_field((CellDim, KDim), eta_v_numpy)
     eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
     cell_2_edge_interpolation(
         eta_v,
@@ -325,22 +334,22 @@ def model_initialization_jabw(
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    vn = as_field((EdgeDim, KDim), vn_numpy)
-    w = as_field((CellDim, KDim), w_numpy)
-    exner = as_field((CellDim, KDim), exner_numpy)
-    rho = as_field((CellDim, KDim), rho_numpy)
-    temperature = as_field((CellDim, KDim), temperature_numpy)
-    pressure = as_field((CellDim, KDim), pressure_numpy)
-    theta_v = as_field((CellDim, KDim), theta_v_numpy)
+    vn = gtx.as_field((EdgeDim, KDim), vn_numpy)
+    w = gtx.as_field((CellDim, KDim), w_numpy)
+    exner = gtx.as_field((CellDim, KDim), exner_numpy)
+    rho = gtx.as_field((CellDim, KDim), rho_numpy)
+    temperature = gtx.as_field((CellDim, KDim), temperature_numpy)
+    pressure = gtx.as_field((CellDim, KDim), pressure_numpy)
+    theta_v = gtx.as_field((CellDim, KDim), theta_v_numpy)
     pressure_ifc_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
     pressure_ifc_numpy[:, -1] = p_sfc
-    pressure_ifc = as_field((CellDim, KDim), pressure_ifc_numpy)
+    pressure_ifc = gtx.as_field((CellDim, KDim), pressure_ifc_numpy)
 
-    vn_next = as_field((EdgeDim, KDim), vn_numpy)
-    w_next = as_field((CellDim, KDim), w_numpy)
-    exner_next = as_field((CellDim, KDim), exner_numpy)
-    rho_next = as_field((CellDim, KDim), rho_numpy)
-    theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
+    vn_next = gtx.as_field((EdgeDim, KDim), vn_numpy)
+    w_next = gtx.as_field((CellDim, KDim), w_numpy)
+    exner_next = gtx.as_field((CellDim, KDim), exner_numpy)
+    rho_next = gtx.as_field((CellDim, KDim), rho_numpy)
+    theta_v_next = gtx.as_field((CellDim, KDim), theta_v_numpy)
 
     u = _allocate(CellDim, KDim, grid=icon_grid)
     v = _allocate(CellDim, KDim, grid=icon_grid)
@@ -353,7 +362,7 @@ def model_initialization_jabw(
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
         0,
-        icon_grid.num_levels,
+        num_levels,
         offset_provider=icon_grid.offset_providers,
     )
 
@@ -706,7 +715,7 @@ def model_initialization_gauss3d(
 
 
 def model_initialization_serialbox(
-    icon_grid: IconGrid, path: Path, rank=0
+    icon_grid: IconGrid, path: pathlib.Path, rank=0
 ) -> tuple[
     DiffusionDiagnosticState,
     DiagnosticStateNonHydro,
@@ -729,9 +738,7 @@ def model_initialization_serialbox(
         variables (now and next).
     """
 
-    data_provider = sb.IconSerialDataProvider(
-        "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-    )
+    data_provider = _serial_data_provider(path, rank)
     diffusion_init_savepoint = data_provider.from_savepoint_diffusion_init(
         linit=True, date=SIMULATION_START_DATE
     )
@@ -806,7 +813,7 @@ def read_initial_state(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
-    path: Path,
+    path: pathlib.Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
@@ -878,21 +885,23 @@ def read_initial_state(
 
 
 def read_geometry_fields(
-    path: Path,
-    damping_height,
+    path: pathlib.Path,
+    vertical_grid_config: VerticalGridConfig,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
+    grid_id=GLOBAL_GRID_ID,
     grid_root=2,
     grid_level=4,
-) -> tuple[EdgeParams, CellParams, VerticalModelParams, Field[[CellDim], bool]]:
+) -> tuple[EdgeParams, CellParams, VerticalGridParams, gtx.Field[[CellDim], bool]]:
     """
     Read fields containing grid properties.
 
     Args:
         path: path to the serialized input data
-        damping_height: damping height for Rayleigh and divergence damping
+        vertical_grid_config: Vertical grid configuration
         rank: mpi rank of the current compute node
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        grid_id: id (uuid) of the horizontal grid
         grid_root: global grid root division number
         grid_level: global grid refinement number
 
@@ -900,42 +909,53 @@ def read_geometry_fields(
         the data is originally obtained from the grid file (horizontal fields) or some special input files.
     """
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
-        ).from_savepoint_grid(grid_root, grid_level)
+        sp = _grid_savepoint(path, rank, grid_id, grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vertical_geometry = VerticalModelParams(
-            vct_a=sp.vct_a(),
-            rayleigh_damping_height=damping_height,
-            nflatlev=sp.nflatlev(),
-            nflat_gradp=sp.nflat_gradp(),
+        vct_a, vct_b = get_vct_a_and_vct_b(vertical_grid_config)
+        vertical_geometry = VerticalGridParams(
+            vertical_config=vertical_grid_config,
+            vct_a=vct_a,
+            vct_b=vct_b,
+            _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
         )
         return edge_geometry, cell_geometry, vertical_geometry, sp.c_owner_mask()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
+@functools.cache
+def _serial_data_provider(path, rank) -> sb.IconSerialDataProvider:
+    return sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
+
+
+@functools.cache
+def _grid_savepoint(path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSavepoint:
+    sp = _serial_data_provider(path, rank).from_savepoint_grid(grid_id, grid_root, grid_level)
+    return sp
+
+
 def read_decomp_info(
-    path: Path,
+    path: pathlib.Path,
     procs_props: ProcessProperties,
     ser_type=SerializationType.SB,
+    grid_id=GLOBAL_GRID_ID,
     grid_root=2,
     grid_level=4,
 ) -> DecompositionInfo:
     if ser_type == SerializationType.SB:
-        sp = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), True, procs_props.rank
-        )
-        return sp.from_savepoint_grid(grid_root, grid_level).construct_decomposition_info()
+        return _grid_savepoint(
+            path, procs_props.rank, grid_id, grid_root, grid_level
+        ).construct_decomposition_info()
     else:
         raise NotImplementedError(SB_ONLY_MSG)
 
 
 def read_static_fields(
-    path: Path,
+    path: pathlib.Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
+    grid_id=GLOBAL_GRID_ID,
     grid_root=2,
     grid_level=4,
 ) -> tuple[
@@ -952,6 +972,7 @@ def read_static_fields(
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
+        grid_id: id (uuid) of the horizontal grid
         grid_root: global grid root division number
         grid_level: global grid refinement number
 
@@ -961,14 +982,12 @@ def read_static_fields(
 
     """
     if ser_type == SerializationType.SB:
-        data_provider = sb.IconSerialDataProvider(
-            "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
+        data_provider = _serial_data_provider(path, rank)
+
+        icon_grid = _grid_savepoint(path, rank, grid_id, grid_root, grid_level).construct_icon_grid(
+            on_gpu=False
         )
-        icon_grid = (
-            sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
-            .from_savepoint_grid(grid_root, grid_level)
-            .construct_icon_grid(on_gpu=False)
-        )
+
         diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
         )
@@ -1062,7 +1081,9 @@ def configure_logging(
         experiment_name: name of the simulation
 
     """
-    run_dir = Path(run_path).absolute() if run_path else Path(__file__).absolute().parent
+    run_dir = (
+        pathlib.Path(run_path).absolute() if run_path else pathlib.Path(__file__).absolute().parent
+    )
     run_dir.mkdir(exist_ok=True)
     logfile = run_dir.joinpath(f"dummy_dycore_driver_{experiment_name}.log")
     logfile.touch(exist_ok=True)
