@@ -128,7 +128,7 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
 
 
 def generate_and_compile_cffi_plugin(
-    plugin_name: str, c_header: str, python_wrapper: str, build_path: Path
+    plugin_name: str, c_header: str, python_wrapper: str, build_path: Path, backend: str
 ) -> None:
     """
     Create and compile a CFFI plugin.
@@ -142,6 +142,7 @@ def generate_and_compile_cffi_plugin(
         c_header: C header signatures for the Python functions.
         python_wrapper: Python code wrapping the original function to be exposed.
         build_path: Path to the build directory.
+        backend: Backend used by the generated C shared library.
     """
     try:
         header_file_path = write_c_header(build_path, plugin_name, c_header)
@@ -150,6 +151,7 @@ def generate_and_compile_cffi_plugin(
             python_wrapper=python_wrapper,
             build_path=str(build_path),
             plugin_name=plugin_name,
+            backend=backend,
         )
     except Exception as e:
         logging.error(f"Error generating and compiling CFFI plugin: {e}")
@@ -174,9 +176,9 @@ def configure_cffi_builder(c_header: str, plugin_name: str, header_file_path: Pa
 
 
 def compile_cffi_plugin(
-    builder: cffi.FFI, python_wrapper: str, build_path: str, plugin_name: str
+    builder: cffi.FFI, python_wrapper: str, build_path: str, plugin_name: str, backend: str
 ) -> None:
     """Compile the CFFI plugin with the given configuration."""
     logger.info("Compiling CFFI dynamic library...")
     builder.embedding_init_code(python_wrapper)
-    builder.compile(tmpdir=build_path, target=f"lib{plugin_name}.*", verbose=True)
+    builder.compile(tmpdir=build_path, target=f"lib{plugin_name}_{backend.lower()}.*", verbose=True)
