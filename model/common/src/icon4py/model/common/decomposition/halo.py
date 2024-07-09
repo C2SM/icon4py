@@ -238,3 +238,13 @@ class HaloGenerator:
         )
         decomp_info.with_dimension(dims.VertexDim, all_vertices, v_owner_mask)
         return decomp_info
+    
+    def construct_local_connectivities(self, decom_info: defs.DecompositionInfo):
+        #ugrid required connectivity
+        #self._props
+        global_node_idx = decom_info.global_index(dims.VertexDim, defs.DecompositionInfo.EntryType.ALL)
+        local_node_idx = decom_info.local_index(dims.VertexDim, defs.DecompositionInfo.EntryType.ALL)
+        sliced_connectivity = self._global_grid.face_node_connectivity[decom_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL)]
+        
+        
+        
