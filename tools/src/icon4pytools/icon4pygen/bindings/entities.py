@@ -47,9 +47,7 @@ def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
 class Offset(Node, OffsetEntity):
     def __init__(self, chain: str) -> None:
         self.includes_center = self._includes_center(chain)
-        chain_ls = chain.split("2")
-        if "O" in chain_ls[-1]:
-            chain_ls.pop()
+        chain_ls = self._split_chain(chain)
         self.source = self._handle_source(chain_ls)
         self.target = self._make_target(chain_ls, self.source)
         self.renderer = OffsetRenderer(self)
@@ -60,9 +58,15 @@ class Offset(Node, OffsetEntity):
     def get_num_neighbors(self) -> int:
         return calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
 
+    def _split_chain(self, chain: str) -> list:
+        chain_ls = chain.split("2")
+        if "O" in chain_ls[-1]:
+            chain_ls.pop()
+        return chain_ls
+
     @staticmethod
     def _includes_center(chain: str) -> bool:
-        if "O" in chain[-1]:
+        if chain.endswith("O"):
             return True
         return False
 
