@@ -153,6 +153,7 @@ if "dace" in backend.executor.name:
 
                 compiled_sdfgs[id(self)]['sdfg'] = compiled_sdfgs[id(self)]['dace_program'].to_sdfg(self, simplify=False, validate=True)
 
+                # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
                 add_halo_exchanges(compiled_sdfgs[id(self)]['sdfg'], exchange_obj, self.grid.offset_providers, **kwargs)
                 
                 compiled_sdfgs[id(self)]['sdfg'].simplify(validate=True)
@@ -250,8 +251,10 @@ if "dace" in backend.executor.name:
         # TODO(kotsaloscv): Work on asynchronous communication
         wait = True
         
-        counter = 0
-        for nested_sdfg in sdfg.all_sdfgs_recursive():
+        expected_ghex_ptrs = ['__context_ptr', '__comm_ptr', '__pattern_CellDim_ptr', '__pattern_VertexDim_ptr', '__pattern_EdgeDim_ptr', '__domain_descriptor_CellDim_ptr', '__domain_descriptor_VertexDim_ptr', '__domain_descriptor_EdgeDim_ptr']
+
+        counter = 0 # for generating unique names
+        for nested_sdfg in sdfg.all_sdfgs_recursive(): # loop over all nested sdfgs (aka stencils) and decide which fields need to be exchanged
             if not hasattr(nested_sdfg, "gt4py_program_output_fields"):
                 continue
 
@@ -362,7 +365,7 @@ if "dace" in backend.executor.name:
                     halo_update = all_bools[0]
 
                 if halo_update:
-                    global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name]
+                    global_buffers[global_buffer_name] = sdfg.arrays[global_buffer_name] # DaCe data descriptor
             
             if len(global_buffers) == 0:
                 # There is no field to exchange
@@ -382,11 +385,12 @@ if "dace" in backend.executor.name:
             in_connectors = {}
             out_connectors = {}
 
-            if counter == 0:
-                for buffer_name in kwargs:
-                    if '_ptr' in buffer_name:
-                        # Add GHEX C++ obj ptrs (just once)
-                        sdfg.add_scalar(buffer_name, dtype=dace.uintp)
+            for buffer_name in kwargs:
+                if buffer_name in expected_ghex_ptrs and buffer_name not in sdfg.arrays:
+                    sdfg.add_scalar(buffer_name, dtype=dace.uintp)
+                    buffer = state.add_read(buffer_name)
+                    in_connectors['IN_' + buffer_name] = dace.uintp.dtype
+                    state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, Memlet(buffer_name, subset='0'))
 
             for i, (buffer_name, data_descriptor) in enumerate(global_buffers.items()):
                 buffer = state.add_read(buffer_name)
@@ -397,32 +401,24 @@ if "dace" in backend.executor.name:
                 out_connectors['OUT_' + f'field_{i}'] = dtypes.pointer(data_descriptor.dtype)
                 state.add_edge(tasklet, 'OUT_' + f'field_{i}', update, None, Memlet.from_array(buffer_name, data_descriptor))
 
-            if counter == 0:
-                for buffer_name in kwargs:
-                    if '_ptr' in buffer_name:
-                        buffer = state.add_read(buffer_name)
-                        data_descriptor = dace.uintp
-                        in_connectors['IN_' + buffer_name] = data_descriptor.dtype
-                        memlet_ =  Memlet(buffer_name, subset='0')
-                        state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, memlet_)
-
             tasklet.in_connectors = in_connectors
             tasklet.out_connectors = out_connectors
-            tasklet.environments = ['icon4py.model.common.orchestration.decorator.DaceGHEX']
+            tasklet.environments = [f"{DaceGHEX.__module__}.{DaceGHEX.__name__}"]
 
             pattern_type = exchange._patterns[dim].__cpp_type__
             domain_descriptor_type = exchange._domain_descriptors[dim].__cpp_type__
             communication_object_type = exchange._comm.__cpp_type__
             communication_handle_type = communication_object_type[communication_object_type.find('<')+1:communication_object_type.rfind('>')]
 
+            # Tasklet code generation part
             fields_desc_glob_vars = '\n'
             fields_desc = '\n'
             descr_unique_names = []
             for i, arg in enumerate(copy.deepcopy(list(global_buffers.values()))):
-                if isinstance(arg.shape[0], dace.symbolic.symbol):
-                    arg.shape   = (kwargs[str(arg.shape[0])]  , kwargs[str(arg.shape[1])])
-                    arg.strides = (kwargs[str(arg.strides[0])], kwargs[str(arg.strides[1])])
-                # https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
+                arg.shape   = (kwargs[str(arg.shape[0])] if isinstance(arg.shape[0], dace.symbolic.symbol) else arg.shape[0], kwargs[str(arg.shape[1])] if isinstance(arg.shape[1], dace.symbolic.symbol) else arg.shape[1])
+                arg.strides = (kwargs[str(arg.strides[0])] if isinstance(arg.strides[0], dace.symbolic.symbol) else arg.strides[0], kwargs[str(arg.strides[1])] if isinstance(arg.strides[1], dace.symbolic.symbol) else arg.strides[1])
+
+                # Checks below adapted from https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
                 if len(arg.shape) > 2:
                     raise ValueError("field has too many dimensions")
                 if arg.shape[0] != exchange._domain_descriptors[dim].size():
@@ -446,13 +442,10 @@ if "dace" in backend.executor.name:
                         raise ValueError("field's strides are not compatible with GHEX")
 
                 levels = 1 if len(arg.shape) == 1 else arg.shape[1]
-
-                device = 'cpu' if arg.storage.value <= 5 else 'gpu'
-                field_dtype = arg.dtype.ctype
                 
                 descr_unique_name = f'field_desc_{i}_{counter}_{id(exchange)}'
                 descr_unique_names.append(descr_unique_name)
-                descr_type_ = f"ghex::unstructured::data_descriptor<ghex::{device}, int, int, {field_dtype}>"
+                descr_type_ = f"ghex::unstructured::data_descriptor<ghex::{'cpu' if arg.storage.value <= 5 else 'gpu'}, int, int, {arg.dtype.ctype}>"
                 if wait:
                     # de-allocated descriptors once out-of-scope, no need for storing them in global vars
                     fields_desc += f"{descr_type_} {descr_unique_name}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
@@ -463,10 +456,12 @@ if "dace" in backend.executor.name:
 
             code = ''
             if counter == 0:
+                # The GHEX C++ ptrs are global variables
+                # Here, they are initialized at the first encounter of the halo exchange node
                 __pattern = ''
                 __domain_descriptor = ''
                 for dim_ in (CellDim, VertexDim, EdgeDim):
-                    __pattern += f"__pattern_{dim_.value}Dim_ptr_{id(exchange)} = IN___pattern_{dim_.value}Dim_ptr;\n"
+                    __pattern += f"__pattern_{dim_.value}Dim_ptr_{id(exchange)} = IN___pattern_{dim_.value}Dim_ptr;\n" # IN_XXX comes from the DaCe connector
                     __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{id(exchange)} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
                     
                 code = f'''
@@ -490,7 +485,9 @@ if "dace" in backend.executor.name:
                     '''
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
+            
             if counter == 0:
+                # Set global variables
                 __pattern = ''
                 __domain_descriptor = ''
                 for dim_ in (CellDim, VertexDim, EdgeDim):
@@ -507,6 +504,7 @@ if "dace" in backend.executor.name:
                         '''
             else:
                 code = fields_desc_glob_vars
+            
             tasklet.code_global = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
 
             counter += 1
