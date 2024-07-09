@@ -457,7 +457,7 @@ def model_initialization_gauss3d(
     icon_grid: IconGrid,
     cell_param: CellParams,
     edge_param: EdgeParams,
-    path: Path,
+    path: pathlib.Path,
     rank=0,
 ) -> tuple[
     DiffusionDiagnosticState,
@@ -580,7 +580,7 @@ def model_initialization_gauss3d(
     )
     log.info("Hydrostatic adjustment computation completed.")
 
-    eta_v = as_field((CellDim, KDim), eta_v_numpy)
+    eta_v = gtx.as_field((CellDim, KDim), eta_v_numpy)
     eta_v_e = _allocate(EdgeDim, KDim, grid=icon_grid)
     cell_2_edge_interpolation(
         eta_v,
@@ -594,24 +594,24 @@ def model_initialization_gauss3d(
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
-    vn = as_field((EdgeDim, KDim), vn_numpy)
-    w = as_field((CellDim, KDim), w_numpy)
-    exner = as_field((CellDim, KDim), exner_numpy)
-    rho = as_field((CellDim, KDim), rho_numpy)
-    temperature = as_field((CellDim, KDim), temperature_numpy)
-    pressure = as_field((CellDim, KDim), pressure_numpy)
-    theta_v = as_field((CellDim, KDim), theta_v_numpy)
+    vn = gtx.as_field((EdgeDim, KDim), vn_numpy)
+    w = gtx.as_field((CellDim, KDim), w_numpy)
+    exner = gtx.as_field((CellDim, KDim), exner_numpy)
+    rho = gtx.as_field((CellDim, KDim), rho_numpy)
+    temperature = gtx.as_field((CellDim, KDim), temperature_numpy)
+    pressure = gtx.as_field((CellDim, KDim), pressure_numpy)
+    theta_v = gtx.as_field((CellDim, KDim), theta_v_numpy)
     pressure_ifc_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
     pressure_ifc_numpy[
         :, -1
     ] = P0REF  # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
-    pressure_ifc = as_field((CellDim, KDim), pressure_ifc_numpy)
+    pressure_ifc = gtx.as_field((CellDim, KDim), pressure_ifc_numpy)
 
-    vn_next = as_field((EdgeDim, KDim), vn_numpy)
-    w_next = as_field((CellDim, KDim), w_numpy)
-    exner_next = as_field((CellDim, KDim), exner_numpy)
-    rho_next = as_field((CellDim, KDim), rho_numpy)
-    theta_v_next = as_field((CellDim, KDim), theta_v_numpy)
+    vn_next = gtx.as_field((EdgeDim, KDim), vn_numpy)
+    w_next = gtx.as_field((CellDim, KDim), w_numpy)
+    exner_next = gtx.as_field((CellDim, KDim), exner_numpy)
+    rho_next = gtx.as_field((CellDim, KDim), rho_numpy)
+    theta_v_next = gtx.as_field((CellDim, KDim), theta_v_numpy)
 
     u = _allocate(CellDim, KDim, grid=icon_grid)
     v = _allocate(CellDim, KDim, grid=icon_grid)

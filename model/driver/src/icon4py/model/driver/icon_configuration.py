@@ -160,7 +160,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
     def _gauss3d_config():
         icon_run_config = IconRunConfig(
-            dtime=timedelta(seconds=4.0),
+            dtime=datetime.timedelta(seconds=4.0),
             end_date=datetime(1, 1, 1, 0, 0, 4),
             damping_height=45000.0,
             apply_initial_stabilization=False,
