@@ -624,7 +624,7 @@ def model_initialization_gauss3d(
         grid_idx_cell_start_plus1,
         grid_idx_cell_end,
         0,
-        icon_grid.num_levels,
+        num_levels,
         offset_provider=icon_grid.offset_providers,
     )
     log.info("U, V computation completed.")
@@ -637,7 +637,7 @@ def model_initialization_gauss3d(
         grid_idx_cell_interior_start,
         grid_idx_cell_end,
         0,
-        icon_grid.num_levels,
+        num_levels,
         offset_provider={},
     )
     log.info("exner_pr initialization completed.")
