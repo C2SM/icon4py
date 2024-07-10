@@ -12,16 +12,20 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import enum
-import functools
-from typing import Union
+import logging
+import uuid
 
+import gt4py.next as gtx
 import scipy as sp
 import xugrid.ugrid.ugrid2d as ux
 
 import icon4py.model.common.decomposition.definitions as defs
 from icon4py.model.common import dimension as dims
+from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.settings import xp
 
+
+log = logging.getLogger(__name__)
 
 # TODO do we need three of those?
 class DecompositionFlag(enum.IntEnum):
@@ -44,6 +48,7 @@ class HaloGenerator:
         num_lev: int,
         face_face_connectivity: xp.ndarray = None,
         node_face_connectivity=None,
+        node_edge_connectivity=None,
     ):
         """
 
@@ -62,8 +67,21 @@ class HaloGenerator:
         self._mapping = rank_mapping
         self._global_grid = ugrid
         self._num_lev = num_lev
-        self._c2e2c = face_face_connectivity
-        self._v2c = node_face_connectivity
+        self._connectivities = {
+            dims.C2E2CDim: face_face_connectivity
+            if face_face_connectivity is not None
+            else self._global_grid.face_face_connectivity,
+            dims.C2EDim: self._global_grid.face_edge_connectivity,
+            dims.C2VDim: self._global_grid.face_node_connectivity,
+            dims.E2CDim: self._global_grid.edge_face_connectivity,
+            dims.E2VDim: self._global_grid.edge_node_connectivity,
+            dims.V2CDim: node_face_connectivity
+            if node_face_connectivity is not None
+            else self._global_grid.node_face_connectivity,
+            dims.V2EDim: node_edge_connectivity
+            if node_edge_connectivity is not None
+            else self._global_grid.node_edge_connectivity,
+        }
 
     def _validate(self):
         assert self._mapping.ndim == 1
@@ -72,6 +90,19 @@ class HaloGenerator:
 
     def _post_init(self):
         self._validate()
+        # TODO handle sparse neibhbors tables?
+
+    def connectivity(self, dim) -> xp.ndarray:
+        try:
+            conn_table = self._connectivities[dim]
+            if sp.sparse.issparse(conn_table):
+                raise NotImplementedError("Scipy sparse for connectivity tables are not supported")
+                # TODO this is not tested/working. It returns a (N x N) matrix not a (N x sparse_dim) matrix
+                # _and_ we cannot make the difference between a valid "0" and a missing-value 0
+                # return conn_table.toarray(order="C")
+            return conn_table
+        except KeyError as err:
+            raise (f"Connectivity for dimension {dim} is not available") from err
 
     def next_halo_line(self, cell_line: xp.ndarray, depot=None):
         """Returns the global indices of the next halo line.
@@ -93,21 +124,11 @@ class HaloGenerator:
         return next_halo_cells
 
     def _cell_neighbors(self, cells: xp.ndarray):
-        if self._c2e2c is not None:
-            return xp.unique(self._c2e2c[cells, :])
-        else:
-            return self._cell_neighbors_from_sparse(cells)
-
-    @functools.cached_property
-    def _node_face_connectivity(self) -> Union[xp.ndarray, sp.sparse.csr_matrix]:
-        if self._v2c is not None:
-            return self._v2c
-        else:
-            return self._global_grid._node_face_connectivity
+        return xp.unique(self.connectivity(dims.C2E2CDim)[cells, :])
 
     def _cell_neighbors_from_sparse(self, cells: xp.ndarray):
         """In xugrid face-face connectivity is a scipy spars matrix, so we reduce it to the regular sparse matrix format: (n_cells, 3)"""
-        conn = self._c2e2c.face_face_connectivity
+        conn = self.connectivity(dims.C2E2CDim)
 
         neighbors = conn[cells, :]
         # There is an issue with explicit 0 (for zero based indices) since sparse.find projects them out...
@@ -123,20 +144,17 @@ class HaloGenerator:
         return unique_neighbors
 
     def find_edge_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
-        return self._find_neighbors(
-            cell_line, connectivity=self._global_grid.face_edge_connectivity
-        )
+        return self._find_neighbors(cell_line, connectivity=self.connectivity(dims.C2EDim))
 
     def find_vertex_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
-        return self._find_neighbors(
-            cell_line, connectivity=self._global_grid.face_node_connectivity
-        )
+        return self._find_neighbors(cell_line, connectivity=self.connectivity(dims.C2VDim))
 
     def owned_cells(self) -> xp.ndarray:
         """Returns the global indices of the cells owned by this rank"""
         owned_cells = self._mapping == self._props.rank
         return xp.asarray(owned_cells).nonzero()[0]
 
+    # TODO (@halungge): move out of halo generator
     def construct_decomposition_info(self) -> defs.DecompositionInfo:
         """
         Constructs the DecompositionInfo for the current rank.
@@ -234,17 +252,68 @@ class HaloGenerator:
         all_vertices = xp.unique(xp.hstack((vertices_on_owned_cells, vertices_on_first_halo_line)))
         v_owner_mask = xp.isin(all_vertices, vertices_on_owned_cells)
         v_owner_mask = _update_owner_mask_by_max_rank_convention(
-            v_owner_mask, all_vertices, intersect_owned_first_line, self._node_face_connectivity
+            v_owner_mask, all_vertices, intersect_owned_first_line, self.connectivity(dims.V2CDim)
         )
         decomp_info.with_dimension(dims.VertexDim, all_vertices, v_owner_mask)
         return decomp_info
+
+    def construct_local_connectivity(self, field_offset: gtx.FieldOffset,
+                                     decom_info: defs.DecompositionInfo) -> xp.ndarray:
+        """
+        Construct a connectivity table for use on a given rank: it maps from source to target dimension in local indices.
+        
+        Args:
+            field_offset: FieldOffset for which we want to construct the offset table 
+            decom_info: DecompositionInfo for the current rank
+
+        Returns: array, containt the connectivity table for the field_offset with rank-local indices
+
+        """
+        source_dim = field_offset.source
+        target_dim = field_offset.target[0]
+        local_dim = field_offset.target[1]
+        connectivity = self.connectivity(local_dim)
+        global_node_idx = decom_info.global_index(source_dim, defs.DecompositionInfo.EntryType.ALL)
+        global_node_sorted = xp.argsort(global_node_idx)
+        sliced_connectivity = connectivity[
+            decom_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
+        ]
+        log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
+        for i in xp.arange(sliced_connectivity.shape[0]):
+            positions = xp.searchsorted(
+                global_node_idx[global_node_sorted], sliced_connectivity[i, :]
+            )
+            indices = global_node_sorted[positions]
+            sliced_connectivity[i, :] = indices
+        log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
+        return sliced_connectivity
+
+# should be done in grid manager!
+def local_grid(props: defs.ProcessProperties, 
+               decomp_info:defs.DecompositionInfo, 
+               global_params:icon_grid.GlobalGridParams,
+               num_lev:int, 
+               limited_area:bool = False, on_gpu:bool=False, )->base_grid.BaseGrid:
+    """
+    Constructs a local grid for this rank based on the decomposition info.
+    TODO (@halungge): for now only returning base grid as we have not start/end indices implementation yet
+    Args:
+        decomp_info: the decomposition info for this rank
+    Returns:
+        local_grid: the local grid
+    """
+    num_vertices = decomp_info.global_index(dims.VertexDim, defs.DecompositionInfo.EntryType.ALL).size
+    num_edges = decomp_info.global_index(dims.EdgeDim, defs.DecompositionInfo.EntryType.ALL).size
+    num_cells = decomp_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL).size
+    grid_size = base_grid.HorizontalGridSize(
+        num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+    )
+    config = base_grid.GridConfig(horizontal_config = grid_size, 
+                                  vertical_size = num_lev, 
+                                  on_gpu=on_gpu, 
+                                  limited_area=limited_area)
     
-    def construct_local_connectivities(self, decom_info: defs.DecompositionInfo):
-        #ugrid required connectivity
-        #self._props
-        global_node_idx = decom_info.global_index(dims.VertexDim, defs.DecompositionInfo.EntryType.ALL)
-        local_node_idx = decom_info.local_index(dims.VertexDim, defs.DecompositionInfo.EntryType.ALL)
-        sliced_connectivity = self._global_grid.face_node_connectivity[decom_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL)]
-        
-        
-        
+    local_grid = icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_global_params(global_params)
+    # add connectivities
+
+    return local_grid

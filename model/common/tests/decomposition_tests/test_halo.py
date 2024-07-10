@@ -10,6 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import logging
+import pathlib
 
 import mpi4py
 import mpi4py.MPI
@@ -17,10 +19,13 @@ import pytest
 import xugrid as xu
 
 import icon4py.model.common.dimension as dims
+import icon4py.model.common.grid.grid_manager as gm
+import icon4py.model.common.grid.vertical as v_grid
 from icon4py.model.common.decomposition import definitions as defs
 from icon4py.model.common.decomposition.halo import HaloGenerator
-from icon4py.model.common.grid import simple
+from icon4py.model.common.grid import icon, simple
 from icon4py.model.common.settings import xp
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
@@ -137,7 +142,7 @@ def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # noqa: F
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-def test_cell_ownership_is_unique(dim, processor_props, simple_ugrid):  # noqa: F811  # fixture
+def test_element_ownership_is_unique(dim, processor_props, simple_ugrid):  # noqa: F811  # fixture
     grid = simple_ugrid
     halo_generator = HaloGenerator(
         ugrid=grid,
@@ -147,10 +152,11 @@ def test_cell_ownership_is_unique(dim, processor_props, simple_ugrid):  # noqa: 
         face_face_connectivity=simple.SimpleGridData.c2e2c_table,
         node_face_connectivity=simple.SimpleGridData.v2c_table,
     )
-    assert processor_props.comm.Get_size() == 4, "This test requires 4 MPI ranks."
+    assert processor_props.comm_size == 4, "This test requires 4 MPI ranks."
 
     decomposition_info = halo_generator.construct_decomposition_info()
     owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
+    print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
     if not mpi4py.MPI.Is_initialized():
         mpi4py.MPI.Init()
     # assert that each cell is only owned by one rank
@@ -158,22 +164,31 @@ def test_cell_ownership_is_unique(dim, processor_props, simple_ugrid):  # noqa: 
 
     my_size = owned.shape[0]
     local_sizes = xp.array(comm.gather(my_size, root=0))
-
+    buffer_size = 27
+    send_buf = -1 * xp.ones(buffer_size, dtype=int)
+    send_buf[:my_size] = owned
+    print(f"rank {processor_props.rank} send_buf: {send_buf}")
     if processor_props.rank == 0:
-        gathered = xp.empty(sum(local_sizes), dtype=int)
-
+        print(f"local_sizes: {local_sizes}")
+        # recv_buffer = xp.empty(sum(local_sizes), dtype=int)
+        recv_buffer = -1 * xp.ones((4, buffer_size), dtype=int)
+        print(f"{recv_buffer.shape}")
     else:
-        gathered = None
-    comm.Gatherv(sendbuf=owned, recvbuf=(gathered, local_sizes), root=0)
+        recv_buffer = None
+    # TODO (@halungge) Gatherv does not work if one of the buffers has size-0 (VertexDim)
+    # comm.Gatherv(sendbuf=owned, recvbuf=(recv_buffer, local_sizes), root=0)
+    comm.Gather(sendbuf=send_buf, recvbuf=recv_buffer, root=0)
     if processor_props.rank == 0:
+        print(f"global indices: {recv_buffer}")
         # check there are no duplicates
-        assert gathered.size == len(xp.unique(gathered))
+        values = recv_buffer[recv_buffer != -1]
+        assert values.size == len(xp.unique(values))
         # check the buffer has all global indices
-        assert xp.all(xp.sort(gathered) == global_indices(dim))
+        assert xp.all(xp.sort(values) == global_indices(dim))
 
 
-# TODO (@halungge) this test can be run on 4MPI ranks or should we rather switch to a single node
-# that parametrizes the rank number
+# TODO (@halungge) this test can be run on 4 MPI ranks or should we rather switch to a single node,
+# and parametrizes the rank number
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim):  # noqa: F811  # fixture
     grid = simple_ugrid
@@ -195,6 +210,41 @@ def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim)
     print(f"rank {processor_props.rank} owns {dim} : {my_owned} ")
     assert my_owned.size == len(owned[dim][processor_props.rank])
     assert xp.setdiff1d(my_owned, owned[dim][processor_props.rank], assume_unique=True).size == 0
+
+
+# TODO V2E2V (from grid file vertices_of_vertex) do we use that at all?
+@pytest.mark.parametrize(
+    "field_offset", [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.V2E, dims.C2E2C]
+)
+def test_local_connectivities(processor_props, caplog, field_offset):  # noqa: F811  # fixture
+    caplog.set_level(logging.INFO)
+    grid = as_ugrid2d(UGRID_FILE)
+    icon_grid = as_icon_grid(GRID_FILE)
+    distributed_grids = grid.partition(n_part=4)
+    labels = grid.label_partitions(n_part=4)
+    halo_generator = HaloGenerator(
+        ugrid=grid,
+        rank_info=processor_props,
+        rank_mapping=labels,
+        num_lev=1,
+        face_face_connectivity=icon_grid.connectivities[dims.C2E2CDim],
+        node_face_connectivity=icon_grid.connectivities[dims.V2CDim],
+        node_edge_connectivity=icon_grid.connectivities[dims.V2EDim],
+    )
+
+    decomposition_info = halo_generator.construct_decomposition_info()
+
+    connectivity = halo_generator.construct_local_connectivity(field_offset, decomposition_info)
+    # TODO (@halungge): think of more valuable assertions
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
+        ).size
+    )
+    assert xp.max(connectivity) == xp.max(
+        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+    )
 
 
 @pytest.fixture
@@ -221,6 +271,68 @@ def simple_ugrid() -> xu.Ugrid2d:
     return grid
 
 
+UGRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
+    "icon_grid_0013_R02B04_R_ugrid.nc"
+)
+GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
+    "icon_grid_0013_R02B04_R.nc"
+)
+
+
+def as_icon_grid(file: pathlib.Path) -> icon.IconGrid:
+    manager = gm.GridManager(
+        gm.ToGt4PyTransformation(), file, v_grid.VerticalGridConfig(num_levels=1)
+    )
+    manager()
+    return manager.grid
+
+
+def as_ugrid2d(file: pathlib.Path) -> xu.Ugrid2d:
+    xu_dataset = xu.open_dataset(file.as_posix())
+    return xu_dataset.grid
+
+
 def global_indices(dim: dims.Dimension) -> int:
     mesh = simple.SimpleGrid()
     return xp.arange(mesh.size[dim], dtype=xp.int32)
+
+def icon_distribution(props:defs.ProcessProperties, decomposition_info:defs.DecompositionInfo) -> xp.ndarray:
+    cell_index =  decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.OWNED)
+    comm = props.comm
+    local_sizes = xp.array(comm.gather(cell_index.size, root=0))
+    if comm.rank == 0:
+        recv_buffer = xp.empty(sum(local_sizes), dtype=int)
+    else:
+        recv_buffer = None
+    comm.Gatherv(sendbuf=cell_index, recvbuf=(recv_buffer, local_sizes), root=0)
+    distribution = xp.empty((sum(local_sizes)), dtype=int)
+    if comm.rank == 0:
+        start_index = 0
+        for s in comm.size:
+            end_index = local_sizes[s]
+            distribution[recv_buffer[start_index:end_index]] = s
+            start_index = end_index
+    
+    comm.Bcast(distribution, root=0)
+    return distribution
+
+def test_local_grid(processor_props, caplog):  # noqa: F811  # fixture
+    caplog.set_level(logging.INFO)
+    grid = as_ugrid2d(UGRID_FILE)
+    icon_grid = as_icon_grid(GRID_FILE)
+    distributed_grids = grid.partition(n_part=4)
+    # TODO (@halungge): replace with the icon 4 nodes distribution from serialbox data.
+    labels = grid.label_partitions(n_part=4)
+    halo_generator = HaloGenerator(
+        ugrid=grid,
+        rank_info=processor_props,
+        rank_mapping=labels,
+        num_lev=1,
+        face_face_connectivity=icon_grid.connectivities[dims.C2E2CDim],
+        node_face_connectivity=icon_grid.connectivities[dims.V2CDim],
+        node_edge_connectivity=icon_grid.connectivities[dims.V2EDim],
+    )
+    decomposition_info = halo_generator.construct_decomposition_info()
+    local_grid = halo_generator.local_grid(decomposition_info)
+    
+    assert local_grid.num_cells == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.All).size
