@@ -662,9 +662,6 @@ def read_static_fields(
     path: pathlib.Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
-    grid_id=GLOBAL_GRID_ID,
-    grid_root=GRID_ROOT,
-    grid_level=GRID_LEVEL,
 ) -> tuple[
     diffus_states.DiffusionMetricState,
     diffus_states.DiffusionInterpolationState,
@@ -676,12 +673,10 @@ def read_static_fields(
     Read fields for metric and interpolation state.
 
      Args:
+        grid: IconGrid
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
-        grid_id: id (uuid) of the horizontal grid
-        grid_root: global grid root division number
-        grid_level: global grid refinement number
 
     Returns:
         a tuple containing the metric_state and interpolation state,

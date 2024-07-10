@@ -346,11 +346,10 @@ def initialize(
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
     ) = driver_init.read_static_fields(
+        icon_grid,
         file_path,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
 
     log.info("initializing diffusion")
