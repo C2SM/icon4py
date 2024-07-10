@@ -11,9 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import as_field
-from gt4py.next.iterator.builtins import int32
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -55,7 +54,7 @@ from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
@@ -65,7 +64,7 @@ class VelocityAdvection:
         grid: IconGrid,
         metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
+        vertical_params: VerticalGridParams,
         edge_params: EdgeParams,
         owner_mask: fa.CellField[bool],
     ):
@@ -305,8 +304,10 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 3),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
+            vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
@@ -353,8 +354,10 @@ class VelocityAdvection:
                 dtime=dtime,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
-                vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-                vertical_end=int32(self.grid.num_levels - 3),
+                vertical_start=gtx.int32(
+                    max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+                ),
+                vertical_end=gtx.int32(self.grid.num_levels - 3),
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -396,13 +399,15 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
     def _update_levmask_from_cfl_clipping(self):
-        self.levmask = as_field(
+        self.levmask = gtx.as_field(
             domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
@@ -527,8 +532,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 3),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
@@ -574,8 +579,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
@@ -618,7 +623,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )

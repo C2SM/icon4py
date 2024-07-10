@@ -18,11 +18,18 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     decomposition_info,
     download_ser_data,
     experiment,
+    flat_height,
     grid_savepoint,
+    htop_moist_proc,
     icon_grid,
     interpolation_savepoint,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    model_top_height,
     processor_props,
     ranked_data_path,
+    stretch_factor,
+    top_height_limit_for_maximal_layer_thickness,
 )
 from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 

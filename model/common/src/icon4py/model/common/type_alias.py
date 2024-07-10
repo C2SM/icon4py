@@ -21,9 +21,10 @@ DEFAULT_PRECISION = "double"
 wpfloat: TypeAlias = float64
 
 precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
-if precision == "double":
-    vpfloat = wpfloat
-elif precision == "mixed":
-    vpfloat: TypeAlias = float32
-else:
-    raise ValueError("Only 'double' and 'mixed' precision are supported.")
+match precision:
+    case "double":
+        vpfloat = wpfloat
+    case "mixed":
+        vpfloat: TypeAlias = float32
+    case other:
+        raise ValueError("Only 'double' and 'mixed' precision are supported.")

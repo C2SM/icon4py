@@ -4,9 +4,6 @@ include:
 variables:
   DACE_VERSION: "0.16.1"
 
-build:
-  extends: .build_template
-
 test_model_stencils:
   extends: .test_template
   stage: test

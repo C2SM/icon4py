@@ -11,12 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from dataclasses import dataclass
+import dataclasses
 from typing import Final, Optional
 
-from gt4py.next import as_field
-from gt4py.next.common import Field
-from gt4py.next.ffront.fbuiltins import int32
+import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
@@ -165,7 +163,7 @@ from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
 )
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
@@ -175,7 +173,7 @@ from icon4py.model.common import field_type_aliases as fa
 log = logging.getLogger(__name__)
 
 
-@dataclass
+@dataclasses.dataclass
 class IntermediateFields:
     """
     Encapsulate internal fields of SolveNonHydro that contain shared state over predictor and corrector step.
@@ -187,16 +185,16 @@ class IntermediateFields:
     """
 
     z_gradh_exner: fa.EdgeKField[float]
-    z_alpha: Field[
+    z_alpha: gtx.Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_beta: fa.CellKField[float]
-    z_w_expl: Field[
+    z_w_expl: gtx.Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_exner_expl: fa.CellKField[float]
     z_q: fa.CellKField[float]
-    z_contr_w_fl_l: Field[
+    z_contr_w_fl_l: gtx.Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
     z_rho_e: fa.EdgeKField[float]
@@ -262,7 +260,6 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        htop_moist_proc: float = 22500.0,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -307,9 +304,6 @@ class NonHydrostaticConfig:
         self.divdamp_z2: float = divdamp_z2
         self.divdamp_z3: float = divdamp_z3
         self.divdamp_z4: float = divdamp_z4
-
-        #: height [m] where moist physics is turned off
-        self.htop_moist_proc: float = htop_moist_proc
 
         #: parameters from other namelists:
 
@@ -382,7 +376,7 @@ class SolveNonhydro:
         self.params: Optional[NonHydrostaticParams] = None
         self.metric_state_nonhydro: Optional[MetricStateNonHydro] = None
         self.interpolation_state: Optional[InterpolationState] = None
-        self.vertical_params: Optional[VerticalModelParams] = None
+        self.vertical_params: Optional[VerticalGridParams] = None
         self.edge_geometry: Optional[EdgeParams] = None
         self.cell_params: Optional[CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
@@ -402,7 +396,7 @@ class SolveNonhydro:
         params: NonHydrostaticParams,
         metric_state_nonhydro: MetricStateNonHydro,
         interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
+        vertical_params: VerticalGridParams,
         edge_geometry: EdgeParams,
         cell_geometry: CellParams,
         owner_mask: fa.CellField[bool],
@@ -439,7 +433,7 @@ class SolveNonhydro:
             self.jk_start = 0
 
         en_smag_fac_for_zero_nshift(
-            self.vertical_params.vct_a,
+            self.vertical_params.inteface_physical_height,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
             self.config.divdamp_fac3,
@@ -965,7 +959,7 @@ class SolveNonhydro:
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
                 vertical_start=self.vertical_params.nflatlev,
-                vertical_end=int32(self.vertical_params.nflat_gradp + 1),
+                vertical_end=gtx.int32(self.vertical_params.nflat_gradp + 1),
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -979,7 +973,7 @@ class SolveNonhydro:
                 z_gradh_exner=z_fields.z_gradh_exner,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
-                vertical_start=int32(self.vertical_params.nflat_gradp + 1),
+                vertical_start=gtx.int32(self.vertical_params.nflat_gradp + 1),
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
@@ -1002,7 +996,9 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
+        hydro_corr_horizontal = gtx.as_field(
+            (EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
+        )
 
         if self.config.igradp_method == 3:
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
@@ -1130,7 +1126,7 @@ class SolveNonhydro:
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             k_field=self.k_field,
-            nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
+            nflatlev_startindex_plus1=gtx.int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_halo,
@@ -1268,8 +1264,8 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=1,
-                vertical_end=int32(
-                    self.vertical_params.index_of_damping_layer + 1
+                vertical_end=gtx.int32(
+                    self.vertical_params.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
@@ -1294,7 +1290,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(self.jk_start),
+            vertical_start=gtx.int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
@@ -1341,7 +1337,7 @@ class SolveNonhydro:
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
-                vertical_end=int32(self.grid.num_levels + 1),
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
             )
 
@@ -1393,7 +1389,7 @@ class SolveNonhydro:
 
         _calculate_divdamp_fields(
             self.enh_divdamp_fac,
-            int32(self.config.divdamp_order),
+            gtx.int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
             divdamp_fac_o2,
             self.config.nudge_max_coeff,
@@ -1819,8 +1815,8 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=1,
-                vertical_end=int32(
-                    self.vertical_params.index_of_damping_layer + 1
+                vertical_end=gtx.int32(
+                    self.vertical_params.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
@@ -1845,7 +1841,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(self.jk_start),
+            vertical_start=gtx.int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
@@ -1887,7 +1883,7 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
-                vertical_end=int32(self.grid.num_levels),
+                vertical_end=gtx.int32(self.grid.num_levels),
                 offset_provider={},
             )
 

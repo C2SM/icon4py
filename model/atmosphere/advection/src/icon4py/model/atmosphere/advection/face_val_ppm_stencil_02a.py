@@ -10,11 +10,12 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import gt4py.next as gtx
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
@@ -34,9 +35,14 @@ def face_val_ppm_stencil_02a(
     p_cc: fa.CellKField[float],
     p_cellhgt_mc_now: fa.CellKField[float],
     p_face: fa.CellKField[float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _face_val_ppm_stencil_02a(
         p_cc,
         p_cellhgt_mc_now,
         out=p_face,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

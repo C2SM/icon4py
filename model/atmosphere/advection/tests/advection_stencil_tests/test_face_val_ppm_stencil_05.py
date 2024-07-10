@@ -68,4 +68,13 @@ class TestFaceValPpmStencil05(StencilTest):
         z_slope = random_field(grid, CellDim, KDim)
         p_face = zero_field(grid, CellDim, KDim)
 
-        return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, z_slope=z_slope, p_face=p_face)
+        return dict(
+            p_cc=p_cc,
+            p_cellhgt_mc_now=p_cellhgt_mc_now,
+            z_slope=z_slope,
+            p_face=p_face,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=2,
+            vertical_end=grid.num_levels,
+        )
