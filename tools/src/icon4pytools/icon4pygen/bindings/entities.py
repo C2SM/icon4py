@@ -49,6 +49,8 @@ class Offset(Node, OffsetEntity):
         self.includes_center = self._includes_center(chain)
         chain_ls = self._split_chain(chain)
         self.source = self._handle_source(chain_ls)
+        if self.is_compound_location():
+            chain_ls = chain_ls[1:]
         self.target = self._make_target(chain_ls, self.source)
         self.renderer = OffsetRenderer(self)
 
