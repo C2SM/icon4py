@@ -74,5 +74,14 @@ class TestFaceValPpmStencil01(StencilTest):
         p_cellhgt_mc_now = random_field(grid, CellDim, KDim, extend={KDim: 1})
         k = as_field((KDim,), np.arange(0, _shape(grid, KDim, extend={KDim: 1})[0], dtype=int32))
         elev = k[-2].as_scalar()
-
-        return dict(p_cc=p_cc, p_cellhgt_mc_now=p_cellhgt_mc_now, k=k, elev=elev, z_slope=z_slope)
+        return dict(
+            p_cc=p_cc,
+            p_cellhgt_mc_now=p_cellhgt_mc_now,
+            k=k,
+            elev=elev,
+            z_slope=z_slope,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=1,
+            vertical_end=grid.num_levels - 1,
+        )

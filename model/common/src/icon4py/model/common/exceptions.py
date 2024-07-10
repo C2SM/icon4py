@@ -11,15 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-# these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
-# therefore unpacking needs to be skipped as otherwise it will trigger an error.
-UNINITIALISED_ARRAYS = [
-    "mask_hdiff",
-    "zd_diffcoef",
-    "zd_vertoffset",
-    "zd_intcoef",
-    "hdef_ic",
-    "div_ic",
-    "dwdx",
-    "dwdy",
-]
+
+class InvalidConfigError(Exception):
+    pass
+
+
+class IncompleteStateError(Exception):
+    def __init__(self, field_name):
+        super().__init__(f"Field '{field_name}' is missing in state.")
