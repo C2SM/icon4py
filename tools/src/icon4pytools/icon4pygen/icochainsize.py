@@ -210,16 +210,16 @@ class IcoChainSize:
         previous_locations = {(0, 0, 0)}
 
         for loc_type in chain[1::]:
-            if loc_type != previous_location_type:
-                connection = Connection(previous_location_type, loc_type)
+            assert loc_type != previous_location_type
+            connection = Connection(previous_location_type, loc_type)
 
-                current_locations = set()
-                for func_name, dims in cls._CHAIN_DISPATCHER.items():
-                    if [connection.start, connection.end] == dims:
-                        func = globals()[func_name]
-                        for previous_location in previous_locations:
-                            neighbors = func(previous_location)
-                            current_locations.update(neighbors)
+            current_locations = set()
+            for func_name, dims in cls._CHAIN_DISPATCHER.items():
+                if [connection.start, connection.end] == dims:
+                    func = globals()[func_name]
+                    for previous_location in previous_locations:
+                        neighbors = func(previous_location)
+                        current_locations.update(neighbors)
 
             previous_locations = current_locations
             previous_location_type = loc_type
