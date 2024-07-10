@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.set_lower_boundary_condition_for_w_and_contravariant_correction import (
+from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_contravariant_correction import (
     set_lower_boundary_condition_for_w_and_contravariant_correction,
 )
 from icon4py.model.common.dimension import CellDim, KDim

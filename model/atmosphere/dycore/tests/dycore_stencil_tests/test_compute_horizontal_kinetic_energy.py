@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_kinetic_energy import (
+from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

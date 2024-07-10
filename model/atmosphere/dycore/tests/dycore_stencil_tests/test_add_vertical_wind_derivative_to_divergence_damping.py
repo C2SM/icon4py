@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.add_vertical_wind_derivative_to_divergence_damping import (
+from icon4py.model.atmosphere.dycore.add_vertical_wind_derivative_to_divergence_damping import (
     add_vertical_wind_derivative_to_divergence_damping,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim

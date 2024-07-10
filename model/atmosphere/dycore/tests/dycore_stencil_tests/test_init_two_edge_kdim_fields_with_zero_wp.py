@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.init_two_edge_kdim_fields_with_zero_wp import (
+from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

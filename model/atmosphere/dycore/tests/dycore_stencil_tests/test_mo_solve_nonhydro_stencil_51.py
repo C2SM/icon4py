@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.mo_solve_nonhydro_stencil_51 import (
+from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
 )
 from icon4py.model.common.dimension import CellDim, KDim

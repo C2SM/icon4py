@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.set_theta_v_prime_ic_at_lower_boundary import (
+from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     set_theta_v_prime_ic_at_lower_boundary,
 )
 from icon4py.model.common.dimension import CellDim, KDim

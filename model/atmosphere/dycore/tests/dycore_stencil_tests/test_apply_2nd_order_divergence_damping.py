@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.apply_2nd_order_divergence_damping import (
+from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
     apply_2nd_order_divergence_damping,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

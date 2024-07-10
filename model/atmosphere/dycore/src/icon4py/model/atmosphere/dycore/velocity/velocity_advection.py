@@ -20,35 +20,35 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     InterpolationState,
     MetricStateNonHydro,
 )
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.add_extra_diffusion_for_w_con_approaching_cfl import (
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
 )
-from icon4py.model.atmosphere.dycore.stencils.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.stencils.interpolate_contravariant_vertical_velocity_to_full_levels import (
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_to_cell_center import (
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
     interpolate_to_cell_center,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.stencils.interpolate_vt_to_interface_edges import (
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
     interpolate_vt_to_interface_edges,
 )
-from icon4py.model.atmosphere.dycore.stencils.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.stencils.mo_math_divrot_rot_vertex_ri_dsl import (
+from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim

@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_advection_term_for_vertical_velocity import (
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, EdgeDim, KDim, VertexDim

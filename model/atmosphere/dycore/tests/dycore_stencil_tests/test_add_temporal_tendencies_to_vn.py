@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.add_temporal_tendencies_to_vn import (
+from icon4py.model.atmosphere.dycore.add_temporal_tendencies_to_vn import (
     add_temporal_tendencies_to_vn,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

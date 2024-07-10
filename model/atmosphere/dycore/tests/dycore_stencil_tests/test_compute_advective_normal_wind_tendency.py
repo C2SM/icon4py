@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.compute_advective_normal_wind_tendency import (
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, ECDim, EdgeDim, KDim, VertexDim

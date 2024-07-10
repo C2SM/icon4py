@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.stencils.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
+from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
