@@ -34,19 +34,14 @@ class DiffusionDiagnosticState:
     """Represents the diagnostic fields needed in diffusion."""
 
     # fields for 3D elements in turbdiff
-    hdef_ic: Field[
-        [CellDim, KDim], float
-    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
-    div_ic: Field[
-        [CellDim, KDim], float
+    hdef_ic: fa.CellKField[float]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
+    div_ic: fa.CellKField[
+        float
     ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
-    dwdx: Field[
-        [CellDim, KDim], float
+    dwdx: fa.CellKField[
+        float
     ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
-
-    dwdy: Field[
-        [CellDim, KDim], float
-    ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
+    dwdy: fa.CellKField[float]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
 
 
 @dataclass(frozen=True)
@@ -54,8 +49,8 @@ class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
     theta_ref_mc: fa.CellKField[float]
-    wgtfac_c: Field[
-        [CellDim, KDim], float
+    wgtfac_c: fa.CellKField[
+        float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: fa.CellKField[bool]
     zd_vertoffset: Field[[CECDim, KDim], int32]
