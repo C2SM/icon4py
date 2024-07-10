@@ -21,8 +21,8 @@ import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.decomposition import (
     definitions as decomp_def,

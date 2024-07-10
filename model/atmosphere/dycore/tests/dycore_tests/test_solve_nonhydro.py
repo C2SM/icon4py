@@ -28,7 +28,6 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import (
     _calculate_bdy_divdamp,
     _calculate_scal_divdamp,
 )
-from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid.horizontal import (
@@ -46,6 +45,7 @@ from icon4py.model.common.test_utils.datatest_utils import (
 )
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.serialbox_utils import IconNonHydroInitSavepoint
+from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
 
 from .utils import (
     construct_config,

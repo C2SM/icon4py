@@ -14,9 +14,6 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, where
 
-from icon4py.model.atmosphere.dycore.state_utils.utils import (
-    _broadcast_zero_to_three_edge_kdim_fields_wp,
-)
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
 )
@@ -78,6 +75,9 @@ from icon4py.model.atmosphere.dycore.set_lower_boundary_condition_for_w_and_cont
 )
 from icon4py.model.atmosphere.dycore.set_theta_v_prime_ic_at_lower_boundary import (
     _set_theta_v_prime_ic_at_lower_boundary,
+)
+from icon4py.model.atmosphere.dycore.state_utils.utils import (
+    _broadcast_zero_to_three_edge_kdim_fields_wp,
 )
 from icon4py.model.atmosphere.dycore.update_density_exner_wind import (
     _update_density_exner_wind,

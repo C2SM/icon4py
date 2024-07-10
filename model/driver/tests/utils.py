@@ -29,8 +29,8 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
     Set values to the ones used in the  EXCLAIM_APE_R04B02 experiment where they differ
     from the default.
     """
-    return DiffusionConfig(
-        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+    return diffus.DiffusionConfig(
+        diffusion_type=diffus.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         zdiffu_t=False,
@@ -45,15 +45,15 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
 
 def r04b09_diffusion_config(
     ndyn_substeps,  # imported `ndyn_substeps` fixture
-) -> DiffusionConfig:
+) -> diffus.DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return DiffusionConfig(
-        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+    return diffus.DiffusionConfig(
+        diffusion_type=diffus.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,
@@ -67,7 +67,7 @@ def r04b09_diffusion_config(
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
         n_substeps=ndyn_substeps,
-        shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        shear_type=diffus.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
 
@@ -80,7 +80,7 @@ def construct_diffusion_config(name: str, ndyn_substeps: int = 5):
 
 def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
     """Create configuration matching the mch_chR04b09_dsl experiment."""
-    config = NonHydrostaticConfig(
+    config = solve_nh.NonHydrostaticConfig(
         ndyn_substeps_var=ndyn_substeps,
         divdamp_order=24,
         iau_wgt_dyn=1.0,
@@ -92,7 +92,7 @@ def mch_ch_r04b09_dsl_nonhydrostatic_config(ndyn_substeps):
 
 def exclaim_ape_nonhydrostatic_config(ndyn_substeps):
     """Create configuration for EXCLAIM APE experiment."""
-    return NonHydrostaticConfig(
+    return solve_nh.NonHydrostaticConfig(
         rayleigh_coeff=0.1,
         divdamp_order=24,
         ndyn_substeps_var=ndyn_substeps,
@@ -111,14 +111,14 @@ def mch_ch_r04b09_dsl_iconrun_config(
     date_exit: str,
     diffusion_linit_init: bool,
     ndyn_substeps: int,
-) -> IconRunConfig:
+) -> driver_config.IconRunConfig:
     """
     Create IconRunConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return IconRunConfig(
+    return driver_config.IconRunConfig(
         dtime=timedelta(seconds=10.0),
         start_date=datetime.fromisoformat(date_init),
         end_date=datetime.fromisoformat(date_exit),
@@ -133,14 +133,14 @@ def exclaim_ape_iconrun_config(
     date_exit: str,
     diffusion_linit_init: bool,
     ndyn_substeps: int,
-) -> IconRunConfig:
+) -> driver_config.IconRunConfig:
     """
     Create IconRunConfig matching exclaim_ape_R02B04.
 
     Set values to the ones used in the exclaim_ape_R02B04 experiment where they differ
     from the default.
     """
-    return IconRunConfig(
+    return driver_config.IconRunConfig(
         dtime=timedelta(seconds=2.0),
         start_date=datetime.fromisoformat(date_init),
         end_date=datetime.fromisoformat(date_exit),

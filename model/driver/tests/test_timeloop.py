@@ -28,8 +28,7 @@ from icon4py.model.common.test_utils.helpers import (
     dallclose,
 )
 from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
-from icon4py.model.driver import icon4py_driver
-from icon4py.model.driver import serialbox_helpers as driver_sb
+from icon4py.model.driver import icon4py_driver, serialbox_helpers as driver_sb
 
 from .utils import (
     construct_diffusion_config,
