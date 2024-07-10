@@ -29,7 +29,21 @@ def zonalwind_2_normalwind_jabw_numpy(
     primal_normal_x: np.array,
     eta_v_e: np.array,
 ):
-    """mask = np.repeat(np.expand_dims(mask, axis=-1), eta_v_e.shape[1], axis=1)"""
+    """
+    Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
+
+    Args:
+        icon_grid: IconGrid
+        jw_u0: base zonal wind speed factor
+        jw_up: perturbation amplitude
+        lat_perturbation_center: perturbation center in latitude
+        lon_perturbation_center: perturbation center in longitude
+        edge_lat: edge center latitude
+        edge_lon: edge center longitude
+        primal_normal_x: zonal component of primal normal vector at edge center
+        eta_v_e: vertical eta coordinate at edge center
+    Returns: normal wind
+    """
     mask = np.ones((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
     mask[
         0 : icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :

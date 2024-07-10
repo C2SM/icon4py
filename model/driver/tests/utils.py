@@ -114,7 +114,6 @@ def mch_ch_r04b09_dsl_iconrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
-    damping_height: float,
     ndyn_substeps: int,
 ) -> IconRunConfig:
     """
@@ -127,7 +126,6 @@ def mch_ch_r04b09_dsl_iconrun_config(
         dtime=timedelta(seconds=10.0),
         start_date=datetime.fromisoformat(date_init),
         end_date=datetime.fromisoformat(date_exit),
-        damping_height=damping_height,
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=True,
         restart_mode=not diffusion_linit_init,
@@ -138,7 +136,6 @@ def exclaim_ape_iconrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
-    damping_height: float,
     ndyn_substeps: int,
 ) -> IconRunConfig:
     """
@@ -151,7 +148,6 @@ def exclaim_ape_iconrun_config(
         dtime=timedelta(seconds=2.0),
         start_date=datetime.fromisoformat(date_init),
         end_date=datetime.fromisoformat(date_exit),
-        damping_height=damping_height,
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=False,
         restart_mode=not diffusion_linit_init,
@@ -163,14 +159,11 @@ def construct_iconrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
-    damping_height: float,
     ndyn_substeps: int = 5,
 ):
     if name.lower() in "mch_ch_r04b09_dsl":
         return mch_ch_r04b09_dsl_iconrun_config(
-            date_init, date_exit, diffusion_linit_init, damping_height, ndyn_substeps
+            date_init, date_exit, diffusion_linit_init, ndyn_substeps
         )
     elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_iconrun_config(
-            date_init, date_exit, diffusion_linit_init, damping_height, ndyn_substeps
-        )
+        return exclaim_ape_iconrun_config(date_init, date_exit, diffusion_linit_init, ndyn_substeps)

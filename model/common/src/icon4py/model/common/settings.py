@@ -17,3 +17,4 @@ config = Icon4PyConfig()
 backend = config.gt4py_runner
 xp = config.array_ns
 device = config.device
+limited_area = config.limited_area

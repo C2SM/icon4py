@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,
 )
@@ -61,6 +61,9 @@ def test_run_solve_nonhydro_single_step(
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     savepoint_velocity_init,
@@ -99,11 +102,18 @@ def test_run_solve_nonhydro_single_step(
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-        nflatlev=grid_savepoint.nflatlev(),
+    )
+    vertical_params = VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
     sp_v = savepoint_velocity_init
     dtime = sp_v.get_metadata("dtime").get("dtime")
