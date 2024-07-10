@@ -18,6 +18,7 @@ from gt4py.next.common import Connectivity, Dimension
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
+from gt4py.next.type_system import type_specifications as ts
 from icon4py.model.common.dimension import KDim, Koff
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
@@ -32,12 +33,14 @@ V_END = "vertical_end"
 DOMAIN_ARGS = [H_START, H_END, V_START, V_END]
 GRID_SIZE_ARGS = ["num_cells", "num_edges", "num_vertices"]
 
+_SIZE_TYPE = ts.ScalarType(kind=ts.ScalarKind.INT32)
+
 
 def transform_and_configure_fencil(
     fencil: itir.FencilDefinition,
 ) -> itir.FencilDefinition:
     """Transform the domain representation and configure the FencilDefinition parameters."""
-    grid_size_symbols = [itir.Sym(id=arg) for arg in GRID_SIZE_ARGS]
+    grid_size_symbols = [itir.Sym(id=arg, type=_SIZE_TYPE) for arg in GRID_SIZE_ARGS]
 
     for closure in fencil.closures:
         if not len(closure.domain.args) == 2:
@@ -98,7 +101,7 @@ def get_missing_domain_params(params: List[itir.Sym]) -> Iterable[itir.Sym]:
     """Get domain limit params that are not present in param list."""
     param_ids = [p.id for p in params]
     missing_args = [s for s in DOMAIN_ARGS if s not in param_ids]
-    return (itir.Sym(id=p) for p in missing_args)
+    return (itir.Sym(id=p, type=_SIZE_TYPE) for p in missing_args)
 
 
 def check_for_domain_bounds(fencil: itir.FencilDefinition) -> None:
