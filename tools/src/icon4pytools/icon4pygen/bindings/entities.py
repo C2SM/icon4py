@@ -79,6 +79,7 @@ class Offset(Node, OffsetEntity):
         if source in [str(loc()) for loc in BASIC_LOCATIONS.values()]:
             return chain_from_str(source)[0]
         elif all(char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source):
+            source = source[1:]
             return CompoundLocation(chain_from_str(source))
         else:
             raise BindingsTypeConsistencyException(f"Invalid source {source}")
