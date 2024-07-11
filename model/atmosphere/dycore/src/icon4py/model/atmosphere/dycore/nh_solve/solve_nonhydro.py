@@ -1308,7 +1308,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == RayleighType.KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.KLEMP:
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
                 w_1=prognostic_state[nnew].w_1,
@@ -1867,7 +1867,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == RayleighType.KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.KLEMP:
             log.debug(f"corrector start stencil 54")
             apply_rayleigh_damping_mechanism(
                 z_raylfac=self.z_raylfac,
