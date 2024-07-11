@@ -18,6 +18,8 @@ from typing import Optional
 import gt4py.next as gtx
 import numpy as np
 
+from icon4py.model.common.decomposition import definitions as defs
+
 
 try:
     from netCDF4 import Dataset
@@ -180,6 +182,18 @@ class GridFile:
         #: end indices of horizontal grid zones for vertex fields
         END_INDEX_VERTICES = "end_idx_v"
 
+
+    class GeometryName(GridFileName):
+        CELL_AREA = "cell_area"
+        EDGE_LENGTH = "edge_length"
+        
+    class CoordinateName(GridFileName):
+        CELL_LONGITUDE = "clon"
+        CELL_LATITUDE = "clat"
+        EDGE_LONGITUDE = "elon"
+        EDGE_LATITUDE = "elat"
+        VERTEX_LONGITUDE = "vlon"
+        VERTEX_LATITUDE = "vlat"
     def __init__(self, dataset: Dataset):
         self._dataset = dataset
         self._log = logging.getLogger(__name__)
@@ -192,6 +206,7 @@ class GridFile:
             nc_variable = self._dataset.variables[name]
 
             self._log.debug(f"reading {name}: {nc_variable}")
+
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
             return np.transpose(data) if transpose else data
@@ -200,6 +215,19 @@ class GridFile:
             self._log.warning(msg)
             raise IconGridError(msg) from err
 
+    def float_field(self, name: GridFileName, indices:np.ndarray = [], dtype=gtx.float64) -> np.ndarray:
+        
+        try:
+            # use python slice?
+            nc_variable = self._dataset.variables[name]
+            self._log.debug(f"reading {name}: {nc_variable}")
+            data = nc_variable[:] if not indices else nc_variable[indices]
+            data = np.array(data, dtype=dtype)
+            return data
+        except KeyError as err:
+            msg = f"{name} does not exist in dataset"
+            self._log.warning(msg)
+            raise IconGridError(msg) from err
 
 class IconGridError(RuntimeError):
     pass
@@ -243,12 +271,21 @@ class GridManager:
         self._config = config
         self._grid: Optional[icon_grid.IconGrid] = None
         self._file_name = grid_file
+        self._dataset = None
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
-        dataset = self._read_gridfile(self._file_name)
-        grid = self._construct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
+        self._dataset = self._read_gridfile(self._file_name)
+        grid = self._construct_grid(self._dataset, on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
 
+    
+    def read_geometry(self, decomposition_info:defs.DecompositionInfo):
+        reader = GridFile(self._dataset)
+        cell_area = reader.int_field(GridFile.GeometryName.CELL_AREA)
+        edge_length = reader.int_field(GridFile.GeometryName.EDGE_LENGTH)
+        return cell_area, edge_length
+        
+        
     def _read_gridfile(self, fname: str) -> Dataset:
         try:
             dataset = Dataset(self._file_name, "r", format="NETCDF4")

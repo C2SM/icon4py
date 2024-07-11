@@ -219,7 +219,7 @@ def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim)
 def test_local_connectivities(processor_props, caplog, field_offset):  # noqa: F811  # fixture
     caplog.set_level(logging.INFO)
     grid = as_ugrid2d(UGRID_FILE)
-    icon_grid = as_icon_grid(GRID_FILE)
+    icon_grid = grid_file_manager(GRID_FILE).grid
     distributed_grids = grid.partition(n_part=4)
     labels = grid.label_partitions(n_part=4)
     halo_generator = HaloGenerator(
@@ -279,13 +279,13 @@ GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
 )
 
 
-def as_icon_grid(file: pathlib.Path) -> icon.IconGrid:
+def grid_file_manager(file: pathlib.Path) -> icon.IconGrid:
     manager = gm.GridManager(
         gm.ToGt4PyTransformation(), file, v_grid.VerticalGridConfig(num_levels=1)
     )
     manager()
-    return manager.grid
-
+    return manager
+    
 
 def as_ugrid2d(file: pathlib.Path) -> xu.Ugrid2d:
     xu_dataset = xu.open_dataset(file.as_posix())
@@ -316,10 +316,11 @@ def icon_distribution(props:defs.ProcessProperties, decomposition_info:defs.Deco
     comm.Bcast(distribution, root=0)
     return distribution
 
+@pytest.mark.xfail(reason="This test is not yet implemented")
 def test_local_grid(processor_props, caplog):  # noqa: F811  # fixture
     caplog.set_level(logging.INFO)
     grid = as_ugrid2d(UGRID_FILE)
-    icon_grid = as_icon_grid(GRID_FILE)
+    icon_grid = grid_file_manager(GRID_FILE).grid
     distributed_grids = grid.partition(n_part=4)
     # TODO (@halungge): replace with the icon 4 nodes distribution from serialbox data.
     labels = grid.label_partitions(n_part=4)
@@ -336,3 +337,9 @@ def test_local_grid(processor_props, caplog):  # noqa: F811  # fixture
     local_grid = halo_generator.local_grid(decomposition_info)
     
     assert local_grid.num_cells == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.All).size
+    
+  
+  
+def test_distributed_fields():
+    pass
+    

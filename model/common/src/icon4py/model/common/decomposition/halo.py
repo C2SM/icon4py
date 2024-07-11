@@ -296,7 +296,10 @@ def local_grid(props: defs.ProcessProperties,
                limited_area:bool = False, on_gpu:bool=False, )->base_grid.BaseGrid:
     """
     Constructs a local grid for this rank based on the decomposition info.
-    TODO (@halungge): for now only returning base grid as we have not start/end indices implementation yet
+    TODO (@halungge): for now only returning BaseGrid as we have not start/end indices implementation yet
+    TODO (@halungge): make sure the INVALID_INDEX is set correctly: - when set in the original (global index) connectivity it should remain
+    TODO (@halungge): how to handle the (source) indices of last halo line: their (global) neighbors are not all present on the local grid, set INVALID_INDEX (that is what xugrid does)
+                                                                           check what ICON does, (they probably duplicate the valid indices...)
     Args:
         decomp_info: the decomposition info for this rank
     Returns:
