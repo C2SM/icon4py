@@ -106,13 +106,21 @@ def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
 
 
 if "dace" in backend.executor.name:
+    def get_stride_from_numpy_to_dace(numpy_array: np.ndarray, axis: int) -> int:
+        """
+        GHEX/NumPy strides: number of bytes to jump
+        DaCe strides: number of elements to jump
+        """
+        return numpy_array.strides[axis] // numpy_array.itemsize
+
+
     def dace_symbols_concretization(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid, fuse_func: Callable, args: Any, kwargs: Any):
         flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
         kwargs.update({
             # DaCe symbols concretization
             **{"CellDim_sym": grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": grid.offset_providers['E2C'].table.shape[0], "KDim_sym": grid.num_levels},
-            **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
-            **{f"PrognosticState_{member}_s{str(stride)}_sym": getattr(k_v[1], member).ndarray.strides[stride] // 8 for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
+            **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
+            **{f"PrognosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
             # [misc] GHEX C++ ptrs, connectivity tables, etc.
             **dace_specific_kwargs(exchange_obj, grid),
             })
@@ -126,7 +134,11 @@ if "dace" in backend.executor.name:
             **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
             **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
             # offset providers
-            **{f"{connectivity_identifier(k)}":v.table for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{connectivity_identifier(k):v.table for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{f"__{connectivity_identifier(k)}_size_0":v.table.shape[0] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{f"__{connectivity_identifier(k)}_size_1":v.table.shape[1] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{f"__{connectivity_identifier(k)}_stride_0":get_stride_from_numpy_to_dace(v.table, 0) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{f"__{connectivity_identifier(k)}_stride_1":get_stride_from_numpy_to_dace(v.table, 1) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
             # TODO(kotsaloscv): Possibly needed for future feature, i.e., build GHEX patterns on the fly
             **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
         }
