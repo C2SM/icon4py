@@ -25,9 +25,11 @@ def gnomonic_proj(
 
     gnomonic_proj
     Args:
-        lon_c, lat_c: center on tangent plane
-        lat, lon: point to be projected
-    Return values:
+        lon_c: longitude center on tangent plane
+        lat_c: lattitude center on tangent plane
+        lon: longitude point to be projected
+        lat: lattitude point to be projected
+    Returns:
         x, y: coordinates of projected point
 
     Variables:

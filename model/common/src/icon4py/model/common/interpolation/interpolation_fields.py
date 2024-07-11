@@ -313,10 +313,9 @@ def rotate_latlon(
     lon: np.ndarray,
     pollat: np.ndarray,
     pollon: np.ndarray,
-) -> (np.ndarray, np.ndarray):
+) -> tuple[np.ndarray, np.ndarray]:
     """
     (Compute rotation of lattitude and longitude.)
-    Rotates latitude and longitude for more accurate computation.
 
     Rotates latitude and longitude for more accurate computation
     of bilinear interpolation
