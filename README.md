@@ -11,6 +11,7 @@ The repository is organized into directories, each containing independent Python
 ## Installation instructions
 
 We recommend to use [tox](https://tox.wiki/en/latest/) for the automatic installation of all packages in development mode in a single step:
+The `tox.ini` files are located in the `model` and `tools` directories so `tox` needs to be run from there.
 
 ```bash
 # Clone the repository
@@ -18,7 +19,7 @@ git clone git@github.com:C2SM/icon4py.git
 cd icon4py
 
 # Use tox to create and set up a development environment (usually at `.venv`) in verbose mode
-tox -vv -e dev --devenv .venv
+python -m tox -vv -c model/tox.ini -e dev --devenv ../.venv
 
 # Activate the virtual environment and check that everything works
 source .venv/bin/activate
