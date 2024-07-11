@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_for_turbulence import (
     calculate_horizontal_gradients_for_turbulence,
 )
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2CODim, CellDim, KHalfDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -48,11 +48,11 @@ class TestCalculateHorizontalGradientsForTurbulence(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KHalfDim, dtype=wpfloat)
         geofac_grg_x = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
         geofac_grg_y = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
-        dwdx = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        dwdy = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        dwdx = zero_field(grid, CellDim, KHalfDim, dtype=vpfloat)
+        dwdy = zero_field(grid, CellDim, KHalfDim, dtype=vpfloat)
 
         return dict(
             w=w,

@@ -25,7 +25,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim, KHalfDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -36,10 +36,10 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    w_old: Field[[CellDim, KDim], wpfloat],
+    w_old: Field[[CellDim, KHalfDim], wpfloat],
     type_shear: int32,
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: Field[[CellDim, KHalfDim], vpfloat],
+    dwdy: Field[[CellDim, KHalfDim], vpfloat],
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
     k: Field[[KDim], int32],
@@ -48,9 +48,9 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     interior_idx: int32,
     halo_idx: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], wpfloat],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    Field[[CellDim, KHalfDim], wpfloat],
+    Field[[CellDim, KHalfDim], vpfloat],
+    Field[[CellDim, KHalfDim], vpfloat],
 ]:
     k = broadcast(k, (CellDim, KDim))
     dwdx, dwdy = (
@@ -87,10 +87,10 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     w_old: Field[[CellDim, KDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     type_shear: int32,
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: Field[[CellDim, KHalfDim], vpfloat],
+    dwdy: Field[[CellDim, KHalfDim], vpfloat],
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
     k: Field[[KDim], int32],
@@ -122,6 +122,6 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
         out=(w, dwdx, dwdy),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KHalfDim: (vertical_start, vertical_end + 1),
         },
     )

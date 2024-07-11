@@ -15,17 +15,17 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KHalfDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _calculate_horizontal_gradients_for_turbulence(
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[Field[[CellDim, KHalfDim], vpfloat], Field[[CellDim, KHalfDim], vpfloat]]:
     dwdx_wp = neighbor_sum(geofac_grg_x * w(C2E2CO), axis=C2E2CODim)
     dwdy_wp = neighbor_sum(geofac_grg_y * w(C2E2CO), axis=C2E2CODim)
     return astype((dwdx_wp, dwdy_wp), vpfloat)
@@ -33,11 +33,11 @@ def _calculate_horizontal_gradients_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_horizontal_gradients_for_turbulence(
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: Field[[CellDim, KHalfDim], vpfloat],
+    dwdy: Field[[CellDim, KHalfDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -50,6 +50,6 @@ def calculate_horizontal_gradients_for_turbulence(
         out=(dwdx, dwdy),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KHalfDim: (vertical_start, vertical_end + 1),
         },
     )

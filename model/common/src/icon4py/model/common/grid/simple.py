@@ -462,6 +462,10 @@ class SimpleGrid(BaseGrid):
         return self.config.num_levels
 
     @property
+    def num_half_levels(self) -> int:
+        return self.config.num_half_levels
+
+    @property
     def id(self) -> uuid.UUID:
         return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
 

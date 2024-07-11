@@ -21,7 +21,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbu
 from icon4py.model.atmosphere.diffusion.stencils.temporary_fields_for_turbulence_diagnostics import (
     _temporary_fields_for_turbulence_diagnostics,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim, KHalfDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -34,7 +34,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[Field[[CellDim, KHalfDim], vpfloat], Field[[CellDim, KHalfDim], vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag
     )
@@ -50,8 +50,8 @@ def calculate_diagnostic_quantities_for_turbulence(
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
     wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    div_ic: Field[[CellDim, KDim], vpfloat],
-    hdef_ic: Field[[CellDim, KDim], vpfloat],
+    div_ic: Field[[CellDim, KHalfDim], vpfloat],
+    hdef_ic: Field[[CellDim, KHalfDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -67,6 +67,6 @@ def calculate_diagnostic_quantities_for_turbulence(
         out=(div_ic, hdef_ic),
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KHalfDim: (vertical_start, vertical_end + 1),
         },
     )
