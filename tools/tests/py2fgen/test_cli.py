@@ -16,6 +16,7 @@ import subprocess
 
 import pytest
 from click.testing import CliRunner
+
 from icon4pytools.py2fgen.cli import main
 
 
