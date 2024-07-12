@@ -11,7 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.constants import CVD_O_RD, P0REF, RD
+from icon4py.model.common import constants as const
+from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.settings import xp
 
 
@@ -48,7 +51,7 @@ def hydrostatic_adjustment_numpy(
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
-        rho[:, k] = exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
+        rho[:, k] = exner[:, k] ** const.CVD_O_RD * const.P0REF / (const.RD * theta_v[:, k])
 
     return rho, exner, theta_v
 
@@ -86,6 +89,64 @@ def hydrostatic_adjustment_constant_thetav_numpy(
         )
 
     for k in range(num_levels - 1, -1, -1):
-        rho[:, k] = exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
+        rho[:, k] = exner[:, k] ** const.CVD_O_RD * const.P0REF / (const.RD * theta_v[:, k])
 
     return rho, exner
+
+
+def zonalwind_2_normalwind_numpy(
+    icon_grid: icon_grid.IconGrid,
+    jw_u0: float,
+    jw_up: float,
+    lat_perturbation_center: float,
+    lon_perturbation_center: float,
+    edge_lat: xp.ndarray,
+    edge_lon: xp.ndarray,
+    primal_normal_x: xp.ndarray,
+    eta_v_e: xp.ndarray,
+):
+    """
+    Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
+
+    Args:
+        icon_grid: IconGrid
+        jw_u0: base zonal wind speed factor
+        jw_up: perturbation amplitude
+        lat_perturbation_center: perturbation center in latitude
+        lon_perturbation_center: perturbation center in longitude
+        edge_lat: edge center latitude
+        edge_lon: edge center longitude
+        primal_normal_x: zonal component of primal normal vector at edge center
+        eta_v_e: vertical eta coordinate at edge center
+    Returns: normal wind
+    """
+    # TODO (Chia Rui) this function needs a test
+
+    mask = xp.ones((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
+    mask[
+        0 : icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :
+    ] = False
+    edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
+    edge_lon = xp.repeat(xp.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
+    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), eta_v_e.shape[1], axis=1)
+    u = xp.where(mask, jw_u0 * (xp.cos(eta_v_e) ** 1.5) * (xp.sin(2.0 * edge_lat) ** 2), 0.0)
+    if jw_up > 1.0e-20:
+        u = xp.where(
+            mask,
+            u
+            + jw_up
+            * xp.exp(
+                -10.0
+                * xp.arccos(
+                    xp.sin(lat_perturbation_center) * xp.sin(edge_lat)
+                    + xp.cos(lat_perturbation_center)
+                    * xp.cos(edge_lat)
+                    * xp.cos(edge_lon - lon_perturbation_center)
+                )
+                ** 2
+            ),
+            u,
+        )
+    vn = u * primal_normal_x
+
+    return vn
