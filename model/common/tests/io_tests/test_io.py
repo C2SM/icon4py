@@ -62,7 +62,7 @@ def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
             data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
             is_on_interface=False,
         ),
-        "upward_air_velocity":utils.to_data_array(
+        "upward_air_velocity": utils.to_data_array(
             w,
             data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
             is_on_interface=True,

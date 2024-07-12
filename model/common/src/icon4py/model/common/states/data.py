@@ -69,5 +69,3 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, FieldMetaData]] = dict(
         icon_var_name="v",
     ),
 )
-
-

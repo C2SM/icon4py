@@ -1,3 +1,16 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# This file is free software: you can redistribute it and/or modify it under
+# the terms of the GNU General Public License as published by the
+# Free Software Foundation, either version 3 of the License, or any later
+# version. See the LICENSE.txt file at the top-level directory of this
+# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
+#
+# SPDX-License-Identifier: GPL-3.0-or-later
+
 import dataclasses
 import functools
 from typing import Protocol, TypedDict, Union, runtime_checkable
@@ -13,38 +26,40 @@ import numpy.typing as np_t
 DimensionT = Union[gtx.Dimension, str]
 BufferT = Union[np_t.ArrayLike, gtx.Field]
 
+
 class OptionalMetaData(TypedDict, total=False):
     #: is optional in CF conventions for downwards compatibility with COARDS
-    long_name:str
+    long_name: str
     #: we might not have this one for all fields. But it is useful to have it for tractability with ICON
     icon_var_name: str
     # TODO (@halungge) dims should probably be required
     dims: tuple[DimensionT, ...]
-    
+
+
 class RequiredMetaData(TypedDict, total=True):
     #: CF conventions
-    standard_name:str
+    standard_name: str
     #: CF conventions
-    units:str
-    
-    
+    units: str
+
 
 class FieldMetaData(RequiredMetaData, OptionalMetaData):
     pass
 
+
 @runtime_checkable
 class DataField(Protocol):
     """Protocol that should be implemented by icon4py model fields and xarray.DataArray"""
-    data: BufferT 
-    attrs:dict
 
-@dataclasses.dataclass 
+    data: BufferT
+    attrs: dict
+
+
+@dataclasses.dataclass
 class ModelField(DataField):
     data: gtx.Field[gtx.Dims[gt_common.DimsT], gt_coredefs.ScalarT]
     attrs: FieldMetaData
-    
+
     @functools.cached_property
     def metadata(self) -> FieldMetaData:
         return self.attrs
-
-

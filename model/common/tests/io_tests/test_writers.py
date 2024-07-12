@@ -17,10 +17,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-import icon4py.model.common.io.data
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import base as grid_def, vertical as v_grid
-from icon4py.model.common.io import cf_utils, writers
+from icon4py.model.common.io import cf_utils, utils, writers
 from icon4py.model.common.io.writers import (
     NETCDFWriter,
     TimeProperties,
@@ -173,7 +172,9 @@ def test_writer_append_timeslice_to_existing_var(test_path, random_name):
     assert "air_density" in dataset.variables
 
     new_rho = helpers.random_field(grid, CellDim, KDim, dtype=np.float32)
-    state["air_density"] = icon4py.model.common.io.data.to_data_array(new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"])
+    state["air_density"] = utils.to_data_array(
+        new_rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]
+    )
     new_time = time + timedelta(hours=1)
     dataset.append(state, new_time)
 
