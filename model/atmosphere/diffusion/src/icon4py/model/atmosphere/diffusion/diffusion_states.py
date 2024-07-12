@@ -56,7 +56,7 @@ class DiffusionMetricState:
 
     theta_ref_mc: Field[[CellDim, KDim], float]
     wgtfac_c: Field[
-        [CellDim, KDim], float
+        [CellDim, KHalfDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: Field[[CellDim, KDim], bool]
     zd_vertoffset: Field[[CECDim, KDim], int32]

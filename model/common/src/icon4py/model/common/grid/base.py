@@ -21,7 +21,7 @@ import gt4py.next as gtx
 import numpy as np
 
 import icon4py.model.common.utils as common_utils
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, KHalfDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
 

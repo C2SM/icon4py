@@ -40,9 +40,10 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
+    KHalfDim,
     V2CDim,
     V2EDim,
-    VertexDim, KHalfDim,
+    VertexDim,
 )
 from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -732,10 +733,10 @@ class MetricSavepoint(IconSavepoint):
 
 class IconDiffusionInitSavepoint(IconSavepoint):
     def hdef_ic(self):
-        return self._get_field("hdef_ic", CellDim, KHalfDim) # TODO: KHalfDim
+        return self._get_field("hdef_ic", CellDim, KHalfDim)  # TODO: KHalfDim
 
     def div_ic(self):
-        return self._get_field("div_ic", CellDim, KHalfDim) # TODO: KHalfDim
+        return self._get_field("div_ic", CellDim, KHalfDim)  # TODO: KHalfDim
 
     @IconSavepoint.optionally_registered(CellDim, KHalfDim)
     def dwdx(self):
@@ -752,7 +753,10 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("theta_v", CellDim, KDim)
 
     def w(self):
-        return self._get_field("w", CellDim, KHalfDim) # TODO: KHalfDim
+        return self._get_field("w", CellDim, KHalfDim)  # TODO: KHalfDim
+
+    def wgtfac_c(self):
+        return self._get_field("wgtfac_c", CellDim, KHalfDim)
 
     def exner(self):
         return self._get_field("exner", CellDim, KDim)
@@ -1034,7 +1038,7 @@ class IconDiffusionExitSavepoint(IconSavepoint):
         return self._get_field("x_div_ic", CellDim, KHalfDim)  # TODO: KHalfDim
 
     def hdef_ic(self):
-        return self._get_field("x_hdef_ic", CellDim, KHalfDim) # TODO: KHalfDim
+        return self._get_field("x_hdef_ic", CellDim, KHalfDim)  # TODO: KHalfDim
 
 
 class IconNonhydroExitSavepoint(IconSavepoint):

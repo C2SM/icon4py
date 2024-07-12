@@ -38,7 +38,7 @@ from icon4py.model.common.dimension import (
     KDim,
     V2CDim,
     V2EDim,
-    VertexDim,
+    VertexDim, KHalfDim,
 )
 from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
 
@@ -428,6 +428,7 @@ class SimpleGrid(BaseGrid):
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
             "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
+            "KHalf2K": (lambda: KDim,),  # Koff is a special case
             "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
             "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
             "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),

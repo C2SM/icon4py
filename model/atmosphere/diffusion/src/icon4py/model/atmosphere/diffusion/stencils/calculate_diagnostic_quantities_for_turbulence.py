@@ -33,7 +33,7 @@ def _calculate_diagnostic_quantities_for_turbulence(
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KHalfDim], vpfloat],
 ) -> tuple[Field[[CellDim, KHalfDim], vpfloat], Field[[CellDim, KHalfDim], vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag
@@ -49,7 +49,7 @@ def calculate_diagnostic_quantities_for_turbulence(
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
+    wgtfac_c: Field[[CellDim, KHalfDim], vpfloat],
     div_ic: Field[[CellDim, KHalfDim], vpfloat],
     hdef_ic: Field[[CellDim, KHalfDim], vpfloat],
     horizontal_start: int32,

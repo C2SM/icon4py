@@ -27,8 +27,8 @@ def calculate_diagnostics_for_turbulence_numpy(
 ) -> tuple[np.array, np.array]:
     kc_offset_1 = np.roll(kh_c, shift=1, axis=1)
     div_offset_1 = np.roll(div, shift=1, axis=1)
-    div_ic[:, 1:] = (wgtfac_c * div + (1.0 - wgtfac_c) * div_offset_1)[:, 1:]
-    hdef_ic[:, 1:] = ((wgtfac_c * kh_c + (1.0 - wgtfac_c) * kc_offset_1) ** 2)[:, 1:]
+    div_ic = (wgtfac_c[:, 1:] * div + (1.0 - wgtfac_c[:, 1:]) * div_offset_1)
+    hdef_ic = ((wgtfac_c[:, 1:] * kh_c + (1.0 - wgtfac_c[:, 1:]) * kc_offset_1) ** 2)
     return div_ic, hdef_ic
 
 
@@ -37,7 +37,13 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
     OUTPUTS = ("div_ic", "hdef_ic")
 
     @staticmethod
-    def reference(grid, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic) -> dict:
+    def reference(grid, wgtfac_c: np.array, div: np.array, kh_c: np.array, div_ic, hdef_ic,
+                    horizontal_start = 0,
+                    horizontal_end=0,
+                    vertical_start = 0,
+                    vertical_end = 0,
+
+    ) -> dict:
         div_ic, hdef_ic = calculate_diagnostics_for_turbulence_numpy(
             wgtfac_c, div, kh_c, div_ic, hdef_ic
         )
@@ -45,9 +51,18 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, CellDim, KHalfDim, dtype=vpfloat)
         div = random_field(grid, CellDim, KDim, dtype=vpfloat)
         kh_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
         div_ic = zero_field(grid, CellDim, KHalfDim, dtype=vpfloat)
         hdef_ic = zero_field(grid, CellDim, KHalfDim, dtype=vpfloat)
-        return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)
+        return dict(wgtfac_c=wgtfac_c,
+                    div=div,
+                    kh_c=kh_c,
+                    div_ic=div_ic,
+                    hdef_ic=hdef_ic,
+                    horizontal_start=0,
+                    horizontal_end=grid.num_cells,
+                    vertical_start=0,
+                    vertical_end=grid.num_levels,
+                    )
