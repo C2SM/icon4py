@@ -18,7 +18,6 @@ import math
 import pathlib
 
 import gt4py.next as gtx
-from icon4py.model.common.settings import xp
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -65,17 +64,18 @@ from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation impor
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
+from icon4py.model.common.settings import xp
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
+from icon4py.model.driver import testcase_functions
 from icon4py.model.driver.jablonowski_willamson_testcase import zonalwind_2_normalwind_jabw_numpy
 from icon4py.model.driver.serialbox_helpers import (
     construct_diagnostics_for_diffusion,
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.driver import testcase_functions
 
 
 GRID_LEVEL = 4

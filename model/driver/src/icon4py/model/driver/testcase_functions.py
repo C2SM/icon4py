@@ -11,9 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from icon4py.model.common.settings import xp
-
 from icon4py.model.common.constants import CVD_O_RD, P0REF, RD
+from icon4py.model.common.settings import xp
 
 
 def hydrostatic_adjustment_numpy(

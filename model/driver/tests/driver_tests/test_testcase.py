@@ -13,7 +13,7 @@
 
 import pytest
 
-from icon4py.model.common.test_utils import helpers, datatest_utils as dt_utils
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.driver import initialization_utils as init_utils
 
 
