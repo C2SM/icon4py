@@ -285,12 +285,12 @@ if "dace" in backend.executor.name:
             if not dim:
                 continue
 
-            if nested_sdfg.gt4py_program_kwargs.get('horizontal_start', None) == None or nested_sdfg.gt4py_program_kwargs.get('horizontal_end', None) == None:
+            if nested_sdfg.parent_nsdfg_node.symbol_mapping.get('horizontal_start', None) == None or nested_sdfg.parent_nsdfg_node.symbol_mapping.get('horizontal_end', None) == None:
                 continue
 
             halos_inds = exchange._decomposition_info.local_index(dim, DecompositionInfo.EntryType.HALO)
             # Consider overcomputing, i.e. computational update of the halo elements and not through communication.
-            updated_halo_inds = np.intersect1d(halos_inds, np.arange(nested_sdfg.gt4py_program_kwargs['horizontal_start'], nested_sdfg.gt4py_program_kwargs['horizontal_end']))
+            updated_halo_inds = np.intersect1d(halos_inds, np.arange(nested_sdfg.parent_nsdfg_node.symbol_mapping['horizontal_start'], nested_sdfg.parent_nsdfg_node.symbol_mapping['horizontal_end']))
 
             for nested_sdfg_state in sdfg.states():
                 if nested_sdfg_state.label == nested_sdfg.parent.label:
@@ -324,7 +324,7 @@ if "dace" in backend.executor.name:
                     if cont:
                         continue
 
-                    if ones_after_nsdfg.gt4py_program_kwargs.get('horizontal_start', None) == None or ones_after_nsdfg.gt4py_program_kwargs.get('horizontal_end', None) == None:
+                    if ones_after_nsdfg.parent_nsdfg_node.symbol_mapping.get('horizontal_start', None) == None or ones_after_nsdfg.parent_nsdfg_node.symbol_mapping.get('horizontal_end', None) == None:
                         continue
 
                     for ones_after_nsdfg_state in sdfg.states():
@@ -359,8 +359,8 @@ if "dace" in backend.executor.name:
                             if source_dim != list(ones_after_nsdfg.gt4py_program_output_fields.values())[0]:
                                 continue
                             
-                            accessed_inds = op[ones_after_nsdfg.gt4py_program_kwargs['horizontal_start']]
-                            for ind in range(ones_after_nsdfg.gt4py_program_kwargs['horizontal_start']+1, ones_after_nsdfg.gt4py_program_kwargs['horizontal_end']):
+                            accessed_inds = op[ones_after_nsdfg.parent_nsdfg_node.symbol_mapping['horizontal_start']]
+                            for ind in range(ones_after_nsdfg.parent_nsdfg_node.symbol_mapping['horizontal_start']+1, ones_after_nsdfg.parent_nsdfg_node.symbol_mapping['horizontal_end']):
                                 accessed_inds = np.concatenate((accessed_inds, op[ind]))
 
                             accessed_halo_inds = np.intersect1d(halos_inds, accessed_inds)
