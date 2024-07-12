@@ -11,21 +11,21 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
+from icon4py.model.common.settings import xp
 
 from icon4py.model.common.constants import CVD_O_RD, P0REF, RD
 
 
 def hydrostatic_adjustment_numpy(
-    wgtfac_c: np.array,
-    ddqz_z_half: np.array,
-    exner_ref_mc: np.array,
-    d_exner_dz_ref_ic: np.array,
-    theta_ref_mc: np.array,
-    theta_ref_ic: np.array,
-    rho: np.array,
-    exner: np.array,
-    theta_v: np.array,
+    wgtfac_c: xp.ndarray,
+    ddqz_z_half: xp.ndarray,
+    exner_ref_mc: xp.ndarray,
+    d_exner_dz_ref_ic: xp.ndarray,
+    theta_ref_mc: xp.ndarray,
+    theta_ref_ic: xp.ndarray,
+    rho: xp.ndarray,
+    exner: xp.ndarray,
+    theta_v: xp.ndarray,
     num_levels: int,
 ):
     # virtual temperature
@@ -45,7 +45,7 @@ def hydrostatic_adjustment_numpy(
         )
         quadratic_c = -(fac2 * fac3 / ddqz_z_half[:, k + 1] + fac2 * d_exner_dz_ref_ic[:, k + 1])
 
-        exner[:, k] = (quadratic_b + np.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
+        exner[:, k] = (quadratic_b + xp.sqrt(quadratic_b**2 + 4.0 * quadratic_a * quadratic_c)) / (
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
@@ -55,17 +55,17 @@ def hydrostatic_adjustment_numpy(
 
 
 def hydrostatic_adjustment_constant_thetav_numpy(
-    wgtfac_c: np.array,
-    ddqz_z_half: np.array,
-    exner_ref_mc: np.array,
-    d_exner_dz_ref_ic: np.array,
-    theta_ref_mc: np.array,
-    theta_ref_ic: np.array,
-    rho: np.array,
-    exner: np.array,
-    theta_v: np.array,
+    wgtfac_c: xp.ndarray,
+    ddqz_z_half: xp.ndarray,
+    exner_ref_mc: xp.ndarray,
+    d_exner_dz_ref_ic: xp.ndarray,
+    theta_ref_mc: xp.ndarray,
+    theta_ref_ic: xp.ndarray,
+    rho: xp.ndarray,
+    exner: xp.ndarray,
+    theta_v: xp.ndarray,
     num_levels: int,
-) -> tuple[np.array, np.array]:
+) -> tuple[xp.ndarray, xp.ndarray]:
     """
     Computes a hydrostatically balanced profile. In constrast to the above
     hydrostatic_adjustment_numpy, the virtual temperature is kept (assumed)

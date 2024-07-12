@@ -18,7 +18,7 @@ import math
 import pathlib
 
 import gt4py.next as gtx
-import numpy as np
+from icon4py.model.common.settings import xp
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionDiagnosticState,
@@ -75,10 +75,7 @@ from icon4py.model.driver.serialbox_helpers import (
     construct_interpolation_state_for_diffusion,
     construct_metric_state_for_diffusion,
 )
-from icon4py.model.driver.testcase_functions import (
-    hydrostatic_adjustment_constant_thetav_numpy,
-    hydrostatic_adjustment_numpy,
-)
+from icon4py.model.driver import testcase_functions
 
 
 GRID_LEVEL = 4
@@ -215,16 +212,16 @@ def model_initialization_jabw(
     lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
     ps_o_p0ref = p_sfc / P0REF
 
-    w_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
-    exner_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    rho_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    temperature_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    pressure_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    theta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
-    eta_v_numpy = np.zeros((cell_size, num_levels), dtype=float)
+    w_numpy = xp.zeros((cell_size, num_levels + 1), dtype=float)
+    exner_numpy = xp.zeros((cell_size, num_levels), dtype=float)
+    rho_numpy = xp.zeros((cell_size, num_levels), dtype=float)
+    temperature_numpy = xp.zeros((cell_size, num_levels), dtype=float)
+    pressure_numpy = xp.zeros((cell_size, num_levels), dtype=float)
+    theta_v_numpy = xp.zeros((cell_size, num_levels), dtype=float)
+    eta_v_numpy = xp.zeros((cell_size, num_levels), dtype=float)
 
-    sin_lat = np.sin(cell_lat)
-    cos_lat = np.cos(cell_lat)
+    sin_lat = xp.sin(cell_lat)
+    cos_lat = xp.cos(cell_lat)
     fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
     fac2 = (
         (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
@@ -233,26 +230,26 @@ def model_initialization_jabw(
     )
     lapse_rate = RD * gamma / GRAV
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = np.full(cell_size, fill_value=1.0e-7, dtype=float)
+        eta_old = xp.full(cell_size, fill_value=1.0e-7, dtype=float)
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
             eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
-            cos_etav = np.cos(eta_v_numpy[:, k_index])
-            sin_etav = np.sin(eta_v_numpy[:, k_index])
+            cos_etav = xp.cos(eta_v_numpy[:, k_index])
+            sin_etav = xp.sin(eta_v_numpy[:, k_index])
 
             temperature_avg = jw_temp0 * (eta_old**lapse_rate)
             geopot_avg = jw_temp0 * GRAV / gamma * (1.0 - eta_old**lapse_rate)
-            temperature_avg = np.where(
+            temperature_avg = xp.where(
                 eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
             )
-            geopot_avg = np.where(
+            geopot_avg = xp.where(
                 eta_old < eta_t,
                 geopot_avg
                 - RD
                 * dtemp
                 * (
-                    (np.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
+                    (xp.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
                     - 5.0 * (eta_t**4) * eta_old
                     + 5.0 * (eta_t**3) * (eta_old**2)
                     - 10.0 / 3.0 * (eta_t**2) * (eta_old**3)
@@ -273,7 +270,7 @@ def model_initialization_jabw(
                 * jw_u0
                 / RD
                 * sin_etav
-                * np.sqrt(cos_etav)
+                * xp.sqrt(cos_etav)
                 * (2.0 * jw_u0 * fac1 * (cos_etav**1.5) + fac2)
             )
             newton_function = geopot_jw - geopot[:, k_index]
@@ -320,7 +317,7 @@ def model_initialization_jabw(
     )
     log.info("U2vn computation completed.")
 
-    rho_numpy, exner_numpy, theta_v_numpy = hydrostatic_adjustment_numpy(
+    rho_numpy, exner_numpy, theta_v_numpy = testcase_functions.hydrostatic_adjustment_numpy(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
@@ -341,7 +338,7 @@ def model_initialization_jabw(
     temperature = gtx.as_field((CellDim, KDim), temperature_numpy)
     pressure = gtx.as_field((CellDim, KDim), pressure_numpy)
     theta_v = gtx.as_field((CellDim, KDim), theta_v_numpy)
-    pressure_ifc_numpy = np.zeros((cell_size, num_levels + 1), dtype=float)
+    pressure_ifc_numpy = xp.zeros((cell_size, num_levels + 1), dtype=float)
     pressure_ifc_numpy[:, -1] = p_sfc
     pressure_ifc = gtx.as_field((CellDim, KDim), pressure_ifc_numpy)
 
@@ -455,7 +452,6 @@ def model_initialization_jabw(
 
 def model_initialization_gauss3d(
     icon_grid: IconGrid,
-    cell_param: CellParams,
     edge_param: EdgeParams,
     path: pathlib.Path,
     rank=0,
@@ -473,7 +469,6 @@ def model_initialization_gauss3d(
 
     Args:
         icon_grid: IconGrid
-        cell_param: cell properties
         edge_param: edge properties
         path: path where to find the input data
         rank: mpi rank of the current compute node
@@ -515,20 +510,20 @@ def model_initialization_gauss3d(
     )
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
-    w_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
-    exner_numpy = np.zeros((num_cells, num_levels), dtype=float)
-    rho_numpy = np.zeros((num_cells, num_levels), dtype=float)
-    temperature_numpy = np.zeros((num_cells, num_levels), dtype=float)
-    pressure_numpy = np.zeros((num_cells, num_levels), dtype=float)
-    theta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
-    eta_v_numpy = np.zeros((num_cells, num_levels), dtype=float)
+    w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    rho_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    temperature_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    pressure_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    theta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    eta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
 
-    mask_array_edge_start_plus1_to_edge_end = np.ones(num_edges, dtype=bool)
+    mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
     mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
-    mask = np.repeat(
-        np.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
+    mask = xp.repeat(
+        xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
     )
-    primal_normal_x = np.repeat(np.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
+    primal_normal_x = xp.repeat(xp.expand_dims(primal_normal_x, axis=-1), num_levels, axis=1)
 
     # Define test case parameters
     # The topography can only be read from serialized data for now, then these
@@ -544,7 +539,7 @@ def model_initialization_gauss3d(
     log.info("Topography can only be read from serialized data for now.")
 
     # Horizontal wind field
-    u = np.where(mask, nh_u0, 0.0)
+    u = xp.where(mask, nh_u0, 0.0)
     vn_numpy = u * primal_normal_x
     log.info("Wind profile assigned.")
 
@@ -552,13 +547,13 @@ def model_initialization_gauss3d(
     for k_index in range(num_levels - 1, -1, -1):
         z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, k_index]
         # profile of theta is explicitly given
-        theta_v_numpy[:, k_index] = nh_t0 * np.exp(z_help)
+        theta_v_numpy[:, k_index] = nh_t0 * xp.exp(z_help)
 
     # Lower boundary condition for exner pressure
     if nh_brunt_vais != 0.0:
         z_help = (nh_brunt_vais / GRAV) ** 2 * geopot[:, num_levels - 1]
         exner_numpy[:, num_levels - 1] = (GRAV / nh_brunt_vais) ** 2 / nh_t0 / CPD * (
-            np.exp(-z_help) - 1.0
+            xp.exp(-z_help) - 1.0
         ) + 1.0
     else:
         exner_numpy[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / CPD / nh_t0
@@ -566,7 +561,7 @@ def model_initialization_gauss3d(
 
     # Compute hydrostatically balanced exner, by integrating the (discretized!)
     # 3rd equation of motion under the assumption thetav=const.
-    rho_numpy, exner_numpy = hydrostatic_adjustment_constant_thetav_numpy(
+    rho_numpy, exner_numpy = testcase_functions.hydrostatic_adjustment_constant_thetav_numpy(
         wgtfac_c,
         ddqz_z_half,
         exner_ref_mc,
@@ -601,7 +596,7 @@ def model_initialization_gauss3d(
     temperature = gtx.as_field((CellDim, KDim), temperature_numpy)
     pressure = gtx.as_field((CellDim, KDim), pressure_numpy)
     theta_v = gtx.as_field((CellDim, KDim), theta_v_numpy)
-    pressure_ifc_numpy = np.zeros((num_cells, num_levels + 1), dtype=float)
+    pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
     pressure_ifc_numpy[
         :, -1
     ] = P0REF  # set surface pressure to the prescribed value (only used for IC in JABW test case, then actually computed in the dycore)
@@ -859,7 +854,7 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_gauss3d(icon_grid, cell_param, edge_param, path, rank)
+        ) = model_initialization_gauss3d(icon_grid, edge_param, path, rank)
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,

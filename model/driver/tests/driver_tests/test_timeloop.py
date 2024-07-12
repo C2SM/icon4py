@@ -30,11 +30,7 @@ from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_utils import (
-    GAUSS3D_EXPERIMENT,
-    GLOBAL_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
-)
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     dallclose,
@@ -59,7 +55,7 @@ from .utils import (
     "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
             0,
@@ -73,7 +69,7 @@ from .utils import (
             False,
         ),
         (
-            REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
             0,
@@ -87,7 +83,7 @@ from .utils import (
             True,
         ),
         (
-            GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
             0,
@@ -101,7 +97,7 @@ from .utils import (
             False,
         ),
         (
-            GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
             0,
@@ -115,7 +111,7 @@ from .utils import (
             True,
         ),
         (
-            GAUSS3D_EXPERIMENT,
+            dt_utils.GAUSS3D_EXPERIMENT,
             1,
             2,
             0,
@@ -150,7 +146,7 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
 ):
-    if experiment == GAUSS3D_EXPERIMENT:
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
         config = icon_configuration.read_config(experiment)
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config

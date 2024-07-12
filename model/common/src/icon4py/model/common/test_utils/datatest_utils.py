@@ -76,6 +76,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Returns: tuple[int, int]: The grid root and level.
     """
     if "torus" in experiment:
+        # these magic values seem to mark a torus: they are set in all torus grid files.
         return 0, 2
 
     try:
