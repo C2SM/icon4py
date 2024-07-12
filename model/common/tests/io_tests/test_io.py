@@ -24,7 +24,7 @@ import xarray as xr
 import icon4py.model.common.exceptions as errors
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import base, simple, vertical as v_grid
-from icon4py.model.common.io import data, ugrid
+from icon4py.model.common.io import ugrid, utils
 from icon4py.model.common.io.io import (
     FieldGroupIOConfig,
     FieldGroupMonitor,
@@ -33,6 +33,7 @@ from icon4py.model.common.io.io import (
     generate_name,
     to_delta,
 )
+from icon4py.model.common.states import data
 from icon4py.model.common.test_utils import datatest_utils, grid_utils, helpers
 
 
@@ -52,21 +53,21 @@ def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
     w = helpers.random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=np.float32)
     vn = helpers.random_field(grid, EdgeDim, KDim, dtype=np.float32)
     return {
-        "air_density": data.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
-        "exner_function": data.to_data_array(
+        "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
+        "exner_function": utils.to_data_array(
             exner, data.PROGNOSTIC_CF_ATTRIBUTES["exner_function"]
         ),
-        "theta_v": data.to_data_array(
+        "theta_v": utils.to_data_array(
             theta_v,
             data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
             is_on_interface=False,
         ),
-        "upward_air_velocity": data.to_data_array(
+        "upward_air_velocity":utils.to_data_array(
             w,
             data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
             is_on_interface=True,
         ),
-        "normal_velocity": data.to_data_array(
+        "normal_velocity": utils.to_data_array(
             vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"], is_on_interface=False
         ),
     }
