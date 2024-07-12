@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil65(StencilTest):
+class TestUpdateMassFluxWeighted(StencilTest):
     PROGRAM = update_mass_flux_weighted
     OUTPUTS = ("mass_flx_ic",)
 
@@ -65,8 +65,8 @@ class TestMoSolveNonhydroStencil65(StencilTest):
             w_concorr_c=w_concorr_c,
             mass_flx_ic=mass_flx_ic,
             r_nsubsteps=r_nsubsteps,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil62(StencilTest):
+class TestUpdateWind(StencilTest):
     PROGRAM = update_wind
     OUTPUTS = ("w_new",)
 
@@ -42,8 +42,8 @@ class TestMoSolveNonhydroStencil62(StencilTest):
             grf_tend_w=grf_tend_w,
             w_new=w_new,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

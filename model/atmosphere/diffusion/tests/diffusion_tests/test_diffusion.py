@@ -17,8 +17,8 @@ import pytest
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
@@ -96,6 +96,15 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
+def create_vertical_params(vertical_config, grid_savepoint):
+    return VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
+
+
 @pytest.mark.datatest
 def test_diffusion_init(
     diffusion_savepoint_init,
@@ -105,18 +114,23 @@ def test_diffusion_init(
     icon_grid,
     experiment,
     step_date_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     ndyn_substeps,
 ):
     config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = DiffusionParams(config)
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     meta = diffusion_savepoint_init.get_metadata("linit", "date")
 
@@ -199,12 +213,12 @@ def _verify_init_values_against_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment,step_date_init,damping_height",
+    "experiment,step_date_init",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", 12500.0),
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", 50000.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000"),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:20.000"),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000"),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:04.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -215,17 +229,22 @@ def test_verify_diffusion_init_against_savepoint(
     interpolation_savepoint,
     metrics_savepoint,
     diffusion_savepoint_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     ndyn_substeps,
 ):
     config = construct_config(experiment, ndyn_substeps=ndyn_substeps)
     additional_parameters = DiffusionParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
     edge_params = grid_savepoint.construct_edge_geometry()
@@ -248,10 +267,10 @@ def test_verify_diffusion_init_against_savepoint(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit, damping_height",
+    "experiment, step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -263,6 +282,9 @@ def test_run_diffusion_single_step(
     grid_savepoint,
     icon_grid,
     experiment,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     ndyn_substeps,
 ):
@@ -271,14 +293,16 @@ def test_run_diffusion_single_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     config = construct_config(experiment, ndyn_substeps)
     additional_parameters = DiffusionParams(config)
 
@@ -307,11 +331,12 @@ def test_run_diffusion_single_step(
 
 
 @pytest.mark.datatest
-@pytest.mark.parametrize(
-    "linit, experiment, damping_height", [(True, REGIONAL_EXPERIMENT, 12500.0)]
-)
+@pytest.mark.parametrize("linit, experiment", [(True, REGIONAL_EXPERIMENT)])
 def test_run_diffusion_initial_step(
     experiment,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     diffusion_savepoint_init,
     diffusion_savepoint_exit,
@@ -325,10 +350,16 @@ def test_run_diffusion_initial_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
-    diagnostic_state = construct_diagnostics(diffusion_savepoint_init, grid_savepoint)
+    diagnostic_state = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state = diffusion_savepoint_init.construct_prognostics()
-    vct_a = grid_savepoint.vct_a()
-    vertical_params = VerticalModelParams(vct_a=vct_a, rayleigh_damping_height=damping_height)
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     config = construct_config(experiment, ndyn_substeps=2)
     additional_parameters = DiffusionParams(config)
 

@@ -21,7 +21,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, r
 from icon4py.model.common.type_alias import wpfloat
 
 
-class TestMoSolveNonhydroStencil68(StencilTest):
+class TestUpdateThetaV(StencilTest):
     PROGRAM = update_theta_v
     OUTPUTS = ("theta_v_new",)
 
@@ -67,8 +67,8 @@ class TestMoSolveNonhydroStencil68(StencilTest):
             rho_new=rho_new,
             theta_v_new=theta_v_new,
             cvd_o_rd=cvd_o_rd,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

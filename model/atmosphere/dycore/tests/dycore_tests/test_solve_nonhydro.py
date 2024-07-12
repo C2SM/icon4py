@@ -37,9 +37,9 @@ from icon4py.model.common.grid.horizontal import (
     EdgeParams,
     HorizontalMarkerIndex,
 )
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -91,7 +91,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
     _calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp,
         config.nudge_max_coeff,
-        constants.dbl_eps,
+        constants.DBL_EPS,
         out=bdy_divdamp,
         offset_provider={},
     )
@@ -103,19 +103,17 @@ def test_validate_divdamp_fields_against_savepoint_values(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "experiment,step_date_init, step_date_exit",
     [
         (
             REGIONAL_EXPERIMENT,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
-            12500.0,
         ),
         (
             GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
-            50000.0,
         ),
     ],
 )
@@ -127,6 +125,9 @@ def test_nonhydro_predictor_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     metrics_savepoint,
@@ -141,7 +142,14 @@ def test_nonhydro_predictor_step(
     sp = savepoint_nonhydro_init
     sp_exit = savepoint_nonhydro_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = create_vertical_params(damping_height, grid_savepoint)
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     recompute = sp.get_metadata("recompute").get("recompute")
     linit = sp.get_metadata("linit").get("linit")
@@ -486,31 +494,29 @@ def construct_diagnostics(init_savepoint: IconNonHydroInitSavepoint):
     )
 
 
-def create_vertical_params(damping_height, grid_savepoint):
-    return VerticalModelParams(
+def create_vertical_params(vertical_config, grid_savepoint):
+    return VerticalGridParams(
+        vertical_config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
-        rayleigh_damping_height=damping_height,
-        nflat_gradp=grid_savepoint.nflat_gradp(),
-        nflatlev=grid_savepoint.nflatlev(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "experiment,step_date_init, step_date_exit",
     [
         (
             REGIONAL_EXPERIMENT,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
-            12500.0,
         ),
         (
             GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
-            50000.0,
         ),
     ],
 )
@@ -522,6 +528,9 @@ def test_nonhydro_corrector_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     metrics_savepoint,
@@ -535,12 +544,14 @@ def test_nonhydro_corrector_step(
     config = construct_config(experiment, ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=grid_savepoint.nflatlev(),
-        nflat_gradp=grid_savepoint.nflat_gradp(),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
@@ -696,19 +707,17 @@ def test_nonhydro_corrector_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init,jstep_init, istep_exit,jstep_exit", [(1, 0, 2, 0)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "experiment,step_date_init, step_date_exit",
     [
         (
             REGIONAL_EXPERIMENT,
             "2021-06-20T12:00:10.000",
             "2021-06-20T12:00:10.000",
-            12500.0,
         ),
         (
             GLOBAL_EXPERIMENT,
             "2000-01-01T00:00:02.000",
             "2000-01-01T00:00:02.000",
-            50000.0,
         ),
     ],
 )
@@ -723,6 +732,9 @@ def test_run_solve_nonhydro_single_step(
     ndyn_substeps,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     metrics_savepoint,
@@ -737,7 +749,14 @@ def test_run_solve_nonhydro_single_step(
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = create_vertical_params(damping_height, grid_savepoint)
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
@@ -839,6 +858,9 @@ def test_run_solve_nonhydro_multi_step(
     step_date_exit,
     icon_grid,
     savepoint_nonhydro_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     grid_savepoint,
     vn_only,
@@ -853,7 +875,14 @@ def test_run_solve_nonhydro_multi_step(
     sp = savepoint_nonhydro_init
     sp_step_exit = savepoint_nonhydro_step_exit
     nonhydro_params = NonHydrostaticParams(config)
-    vertical_params = create_vertical_params(damping_height, grid_savepoint)
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
     dtime = sp.get_metadata("dtime").get("dtime")
     lprep_adv = sp.get_metadata("prep_adv").get("prep_adv")
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")

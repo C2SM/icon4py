@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim, Koff
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 

@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil47(StencilTest):
+class TestInitLowerBoundaryConditionForWAndContravariantCorrection(StencilTest):
     PROGRAM = set_lower_boundary_condition_for_w_and_contravariant_correction
     OUTPUTS = ("w_nnew", "z_contr_w_fl_l")
 
@@ -43,8 +43,8 @@ class TestMoSolveNonhydroStencil47(StencilTest):
             w_nnew=w_nnew,
             z_contr_w_fl_l=z_contr_w_fl_l,
             w_concorr_c=w_concorr_c,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

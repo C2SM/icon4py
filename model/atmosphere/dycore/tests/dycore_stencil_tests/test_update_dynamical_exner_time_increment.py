@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil60(StencilTest):
+class TestUpdateDynamicalExnerTimeIncrement(StencilTest):
     PROGRAM = update_dynamical_exner_time_increment
     OUTPUTS = ("exner_dyn_incr",)
 
@@ -53,8 +53,8 @@ class TestMoSolveNonhydroStencil60(StencilTest):
             exner_dyn_incr=exner_dyn_incr,
             ndyn_substeps_var=ndyn_substeps_var,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

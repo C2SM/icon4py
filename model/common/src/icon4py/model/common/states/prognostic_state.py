@@ -26,7 +26,7 @@ class PrognosticState:
     Corresponds to ICON t_nh_prog
     """
 
-    rho: Field[[CellDim, KDim], float]  # density, rho(nproma, nlev, nblks_c) [m/s]
+    rho: Field[[CellDim, KDim], float]  # density, rho(nproma, nlev, nblks_c) [kg/m^3]
     w: Field[[CellDim, KDim], float]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
     vn: Field[
         [EdgeDim, KDim], float
@@ -36,4 +36,4 @@ class PrognosticState:
 
     @property
     def w_1(self) -> Field[[CellDim], float]:
-        return as_field((CellDim,), self.w.asnumpy()[:, 0])
+        return as_field((CellDim,), self.w.ndarray[:, 0])

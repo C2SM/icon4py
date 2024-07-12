@@ -11,17 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import as_field
-from gt4py.next.common import Field
-from gt4py.next.iterator.builtins import int32
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+    add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
+)
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
-)
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
-    add_extra_diffusion_for_wn_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
@@ -30,14 +28,16 @@ from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_verti
     compute_horizontal_advection_term_for_vertical_velocity,
 )
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.atmosphere.dycore.interpolate_contravatiant_vertical_verlocity_to_full_levels import (
-    interpolate_contravatiant_vertical_verlocity_to_full_levels,
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
+    interpolate_contravariant_vertical_velocity_to_full_levels,
 )
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
-from icon4py.model.atmosphere.dycore.interpolate_vt_to_ie import interpolate_vt_to_ie
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
+    interpolate_vt_to_interface_edges,
+)
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
@@ -53,7 +53,7 @@ from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _alloca
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
 
@@ -63,9 +63,9 @@ class VelocityAdvection:
         grid: IconGrid,
         metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
+        vertical_params: VerticalGridParams,
         edge_params: EdgeParams,
-        owner_mask: Field[[CellDim], bool],
+        owner_mask: gtx.Field[[CellDim], bool],
     ):
         self._initialized = False
         self.grid: IconGrid = grid
@@ -103,12 +103,12 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
-        z_w_concorr_me: Field[[EdgeDim, KDim], float],
-        z_kin_hor_e: Field[[EdgeDim, KDim], float],
-        z_vt_ie: Field[[EdgeDim, KDim], float],
+        z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
+        z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
+        z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
         dtime: float,
         ntnd: int,
-        cell_areas: Field[[CellDim], float],
+        cell_areas: gtx.Field[[CellDim], float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -196,7 +196,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            interpolate_vt_to_ie(
+            interpolate_vt_to_interface_edges(
                 wgtfac_e=self.metric_state.wgtfac_e,
                 vt=diagnostic_state.vt,
                 z_vt_ie=z_vt_ie,
@@ -303,14 +303,16 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 3),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
+            vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravatiant_vertical_verlocity_to_full_levels(
+        interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -351,8 +353,10 @@ class VelocityAdvection:
                 dtime=dtime,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
-                vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-                vertical_end=int32(self.grid.num_levels - 3),
+                vertical_start=gtx.int32(
+                    max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+                ),
+                vertical_end=gtx.int32(self.grid.num_levels - 3),
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -377,7 +381,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_wn_approaching_cfl(
+        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -394,13 +398,15 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
     def _update_levmask_from_cfl_clipping(self):
-        self.levmask = as_field(
+        self.levmask = gtx.as_field(
             domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
@@ -414,11 +420,11 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: DiagnosticStateNonHydro,
         prognostic_state: PrognosticState,
-        z_kin_hor_e: Field[[EdgeDim, KDim], float],
-        z_vt_ie: Field[[EdgeDim, KDim], float],
+        z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
+        z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
         dtime: float,
         ntnd: int,
-        cell_areas: Field[[CellDim], float],
+        cell_areas: gtx.Field[[CellDim], float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -525,14 +531,14 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 3),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
         self._update_levmask_from_cfl_clipping()
 
-        interpolate_contravatiant_vertical_verlocity_to_full_levels(
+        interpolate_contravariant_vertical_velocity_to_full_levels(
             z_w_con_c=self.z_w_con_c,
             z_w_con_c_full=self.z_w_con_c_full,
             horizontal_start=start_cell_lb_plus3,
@@ -572,8 +578,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
@@ -599,7 +605,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        add_extra_diffusion_for_wn_approaching_cfl(
+        add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
             levelmask=self.levelmask,
             c_lin_e=self.interpolation_state.c_lin_e,
             z_w_con_c_full=self.z_w_con_c_full,
@@ -616,7 +622,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )

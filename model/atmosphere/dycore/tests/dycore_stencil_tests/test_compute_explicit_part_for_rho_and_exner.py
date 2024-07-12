@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil48(StencilTest):
+class TestComputeExplicitPartForRhoAndExner(StencilTest):
     PROGRAM = compute_explicit_part_for_rho_and_exner
     OUTPUTS = ("z_rho_expl", "z_exner_expl")
 
@@ -87,8 +87,8 @@ class TestMoSolveNonhydroStencil48(StencilTest):
             theta_v_ic=theta_v_ic,
             ddt_exner_phy=ddt_exner_phy,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

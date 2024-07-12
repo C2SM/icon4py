@@ -12,18 +12,26 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.state_utils.states import DiagnosticStateNonHydro
 from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
 from icon4py.model.common.dimension import CellDim, EdgeDim
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 
 from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metric_state
+
+
+def create_vertical_params(vertical_config, grid_savepoint):
+    return VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
 
 
 @pytest.mark.datatest
@@ -50,17 +58,22 @@ def test_velocity_init(
     icon_grid,
     metrics_savepoint,
     step_date_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
 ):
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-        nflatlev=int32(grid_savepoint.nflatlev()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -81,10 +94,10 @@ def test_velocity_init(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, damping_height",
+    "experiment, step_date_init",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_regular_savepoint(
@@ -93,6 +106,9 @@ def test_verify_velocity_init_against_regular_savepoint(
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     experiment,
 ):
@@ -101,12 +117,14 @@ def test_verify_velocity_init_against_regular_savepoint(
 
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-        nflatlev=int32(grid_savepoint.nflatlev()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -126,10 +144,10 @@ def test_verify_velocity_init_against_regular_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "experiment,step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -138,6 +156,9 @@ def test_velocity_predictor_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -188,12 +209,14 @@ def test_velocity_predictor_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=int32(grid_savepoint.nflatlev()),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,
@@ -290,10 +313,10 @@ def test_velocity_predictor_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit, damping_height",
+    "experiment, step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -301,6 +324,9 @@ def test_velocity_corrector_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -352,12 +378,14 @@ def test_velocity_corrector_step(
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=int32(grid_savepoint.nflatlev()),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
     velocity_advection = VelocityAdvection(
         grid=icon_grid,

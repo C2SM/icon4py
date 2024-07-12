@@ -23,7 +23,7 @@ from icon4py.model.common.test_utils.helpers import StencilTest, random_field, z
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-class TestMoSolveNonhydroStencil43(StencilTest):
+class TestComputeExplicitVerticalWindSpeedAndVerticalWindTimesDensity(StencilTest):
     PROGRAM = compute_explicit_vertical_wind_speed_and_vertical_wind_times_density
     OUTPUTS = ("z_w_expl", "z_contr_w_fl_l")
 
@@ -69,8 +69,8 @@ class TestMoSolveNonhydroStencil43(StencilTest):
             vwind_expl_wgt=vwind_expl_wgt,
             dtime=dtime,
             cpd=cpd,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

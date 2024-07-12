@@ -11,7 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -19,17 +19,21 @@ from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, Diffus
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
+    flat_height,
     grid_savepoint,
+    htop_moist_proc,
     icon_grid,
     interpolation_savepoint,
     istep_exit,
     istep_init,
     jstep_exit,
     jstep_init,
+    lowest_layer_thickness,
+    maximal_layer_thickness,
     metrics_savepoint,
+    model_top_height,
     ndyn_substeps,
     processor_props,
     ranked_data_path,
@@ -39,6 +43,8 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     savepoint_velocity_init,
     step_date_exit,
     step_date_init,
+    stretch_factor,
+    top_height_limit_for_maximal_layer_thickness,
     vn_only,
 )
 from icon4py.model.driver.icon_configuration import IconRunConfig
@@ -87,23 +93,9 @@ def r04b09_iconrun_config(
     from the default.
     """
     return IconRunConfig(
-        dtime=10.0,
-        start_date=datetime(
-            int(timeloop_date_init[0:4]),
-            int(timeloop_date_init[5:7]),
-            int(timeloop_date_init[8:10]),
-            int(timeloop_date_init[11:13]),
-            int(timeloop_date_init[14:16]),
-            int(timeloop_date_init[17:19]),
-        ),
-        end_date=datetime(
-            int(timeloop_date_exit[0:4]),
-            int(timeloop_date_exit[5:7]),
-            int(timeloop_date_exit[8:10]),
-            int(timeloop_date_exit[11:13]),
-            int(timeloop_date_exit[14:16]),
-            int(timeloop_date_exit[17:19]),
-        ),
+        dtime=timedelta(seconds=10.0),
+        start_date=datetime.fromisoformat(timeloop_date_init),
+        end_date=datetime.fromisoformat(timeloop_date_exit),
         n_substeps=ndyn_substeps,
         apply_initial_stabilization=timeloop_diffusion_linit_init,
     )

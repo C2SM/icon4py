@@ -14,8 +14,8 @@ from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
 
-from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_wn_approaching_cfl import (
-    _add_extra_diffusion_for_wn_approaching_cfl,
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
+    _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
 from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     _compute_advective_normal_wind_tendency,
@@ -33,7 +33,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.model_backend import backend
+from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
@@ -81,7 +81,7 @@ def _fused_velocity_advection_stencil_19_to_20(
     ddt_vn_apc = (
         where(
             maximum(2, nrdmax - 2) <= k < nlev - 3,
-            _add_extra_diffusion_for_wn_approaching_cfl(
+            _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
                 levelmask,
                 c_lin_e,
                 z_w_con_c_full,

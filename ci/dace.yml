@@ -2,18 +2,13 @@ include:
   - local: 'ci/base.yml'
 
 variables:
-  DACE_VERSION: "d0db188db"
-
-build:
-  extends: .build_template
+  DACE_VERSION: "0.16.1"
 
 test_model_stencils:
   extends: .test_template
   stage: test
   script:
-# TODO(edopao): wait for next dace release to fix the inline_sdfgs simplify step
-#   - pip install dace==$DACE_VERSION
-    - pip install git+https://github.com/spcl/dace.git@$DACE_VERSION
+    - pip install dace==$DACE_VERSION
     - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
   parallel:
     matrix:
@@ -24,10 +19,9 @@ benchmark_model_stencils:
   extends: .test_template
   stage: benchmark
   script:
-# TODO(edopao): wait for next dace release to fix the inline_sdfgs simplify step
-#   - pip install dace==$DACE_VERSION
-    - pip install git+https://github.com/spcl/dace.git@$DACE_VERSION
-    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
+    - pip install dace==$DACE_VERSION
+    # force execution of tests where validation is expected to fail, because the reason for failure is wrong numpy reference
+    - tox -r -e run_benchmarks -c model/ -- --backend=$BACKEND --grid=$GRID --runxfail --verbose
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]

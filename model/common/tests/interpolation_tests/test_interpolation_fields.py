@@ -57,7 +57,6 @@ from icon4py.model.common.interpolation.interpolation_fields import (
 )
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     processor_props,
@@ -292,20 +291,23 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
 
 
 @pytest.mark.datatest
-def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_grid):
+def test_compute_cells_aw_verts(
+    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint
+):
     cells_aw_verts_ref = interpolation_savepoint.c_intp().asnumpy()
-    dual_area = grid_savepoint.vertex_dual_area().asnumpy()
+    dual_area = grid_savepoint.v_dual_area().asnumpy()
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
-    owner_mask = grid_savepoint.v_owner_mask().asnumpy()
+    owner_mask = grid_savepoint.v_owner_mask()
+    e2c = icon_grid.connectivities[E2CDim]
+    v2c = icon_grid.connectivities[V2CDim]
     v2e = icon_grid.connectivities[V2EDim]
     e2v = icon_grid.connectivities[E2VDim]
-    v2c = icon_grid.connectivities[V2CDim]
-    e2c = icon_grid.connectivities[E2CDim]
-    horizontal_start = icon_grid.get_start_index(
+    horizontal_start_vertex = icon_grid.get_start_index(
         VertexDim,
         HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
     )
+
     cells_aw_verts = compute_cells_aw_verts(
         dual_area,
         edge_vert_length,
@@ -315,7 +317,7 @@ def test_compute_cells_aw_verts(grid_savepoint, interpolation_savepoint, icon_gr
         e2v,
         v2c,
         e2c,
-        horizontal_start,
+        horizontal_start_vertex
     )
     assert dallclose(cells_aw_verts, cells_aw_verts_ref)
 
