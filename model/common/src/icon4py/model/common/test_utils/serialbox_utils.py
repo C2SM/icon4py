@@ -168,12 +168,6 @@ class IconGridSavepoint(IconSavepoint):
     def edges_center_lon(self):
         return self._get_field("edges_center_lon", EdgeDim)
 
-    def cell_center_lat(self):
-        return self._get_field("cell_center_lat", CellDim)
-
-    def cell_center_lon(self):
-        return self._get_field("cell_center_lon", CellDim)
-
     def v_num_edges(self):
         return self._get_field("v_num_edges", VertexDim)
 
@@ -271,12 +265,6 @@ class IconGridSavepoint(IconSavepoint):
     def cell_center_lon(self):
         return self._get_field("cell_center_lon", CellDim)
 
-    def edge_center_lat(self):
-        return self._get_field("edges_center_lat", EdgeDim)
-
-    def edge_center_lon(self):
-        return self._get_field("edges_center_lon", EdgeDim)
-
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
 
@@ -291,9 +279,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_cell_length(self):
         return self._get_field("edge_cell_length", EdgeDim, E2CDim)
-
-    def edge_vert_length(self):
-        return self._get_field("edge_vert_length", EdgeDim, E2CDim)
 
     def cells_start_index(self):
         return self._read_int32_shift1("c_start_index")
@@ -329,9 +314,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def e_owner_mask(self):
         return self._get_field("e_owner_mask", EdgeDim, dtype=bool)
-
-    def v_owner_mask(self):
-        return self._get_field("v_owner_mask", VertexDim, dtype=bool)
 
     def f_e(self):
         return self._get_field("f_e", EdgeDim)

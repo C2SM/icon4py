@@ -79,6 +79,7 @@ DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 #: average earth radius in [m]
 EARTH_RADIUS: Final[wpfloat] = 6.371229e6
 
+
 class RayleighType(IntEnum):
     RAYLEIGH_CLASSIC: Final[
         int

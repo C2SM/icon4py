@@ -27,6 +27,7 @@ import numpy as np
 import pytest
 from gt4py.next.iterator.builtins import int32
 
+from icon4py.model.common.constants import EARTH_RADIUS
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2EDim,
@@ -62,9 +63,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.helpers import zero_field
-from icon4py.model.common.constants import EARTH_RADIUS
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 
 
 @pytest.mark.datatest
@@ -317,7 +316,7 @@ def test_compute_cells_aw_verts(
         e2v,
         v2c,
         e2c,
-        horizontal_start_vertex
+        horizontal_start_vertex,
     )
     assert dallclose(cells_aw_verts, cells_aw_verts_ref)
 

@@ -29,8 +29,8 @@ from gt4py.next.ffront.decorator import field_operator
 from gt4py.next.ffront.fbuiltins import Field
 
 from icon4py.model.common.dimension import C2E, V2E, C2EDim, CellDim, EdgeDim, V2EDim, VertexDim
-from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.math.projection import gnomonic_proj
+from icon4py.model.common.type_alias import wpfloat
 
 
 def compute_c_lin_e(
@@ -349,26 +349,26 @@ def weighting_factors(
     wgt_loc: wpfloat,
 ) -> np.ndarray:
     """
-    Compute weighting factors.
-    The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
-    and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
-    are not aliased into a checkerboard pattern between upward- and downward
-    directed cells. The third condition is sum(w(i)) = 1., and the weight
-    of the local point is 0.5 (see above). Analytical elimination yields...
+        Compute weighting factors.
+        The weighting factors are based on the requirement that sum(w(i)*x(i)) = 0
+        and sum(w(i)*y(i)) = 0, which ensures that linear horizontal gradients
+        are not aliased into a checkerboard pattern between upward- and downward
+        directed cells. The third condition is sum(w(i)) = 1., and the weight
+        of the local point is 0.5 (see above). Analytical elimination yields...
 
-# TODO (Andreas J) computation different for Torus grids see mo_intp_coeffs.f90
-# The function weighting_factors does not exist in the Fortran code, the
-# Fortran is organised differently with code duplication
+    # TODO (Andreas J) computation different for Torus grids see mo_intp_coeffs.f90
+    # The function weighting_factors does not exist in the Fortran code, the
+    # Fortran is organised differently with code duplication
 
-    Args:
-        ytemp:  \\   numpy array of size [[3, flexible], wpfloat]
-        xtemp:  //
-        yloc:   \\   numpy array of size [[flexible], wpfloat]
-        xloc:   //
-        wgt_loc:
+        Args:
+            ytemp:  \\   numpy array of size [[3, flexible], wpfloat]
+            xtemp:  //
+            yloc:   \\   numpy array of size [[flexible], wpfloat]
+            xloc:   //
+            wgt_loc:
 
-    Returns:
-        wgt: numpy array of size [[3, flexible], wpfloat]
+        Returns:
+            wgt: numpy array of size [[3, flexible], wpfloat]
     """
     pollat = np.where(yloc >= 0.0, yloc - np.pi * 0.5, yloc + np.pi * 0.5)
     pollon = xloc
