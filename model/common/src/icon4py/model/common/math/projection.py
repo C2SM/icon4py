@@ -19,7 +19,7 @@ def gnomonic_proj(
     lat_c: np.ndarray,
     lon: np.ndarray,
     lat: np.ndarray,
-) -> (np.ndarray, np.ndarray):
+) -> tuple[np.ndarray, np.ndarray]:
     """
     Compute gnomonic projection.
 
