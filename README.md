@@ -19,7 +19,7 @@ git clone git@github.com:C2SM/icon4py.git
 cd icon4py
 
 # Use tox to create and set up a development environment (usually at `.venv`) in verbose mode
-python -m tox -vv -c model/tox.ini -e dev --devenv ../.venv
+python -m tox -vv -c model/tox.ini -e dev --devenv .venv
 
 # Activate the virtual environment and check that everything works
 source .venv/bin/activate
