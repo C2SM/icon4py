@@ -34,7 +34,7 @@ class Component(Protocol):
     In order to define a component, subclass from this one and implement the `run` method.
 
     TODO (@halungge): add more consistency checks.
-     - check for mathching units and allow for unit conversion
+     - check for mathching units and provide a hook for unit conversion for the components implementations
      - check for consistency of dimensions of state and input_properties
 
     """
@@ -43,7 +43,10 @@ class Component(Protocol):
     @property
     def input_properties(self) -> dict[str, model.FieldMetaData]:
         """Return a dictionary of input properties for the component:contains name, units and dimension of
-        the output_properties"""
+        the output_properties.
+
+        We make this abstract in order to for the implementing class to define the input_properties.
+        """
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -52,9 +55,13 @@ class Component(Protocol):
         """Returns a dictionary of the output of the component: contains name, units and dimension of
         the output_properties.
 
-        TODO (@halungge): is this too generic and we should split into separate properties for
-            tendencies, diagnostics, prognostics, etc? Along the same lines how should we track the time
-            the produced values are valid for?
+        We make this abstract in order to for the implementing class to define the output_properties.
+
+        TODO (@halungge): is this too generic and we should split into separate properties for the different types of outputs like
+            tendencies, diagnostics, prognostics, etc?
+            Are they different? or ar the just different in the way they are used later on
+            and how they are applied to the model state? Should this be made explicit in the interface?
+            Along the same lines how should we track the time the produced values are valid for?
         """
         raise NotImplementedError
 
@@ -69,7 +76,9 @@ class Component(Protocol):
         """
         Gets the input_properties from the model state and applies the `run` to them and
         returns the output_properties.
-        This function should implement some general functionality like checks
+        This function should implement some joint functionality like consistency checks,
+        field unit conversion etc. it calls
+        `run` as a hook to do the actual computation.
 
         Args:
             state: dict  model state dictionary
@@ -94,7 +103,8 @@ class Component(Protocol):
         """
         Runs the component on the input_properties and returns the output_properties.
 
-        This function *must* to be implemented in each implementing class to contain the
+        This is an abstract hook for the actual component implementation to add its logic.
+        This function *must* to be implemented in each implementing class and contain the
         real logic of the component.
 
         TODO (@halungge): is it possible to improve this interface not haveing to pass on the entire state for example?
