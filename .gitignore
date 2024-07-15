@@ -15,8 +15,6 @@ simple_mesh*.nc
 
 
 ### Sphinx ###
-**/docs/Makefile
-**/docs/make.bat
 **/docs/*.rst
 
 ### GT4Py ####
