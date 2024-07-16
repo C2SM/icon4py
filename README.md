@@ -119,6 +119,24 @@ The default `tox` environment is configured to generate HTML test coverage repor
 
 We use [`pytest-benchmark`](https://pytest-benchmark.readthedocs.io/en/latest/) to benchmark the execution time of stencils in icon4py. To disable benchmarking during testing you can use `--benchmark-disable` when invoking `pytest`.
 
+### Documentation
+
+The documentation is at a very early stage given the constant state of development. Some effort is ongoing to document the dycore and can be compiled as follows:
+
+```bash
+# Install the required packages
+pip install sphinx==7.3.7 myst-parser sphinx-rtd-theme
+
+# Move to the dycore docs folder
+cd model/atmosphere/dycore/docs
+
+# Build the documentation
+sphinx-apidoc --implicit-namespaces -o . ../src/icon4py/
+make html
+```
+
+The documentation can then be accessed at `docs/_build/html/index.html`
+
 ### More Information
 
 For more information please consult the package specific READMEs found in the `model` and `tools` folders.

@@ -652,6 +652,20 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
+        """Runs the predictor step of the non-hydrostatic solver.
+
+        Args:
+            diagnostic_state_nh (DiagnosticStateNonHydro): The diagnostic state
+            prognostic_state (list[PrognosticState]): The prognostic state
+            z_fields (IntermediateFields): The intermediate fields
+            dtime (float): The time step
+            l_recompute (bool): Flag indicating whether to recompute only vn tendency
+            l_init (bool): Flag indicating whether it is the initial step
+            at_first_substep (bool): Flag indicating whether it is the first substep
+            nnow (int): The current time index
+            nnew (int): The new time index
+        """
+
         log.info(
             f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
