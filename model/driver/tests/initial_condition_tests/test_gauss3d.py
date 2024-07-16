@@ -14,7 +14,7 @@
 import pytest
 
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.driver import initialization_utils as init_utils
+from icon4py.model.driver.test_cases import gauss3d
 
 
 @pytest.mark.datatest
@@ -43,9 +43,8 @@ def test_gauss3d_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = init_utils.model_initialization_gauss3d(
+    ) = gauss3d.model_initialization_gauss3d(
         icon_grid,
-        cell_geometry,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
         rank,

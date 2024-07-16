@@ -217,7 +217,7 @@ def model_initialization_gauss3d(
     log.info("U, V computation completed.")
 
     exner_pr = dycore_utils._allocate(CellDim, KDim, grid=icon_grid)
-    init_exner_pr(
+    init_exner_pr.init_exner_pr(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
