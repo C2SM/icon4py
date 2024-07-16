@@ -33,7 +33,6 @@ def test_gauss3d_initial_condition(
     icon_grid,
 ):
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
 
     (
         diffusion_diagnostic_state,
