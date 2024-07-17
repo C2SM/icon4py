@@ -35,7 +35,7 @@ from icon4pytools.icon4pygen.bindings.utils import calc_num_neighbors
 from icon4pytools.icon4pygen.metadata import FieldInfo
 
 
-def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
+def chain_from_str(chain: list[str] | str) -> BasicLocation | list[BasicLocation]:
     chain_ctor_dispatcher = {"E": Edge, "C": Cell, "V": Vertex}
     if not all(c in chain_ctor_dispatcher for c in chain):
         raise BindingsTypeConsistencyException(
@@ -49,8 +49,6 @@ class Offset(Node, OffsetEntity):
         self.includes_center = self._includes_center(chain)
         chain_ls = self._split_chain(chain)
         self.source = self._handle_source(chain_ls)
-        if self.is_compound_location():
-            chain_ls = chain_ls[1:]
         self.target = self._make_target(chain_ls, self.source)
         self.renderer = OffsetRenderer(self)
 
@@ -74,15 +72,12 @@ class Offset(Node, OffsetEntity):
 
     @staticmethod
     def _handle_source(chain_ls: list) -> BasicLocation | CompoundLocation:
-        source = "".join(chain_ls)
-
-        if source in [str(loc()) for loc in BASIC_LOCATIONS.values()]:
-            return chain_from_str(source)[0]
-        elif all(char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source):
-            source = source[1:]
-            return CompoundLocation(chain_from_str(source))
+        if all(chain_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()] for chain_loc in chain_ls):
+            return chain_from_str(chain_ls[1])
+        elif all(source_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()] for source_loc in chain_ls[1]):
+            return CompoundLocation(chain_from_str(chain_ls[1]))
         else:
-            raise BindingsTypeConsistencyException(f"Invalid source {source}")
+            raise BindingsTypeConsistencyException(f"Invalid source {chain_ls[1]}")
 
     @staticmethod
     def _make_target(
