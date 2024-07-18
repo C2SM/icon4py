@@ -768,10 +768,9 @@ class SolveNonhydro:
             Compute the temporal extrapolation of perturbed exner function at
             full levels (cell center) using the time backward scheme (page 74 in
             icon tutorial 2023) for horizontal momentum equations. Note that it
-            has ``nlev+1`` levels. This last level is underground and set to
-            zero.
+            has nlev+1 levels. This last level is underground and set to zero.
 
-        .. math:: \pi_k^{\tilde{n}} = (1 + \gamma) \pi_k^{n} - \gamma \pi_k^{n-1}
+        .. math:: \pi_k^{\prime\tilde{n}} = (1 + \gamma) \pi_k^{\prime n} - \gamma \pi_k^{\prime n-1}
 
         .. code-block:: python
 
@@ -785,7 +784,9 @@ class SolveNonhydro:
             exner_pr = exner - exner_ref_mc
         
         FIXME:
-            ``_extrapolate_temporally_exner_pressure`` doesn't only do what the name suggests: it also updates exner_pr, which is not what the name implies
+            In the stencil, _extrapolate_temporally_exner_pressure doesn't only
+            do what the name suggests: it also updates exner_pr, which is not
+            what the name implies.
         """
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
@@ -804,19 +805,23 @@ class SolveNonhydro:
 
         if self.config.igradp_method == 3:
             """
+            ``nhsolve_prog.predictor_stencils_4_5_6()``
+
             z_exner_ic (1 or flat_lev:nlev):
                 Linearly interpolate the temporal extrapolation of perturbed
                 exner function computed in previous stencil to half levels. The
                 ground level is based on quadratic interpolation (with
-                hydrostatic assumption?). FIXME: Its value at the model top
-                level is not updated and assumed to be zero. It should be
-                treated in the same way as the ground level.
+                hydrostatic assumption?).
+            FIXME:
+                The value of z_exner_ic at the model top level is not updated
+                and assumed to be zero. It should be treated in the same way as
+                the ground level.
 
-            .. math:: \pi'_{k-1/2}^{\tilde{n}} = wgtfac_c   \pi'_k^{\tilde{n}} + (1 - wgtfac_c) \pi'_{k-1}^{\tilde{n}}
+            .. math:: \pi_{k-1/2}^{\prime \tilde{n}} = wgtfac_c \pi_k^{\prime\tilde{n}} + (1 - wgtfac_c) \pi_{k-1}^{\prime\tilde{n}}
 
             .. code-block:: python
 
-                z_exner_ic               = wgtfac_c * z_exner_ex_pr      + (1 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
+                z_exner_ic = wgtfac_c * z_exner_ex_pr + (1 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
 
             z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
                 Vertical derivative of the temporal extrapolation of exner
@@ -824,7 +829,7 @@ class SolveNonhydro:
 
             .. math::
 
-                \frac{\partial \pi'_{k}^{\tilde{n}}}{\partial z} = \frac{\pi'_{k-1/2}^{\tilde{n}} - \pi'_{k+1/2}^{\tilde{n}}}{\Delta z_{k}}
+                \frac{\partial \pi_{k}^{\prime\tilde{n}}}{\partial z} = \frac{\pi_{k-1/2}^{\prime\tilde{n}} - \pi_{k+1/2}^{\prime\tilde{n}}}{\Delta z_{k}}
 
             .. code-block:: python
 
