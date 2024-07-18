@@ -652,18 +652,8 @@ class SolveNonhydro:
         nnow: int,
         nnew: int,
     ):
-        """Runs the predictor step of the non-hydrostatic solver.
-
-        Args:
-            diagnostic_state_nh (DiagnosticStateNonHydro): The diagnostic state
-            prognostic_state (list[PrognosticState]): The prognostic state
-            z_fields (IntermediateFields): The intermediate fields
-            dtime (float): The time step
-            l_recompute (bool): Flag indicating whether to recompute only vn tendency
-            l_init (bool): Flag indicating whether it is the initial step
-            at_first_substep (bool): Flag indicating whether it is the first substep
-            nnow (int): The current time index
-            nnew (int): The new time index
+        """
+        Runs the predictor step of the non-hydrostatic solver.
         """
 
         log.info(
@@ -771,27 +761,31 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        r"""
+        """
+        ``nhsolve_prog.predictor_stencils_2_3()``
+
         z_exner_ex_pr (0:nlev):
             Compute the temporal extrapolation of perturbed exner function at
             full levels (cell center) using the time backward scheme (page 74 in
-            icon tutorial 2023) for horizontal momentum equations.
-            Note that it has nlev+1 levels. This last level is underground and
-            set to zero.
-            .. math::
-                \pi'_k^{\tilde{n}} = (1 + \gamma)        \pi'_k^{n}             - \gamma        \pi'_k^{n-1}
-            .. code-block:: python
-                z_exner_ex_pr      = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
+            icon tutorial 2023) for horizontal momentum equations. Note that it
+            has ``nlev+1`` levels. This last level is underground and set to
+            zero.
+
+        .. math:: \pi_k^{\tilde{n}} = (1 + \gamma) \pi_k^{n} - \gamma \pi_k^{n-1}
+
+        .. code-block:: python
+
+            z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
 
         exner_pr (0:nlev-1):
             Store perturbed exner function at full levels of current time step.
-            .. code-block:: python
-                exner_pr = exner - exner_ref_mc
+
+        .. code-block:: python
+
+            exner_pr = exner - exner_ref_mc
         
         FIXME:
-        * _extrapolate_temporally_exner_pressure doesn't only do what the name
-            suggests: it also updates exner_pr, which is not what the name
-            implies
+            ``_extrapolate_temporally_exner_pressure`` doesn't only do what the name suggests: it also updates exner_pr, which is not what the name implies
         """
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
@@ -809,29 +803,34 @@ class SolveNonhydro:
         )
 
         if self.config.igradp_method == 3:
-            r"""
+            """
             z_exner_ic (1 or flat_lev:nlev):
                 Linearly interpolate the temporal extrapolation of perturbed
-                exner function computed in previous stencil to half levels.
-                The ground level is based on quadratic interpolation (with
-                hydrostatic assumption?).
-                FIXME: Its value at the model top level is not updated and
-                assumed to be zero. It should be treated in the same way as the
-                ground level.
-                .. math::
-                    \pi'_{k-1/2}^{\tilde{n}} = wgtfac_c   \pi'_k^{\tilde{n}} + (1 - wgtfac_c) \pi'_{k-1}^{\tilde{n}}
-                .. code-block:: python
-                    z_exner_ic               = wgtfac_c * z_exner_ex_pr      + (1 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
+                exner function computed in previous stencil to half levels. The
+                ground level is based on quadratic interpolation (with
+                hydrostatic assumption?). FIXME: Its value at the model top
+                level is not updated and assumed to be zero. It should be
+                treated in the same way as the ground level.
+
+            .. math:: \pi'_{k-1/2}^{\tilde{n}} = wgtfac_c   \pi'_k^{\tilde{n}} + (1 - wgtfac_c) \pi'_{k-1}^{\tilde{n}}
+
+            .. code-block:: python
+
+                z_exner_ic               = wgtfac_c * z_exner_ex_pr      + (1 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
 
             z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
                 Vertical derivative of the temporal extrapolation of exner
                 function at full levels is also computed (first order scheme).
-                .. math::
-                    \frac{\partial \pi'_{k}^{\tilde{n}}}{\partial z} = \frac{\pi'_{k-1/2}^{\tilde{n}} - \pi'_{k+1/2}^{\tilde{n}}}{\Delta z_{k}}
-                .. code-block:: python
-                    z_dexner_dz_c_1                                  = (z_exner_ic                    - z_exner_ic(Koff[1])      ) * inv_ddqz_z_full
 
-            flat_lev
+            .. math::
+
+                \frac{\partial \pi'_{k}^{\tilde{n}}}{\partial z} = \frac{\pi'_{k-1/2}^{\tilde{n}} - \pi'_{k+1/2}^{\tilde{n}}}{\Delta z_{k}}
+
+            .. code-block:: python
+
+                z_dexner_dz_c_1 = (z_exner_ic - z_exner_ic(Koff[1])) * inv_ddqz_z_full
+
+            flat_lev:
                 height (inclusive) above which the grid is not affected by terrain following.
             """
             nhsolve_prog.predictor_stencils_4_5_6(
@@ -854,7 +853,7 @@ class SolveNonhydro:
                 # Perturbation Exner pressure on top half level
                 raise NotImplementedError("nflatlev=1 not implemented")
 
-        r"""
+        """
         rho_ic & theta_v_ic (1:nlev-1):
             Compute rho and virtual temperature at half levels. rho and virtual temperature at model top boundary and ground are not updated.
         z_rth_pr_1 (0:nlev-1):
@@ -926,6 +925,7 @@ class SolveNonhydro:
                 z_dexner_dz_c_2 = 1/2 d2pi'/dz2
                 1/theta_v_0 dpi_0/dz is precomputed as d2dexdz2_fac1_mc.
                 d/dz( 1/theta_v_0 dpi_0/dz ) is precomputed as d2dexdz2_fac2_mc. It makes use of eq. 15 in Günther et al. 2012 for refernce state of temperature when computing dtheta_v_0/dz
+
             flat_gradp is the maximum height index at which the height of the center of an edge lies within two neighboring cells.
             """
             # Second vertical derivative of perturbation Exner pressure (hydrostatic approximation)
@@ -1051,8 +1051,10 @@ class SolveNonhydro:
                 The distance between back-trajectory point and the nearest cell center is computed first (d_n, d_t) = -(cell_center_n + vn dt/2, cell_center_t + vt dt/2) = d_n vn + d_t vt.
                 It is then transformed to (lat, lon) coordinates = (d_lat, d_lon) = (d_y, d_x) by d_n*vn_lat + d_t*vt_lat, d_n*vn_lon + d_t*vt_lon.
                 Then, the value at edges is simply p_at_edge = p_at_cell_center + dp/dx d_x + dp/dy d_y
+
                 z_rho_e (0:nlev-1):
                     rho at edges.
+
                 z_theta_v_e (0:nlev-1):
                     theta_v at edges.
                 """
@@ -1343,14 +1345,14 @@ class SolveNonhydro:
                 Compute the horizonal kinetic energy (vn^2 + vt^2)/2 at first full level (edge center).
             vn_ie (nlev):
                 Compute normal wind at ground level (edge center) by quadratic extrapolation.
-                ---------------  z4
-                       z3'
-                ---------------  z3
-                       z2'
-                ---------------  z2
-                       z1'
-                ---------------  z1 (surface)
-                ///////////////
+                #---------------  z4
+                #       z3'
+                #---------------  z3
+                #       z2'
+                #---------------  z2
+                #       z1'
+                #---------------  z1 (surface)
+                #///////////////
                 The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
                 then obtained by quadratic interpolation polynomial based on these three points.
             """
@@ -1375,14 +1377,14 @@ class SolveNonhydro:
         w_concorr_c (nlev):
             Compute contravariant correction at ground level (cell center) by quadratic extrapolation. z_w_concorr_me needs to be first
             linearly interpolated to cell center.
-            ---------------  z4
-                   z3'
-            ---------------  z3
-                   z2'
-            ---------------  z2
-                   z1'
-            ---------------  z1 (surface)
-            ///////////////
+            #---------------  z4
+            #       z3'
+            #---------------  z3
+            #       z2'
+            #---------------  z2
+            #       z1'
+            #---------------  z1 (surface)
+            #///////////////
             The three reference points for extrapolation are at z2, z2', and z3'. Value at z1 is
             then obtained by quadratic interpolation polynomial based on these three points.
         """

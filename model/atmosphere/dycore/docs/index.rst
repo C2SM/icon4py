@@ -10,11 +10,11 @@ Welcome to icon4py-atmosphere-dycore's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   dycore_numerics.rst
    icon4py.model.atmosphere.rst
 
 .. modules.rst
 .. icon4py.model.rst
-
 
 Indices and tables
 ==================
