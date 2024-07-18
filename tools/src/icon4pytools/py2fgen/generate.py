@@ -45,7 +45,9 @@ def generate_c_header(plugin: CffiPlugin) -> str:
     return codegen.format_source("cpp", generated_code, style="LLVM")
 
 
-def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mode: bool) -> str:
+def generate_python_wrapper(
+    plugin: CffiPlugin, backend: Optional[str], debug_mode: bool, limited_area: str, profile: bool
+) -> str:
     """
     Generate Python wrapper code.
 
@@ -53,6 +55,8 @@ def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mo
         plugin: The CffiPlugin instance containing information for code generation.
         backend: Optional gt4py backend specification.
         debug_mode: Flag indicating if debug mode is enabled.
+        limited_area: Optional gt4py limited area specification.
+        profile: Flag indicate if code should be profiled.
 
     Returns:
         Formatted Python wrapper code as a string.
@@ -65,13 +69,15 @@ def generate_python_wrapper(plugin: CffiPlugin, backend: Optional[str], debug_mo
         imports=plugin.imports,
         backend=backend,
         debug_mode=debug_mode,
+        limited_area=limited_area,
+        profile=profile,
     )
 
     generated_code = PythonWrapperGenerator.apply(python_wrapper)
     return codegen.format_source("python", generated_code)
 
 
-def generate_f90_interface(plugin: CffiPlugin) -> str:
+def generate_f90_interface(plugin: CffiPlugin, limited_area: str) -> str:
     """
     Generate Fortran 90 interface code.
 
@@ -79,5 +85,7 @@ def generate_f90_interface(plugin: CffiPlugin) -> str:
         plugin: The CffiPlugin instance containing information for code generation.
     """
     logger.info("Generating Fortran interface...")
-    generated_code = F90InterfaceGenerator.apply(F90Interface(cffi_plugin=plugin))
+    generated_code = F90InterfaceGenerator.apply(
+        F90Interface(cffi_plugin=plugin, limited_area=limited_area)
+    )
     return format_fortran_code(generated_code)

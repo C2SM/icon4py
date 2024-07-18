@@ -66,8 +66,8 @@ class TestUpdateDensityExnerWind(StencilTest):
             exner_new=exner_new,
             w_new=w_new,
             dtime=dtime,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

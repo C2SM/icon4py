@@ -146,6 +146,7 @@ class IntegrationCodeGenerator(CodeGenerator):
                     acc_present=stencil.acc_present,
                     mergecopy=stencil.mergecopy,
                     copies=stencil.copies,
+                    optional_module=stencil.optional_module,
                 )
                 i += 2
 

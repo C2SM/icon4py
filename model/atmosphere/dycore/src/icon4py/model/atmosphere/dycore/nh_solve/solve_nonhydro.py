@@ -11,12 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
-from dataclasses import dataclass
+import dataclasses
 from typing import Final, Optional
 
-from gt4py.next import as_field
-from gt4py.next.common import Field
-from gt4py.next.ffront.fbuiltins import int32
+import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
@@ -165,17 +163,69 @@ from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
 )
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
+from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.settings import backend
-
+import enum
 
 # flake8: noqa
 log = logging.getLogger(__name__)
 
 
-@dataclass
+class TimeSteppingScheme(enum.IntEnum):
+    """Parameter called `itime_scheme` in ICON namelist."""
+
+    #: Contravariant vertical velocity is computed in the predictor step only, velocity tendencies are computed in the corrector step only
+    MOST_EFFICIENT = 4
+    #: Contravariant vertical velocity is computed in both substeps (beneficial for numerical stability in very-high resolution setups with extremely steep slopes)
+    STABLE = 5
+    #:  As STABLE, but velocity tendencies are also computed in both substeps (no benefit, but more expensive)
+    EXPENSIVE = 6
+
+
+class DivergenceDampingType(enum.IntEnum):
+    #: divergence damping acting on 2D divergence
+    TWO_DIMENSIONAL = 2
+    #: divergence damping acting on 3D divergence
+    THREE_DIMENSIONAL = 3
+    #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
+    COMBINED = 32
+
+
+class DivergenceDampingOrder(enum.IntEnum):
+    #: 2nd order divergence damping
+    SECOND_ORDER = 2
+    #: 4th order divergence damping
+    FOURTH_ORDER = 4
+    #: combined 2nd and 4th orders divergence damping and enhanced vertical wind off - centering during initial spinup phase
+    COMBINED = 24
+
+
+class HorizontalPressureDiscretizationType(enum.IntEnum):
+    """Parameter called igradp_method in ICON namelist."""
+
+    #: conventional discretization with metric correction term
+    CONVENTIONAL = 1
+    #: Taylor-expansion-based reconstruction of pressure
+    TAYLOR = 2
+    #: Similar discretization as igradp_method_taylor, but uses hydrostatic approximation for downward extrapolation over steep slopes
+    TAYLOR_HYDRO = 3
+    #: Cubic / quadratic polynomial interpolation for pressure reconstruction
+    POLYNOMIAL = 4
+    #: Same as igradp_method_polynomial, but hydrostatic approximation for downward extrapolation over steep slopes
+    POLYNOMIAL_HYDRO = 5
+
+
+class RhoThetaAdvectionType(enum.IntEnum):
+    """Parameter called iadv_rhotheta in ICON namelist."""
+
+    #: simple 2nd order upwind-biased scheme
+    SIMPLE = 1
+    #: 2nd order Miura horizontal
+    MIURA = 2
+
+
+@dataclasses.dataclass
 class IntermediateFields:
     """
     Encapsulate internal fields of SolveNonHydro that contain shared state over predictor and corrector step.
@@ -186,26 +236,26 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    z_gradh_exner: Field[[EdgeDim, KDim], float]
-    z_alpha: Field[
+    z_gradh_exner: gtx.Field[[EdgeDim, KDim], float]
+    z_alpha: gtx.Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_beta: Field[[CellDim, KDim], float]
-    z_w_expl: Field[
+    z_beta: gtx.Field[[CellDim, KDim], float]
+    z_w_expl: gtx.Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_exner_expl: Field[[CellDim, KDim], float]
-    z_q: Field[[CellDim, KDim], float]
-    z_contr_w_fl_l: Field[
+    z_exner_expl: gtx.Field[[CellDim, KDim], float]
+    z_q: gtx.Field[[CellDim, KDim], float]
+    z_contr_w_fl_l: gtx.Field[
         [EdgeDim, KDim], float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_rho_e: Field[[EdgeDim, KDim], float]
-    z_theta_v_e: Field[[EdgeDim, KDim], float]
-    z_kin_hor_e: Field[[EdgeDim, KDim], float]
-    z_vt_ie: Field[[EdgeDim, KDim], float]
-    z_graddiv_vn: Field[[EdgeDim, KDim], float]
-    z_rho_expl: Field[[CellDim, KDim], float]
-    z_dwdz_dd: Field[[CellDim, KDim], float]
+    z_rho_e: gtx.Field[[EdgeDim, KDim], float]
+    z_theta_v_e: gtx.Field[[EdgeDim, KDim], float]
+    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float]
+    z_vt_ie: gtx.Field[[EdgeDim, KDim], float]
+    z_graddiv_vn: gtx.Field[[EdgeDim, KDim], float]
+    z_rho_expl: gtx.Field[[CellDim, KDim], float]
+    z_dwdz_dd: gtx.Field[[CellDim, KDim], float]
 
     @classmethod
     def allocate(cls, grid: BaseGrid):
@@ -238,16 +288,16 @@ class NonHydrostaticConfig:
 
     def __init__(
         self,
-        itime_scheme: int = 4,
-        iadv_rhotheta: int = 2,
-        igradp_method: int = 3,
+        itime_scheme: TimeSteppingScheme = TimeSteppingScheme.MOST_EFFICIENT,
+        iadv_rhotheta: RhoThetaAdvectionType = RhoThetaAdvectionType.MIURA,
+        igradp_method: HorizontalPressureDiscretizationType = HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         ndyn_substeps_var: float = 5.0,
-        rayleigh_type: int = 2,
+        rayleigh_type: constants.RayleighType = constants.RayleighType.KLEMP,
         rayleigh_coeff: float = 0.05,
-        divdamp_order: int = 24,  # the ICON default is 4,
+        divdamp_order: DivergenceDampingOrder = DivergenceDampingOrder.COMBINED,  # the ICON default is 4,
         is_iau_active: bool = False,
         iau_wgt_dyn: float = 0.0,
-        divdamp_type: int = 3,
+        divdamp_type: DivergenceDampingType = DivergenceDampingType.THREE_DIMENSIONAL,
         divdamp_trans_start: float = 12500.0,
         divdamp_trans_end: float = 17500.0,
         l_vert_nested: bool = False,
@@ -262,7 +312,6 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        htop_moist_proc: float = 22500.0,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -308,9 +357,6 @@ class NonHydrostaticConfig:
         self.divdamp_z3: float = divdamp_z3
         self.divdamp_z4: float = divdamp_z4
 
-        #: height [m] where moist physics is turned off
-        self.htop_moist_proc: float = htop_moist_proc
-
         #: parameters from other namelists:
 
         #: from mo_interpol_nml.f90
@@ -334,16 +380,16 @@ class NonHydrostaticConfig:
         if self.l_vert_nested:
             raise NotImplementedError("Vertical nesting support not implemented")
 
-        if self.igradp_method != 3:
+        if self.igradp_method != HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             raise NotImplementedError("igradp_method can only be 3")
 
-        if self.itime_scheme != 4:
+        if self.itime_scheme != TimeSteppingScheme.MOST_EFFICIENT:
             raise NotImplementedError("itime_scheme can only be 4")
 
-        if self.divdamp_order != 24:
+        if self.divdamp_order != DivergenceDampingOrder.COMBINED:
             raise NotImplementedError("divdamp_order can only be 24")
 
-        if self.divdamp_type == 32:
+        if self.divdamp_type == DivergenceDampingType.COMBINED:
             raise NotImplementedError("divdamp_type with value 32 not yet implemented")
 
 
@@ -382,14 +428,14 @@ class SolveNonhydro:
         self.params: Optional[NonHydrostaticParams] = None
         self.metric_state_nonhydro: Optional[MetricStateNonHydro] = None
         self.interpolation_state: Optional[InterpolationState] = None
-        self.vertical_params: Optional[VerticalModelParams] = None
+        self.vertical_params: Optional[VerticalGridParams] = None
         self.edge_geometry: Optional[EdgeParams] = None
         self.cell_params: Optional[CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac: Optional[Field[[KDim], float]] = None
-        self.scal_divdamp: Optional[Field[[KDim], float]] = None
-        self._bdy_divdamp: Optional[Field[[KDim], float]] = None
+        self.enh_divdamp_fac: Optional[gtx.Field[[KDim], float]] = None
+        self.scal_divdamp: Optional[gtx.Field[[KDim], float]] = None
+        self._bdy_divdamp: Optional[gtx.Field[[KDim], float]] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
@@ -402,10 +448,10 @@ class SolveNonhydro:
         params: NonHydrostaticParams,
         metric_state_nonhydro: MetricStateNonHydro,
         interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
+        vertical_params: VerticalGridParams,
         edge_geometry: EdgeParams,
         cell_geometry: CellParams,
-        owner_mask: Field[[CellDim], bool],
+        owner_mask: gtx.Field[[CellDim], bool],
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -439,7 +485,7 @@ class SolveNonhydro:
             self.jk_start = 0
 
         en_smag_fac_for_zero_nshift(
-            self.vertical_params.vct_a,
+            self.vertical_params.inteface_physical_height,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
             self.config.divdamp_fac3,
@@ -491,7 +537,7 @@ class SolveNonhydro:
 
     def set_timelevels(self, nnow, nnew):
         #  Set time levels of ddt_adv fields for call to velocity_tendencies
-        if self.config.itime_scheme == 4:
+        if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             self.ntl1 = nnow
             self.ntl2 = nnew
         else:
@@ -660,7 +706,7 @@ class SolveNonhydro:
             f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
         if l_init or l_recompute:
-            if self.config.itime_scheme == 4 and not l_init:
+            if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT and not l_init:
                 lvn_only = True  # Recompute only vn tendency
             else:
                 lvn_only = False
@@ -803,7 +849,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.igradp_method == 3:
+        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """
             ``nhsolve_prog.predictor_stencils_4_5_6()``
 
@@ -921,7 +967,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        if self.config.igradp_method == 3:
+        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """
             z_dexner_dz_c_2 (flat_gradp:nlev-1):
                 Compute second vertical derivative of perturbed exner function at full levels (cell centers) from flat_gradp to the bottom-most level.
@@ -971,7 +1017,7 @@ class SolveNonhydro:
         )
 
         # Compute rho and theta at edges for horizontal flux divergence term
-        if self.config.iadv_rhotheta == 1:
+        if self.config.iadv_rhotheta == RhoThetaAdvectionType.SIMPLE:
             """
             z_rho_v (0:nlev-1):
                 Compute the density at cell vertices at full levels by simple area-weighted interpolation.
@@ -1000,7 +1046,7 @@ class SolveNonhydro:
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
-        elif self.config.iadv_rhotheta == 2:
+        elif self.config.iadv_rhotheta == RhoThetaAdvectionType.MIURA:
             """
             z_grad_rth_1 (0:nlev-1):
                 Compute x derivative of perturbed rho at full levels (cell center) using the Green theorem. See https://www.cfd-online.com/Wiki/Gradient_computation.
@@ -1048,7 +1094,7 @@ class SolveNonhydro:
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
-            if self.config.iadv_rhotheta == 2:
+            if self.config.iadv_rhotheta == RhoThetaAdvectionType.MIURA:
                 """
                 This long stencil computes rho (density) and theta_v (virtual temperature) on edges.
                 Miura (2007) scheme is adopted. pos_on_tplane_e is the location of neighboring cell centers on (vn, vt) coordinates (normal points inwards and tangent points right-handed).
@@ -1110,7 +1156,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        if self.config.igradp_method == 3:
+        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """
             z_gradh_exner (flat_lev:flat_gradp):
                 Compute the horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center) by simple first order scheme.
@@ -1131,7 +1177,7 @@ class SolveNonhydro:
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
                 vertical_start=self.vertical_params.nflatlev,
-                vertical_end=int32(self.vertical_params.nflat_gradp + 1),
+                vertical_end=gtx.int32(self.vertical_params.nflat_gradp + 1),
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -1157,12 +1203,12 @@ class SolveNonhydro:
                 z_gradh_exner=z_fields.z_gradh_exner,
                 horizontal_start=start_edge_nudging_plus1,
                 horizontal_end=end_edge_local,
-                vertical_start=int32(self.vertical_params.nflat_gradp + 1),
+                vertical_start=gtx.int32(self.vertical_params.nflat_gradp + 1),
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
             )
         # compute hydrostatically approximated correction term that replaces downward extrapolation
-        if self.config.igradp_method == 3:
+        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """
             z_hydro_corr (nlev-1):
                 z_hydro_corr = g/(cpd theta_v^2) dtheta_v/dn (h_k - h_k*)
@@ -1189,9 +1235,11 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
+        hydro_corr_horizontal = gtx.as_field(
+            (EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
+        )
 
-        if self.config.igradp_method == 3:
+        if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """
             z_gradh_exner (0:nlev-1):
                 Apply the dydrostatic correction term to horizontal gradient (at constant height) of temporal extrapolation of perturbed exner function at full levels (edge center)
@@ -1400,7 +1448,7 @@ class SolveNonhydro:
             wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,
             w_concorr_c=diagnostic_state_nh.w_concorr_c,
             k_field=self.k_field,
-            nflatlev_startindex_plus1=int32(self.vertical_params.nflatlev + 1),
+            nflatlev_startindex_plus1=gtx.int32(self.vertical_params.nflatlev + 1),
             nlev=self.grid.num_levels,
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_halo,
@@ -1627,7 +1675,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.KLEMP:
             """
             w (1:damp_nlev):
                 Compute the rayleigh damping of vertical velocity at half levels (cell center).
@@ -1641,8 +1689,8 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=1,
-                vertical_end=int32(
-                    self.vertical_params.index_of_damping_layer + 1
+                vertical_end=gtx.int32(
+                    self.vertical_params.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
@@ -1688,7 +1736,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(self.jk_start),
+            vertical_start=gtx.int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
@@ -1749,7 +1797,7 @@ class SolveNonhydro:
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
-                vertical_end=int32(self.grid.num_levels + 1),
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
             )
 
@@ -1807,11 +1855,11 @@ class SolveNonhydro:
 
         _calculate_divdamp_fields(
             self.enh_divdamp_fac,
-            int32(self.config.divdamp_order),
+            gtx.int32(self.config.divdamp_order),
             self.cell_params.mean_cell_area,
             divdamp_fac_o2,
             self.config.nudge_max_coeff,
-            constants.dbl_eps,
+            constants.DBL_EPS,
             out=(self.scal_divdamp, self._bdy_divdamp),
             offset_provider={},
         )
@@ -1946,7 +1994,7 @@ class SolveNonhydro:
             offset_provider=self.grid.offset_providers,
         )
 
-        if self.config.itime_scheme == 4:
+        if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             log.debug(f"corrector: start stencil 23")
             """
             vn (0:nlev-1):
@@ -1977,7 +2025,10 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-        if self.config.divdamp_order == 24 or self.config.divdamp_order == 4:
+        if (
+            self.config.divdamp_order == DivergenceDampingOrder.COMBINED
+            or self.config.divdamp_order == DivergenceDampingOrder.FOURTH_ORDER
+        ):
             # verified for e-10
             log.debug(f"corrector start stencil 25")
             """
@@ -1995,7 +2046,10 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
 
-        if self.config.divdamp_order == 24 and scal_divdamp_o2 > 1.0e-6:
+        if (
+            self.config.divdamp_order == DivergenceDampingOrder.COMBINED
+            and scal_divdamp_o2 > 1.0e-6
+        ):
             log.debug(f"corrector: start stencil 26")
             """
             vn (0:nlev-1):
@@ -2014,7 +2068,10 @@ class SolveNonhydro:
             )
 
         # TODO: this does not get accessed in FORTRAN
-        if self.config.divdamp_order == 24 and divdamp_fac_o2 <= 4 * self.config.divdamp_fac:
+        if (
+            self.config.divdamp_order == DivergenceDampingOrder.COMBINED
+            and divdamp_fac_o2 <= 4 * self.config.divdamp_fac
+        ):
             if self.grid.limited_area:
                 log.debug("corrector: start stencil 27")
                 """
@@ -2132,28 +2189,28 @@ class SolveNonhydro:
                 offset_provider={},
             )
 
-            # verified for e-9
-            log.debug(f"corrector: start stencile 41")
-            """
-            z_flxdiv_mass (0:nlev-1):
-                Compute the divergence of mass flux at full levels (cell center) by Gauss theorem.
-            z_flxdiv_theta (0:nlev-1):
-                Compute the divergence of energy (theta_v * mass) flux at full levels (cell center) by Gauss theorem.
-            """
-            compute_divergence_of_fluxes_of_rho_and_theta(
-                geofac_div=self.interpolation_state.geofac_div,
-                mass_fl_e=diagnostic_state_nh.mass_fl_e,
-                z_theta_v_fl_e=self.z_theta_v_fl_e,
-                z_flxdiv_mass=self.z_flxdiv_mass,
-                z_flxdiv_theta=self.z_flxdiv_theta,
-                horizontal_start=start_cell_nudging,
-                horizontal_end=end_cell_local,
-                vertical_start=0,
-                vertical_end=self.grid.num_levels,
-                offset_provider=self.grid.offset_providers,
-            )
+        # verified for e-9
+        log.debug(f"corrector: start stencil 41")
+        """
+        z_flxdiv_mass (0:nlev-1):
+            Compute the divergence of mass flux at full levels (cell center) by Gauss theorem.
+        z_flxdiv_theta (0:nlev-1):
+            Compute the divergence of energy (theta_v * mass) flux at full levels (cell center) by Gauss theorem.
+        """
+        compute_divergence_of_fluxes_of_rho_and_theta(
+            geofac_div=self.interpolation_state.geofac_div,
+            mass_fl_e=diagnostic_state_nh.mass_fl_e,
+            z_theta_v_fl_e=self.z_theta_v_fl_e,
+            z_flxdiv_mass=self.z_flxdiv_mass,
+            z_flxdiv_theta=self.z_flxdiv_theta,
+            horizontal_start=start_cell_nudging,
+            horizontal_end=end_cell_local,
+            vertical_start=0,
+            vertical_end=self.grid.num_levels,
+            offset_provider=self.grid.offset_providers,
+        )
 
-        if self.config.itime_scheme == 4:
+        if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT:
             log.debug(f"corrector start stencil 42 44 45 45b")
             """
             z_w_expl (1:nlev-1):
@@ -2425,7 +2482,7 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        if self.config.rayleigh_type == constants.RayleighType.RAYLEIGH_KLEMP:
+        if self.config.rayleigh_type == constants.RayleighType.KLEMP:
             log.debug(f"corrector start stencil 54")
             """
             w (1:damp_nlev):
@@ -2440,8 +2497,8 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=1,
-                vertical_end=int32(
-                    self.vertical_params.index_of_damping_layer + 1
+                vertical_end=gtx.int32(
+                    self.vertical_params.end_index_of_damping_layer + 1
                 ),  # +1 since Fortran includes boundaries
                 offset_provider={},
             )
@@ -2487,7 +2544,7 @@ class SolveNonhydro:
             cvd_o_rd=constants.CVD_O_RD,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(self.jk_start),
+            vertical_start=gtx.int32(self.jk_start),
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
         )
@@ -2529,7 +2586,7 @@ class SolveNonhydro:
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=self.vertical_params.kstart_moist,
-                vertical_end=int32(self.grid.num_levels),
+                vertical_end=gtx.int32(self.grid.num_levels),
                 offset_provider={},
             )
 

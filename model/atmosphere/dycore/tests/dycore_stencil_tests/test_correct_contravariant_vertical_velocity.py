@@ -47,8 +47,8 @@ class TestCorrectContravariantVerticalVelocity(StencilTest):
         return dict(
             w_concorr_c=w_concorr_c,
             z_w_con_c=z_w_con_c,
-            horizontal_start=int32(0),
+            horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(0),
+            vertical_start=0,
             vertical_end=int32(grid.num_levels),
         )

@@ -47,61 +47,61 @@ def _upwind_hflux_miura3_stencil_01(
     p_out_e_miura3 = (
         (
             where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_1(E2C[1]),
                 z_lsq_coeff_1(E2C[0]),
             )
             * z_quad_vector_sum_1
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_2(E2C[1]),
                 z_lsq_coeff_2(E2C[0]),
             )
             * z_quad_vector_sum_2
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_3(E2C[1]),
                 z_lsq_coeff_3(E2C[0]),
             )
             * z_quad_vector_sum_3
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_4(E2C[1]),
                 z_lsq_coeff_4(E2C[0]),
             )
             * z_quad_vector_sum_4
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_5(E2C[1]),
                 z_lsq_coeff_5(E2C[0]),
             )
             * z_quad_vector_sum_5
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_6(E2C[1]),
                 z_lsq_coeff_6(E2C[0]),
             )
             * z_quad_vector_sum_6
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_7(E2C[1]),
                 z_lsq_coeff_7(E2C[0]),
             )
             * z_quad_vector_sum_7
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_8(E2C[1]),
                 z_lsq_coeff_8(E2C[0]),
             )
             * z_quad_vector_sum_8
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_9(E2C[1]),
                 z_lsq_coeff_9(E2C[0]),
             )
             * z_quad_vector_sum_9
             + where(
-                cell_rel_idx_dsl == int32(1),
+                cell_rel_idx_dsl == 1,
                 z_lsq_coeff_10(E2C[1]),
                 z_lsq_coeff_10(E2C[0]),
             )

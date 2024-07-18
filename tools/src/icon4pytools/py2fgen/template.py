@@ -22,10 +22,24 @@ from icon4py.model.common.config import GT4PyBackend
 from icon4pytools.icon4pygen.bindings.codegen.type_conversion import (
     BUILTIN_TO_CPP_TYPE,
     BUILTIN_TO_ISO_C_TYPE,
+    BUILTIN_TO_NUMPY_TYPE,
 )
 from icon4pytools.py2fgen.plugin import int_array_to_bool_array, unpack, unpack_gpu
 from icon4pytools.py2fgen.utils import flatten_and_get_unique_elts
 
+
+# these arrays are not initialised in global experiments (e.g. ape_r02b04) and are not used
+# therefore unpacking needs to be skipped as otherwise it will trigger an error.
+UNINITIALISED_ARRAYS = [
+    "mask_hdiff",
+    "zd_diffcoef",
+    "zd_vertoffset",
+    "zd_intcoef",
+    "hdef_ic",
+    "div_ic",
+    "dwdx",
+    "dwdy",
+]
 
 CFFI_DECORATOR = "@ffi.def_extern()"
 PROGRAM_DECORATOR = "@program"
@@ -44,16 +58,20 @@ class FuncParameter(Node):
     size_args: list[str] = datamodels.field(init=False)
     is_array: bool = datamodels.field(init=False)
     gtdims: list[str] = datamodels.field(init=False)
+    size_args_len: int = datamodels.field(init=False)
+    np_type: str = datamodels.field(init=False)
 
     def __post_init__(self):
         self.size_args = dims_to_size_strings(self.dimensions)
+        self.size_args_len = len(self.size_args)
         self.is_array = True if len(self.dimensions) >= 1 else False
         # We need some fields to have nlevp1 levels on the fortran wrapper side, which we make
         # happen by using KHalfDim as a type hint. However, this is not yet supported on the icon4py
-        # side. So before generating the python wrapper code, we replace occurences of KHalfDim with KDim
+        # side. So before generating the python wrapper code, we replace occurrences of KHalfDim with KDim
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
+        self.np_type = to_np_type(self.d_type)
 
 
 class Func(Node):
@@ -78,6 +96,8 @@ class CffiPlugin(Node):
 class PythonWrapper(CffiPlugin):
     backend: str
     debug_mode: bool
+    profile: bool
+    limited_area: bool
     cffi_decorator: str = CFFI_DECORATOR
     cffi_unpack: str = inspect.getsource(unpack)
     cffi_unpack_gpu: str = inspect.getsource(unpack_gpu)
@@ -88,6 +108,11 @@ class PythonWrapper(CffiPlugin):
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         self.gt4py_backend = GT4PyBackend[self.backend].value
         self.is_gt4py_program_present = any(func.is_gt4py_program for func in self.functions)
+        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
+
+
+def get_uninitialised_arrays(limited_area: bool):
+    return UNINITIALISED_ARRAYS if not limited_area else []
 
 
 def build_array_size_args() -> dict[str, str]:
@@ -107,6 +132,11 @@ def build_array_size_args() -> dict[str, str]:
 def to_c_type(scalar_type: ScalarKind) -> str:
     """Convert a scalar type to its corresponding C++ type."""
     return BUILTIN_TO_CPP_TYPE[scalar_type]
+
+
+def to_np_type(scalar_type: ScalarKind) -> str:
+    """Convert a scalar type to its corresponding numpy type."""
+    return BUILTIN_TO_NUMPY_TYPE[scalar_type]
 
 
 def to_iso_c_type(scalar_type: ScalarKind) -> str:
@@ -196,11 +226,15 @@ class PythonWrapperGenerator(TemplatedGenerator):
         """\
 # imports for generated wrapper code
 import logging
+{% if _this_node.profile %}import time{% endif %}
+import math
 from {{ plugin_name }} import ffi
 import numpy as np
 {% if _this_node.backend == 'GPU' %}import cupy as cp {% endif %}
 from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
+from gt4py.next.ffront.fbuiltins import int32
+from icon4py.model.common.settings import xp
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly
@@ -253,6 +287,11 @@ def {{ func.name }}_wrapper(
         logging.info("Python Execution Context Start")
         {% endif %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_start_time = time.perf_counter()
+        {% endif %}
+
         # Unpack pointers into Ndarrays
         {% for arg in func.args %}
         {% if arg.is_array %}
@@ -260,7 +299,12 @@ def {{ func.name }}_wrapper(
         msg = '{{ arg.name }} before unpacking: %s' % str({{ arg.name}})
         logging.debug(msg)
         {% endif %}
+
+        {%- if arg.name in _this_node.uninitialised_arrays -%}
+        {{ arg.name }} = xp.ones((1,) * {{ arg.size_args_len }}, dtype={{arg.np_type}}, order="F")
+        {%- else -%}
         {{ arg.name }} = unpack{%- if _this_node.backend == 'GPU' -%}_gpu{%- endif -%}({{ arg.name }}, {{ ", ".join(arg.size_args) }})
+        {%- endif -%}
 
         {%- if arg.d_type.name == "BOOL" %}
         {{ arg.name }} = int_array_to_bool_array({{ arg.name }})
@@ -275,6 +319,17 @@ def {{ func.name }}_wrapper(
         {% endif %}
         {% endfor %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        unpack_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} unpacking arrays time per timestep: %s' % str(unpack_end_time - unpack_start_time))
+        {% endif %}
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        allocate_start_time = time.perf_counter()
+        {% endif %}
+
         # Allocate GT4Py Fields
         {% for arg in func.args %}
         {% if arg.is_array %}
@@ -288,6 +343,17 @@ def {{ func.name }}_wrapper(
         {% endif %}
         {% endfor %}
 
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        allocate_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} allocating to gt4py fields time per timestep: %s' % str(allocate_end_time - allocate_start_time))
+        {% endif %}
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        func_start_time = time.perf_counter()
+        {% endif %}
+
         {{ func.name }}
         {%- if func.is_gt4py_program -%}.with_backend({{ _this_node.gt4py_backend }}){%- endif -%}(
         {%- for arg in func.args -%}
@@ -297,6 +363,13 @@ def {{ func.name }}_wrapper(
         offset_provider=grid.offset_providers
         {%- endif -%}
         )
+
+        {% if _this_node.profile %}
+        cp.cuda.Stream.null.synchronize()
+        func_end_time = time.perf_counter()
+        logging.critical('{{ func.name }} function time per timestep: %s' % str(func_end_time - func_start_time))
+        {% endif %}
+
 
         {% if _this_node.debug_mode %}
         # debug info
@@ -311,7 +384,7 @@ def {{ func.name }}_wrapper(
         {% endif %}
 
         {%- if _this_node.debug_mode %}
-        logging.info("Python Execution Context End")
+        logging.critical("Python Execution Context End")
         {% endif %}
 
     except Exception as e:
@@ -354,23 +427,33 @@ class DimensionPosition(Node):
 
 
 class F90FunctionDefinition(Func):
-    dimension_size_declarations: Sequence[DimensionPosition] = datamodels.field(init=False)
+    limited_area: bool
+    dimension_positions: Sequence[DimensionPosition] = datamodels.field(init=False)
 
     def __post_init__(self, *args: Any, **kwargs: Any) -> None:
         super().__post_init__()  # call Func __post_init__
+        self.dimension_positions = self.extract_dimension_positions()
+        self.uninitialised_arrays = get_uninitialised_arrays(self.limited_area)
 
-        dim_positions = []
+    def extract_dimension_positions(self) -> Sequence[DimensionPosition]:
+        """Extract a unique set of dimension positions which are used to infer dimension sizes at runtime."""
+        dim_positions: list[DimensionPosition] = []
+        unique_size_args: set[str] = set()
         for arg in self.args:
             for index, size_arg in enumerate(arg.size_args):
-                dim_positions.append(
-                    DimensionPosition(variable=str(arg.name), size_arg=size_arg, index=index + 1)
-                )  # Use Fortran indexing
-
-        self.dimension_size_declarations = dim_positions
+                if size_arg not in unique_size_args:
+                    dim_positions.append(
+                        DimensionPosition(
+                            variable=str(arg.name), size_arg=size_arg, index=index + 1
+                        )
+                    )  # Use Fortran indexing
+                    unique_size_args.add(size_arg)
+        return dim_positions
 
 
 class F90Interface(Node):
     cffi_plugin: CffiPlugin
+    limited_area: bool
     function_declaration: list[F90FunctionDeclaration] = datamodels.field(init=False)
     function_definition: list[F90FunctionDefinition] = datamodels.field(init=False)
 
@@ -381,7 +464,12 @@ class F90Interface(Node):
             for f in functions
         ]
         self.function_definition = [
-            F90FunctionDefinition(name=f.name, args=f.args, is_gt4py_program=f.is_gt4py_program)
+            F90FunctionDefinition(
+                name=f.name,
+                args=f.args,
+                is_gt4py_program=f.is_gt4py_program,
+                limited_area=self.limited_area,
+            )
             for f in functions
         ]
 
@@ -435,18 +523,22 @@ end function {{name}}_wrapper
             arg_names = ", &\n ".join(map(lambda x: x.name, func.args))
             param_names_with_size_args = arg_names + ",&\n" + ", &\n".join(func.global_size_args)
 
+        return_code_param = ",&\nrc" if len(func.args) >= 1 else "rc"
+
         return self.generic_visit(
             func,
             assumed_size_array=False,
             param_names=arg_names,
             param_names_with_size_args=param_names_with_size_args,
-            arrays=[arg for arg in func.args if arg.is_array],
+            arrays=set([arg.name for arg in func.args if arg.is_array]).difference(
+                set(func.uninitialised_arrays)
+            ),
+            return_code_param=return_code_param,
         )
 
-    # todo(samkellerhals): Consider using unique SIZE args
     F90FunctionDefinition = as_jinja(
         """
-subroutine {{name}}({{param_names}}, &\nrc)
+subroutine {{name}}({{param_names}} {{ return_code_param }})
    use, intrinsic :: iso_c_binding
    {% for size_arg in global_size_args %}
    integer(c_int) :: {{ size_arg }}
@@ -456,19 +548,23 @@ subroutine {{name}}({{param_names}}, &\nrc)
    {% endfor %}
    integer(c_int) :: rc  ! Stores the return code
 
+   {% if arrays | length >= 1 %}
    !$ACC host_data use_device( &
    {%- for arr in arrays %}
-       !$ACC {{ arr.name }}{% if not loop.last %}, &{% else %} &{% endif %}
+       !$ACC {{ arr }}{% if not loop.last %}, &{% else %} &{% endif %}
    {%- endfor %}
    !$ACC )
+   {% endif %}
 
-   {% for d in _this_node.dimension_size_declarations %}
+   {% for d in _this_node.dimension_positions %}
    {{ d.size_arg }} = SIZE({{ d.variable }}, {{ d.index }})
    {% endfor %}
 
    rc = {{ name }}_wrapper({{ param_names_with_size_args }})
 
+   {% if arrays | length >= 1 %}
    !$acc end host_data
+   {% endif %}
 end subroutine {{name}}
     """
     )

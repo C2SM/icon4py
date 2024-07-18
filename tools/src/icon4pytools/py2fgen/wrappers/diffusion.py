@@ -20,6 +20,9 @@ Fortran granule interfaces:
 - all arguments needed from external sources are passed.
 - passing of scalar types or fields of simple types
 """
+import cProfile
+import os
+import pstats
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
@@ -34,6 +37,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.dimension import (
     C2E2CDim,
     C2E2CODim,
@@ -51,10 +55,10 @@ from icon4py.model.common.dimension import (
     VertexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.settings import device
+from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import _load_from_gridfile
+from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
 
 from icon4pytools.common.logger import setup_logger
@@ -65,6 +69,19 @@ logger = setup_logger(__name__)
 
 # global diffusion object
 diffusion_granule: Diffusion = Diffusion()
+
+# global profiler object
+profiler = cProfile.Profile()
+
+
+def profile_enable():
+    profiler.enable()
+
+
+def profile_disable():
+    profiler.disable()
+    stats = pstats.Stats(profiler)
+    stats.dump_stats(f"{__name__}.profile")
 
 
 def diffusion_init(
@@ -98,6 +115,11 @@ def diffusion_init(
     hdiff_efdt_ratio: float64,
     smagorinski_scaling_factor: float64,
     hdiff_temp: bool,
+    thslp_zdiffu: float,
+    thhgtd_zdiffu: float,
+    denom_diffu_v: float,
+    nudge_max_coeff: float,
+    itype_sher: int32,
     tangent_orientation: Field[[EdgeDim], float64],
     inverse_primal_edge_lengths: Field[[EdgeDim], float64],
     inv_dual_edge_length: Field[[EdgeDim], float64],
@@ -122,12 +144,13 @@ def diffusion_init(
     else:
         on_gpu = False
 
-    icon_grid = _load_from_gridfile(
-        file_path=get_icon_grid_loc(),
-        filename=get_grid_filename(),
+    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
+
+    icon_grid = load_grid_from_file(
+        grid_file=grid_file_path,
         num_levels=num_levels,
         on_gpu=on_gpu,
-        limited_area=True,
+        limited_area=True if limited_area else False,
     )
 
     # Edge geometry
@@ -163,21 +186,29 @@ def diffusion_init(
         smagorinski_scaling_factor=smagorinski_scaling_factor,
         hdiff_temp=hdiff_temp,
         n_substeps=ndyn_substeps,
-        thslp_zdiffu=0.02,
-        thhgtd_zdiffu=125.0,
-        velocity_boundary_diffusion_denom=150.0,
-        max_nudging_coeff=0.075,
-        shear_type=TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        thslp_zdiffu=thslp_zdiffu,
+        thhgtd_zdiffu=thhgtd_zdiffu,
+        velocity_boundary_diffusion_denom=denom_diffu_v,
+        max_nudging_coeff=nudge_max_coeff
+        / DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO,  # ICON already scales this, we
+        # need to unscale it as it will be rescaled in diffusion.py
+        shear_type=TurbulenceShearForcingType(itype_sher),
     )
 
     diffusion_params = DiffusionParams(config)
 
-    # vertical parameters
-    vertical_params = VerticalModelParams(
-        vct_a=vct_a,
+    # vertical grid config
+    vertical_config = VerticalGridConfig(
+        num_levels=num_levels,
         rayleigh_damping_height=rayleigh_damping_height,
-        nflatlev=nflatlev,
-        nflat_gradp=nflat_gradp,
+    )
+
+    # vertical parameters
+    vertical_params = VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=vct_a,
+        vct_b=None,
+        _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
     # metric state
