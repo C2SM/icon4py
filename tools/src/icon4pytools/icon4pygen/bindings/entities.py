@@ -61,7 +61,7 @@ class Offset(Node, OffsetEntity):
     def _split_chain(self, chain: str) -> list:
         chain_ls = chain.split("2")
         if "O" in chain_ls[-1]:
-            chain_ls.pop()
+            chain_ls[-1] = chain_ls[-1].replace("O", "")
         return chain_ls
 
     @staticmethod
