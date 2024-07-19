@@ -10,6 +10,25 @@ Check the `README.md` at the root of the `model` folder for installation instruc
 
 ## Contents
 
+### IO
+
+module containing IO funcitonality for ICON4Py.
+
+The IO module requires the installation of the `io` optional dependencies defined in [pyproject.toml](../../../pyproject.toml)
+of the `icon4py-common` package and can be installed with the following command:
+
+```bash
+pip install icon4py-common[io]
+```
+
+or by using
+
+```bash
+pip install -r requirements-dev.txt
+```
+
+which installs all `ICON4Py` packages including the IO dependencies.
+
 ### decomposition
 
 Contains infrastructure for parallel implementation of `icon4py/model`.
