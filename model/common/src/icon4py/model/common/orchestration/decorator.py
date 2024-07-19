@@ -17,8 +17,11 @@ from typing import Union
 import warnings
 from icon4py.model.common.decomposition.definitions import SingleNodeResult
 from icon4py.model.common.decomposition.mpi_decomposition import MultiNodeResult
+from gt4py.next.common import Connectivity
+from gt4py.next import NeighborOffsetProvider
 
-if "dace" in backend.executor.name:
+
+if "dace" in backend.executor.name.lower():
     import sys
     from collections.abc import Sequence
     from dace.frontend.python.common import SDFGConvertible
@@ -49,7 +52,7 @@ def orchestration(method=True):
     def decorator(fuse_func):
         compiled_sdfgs = {}
         def wrapper(*args, **kwargs):
-            if "dace" in backend.executor.name:
+            if "dace" in backend.executor.name.lower():
                 if method:
                     # self is used to retrieve the _exchange object -on the fly halo exchanges- and the grid object -offset providers-
                     self = args[0]
@@ -72,10 +75,16 @@ def orchestration(method=True):
                     warnings.warn("No exchnage/grid object found. Returning the original function.")
                     return fuse_func(*args, **kwargs)
 
+                compile_time_args = {}
+                all_args_kwargs = list(args) + list(kwargs.values())
+                for i, (k, v) in enumerate(fuse_func.__annotations__.items()):
+                    if v is dace.compiletime and k != self_name:
+                        compile_time_args[k] = all_args_kwargs[i]
+
                 dace_symbols_concretization(exchange_obj, grid, fuse_func, args, kwargs)
 
                 # Parse and compile the fused SDFG -caches it-, i.e. every time the same fused function is called, the same SDFG is used
-                parse_and_compile_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs)
+                parse_and_compile_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs, compile_time_args)
 
                 with dace.config.temporary_config():
                     configure_dace_temp_env()
@@ -105,7 +114,22 @@ def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
         comm_handle.wait()
 
 
-if "dace" in backend.executor.name:
+def build_connectivities(offset_providers: dict[str, Connectivity]) -> dict[str, Connectivity]:
+    connectivities = {}
+    for k,v in offset_providers.items():
+        if hasattr(v, "table"):
+            connectivities[k] = NeighborOffsetProvider(v.table, 
+                                                       v.origin_axis,
+                                                       v.neighbor_axis,
+                                                       v.max_neighbors,
+                                                       v.has_skip_values)
+        else:
+            connectivities[k] = v
+    
+    return connectivities
+
+
+if "dace" in backend.executor.name.lower():
     def get_stride_from_numpy_to_dace(numpy_array: np.ndarray, axis: int) -> int:
         """
         GHEX/NumPy strides: number of bytes to jump
@@ -144,7 +168,7 @@ if "dace" in backend.executor.name:
         }
 
 
-    def parse_and_compile_sdfg(compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, kwargs: Any):
+    def parse_and_compile_sdfg(compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, kwargs: Any, compile_time_args: dict[str, Any]):
         """Function that parses and compiles the fused SDFG along with adding the halo exchanges."""
         if id(self) not in compiled_sdfgs:
             compiled_sdfgs[id(self)] = {}
@@ -163,7 +187,7 @@ if "dace" in backend.executor.name:
                                                                         device=dev_type_from_gt4py_to_dace(device_type),
                                                                         distributed_compilation=False)(fuse_func)
 
-                compiled_sdfgs[id(self)]['sdfg'] = compiled_sdfgs[id(self)]['dace_program'].to_sdfg(self, simplify=False, validate=True)
+                compiled_sdfgs[id(self)]['sdfg'] = compiled_sdfgs[id(self)]['dace_program'].to_sdfg(self, **compile_time_args, simplify=False, validate=True)
 
                 # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
                 add_halo_exchanges(compiled_sdfgs[id(self)]['sdfg'], exchange_obj, self.grid.offset_providers, **kwargs)
@@ -181,13 +205,24 @@ if "dace" in backend.executor.name:
 
     def mod_args_for_dace_structures(fuse_func: Callable, args: Any) -> tuple:
         """Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures"""
+        # DiffusionDiagnosticState_t
         new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
+        # PrognosticState_t
         new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+        # OffsetProviders_int64_t
+        new_args = [OffsetProviders_int64_t.dtype._typeclass.as_ctypes()(**{member: k_v[1][member].data_ptr() for member in k_v[1].keys() if hasattr(k_v[1][member], "table")}) if k_v[0] is OffsetProviders_int64_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+        # OffsetProviders_int32_t
+        new_args = [OffsetProviders_int32_t.dtype._typeclass.as_ctypes()(**{member: k_v[1][member].data_ptr() for member in k_v[1].keys() if hasattr(k_v[1][member], "table")}) if k_v[0] is OffsetProviders_int32_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+
         for new_arg_ in new_args:
             if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):
                 new_arg_.descriptor = DiffusionDiagnosticState_t
             if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):
                 new_arg_.descriptor = PrognosticState_t
+            if isinstance(new_arg_, OffsetProviders_int64_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = OffsetProviders_int64_t
+            if isinstance(new_arg_, OffsetProviders_int32_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = OffsetProviders_int32_t
         return tuple(new_args)
 
 

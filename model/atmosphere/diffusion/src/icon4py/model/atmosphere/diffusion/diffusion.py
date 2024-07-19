@@ -63,8 +63,9 @@ from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.settings import xp
 
-from icon4py.model.common.orchestration.decorator import orchestration, wait
+from icon4py.model.common.orchestration.decorator import orchestration, wait, build_connectivities
 from icon4py.model.common.orchestration.dtypes import *
+
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -619,7 +620,7 @@ class Diffusion:
             smag_offset:
 
         """
-        self._do_diffusion_step_stencils(diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, smag_offset)
+        self._do_diffusion_step_stencils(diagnostic_state, prognostic_state, dtime, diff_multfac_vn, smag_limit, smag_offset, self.grid.offset_providers, build_connectivities(self.grid.offset_providers))
 
     @orchestration(method=True)
     def _do_diffusion_step_stencils(
@@ -629,13 +630,15 @@ class Diffusion:
         dtime: float64_t,
         diff_multfac_vn: Field_f64_KDim_t,
         smag_limit: Field_f64_KDim_t,
-        smag_offset: float64_t
+        smag_offset: float64_t,
+        offset_providers: OffsetProviders_int64_t,
+        connectivities: Connectivities_t
     ):
         # dtime dependent: enh_smag_factor,
-        scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
+        scale_k.with_connectivities(connectivities)(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
         log.debug("rbf interpolation 1: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex.with_connectivities(connectivities)(
             p_e_in=prognostic_state.vn,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -645,7 +648,7 @@ class Diffusion:
             horizontal_end=self.vertex_end_local,
             vertical_start=0,
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug("rbf interpolation 1: end")
 
@@ -655,7 +658,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
-        calculate_nabla2_and_smag_coefficients_for_vn(
+        calculate_nabla2_and_smag_coefficients_for_vn.with_connectivities(connectivities)(
             diff_multfac_smag=self.diff_multfac_smag,
             tangent_orientation=self.edge_params.tangent_orientation,
             inv_primal_edge_length=self.edge_params.inverse_primal_edge_lengths,
@@ -676,7 +679,7 @@ class Diffusion:
             horizontal_end=self.edge_end_local_minus2,
             vertical_start=0,
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
         if (
@@ -686,7 +689,7 @@ class Diffusion:
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): start"
             )
-            calculate_diagnostic_quantities_for_turbulence(
+            calculate_diagnostic_quantities_for_turbulence.with_connectivities(connectivities)(
                 kh_smag_ec=self.kh_smag_ec,
                 vn=prognostic_state.vn,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -699,7 +702,7 @@ class Diffusion:
                 horizontal_end=self.cell_end_local,
                 vertical_start=1,
                 vertical_end=self.klevels,
-                offset_provider=self.grid.offset_providers,
+                offset_provider=offset_providers,
             )
             log.debug(
                 "running stencils 02 03 (calculate_diagnostic_quantities_for_turbulence): end"
@@ -713,7 +716,7 @@ class Diffusion:
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
-        mo_intp_rbf_rbf_vec_interpol_vertex(
+        mo_intp_rbf_rbf_vec_interpol_vertex.with_connectivities(connectivities)(
             p_e_in=self.z_nabla2_e,
             ptr_coeff_1=self.interpolation_state.rbf_coeff_1,
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
@@ -723,7 +726,7 @@ class Diffusion:
             horizontal_end=self.vertex_end_local,
             vertical_start=0,
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
 
@@ -733,7 +736,7 @@ class Diffusion:
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
-        apply_diffusion_to_vn(
+        apply_diffusion_to_vn.with_connectivities(connectivities)(
             u_vert=self.u_vert,
             v_vert=self.v_vert,
             primal_normal_vert_v1=self.edge_params.primal_normal_vert[0],
@@ -755,7 +758,7 @@ class Diffusion:
             horizontal_end=self.edge_end_local,
             vertical_start=0,
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
         log.debug("communication of prognistic.vn : start")
@@ -765,9 +768,9 @@ class Diffusion:
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
         )
         # TODO (magdalena) get rid of this copying. So far passing an empty buffer instead did not verify?
-        copy_field(prognostic_state.w, self.w_tmp, offset_provider={})
+        copy_field.with_connectivities(connectivities)(prognostic_state.w, self.w_tmp, offset_provider={})
 
-        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
+        apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence.with_connectivities(connectivities)(
             area=self.cell_params.area,
             geofac_n2s=self.interpolation_state.geofac_n2s,
             geofac_grg_x=self.interpolation_state.geofac_grg_x,
@@ -790,7 +793,7 @@ class Diffusion:
             horizontal_end=self.cell_end_halo,
             vertical_start=0,
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): end"
@@ -800,7 +803,7 @@ class Diffusion:
             "running fused stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): start"
         )
 
-        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
+        calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools.with_connectivities(connectivities)(
             theta_v=prognostic_state.theta_v,
             theta_ref_mc=self.metric_state.theta_ref_mc,
             thresh_tdiff=self.thresh_tdiff,
@@ -810,14 +813,14 @@ class Diffusion:
             horizontal_end=self.edge_end_halo,
             vertical_start=(self.klevels - 2),
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug(
             "running stencils 11 12 (calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools): end"
         )
 
         log.debug("running stencils 13 14 (calculate_nabla2_for_theta): start")
-        calculate_nabla2_for_theta(
+        calculate_nabla2_for_theta.with_connectivities(connectivities)(
             kh_smag_e=self.kh_smag_e,
             inv_dual_edge_length=self.edge_params.inverse_dual_edge_lengths,
             theta_v=prognostic_state.theta_v,
@@ -827,14 +830,14 @@ class Diffusion:
             horizontal_end=self.cell_end_local,
             vertical_start=0,
             vertical_end=self.klevels,
-            offset_provider=self.grid.offset_providers,
+            offset_provider=offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
         log.debug(
             "running stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): start"
         )
         if self.config.apply_zdiffusion_t:
-            truly_horizontal_diffusion_nabla_of_theta_over_steep_points(
+            truly_horizontal_diffusion_nabla_of_theta_over_steep_points.with_connectivities(connectivities)(
                 mask=self.metric_state.mask_hdiff,
                 zd_vertoffset=self.metric_state.zd_vertoffset,
                 zd_diffcoef=self.metric_state.zd_diffcoef,
@@ -847,14 +850,14 @@ class Diffusion:
                 horizontal_end=self.cell_end_local,
                 vertical_start=0,
                 vertical_end=self.klevels,
-                offset_provider=self.grid.offset_providers,
+                offset_provider=offset_providers,
             )
 
             log.debug(
                 "running fused stencil 15 (truly_horizontal_diffusion_nabla_of_theta_over_steep_points): end"
             )
         log.debug("running stencil 16 (update_theta_and_exner): start")
-        update_theta_and_exner(
+        update_theta_and_exner.with_connectivities(connectivities)(
             z_temp=self.z_temp,
             area=self.cell_params.area,
             theta_v=prognostic_state.theta_v,
