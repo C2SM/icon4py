@@ -426,9 +426,7 @@ def initialize(
         solve_nonhydro=solve_nonhydro,
     )
 
-    ibm = ImmersedBoundaryMethod(
-        log=log
-    )
+    ibm = ImmersedBoundaryMethod(icon_grid)
 
     return (
         timeloop,
@@ -524,8 +522,8 @@ def main(
         prognostic_state_list,
         prep_adv,
         inital_divdamp_fac_o2,
-        ibm,
         do_prep_adv=False,
+        ibm=ibm,
     )
 
     log.info("timeloop:  DONE")

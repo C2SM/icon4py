@@ -591,7 +591,15 @@ class SolveNonhydro:
 
         self.set_timelevels(nnow, nnew)
 
-        ibm.set_boundary_conditions()
+        vn_b = prognostic_state_ls[nnow].vn.asnumpy().copy()
+
+        ibm.set_boundary_conditions(
+            diagnostic_state=diagnostic_state_nh,
+            prognostic_state=prognostic_state_ls[nnow],
+        )
+
+        vn_a = prognostic_state_ls[nnow].vn.asnumpy().copy()
+        import pdb; pdb.set_trace()
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
@@ -604,8 +612,6 @@ class SolveNonhydro:
             nnow=nnow,
             nnew=nnew,
         )
-
-        ibm.set_boundary_conditions()
 
         self.run_corrector_step(
             diagnostic_state_nh=diagnostic_state_nh,

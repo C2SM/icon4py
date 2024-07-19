@@ -12,9 +12,14 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import logging
 
-from gt4py.next.ffront.fbuiltins import Field
+import gt4py.next as gtx
+from icon4py.model.common.settings import xp
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+
+from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.atmosphere.dycore.state_utils import states as states_utils
+from icon4py.model.common.states import prognostic_state as prog_state
 
 
 """
@@ -31,17 +36,34 @@ class ImmersedBoundaryMethod:
 
     def __init__(
         self,
-    ):
+        icon_grid: icon_grid.IconGrid,
+        ):
+
+        num_cells = icon_grid.num_cells
+        num_edges = icon_grid.num_edges
+        num_levels = icon_grid.num_levels
 
         self._validate_config()
 
-        self.mask: Field[[CellDim, KDim], int] = 0
+        cell_mask=xp.zeros((num_cells, num_levels), dtype=bool)
+        edge_mask=xp.zeros((num_edges, num_levels), dtype=bool)
+
+        edge_mask[313, 17] = True
+
+        self.cell_mask = gtx.as_field((CellDim, KDim), cell_mask)
+        self.edge_mask = gtx.as_field((EdgeDim, KDim), edge_mask)
 
         log.info("IBM initialized")
 
     def _validate_config(self):
+        log.info("IBM config validated")
         pass
 
-    def set_boundary_conditions(self):
+    def set_boundary_conditions(
+        self,
+        diagnostic_state: states_utils.DiagnosticStateNonHydro,
+        prognostic_state: prog_state.PrognosticState,
+        ):
         log.info("IBM set BCs ")
-        pass
+
+        prognostic_state.vn = gtx.where(self.edge_mask, 313, prognostic_state.vn)
