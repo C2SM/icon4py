@@ -43,6 +43,7 @@ class DiffusionDiagnosticState:
     dwdx: Field[
         [CellDim, KDim], float
     ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
+
     dwdy: Field[
         [CellDim, KDim], float
     ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)

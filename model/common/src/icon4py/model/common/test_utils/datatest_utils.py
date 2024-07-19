@@ -36,6 +36,7 @@ GRID_IDS = {
     GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
 }
 
 
@@ -75,6 +76,7 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Returns: tuple[int, int]: The grid root and level.
     """
     if "torus" in experiment:
+        # these magic values seem to mark a torus: they are set in all torus grid files.
         return 0, 2
 
     try:

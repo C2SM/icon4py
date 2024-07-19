@@ -10,21 +10,24 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import os
-from typing import TypeAlias
+from typing import Final
 
-from gt4py.next.ffront.fbuiltins import float32, float64
+from packaging import version as pkg_version
 
 
-DEFAULT_PRECISION = "double"
+__all__ = [
+    "__author__",
+    "__copyright__",
+    "__license__",
+    "__version__",
+    "__version_info__",
+]
 
-wpfloat: TypeAlias = float64
 
-precision = os.environ.get("FLOAT_PRECISION", DEFAULT_PRECISION).lower()
-match precision:
-    case "double":
-        vpfloat = wpfloat
-    case "mixed":
-        vpfloat: TypeAlias = float32
-    case other:
-        raise ValueError("Only 'double' and 'mixed' precision are supported.")
+__author__: Final = "ETH Zurich and individual contributors"
+__copyright__: Final = "Copyright (c) 2014-2022 ETH Zurich"
+__license__: Final = "GPL-3.0-or-later"
+
+
+__version__: Final = "0.0.6"
+__version_info__: Final = pkg_version.parse(__version__)
