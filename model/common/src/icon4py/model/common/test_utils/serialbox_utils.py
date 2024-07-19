@@ -1514,6 +1514,98 @@ class IconInterfaceSatadExitSavepoint(IconSavepoint):
         return self._get_field("ser_out_satad_qc", CellDim, KDim)
 
 
+class IconGraupelInitSavepoint(IconSavepoint):
+    def iautocon(self):
+        return self.serializer.read("ser_init_graupel_iautocon", self.savepoint)[0]
+
+    def isnow_n0temp(self):
+        return self.serializer.read("ser_init_graupel_isnow_n0temp", self.savepoint)[0]
+
+    def ceff_min(self):
+        return self.serializer.read("ser_init_graupel_zceff_min", self.savepoint)[0]
+
+    def v0snow(self):
+        return self.serializer.read("ser_init_graupel_v0snow", self.savepoint)[0]
+
+    def vz0i(self):
+        return self.serializer.read("ser_init_graupel_zvz0i", self.savepoint)[0]
+
+    def icesedi_exp(self):
+        return self.serializer.read("ser_init_graupel_icesedi_exp", self.savepoint)[0]
+
+    def mu_rain(self):
+        return self.serializer.read("ser_init_graupel_mu_rain", self.savepoint)[0]
+
+    def rain_n0_factor(self):
+        return self.serializer.read("ser_init_graupel_rain_n0_factor", self.savepoint)[0]
+
+    def qmin(self):
+        return self.serializer.read("ser_init_graupel_zqmin", self.savepoint)[0]
+
+    def eps(self):
+        return self.serializer.read("ser_init_graupel_zeps", self.savepoint)[0]
+
+    def ams(self):
+        return self.serializer.read("ser_init_graupel_zams", self.savepoint)[0]
+
+    def ccsrim(self):
+        return self.serializer.read("ser_init_graupel_ccsrim", self.savepoint)[0]
+
+    def ccsagg(self):
+        return self.serializer.read("ser_init_graupel_ccsagg", self.savepoint)[0]
+
+    def ccsdep(self):
+        return self.serializer.read("ser_init_graupel_ccsdep", self.savepoint)[0]
+
+    def ccsvel(self):
+        return self.serializer.read("ser_init_graupel_ccsvel", self.savepoint)[0]
+
+    def ccsvxp(self):
+        return self.serializer.read("ser_init_graupel_ccsvxp", self.savepoint)[0]
+
+    def ccslam(self):
+        return self.serializer.read("ser_init_graupel_ccslam", self.savepoint)[0]
+
+    def ccslxp(self):
+        return self.serializer.read("ser_init_graupel_ccslxp", self.savepoint)[0]
+
+    def ccswxp(self):
+        return self.serializer.read("ser_init_graupel_ccswxp", self.savepoint)[0]
+
+    def ccsaxp(self):
+        return self.serializer.read("ser_init_graupel_ccsaxp", self.savepoint)[0]
+
+    def ccsdxp(self):
+        return self.serializer.read("ser_init_graupel_ccsdxp", self.savepoint)[0]
+
+    def ccshi1(self):
+        return self.serializer.read("ser_init_graupel_ccshi1", self.savepoint)[0]
+
+    def ccdvtp(self):
+        return self.serializer.read("ser_init_graupel_ccdvtp", self.savepoint)[0]
+
+    def ccidep(self):
+        return self.serializer.read("ser_init_graupel_ccidep", self.savepoint)[0]
+
+    def cevxp(self):
+        return self.serializer.read("ser_init_graupel_zcevxp", self.savepoint)[0]
+
+    def cev(self):
+        return self.serializer.read("ser_init_graupel_zcev", self.savepoint)[0]
+
+    def bevxp(self):
+        return self.serializer.read("ser_init_graupel_zbevxp", self.savepoint)[0]
+
+    def bev(self):
+        return self.serializer.read("ser_init_graupel_zbev", self.savepoint)[0]
+
+    def vzxp(self):
+        return self.serializer.read("ser_init_graupel_zvzxp", self.savepoint)[0]
+
+    def vz0r(self):
+        return self.serializer.read("ser_init_graupel_zvz0r", self.savepoint)[0]
+
+
 class IconSerialDataProvider:
     def __init__(self, fname_prefix, path=".", do_print=False, mpi_rank=0):
         self.rank = mpi_rank
@@ -1655,6 +1747,10 @@ class IconSerialDataProvider:
     def from_savepoint_jabw_diagnostic(self) -> IconJabwDiagnosticSavepoint:
         savepoint = self.serializer.savepoint["first_output_var"].id[1].as_savepoint()
         return IconJabwDiagnosticSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_graupel_init(self) -> IconGraupelInitSavepoint:
+        savepoint = self.serializer.savepoint["init-graupel"].serial_rank[0].as_savepoint()
+        return IconGraupelInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelEntrySavepoint:
         savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()

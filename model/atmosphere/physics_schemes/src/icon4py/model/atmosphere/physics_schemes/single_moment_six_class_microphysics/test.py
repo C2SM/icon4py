@@ -43,6 +43,9 @@ class TestData:
         _dict = self.__dict__.copy()
         return _dict
 
+    def __post_init__(self):
+        aa2: float = aa + 2.0
+
 
 class FrozenData(FrozenNamespace):
     aa: float = 1.0

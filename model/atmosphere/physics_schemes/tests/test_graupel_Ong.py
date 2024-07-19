@@ -32,18 +32,36 @@ from gt4py.next.ffront.fbuiltins import (
     int32
 )
 
-from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong import _graupel_scan, _graupel_t_tendency, _graupel_q_tendency, _graupel_flux_scan
-from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics.gscp_graupel_Ong import GraupelGlobalConstants, GraupelFunctionConstants
+from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics import gscp_graupel_Ong as graupel
 from typing import Final
 from icon4py.model.common.dimension import CellDim, KDim
-from gt4py.next import as_field
+import gt4py.next as gtx
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
+from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
+from icon4py.model.common.grid import vertical as v_grid, horizontal as h_grid
+from icon4py.model.common.test_utils.helpers import dallclose
 
-import serialbox as ser
-
-
-@pytest.mark.parametrize("experiment, date_no,Nblocks,rank,debug,data_output", WEISMAN_KLEMP_EXPERIMENT, [(date_i,120,rank_j,False,False) for date_i in range(1) for rank_j in range(5)])
-def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
+@pytest.mark.parametrize(
+    "experiment, model_top_height,, damping_height, stretch_factor, date",
+    [
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "48"),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "52"),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "56"),
+    ],
+)
+def test_graupel(
+    experiment,
+    model_top_height,
+    damping_height,
+    stretch_factor,
+    date,
+    data_provider,
+    grid_savepoint,
+    metrics_savepoint,
+    icon_grid,
+    lowest_layer_thickness,
+):
 
     backend = run_gtfn
 
@@ -51,444 +69,95 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
     ldass_lhn = True  # TODO: may need to be read from serialized data, default is False. We now manually set to True for debugging
     tendency_serialization = True
 
-
-    #mpi_ranks = np.arange(0, 10, dtype=int)
-    initial_date = "2008-09-01T00:00:00.000"
-    dates = ("2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000")
-    blocks = tuple(i+1 for i in range(Nblocks))
-    print()
-    print("date no: ", date_no)
-    print("rank: ", rank)
-    print("Nblocks; ", Nblocks)
-    print("debug, output: ", debug, data_output)
-
-    # please put the data in the serialbox directory
-    #script_dir = os.path.dirname(__file__)
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = script_dir+'/serialbox/data_dir/'
-    #base_dir = "/home/ong/Data/nh_wk_rerun_complete/data_dir/"
-    try:
-        serializer = ser.Serializer(ser.OpenModeKind.Read, base_dir, "wk__rank"+str(rank))
-        savePoints = serializer.savepoint_list()
-    except ser.SerialboxError as e:
-        print(f"serializer: error: {e}")
-        print("Data download link: https://polybox.ethz.ch/index.php/s/8qWeEg5JNAiNeGk")
-        sys.exit(1)
-
-
-    if (debug):
-        for item in serializer.get_savepoint("call-graupel-entrance"):
-            print(item)
-        for item in serializer.get_savepoint("init-graupel"):
-            print(item)
-        for item in serializer.fieldnames():
-            print(item)
-
-        # Nblock = 0
-        # for key, value in savePoints.items():
-        #    if (key == 'serial_state' and value == 1): Nblock += 1
-        # print(item)
-        # for item in savePoints:
-        #    print(item)
-
-        if (isinstance(savePoints,dict)):
-            print("save point is a dictionary")
-        elif (isinstance(savePoints,list)):
-            print("save point is a list")
-
-        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[1]]["date"][dates[1]]
-        qv1 = serializer.read("ser_graupel_qv", entrance_savePoint)
-        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[2]]["date"][dates[1]]
-        qv2 = serializer.read("ser_graupel_qv", entrance_savePoint)
-        qv = np.concatenate((qv1, qv2), axis=0)
-        for k in range(5):
-            for i in range(16):
-                print(qv[i][k], qv[i + 16][k], " --- ", qv1[i][k], qv2[i][k])
-
-        # DOES NOT WORK
-        #for item in entrance_savePoint:
-        #    print(item)
-
-    ser_field_name = (
-        "ser_graupel_dz",
-        "ser_graupel_temperature",
-        "ser_graupel_pres",
-        "ser_graupel_rho",
-        "ser_graupel_qv",
-        "ser_graupel_qc",
-        "ser_graupel_qi",
-        "ser_graupel_qr",
-        "ser_graupel_qs",
-        "ser_graupel_qg",
-        "ser_graupel_qnc",
-        "ser_graupel_ddt_tend_t",
-        "ser_graupel_ddt_tend_qv",
-        "ser_graupel_ddt_tend_qc",
-        "ser_graupel_ddt_tend_qi",
-        "ser_graupel_ddt_tend_qr",
-        "ser_graupel_ddt_tend_qs",
-        "ser_graupel_prr_gsp",
-        "ser_graupel_prs_gsp",
-        "ser_graupel_prg_gsp",
-        "ser_graupel_pri_gsp",
-        "ser_graupel_qrsflux"
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
 
-    mixT_name = (
-        "ser_graupel_temperature",
-        "ser_graupel_qv",
-        "ser_graupel_qc",
-        "ser_graupel_qi",
-        "ser_graupel_qr",
-        "ser_graupel_qs",
-        "ser_graupel_qg",
-        "ser_graupel_ddt_tend_t",
-        "ser_graupel_ddt_tend_qv",
-        "ser_graupel_ddt_tend_qc",
-        "ser_graupel_ddt_tend_qi",
-        "ser_graupel_ddt_tend_qr",
-        "ser_graupel_ddt_tend_qs",
-        "ser_graupel_prr_gsp",
-        "ser_graupel_prs_gsp",
-        "ser_graupel_prg_gsp",
-        "ser_graupel_pri_gsp",
-        "ser_graupel_qrsflux"
+    metric_state = graupel.MetricStateIconGraupel(
+        ddqz_z_full=metrics_savepoint.ddqz_z_full(),
     )
 
-    ser_redundant_name = (
-        "ser_graupel_rho_kup",
-        "ser_graupel_Crho1o2_kup",
-        "ser_graupel_Crhofac_qi_kup",
-        "ser_graupel_Cvz0s_kup",
-        "ser_graupel_qvsw_kup",
-        "ser_graupel_clddist",
-        "ser_graupel_klev"
+    init_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_init()
+    entry_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date)
+    exit_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_exit(date=date)
+
+    assert vertical_params.kstart_moist == entry_savepoint.kstart_moist() - 1
+
+    tracer_state = tracers.TracerState(
+        qv=entry_savepoint.qv(),
+        qc=entry_savepoint.qc(),
+        qr=entry_savepoint.qr(),
+        qi=entry_savepoint.qi(),
+        qs=entry_savepoint.qs(),
+        qg=entry_savepoint.qg(),
     )
-    ser_tend_name = (
-        "ser_graupel_szdep_v2i",
-        "ser_graupel_szsub_v2i",
-        "ser_graupel_snucl_v2i",
-        "ser_graupel_scfrz_c2i",
-        "ser_graupel_simlt_i2c",
-        "ser_graupel_sicri_i2g",
-        "ser_graupel_sidep_v2i",
-        "ser_graupel_sdaut_i2s",
-        "ser_graupel_saggs_i2s",
-        "ser_graupel_saggg_i2g",
-        "ser_graupel_siaut_i2s",
-        "ser_graupel_ssmlt_s2r",
-        "ser_graupel_srims_c2s",
-        "ser_graupel_ssdep_v2s",
-        "ser_graupel_scosg_s2g",
-        "ser_graupel_sgmlt_g2r",
-        "ser_graupel_srcri_r2g",
-        "ser_graupel_sgdep_v2g",
-        "ser_graupel_srfrz_r2g",
-        "ser_graupel_srimg_c2g"
+    prognostic_state = prognostics.PrognosticState(
+        rho=entry_savepoint.rho(),
+        vn=None,
+        w=None,
+        exner=None,
+        theta_v=None,
+    )
+    diagnostic_state = diagnostics.DiagnosticState(
+        temperature=entry_savepoint.temperature(),
+        pressure=entry_savepoint.pres(),
+        pressure_ifc=None,
+        u=None,
+        v=None,
     )
 
-    velocity_field_name = (
-        "rhoqrV_old_kup",
-        "rhoqsV_old_kup",
-        "rhoqgV_old_kup",
-        "rhoqiV_old_kup",
-        "Vnew_r",
-        "Vnew_s",
-        "Vnew_g",
-        "Vnew_i"
+    graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
+        liquid_autoconversion_option=init_savepoint.iautocon(),
+        ice_stickeff_min=init_savepoint.ceff_min(),
+        ice_v0=init_savepoint.vz0i(),
+        ice_sedi_density_factor_exp=init_savepoint.icesedi_exp(),
+        snow_v0=init_savepoint.v0snow(),
+        rain_mu=init_savepoint.mu_rain(),
+        rain_n0=init_savepoint.rain_n0_factor(),
     )
 
-    ser_const_name = (
-        "ser_graupel_dt",
-        "ser_graupel_qc0",
-        "ser_graupel_qi0",
-        "ser_graupel_kstart_moist",
-        "ser_graupel_l_cv",
-        "ser_graupel_ithermo_water",
-        "ser_graupel_ldiag_ttend",
-        "ser_graupel_ldiag_qtend",
-        "ser_graupel_istart",
-        "ser_graupel_iend",
-        "ser_graupel_kend",
-        "ser_graupel_nvec"
+    graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
+        config=graupel_config,
+        grid=icon_grid,
+        metric_state=metric_state,
+        vertical_params=vertical_params,
     )
 
-    ser_const_type = (
-        "float64",
-        "float64",
-        "float64",
-        "int32",
-        "bool",
-        "int32",
-        "bool",
-        "bool",
-        "int32",
-        "int32",
-        "int32",
-        "int32"
-    )
-
-    ser_tune_name = (
-        "ser_init_graupel_tune_zceff_min",
-        "ser_init_graupel_tune_v0snow",
-        "ser_init_graupel_tune_zvz0i",
-        "ser_init_graupel_tune_icesedi_exp",
-        "ser_init_graupel_tune_mu_rain",
-        "ser_init_graupel_tune_rain_n0_factor",
-        "ser_init_graupel_iautocon",
-        "ser_init_graupel_isnow_n0temp",
-        "ser_init_graupel_zqmin",
-        "ser_init_graupel_zeps"
-    )
-
-    ser_gscp_data_name = (
-        "ser_init_graupel_zceff_min",
-        "ser_init_graupel_v0snow",
-        "ser_init_graupel_zvz0i",
-        "ser_init_graupel_icesedi_exp",
-        "ser_init_graupel_mu_rain",
-        "ser_init_graupel_rain_n0_factor",
-        "ser_init_graupel_ccsrim",
-        "ser_init_graupel_ccsagg",
-        "ser_init_graupel_ccsdep",
-        "ser_init_graupel_ccsvel",
-        "ser_init_graupel_ccsvxp",
-        "ser_init_graupel_ccslam",
-        "ser_init_graupel_ccslxp",
-        "ser_init_graupel_ccswxp",
-        "ser_init_graupel_ccsaxp",
-        "ser_init_graupel_ccsdxp",
-        "ser_init_graupel_ccshi1",
-        "ser_init_graupel_ccdvtp",
-        "ser_init_graupel_ccidep",
-        "ser_init_graupel_zn0r",
-        "ser_init_graupel_zar",
-        "ser_init_graupel_zcevxp",
-        "ser_init_graupel_zcev",
-        "ser_init_graupel_zbevxp",
-        "ser_init_graupel_zbev",
-        "ser_init_graupel_zvzxp",
-        "ser_init_graupel_zvz0r"
-    )
-
-    ser_tune_type = (
-        "float64",
-        "float64",
-        "float64",
-        "float64",
-        "float64",
-        "float64",
-        "int32",
-        "float64",
-        "float64",
-        "float64"
-    )
-
-    # construct constant data dictionary
-    const_data = {}
-    for item in ser_const_name:
-        const_data[item] = None
-
-    # construct tuning constant data dictionary
-    tune_data = {}
-    for item in ser_tune_name:
-        tune_data[item] = None
-
-    # construct tuning constant data dictionary
-    gscp_data = {}
-    for item in ser_gscp_data_name:
-        gscp_data[item] = None
-
-    # construct serialized data dictionary
-    ser_data = {}
-    ref_data = {}
-    for item in ser_field_name:
-        ser_data[item] = None
-        ref_data[item] = None
-
-    # construct serialized tendency data dictionary
-    tend_data = {}
-    for item in ser_tend_name:
-        tend_data[item] = None
-
-    # read constants
-    for item_no, item in enumerate(ser_const_name):
-        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[0]]["date"][dates[date_no]]
-        const_data[item] = serializer.read(item, entrance_savePoint)[0]
-        for i in range(Nblocks - 1):
-            entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[i + 1]]["date"][dates[date_no]]
-            if (item != "ser_graupel_istart" and item != "ser_graupel_iend" and item != "ser_graupel_nvec"):
-                if (const_data[item] != serializer.read(item, entrance_savePoint)[0]):
-                    print(const_data[item], serializer.read(item, entrance_savePoint)[0], ser_const_type[item_no])
-                    sys.exit(0)
-
-    for item in ser_tune_name:
-        init_savePoint = serializer.savepoint["init-graupel"]["serial_state"][1]["date"][initial_date]
-        tune_data[item] = serializer.read(item, init_savePoint)[0]
-
-    for item in ser_gscp_data_name:
-        init_savePoint = serializer.savepoint["init-graupel"]["serial_state"][1]["date"][initial_date]
-        gscp_data[item] = serializer.read(item, init_savePoint)[0]
-
-    # read serialized input and reference data
-    for item in ser_field_name:
-        entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[0]]["date"][dates[date_no]]
-        exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_no]]
-        ser_data[item] = serializer.read(item, entrance_savePoint)
-        ref_data[item] = serializer.read(item, exit_savePoint)
-        for i in range(Nblocks-1):
-            entrance_savePoint = serializer.savepoint["call-graupel-entrance"]["serial_state"][0]["block_index"][blocks[i+1]]["date"][dates[date_no]]
-            exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[i+1]]["date"][dates[date_no]]
-            ser_data[item] = np.concatenate((ser_data[item],serializer.read(item, entrance_savePoint)),axis=0)
-            ref_data[item] = np.concatenate((ref_data[item], serializer.read(item, exit_savePoint)), axis=0)
-
-    # read serialized rendency data
-    if tendency_serialization:
-        for item in ser_tend_name:
-            exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[0]]["date"][dates[date_no]]
-            tend_data[item] = serializer.read(item, exit_savePoint)
-            for i in range(Nblocks-1):
-                exit_savePoint = serializer.savepoint["call-graupel-exit"]["serial_state"][1]["block_index"][blocks[i + 1]]["date"][dates[date_no]]
-                tend_data[item] = np.concatenate((tend_data[item], serializer.read(item, exit_savePoint)), axis=0)
-
-    (cell_size, k_size) = ser_data["ser_graupel_temperature"].shape
-    const_data["ser_graupel_kstart_moist"] -= int32(1)
-    const_data["ser_graupel_kend"] -= int32(1)
-    if (tune_data["ser_init_graupel_tune_v0snow"] < 0.0):
-        tune_data["ser_init_graupel_tune_v0snow"] = 20.0 # default value for graupel scheme
-
-    check_graupel_const: Final = GraupelGlobalConstants()
-    check_graupel_funcConst: Final = GraupelFunctionConstants()
-
-    # print out some constants and indices
-    print("Below is a summary of constants used in the experiment:")
-    print("cell and k dimensions  : ", ser_data["ser_graupel_temperature"].shape)
-    print("qrsflux shape          : ", ser_data["ser_graupel_qrsflux"].shape)
-    print("qnc shape              : ", ser_data["ser_graupel_qnc"].shape)
-    print("dt                     : ", const_data["ser_graupel_dt"])
-    print("qc0                    : ", const_data["ser_graupel_qc0"], check_graupel_funcConst.GrFuncConst_qc0)
-    print("qi0                    : ", const_data["ser_graupel_qi0"], check_graupel_funcConst.GrFuncConst_qi0)
-    print("qnc                    : ", ser_data["ser_graupel_qnc"][0])
-    print("istart                 : ", const_data["ser_graupel_istart"])
-    print("iend                   : ", const_data["ser_graupel_iend"])
-    print("kstart_moist           : ", const_data["ser_graupel_kstart_moist"])
-    print("kend                   : ", const_data["ser_graupel_kend"])
-    print("l_cv                   : ", const_data["ser_graupel_l_cv"])
-    print("ithermo_water          : ", const_data["ser_graupel_ithermo_water"])
-    print("ldiag_ttend            : ", const_data["ser_graupel_ldiag_ttend"])
-    print("ldiag_qtend            : ", const_data["ser_graupel_ldiag_qtend"])
-    print("tune_zceff_min         : ", tune_data["ser_init_graupel_tune_zceff_min"], check_graupel_const.GrConst_ceff_min)
-    print("tune_v0snow            : ", tune_data["ser_init_graupel_tune_v0snow"], check_graupel_const.GrConst_v0snow)
-    print("tune_zvz0i             : ", tune_data["ser_init_graupel_tune_zvz0i"], check_graupel_const.GrConst_vz0i)
-    print("tune_icesedi_exp       : ", tune_data["ser_init_graupel_tune_icesedi_exp"], check_graupel_const.GrConst_icesedi_exp)
-    print("tune_mu_rain           : ", tune_data["ser_init_graupel_tune_mu_rain"], check_graupel_const.GrConst_mu_rain)
-    print("tune_rain_n0_factor    : ", tune_data["ser_init_graupel_tune_rain_n0_factor"], check_graupel_const.GrConst_rain_n0_factor)
-    print("iautocon               : ", tune_data["ser_init_graupel_iautocon"], check_graupel_const.GrConst_iautocon)
-    print("isnow_n0temp           : ", tune_data["ser_init_graupel_isnow_n0temp"], check_graupel_const.GrConst_isnow_n0temp)
-    print("zqmin                  : ", tune_data["ser_init_graupel_zqmin"], check_graupel_const.GrConst_qmin)
-    print("zeps                   : ", tune_data["ser_init_graupel_zeps"], check_graupel_const.GrConst_eps)
-
-    print("zceff_min              : ", gscp_data["ser_init_graupel_zceff_min"],check_graupel_const.GrConst_ceff_min)
-    print("v0snow                 : ", gscp_data["ser_init_graupel_v0snow"], check_graupel_const.GrConst_v0snow)
-    print("zvz0i                  : ", gscp_data["ser_init_graupel_zvz0i"], check_graupel_const.GrConst_vz0i)
-    print("icesedi_exp            : ", gscp_data["ser_init_graupel_icesedi_exp"],check_graupel_const.GrConst_icesedi_exp)
-    print("mu_rain                : ", gscp_data["ser_init_graupel_mu_rain"], check_graupel_const.GrConst_mu_rain)
-    print("rain_n0_factor         : ", gscp_data["ser_init_graupel_rain_n0_factor"],check_graupel_const.GrConst_rain_n0_factor)
-    print("ccsrim                 : ", gscp_data["ser_init_graupel_ccsrim"], check_graupel_const.GrConst_ccsrim)
-    print("ccsagg                 : ", gscp_data["ser_init_graupel_ccsagg"], check_graupel_const.GrConst_ccsagg)
-    print("ccsdep                 : ", gscp_data["ser_init_graupel_ccsdep"], check_graupel_const.GrConst_ccsdep)
-    print("ccsvel                 : ", gscp_data["ser_init_graupel_ccsvel"], check_graupel_const.GrConst_ccsvel)
-    print("ccsvxp                 : ", gscp_data["ser_init_graupel_ccsvxp"], check_graupel_const.GrConst_ccsvxp)
-    print("ccslam                 : ", gscp_data["ser_init_graupel_ccslam"], check_graupel_const.GrConst_ccslam)
-    print("ccslxp                 : ", gscp_data["ser_init_graupel_ccslxp"], check_graupel_const.GrConst_ccslxp)
-    print("ccswxp                 : ", gscp_data["ser_init_graupel_ccswxp"], check_graupel_const.GrConst_ccswxp)
-    print("ccsaxp                 : ", gscp_data["ser_init_graupel_ccsaxp"], check_graupel_const.GrConst_ccsaxp)
-    print("ccsdxp                 : ", gscp_data["ser_init_graupel_ccsdxp"], check_graupel_const.GrConst_ccsdxp)
-    print("ccshi1                 : ", gscp_data["ser_init_graupel_ccshi1"], check_graupel_const.GrConst_ccshi1)
-    print("ccdvtp                 : ", gscp_data["ser_init_graupel_ccdvtp"], check_graupel_const.GrConst_ccdvtp)
-    print("ccidep                 : ", gscp_data["ser_init_graupel_ccidep"], check_graupel_const.GrConst_ccidep)
-    print("zn0r                   : ", gscp_data["ser_init_graupel_zn0r"], check_graupel_const.GrConst_n0r)
-    print("zar                    : ", gscp_data["ser_init_graupel_zar"], check_graupel_const.GrConst_ar)
-    print("zcevxp                 : ", gscp_data["ser_init_graupel_zcevxp"], check_graupel_const.GrConst_cevxp)
-    print("zcev                   : ", gscp_data["ser_init_graupel_zcev"], check_graupel_const.GrConst_cev)
-    print("zbevxp                 : ", gscp_data["ser_init_graupel_zbevxp"], check_graupel_const.GrConst_bevxp)
-    print("zbev                   : ", gscp_data["ser_init_graupel_zbev"], check_graupel_const.GrConst_bev)
-    print("zvzxp                  : ", gscp_data["ser_init_graupel_zvzxp"], check_graupel_const.GrConst_vzxp)
-    print("zvz0r                  : ", gscp_data["ser_init_graupel_zvz0r"], check_graupel_const.GrConst_vz0r)
-
-    print("------------------------------------------------------")
-    print()
+    assert dallclose(graupel.icon_graupel_params.qmin, init_savepoint.qmin())
+    assert dallclose(graupel.icon_graupel_params.eps, init_savepoint.eps())
+    assert dallclose(graupel.icon_graupel_params.snow_m0, init_savepoint.ams())
+    assert dallclose(graupel_microphysics.ccs[0], init_savepoint.ccsrim(), atol=1.e-8)
+    assert dallclose(graupel_microphysics.ccs[1], init_savepoint.ccsagg(), atol=1.e-8)
+    assert dallclose(graupel.icon_graupel_params.ccsaxp, init_savepoint.ccsaxp())
+    assert dallclose(graupel.icon_graupel_params.ccsdep, init_savepoint.ccsdep(), atol=1.e-7)
+    assert dallclose(graupel.icon_graupel_params.ccsdxp, init_savepoint.ccsdxp())
+    assert dallclose(graupel_microphysics.ccs[2], init_savepoint.ccsvel(), atol=1.e-8)
+    assert dallclose(graupel.icon_graupel_params.ccsvxp, init_savepoint.ccsvxp())
+    assert dallclose(graupel.icon_graupel_params.ccslam, init_savepoint.ccslam(), atol=1.e-10)
+    assert dallclose(graupel.icon_graupel_params.ccslxp, init_savepoint.ccslxp())
+    assert dallclose(graupel.icon_graupel_params.ccshi1, init_savepoint.ccshi1())
+    assert dallclose(graupel.icon_graupel_params.ccdvtp, init_savepoint.ccdvtp())
+    assert dallclose(graupel.icon_graupel_params.ccidep, init_savepoint.ccidep())
+    assert dallclose(graupel_microphysics.rain_vel_coef[2], init_savepoint.cevxp())
+    assert dallclose(graupel_microphysics.rain_vel_coef[3], init_savepoint.cev(), atol=1.e-10)
+    assert dallclose(graupel_microphysics.rain_vel_coef[4], init_savepoint.bevxp())
+    assert dallclose(graupel_microphysics.rain_vel_coef[5], init_savepoint.bev())
+    assert dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
+    assert dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.e-10)
 
 
-    # check whether the tuning parameters are the same. If not, exit the program
-    def comparison(description: str, a):
-        if (description in ser_const_name):
-            if (const_data[description] != a):
-                print(description, " is NOT equal. Pleas check.")
-                sys.exit()
-        elif (description in ser_tune_name):
-            if (tune_data[description] != a):
-                print(description, " is NOT equal. Pleas check.")
-                sys.exit()
-    comparison("ser_graupel_qc0", check_graupel_funcConst.GrFuncConst_qc0)
-    comparison("ser_graupel_qi0", check_graupel_funcConst.GrFuncConst_qi0)
-    comparison("ser_init_graupel_tune_zceff_min", check_graupel_const.GrConst_ceff_min)
-    comparison("ser_init_graupel_tune_v0snow", check_graupel_const.GrConst_v0snow)
-    comparison("ser_init_graupel_tune_zvz0i", check_graupel_const.GrConst_vz0i)
-    comparison("ser_init_graupel_tune_icesedi_exp", check_graupel_const.GrConst_icesedi_exp)
-    comparison("ser_init_graupel_tune_mu_rain", check_graupel_const.GrConst_mu_rain)
-    comparison("ser_init_graupel_tune_rain_n0_factor", check_graupel_const.GrConst_rain_n0_factor)
-    comparison("ser_init_graupel_iautocon", check_graupel_const.GrConst_iautocon)
-    comparison("ser_init_graupel_isnow_n0temp", check_graupel_const.GrConst_isnow_n0temp)
-    comparison("ser_init_graupel_zqmin", check_graupel_const.GrConst_qmin)
-    comparison("ser_init_graupel_zeps", check_graupel_const.GrConst_eps)
-
-    # if ldass_lhn is not turned on, the serialized qrsflux has only dimension (1)
-    if (not ldass_lhn):
-        ser_data["ser_graupel_qrsflux"] = np.zeros((cell_size, k_size), dtype=float64)
-        ref_data["ser_graupel_qrsflux"] = np.zeros((cell_size, k_size), dtype=float64)
-
-    # qnc is a constant in Fortran, we transform it into (cell_size, k_size) dimension
-    #ser_data["ser_graupel_qnc"] = np.full((cell_size, k_size), fill_value=ser_data["ser_graupel_qnc"][0], dtype=float64)
-
-    # expand the 2D precipitation fluxes (prr, pri, prs, prg) to 3D arrays
-    for item in ("ser_graupel_prr_gsp", "ser_graupel_prs_gsp", "ser_graupel_prg_gsp", "ser_graupel_pri_gsp"):
-        ser_data[item] = np.expand_dims(ser_data[item], axis=0)
-        ref_data[item] = np.expand_dims(ref_data[item], axis=0)
-        ser_data[item] = np.flip(np.transpose(np.pad(ser_data[item], [(0, k_size-1), (0, 0)], mode='constant', constant_values=0)),axis=1)
-        ref_data[item] = np.flip(np.transpose(np.pad(ref_data[item], [(0, k_size-1), (0, 0)], mode='constant', constant_values=0)),axis=1)
-
-    # checking shape
-    for item in ser_field_name:
-        if (item != "ser_graupel_qnc" and (cell_size, k_size) != ser_data[item].shape):
-            print("The array size is not fixed. The shape of temperature field is ", cell_size, k_size, ", while the shape of ", item, " is ", ser_data[item].shape, "Please check.")
-            sys.exit()
-
-    # transform serialized input and predicted arrays into GT4py Fields and construct predicted output arrays
-    ser_field = {}
-    tend_field = {}
-    redundant_field = {}
-    predict_field = {}
-    velocity_field = {}
-    for item in ser_field_name:
-        if (item != "ser_graupel_qnc"):
-            ser_field[item] = as_field((CellDim, KDim), np.array(ser_data[item], dtype=float64))
-            predict_field[item] = as_field((CellDim, KDim), np.zeros((cell_size,k_size), dtype=float64))
-        else:
-            ser_field[item] = as_field((CellDim,), np.array(ser_data[item], dtype=float64))
-            predict_field[item] = as_field((CellDim,), np.zeros(cell_size, dtype=float64))
-    for item in ser_tend_name:
-        tend_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
-    for item in ser_redundant_name:
-        if (item != "ser_graupel_klev"):
-            redundant_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
-        else:
-            redundant_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=int32))
-    for item in velocity_field_name:
-        velocity_field[item] = as_field((CellDim, KDim), np.zeros((cell_size, k_size), dtype=float64))
-
-    print("max and min dz: ", ser_field["ser_graupel_dz"].asnumpy().min(), ser_field["ser_graupel_dz"].asnumpy().max())
-    print("max and min pres: ", ser_field["ser_graupel_pres"].asnumpy().min(), ser_field["ser_graupel_pres"].asnumpy().max())
+    # graupel_microphysics.run()
+    '''
 
     # run graupel
 
@@ -768,3 +437,4 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
         # for the main graupel scan, why?
         assert(np.allclose(predict_field[item].asnumpy(),ref_data[item], rtol=1e-10, atol=1e-16))
 
+    '''
