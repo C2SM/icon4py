@@ -42,7 +42,7 @@ from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 import serialbox as ser
 
 
-@pytest.mark.parametrize("date_no,Nblocks,rank,debug,data_output", [(date_i,120,rank_j,False,False) for date_i in range(1) for rank_j in range(5)])
+@pytest.mark.parametrize("experiment, date_no,Nblocks,rank,debug,data_output", WEISMAN_KLEMP_EXPERIMENT, [(date_i,120,rank_j,False,False) for date_i in range(1) for rank_j in range(5)])
 def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
 
     backend = run_gtfn
@@ -54,7 +54,7 @@ def test_graupel_Ong_serialized_data(date_no,Nblocks,rank,debug,data_output):
 
     #mpi_ranks = np.arange(0, 10, dtype=int)
     initial_date = "2008-09-01T00:00:00.000"
-    dates = ("2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000")
+    dates = ("2008-09-01T01:59:48.000", "2008-09-01T01:59:52.000", "2008-09-01T01:59:56.000")
     blocks = tuple(i+1 for i in range(Nblocks))
     print()
     print("date no: ", date_no)

@@ -52,6 +52,8 @@ def download_ser_data(request, processor_props, ranked_data_path, experiment, py
             uri = utils.DATA_URIS_APE[processor_props.comm_size]
         elif experiment == utils.JABW_EXPERIMENT:
             uri = utils.DATA_URIS_JABW[processor_props.comm_size]
+        elif experiment == utils.WEISMAN_KLEMP_EXPERIMENT:
+            uri = utils.DATA_URIS_WK[processor_props.comm_size]
         else:
             uri = utils.DATA_URIS[processor_props.comm_size]
 

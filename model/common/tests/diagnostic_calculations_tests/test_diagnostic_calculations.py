@@ -133,12 +133,12 @@ def test_diagnose_meridional_and_zonal_winds(
 
     assert dallclose(
         diagnostic_state.u.asnumpy(),
-        icon_diagnostics_output_sp.zonal_Wind().asnumpy(),
+        icon_diagnostics_output_sp.zonal_wind().asnumpy(),
     )
 
     assert dallclose(
         diagnostic_state.v.asnumpy(),
-        icon_diagnostics_output_sp.meridional_Wind().asnumpy(),
+        icon_diagnostics_output_sp.meridional_wind().asnumpy(),
         atol=1.0e-13,
     )
 
