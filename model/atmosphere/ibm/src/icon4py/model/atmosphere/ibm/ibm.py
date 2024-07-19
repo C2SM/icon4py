@@ -10,13 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import functools
 import logging
-import math
-import sys
-import dataclasses
-import enum
-from typing import Final, Optional
 
 from gt4py.next.ffront.fbuiltins import Field
 
@@ -28,6 +22,7 @@ Immersed boundary method module
 
 """
 
+log = logging.getLogger(__name__)
 
 class ImmersedBoundaryMethod:
     """
@@ -36,19 +31,17 @@ class ImmersedBoundaryMethod:
 
     def __init__(
         self,
-        log: logging.Logger = None,
     ):
-        self.log = log or logging.getLogger(__name__)
 
         self._validate_config()
 
         self.mask: Field[[CellDim, KDim], int] = 0
 
-        self.log.info("IBM initialized")
+        log.info("IBM initialized")
 
     def _validate_config(self):
         pass
 
     def set_boundary_conditions(self):
-        self.log.info("IBM set BCs ")
+        log.info("IBM set BCs ")
         pass
