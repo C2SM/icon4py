@@ -49,6 +49,6 @@ class ImmersedBoundaryMethod:
     def _validate_config(self):
         pass
 
-    def set_boundary_conditions(self, loc: str=''):
-        self.log.info("IBM set BCs " + loc)
+    def set_boundary_conditions(self):
+        self.log.info("IBM set BCs ")
         pass
