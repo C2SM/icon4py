@@ -14,11 +14,6 @@ triggerPhrase.each {
     }
 }
 
-def map_srun = [
-    daint: 'srun -t 03:00:00 -C gpu -A g110 -c 12 -n 1',
-    balfrin: 'srun -t 03:00:00 -p postproc -N 1 -c 48 ./jenkins/run_multiple_times_in_parallel.sh'
-    ]
-
 pipeline {
     agent none
     options{
@@ -30,13 +25,12 @@ pipeline {
                 agent {
                 node {
                       label "${NODENAME}" 
-                      customWorkspace "workspace/EXCLAIM/icon4py/icon4py-spack-PR_${BUILD_NUMBER}"
                     }
                 }
                 axes {
                     axis {
                         name 'NODENAME'
-                        values 'daint', 'balfrin'
+                        values 'balfrin'
                     }
                 }
                 post {
@@ -58,12 +52,11 @@ pipeline {
                     stage('Install with gt4py@main') {
                         steps {
                             script{
-                                def srun = map_srun["${NODENAME}"]
                                 sh """
                                 . ./spack-c2sm/setup-env.sh
                                 cd local_copy
                                 spack env activate spack/gt4py-main
-                                ${srun} spack install -v --test=root
+                                spack install -v --test=root
                                 """
                             }
                         }
