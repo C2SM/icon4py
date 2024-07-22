@@ -81,15 +81,15 @@ def orchestration(method=True):
                     if v is dace.compiletime and k != self_name:
                         compile_time_args[k] = all_args_kwargs[i]
 
-                dace_specific_kwargs(exchange_obj, grid, kwargs)
-                dace_symbols_concretization(exchange_obj, grid, fuse_func, args, kwargs)
-
-                parse_compile_cache_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, kwargs, compile_time_args)
+                parse_compile_cache_sdfg(compiled_sdfgs, self, exchange_obj, fuse_func, compile_time_args)
 
                 with dace.config.temporary_config():
                     configure_dace_temp_env()
 
-                    args = mod_args_for_dace_structures(fuse_func, args)                    
+                    dace_specific_kwargs(exchange_obj, grid, kwargs)
+                    dace_symbols_concretization(exchange_obj, grid, fuse_func, args, kwargs)
+                    args = mod_args_for_dace_structures(fuse_func, args)
+
                     sdfg_args = compiled_sdfgs[id(self)]['dace_program']._create_sdfg_args(compiled_sdfgs[id(self)]['sdfg'], args, kwargs)
                     if method:
                         del sdfg_args[self_name]
@@ -165,7 +165,7 @@ if "dace" in backend.executor.name.lower():
         })
 
 
-    def parse_compile_cache_sdfg(compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, kwargs: Any, compile_time_args: dict[str, Any]):
+    def parse_compile_cache_sdfg(compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, compile_time_args: dict[str, Any]):
         """Function that parses, compiles and caches the fused SDFG along with adding the halo exchanges."""
         if id(self) in compiled_sdfgs:
             return
@@ -190,9 +190,9 @@ if "dace" in backend.executor.name.lower():
             sdfg = compiled_sdfgs[id(self)]['sdfg']
 
             # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
-            add_halo_exchanges(sdfg, exchange_obj, self.grid.offset_providers, **kwargs)
+            add_halo_exchanges(sdfg, exchange_obj, self.grid.offset_providers)
             
-            sdfg.simplify(validate=True)
+            #sdfg.simplify(validate=True)
 
             with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg_:
                 # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
@@ -290,7 +290,7 @@ if "dace" in backend.executor.name.lower():
             return ([],[])
 
 
-    def add_halo_exchanges(sdfg: dace.SDFG, exchange: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Any], **kwargs: Any):
+    def add_halo_exchanges(sdfg: dace.SDFG, exchange: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Any]):
         '''Add halo exchange nodes to the SDFG only where needed.'''
         if not isinstance(exchange, GHexMultiNodeExchange):
             return
@@ -298,7 +298,7 @@ if "dace" in backend.executor.name.lower():
         # TODO(kotsaloscv): Work on asynchronous communication
         wait = True
         
-        expected_ghex_ptrs = ['__context_ptr', '__comm_ptr', '__pattern_CellDim_ptr', '__pattern_VertexDim_ptr', '__pattern_EdgeDim_ptr', '__domain_descriptor_CellDim_ptr', '__domain_descriptor_VertexDim_ptr', '__domain_descriptor_EdgeDim_ptr']
+        ghex_ptr_names = ['__context_ptr', '__comm_ptr', '__pattern_CellDim_ptr', '__pattern_VertexDim_ptr', '__pattern_EdgeDim_ptr', '__domain_descriptor_CellDim_ptr', '__domain_descriptor_VertexDim_ptr', '__domain_descriptor_EdgeDim_ptr']
 
         counter = 0 # for generating unique names
         for nested_sdfg in sdfg.all_sdfgs_recursive(): # loop over all nested sdfgs (aka stencils) and decide which fields need to be exchanged
@@ -316,7 +316,7 @@ if "dace" in backend.executor.name.lower():
                 raise ValueError("The output fields to be communicated are not defined on the same dimension.")
 
             # dimension of the fields to be exchanged
-            dim = {'Cell':CellDim, 'Edge':EdgeDim, 'Vertex':VertexDim}[list(field_dims)[0].value] if len(field_dims) == 1 else None
+            dim = list(field_dims)[0] if len(field_dims) == 1 else None
             if not dim:
                 continue
 
@@ -331,16 +331,16 @@ if "dace" in backend.executor.name.lower():
                 if nested_sdfg_state.label == nested_sdfg.parent.label:
                     break
 
-            global_buffers = {} # the elements of this dictionary are going to be exchanged
-            for buffer_name in nested_sdfg.gt4py_program_output_fields:
-                global_buffer_name = None
+            global_buffers: dict[str, dace.data.Data] = {} # the elements of this dictionary are going to be exchanged
+            for buffer_name in nested_sdfg.gt4py_program_output_fields: # Check which fields need to be exchanged
+                global_buffer_name = None # from nested SDFG to the name in the fused SDFG -global sense-
                 for edge in nested_sdfg_state.all_edges_recursive():
                     # local buffer_name [src] --> global_buffer_name [dst]
                     if hasattr(edge[0], "src_conn") and (edge[0].src_conn == buffer_name):
                         global_buffer_name = edge[0].dst.label
                         break
                 if not global_buffer_name:
-                    raise ValueError("Could not link the local buffer_name to the global one (coming from the closure).")
+                    raise ValueError("Could not link the local buffer_name to the global one -from the nested SDFG to the fused-.")
                 
                 # Visit all stencils/sdfgs below the current one (nested_sdfg), and see if halo update is needed for the specific (buffer_name) output field.
                 halo_update = False
@@ -432,12 +432,14 @@ if "dace" in backend.executor.name.lower():
             in_connectors = {}
             out_connectors = {}
 
-            for buffer_name in kwargs:
-                if buffer_name in expected_ghex_ptrs and buffer_name not in sdfg.arrays:
-                    sdfg.add_scalar(buffer_name, dtype=dace.uintp)
-                    buffer = state.add_read(buffer_name)
-                    in_connectors['IN_' + buffer_name] = dace.uintp.dtype
-                    state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, Memlet(buffer_name, subset='0'))
+            for buffer_name in ghex_ptr_names:
+                if buffer_name in sdfg.arrays:
+                    continue
+                # define them only once
+                sdfg.add_scalar(buffer_name, dtype=dace.uintp)
+                buffer = state.add_read(buffer_name)
+                in_connectors['IN_' + buffer_name] = dace.uintp.dtype
+                state.add_edge(buffer, None, tasklet, 'IN_' + buffer_name, Memlet(buffer_name, subset='0'))
 
             for i, (buffer_name, data_descriptor) in enumerate(global_buffers.items()):
                 buffer = state.add_read(buffer_name)
@@ -459,46 +461,53 @@ if "dace" in backend.executor.name.lower():
 
             # Tasklet code generation part
             fields_desc_glob_vars = '\n'
-            fields_desc = '\n'
+            fields_desc = f'''
+            bool levels_first;
+            std::size_t outer_strides;
+            std::size_t levels;
+
+            '''
             descr_unique_names = []
             for i, arg in enumerate(copy.deepcopy(list(global_buffers.values()))):
-                arg.shape   = (kwargs[str(arg.shape[0])] if isinstance(arg.shape[0], dace.symbolic.symbol) else arg.shape[0], kwargs[str(arg.shape[1])] if isinstance(arg.shape[1], dace.symbolic.symbol) else arg.shape[1])
-                arg.strides = (kwargs[str(arg.strides[0])] if isinstance(arg.strides[0], dace.symbolic.symbol) else arg.strides[0], kwargs[str(arg.strides[1])] if isinstance(arg.strides[1], dace.symbolic.symbol) else arg.strides[1])
-
                 # Checks below adapted from https://github.com/ghex-org/GHEX/blob/master/bindings/python/src/_pyghex/unstructured/field_descriptor.cpp
-                if len(arg.shape) > 2:
-                    raise ValueError("field has too many dimensions")
-                if arg.shape[0] != exchange._domain_descriptors[dim].size():
-                    raise ValueError("field's first dimension must match the size of the domain")
-                
-                levels_first = True
-                outer_strides = 0
-                # DaCe strides: number of elements to jump
+                # Keep in mind:
                 # GHEX/NumPy strides: number of bytes to jump
-                if len(arg.shape) == 2 and arg.strides[1] != 1:
-                    levels_first = False
-                    if arg.strides[0] != 1:
-                        raise ValueError("field's strides are not compatible with GHEX")
-                    outer_strides = arg.strides[1]
-                elif len(arg.shape) == 2:
-                    if arg.strides[1] != 1:
-                        raise ValueError("field's strides are not compatible with GHEX")
-                    outer_strides = arg.strides[0]
-                else:
-                    if arg.strides[0] != 1:
-                        raise ValueError("field's strides are not compatible with GHEX")
-
-                levels = 1 if len(arg.shape) == 1 else arg.shape[1]
+                # DaCe strides: number of elements to jump
+                fields_desc += f'''
+                if ({len(arg.shape)} > 2u) throw std::runtime_error("field has too many dimensions");
                 
+                if ({arg.shape[0]} != {exchange._domain_descriptors[dim].size()}) throw std::runtime_error("field's first dimension must match the size of the domain");
+
+                levels_first = true;
+                outer_strides = 0u;
+                if ({len(arg.shape)} == 2 && {arg.strides[1]} != 1)
+                {{
+                    levels_first = false;
+                    if ({arg.strides[0]} != 1) throw std::runtime_error("field's strides are not compatible with GHEX");
+                    outer_strides = {arg.strides[1]};
+                }}
+                else if ({len(arg.shape)} == 2)
+                {{
+                    if ({arg.strides[1]} != 1) throw std::runtime_error("field's strides are not compatible with GHEX");
+                    outer_strides = {arg.strides[0]};
+                }}
+                else
+                {{
+                    if ({arg.strides[0]} != 1) throw std::runtime_error("field's strides are not compatible with GHEX");
+                }}
+
+                levels = ({len(arg.shape)} == 1) ? 1u : {arg.shape[1]};
+                '''
+                                
                 descr_unique_name = f'field_desc_{i}_{counter}_{id(exchange)}'
                 descr_unique_names.append(descr_unique_name)
                 descr_type_ = f"ghex::unstructured::data_descriptor<ghex::{'cpu' if arg.storage.value <= 5 else 'gpu'}, int, int, {arg.dtype.ctype}>"
                 if wait:
                     # de-allocated descriptors once out-of-scope, no need for storing them in global vars
-                    fields_desc += f"{descr_type_} {descr_unique_name}{{*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides}}};\n"
+                    fields_desc += f"{descr_type_} {descr_unique_name}{{*domain_descriptor, IN_field_{i}, levels, levels_first, outer_strides}};\n"
                 else:
                     # for async exchange, we need to keep the descriptors alive, until the wait
-                    fields_desc += f"{descr_unique_name} = std::make_unique<{descr_type_}>(*domain_descriptor, IN_field_{i}, {levels}, {'true' if levels_first else 'false'}, {outer_strides});\n"
+                    fields_desc += f"{descr_unique_name} = std::make_unique<{descr_type_}>(*domain_descriptor, IN_field_{i}, levels, levels_first, outer_strides);\n"
                     fields_desc_glob_vars += f"std::unique_ptr<{descr_type_}> {descr_unique_name};\n"
 
             code = ''
@@ -571,7 +580,7 @@ if "dace" in backend.executor.name.lower():
         cmake_files = []
         cmake_libraries = []
 
-        headers = ["ghex/context.hpp", "ghex/unstructured/pattern.hpp", "ghex/unstructured/user_concepts.hpp", "ghex/communication_object.hpp"]
+        headers = ["ghex/context.hpp", "ghex/unstructured/pattern.hpp", "ghex/unstructured/user_concepts.hpp", "ghex/communication_object.hpp", "stdexcept"]
         state_fields = []
         init_code = ""
         finalize_code = ""
