@@ -167,7 +167,7 @@ from icon4py.model.common.grid.vertical import VerticalGridParams
 from icon4py.model.common.math.smagorinsky import en_smag_fac_for_zero_nshift
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
-from icon4py.model.atmosphere.ibm import ibm
+from icon4py.model.atmosphere.dycore.ibm import ibm
 import enum
 
 # flake8: noqa
@@ -314,6 +314,7 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
+        use_ibm: bool = False,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -442,6 +443,7 @@ class SolveNonhydro:
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
         self.ntl2 = 0
+        self.ibm = None
 
     def init(
         self,
@@ -500,8 +502,11 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
+
         self.p_test_run = True
         self._initialized = True
+
+        self.ibm = ibm.ImmersedBoundaryMethod(grid)
 
     @property
     def initialized(self):
@@ -561,7 +566,6 @@ class SolveNonhydro:
         lprep_adv: bool,
         at_first_substep: bool,
         at_last_substep: bool,
-        ibm: ibm.ImmersedBoundaryMethod,
     ):
         log.info(
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
@@ -591,14 +595,14 @@ class SolveNonhydro:
 
         self.set_timelevels(nnow, nnew)
 
-        vn_b = prognostic_state_ls[nnow].vn.asnumpy().copy()
+        vn_1 = prognostic_state_ls[nnow].vn.asnumpy().copy()
 
-        ibm.set_boundary_conditions(
+        self.ibm.set_boundary_conditions(
             diagnostic_state=diagnostic_state_nh,
             prognostic_state=prognostic_state_ls[nnow],
         )
 
-        vn_a = prognostic_state_ls[nnow].vn.asnumpy().copy()
+        vn_2 = prognostic_state_ls[nnow].vn.asnumpy().copy()
         import pdb; pdb.set_trace()
 
         self.run_predictor_step(

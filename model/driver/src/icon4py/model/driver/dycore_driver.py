@@ -48,7 +48,6 @@ from icon4py.model.driver.initialization_utils import (
     read_static_fields,
 )
 
-from icon4py.model.atmosphere.ibm.ibm import ImmersedBoundaryMethod
 
 
 log = logging.getLogger(__name__)
@@ -157,7 +156,6 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
-        ibm: ImmersedBoundaryMethod,
     ):
         log.info(
             f"starting time loop for dtime={self.dtime_in_seconds} s and n_timesteps={self._n_time_steps}"
@@ -209,7 +207,6 @@ class TimeLoop:
                 prep_adv,
                 inital_divdamp_fac_o2,
                 do_prep_adv,
-                ibm,
             )
             timer.capture()
 
@@ -229,7 +226,6 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
-        ibm: ImmersedBoundaryMethod,
     ):
         # TODO (Chia Rui): Add update_spinup_damping here to compute divdamp_fac_o2
 
@@ -239,7 +235,6 @@ class TimeLoop:
             prep_adv,
             inital_divdamp_fac_o2,
             do_prep_adv,
-            ibm,
         )
 
         if self.diffusion.config.apply_to_horizontal_wind:
@@ -258,7 +253,6 @@ class TimeLoop:
         prep_adv: PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
-        ibm: ImmersedBoundaryMethod,
     ):
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
@@ -284,7 +278,6 @@ class TimeLoop:
                 lprep_adv=do_prep_adv,
                 at_first_substep=self._is_first_substep(dyn_substep),
                 at_last_substep=self._is_last_substep(dyn_substep),
-                ibm=ibm,
             )
 
             do_recompute = False
@@ -426,7 +419,6 @@ def initialize(
         solve_nonhydro=solve_nonhydro,
     )
 
-    ibm = ImmersedBoundaryMethod(icon_grid)
 
     return (
         timeloop,
@@ -436,7 +428,6 @@ def initialize(
         diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
-        ibm,
     )
 
 
@@ -496,7 +487,6 @@ def main(
         diagnostic_state,
         prep_adv,
         inital_divdamp_fac_o2,
-        ibm,
     ) = initialize(
         pathlib.Path(input_path),
         parallel_props,
@@ -523,7 +513,6 @@ def main(
         prep_adv,
         inital_divdamp_fac_o2,
         do_prep_adv=False,
-        ibm=ibm,
     )
 
     log.info("timeloop:  DONE")

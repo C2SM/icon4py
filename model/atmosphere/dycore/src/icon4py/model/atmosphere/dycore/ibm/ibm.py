@@ -39,6 +39,8 @@ class ImmersedBoundaryMethod:
         icon_grid: icon_grid.IconGrid,
         ):
 
+        self.test_value = 313
+
         num_cells = icon_grid.num_cells
         num_edges = icon_grid.num_edges
         num_levels = icon_grid.num_levels
@@ -66,4 +68,5 @@ class ImmersedBoundaryMethod:
         ):
         log.info("IBM set BCs ")
 
-        prognostic_state.vn = gtx.where(self.edge_mask, 313, prognostic_state.vn)
+        prognostic_state.vn = gtx.where(self.edge_mask, self.test_value, prognostic_state.vn)
+        prognostic_state.w  = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)

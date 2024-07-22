@@ -12,6 +12,7 @@ testdata
 simple_mesh*.nc
 /prof
 .profile
+*.log
 
 
 ### Sphinx ###
