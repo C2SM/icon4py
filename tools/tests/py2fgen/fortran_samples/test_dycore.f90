@@ -272,26 +272,27 @@ program solve_nh_simulation
     integer(c_int), dimension(:, :, :), allocatable :: vertoffset_gradp
     real(c_double), dimension(:, :, :), allocatable :: zdiff_gradp
 
-   !$acc enter data create (vct_a, rayleigh_w, tangent_orientation, nudgecoeff_e, &
-   !$acc hmask_dd3d, inverse_primal_edge_lengths, inv_dual_edge_length, &
-   !$acc inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
-   !$acc vwind_impl_wgt, scalfac_dd3d, mask_prog_halo_c, c_owner_mask, bdy_halo_c, &
+   !$acc enter data create (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
    !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
    !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
-   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, &
-   !$acc rho_now, rho_new, dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, &
-   !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, &
-   !$acc primal_normal_vert_y, exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, &
-   !$acc d_exner_dz_ref_ic, ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, &
-   !$acc rho_ref_me, theta_ref_me, ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, &
-   !$acc wgtfac_e, wgtfacq_e, coeff1_dwdz, coeff2_dwdz, grf_tend_rho, grf_tend_thv, &
-   !$acc grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, vn_ie, vt, mass_flx_me, &
-   !$acc mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
-   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, &
-   !$acc ipeidx_dsl, coeff_gradekin, geofac_grdiv, geofac_rot, c_intp, w_concorr_c, &
-   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, &
-   !$acc zdiff_gradp, vertoffset_gradp)
+   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+   !$acc rho_now, rho_new, &
 
+   !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+   !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+   !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+   !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
 
 
 
@@ -503,25 +504,27 @@ program solve_nh_simulation
    call fill_random_3d(zdiff_gradp, 0.0_c_double, 1.0_c_double)
    call fill_random_3d_int(vertoffset_gradp, 0, 1)
 
-   !$acc data copyin (vct_a, rayleigh_w, tangent_orientation, nudgecoeff_e, &
-   !$acc hmask_dd3d, inverse_primal_edge_lengths, inv_dual_edge_length, &
-   !$acc inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
-   !$acc vwind_impl_wgt, scalfac_dd3d, mask_prog_halo_c, c_owner_mask, bdy_halo_c, &
+   !$acc data copyin (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
    !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
    !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
-   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, &
-   !$acc rho_now, rho_new, dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, &
-   !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, &
-   !$acc primal_normal_vert_y, exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, &
-   !$acc d_exner_dz_ref_ic, ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, &
-   !$acc rho_ref_me, theta_ref_me, ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, &
-   !$acc wgtfac_e, wgtfacq_e, coeff1_dwdz, coeff2_dwdz, grf_tend_rho, grf_tend_thv, &
-   !$acc grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, vn_ie, vt, mass_flx_me, &
-   !$acc mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
-   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, &
-   !$acc ipeidx_dsl, coeff_gradekin, geofac_grdiv, geofac_rot, c_intp, w_concorr_c, &
-   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, &
-   !$acc zdiff_gradp, vertoffset_gradp)
+   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+   !$acc rho_now, rho_new, &
+
+   !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+   !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+   !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+   !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
 
 
    ! Call solve_nh_init
@@ -577,48 +580,52 @@ program solve_nh_simulation
       call exit(1)
   end if
 
-  !$acc update host (vct_a, rayleigh_w, tangent_orientation, nudgecoeff_e, &
-  !$acc hmask_dd3d, inverse_primal_edge_lengths, inv_dual_edge_length, &
-  !$acc inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
-  !$acc vwind_impl_wgt, scalfac_dd3d, mask_prog_halo_c, c_owner_mask, bdy_halo_c, &
-  !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
-  !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
-  !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, &
-  !$acc rho_now, rho_new, dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, &
-  !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, &
-  !$acc primal_normal_vert_y, exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, &
-  !$acc d_exner_dz_ref_ic, ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, &
-  !$acc rho_ref_me, theta_ref_me, ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, &
-  !$acc wgtfac_e, wgtfacq_e, coeff1_dwdz, coeff2_dwdz, grf_tend_rho, grf_tend_thv, &
-  !$acc grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, vn_ie, vt, mass_flx_me, &
-  !$acc mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
-  !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, &
-  !$acc ipeidx_dsl, coeff_gradekin, geofac_grdiv, geofac_rot, c_intp, w_concorr_c, &
-  !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, &
-  !$acc zdiff_gradp, vertoffset_gradp)
+   !$acc update host (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
+   !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
+   !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
+   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+   !$acc rho_now, rho_new, &
+
+   !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+   !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+   !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+   !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
 
    print *, "passed"
 
   !$acc end data
-  !$acc exit data delete (vct_a, rayleigh_w, tangent_orientation, nudgecoeff_e, &
-  !$acc hmask_dd3d, inverse_primal_edge_lengths, inv_dual_edge_length, &
-  !$acc inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
-  !$acc vwind_impl_wgt, scalfac_dd3d, mask_prog_halo_c, c_owner_mask, bdy_halo_c, &
+  !$acc exit data delete (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+  !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+  !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+  !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
   !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
   !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
-  !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, &
-  !$acc rho_now, rho_new, dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, &
-  !$acc dual_normal_vert_y, primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, &
-  !$acc primal_normal_vert_y, exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, &
-  !$acc d_exner_dz_ref_ic, ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, &
-  !$acc rho_ref_me, theta_ref_me, ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, &
-  !$acc wgtfac_e, wgtfacq_e, coeff1_dwdz, coeff2_dwdz, grf_tend_rho, grf_tend_thv, &
-  !$acc grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, vn_ie, vt, mass_flx_me, &
-  !$acc mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
-  !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, &
-  !$acc ipeidx_dsl, coeff_gradekin, geofac_grdiv, geofac_rot, c_intp, w_concorr_c, &
-  !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, &
-  !$acc zdiff_gradp, vertoffset_gradp)
+  !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+  !$acc rho_now, rho_new, &
+
+  !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+  !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+  !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+  !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+  !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+  !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+  !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+  !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+  !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+  !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
 
 
 end program solve_nh_simulation
