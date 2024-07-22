@@ -314,7 +314,7 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        use_ibm: bool = False,
+        use_ibm: bool = True,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -374,6 +374,9 @@ class NonHydrostaticConfig:
         self.is_iau_active: bool = is_iau_active
         #: IAU weight for dynamics fields
         self.iau_wgt_dyn: float = iau_wgt_dyn
+
+        # IBM
+        self.use_ibm: bool = use_ibm
 
         self._validate()
 
@@ -506,7 +509,8 @@ class SolveNonhydro:
         self.p_test_run = True
         self._initialized = True
 
-        self.ibm = ibm.ImmersedBoundaryMethod(grid)
+        if self.config.use_ibm:
+            self.ibm = ibm.ImmersedBoundaryMethod(grid)
 
     @property
     def initialized(self):
@@ -595,15 +599,15 @@ class SolveNonhydro:
 
         self.set_timelevels(nnow, nnew)
 
-        vn_1 = prognostic_state_ls[nnow].vn.asnumpy().copy()
 
-        self.ibm.set_boundary_conditions(
-            diagnostic_state=diagnostic_state_nh,
-            prognostic_state=prognostic_state_ls[nnow],
-        )
-
-        vn_2 = prognostic_state_ls[nnow].vn.asnumpy().copy()
-        import pdb; pdb.set_trace()
+        if self.config.use_ibm:
+            v1 = prognostic_state_ls[nnow].vn.asnumpy().copy()
+            self.ibm.set_boundary_conditions(
+                diagnostic_state=diagnostic_state_nh,
+                prognostic_state=prognostic_state_ls[nnow],
+            )
+            v2 = prognostic_state_ls[nnow].vn.asnumpy().copy()
+            import pdb; pdb.set_trace()
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
