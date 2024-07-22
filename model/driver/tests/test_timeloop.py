@@ -16,18 +16,14 @@ import os
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion import diffusion as diffus
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    dallclose,
-)
-from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver import icon4py_driver, serialbox_helpers as driver_sb
 
 from .utils import (
@@ -146,10 +142,10 @@ def test_run_timeloop_single_step(
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    additional_parameters = diffus.DiffusionParams(diffusion_config)
+    additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
-    diffusion = diffus.Diffusion()
-    diffusion.init(
+    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule.init(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
@@ -188,10 +184,10 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -236,8 +232,8 @@ def test_run_timeloop_single_step(
     cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
     edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule.init(
         grid=icon_grid,
         config=nonhydro_config,
         params=nonhydro_params,
@@ -284,7 +280,7 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = icon4py_driver.TimeLoop(iconrun_config, diffusion, solve_nonhydro)
+    timeloop = icon4py_driver.TimeLoop(iconrun_config, diffusion_granule, solve_nonhydro_granule)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 
@@ -374,30 +370,30 @@ def test_run_timeloop_single_step(
             "vn",
         )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
         rho_sp.asnumpy(),
     )

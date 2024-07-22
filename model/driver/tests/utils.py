@@ -13,7 +13,7 @@
 
 from datetime import datetime, timedelta
 
-from icon4py.model.atmosphere.diffusion import diffusion as diffus
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.driver import icon4py_configuration as driver_config
 
@@ -29,8 +29,8 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
     Set values to the ones used in the  EXCLAIM_APE_R04B02 experiment where they differ
     from the default.
     """
-    return diffus.DiffusionConfig(
-        diffusion_type=diffus.DiffusionType.SMAGORINSKY_4TH_ORDER,
+    return diffusion.DiffusionConfig(
+        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         zdiffu_t=False,
@@ -45,15 +45,15 @@ def exclaim_ape_diffusion_config(ndyn_substeps):
 
 def r04b09_diffusion_config(
     ndyn_substeps,  # imported `ndyn_substeps` fixture
-) -> diffus.DiffusionConfig:
+) -> diffusion.DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return diffus.DiffusionConfig(
-        diffusion_type=diffus.DiffusionType.SMAGORINSKY_4TH_ORDER,
+    return diffusion.DiffusionConfig(
+        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,
@@ -67,7 +67,7 @@ def r04b09_diffusion_config(
         velocity_boundary_diffusion_denom=150.0,
         max_nudging_coeff=0.075,
         n_substeps=ndyn_substeps,
-        shear_type=diffus.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
+        shear_type=diffusion.TurbulenceShearForcingType.VERTICAL_HORIZONTAL_OF_HORIZONTAL_VERTICAL_WIND,
     )
 
 

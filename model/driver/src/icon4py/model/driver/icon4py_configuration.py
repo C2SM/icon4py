@@ -14,7 +14,7 @@ import dataclasses
 import datetime
 import logging
 
-from icon4py.model.atmosphere.diffusion import diffusion as diffus
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.driver import initialization_utils as driver_init
@@ -49,7 +49,7 @@ class IconRunConfig:
 class IconConfig:
     run_config: IconRunConfig
     vertical_grid_config: v_grid.VerticalGridConfig
-    diffusion_config: diffus.DiffusionConfig
+    diffusion_config: diffusion.DiffusionConfig
     solve_nonhydro_config: solve_nh.NonHydrostaticConfig
 
 
@@ -66,8 +66,8 @@ def read_config(
         )
 
     def _mch_ch_r04b09_diffusion_config():
-        return diffus.DiffusionConfig(
-            diffusion_type=diffus.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             n_substeps=n_substeps_reduced,
             hdiff_vn=True,
@@ -93,8 +93,8 @@ def read_config(
         )
 
     def _jabw_diffusion_config(n_substeps: int):
-        return diffus.DiffusionConfig(
-            diffusion_type=diffus.DiffusionType.SMAGORINSKY_4TH_ORDER,
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
             hdiff_temp=False,

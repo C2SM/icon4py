@@ -13,10 +13,7 @@
 
 import pytest
 
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
-from icon4py.model.common.test_utils.helpers import (
-    dallclose,
-)
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.driver import initialization_utils as driver_init
 
 
@@ -55,42 +52,42 @@ def test_jabw_initial_condition(
     )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.rho.asnumpy(),
         data_provider.from_savepoint_jabw_final().rho().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.exner.asnumpy(),
         data_provider.from_savepoint_jabw_final().exner().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.theta_v.asnumpy(),
         data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.vn.asnumpy(),
         data_provider.from_savepoint_jabw_final().vn().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.pressure.asnumpy(),
         data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.temperature.asnumpy(),
         data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.pressure_sfc.asnumpy(),
         data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
         data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
         atol=1.0e-14,

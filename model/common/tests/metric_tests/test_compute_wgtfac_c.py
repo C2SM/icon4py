@@ -29,7 +29,7 @@ from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 @pytest.mark.datatest

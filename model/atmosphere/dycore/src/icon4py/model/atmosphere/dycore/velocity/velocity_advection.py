@@ -46,33 +46,27 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.state_utils.states import (
-    DiagnosticStateNonHydro,
-    InterpolationState,
-    MetricStateNonHydro,
-)
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalGridParams
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 class VelocityAdvection:
     def __init__(
         self,
-        grid: IconGrid,
-        metric_state: MetricStateNonHydro,
-        interpolation_state: InterpolationState,
-        vertical_params: VerticalGridParams,
-        edge_params: EdgeParams,
+        grid: icon_grid.IconGrid,
+        metric_state: solve_nh_states.MetricStateNonHydro,
+        interpolation_state: solve_nh_states.InterpolationState,
+        vertical_params: v_grid.VerticalGridParams,
+        edge_params: h_grid.EdgeParams,
         owner_mask: gtx.Field[[CellDim], bool],
     ):
         self._initialized = False
-        self.grid: IconGrid = grid
-        self.metric_state: MetricStateNonHydro = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
+        self.grid: icon_grid.IconGrid = grid
+        self.metric_state: solve_nh_states.MetricStateNonHydro = metric_state
+        self.interpolation_state: solve_nh_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
@@ -109,8 +103,8 @@ class VelocityAdvection:
     def run_predictor_step(
         self,
         vn_only: bool,
-        diagnostic_state: DiagnosticStateNonHydro,
-        prognostic_state: PrognosticState,
+        diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state: prognostics.PrognosticState,
         z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
         z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
         z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
@@ -121,39 +115,43 @@ class VelocityAdvection:
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         start_vertex_lb_plus1 = self.grid.get_start_index(
-            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+            VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
         end_vertex_local_minus1 = self.grid.get_end_index(
-            VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+            VertexDim, h_grid.HorizontalMarkerIndex.local(VertexDim) - 1
         )
 
         start_edge_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
         start_edge_lb_plus6 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
         start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+        end_edge_local = self.grid.get_end_index(
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+        )
 
         end_edge_local_minus1 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 1
         )
         end_edge_local_minus2 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
         )
 
         start_cell_lb_plus3 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
         )
         start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
         )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        end_cell_local = self.grid.get_end_index(
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+        )
         end_cell_local_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) - 1
         )
 
         if not vn_only:
@@ -426,8 +424,8 @@ class VelocityAdvection:
     def run_corrector_step(
         self,
         vn_only: bool,
-        diagnostic_state: DiagnosticStateNonHydro,
-        prognostic_state: PrognosticState,
+        diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state: prognostics.PrognosticState,
         z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
         z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
         dtime: float,
@@ -437,32 +435,36 @@ class VelocityAdvection:
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         start_vertex_lb_plus1 = self.grid.get_start_index(
-            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+            VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
         end_vertex_local_minus1 = self.grid.get_end_index(
-            VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+            VertexDim, h_grid.HorizontalMarkerIndex.local(VertexDim) - 1
         )
 
         start_edge_lb_plus6 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
         start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+        end_edge_local = self.grid.get_end_index(
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+        )
         end_edge_local_minus1 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 1
         )
 
         start_cell_lb_plus3 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
         )
         start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
         )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        end_cell_local = self.grid.get_end_index(
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+        )
         end_cell_lb_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) - 1
         )
 
         if not vn_only:

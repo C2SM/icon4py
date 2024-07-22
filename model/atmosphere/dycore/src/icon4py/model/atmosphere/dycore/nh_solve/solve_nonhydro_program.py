@@ -10,9 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from gt4py.next.common import Field, GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import int32, where
+import gt4py.next as gtx
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -88,17 +86,17 @@ from icon4py.model.common.settings import backend
 
 
 # TODO: abishekg7 move this to tests
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def init_test_fields(
-    z_rho_e: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
-    z_dwdz_dd: Field[[CellDim, KDim], float],
-    z_graddiv_vn: Field[[EdgeDim, KDim], float],
-    indices_edges_1: int32,
-    indices_edges_2: int32,
-    indices_cells_1: int32,
-    indices_cells_2: int32,
-    nlev: int32,
+    z_rho_e: gtx.Field[[EdgeDim, KDim], float],
+    z_theta_v_e: gtx.Field[[EdgeDim, KDim], float],
+    z_dwdz_dd: gtx.Field[[CellDim, KDim], float],
+    z_graddiv_vn: gtx.Field[[EdgeDim, KDim], float],
+    indices_edges_1: gtx.int32,
+    indices_edges_2: gtx.int32,
+    indices_cells_1: gtx.int32,
+    indices_cells_2: gtx.int32,
+    nlev: gtx.int32,
 ):
     _broadcast_zero_to_three_edge_kdim_fields_wp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
@@ -110,39 +108,39 @@ def init_test_fields(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _predictor_stencils_2_3(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    (z_exner_ex_pr, exner_pr) = where(
+    exner_exfac: gtx.Field[[CellDim, KDim], float],
+    exner: gtx.Field[[CellDim, KDim], float],
+    exner_ref_mc: gtx.Field[[CellDim, KDim], float],
+    exner_pr: gtx.Field[[CellDim, KDim], float],
+    z_exner_ex_pr: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
+    (z_exner_ex_pr, exner_pr) = gtx.where(
         (k_field >= 0) & (k_field < nlev),
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
+    z_exner_ex_pr = gtx.where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_2_3(
-    exner_exfac: Field[[CellDim, KDim], float],
-    exner: Field[[CellDim, KDim], float],
-    exner_ref_mc: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    exner_exfac: gtx.Field[[CellDim, KDim], float],
+    exner: gtx.Field[[CellDim, KDim], float],
+    exner_ref_mc: gtx.Field[[CellDim, KDim], float],
+    exner_pr: gtx.Field[[CellDim, KDim], float],
+    z_exner_ex_pr: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _predictor_stencils_2_3(
         exner_exfac,
@@ -160,19 +158,19 @@ def predictor_stencils_2_3(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _predictor_stencils_4_5_6(
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    z_exner_ic: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    wgtfacq_c_dsl: gtx.Field[[CellDim, KDim], float],
+    z_exner_ex_pr: gtx.Field[[CellDim, KDim], float],
+    z_exner_ic: gtx.Field[[CellDim, KDim], float],
+    wgtfac_c: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_dexner_dz_c_1: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
     # Perturbation Exner pressure on bottom half level
-    z_exner_ic = where(
+    z_exner_ic = gtx.where(
         k_field == nlev,
         _interpolate_to_surface(wgtfacq_c_dsl, z_exner_ex_pr),
         z_exner_ic,
@@ -180,14 +178,14 @@ def _predictor_stencils_4_5_6(
 
     # WS: moved full z_exner_ic calculation here to avoid OpenACC dependency on jk+1 below
     # possibly GZ will want to consider the cache ramifications of this change for CPU
-    z_exner_ic = where(
+    z_exner_ic = gtx.where(
         k_field < nlev,
         _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr),
         z_exner_ic,
     )
 
     # First vertical derivative of perturbation Exner pressure
-    z_dexner_dz_c_1 = where(
+    z_dexner_dz_c_1 = gtx.where(
         k_field < nlev,
         _compute_first_vertical_derivative(z_exner_ic, inv_ddqz_z_full),
         z_dexner_dz_c_1,
@@ -195,20 +193,20 @@ def _predictor_stencils_4_5_6(
     return z_exner_ic, z_dexner_dz_c_1
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_4_5_6(
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
-    z_exner_ex_pr: Field[[CellDim, KDim], float],
-    z_exner_ic: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_dexner_dz_c_1: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    wgtfacq_c_dsl: gtx.Field[[CellDim, KDim], float],
+    z_exner_ex_pr: gtx.Field[[CellDim, KDim], float],
+    z_exner_ic: gtx.Field[[CellDim, KDim], float],
+    wgtfac_c: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_dexner_dz_c_1: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _predictor_stencils_4_5_6(
         wgtfacq_c_dsl,
@@ -227,40 +225,40 @@ def predictor_stencils_4_5_6(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _predictor_stencils_7_8_9(
-    rho: Field[[CellDim, KDim], float],
-    z_rth_pr_1: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
+    rho: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr_1: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr_2: gtx.Field[[CellDim, KDim], float],
+    rho_ref_mc: gtx.Field[[CellDim, KDim], float],
+    theta_v: gtx.Field[[CellDim, KDim], float],
+    theta_ref_mc: gtx.Field[[CellDim, KDim], float],
+    rho_ic: gtx.Field[[CellDim, KDim], float],
+    wgtfac_c: gtx.Field[[CellDim, KDim], float],
+    vwind_expl_wgt: gtx.Field[[CellDim], float],
+    exner_pr: gtx.Field[[CellDim, KDim], float],
+    d_exner_dz_ref_ic: gtx.Field[[CellDim, KDim], float],
+    ddqz_z_half: gtx.Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: gtx.Field[[CellDim, KDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
 ]:
-    (z_rth_pr_1, z_rth_pr_2) = where(
+    (z_rth_pr_1, z_rth_pr_2) = gtx.where(
         k_field == 0,
         _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
-    (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
+    (rho_ic, z_rth_pr_1, z_rth_pr_2) = gtx.where(
         k_field >= 1,
         _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
             wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
@@ -268,7 +266,7 @@ def _predictor_stencils_7_8_9(
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
-    (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
+    (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = gtx.where(
         k_field >= 1,
         _compute_virtual_potential_temperatures_and_pressure_gradient(
             wgtfac_c,
@@ -285,29 +283,29 @@ def _predictor_stencils_7_8_9(
     return z_rth_pr_1, z_rth_pr_2, rho_ic, z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_7_8_9(
-    rho: Field[[CellDim, KDim], float],
-    rho_ref_mc: Field[[CellDim, KDim], float],
-    theta_v: Field[[CellDim, KDim], float],
-    theta_ref_mc: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    z_rth_pr_1: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    d_exner_dz_ref_ic: Field[[CellDim, KDim], float],
-    ddqz_z_half: Field[[CellDim, KDim], float],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    rho: gtx.Field[[CellDim, KDim], float],
+    rho_ref_mc: gtx.Field[[CellDim, KDim], float],
+    theta_v: gtx.Field[[CellDim, KDim], float],
+    theta_ref_mc: gtx.Field[[CellDim, KDim], float],
+    rho_ic: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr_1: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr_2: gtx.Field[[CellDim, KDim], float],
+    wgtfac_c: gtx.Field[[CellDim, KDim], float],
+    vwind_expl_wgt: gtx.Field[[CellDim], float],
+    exner_pr: gtx.Field[[CellDim, KDim], float],
+    d_exner_dz_ref_ic: gtx.Field[[CellDim, KDim], float],
+    ddqz_z_half: gtx.Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: gtx.Field[[CellDim, KDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _predictor_stencils_7_8_9(
         rho,
@@ -342,19 +340,19 @@ def predictor_stencils_7_8_9(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _predictor_stencils_11_lower_upper(
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
-    z_rth_pr: Field[[CellDim, KDim], float],
-    theta_ref_ic: Field[[CellDim, KDim], float],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
+    wgtfacq_c_dsl: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr: gtx.Field[[CellDim, KDim], float],
+    theta_ref_ic: gtx.Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: gtx.Field[[CellDim, KDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
+    z_theta_v_pr_ic = gtx.where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
 
-    (z_theta_v_pr_ic, theta_v_ic) = where(
+    (z_theta_v_pr_ic, theta_v_ic) = gtx.where(
         k_field == nlev,
         _set_theta_v_prime_ic_at_lower_boundary(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
         (z_theta_v_pr_ic, theta_v_ic),
@@ -362,19 +360,19 @@ def _predictor_stencils_11_lower_upper(
     return z_theta_v_pr_ic, theta_v_ic
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_11_lower_upper(
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
-    z_rth_pr: Field[[CellDim, KDim], float],
-    theta_ref_ic: Field[[CellDim, KDim], float],
-    z_theta_v_pr_ic: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    wgtfacq_c_dsl: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr: gtx.Field[[CellDim, KDim], float],
+    theta_ref_ic: gtx.Field[[CellDim, KDim], float],
+    z_theta_v_pr_ic: gtx.Field[[CellDim, KDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _predictor_stencils_11_lower_upper(
         wgtfacq_c_dsl,
@@ -392,31 +390,31 @@ def predictor_stencils_11_lower_upper(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_horizontal_advection_of_rho_and_theta(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
-    pos_on_tplane_e_1: Field[[ECDim], float],
-    pos_on_tplane_e_2: Field[[ECDim], float],
-    primal_normal_cell_1: Field[[ECDim], float],
-    dual_normal_cell_1: Field[[ECDim], float],
-    primal_normal_cell_2: Field[[ECDim], float],
-    dual_normal_cell_2: Field[[ECDim], float],
+    p_vn: gtx.Field[[EdgeDim, KDim], float],
+    p_vt: gtx.Field[[EdgeDim, KDim], float],
+    pos_on_tplane_e_1: gtx.Field[[ECDim], float],
+    pos_on_tplane_e_2: gtx.Field[[ECDim], float],
+    primal_normal_cell_1: gtx.Field[[ECDim], float],
+    dual_normal_cell_1: gtx.Field[[ECDim], float],
+    primal_normal_cell_2: gtx.Field[[ECDim], float],
+    dual_normal_cell_2: gtx.Field[[ECDim], float],
     p_dthalf: float,
-    rho_ref_me: Field[[EdgeDim, KDim], float],
-    theta_ref_me: Field[[EdgeDim, KDim], float],
-    z_grad_rth_1: Field[[CellDim, KDim], float],
-    z_grad_rth_2: Field[[CellDim, KDim], float],
-    z_grad_rth_3: Field[[CellDim, KDim], float],
-    z_grad_rth_4: Field[[CellDim, KDim], float],
-    z_rth_pr_1: Field[[CellDim, KDim], float],
-    z_rth_pr_2: Field[[CellDim, KDim], float],
-    z_rho_e: Field[[EdgeDim, KDim], float],
-    z_theta_v_e: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    rho_ref_me: gtx.Field[[EdgeDim, KDim], float],
+    theta_ref_me: gtx.Field[[EdgeDim, KDim], float],
+    z_grad_rth_1: gtx.Field[[CellDim, KDim], float],
+    z_grad_rth_2: gtx.Field[[CellDim, KDim], float],
+    z_grad_rth_3: gtx.Field[[CellDim, KDim], float],
+    z_grad_rth_4: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr_1: gtx.Field[[CellDim, KDim], float],
+    z_rth_pr_2: gtx.Field[[CellDim, KDim], float],
+    z_rho_e: gtx.Field[[EdgeDim, KDim], float],
+    z_theta_v_e: gtx.Field[[EdgeDim, KDim], float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_horizontal_advection_of_rho_and_theta(
         p_vn,
@@ -444,31 +442,31 @@ def compute_horizontal_advection_of_rho_and_theta(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _predictor_stencils_35_36(
-    vn: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nflatlev_startindex: int32,
+    vn: gtx.Field[[EdgeDim, KDim], float],
+    ddxn_z_full: gtx.Field[[EdgeDim, KDim], float],
+    ddxt_z_full: gtx.Field[[EdgeDim, KDim], float],
+    vt: gtx.Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
+    wgtfac_e: gtx.Field[[EdgeDim, KDim], float],
+    vn_ie: gtx.Field[[EdgeDim, KDim], float],
+    z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nflatlev_startindex: gtx.int32,
 ) -> tuple[
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    gtx.Field[[EdgeDim, KDim], float],
+    gtx.Field[[EdgeDim, KDim], float],
+    gtx.Field[[EdgeDim, KDim], float],
+    gtx.Field[[EdgeDim, KDim], float],
 ]:
-    z_w_concorr_me = where(
+    z_w_concorr_me = gtx.where(
         k_field >= nflatlev_startindex,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
-    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
+    (vn_ie, z_vt_ie, z_kin_hor_e) = gtx.where(
         k_field >= 1,
         _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
@@ -476,23 +474,23 @@ def _predictor_stencils_35_36(
     return z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_35_36(
-    vn: Field[[EdgeDim, KDim], float],
-    ddxn_z_full: Field[[EdgeDim, KDim], float],
-    ddxt_z_full: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_e: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nflatlev_startindex: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    vn: gtx.Field[[EdgeDim, KDim], float],
+    ddxn_z_full: gtx.Field[[EdgeDim, KDim], float],
+    ddxt_z_full: gtx.Field[[EdgeDim, KDim], float],
+    vt: gtx.Field[[EdgeDim, KDim], float],
+    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
+    wgtfac_e: gtx.Field[[EdgeDim, KDim], float],
+    vn_ie: gtx.Field[[EdgeDim, KDim], float],
+    z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nflatlev_startindex: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _predictor_stencils_35_36(
         vn,
@@ -514,18 +512,18 @@ def predictor_stencils_35_36(
     )
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def predictor_stencils_37_38(
-    vn: Field[[EdgeDim, KDim], float],
-    vt: Field[[EdgeDim, KDim], float],
-    vn_ie: Field[[EdgeDim, KDim], float],
-    z_vt_ie: Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: Field[[EdgeDim, KDim], float],
-    wgtfacq_e_dsl: Field[[EdgeDim, KDim], float],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    vn: gtx.Field[[EdgeDim, KDim], float],
+    vt: gtx.Field[[EdgeDim, KDim], float],
+    vn_ie: gtx.Field[[EdgeDim, KDim], float],
+    z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
+    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
+    wgtfacq_e_dsl: gtx.Field[[EdgeDim, KDim], float],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _compute_horizontal_kinetic_energy(
         vn,
@@ -547,24 +545,24 @@ def predictor_stencils_37_38(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _stencils_39_40(
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nflatlev_startindex_plus1: int32,
-    nlev: int32,
-) -> Field[[CellDim, KDim], float]:
-    w_concorr_c = where(
+    e_bln_c_s: gtx.Field[[CEDim], float],
+    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
+    wgtfac_c: gtx.Field[[CellDim, KDim], float],
+    wgtfacq_c_dsl: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nflatlev_startindex_plus1: gtx.int32,
+    nlev: gtx.int32,
+) -> gtx.Field[[CellDim, KDim], float]:
+    w_concorr_c = gtx.where(
         k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
 
-    w_concorr_c = where(
+    w_concorr_c = gtx.where(
         k_field == nlev,
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl
@@ -575,20 +573,20 @@ def _stencils_39_40(
     return w_concorr_c
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
-    e_bln_c_s: Field[[CEDim], float],
-    z_w_concorr_me: Field[[EdgeDim, KDim], float],
-    wgtfac_c: Field[[CellDim, KDim], float],
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
-    nflatlev_startindex_plus1: int32,
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    e_bln_c_s: gtx.Field[[CEDim], float],
+    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
+    wgtfac_c: gtx.Field[[CellDim, KDim], float],
+    wgtfacq_c_dsl: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
+    nflatlev_startindex_plus1: gtx.int32,
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _stencils_39_40(
         e_bln_c_s,
@@ -607,42 +605,42 @@ def stencils_39_40(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _stencils_42_44_45_45b(
-    z_w_expl: Field[[CellDim, KDim], float],
-    w_nnow: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    z_w_expl: gtx.Field[[CellDim, KDim], float],
+    w_nnow: gtx.Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: gtx.Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl2: gtx.Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: gtx.Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: gtx.Field[[CellDim, KDim], float],
+    rho_ic: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    vwind_expl_wgt: gtx.Field[[CellDim], float],
+    z_beta: gtx.Field[[CellDim, KDim], float],
+    exner_nnow: gtx.Field[[CellDim, KDim], float],
+    rho_nnow: gtx.Field[[CellDim, KDim], float],
+    theta_v_nnow: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_alpha: gtx.Field[[CellDim, KDim], float],
+    vwind_impl_wgt: gtx.Field[[CellDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    z_q: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
-    nlev: int32,
+    nlev: gtx.int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
 ]:
-    (z_w_expl, z_contr_w_fl_l) = where(
+    (z_w_expl, z_contr_w_fl_l) = gtx.where(
         (k_field >= 1) & (k_field < nlev),
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
@@ -660,7 +658,7 @@ def _stencils_42_44_45_45b(
         (z_w_expl, z_contr_w_fl_l),
     )
 
-    (z_beta, z_alpha) = where(
+    (z_beta, z_alpha) = gtx.where(
         (k_field >= 0) & (k_field < nlev),
         _compute_solver_coefficients_matrix(
             exner_nnow,
@@ -676,44 +674,44 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_alpha = gtx.where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
-    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = gtx.where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_42_44_45_45b(
-    z_w_expl: Field[[CellDim, KDim], float],
-    w_nnow: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl2: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    z_w_expl: gtx.Field[[CellDim, KDim], float],
+    w_nnow: gtx.Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: gtx.Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl2: gtx.Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: gtx.Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: gtx.Field[[CellDim, KDim], float],
+    rho_ic: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    vwind_expl_wgt: gtx.Field[[CellDim], float],
+    z_beta: gtx.Field[[CellDim, KDim], float],
+    exner_nnow: gtx.Field[[CellDim, KDim], float],
+    rho_nnow: gtx.Field[[CellDim, KDim], float],
+    theta_v_nnow: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_alpha: gtx.Field[[CellDim, KDim], float],
+    vwind_impl_wgt: gtx.Field[[CellDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    z_q: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
     wgt_nnow_vel: float,
     wgt_nnew_vel: float,
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _stencils_42_44_45_45b(
         z_w_expl,
@@ -750,39 +748,39 @@ def stencils_42_44_45_45b(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _stencils_43_44_45_45b(
-    z_w_expl: Field[[CellDim, KDim], float],
-    w_nnow: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    z_w_expl: gtx.Field[[CellDim, KDim], float],
+    w_nnow: gtx.Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: gtx.Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: gtx.Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: gtx.Field[[CellDim, KDim], float],
+    rho_ic: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    vwind_expl_wgt: gtx.Field[[CellDim], float],
+    z_beta: gtx.Field[[CellDim, KDim], float],
+    exner_nnow: gtx.Field[[CellDim, KDim], float],
+    rho_nnow: gtx.Field[[CellDim, KDim], float],
+    theta_v_nnow: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_alpha: gtx.Field[[CellDim, KDim], float],
+    vwind_impl_wgt: gtx.Field[[CellDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    z_q: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
-    nlev: int32,
+    nlev: gtx.int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
 ]:
-    (z_w_expl, z_contr_w_fl_l) = where(
+    (z_w_expl, z_contr_w_fl_l) = gtx.where(
         (k_field >= 1) & (k_field < nlev),
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
@@ -796,7 +794,7 @@ def _stencils_43_44_45_45b(
         ),
         (z_w_expl, z_contr_w_fl_l),
     )
-    (z_beta, z_alpha) = where(
+    (z_beta, z_alpha) = gtx.where(
         (k_field >= 0) & (k_field < nlev),
         _compute_solver_coefficients_matrix(
             exner_nnow,
@@ -812,41 +810,41 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
-    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_alpha = gtx.where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_q = gtx.where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_43_44_45_45b(
-    z_w_expl: Field[[CellDim, KDim], float],
-    w_nnow: Field[[CellDim, KDim], float],
-    ddt_w_adv_ntl1: Field[[CellDim, KDim], float],
-    z_th_ddz_exner_c: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    rho_ic: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    vwind_expl_wgt: Field[[CellDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    exner_nnow: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    theta_v_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_alpha: Field[[CellDim, KDim], float],
-    vwind_impl_wgt: Field[[CellDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    z_q: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    z_w_expl: gtx.Field[[CellDim, KDim], float],
+    w_nnow: gtx.Field[[CellDim, KDim], float],
+    ddt_w_adv_ntl1: gtx.Field[[CellDim, KDim], float],
+    z_th_ddz_exner_c: gtx.Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: gtx.Field[[CellDim, KDim], float],
+    rho_ic: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    vwind_expl_wgt: gtx.Field[[CellDim], float],
+    z_beta: gtx.Field[[CellDim, KDim], float],
+    exner_nnow: gtx.Field[[CellDim, KDim], float],
+    rho_nnow: gtx.Field[[CellDim, KDim], float],
+    theta_v_nnow: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_alpha: gtx.Field[[CellDim, KDim], float],
+    vwind_impl_wgt: gtx.Field[[CellDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    z_q: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     rd: float,
     cvd: float,
     dtime: float,
     cpd: float,
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _stencils_43_44_45_45b(
         z_w_expl,
@@ -880,37 +878,37 @@ def stencils_43_44_45_45b(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _stencils_47_48_49(
-    w_nnew: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_rho_expl: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_flxdiv_mass: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_flxdiv_theta: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    w_nnew: gtx.Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    z_rho_expl: gtx.Field[[CellDim, KDim], float],
+    z_exner_expl: gtx.Field[[CellDim, KDim], float],
+    rho_nnow: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_flxdiv_mass: gtx.Field[[CellDim, KDim], float],
+    exner_pr: gtx.Field[[CellDim, KDim], float],
+    z_beta: gtx.Field[[CellDim, KDim], float],
+    z_flxdiv_theta: gtx.Field[[CellDim, KDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    ddt_exner_phy: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     dtime: float,
-    nlev: int32,
+    nlev: gtx.int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
 ]:
-    (w_nnew, z_contr_w_fl_l) = where(
+    (w_nnew, z_contr_w_fl_l) = gtx.where(
         k_field == nlev,
         _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c),
         (w_nnew, z_contr_w_fl_l),
     )
     # 48 and 49 are identical except for bounds
-    (z_rho_expl, z_exner_expl) = where(
+    (z_rho_expl, z_exner_expl) = gtx.where(
         (k_field >= 0) & (k_field < nlev),
         _compute_explicit_part_for_rho_and_exner(
             rho_nnow,
@@ -929,28 +927,28 @@ def _stencils_47_48_49(
     return w_nnew, z_contr_w_fl_l, z_rho_expl, z_exner_expl
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_47_48_49(
-    w_nnew: Field[[CellDim, KDim], float],
-    z_contr_w_fl_l: Field[[CellDim, KDim], float],
-    w_concorr_c: Field[[CellDim, KDim], float],
-    z_rho_expl: Field[[CellDim, KDim], float],
-    z_exner_expl: Field[[CellDim, KDim], float],
-    rho_nnow: Field[[CellDim, KDim], float],
-    inv_ddqz_z_full: Field[[CellDim, KDim], float],
-    z_flxdiv_mass: Field[[CellDim, KDim], float],
-    exner_pr: Field[[CellDim, KDim], float],
-    z_beta: Field[[CellDim, KDim], float],
-    z_flxdiv_theta: Field[[CellDim, KDim], float],
-    theta_v_ic: Field[[CellDim, KDim], float],
-    ddt_exner_phy: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    w_nnew: gtx.Field[[CellDim, KDim], float],
+    z_contr_w_fl_l: gtx.Field[[CellDim, KDim], float],
+    w_concorr_c: gtx.Field[[CellDim, KDim], float],
+    z_rho_expl: gtx.Field[[CellDim, KDim], float],
+    z_exner_expl: gtx.Field[[CellDim, KDim], float],
+    rho_nnow: gtx.Field[[CellDim, KDim], float],
+    inv_ddqz_z_full: gtx.Field[[CellDim, KDim], float],
+    z_flxdiv_mass: gtx.Field[[CellDim, KDim], float],
+    exner_pr: gtx.Field[[CellDim, KDim], float],
+    z_beta: gtx.Field[[CellDim, KDim], float],
+    z_flxdiv_theta: gtx.Field[[CellDim, KDim], float],
+    theta_v_ic: gtx.Field[[CellDim, KDim], float],
+    ddt_exner_phy: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     dtime: float,
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_end: int32,
-    vertical_start: int32,
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_end: gtx.int32,
+    vertical_start: gtx.int32,
 ):
     _stencils_47_48_49(
         w_nnew,
@@ -977,33 +975,33 @@ def stencils_47_48_49(
     )
 
 
-@field_operator
+@gtx.field_operator
 def _stencils_61_62(
-    rho_now: Field[[CellDim, KDim], float],
-    grf_tend_rho: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    grf_tend_thv: Field[[CellDim, KDim], float],
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    rho_new: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    rho_now: gtx.Field[[CellDim, KDim], float],
+    grf_tend_rho: gtx.Field[[CellDim, KDim], float],
+    theta_v_now: gtx.Field[[CellDim, KDim], float],
+    grf_tend_thv: gtx.Field[[CellDim, KDim], float],
+    w_now: gtx.Field[[CellDim, KDim], float],
+    grf_tend_w: gtx.Field[[CellDim, KDim], float],
+    rho_new: gtx.Field[[CellDim, KDim], float],
+    exner_new: gtx.Field[[CellDim, KDim], float],
+    w_new: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     dtime: float,
-    nlev: int32,
+    nlev: gtx.int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
+    gtx.Field[[CellDim, KDim], float],
 ]:
-    (rho_new, exner_new, w_new) = where(
+    (rho_new, exner_new, w_new) = gtx.where(
         (k_field >= 0) & (k_field < nlev),
         _update_density_exner_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),
     )
-    w_new = where(
+    w_new = gtx.where(
         k_field == nlev,
         _update_wind(w_now, grf_tend_w, dtime),
         w_new,
@@ -1011,24 +1009,24 @@ def _stencils_61_62(
     return rho_new, exner_new, w_new
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_61_62(
-    rho_now: Field[[CellDim, KDim], float],
-    grf_tend_rho: Field[[CellDim, KDim], float],
-    theta_v_now: Field[[CellDim, KDim], float],
-    grf_tend_thv: Field[[CellDim, KDim], float],
-    w_now: Field[[CellDim, KDim], float],
-    grf_tend_w: Field[[CellDim, KDim], float],
-    rho_new: Field[[CellDim, KDim], float],
-    exner_new: Field[[CellDim, KDim], float],
-    w_new: Field[[CellDim, KDim], float],
-    k_field: Field[[KDim], int32],
+    rho_now: gtx.Field[[CellDim, KDim], float],
+    grf_tend_rho: gtx.Field[[CellDim, KDim], float],
+    theta_v_now: gtx.Field[[CellDim, KDim], float],
+    grf_tend_thv: gtx.Field[[CellDim, KDim], float],
+    w_now: gtx.Field[[CellDim, KDim], float],
+    grf_tend_w: gtx.Field[[CellDim, KDim], float],
+    rho_new: gtx.Field[[CellDim, KDim], float],
+    exner_new: gtx.Field[[CellDim, KDim], float],
+    w_new: gtx.Field[[CellDim, KDim], float],
+    k_field: gtx.Field[[KDim], gtx.int32],
     dtime: float,
-    nlev: int32,
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    nlev: gtx.int32,
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _stencils_61_62(
         rho_now,

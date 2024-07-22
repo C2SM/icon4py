@@ -20,12 +20,12 @@ import click
 from devtools import Timer
 
 from icon4py.model.atmosphere.diffusion import (
-    diffusion as diffus,
-    diffusion_states as diffus_states,
+    diffusion,
+    diffusion_states,
 )
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common.decomposition import definitions as decomp_def
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
@@ -44,12 +44,12 @@ class TimeLoop:
     def __init__(
         self,
         run_config: driver_config.IconRunConfig,
-        diffusion: diffus.Diffusion,
-        solve_nonhydro: solve_nh.SolveNonhydro,
+        diffusion_granule: diffusion.Diffusion,
+        solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
         self.run_config: driver_config.IconRunConfig = run_config
-        self.diffusion = diffusion
-        self.solve_nonhydro = solve_nonhydro
+        self.diffusion = diffusion_granule
+        self.solve_nonhydro = solve_nonhydro_granule
 
         self._n_time_steps: int = int(
             (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
@@ -131,7 +131,7 @@ class TimeLoop:
 
     def time_integration(
         self,
-        diffusion_diagnostic_state: diffus_states.DiffusionDiagnosticState,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
         # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
         prognostic_state_list: list[prognostics.PrognosticState],
@@ -203,7 +203,7 @@ class TimeLoop:
 
     def _integrate_one_time_step(
         self,
-        diffusion_diagnostic_state: diffus_states.DiffusionDiagnosticState,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
         prognostic_state_list: list[prognostics.PrognosticState],
         prep_adv: solve_nh_states.PrepAdvection,
@@ -276,7 +276,7 @@ class TimeLoop:
 
 def initialize(
     file_path: pathlib.Path,
-    props: decomp_def.ProcessProperties,
+    props: decomposition.ProcessProperties,
     serialization_type: driver_init.SerializationType,
     experiment_type: driver_init.ExperimentType,
     grid_id: uuid.UUID,
@@ -353,10 +353,10 @@ def initialize(
     )
 
     log.info("initializing diffusion")
-    diffusion_params = diffus.DiffusionParams(config.diffusion_config)
-    exchange = decomp_def.create_exchange(props, decomp_info)
-    diffusion = diffus.Diffusion(exchange)
-    diffusion.init(
+    diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
+    exchange = decomposition.create_exchange(props, decomp_info)
+    diffusion_granule = diffusion.Diffusion(exchange)
+    diffusion_granule.init(
         icon_grid,
         config.diffusion_config,
         diffusion_params,
@@ -369,8 +369,8 @@ def initialize(
 
     nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro = solve_nh.SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule.init(
         grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
@@ -402,8 +402,8 @@ def initialize(
 
     timeloop = TimeLoop(
         run_config=config.run_config,
-        diffusion=diffusion,
-        solve_nonhydro=solve_nonhydro,
+        diffusion_granule=diffusion_granule,
+        solve_nonhydro_granule=solve_nonhydro_granule,
     )
     return (
         timeloop,
@@ -456,7 +456,7 @@ def main(
 
     2. run time loop
     """
-    parallel_props = decomp_def.get_processor_properties(decomp_def.get_runtype(with_mpi=mpi))
+    parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
     driver_init.configure_logging(run_path, experiment_type, parallel_props)
     (

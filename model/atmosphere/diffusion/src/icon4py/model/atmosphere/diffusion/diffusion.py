@@ -28,7 +28,7 @@ from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
-from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.common.settings import xp

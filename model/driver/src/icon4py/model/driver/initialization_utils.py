@@ -25,7 +25,7 @@ from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants as phy_const
 from icon4py.model.common.decomposition import (
-    definitions as decomp_def,
+    definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
 from icon4py.model.common.dimension import (
@@ -43,9 +43,12 @@ from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
-from icon4py.model.common.utillity_functions import gt4py_field_allocation as field_alloc
+from icon4py.model.common.test_utils import (
+    datatest_utils as dt_utils,
+    helpers,
+    serialbox_utils as sb,
+)
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver import (
     jablonowski_willamson_testcase as jw_func,
     serialbox_helpers as driver_sb,
@@ -643,12 +646,12 @@ def _grid_savepoint(path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSa
 
 def read_decomp_info(
     path: pathlib.Path,
-    procs_props: decomp_def.ProcessProperties,
+    procs_props: decomposition.ProcessProperties,
     ser_type=SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
-) -> decomp_def.DecompositionInfo:
+) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
         return _grid_savepoint(
             path, procs_props.rank, grid_id, grid_root, grid_level
@@ -703,10 +706,10 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
@@ -767,7 +770,7 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str, experiment_name: str, processor_procs: decomp_def.ProcessProperties = None
+    run_path: str, experiment_name: str, processor_procs: decomposition.ProcessProperties = None
 ) -> None:
     """
     Configure logging.

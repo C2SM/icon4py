@@ -11,16 +11,15 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import Field, field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
+import gt4py.next as gtx
 
 from icon4py.model.common.dimension import KDim, Koff
 from icon4py.model.common.settings import backend
 
 
-@field_operator
+@gtx.field_operator
 def _en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
+    vect_a: gtx.Field[[KDim], float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -29,7 +28,7 @@ def _en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-) -> Field[[KDim], float]:
+) -> gtx.Field[[KDim], float]:
     dz21 = hdiff_smag_z2 - hdiff_smag_z
     alin = (hdiff_smag_fac2 - hdiff_smag_fac) / dz21
     df32 = hdiff_smag_fac3 - hdiff_smag_fac2
@@ -40,17 +39,17 @@ def _en_smag_fac_for_zero_nshift(
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
     zf = 0.5 * (vect_a + vect_a(Koff[1]))
-    zero = broadcast(0.0, (KDim,))
+    zero = gtx.broadcast(0.0, (KDim,))
 
-    dzlin = minimum(broadcast(dz21, (KDim,)), maximum(zero, zf - hdiff_smag_z))
-    dzqdr = minimum(broadcast(dz42, (KDim,)), maximum(zero, zf - hdiff_smag_z2))
+    dzlin = gtx.minimum(gtx.broadcast(dz21, (KDim,)), gtx.maximum(zero, zf - hdiff_smag_z))
+    dzqdr = gtx.minimum(gtx.broadcast(dz42, (KDim,)), gtx.maximum(zero, zf - hdiff_smag_z2))
     enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
     return enh_smag_fac
 
 
-@program(backend=backend)
+@gtx.program(backend=backend)
 def en_smag_fac_for_zero_nshift(
-    vect_a: Field[[KDim], float],
+    vect_a: gtx.Field[[KDim], float],
     hdiff_smag_fac: float,
     hdiff_smag_fac2: float,
     hdiff_smag_fac3: float,
@@ -59,7 +58,7 @@ def en_smag_fac_for_zero_nshift(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    enh_smag_fac: Field[[KDim], float],
+    enh_smag_fac: gtx.Field[[KDim], float],
 ):
     _en_smag_fac_for_zero_nshift(
         vect_a,
