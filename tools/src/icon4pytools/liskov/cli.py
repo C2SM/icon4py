@@ -12,6 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pathlib
+from typing import Optional
 
 import click
 
@@ -25,6 +26,10 @@ from icon4pytools.liskov.pipeline.collection import (
 
 
 logger = setup_logger(__name__)
+
+
+def split_comma(ctx, param, value) -> Optional[tuple[str]]:
+    return tuple(v.strip() for v in value.split(",")) if value else None
 
 
 @click.group(invoke_without_command=True)
@@ -57,6 +62,11 @@ def main(ctx: click.Context) -> None:
     help="Adds fused or unfused stencils.",
 )
 @click.option(
+    "--optional-modules-to-enable",
+    callback=split_comma,
+    help="Specify a list of comma-separated optional DSL modules to enable.",
+)
+@click.option(
     "--verification/--substitution",
     "-v/-s",
     default=False,
@@ -77,10 +87,13 @@ def integrate(
     verification: bool,
     profile: bool,
     metadatagen: bool,
+    optional_modules_to_enable: Optional[tuple[str]],
 ) -> None:
     mode = "integration"
     iface = parse_fortran_file(input_path, output_path, mode)
-    iface_gt4py = process_stencils(iface, fused)
+    iface_gt4py = process_stencils(
+        iface, fused, optional_modules_to_enable=optional_modules_to_enable
+    )
     run_code_generation(
         input_path,
         output_path,

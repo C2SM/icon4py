@@ -13,9 +13,15 @@
 
 
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
+    lowest_layer_thickness,
+    maximal_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    top_height_limit_for_maximal_layer_thickness,
+    flat_height,
+    htop_moist_proc,
     damping_height,
     data_provider,
-    datapath,
     download_ser_data,
     experiment,
     grid_savepoint,

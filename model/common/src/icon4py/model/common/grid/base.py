@@ -10,42 +10,47 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-
+import dataclasses
+import functools
+import uuid
 import warnings
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from functools import cached_property
 from typing import Callable, Dict
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next.common import Dimension
-from gt4py.next.iterator.embedded import NeighborTableOffsetProvider
 
+import icon4py.model.common.utils as common_utils
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.utils import neighbortable_offset_provider_for_1d_sparse_fields
-from icon4py.model.common.grid.vertical import VerticalGridSize
-from icon4py.model.common.utils import builder
+from icon4py.model.common.grid import utils as grid_utils
+from icon4py.model.common.settings import xp
 
 
 class MissingConnectivity(ValueError):
     pass
 
 
-@dataclass(
-    frozen=True,
-)
+@dataclasses.dataclass(frozen=True)
+class HorizontalGridSize:
+    num_vertices: int
+    num_edges: int
+    num_cells: int
+
+
+@dataclasses.dataclass(frozen=True, kw_only=True)
 class GridConfig:
     horizontal_config: HorizontalGridSize
-    vertical_config: VerticalGridSize
+    # TODO (Magdalena): Decouple the vertical from horizontal grid.
+    vertical_size: int
     limited_area: bool = True
     n_shift_total: int = 0
+    length_rescale_factor: float = 1.0
     lvertnest: bool = False
     on_gpu: bool = False
 
     @property
     def num_levels(self):
-        return self.vertical_config.num_lev
+        return self.vertical_size
 
     @property
     def num_vertices(self):
@@ -63,9 +68,19 @@ class GridConfig:
 class BaseGrid(ABC):
     def __init__(self):
         self.config: GridConfig = None
-        self.connectivities: Dict[Dimension, np.ndarray] = {}
-        self.size: Dict[Dimension, int] = {}
-        self.offset_provider_mapping: Dict[str, tuple[Callable, Dimension, ...]] = {}
+        self.connectivities: Dict[gtx.Dimension, np.ndarray] = {}
+        self.size: Dict[gtx.Dimension, int] = {}
+        self.offset_provider_mapping: Dict[str, tuple[Callable, gtx.Dimension, ...]] = {}
+
+    @property
+    @abstractmethod
+    def id(self) -> uuid.UUID:
+        """Unique identifier of the horizontal grid.
+
+        ICON grid files contain a UUID that uniquely identifies the horizontal grid described in the file (global attribute `uuidOfHGrid`).
+        UUID from icon grid files are UUID v1.
+        """
+        pass
 
     @property
     @abstractmethod
@@ -88,10 +103,10 @@ class BaseGrid(ABC):
         pass
 
     @abstractmethod
-    def _has_skip_values(self, dimension: Dimension) -> bool:
+    def _has_skip_values(self, dimension: gtx.Dimension) -> bool:
         pass
 
-    @cached_property
+    @functools.cached_property
     def offset_providers(self):
         offset_providers = {}
         for key, value in self.offset_provider_mapping.items():
@@ -103,12 +118,12 @@ class BaseGrid(ABC):
 
         return offset_providers
 
-    @builder
-    def with_connectivities(self, connectivity: Dict[Dimension, np.ndarray]):
-        self.connectivities.update({d: k.astype(int) for d, k in connectivity.items()})
+    @common_utils.builder
+    def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
+        self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
-    @builder
+    @common_utils.builder
     def with_config(self, config: GridConfig):
         self.config = config
         self._update_size()
@@ -122,13 +137,12 @@ class BaseGrid(ABC):
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
-
-        if self.config.on_gpu:
-            import cupy as xp
-        else:
-            xp = np
-
-        return NeighborTableOffsetProvider(
+        assert (
+            self.connectivities[dim].dtype == gtx.int32
+        ), 'Neighbor table\'s "{}" data type must be int32. Instead it\'s "{}"'.format(
+            dim, self.connectivities[dim].dtype
+        )
+        return gtx.NeighborTableOffsetProvider(
             xp.asarray(self.connectivities[dim]),
             from_dim,
             to_dim,
@@ -139,7 +153,7 @@ class BaseGrid(ABC):
     def _get_offset_provider_for_sparse_fields(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
             raise MissingConnectivity()
-        return neighbortable_offset_provider_for_1d_sparse_fields(
+        return grid_utils.neighbortable_offset_provider_for_1d_sparse_fields(
             self.connectivities[dim].shape,
             from_dim,
             to_dim,

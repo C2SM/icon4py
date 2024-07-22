@@ -11,13 +11,12 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import dataclasses
+import enum
 import logging
-from enum import Enum
 from typing import Optional
-from uuid import UUID
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next.common import Dimension, DimensionKind
 
 
 try:
@@ -32,6 +31,7 @@ except ImportError:
 
 
 from icon4py.model.common.dimension import (
+    C2E2C2EDim,
     C2E2CDim,
     C2E2CODim,
     C2EDim,
@@ -50,13 +50,16 @@ from icon4py.model.common.dimension import (
     V2E2VDim,
     V2EDim,
     VertexDim,
+    global_dimensions,
 )
-from icon4py.model.common.grid.base import GridConfig, VerticalGridSize
-from icon4py.model.common.grid.horizontal import HorizontalGridSize
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid import (
+    base as grid_def,
+    icon as icon_grid,
+    vertical as v_grid,
+)
 
 
-class GridFileName(str, Enum):
+class GridFileName(str, enum.Enum):
     pass
 
 
@@ -81,6 +84,8 @@ class GridFile:
     class PropertyName(GridFileName):
         GRID_ID = "uuidOfHGrid"
         PARENT_GRID_ID = "uuidOfParHGrid"
+        LEVEL = "grid_level"
+        ROOT = "grid_root"
 
     class OffsetName(GridFileName):
         """Names for connectivities used in the grid file."""
@@ -183,7 +188,7 @@ class GridFile:
     def dimension(self, name: GridFileName) -> int:
         return self._dataset.dimensions[name].size
 
-    def int_field(self, name: GridFileName, transpose=True, dtype=np.int32) -> np.ndarray:
+    def int_field(self, name: GridFileName, transpose=True, dtype=gtx.int32) -> np.ndarray:
         try:
             nc_variable = self._dataset.variables[name]
 
@@ -206,7 +211,7 @@ class IndexTransformation:
         self,
         array: np.ndarray,
     ):
-        return np.zeros(array.shape, dtype=np.int32)
+        return np.zeros(array.shape, dtype=gtx.int32)
 
 
 class ToGt4PyTransformation(IndexTransformation):
@@ -217,7 +222,7 @@ class ToGt4PyTransformation(IndexTransformation):
         Fortran indices are 1-based, hence the offset is -1 for 0-based ness of python except for
         INVALID values which are marked with -1 in the grid file and are kept such.
         """
-        return np.where(array == GridFile.INVALID_INDEX, 0, -1)
+        return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
 
 class GridManager:
@@ -232,17 +237,17 @@ class GridManager:
         self,
         transformation: IndexTransformation,
         grid_file: str,
-        config: VerticalGridSize,
+        config: v_grid.VerticalGridConfig,
     ):
         self._log = logging.getLogger(__name__)
         self._transformation = transformation
         self._config = config
-        self._grid: Optional[IconGrid] = None
+        self._grid: Optional[icon_grid.IconGrid] = None
         self._file_name = grid_file
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
         dataset = self._read_gridfile(self._file_name)
-        _, grid = self._constuct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
+        grid = self._construct_grid(dataset, on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> Dataset:
@@ -258,64 +263,58 @@ class GridManager:
         _CHILD_DOM = 0
         reader = GridFile(dataset)
 
+        control_dims = [
+            GridFile.GridRefinementName.CONTROL_CELLS,
+            GridFile.GridRefinementName.CONTROL_EDGES,
+            GridFile.GridRefinementName.CONTROL_VERTICES,
+        ]
         refin_ctrl = {
-            CellDim: reader.int_field(GridFile.GridRefinementName.CONTROL_CELLS),
-            EdgeDim: reader.int_field(GridFile.GridRefinementName.CONTROL_EDGES),
-            VertexDim: reader.int_field(GridFile.GridRefinementName.CONTROL_VERTICES),
+            dim: reader.int_field(control_dims[dim_i])
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
+
+        grf_dims = [
+            GridFile.DimensionName.CELL_GRF,
+            GridFile.DimensionName.EDGE_GRF,
+            GridFile.DimensionName.VERTEX_GRF,
+        ]
         refin_ctrl_max = {
-            CellDim: reader.dimension(GridFile.DimensionName.CELL_GRF),
-            EdgeDim: reader.dimension(GridFile.DimensionName.EDGE_GRF),
-            VertexDim: reader.dimension(GridFile.DimensionName.VERTEX_GRF),
+            dim: reader.dimension(grf_dims[dim_i])
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
+
+        start_index_dims = [
+            GridFile.GridRefinementName.START_INDEX_CELLS,
+            GridFile.GridRefinementName.START_INDEX_EDGES,
+            GridFile.GridRefinementName.START_INDEX_VERTICES,
+        ]
         start_indices = {
-            CellDim: self._get_index_field(
-                reader, GridFile.GridRefinementName.START_INDEX_CELLS, transpose=False
-            )[_CHILD_DOM],
-            EdgeDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.START_INDEX_EDGES,
-                transpose=False,
-                dtype=np.int64,
-            )[_CHILD_DOM],
-            VertexDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.START_INDEX_VERTICES,
-                transpose=False,
-                dtype=np.int64,
-            )[_CHILD_DOM],
+            dim: self._get_index_field(
+                reader, start_index_dims[dim_i], transpose=False, dtype=gtx.int32
+            )[_CHILD_DOM]
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
+
+        end_index_dims = [
+            GridFile.GridRefinementName.END_INDEX_CELLS,
+            GridFile.GridRefinementName.END_INDEX_EDGES,
+            GridFile.GridRefinementName.END_INDEX_VERTICES,
+        ]
         end_indices = {
-            CellDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.END_INDEX_CELLS,
-                transpose=False,
-                apply_offset=False,
-                dtype=np.int64,
-            )[_CHILD_DOM],
-            EdgeDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.END_INDEX_EDGES,
-                transpose=False,
-                apply_offset=False,
-                dtype=np.int64,
-            )[_CHILD_DOM],
-            VertexDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.END_INDEX_VERTICES,
-                transpose=False,
-                apply_offset=False,
-                dtype=np.int64,
-            )[_CHILD_DOM],
+            dim: self._get_index_field(
+                reader, end_index_dims[dim_i], transpose=False, apply_offset=False, dtype=gtx.int32
+            )[_CHILD_DOM]
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
 
-    def get_grid(self):
+    @property
+    def grid(self):
         return self._grid
 
-    def _get_index(self, dim: Dimension, start_marker: int, index_dict):
-        if dim.kind != DimensionKind.HORIZONTAL:
+    def _get_index(self, dim: gtx.Dimension, start_marker: int, index_dict):
+        if dim.kind != gtx.DimensionKind.HORIZONTAL:
             msg = f"getting start index in horizontal domain with non - horizontal dimension {dim}"
             self._log.warning(msg)
             raise IconGridError(msg)
@@ -326,13 +325,12 @@ class GridManager:
             self._log.error(msg)
             raise IconGridError(msg) from err
 
-    def _constuct_grid(
+    def _construct_grid(
         self, dataset: Dataset, on_gpu: bool, limited_area: bool
-    ) -> tuple[UUID, IconGrid]:
-        grid_id = UUID(dataset.getncattr(GridFile.PropertyName.GRID_ID))
-        return grid_id, self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
+    ) -> icon_grid.IconGrid:
+        return self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
 
-    def get_size(self, dim: Dimension):
+    def get_size(self, dim: gtx.Dimension):
         if dim == VertexDim:
             return self._grid.config.num_vertices
         elif dim == CellDim:
@@ -349,20 +347,26 @@ class GridManager:
         field: GridFileName,
         transpose=True,
         apply_offset=True,
-        dtype=np.int32,
+        dtype=gtx.int32,
     ):
         field = reader.int_field(field, transpose=transpose, dtype=dtype)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_grid_dataset(self, dataset: Dataset, on_gpu: bool, limited_area=True) -> IconGrid:
+    def _from_grid_dataset(
+        self, dataset: Dataset, on_gpu: bool, limited_area=True
+    ) -> icon_grid.IconGrid:
         reader = GridFile(dataset)
         num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
         num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
         num_vertices = reader.dimension(GridFile.DimensionName.VERTEX_NAME)
+        uuid = dataset.getncattr(GridFile.PropertyName.GRID_ID)
+        grid_level = dataset.getncattr(GridFile.PropertyName.LEVEL)
+        grid_root = dataset.getncattr(GridFile.PropertyName.ROOT)
+        global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
 
-        grid_size = HorizontalGridSize(
+        grid_size = grid_def.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         c2e = self._get_index_field(reader, GridFile.OffsetName.C2E)
@@ -379,6 +383,7 @@ class GridManager:
         v2e = self._get_index_field(reader, GridFile.OffsetName.V2E)
         v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V)
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
+        c2e2c2e = self._construct_triangle_edges(c2e2c, c2e)
         c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
         (
             start_indices,
@@ -387,15 +392,16 @@ class GridManager:
             refine_ctrl_max,
         ) = self._read_grid_refinement_information(dataset)
 
-        config = GridConfig(
+        config = grid_def.GridConfig(
             horizontal_config=grid_size,
-            vertical_config=self._config,
+            vertical_size=self._config.num_levels,
             on_gpu=on_gpu,
             limited_area=limited_area,
         )
-        icon_grid = (
-            IconGrid()
+        grid = (
+            icon_grid.IconGrid(uuid)
             .with_config(config)
+            .with_global_params(global_params)
             .with_connectivities(
                 {
                     C2EDim: c2e,
@@ -406,6 +412,7 @@ class GridManager:
                     C2VDim: c2v,
                     C2E2CDim: c2e2c,
                     C2E2CODim: c2e2c0,
+                    C2E2C2EDim: c2e2c2e,
                     E2C2VDim: e2c2v,
                     V2E2VDim: v2e2v,
                     E2C2EDim: e2c2e,
@@ -416,15 +423,15 @@ class GridManager:
             .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
             .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
         )
-        icon_grid.update_size_connectivities(
+        grid.update_size_connectivities(
             {
-                ECVDim: icon_grid.size[EdgeDim] * icon_grid.size[E2C2VDim],
-                CEDim: icon_grid.size[CellDim] * icon_grid.size[C2EDim],
-                ECDim: icon_grid.size[EdgeDim] * icon_grid.size[E2CDim],
+                ECVDim: grid.size[EdgeDim] * grid.size[E2C2VDim],
+                CEDim: grid.size[CellDim] * grid.size[C2EDim],
+                ECDim: grid.size[EdgeDim] * grid.size[E2CDim],
             }
         )
 
-        return icon_grid
+        return grid
 
     @staticmethod
     def _construct_diamond_vertices(
@@ -463,7 +470,7 @@ class GridManager:
         far_indices = np.zeros_like(e2v)
         # TODO (magdalena) vectorize speed this up?
         for i in range(sh[0]):
-            far_indices[i, :] = flat[i, ~np.in1d(flat[i, :], e2v[i, :])][:2]
+            far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
         return np.hstack((e2v, far_indices))
 
     @staticmethod
@@ -494,21 +501,48 @@ class GridManager:
                  on the diamond
         """
         dummy_c2e = _patch_with_dummy_lastline(c2e)
-        expanded = dummy_c2e[e2c, :]
+        expanded = dummy_c2e[e2c[:, :], :]
         sh = expanded.shape
         flattened = expanded.reshape(sh[0], sh[1] * sh[2])
 
         diamond_sides = 4
-        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=np.int32)
+        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
         for i in range(sh[0]):
-            var = flattened[i, (~np.in1d(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
+            var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
             e2c2e[i, : var.shape[0]] = var
         return e2c2e
+
+    def _construct_triangle_edges(self, c2e2c, c2e):
+        """Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
+
+           ____e3________e7____
+           \   c1  / \   c3  /
+            \     /   \     /
+            e4   e2    e1  e8
+              \ /   c0  \ /
+                ----e0----
+                \   c2  /
+                 e5    e6
+                  \   /
+                   \ /
+
+        For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
+
+        Args:
+            c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
+            c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
+        Returns:
+            np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
+                edges of its cell neighbors
+        """
+        dummy_c2e = _patch_with_dummy_lastline(c2e)
+        table = np.reshape(dummy_c2e[c2e2c[:, :], :], (c2e2c.shape[0], 9))
+        return table
 
 
 def _patch_with_dummy_lastline(ar):
     """
-    Patch an array for easy access with an another offset containing invalid indices (-1).
+    Patch an array for easy access with another offset containing invalid indices (-1).
 
     Enlarges this table to contain a fake last line to account for numpy wrap around when
     encountering a -1 = GridFile.INVALID_INDEX value
@@ -521,7 +555,7 @@ def _patch_with_dummy_lastline(ar):
     """
     patched_ar = np.append(
         ar,
-        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=np.int32),
+        GridFile.INVALID_INDEX * np.ones((1, ar.shape[1]), dtype=gtx.int32),
         axis=0,
     )
     return patched_ar
