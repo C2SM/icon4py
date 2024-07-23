@@ -23,18 +23,22 @@ GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 JABW_EXPERIMENT = "jabw_R02B04"
+WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
+TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1OKzs/download"
 GRID_URIS = {
     REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
+    WEISMAN_KLEMP_EXPERIMENT: TORUS_100X116_1000M_GRID_URI,
 }
 
 GRID_IDS = {
     GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("24fe2406-8066-11e8-bc5b-f3dc5af69303"),
 }
 
 
@@ -61,6 +65,7 @@ DATA_URIS = {
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
+DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/pruE9yYGeiuIP6d/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
@@ -76,9 +81,11 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
         return root, level
     except AttributeError as err:
-        raise ValueError(
-            f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
-        ) from err
+        #raise ValueError(
+        #    f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
+        #) from err
+        # TODO (Chia Rui): remove this temporary fix after merging from Jacopo's branch
+        return 0, 2
 
 
 def get_grid_id_for_experiment(experiment) -> uuid.UUID:

@@ -484,6 +484,7 @@ def main(
         parallel_props,
         serialization_type,
         experiment_type,
+        grid_id,
         grid_root,
         grid_level,
     )

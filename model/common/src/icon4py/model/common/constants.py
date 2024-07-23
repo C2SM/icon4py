@@ -76,6 +76,29 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 # TODO (magdalena) not a constant, this is a default config parameter
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 
+# Constants for physics schemes
+#: Melting temperature of ice/snow [K]
+TMELT: Final[float] = 273.15
+
+#: Latent heat of vaporisation for water [J/kg]
+ALV: Final[float] = 2.5008e6
+
+#: Latent heat of sublimation for water [J/kg]
+ALS: Final[float] = 2.8345e6
+
+#: latent heat of fusion for water [J/kg]
+ALF: Final[float] = ALS - ALV
+
+#: cp_d / cp_l - 1
+RCPL: Final[float] = 3.1733
+
+CLW: Final[float] = (RCPL + 1.0) * CPD
+
+#: Inverse of specific heat at constant pressure  [K*kg/J]
+RCPD = 1.0 / CPD
+
+#: Inverse of specific heat at constant volume [K*kg/J]
+RCVD = 1.0 / CVD
 
 class RayleighType(enum.IntEnum):
     #: classical Rayleigh damping, which makes use of a reference state.

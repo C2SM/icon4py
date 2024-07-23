@@ -1,9 +1,11 @@
 -r base-requirements.txt
 
+
 # icon4py model
 ./model/atmosphere/dycore
 ./model/atmosphere/diffusion
 ./model/atmosphere/advection
+./model/atmosphere/physics_schemes
 ./model/common[io]
 ./model/driver
 

@@ -1,0 +1,120 @@
+[build-system]
+build-backend = "setuptools.build_meta"
+requires = ["setuptools>=61.0", "wheel>=0.40.0"]
+
+[project]
+authors = [
+  {email = "gridtools@cscs.ch"},
+  {name = "ETH Zurich"}
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Operating System :: POSIX",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Atmospheric Science",
+  "Topic :: Scientific/Engineering :: Mathematics",
+  "Topic :: Scientific/Engineering :: Physics"
+]
+dependencies = [
+  "gt4py>=1.0.1",
+  "icon4py-common>=0.0.5"
+]
+description = "ICON physics schemes."
+dynamic = ['version']
+license = {file = "LICENSE"}
+name = "icon4py-atmosphere-physics_schemes"
+readme = "README.md"
+requires-python = ">=3.10"
+
+[project.urls]
+repository = "https://github.com/C2SM/icon4py"
+
+[tool.black]
+exclude = '''
+/(
+    \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
+include = '\.pyi?$'
+line-length = 100
+target-version = ['py310']
+
+[tool.coverage]
+
+[tool.coverage.html]
+directory = 'tests/_reports/coverage_html'
+
+[tool.coverage.paths]
+source = ['src/icon4py/model/']
+
+[tool.coverage.report]
+exclude_lines = [
+  'raise AssertionError',  # Don't complain if tests don't hit defensive assertion code
+  'raise NotImplementedError',  # Don't complain if tests don't hit defensive assertion code
+  'if 0:',  # Don't complain if non-runnable code isn't run
+  'if __name__ == .__main__.:'  # Don't complain if non-runnable code isn't run
+]
+ignore_errors = true
+
+[tool.coverage.run]
+branch = true
+parallel = true
+source_pkgs = ['physics_schemes']
+
+[tool.isort]
+force_grid_wrap = 0
+include_trailing_comma = true
+known_first_party = ['icon4py']
+known_third_party = ['gt4py']
+lexicographical = true
+line_length = 100  # It should be the same as in `tool.black.line-length` above
+lines_after_imports = 2
+# known_tests = ['tests_utils']
+multi_line_output = 3
+profile = 'black'
+sections = ['FUTURE', 'STDLIB', 'THIRDPARTY', 'FIRSTPARTY', 'LOCALFOLDER']
+skip_gitignore = true
+skip_glob = ['*.venv/**', '_local/**']
+use_parentheses = true
+
+[tool.mypy]
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+exclude = [
+  '^tests/*.py'
+]
+ignore_missing_imports = false
+implicit_reexport = true
+install_types = true
+non_interactive = true
+show_column_numbers = true
+show_error_codes = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+
+[tool.pytest]
+
+[tool.pytest.ini_options]
+addopts = ['-p icon4py.model.common.test_utils.pytest_config']
+testpaths = 'tests'
+
+[tool.setuptools.dynamic]
+version = {attr = 'icon4py.model.atmosphere.physics_schemes.__init__.__version__'}
+
+[tool.setuptools.package-data]
+'icon4py.model.atmosphere.physics_schemes' = ['py.typed']
