@@ -22,7 +22,6 @@ from icon4py.model.common.test_utils.datatest_utils import (
     REGIONAL_EXPERIMENT,
 )
 
-#TODO(kotsaloscv): reuse the backend names from the ../config.py file (?)
 backends = {
     "embedded": None,
     "roundtrip": itir_python,
