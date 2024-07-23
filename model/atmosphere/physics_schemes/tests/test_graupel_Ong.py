@@ -10,36 +10,14 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-"""Test graupel in standalone mode using data serialized from ICON.
-
-GT4Py hotfix:
-
-In _external_src/gt4py-functional/src/functional/iterator/transforms/pass_manager.py
-1. Exchange L49 with: inlined = InlineLambdas.apply(inlined, opcount_preserving=True)
-2. Add "return inlined" below
-"""
-
-import os
-
-import numpy as np
-import os
-import sys
 
 import pytest
 
-from gt4py.next.ffront.fbuiltins import (
-    float64,
-    int32
-)
-
 from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics import gscp_graupel_Ong as graupel
-from typing import Final
-from icon4py.model.common.dimension import CellDim, KDim
-import gt4py.next as gtx
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
-from icon4py.model.common.grid import vertical as v_grid, horizontal as h_grid
+from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils.helpers import dallclose
 
 @pytest.mark.parametrize(
@@ -65,10 +43,6 @@ def test_graupel(
 
     backend = run_gtfn
 
-    lpres_pri = True  # TODO: may need to be read from serialized data, default is True. We now manually set to True for debugging
-    ldass_lhn = True  # TODO: may need to be read from serialized data, default is False. We now manually set to True for debugging
-    tendency_serialization = True
-
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -90,6 +64,8 @@ def test_graupel(
     init_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_init()
     entry_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_exit(date=date)
+
+    dtime = entry_savepoint.dt_microphysics()
 
     assert vertical_params.kstart_moist == entry_savepoint.kstart_moist() - 1
 
@@ -155,157 +131,54 @@ def test_graupel(
     assert dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
     assert dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.e-10)
 
+    graupel_microphysics.run(
+        dtime,
+        prognostic_state,
+        diagnostic_state,
+        tracer_state,
+    )
 
-    # graupel_microphysics.run()
+    new_temperature = entry_savepoint.temperature().ndarray + graupel_microphysics.temperature_tendency.ndarray * dtime
+    new_qv = entry_savepoint.qv().ndarray + graupel_microphysics.qv_tendency.ndarray * dtime
+    new_qc = entry_savepoint.qc().ndarray + graupel_microphysics.qc_tendency.ndarray * dtime
+    new_qr = entry_savepoint.qr().ndarray + graupel_microphysics.qr_tendency.ndarray * dtime
+    new_qi = entry_savepoint.qi().ndarray + graupel_microphysics.qi_tendency.ndarray * dtime
+    new_qs = entry_savepoint.qs().ndarray + graupel_microphysics.qs_tendency.ndarray * dtime
+    new_qg = entry_savepoint.qg().ndarray + graupel_microphysics.qg_tendency.ndarray * dtime
+    # measure differences
+    assert dallclose(new_temperature, exit_savepoint.temperature().ndarray)
+    assert dallclose(new_qv, exit_savepoint.qv().ndarray)
+    assert dallclose(new_qc, exit_savepoint.qc().ndarray)
+    assert dallclose(new_qr, exit_savepoint.qr().ndarray)
+    assert dallclose(new_qi, exit_savepoint.qi().ndarray)
+    assert dallclose(new_qs, exit_savepoint.qs().ndarray)
+    assert dallclose(new_qg, exit_savepoint.qg().ndarray)
+    assert dallclose(graupel_microphysics.temperature_tendency.ndarray, exit_savepoint.ddt_tend_t().ndarray)
+    assert dallclose(graupel_microphysics.qv_tendency.ndarray, exit_savepoint.ddt_tend_qv().ndarray)
+    assert dallclose(graupel_microphysics.qc_tendency.ndarray, exit_savepoint.ddt_tend_qc().ndarray)
+    assert dallclose(graupel_microphysics.qr_tendency.ndarray, exit_savepoint.ddt_tend_qr().ndarray)
+    assert dallclose(graupel_microphysics.qi_tendency.ndarray, exit_savepoint.ddt_tend_qi().ndarray)
+    assert dallclose(graupel_microphysics.qs_tendency.ndarray, exit_savepoint.ddt_tend_qs().ndarray)
+
+    assert dallclose(
+        graupel_microphysics.ice_precipitation_flux.ndarray[:,icon_grid.num_levels-1],
+        exit_savepoint.ice_flux().ndarray
+    )
+    assert dallclose(
+        graupel_microphysics.rain_precipitation_flux.ndarray[:, icon_grid.num_levels - 1],
+        exit_savepoint.rain_flux().ndarray
+    )
+    assert dallclose(
+        graupel_microphysics.snow_precipitation_flux.ndarray[:, icon_grid.num_levels - 1],
+        exit_savepoint.snow_flux().ndarray
+    )
+    assert dallclose(
+        graupel_microphysics.graupel_precipitation_flux.ndarray[:, icon_grid.num_levels - 1],
+        exit_savepoint.graupel_flux().ndarray
+    )
+
+
     '''
-
-    # run graupel
-
-    _graupel_scan(
-        const_data["ser_graupel_kstart_moist"],
-        const_data["ser_graupel_kend"],
-        const_data["ser_graupel_dt"],
-        ser_field["ser_graupel_dz"],
-        ser_field["ser_graupel_temperature"],
-        ser_field["ser_graupel_pres"],
-        ser_field["ser_graupel_rho"],
-        ser_field["ser_graupel_qv"],
-        ser_field["ser_graupel_qc"],
-        ser_field["ser_graupel_qi"],
-        ser_field["ser_graupel_qr"],
-        ser_field["ser_graupel_qs"],
-        ser_field["ser_graupel_qg"],
-        ser_field["ser_graupel_qnc"],
-        const_data["ser_graupel_l_cv"],
-        const_data["ser_graupel_ithermo_water"],
-        out=(
-            predict_field["ser_graupel_temperature"],
-            predict_field["ser_graupel_qv"],
-            predict_field["ser_graupel_qc"],
-            predict_field["ser_graupel_qi"],
-            predict_field["ser_graupel_qr"],
-            predict_field["ser_graupel_qs"],
-            predict_field["ser_graupel_qg"],
-            # used in graupel scheme, do not output to outer world
-            velocity_field["rhoqrV_old_kup"],
-            velocity_field["rhoqsV_old_kup"],
-            velocity_field["rhoqgV_old_kup"],
-            velocity_field["rhoqiV_old_kup"],
-            velocity_field["Vnew_r"],
-            velocity_field["Vnew_s"],
-            velocity_field["Vnew_g"],
-            velocity_field["Vnew_i"],
-            redundant_field["ser_graupel_clddist"],
-            redundant_field["ser_graupel_rho_kup"],
-            redundant_field["ser_graupel_Crho1o2_kup"],
-            redundant_field["ser_graupel_Crhofac_qi_kup"],
-            redundant_field["ser_graupel_Cvz0s_kup"],
-            redundant_field["ser_graupel_qvsw_kup"],
-            redundant_field["ser_graupel_klev"],
-            tend_field["ser_graupel_szdep_v2i"],
-            tend_field["ser_graupel_szsub_v2i"],
-            tend_field["ser_graupel_snucl_v2i"],
-            tend_field["ser_graupel_scfrz_c2i"],
-            tend_field["ser_graupel_simlt_i2c"],
-            tend_field["ser_graupel_sicri_i2g"],
-            tend_field["ser_graupel_sidep_v2i"],
-            tend_field["ser_graupel_sdaut_i2s"],
-            tend_field["ser_graupel_saggs_i2s"],
-            tend_field["ser_graupel_saggg_i2g"],
-            tend_field["ser_graupel_siaut_i2s"],
-            tend_field["ser_graupel_ssmlt_s2r"],
-            tend_field["ser_graupel_srims_c2s"],
-            tend_field["ser_graupel_ssdep_v2s"],
-            tend_field["ser_graupel_scosg_s2g"],
-            tend_field["ser_graupel_sgmlt_g2r"],
-            tend_field["ser_graupel_srcri_r2g"],
-            tend_field["ser_graupel_sgdep_v2g"],
-            tend_field["ser_graupel_srfrz_r2g"],
-            tend_field["ser_graupel_srimg_c2g"]
-        ),
-        offset_provider={}
-    )
-
-    if const_data["ser_graupel_ldiag_ttend"]:
-        _graupel_t_tendency(
-            const_data["ser_graupel_dt"],
-            predict_field["ser_graupel_temperature"],
-            ser_field["ser_graupel_temperature"],
-            out=(
-                predict_field["ser_graupel_ddt_tend_t"]
-            ),
-            offset_provider={}
-        )
-
-    if const_data["ser_graupel_ldiag_qtend"]:
-        _graupel_q_tendency(
-            const_data["ser_graupel_dt"],
-            predict_field["ser_graupel_qv"],
-            predict_field["ser_graupel_qc"],
-            predict_field["ser_graupel_qi"],
-            predict_field["ser_graupel_qr"],
-            predict_field["ser_graupel_qs"],
-            ser_field["ser_graupel_qv"],
-            ser_field["ser_graupel_qc"],
-            ser_field["ser_graupel_qi"],
-            ser_field["ser_graupel_qr"],
-            ser_field["ser_graupel_qs"],
-            out=(
-                predict_field["ser_graupel_ddt_tend_qv"],
-                predict_field["ser_graupel_ddt_tend_qc"],
-                predict_field["ser_graupel_ddt_tend_qi"],
-                predict_field["ser_graupel_ddt_tend_qr"],
-                predict_field["ser_graupel_ddt_tend_qs"]
-            ),
-            offset_provider={}
-        )
-
-
-    _graupel_flux_scan(
-        const_data["ser_graupel_kstart_moist"],
-        const_data["ser_graupel_kend"],
-        ser_field["ser_graupel_rho"],
-        predict_field["ser_graupel_qr"],
-        predict_field["ser_graupel_qs"],
-        predict_field["ser_graupel_qg"],
-        predict_field["ser_graupel_qi"],
-        velocity_field["Vnew_r"],
-        velocity_field["Vnew_s"],
-        velocity_field["Vnew_g"],
-        velocity_field["Vnew_i"],
-        velocity_field["rhoqrV_old_kup"],
-        velocity_field["rhoqsV_old_kup"],
-        velocity_field["rhoqgV_old_kup"],
-        velocity_field["rhoqiV_old_kup"],
-        lpres_pri,
-        ldass_lhn,
-        out=(
-            predict_field["ser_graupel_prr_gsp"],
-            predict_field["ser_graupel_prs_gsp"],
-            predict_field["ser_graupel_prg_gsp"],
-            predict_field["ser_graupel_pri_gsp"],
-            predict_field["ser_graupel_qrsflux"],
-            redundant_field["ser_graupel_klev"]
-        ),
-        offset_provider={}
-    )
-
-
-    diff_data = {}
-    for item in mixT_name:
-        diff_data[item] = np.abs(predict_field[item].asnumpy() - ref_data[item]) / ref_data[item]
-        diff_data[item] = np.where(np.abs(ref_data[item]) <= 1.e-20 , predict_field[item].asnumpy(), diff_data[item])
-
-    if tendency_serialization:
-        for item in ser_tend_name:
-            diff_data[item] = np.abs(tend_field[item].asnumpy() - tend_data[item]) / tend_data[item]
-            diff_data[item] = np.where(np.abs(tend_data[item]) <= 1.e-30, tend_field[item].asnumpy(), tend_data[item])
-
-    if tendency_serialization:
-        print("Max predict-ref tendency difference:")
-        for item in ser_tend_name:
-            print(item, ": ", np.abs(tend_field[item].asnumpy() - tend_data[item]).max(), diff_data[item].max())
-
     print("Max predict-ref difference:")
     for item in mixT_name:
         print(item, ": ", np.abs(predict_field[item].asnumpy() - ref_data[item]).max(), diff_data[item].max())
@@ -314,41 +187,6 @@ def test_graupel(
     for item in mixT_name:
         print(item, ": ", np.abs(ser_field[item].asnumpy() - ref_data[item]).max())
 
-    print("Max init:")
-    for item in mixT_name:
-        print(item, ": ", np.abs(ser_data[item]).max())
-
-    print("Max ref:")
-    for item in mixT_name:
-        print(item, ": ", np.abs(ref_data[item]).max())
-
-    print("Max predict:")
-    for item in mixT_name:
-        print(item, ": ", predict_field[item].asnumpy().max())
-
-    print("Max abs predict:")
-    for item in mixT_name:
-        print(item, ": ", np.abs(predict_field[item].asnumpy()).max())
-
-    print("Max init-ref total difference:")
-    print("qv: ", np.abs(
-        ser_field["ser_graupel_qv"].asnumpy() - ref_data["ser_graupel_qv"] +
-        ser_field["ser_graupel_qc"].asnumpy() - ref_data["ser_graupel_qc"] +
-        ser_field["ser_graupel_qi"].asnumpy() - ref_data["ser_graupel_qi"] +
-        ser_field["ser_graupel_qr"].asnumpy() - ref_data["ser_graupel_qr"] +
-        ser_field["ser_graupel_qs"].asnumpy() - ref_data["ser_graupel_qs"] +
-        ser_field["ser_graupel_qg"].asnumpy() - ref_data["ser_graupel_qg"]
-    ).max())
-
-    print("Max predict-init total difference:")
-    print("qv: ", np.abs(
-        predict_field["ser_graupel_qv"].asnumpy() - ref_data["ser_graupel_qv"] +
-        predict_field["ser_graupel_qc"].asnumpy() - ref_data["ser_graupel_qc"] +
-        predict_field["ser_graupel_qi"].asnumpy() - ref_data["ser_graupel_qi"] +
-        predict_field["ser_graupel_qr"].asnumpy() - ref_data["ser_graupel_qr"] +
-        predict_field["ser_graupel_qs"].asnumpy() - ref_data["ser_graupel_qs"] +
-        predict_field["ser_graupel_qg"].asnumpy() - ref_data["ser_graupel_qg"]
-    ).max())
 
     if data_output:
         with open(base_dir+'analysis_dz_rank'+str(rank)+'.dat','w') as f:
@@ -428,13 +266,5 @@ def test_graupel(
                         for item in ser_tend_name:
                             f.write(" {0:.20e} ".format(tend_data[item][i, k]))
                         f.write("\n")
-
-    # measure differences
-    for item in mixT_name:
-        print(item)
-        # just realized that sometimes the diagnostic variables such as qv tendency output from the
-        # _graupel_q_tendency does not pass rtol=1.e-12 even though rtol=1.e-12 can be satisfied
-        # for the main graupel scan, why?
-        assert(np.allclose(predict_field[item].asnumpy(),ref_data[item], rtol=1e-10, atol=1e-16))
 
     '''

@@ -31,7 +31,7 @@ from gt4py.next.ffront.fbuiltins import Field, abs, exp, maximum, where
 from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.shared.mo_physical_constants import phy_const
-
+from icon4py.model.common.settings import xp
 from gt4py.next.program_processors.runners.gtfn_cpu import (
     run_gtfn,
     run_gtfn_cached,
@@ -86,90 +86,130 @@ def _dqsatdT_rho(
 
 
 @field_operator
-def _newtonian_for_body(
+def _second_onwards_newtonian_iteration(
     t: Field[[CellDim, KDim], float],
+    t2: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
-    lwdocvd: Field[[CellDim, KDim], float],
+    lwdocvd: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
-
-    fT = lwdocvd * (_qsat_rho(t, rho) - qv)
-    dfT = 1.0 + lwdocvd * _dqsatdT_rho(t, _qsat_rho(t, rho))
-
-    return t - fT / dfT
-
-
-@field_operator
-def _conditional_newtonian_for_body(
-    t: Field[[CellDim, KDim], float],
-    tWork: Field[[CellDim, KDim], float],
-    qv: Field[[CellDim, KDim], float],
-    rho: Field[[CellDim, KDim], float],
-    lwdocvd: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], float]:
-
     tol = 1e-3  # tolerance for iteration
 
-    fT = tWork - t + lwdocvd * (_qsat_rho(tWork, rho) - qv)
-    dfT = 1.0 + lwdocvd * _dqsatdT_rho(tWork, _qsat_rho(tWork, rho))
+    ft = t2 - t + lwdocvd * (_qsat_rho(t2, rho) - qv)
+    dft = 1.0 + lwdocvd * _dqsatdT_rho(t2, _qsat_rho(t2, rho))
 
-    return where(abs(tWork - t) > tol, tWork - fT / dfT, tWork)
+    return where(abs(t2 - t) > tol, t2 - ft / dft, t2)
 
 
 @field_operator
-def _newtonian_iteration_temp(
+def _first_newtonian_iteration(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
+    lwdocvd: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
 
-    # Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
+    ft = lwdocvd * (_qsat_rho(t, rho) - qv)
+    dft = 1.0 + lwdocvd * _dqsatdT_rho(t, _qsat_rho(t, rho))
 
-    # for _ in range(1, maxiter):
-    tWork = _newtonian_for_body(t, qv, rho, lwdocvd)
-    tWork = _conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # DL: @Linus Uncommenting below is suuuper slow :-)
-    # tWork = _conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    # tWork =_conditional_newtonian_for_body(t, tWork, qv, rho, lwdocvd)
-    return tWork
+    return t - ft / dft
+
 
 @field_operator
-def _newtonian_iteration_temp_Ong(
+def _compute_temperature_in_first_satad_iteration(
     t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
+    temperature_after_all_qc_evaporated: Field[[CellDim, KDim], float],
+    subsaturated_mask: Field[[CellDim, KDim], bool],
+    lwdocvd: Field[[CellDim, KDim], float]
 ) -> Field[[CellDim, KDim], float]:
-
-    tol = 1e-3  # tolerance for iteration
-
-    # Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
-
-    fT = lwdocvd * ( conv_table.c1es * exp( conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les) ) / (rho * phy_const.rv * t) - qv )
-    dfT = 1.0 + lwdocvd * conv_table.c5les / (t - conv_table.c4les) ** 2 - 1.0 / t * conv_table.c1es * exp( conv_table.c3les * (t - phy_const.tmelt) / (t - conv_table.c4les) ) / (rho * phy_const.rv * t)
-
-    tWork = t - fT / dfT
-
-    fT2 = tWork - t + lwdocvd * ( conv_table.c1es * exp( conv_table.c3les * (tWork - phy_const.tmelt) / (tWork - conv_table.c4les) ) / (rho * phy_const.rv * tWork)  - qv )
-    dfT2 = 1.0 + lwdocvd * conv_table.c5les / (tWork - conv_table.c4les) ** 2 - 1.0 / tWork * conv_table.c1es * exp( conv_table.c3les * (tWork - phy_const.tmelt) / (tWork - conv_table.c4les) ) / (rho * phy_const.rv * tWork)
-
-    return where(abs(tWork - t) > tol, tWork - fT2 / dfT2, tWork)
-
+    t = where(
+        subsaturated_mask,
+        # If all cloud water evaporates, no newtonian iteration ncessary
+        temperature_after_all_qc_evaporated,
+        _first_newtonian_iteration(t, qv, rho, lwdocvd),
+    )
+    return t
 
 @field_operator
-def _satad(
+def _compute_temperature_from_second_satad_iteration(
+    t: Field[[CellDim, KDim], float],
+    t2: Field[[CellDim, KDim], float],
+    qv: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], float],
+    temperature_after_all_qc_evaporated: Field[[CellDim, KDim], float],
+    subsaturated_mask: Field[[CellDim, KDim], bool],
+    lwdocvd: Field[[CellDim, KDim], float]
+) -> Field[[CellDim, KDim], float]:
+    t = where(
+        subsaturated_mask,
+        # If all cloud water evaporates, no newtonian iteration ncessary
+        temperature_after_all_qc_evaporated,
+        _second_onwards_newtonian_iteration(t, t2, qv, rho, lwdocvd),
+    )
+    return t
+
+@field_operator
+def _update_qv_qc_in_satad(
+    t: Field[[CellDim, KDim], float],
     qv: Field[[CellDim, KDim], float],
     qc: Field[[CellDim, KDim], float],
-    t: Field[[CellDim, KDim], float],
     rho: Field[[CellDim, KDim], float],
-) -> tuple[
+    subsaturated_mask: Field[[CellDim, KDim], bool]
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    # Local treshold
+    zqwmin = 1e-20
+    qv, qc = where(
+        subsaturated_mask,
+        (qv + qc, 0.0),
+        (_qsat_rho(t, rho), maximum(qv + qc - _qsat_rho(t, rho), zqwmin)),
+    )
+
+    return qv, qc
+@field_operator
+def _compute_subsaturated_mask(
+    t: Field[[CellDim, KDim], float],
+    qv: Field[[CellDim, KDim], float],
+    qc: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], float],
+) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], bool], Field[[CellDim, KDim], float]]:
+    """
+    Adjust saturation at each grid point.
+
+    Synopsis:
+    Saturation adjustment condenses/evaporates specific humidity (qv) into/from
+    cloud water content (qc) such that a gridpoint is just saturated. Temperature (t)
+    is adapted accordingly and pressure adapts itself in ICON.
+
+    Method:
+    Saturation adjustment at constant total density (adjustment of T and p accordingly)
+    assuming chemical equilibrium of water and vapor. For the heat capacity of
+    of the total system (dry air, vapor, and hydrometeors) the value of dry air
+    is taken, which is a common approximation and introduces only a small error.
+
+    Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
+    """
+
+    temperature_after_all_qc_evaporated = (
+        t - _latent_heat_vaporization(t) / phy_const.cvd * qc
+    )
+
+    # Check, which points will still be subsaturated even after evaporating all cloud water.
+    subsaturated_mask = qv + qc <= _qsat_rho(temperature_after_all_qc_evaporated, rho)
+
+    # Remains const. during iteration
+    lwdocvd = _latent_heat_vaporization(t) / phy_const.cvd
+
+    return temperature_after_all_qc_evaporated, subsaturated_mask, lwdocvd
+
+def saturation_adjustment(
+    grid: icon_grid.IconGrid,
+    t: Field[[CellDim, KDim], float],
+    qv: Field[[CellDim, KDim], float],
+    qc: Field[[CellDim, KDim], float],
+    rho: Field[[CellDim, KDim], float],
+)-> tuple[
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
     Field[[CellDim, KDim], float],
@@ -190,31 +230,27 @@ def _satad(
 
     Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
     """
-    # Local treshold
-    zqwmin = 1e-20
 
-    TemperatureAfterAllQcEvaporated = (
-        t - _latent_heat_vaporization(t) / phy_const.cvd * qc
-    )
+    temperature_after_all_qc_evaporated, subsaturated_mask, lwdocvd = _compute_subsaturated_mask(t, qv, qc, rho)
 
-    # Check, which points will still be subsaturated even after evaporating all cloud water.
-    SubsaturatedMask = qv + qc <= _qsat_rho(TemperatureAfterAllQcEvaporated, rho)
+    t2 = _compute_temperature_in_first_satad_iteration(t, qv, qc, rho, temperature_after_all_qc_evaporated, subsaturated_mask, lwdocvd)
 
-    t = where(
-        SubsaturatedMask,
-        # If all cloud water evaporates, no newtonian iteration ncessary
-        TemperatureAfterAllQcEvaporated,
-        # Newtonian iteration on temperature (expensive)
-        _newtonian_iteration_temp(t, qv, rho),
-    )
+    for _ in range(10):
+        if (xp.abs(t2.ndarray - t.ndarray) > 1.e-3).any():
+            t2 = _compute_temperature_from_second_satad_iteration(
+                t,
+                t2,
+                qv,
+                qc,
+                rho,
+                temperature_after_all_qc_evaporated,
+                subsaturated_mask,
+                lwdocvd
+            )
+        else:
+            break
+    new_qv, new_qc = _update_qv_qc_in_satad(t, qv, qc, rho, subsaturated_mask)
 
-    qv, qc = where(
-        SubsaturatedMask,
-        (qv + qc, 0.0),
-        (_qsat_rho(t, rho), maximum(qv + qc - _qsat_rho(t, rho), zqwmin)),
-    )
-
-    return t, qv, qc
 
 #backend=run_gtfn
 @program()

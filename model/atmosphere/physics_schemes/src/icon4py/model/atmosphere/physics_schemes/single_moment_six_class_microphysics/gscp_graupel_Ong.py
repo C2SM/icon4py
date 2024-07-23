@@ -96,8 +96,9 @@ class SingleMomentSixClassIconGraupelConfig:
     rain_n0: wpfloat = 1.0
 
 
-@dataclasses.dataclass(frozen=True)
-class SingleMomentSixClassIconGraupelParams:
+#@dataclasses.dataclass(frozen=True)
+#class SingleMomentSixClassIconGraupelParams:
+class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     """
     Contains numerical, physical, and empirical constants for the ICON graupel scheme.
 
@@ -309,170 +310,9 @@ class SingleMomentSixClassIconGraupelParams:
 
     pvsw0: wpfloat = c1es * np.exp(c3les * (tmelt - tmelt) / (tmelt - c4les)) # _fpvsw(tmelt)  # sat. vap. pressure for t = t0
 
-    '''
-    def __post_init__(self):
-        ccsdep: wpfloat = 0.26 * gamma_fct((self.snow_exp_v + 5.0) / 2.0) * np.sqrt(
-            1.0 / self.eta)
-        _ccsvxp: wpfloat = -(self.snow_exp_v / (self.snow_exp_m + 1.0) + 1.0)
-        ccsvxp: wpfloat = _ccsvxp + 1.0
-        ccslam: wpfloat = self.snow_m0 * gamma_fct(self.snow_exp_m + 1.0)
-        ccslxp: wpfloat = 1.0 / (self.snow_exp_m + 1.0)
-        ccswxp: wpfloat = self.snow_exp_v * ccslxp
-        ccsaxp: wpfloat = -(self.snow_exp_v + 3.0)
-        ccsdxp: wpfloat = -(self.snow_exp_v + 1.0) / 2.0
-        ccshi1: wpfloat = self.als * self.als / (self.dry_air_latent_heat * self.rv)
-        ccdvtp: wpfloat = 2.22e-5 * self.tmelt ** (-1.94) * 101325.0
-        ccidep: wpfloat = 4.0 * self.ice_m0 ** (-1.0 / 3.0)
-        pvsw0: wpfloat = _fpvsw(self.tmelt)  # sat. vap. pressure for t = t0
-        #log_10 = np.log(10.0)  # logarithm of 10
-        ccswxp_ln1o2: wpfloat = np.exp(ccswxp * np.log(0.5))
-
-        #: latent heat of fusion for water [J/kg]
-        alf: wpfloat = self.als - self.alv
-        #: Specific heat capacity of liquid water
-        clw: wpfloat = (self.rcpl + 1.0) * self.cpd
-
-        #: Specific heat of dry air at constant volume [J/K/kg]
-        cvd: wpfloat = self.cpd - self.rd
-        #: [K*kg/J]
-        rcpd: wpfloat = 1.0 / self.cpd
-        #: [K*kg/J]"""
-        rcvd: wpfloat = 1.0 / cvd
-
-        c2es: wpfloat = self.c1es * self.rd / self.rv
-        #: = b234w
-        c5les: wpfloat = self.c3les * (self.tmelt - self.c4les)
-        #: = b234i
-        c5ies: wpfloat = self.c3ies * (self.tmelt - self.c4ies)
-        c5alvcp: wpfloat = c5les * self.alv / self.cpd
-        c5alscp: wpfloat = c5ies * self.als / self.cpd
-        alvdcp: wpfloat = self.alv / self.cpd
-        alsdcp: wpfloat = self.als / self.cpd
-
-        object.__setattr__(
-            self,
-            "ccsdep",
-            ccsdep,
-        )
-        object.__setattr__(
-            self,
-            "ccsvxp",
-            ccsvxp,
-        )
-        object.__setattr__(
-            self,
-            "ccslam",
-            ccslam,
-        )
-        object.__setattr__(
-            self,
-            "ccslxp",
-            ccslxp,
-        )
-        object.__setattr__(
-            self,
-            "ccswxp",
-            ccswxp,
-        )
-        object.__setattr__(
-            self,
-            "ccsaxp",
-            ccsaxp,
-        )
-        object.__setattr__(
-            self,
-            "ccsdxp",
-            ccsdxp,
-        )
-        object.__setattr__(
-            self,
-            "ccshi1",
-            ccshi1,
-        )
-        object.__setattr__(
-            self,
-            "ccdvtp",
-            ccdvtp,
-        )
-        object.__setattr__(
-            self,
-            "ccidep",
-            ccidep,
-        )
-        object.__setattr__(
-            self,
-            "pvsw0",
-            pvsw0,
-        )
-        object.__setattr__(
-            self,
-            "ccswxp_ln1o2",
-            ccswxp_ln1o2,
-        )
-        object.__setattr__(
-            self,
-            "alf",
-            alf,
-        )
-        object.__setattr__(
-            self,
-            "clw",
-            clw,
-        )
-        object.__setattr__(
-            self,
-            "cvd",
-            cvd,
-        )
-        object.__setattr__(
-            self,
-            "rcpd",
-            rcpd,
-        )
-        object.__setattr__(
-            self,
-            "rcvd",
-            rcvd,
-        )
-        object.__setattr__(
-            self,
-            "c2es",
-            c2es,
-        )
-        object.__setattr__(
-            self,
-            "c5les",
-            c5les,
-        )
-        object.__setattr__(
-            self,
-            "c5ies",
-            c5ies,
-        )
-        object.__setattr__(
-            self,
-            "c5alvcp",
-            c5alvcp,
-        )
-        object.__setattr__(
-            self,
-            "c5alscp",
-            c5alscp,
-        )
-        object.__setattr__(
-            self,
-            "alvdcp",
-            alvdcp,
-        )
-        object.__setattr__(
-            self,
-            "alsdcp",
-            alsdcp,
-        )
-        '''
-
-_icon_graupel_params = SingleMomentSixClassIconGraupelParams()
-icon_graupel_params: Final = FrozenNamespace(**vars(_icon_graupel_params))
+#_icon_graupel_params = SingleMomentSixClassIconGraupelParams()
+#icon_graupel_params: Final = FrozenNamespace(**vars(_icon_graupel_params))
+icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
 
 # Statement functions
 # -------------------
@@ -656,7 +496,10 @@ class SingleMomentSixClassIconGraupel:
             self.config.do_reduced_icedeposition,
             self.config.is_isochoric,
             self.config.use_constant_water_heat_capacity,
+            self.config.ice_stickeff_min,
+            self.config.ice_v0,
             self.config.ice_sedi_density_factor_exp,
+            self.config.snow_v0,
             *self._ccs,
             self._nimax,
             self._nimix,
@@ -730,27 +573,27 @@ class SingleMomentSixClassIconGraupel:
     axis=KDim,
     forward=True,
     init=(
-        0.0,  # temperature
-        0.0,  # qv
-        0.0,  # qc
-        0.0,  # qi
-        0.0,  # qr
-        0.0,  # qs
-        0.0,  # qg
-        0.0,  # rhoqrv
-        0.0,  # rhoqsv
-        0.0,  # rhoqgv
-        0.0,  # rhoqiv
-        0.0,  # newv_r
-        0.0,  # newv_s
-        0.0,  # newv_g
-        0.0,  # newv_i
-        0.0,  # cloud top distance
-        0.0,  # density
-        0.0,  # density factor
-        0.0,  # density factor for ice
-        0.0,  # snow intercept parameter
-        0.0,  # saturation pressure
+        vpfloat("0.0"),  # temperature
+        vpfloat("0.0"),  # qv
+        vpfloat("0.0"),  # qc
+        vpfloat("0.0"),  # qi
+        vpfloat("0.0"),  # qr
+        vpfloat("0.0"),  # qs
+        vpfloat("0.0"),  # qg
+        vpfloat("0.0"),  # rhoqrv
+        vpfloat("0.0"),  # rhoqsv
+        vpfloat("0.0"),  # rhoqgv
+        vpfloat("0.0"),  # rhoqiv
+        vpfloat("0.0"),  # newv_r
+        vpfloat("0.0"),  # newv_s
+        vpfloat("0.0"),  # newv_g
+        vpfloat("0.0"),  # newv_i
+        vpfloat("0.0"),  # cloud top distance
+        vpfloat("0.0"),  # density
+        vpfloat("0.0"),  # density factor
+        vpfloat("0.0"),  # density factor for ice
+        vpfloat("0.0"),  # snow intercept parameter
+        vpfloat("0.0"),  # saturation pressure
         gtx.int32(0)     # k level
     )
 )
