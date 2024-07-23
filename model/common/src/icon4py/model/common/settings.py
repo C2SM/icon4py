@@ -12,10 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from icon4py.model.common.config import Icon4PyConfig
 
-from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
 
 config = Icon4PyConfig()
-backend = run_dace_cpu_noopt
+backend = config.gt4py_runner
 xp = config.array_ns
 device = config.device
 limited_area = config.limited_area
