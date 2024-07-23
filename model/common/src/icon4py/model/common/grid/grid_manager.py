@@ -52,6 +52,7 @@ from icon4py.model.common.dimension import (
     V2E2VDim,
     V2EDim,
     VertexDim,
+    global_dimensions,
 )
 from icon4py.model.common.grid import (
     base as grid_def,
@@ -299,55 +300,48 @@ class GridManager:
         _CHILD_DOM = 0
         reader = GridFile(dataset)
 
+        control_dims = [
+            GridFile.GridRefinementName.CONTROL_CELLS,
+            GridFile.GridRefinementName.CONTROL_EDGES,
+            GridFile.GridRefinementName.CONTROL_VERTICES,
+        ]
         refin_ctrl = {
-            CellDim: reader.int_field(GridFile.GridRefinementName.CONTROL_CELLS),
-            EdgeDim: reader.int_field(GridFile.GridRefinementName.CONTROL_EDGES),
-            VertexDim: reader.int_field(GridFile.GridRefinementName.CONTROL_VERTICES),
+            dim: reader.int_field(control_dims[dim_i])
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
+
+        grf_dims = [
+            GridFile.DimensionName.CELL_GRF,
+            GridFile.DimensionName.EDGE_GRF,
+            GridFile.DimensionName.VERTEX_GRF,
+        ]
         refin_ctrl_max = {
-            CellDim: reader.dimension(GridFile.DimensionName.CELL_GRF),
-            EdgeDim: reader.dimension(GridFile.DimensionName.EDGE_GRF),
-            VertexDim: reader.dimension(GridFile.DimensionName.VERTEX_GRF),
+            dim: reader.dimension(grf_dims[dim_i])
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
+
+        start_index_dims = [
+            GridFile.GridRefinementName.START_INDEX_CELLS,
+            GridFile.GridRefinementName.START_INDEX_EDGES,
+            GridFile.GridRefinementName.START_INDEX_VERTICES,
+        ]
         start_indices = {
-            CellDim: self._get_index_field(
-                reader, GridFile.GridRefinementName.START_INDEX_CELLS, transpose=False
-            )[_CHILD_DOM],
-            EdgeDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.START_INDEX_EDGES,
-                transpose=False,
-                dtype=gtx.int32,
-            )[_CHILD_DOM],
-            VertexDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.START_INDEX_VERTICES,
-                transpose=False,
-                dtype=gtx.int32,
-            )[_CHILD_DOM],
+            dim: self._get_index_field(
+                reader, start_index_dims[dim_i], transpose=False, dtype=gtx.int32
+            )[_CHILD_DOM]
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
+
+        end_index_dims = [
+            GridFile.GridRefinementName.END_INDEX_CELLS,
+            GridFile.GridRefinementName.END_INDEX_EDGES,
+            GridFile.GridRefinementName.END_INDEX_VERTICES,
+        ]
         end_indices = {
-            CellDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.END_INDEX_CELLS,
-                transpose=False,
-                apply_offset=False,
-                dtype=gtx.int32,
-            )[_CHILD_DOM],
-            EdgeDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.END_INDEX_EDGES,
-                transpose=False,
-                apply_offset=False,
-                dtype=gtx.int32,
-            )[_CHILD_DOM],
-            VertexDim: self._get_index_field(
-                reader,
-                GridFile.GridRefinementName.END_INDEX_VERTICES,
-                transpose=False,
-                apply_offset=False,
-                dtype=gtx.int32,
-            )[_CHILD_DOM],
+            dim: self._get_index_field(
+                reader, end_index_dims[dim_i], transpose=False, apply_offset=False, dtype=gtx.int32
+            )[_CHILD_DOM]
+            for dim_i, dim in enumerate(global_dimensions.values())
         }
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
@@ -514,7 +508,7 @@ class GridManager:
         far_indices = np.zeros_like(e2v)
         # TODO (magdalena) vectorize speed this up?
         for i in range(sh[0]):
-            far_indices[i, :] = flat[i, ~np.in1d(flat[i, :], e2v[i, :])][:2]
+            far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
         return np.hstack((e2v, far_indices))
 
     @staticmethod
@@ -552,7 +546,7 @@ class GridManager:
         diamond_sides = 4
         e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
         for i in range(sh[0]):
-            var = flattened[i, (~np.in1d(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
+            var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
             e2c2e[i, : var.shape[0]] = var
         return e2c2e
 

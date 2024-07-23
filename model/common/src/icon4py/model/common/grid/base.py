@@ -77,7 +77,7 @@ class BaseGrid(ABC):
     def id(self) -> uuid.UUID:
         """Unique identifier of the horizontal grid.
 
-        ICON grid files contain an UUID that uniquely identifies the horizontal grid described in the file (global attribute `uuidOfHGrid`).
+        ICON grid files contain a UUID that uniquely identifies the horizontal grid described in the file (global attribute `uuidOfHGrid`).
         UUID from icon grid files are UUID v1.
         """
         pass

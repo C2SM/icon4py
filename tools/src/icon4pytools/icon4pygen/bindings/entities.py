@@ -14,6 +14,7 @@
 from typing import cast
 
 from gt4py.eve import Node
+from gt4py.next import DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.type_system import type_specifications as ts
 
@@ -46,8 +47,9 @@ def chain_from_str(chain: list[str] | str) -> list[BasicLocation]:
 class Offset(Node, OffsetEntity):
     def __init__(self, chain: str) -> None:
         self.includes_center = self._includes_center(chain)
-        self.source = self._handle_source(chain)
-        self.target = self._make_target(chain, self.source)
+        chain_ls = self._split_chain(chain)
+        self.source = self._handle_source(chain_ls)
+        self.target = self._make_target(chain_ls, self.source)
         self.renderer = OffsetRenderer(self)
 
     def is_compound_location(self) -> bool:
@@ -56,6 +58,12 @@ class Offset(Node, OffsetEntity):
     def get_num_neighbors(self) -> int:
         return calc_num_neighbors(self.target[1].to_dim_list(), self.includes_center)
 
+    def _split_chain(self, chain: str) -> list:
+        chain_ls = chain.split("2")
+        if "O" in chain_ls[-1]:
+            chain_ls[-1] = chain_ls[-1].replace("O", "")
+        return chain_ls
+
     @staticmethod
     def _includes_center(chain: str) -> bool:
         if chain.endswith("O"):
@@ -63,31 +71,28 @@ class Offset(Node, OffsetEntity):
         return False
 
     @staticmethod
-    def _handle_source(chain: str) -> BasicLocation | CompoundLocation:
-        if chain.endswith("O"):
-            chain = chain[:-1]
-
-        source = chain.split("2")[-1]
-
-        if source in [str(loc()) for loc in BASIC_LOCATIONS.values()]:
-            return chain_from_str(source)[0]
-        elif all(char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source):
-            return CompoundLocation(chain_from_str(source))
+    def _handle_source(chain_ls: list) -> BasicLocation | CompoundLocation:
+        if all(
+            chain_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()] for chain_loc in chain_ls
+        ):
+            return chain_from_str(chain_ls[1])[0]
+        elif all(
+            source_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()]
+            for source_loc in chain_ls[1]
+        ):
+            return CompoundLocation(chain_from_str(chain_ls[1]))
         else:
-            raise BindingsTypeConsistencyException(f"Invalid source {source}")
+            raise BindingsTypeConsistencyException(f"Invalid source {chain_ls[1]}")
 
     @staticmethod
     def _make_target(
-        chain: str, source: BasicLocation | CompoundLocation
+        chain_ls: list, source: BasicLocation | CompoundLocation
     ) -> tuple[BasicLocation, ChainedLocation]:
-        if chain.endswith("O"):
-            chain = chain[:-1]
-
-        target_0 = chain_from_str(chain.split("2")[0])[0]
+        target_0 = chain_from_str(chain_ls[0])[0]
         if isinstance(source, CompoundLocation):
             target_1 = ChainedLocation(chain_from_str(str(source)))
         else:
-            target_1 = ChainedLocation(chain_from_str("".join(chain).split("2")))
+            target_1 = ChainedLocation(chain_from_str(chain_ls))
 
         return target_0, target_1
 
@@ -157,18 +162,14 @@ class Field(Node, FieldEntity):
         if not isinstance(field.type, ts.FieldType):
             return
 
-        maybe_horizontal_dimension = list(filter(lambda dim: dim.value != "K", field.type.dims))
+        h_dims = list(filter(lambda dim: dim.kind != DimensionKind.VERTICAL, field.type.dims))
 
         # early abort if field is vertical
-        if not len(maybe_horizontal_dimension):
+        if not len(h_dims):
             return
 
         # for sparse fields, throw out dense "root" since it's redundant
-        horizontal_dimension = (
-            maybe_horizontal_dimension[1].value
-            if len(maybe_horizontal_dimension) > 1
-            else maybe_horizontal_dimension[0].value
-        )
+        horizontal_dimension = h_dims[1].value if len(h_dims) > 1 else h_dims[0].value
 
         original_horizontal_dimension = horizontal_dimension
 
@@ -178,12 +179,10 @@ class Field(Node, FieldEntity):
             horizontal_dimension = horizontal_dimension[:-1]
 
         # actual case distinction of field types
-        if horizontal_dimension in [loc for loc in BASIC_LOCATIONS.keys()]:
+        if horizontal_dimension in list(BASIC_LOCATIONS.keys()):
             self.location = BASIC_LOCATIONS[horizontal_dimension]()
         elif all(len(token) == 1 for token in horizontal_dimension.split("2")):
-            self.location = ChainedLocation(
-                chain_from_str("".join(horizontal_dimension.split("2")))
-            )
+            self.location = ChainedLocation(chain_from_str(horizontal_dimension.replace("2", "")))
         elif all(
             char in [str(loc()) for loc in BASIC_LOCATIONS.values()]
             for char in horizontal_dimension

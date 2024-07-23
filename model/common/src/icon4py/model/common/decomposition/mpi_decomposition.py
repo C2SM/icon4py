@@ -44,7 +44,7 @@ except ImportError:
     unstructured = None
 
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import CellDim, DimensionKind, EdgeDim, VertexDim
+from icon4py.model.common.dimension import DimensionKind, global_dimensions
 
 
 if TYPE_CHECKING:
@@ -132,20 +132,17 @@ class GHexMultiNodeExchange:
         self._domain_id_gen = definitions.DomainDescriptorIdGenerator(props)
         self._decomposition_info = domain_decomposition
         self._domain_descriptors = {
-            CellDim: self._create_domain_descriptor(
-                CellDim,
-            ),
-            VertexDim: self._create_domain_descriptor(
-                VertexDim,
-            ),
-            EdgeDim: self._create_domain_descriptor(EdgeDim),
+            dim: self._create_domain_descriptor(
+                dim,
+            )
+            for dim in global_dimensions.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
-
         self._patterns = {
-            CellDim: self._create_pattern(CellDim),
-            VertexDim: self._create_pattern(VertexDim),
-            EdgeDim: self._create_pattern(EdgeDim),
+            dim: self._create_pattern(
+                dim,
+            )
+            for dim in global_dimensions.values()
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
@@ -197,7 +194,7 @@ class GHexMultiNodeExchange:
         return pattern
 
     def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
-        assert dim in [CellDim, EdgeDim, VertexDim]
+        assert dim in global_dimensions.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]
