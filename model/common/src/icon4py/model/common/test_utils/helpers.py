@@ -12,7 +12,7 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 from dataclasses import dataclass, field
-from typing import ClassVar, Optional
+from typing import ClassVar, Optional, Union
 
 import numpy as np
 import numpy.typing as npt
@@ -20,6 +20,12 @@ import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
+from gt4py.next import as_field
+from hypothesis import strategies as st
+from hypothesis import target
+from hypothesis.extra.numpy import arrays as hypothesis_array
+
+from ..grid.simple import SimpleGrid
 
 from ..grid.base import BaseGrid
 from ..type_alias import wpfloat
@@ -35,6 +41,17 @@ except ModuleNotFoundError:
 def backend(request):
     return request.param
 
+
+def objShape(
+    obj: Union[tuple, np.ndarray, SimpleGrid], *dims: gt_common.Dimension
+):
+
+    if isinstance(obj, SimpleGrid):
+        return tuple(map(lambda x: obj.size[x], dims))
+    if isinstance(obj, tuple):
+        return obj
+    if isinstance(obj, np.ndarray):
+        return obj.shape
 
 def is_python(backend) -> bool:
     # want to exclude python backends:
@@ -114,6 +131,33 @@ def constant_field(
         dims,
         value * np.ones(shape=tuple(map(lambda x: grid.size[x], dims)), dtype=dtype),
     )
+
+
+def random_field_strategy(
+    mesh: Union[tuple, np.ndarray, SimpleGrid],
+    *dims,
+    min_value=None,
+    max_value=None,
+) -> st.SearchStrategy[float]:
+    """Return a hypothesis strategy of a random field."""
+    return hypothesis_array(
+        dtype=np.float64,
+        shape=objShape(mesh, *dims),
+        elements=st.floats(
+            min_value=min_value,
+            max_value=max_value,
+            exclude_min=min_value is not None,
+            allow_nan=False,
+            allow_infinity=False,
+        ),
+    ).map(as_field(*dims))
+
+
+def maximizeTendency(fld, refFld, varname):
+    """Make hypothesis maximize mean and std of tendency."""
+    tendency = np.asarray(fld) - refFld
+    target(np.mean(np.abs(tendency)), label=f"{varname} mean tendency")
+    target(np.std(tendency), label=f"{varname} stdev. tendency")
 
 
 def as_1D_sparse_field(field: gt_common.Field, target_dim: gt_common.Dimension) -> gt_common.Field:
