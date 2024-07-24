@@ -56,7 +56,7 @@ if dace_orchestration():
 
 def orchestration(method=True):
     def decorator(fuse_func):
-        compiled_sdfgs = {}
+        compiled_sdfgs = {} # Caching
         def wrapper(*args, **kwargs):
             if dace_orchestration():
                 if method:
@@ -65,7 +65,7 @@ def orchestration(method=True):
                     self_name = [param.name for param in inspect.signature(fuse_func).parameters.values()][0]
                 else:
                     warnings.warn("The orchestration decorator is only for methods -at least for now-. Returning the original function.")
-                    return fuse_func(*args, **kwargs)
+                    return fuse_func(*args, **kwargs) # fallback option is always the non-orchstrated function
 
                 has_exchange = False
                 has_grid = False
@@ -81,29 +81,32 @@ def orchestration(method=True):
                     warnings.warn("No exchnage/grid object found. Returning the original function.")
                     return fuse_func(*args, **kwargs)
 
-                compile_time_args = {}
+                compile_time_args_kwargs = {}
                 all_args_kwargs = list(args) + list(kwargs.values())
                 for i, (k, v) in enumerate(fuse_func.__annotations__.items()):
                     if v is dace.compiletime:
-                        compile_time_args[k] = all_args_kwargs[i]
-                unique_id = hash(tuple([id(e) for e in compile_time_args.values()]))
+                        compile_time_args_kwargs[k] = all_args_kwargs[i]
+                unique_id = hash(tuple([id(e) for e in compile_time_args_kwargs.values()]))
                 if method:
-                    del compile_time_args[self_name]
+                    del compile_time_args_kwargs[self_name]
 
-                parse_compile_cache_sdfg(unique_id, compiled_sdfgs, self, exchange_obj, fuse_func, compile_time_args)
+                parse_compile_cache_sdfg(unique_id, compiled_sdfgs, self, exchange_obj, fuse_func, compile_time_args_kwargs)
+                dace_program = compiled_sdfgs[unique_id]['dace_program']
+                sdfg = compiled_sdfgs[unique_id]['sdfg']
+                compiled_sdfg = compiled_sdfgs[unique_id]['compiled_sdfg']
 
                 with dace.config.temporary_config():
                     configure_dace_temp_env()
 
-                    dace_specific_kwargs(exchange_obj, grid, kwargs)
-                    dace_symbols_concretization(exchange_obj, grid, fuse_func, args, kwargs)
-                    args = mod_args_for_dace_structures(fuse_func, args)
+                    updated_args = mod_args_for_dace_structures(fuse_func, args)
+                    updated_kwargs = {**kwargs, **dace_specific_kwargs(exchange_obj, grid)}
+                    updated_kwargs = {**updated_kwargs, **dace_symbols_concretization(grid, fuse_func, args, kwargs)}
 
-                    sdfg_args = compiled_sdfgs[unique_id]['dace_program']._create_sdfg_args(compiled_sdfgs[unique_id]['sdfg'], args, kwargs)
+                    sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
                     if method:
                         del sdfg_args[self_name]
                     
-                    return compiled_sdfgs[unique_id]['compiled_sdfg'](**sdfg_args)
+                    return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
         return wrapper
@@ -139,42 +142,44 @@ def build_connectivities(offset_providers: dict[str, Connectivity]) -> dict[str,
 
 
 if dace_orchestration():
-    def get_stride_from_numpy_to_dace(numpy_array: np.ndarray, axis: int) -> int:
-        """
-        GHEX/NumPy strides: number of bytes to jump
-        DaCe strides: number of elements to jump
-        """
-        return numpy_array.strides[axis] // numpy_array.itemsize
+    class DummyNestedSDFG(SDFGConvertible):
+        """Dummy replacement of the manually placed halo exchanges"""
+        def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
+            sdfg = dace.SDFG('DummyNestedSDFG')
+            state = sdfg.add_state()
+
+            sdfg.add_scalar(name='__return', dtype=dace.int32)
+
+            tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
+                                              inputs=None,
+                                              outputs=None,
+                                              code="__out = 1;",
+                                              language=dace.dtypes.Language.CPP,
+                                              side_effects=False,)
+            state.add_node(tasklet)
+
+            state.add_edge(tasklet, '__out', state.add_write('__return'), None, dace.Memlet(data='__return', subset='0'))
+            tasklet.out_connectors = {'__out':dace.int32}
+
+            return sdfg
+
+        def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
+            return {}
+
+        def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return ([],[])
 
 
-    def dace_symbols_concretization(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid, fuse_func: Callable, args: Any, kwargs: Any):
-        flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
-        kwargs.update({
-            **{"CellDim_sym": grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": grid.offset_providers['E2C'].table.shape[0], "KDim_sym": grid.num_levels},
-            **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
-            **{f"PrognosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
-            **{connectivity_table_size_symbol(connectivity_identifier(k), axis=0):v.table.shape[0] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            **{connectivity_table_size_symbol(connectivity_identifier(k), axis=1):v.table.shape[1] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            **{connectivity_table_stride_symbol(connectivity_identifier(k), axis=0):get_stride_from_numpy_to_dace(v.table, 0) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            **{connectivity_table_stride_symbol(connectivity_identifier(k), axis=1):get_stride_from_numpy_to_dace(v.table, 1) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            })
+    def dev_type_from_gt4py_to_dace(device_type: core_defs.DeviceType) -> dace.dtypes.DeviceType:
+        if device_type == core_defs.DeviceType.CPU:
+            return dace.dtypes.DeviceType.CPU
+        elif device_type == core_defs.DeviceType.CUDA:
+            return dace.dtypes.DeviceType.GPU
+        else:
+            raise ValueError("The device type is not supported.")
 
 
-    def dace_specific_kwargs(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid, kwargs: Any) -> dict[str, Any]:
-        kwargs.update({
-            # connectivity tables
-            **{connectivity_identifier(k):v.table for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            # GHEX C++ ptrs
-            "__context_ptr":expose_cpp_ptr(exchange_obj._context) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
-            "__comm_ptr":expose_cpp_ptr(exchange_obj._comm) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
-            **{f"__pattern_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
-            **{f"__domain_descriptor_{dim.value}Dim_ptr":expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
-            # TODO(kotsaloscv): Possibly needed for future feature, i.e., build GHEX patterns on the fly
-            **{f"__gids_{ind.name}_{dim.value}":exchange_obj._decomposition_info.global_index(dim, ind) if isinstance(exchange_obj, GHexMultiNodeExchange) else np.empty(1, dtype=np.int64) for ind in (DecompositionInfo.EntryType.ALL, DecompositionInfo.EntryType.OWNED, DecompositionInfo.EntryType.HALO) for dim in (CellDim, VertexDim, EdgeDim)},
-        })
-
-
-    def parse_compile_cache_sdfg(unique_id: int, compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, compile_time_args: dict[str, Any]):
+    def parse_compile_cache_sdfg(unique_id: int, compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, compile_time_args_kwargs: dict[str, Any]):
         """Function that parses, compiles and caches the fused SDFG along with adding the halo exchanges."""
         if unique_id in compiled_sdfgs:
             return
@@ -195,7 +200,7 @@ if dace_orchestration():
                                                                     distributed_compilation=False)(fuse_func)
             dace_program = compiled_sdfgs[unique_id]['dace_program']
 
-            compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(self, **compile_time_args, simplify=False, validate=True)
+            compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(self, **compile_time_args_kwargs, simplify=False, validate=True)
             sdfg = compiled_sdfgs[unique_id]['sdfg']
 
             # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
@@ -210,29 +215,6 @@ if dace_orchestration():
         # Restore the original exchange methods
         exchange_obj.exchange_and_wait = tmp_exchange_and_wait
         exchange_obj.exchange = tmp_exchange
-
-
-    def mod_args_for_dace_structures(fuse_func: Callable, args: Any) -> tuple:
-        """Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures"""
-        # DiffusionDiagnosticState_t
-        new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
-        # PrognosticState_t
-        new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
-        # OffsetProviders_int64_t
-        new_args = [OffsetProviders_int64_t.dtype._typeclass.as_ctypes()(**{member: k_v[1][member].data_ptr() for member in k_v[1].keys() if hasattr(k_v[1][member], "table")}) if k_v[0] is OffsetProviders_int64_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
-        # OffsetProviders_int32_t
-        new_args = [OffsetProviders_int32_t.dtype._typeclass.as_ctypes()(**{member: k_v[1][member].data_ptr() for member in k_v[1].keys() if hasattr(k_v[1][member], "table")}) if k_v[0] is OffsetProviders_int32_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
-
-        for new_arg_ in new_args:
-            if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):
-                new_arg_.descriptor = DiffusionDiagnosticState_t
-            if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):
-                new_arg_.descriptor = PrognosticState_t
-            if isinstance(new_arg_, OffsetProviders_int64_t.dtype._typeclass.as_ctypes()):
-                new_arg_.descriptor = OffsetProviders_int64_t
-            if isinstance(new_arg_, OffsetProviders_int32_t.dtype._typeclass.as_ctypes()):
-                new_arg_.descriptor = OffsetProviders_int32_t
-        return tuple(new_args)
 
 
     def configure_dace_temp_env():
@@ -262,41 +244,60 @@ if dace_orchestration():
         return device_type
 
 
-    def dev_type_from_gt4py_to_dace(device_type: core_defs.DeviceType) -> dace.dtypes.DeviceType:
-        if device_type == core_defs.DeviceType.CPU:
-            return dace.dtypes.DeviceType.CPU
-        elif device_type == core_defs.DeviceType.CUDA:
-            return dace.dtypes.DeviceType.GPU
-        else:
-            raise ValueError("The device type is not supported.")
+    def get_stride_from_numpy_to_dace(numpy_array: np.ndarray, axis: int) -> int:
+        """
+        GHEX/NumPy strides: number of bytes to jump
+        DaCe strides: number of elements to jump
+        """
+        return numpy_array.strides[axis] // numpy_array.itemsize
 
 
-    class DummyNestedSDFG(SDFGConvertible):
-        """Dummy replacement of the manually placed halo exchanges"""
-        def __sdfg__(self, *args, **kwargs) -> dace.SDFG:
-            sdfg = dace.SDFG('DummyNestedSDFG')
-            state = sdfg.add_state()
+    def dace_specific_kwargs(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid) -> dict[str, Any]:
+        return {
+            # connectivity tables
+            **{connectivity_identifier(k): v.table for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            # GHEX C++ ptrs
+            "__context_ptr": expose_cpp_ptr(exchange_obj._context) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
+            "__comm_ptr": expose_cpp_ptr(exchange_obj._comm) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
+            **{f"__pattern_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._patterns[dim]) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+            **{f"__domain_descriptor_{dim.value}Dim_ptr": expose_cpp_ptr(exchange_obj._domain_descriptors[dim].__wrapped__) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0 for dim in (CellDim, VertexDim, EdgeDim)},
+        }
 
-            sdfg.add_scalar(name='__return', dtype=dace.int32)
 
-            tasklet = dace.sdfg.nodes.Tasklet('DummyNestedSDFG',
-                                              inputs=None,
-                                              outputs=None,
-                                              code="__out = 1;",
-                                              language=dace.dtypes.Language.CPP,
-                                              side_effects=False,)
-            state.add_node(tasklet)
+    def dace_symbols_concretization(grid: IconGrid, fuse_func: Callable, args: Any, kwargs: Any) -> dict[str, Any]:
+        flattened_xargs_type_value = list(zip(list(fuse_func.__annotations__.values()), list(args) + list(kwargs.values())))
+        return {
+            **{"CellDim_sym": grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": grid.offset_providers['E2C'].table.shape[0], "KDim_sym": grid.num_levels},
+            **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
+            **{f"PrognosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
+            **{connectivity_table_size_symbol(connectivity_identifier(k), axis=0): v.table.shape[0] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{connectivity_table_size_symbol(connectivity_identifier(k), axis=1): v.table.shape[1] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{connectivity_table_stride_symbol(connectivity_identifier(k), axis=0): get_stride_from_numpy_to_dace(v.table, 0) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{connectivity_table_stride_symbol(connectivity_identifier(k), axis=1): get_stride_from_numpy_to_dace(v.table, 1) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            }
 
-            state.add_edge(tasklet, '__out', state.add_write('__return'), None, dace.Memlet(data='__return', subset='0'))
-            tasklet.out_connectors = {'__out':dace.int32}
 
-            return sdfg
+    def mod_args_for_dace_structures(fuse_func: Callable, args: Any) -> tuple:
+        """Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures"""
+        # DiffusionDiagnosticState_t
+        new_args = [DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(hdef_ic=k_v[1].hdef_ic.data_ptr(), div_ic=k_v[1].div_ic.data_ptr(), dwdx=k_v[1].dwdx.data_ptr(), dwdy=k_v[1].dwdy.data_ptr()) if k_v[0] is DiffusionDiagnosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args)))]
+        # PrognosticState_t
+        new_args = [PrognosticState_t.dtype._typeclass.as_ctypes()(rho=k_v[1].rho.data_ptr(), w=k_v[1].w.data_ptr(), vn=k_v[1].vn.data_ptr(), exner=k_v[1].exner.data_ptr(), theta_v=k_v[1].theta_v.data_ptr()) if k_v[0] is PrognosticState_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+        # OffsetProviders_int64_t
+        new_args = [OffsetProviders_int64_t.dtype._typeclass.as_ctypes()(**{member: k_v[1][member].data_ptr() for member in k_v[1].keys() if hasattr(k_v[1][member], "table")}) if k_v[0] is OffsetProviders_int64_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
+        # OffsetProviders_int32_t
+        new_args = [OffsetProviders_int32_t.dtype._typeclass.as_ctypes()(**{member: k_v[1][member].data_ptr() for member in k_v[1].keys() if hasattr(k_v[1][member], "table")}) if k_v[0] is OffsetProviders_int32_t else k_v[1] for k_v in list(zip(list(fuse_func.__annotations__.values()), list(new_args)))]
 
-        def __sdfg_closure__(self, reevaluate: Optional[dict[str, str]] = None) -> dict[str, Any]:
-            return {}
-
-        def __sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
-            return ([],[])
+        for new_arg_ in new_args:
+            if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = DiffusionDiagnosticState_t
+            if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = PrognosticState_t
+            if isinstance(new_arg_, OffsetProviders_int64_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = OffsetProviders_int64_t
+            if isinstance(new_arg_, OffsetProviders_int32_t.dtype._typeclass.as_ctypes()):
+                new_arg_.descriptor = OffsetProviders_int32_t
+        return tuple(new_args)
 
 
     def add_halo_exchanges(sdfg: dace.SDFG, exchange: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Any]):
