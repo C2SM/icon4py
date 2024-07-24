@@ -46,8 +46,10 @@ from icon4py.model.common.interpolation.stencils.mo_intp_rbf_rbf_vec_interpol_ve
     mo_intp_rbf_rbf_vec_interpol_vertex as mo_intp_rbf_rbf_vec_interpol_vertex_orig,
 )
 
-def CachedProgram(stencil, with_domain=True):
-    return stencil
+from icon4py.model.common.orchestration.decorator import dace_orchestration
+if dace_orchestration():
+    # Skip caching since there is a caching mechanism in DaCe orchestration
+    CachedProgram = lambda stencil, with_domain=True: stencil
 
 # diffusion run stencils
 apply_diffusion_to_vn = CachedProgram(apply_diffusion_to_vn_orig)

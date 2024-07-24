@@ -44,9 +44,14 @@ try:
             "dace_gpu": run_dace_gpu,
             "dace_cpu_noopt": run_dace_cpu_noopt,
             "dace_gpu_noopt": run_dace_gpu_noopt,
+            # DaCe Orchestration
+            "dace_cpu_orch": run_dace_cpu,
+            "dace_gpu_orch": run_dace_gpu,
+            "dace_cpu_noopt_orch": run_dace_cpu_noopt,
+            "dace_gpu_noopt_orch": run_dace_gpu_noopt,
         }
     )
-    gpu_backends.extend(["dace_gpu", "dace_gpu_noopt"])
+    gpu_backends.extend(["dace_gpu", "dace_gpu_noopt", "dace_gpu_orch", "dace_gpu_noopt_orch"])
 
 except ImportError:
     # dace module not installed, ignore dace backends
@@ -77,6 +82,7 @@ def pytest_configure(config):
     if config.getoption("--backend"):
         backend = config.getoption("--backend")
         check_backend_validity(backend)
+        settings.backend_name = backend
         settings.backend = backends[backend]
 
 

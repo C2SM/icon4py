@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.model.common.settings import backend
+from icon4py.model.common.settings import backend, backend_name
 
 from collections.abc import Callable
 from typing import Union
@@ -21,7 +21,14 @@ from gt4py.next.common import Connectivity
 from gt4py.next import NeighborOffsetProvider
 
 
-if "dace" in backend.executor.name.lower():
+def dace_orchestration() -> bool:
+    """DaCe Orchestration: GT4Py Programs called in a dace.program annotated function"""
+    if "dace" in backend_name and "orch" in backend_name:
+        return True
+    return False
+
+
+if dace_orchestration():
     import sys
     from collections.abc import Sequence
     from dace.frontend.python.common import SDFGConvertible
@@ -34,7 +41,6 @@ if "dace" in backend.executor.name.lower():
     import dace
     from dace.sdfg.utils import distributed_compile
     from dace import hooks, dtypes
-    from dace.config import Config
     from dace.memlet import Memlet
     from dace.properties import CodeBlock
     from gt4py._core import definitions as core_defs
@@ -52,7 +58,7 @@ def orchestration(method=True):
     def decorator(fuse_func):
         compiled_sdfgs = {}
         def wrapper(*args, **kwargs):
-            if "dace" in backend.executor.name.lower():
+            if dace_orchestration():
                 if method:
                     # self is used to retrieve the _exchange object -on the fly halo exchanges- and the grid object -offset providers-
                     self = args[0]
@@ -132,7 +138,7 @@ def build_connectivities(offset_providers: dict[str, Connectivity]) -> dict[str,
     return connectivities
 
 
-if "dace" in backend.executor.name.lower():
+if dace_orchestration():
     def get_stride_from_numpy_to_dace(numpy_array: np.ndarray, axis: int) -> int:
         """
         GHEX/NumPy strides: number of bytes to jump

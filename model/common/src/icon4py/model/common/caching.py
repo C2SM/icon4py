@@ -18,6 +18,7 @@ import numpy as np
 from gt4py import next as gtx
 from gt4py.next.otf import workflow
 from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
+from gt4py.next.common import Connectivity
 
 from icon4py.model.common.settings import device
 
@@ -133,3 +134,7 @@ class CachedProgram:
 
         # todo(samkellerhals): if we merge gt4py PR we can also pass connectivity args here conn_args=self.conn_args
         return self.compiled_program(*program_args, offset_provider=offset_provider)
+    
+    def with_connectivities(self, connectivities: dict[str, Connectivity]) -> "CachedProgram":
+        """Used ONLY in DaCe Orchestration for ahead-of-time compilation."""
+        return self
