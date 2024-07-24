@@ -18,7 +18,7 @@ import warnings
 from icon4py.model.common.decomposition.definitions import SingleNodeResult
 from icon4py.model.common.decomposition.mpi_decomposition import MultiNodeResult
 from gt4py.next.common import Connectivity
-from gt4py.next import NeighborOffsetProvider
+from gt4py.next import CompileTimeConnectivity
 
 
 def dace_orchestration() -> bool:
@@ -128,11 +128,11 @@ def build_connectivities(offset_providers: dict[str, Connectivity]) -> dict[str,
     connectivities = {}
     for k,v in offset_providers.items():
         if hasattr(v, "table"):
-            connectivities[k] = NeighborOffsetProvider(v.table, 
-                                                       v.origin_axis,
-                                                       v.neighbor_axis,
-                                                       v.max_neighbors,
-                                                       v.has_skip_values)
+            connectivities[k] = CompileTimeConnectivity(v.max_neighbors,
+                                                        v.has_skip_values,
+                                                        v.origin_axis,
+                                                        v.neighbor_axis,
+                                                        v.table.dtype)
         else:
             connectivities[k] = v
     
@@ -307,6 +307,8 @@ if dace_orchestration():
         '''Add halo exchange nodes to the SDFG only where needed.'''
         if not isinstance(exchange, GHexMultiNodeExchange):
             return
+
+        unique_id = str(unique_id).replace('-', '_') # unique_id can be negative
 
         # TODO(kotsaloscv): Work on asynchronous communication
         wait = True
