@@ -24,7 +24,9 @@ from gt4py.next import (
     int32,
     maximum,
     minimum,
+    neighbor_sum,
     program,
+    scan_operator,
     sin,
     tanh,
     where,
@@ -32,7 +34,10 @@ from gt4py.next import (
 
 from icon4py.model.common.dimension import (
     C2E,
+    C2E2C,
+    C2E2CO,
     E2C,
+    C2E2CODim,
     CellDim,
     E2CDim,
     EdgeDim,
@@ -564,6 +569,40 @@ def _compute_maxslp_maxhgtd(
     return z_maxslp, z_maxhgtd
 
 
+@program
+def compute_maxslp_maxhgtd(
+    ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
+    dual_edge_length: Field[[EdgeDim], wpfloat],
+    z_maxslp: Field[[CellDim, KDim], wpfloat],
+    z_maxhgtd: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute z_maxslp and z_maxhgtd.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        ddxn_z_full: dual_edge_length
+        dual_edge_length: dual_edge_length
+        z_maxslp: output
+        z_maxhgtd: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+    _compute_maxslp_maxhgtd(
+        ddxn_z_full=ddxn_z_full,
+        dual_edge_length=dual_edge_length,
+        out=(z_maxslp, z_maxhgtd),
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
 @field_operator
 def _compute_exner_exfac(
     ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
@@ -1021,3 +1060,112 @@ def compute_hmask_dd3d(
         out=hmask_dd3d,
         domain={EdgeDim: (horizontal_start, horizontal_end)},
     )
+
+
+@field_operator
+def _compute_weighted_cell_neighbor_sum(
+    field: Field[[CellDim, KDim], wpfloat],
+    c_bln_avg: Field[[CellDim, C2E2CODim], wpfloat],
+) -> Field[[CellDim, KDim], wpfloat]:
+    field_avg = neighbor_sum(field(C2E2CO) * c_bln_avg, axis=C2E2CODim)
+    return field_avg
+
+
+@program
+def compute_weighted_cell_neighbor_sum(
+    maxslp: Field[[CellDim, KDim], wpfloat],
+    maxhgtd: Field[[CellDim, KDim], wpfloat],
+    c_bln_avg: Field[[CellDim, C2E2CODim], wpfloat],
+    z_maxslp_avg: Field[[CellDim, KDim], wpfloat],
+    z_maxhgtd_avg: Field[[CellDim, KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute z_maxslp_avg and z_maxhgtd_avg.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        maxslp: Max field over ddxn_z_full offset
+        maxhgtd: Max field over ddxn_z_full offset*dual_edge_length offset
+        c_bln_avg: Interpolation field
+        z_maxslp_avg: output
+        z_maxhgtd_avg: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+
+    _compute_weighted_cell_neighbor_sum(
+        field=maxslp,
+        c_bln_avg=c_bln_avg,
+        out=z_maxslp_avg,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+    _compute_weighted_cell_neighbor_sum(
+        field=maxhgtd,
+        c_bln_avg=c_bln_avg,
+        out=z_maxhgtd_avg,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@field_operator
+def _compute_max_nbhgt(
+    z_mc_nlev: Field[[CellDim], wpfloat],
+) -> Field[[CellDim], wpfloat]:
+    max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
+    max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
+    return max_nbhgt
+
+
+@program
+def compute_max_nbhgt(
+    z_mc_nlev: Field[[CellDim], wpfloat],
+    max_nbhgt: Field[[CellDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+):
+    """
+    Compute max_nbhgt.
+
+    See mo_vertical_grid.f90.
+
+    Args:
+        z_mc_nlev: Last K level of z_mc
+        max_nbhgt: output
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+    """
+    _compute_max_nbhgt(
+        z_mc_nlev=z_mc_nlev, out=max_nbhgt, domain={CellDim: (horizontal_start, horizontal_end)}
+    )
+
+
+@scan_operator(axis=KDim, forward=True, init=(0, False))
+def _compute_param(
+    param: tuple[int32, bool],
+    z_me_jk: float,
+    z_ifc_off: float,
+    z_ifc_off_koff: float,
+    lower: int32,
+    nlev: int32,
+) -> tuple[int32, bool]:
+    param_0, param_1 = param
+    if param_0 >= lower:
+        if (param_0 == nlev) | (z_me_jk <= z_ifc_off) & (z_me_jk >= z_ifc_off_koff):
+            param_1 = True
+    return param_0 + 1, param_1
+
+
+@field_operator(grid_type=GridType.UNSTRUCTURED)
+def _compute_z_ifc_off_koff(
+    z_ifc_off: Field[[EdgeDim, KDim], wpfloat],
+) -> Field[[EdgeDim, KDim], wpfloat]:
+    n = z_ifc_off(Koff[1])
+    return n

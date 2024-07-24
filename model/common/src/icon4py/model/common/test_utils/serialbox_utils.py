@@ -497,6 +497,9 @@ class IconGridSavepoint(IconSavepoint):
 
 
 class InterpolationSavepoint(IconSavepoint):
+    def c_bln_avg(self):
+        return self._get_field("c_bln_avg", CellDim, C2E2CODim)
+
     def c_intp(self):
         return self._get_field("c_intp", VertexDim, V2CDim)
 
@@ -705,6 +708,7 @@ class MetricSavepoint(IconSavepoint):
 
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
+        ser_input = self._reduce_to_dim_size(ser_input, (CellDim, C2E2CDim, KDim))
         if ser_input.shape[1] != sparse_size:
             ser_input = np.moveaxis(ser_input, 1, -1)
 
