@@ -87,10 +87,8 @@ def orchestration(method=True):
                     if v is dace.compiletime:
                         compile_time_args_kwargs[k] = all_args_kwargs[i]
                 unique_id = hash(tuple([id(e) for e in compile_time_args_kwargs.values()]))
-                if method:
-                    del compile_time_args_kwargs[self_name]
 
-                parse_compile_cache_sdfg(unique_id, compiled_sdfgs, self, exchange_obj, fuse_func, compile_time_args_kwargs)
+                parse_compile_cache_sdfg(unique_id, compiled_sdfgs, exchange_obj, grid.offset_providers, fuse_func, compile_time_args_kwargs, self_name, simplify_fused_sdfg=True)
                 dace_program = compiled_sdfgs[unique_id]['dace_program']
                 sdfg = compiled_sdfgs[unique_id]['sdfg']
                 compiled_sdfg = compiled_sdfgs[unique_id]['compiled_sdfg']
@@ -99,7 +97,7 @@ def orchestration(method=True):
                     configure_dace_temp_env()
 
                     updated_args = mod_args_for_dace_structures(fuse_func, args)
-                    updated_kwargs = {**kwargs, **dace_specific_kwargs(exchange_obj, grid)}
+                    updated_kwargs = {**kwargs, **dace_specific_kwargs(exchange_obj, grid.offset_providers)}
                     updated_kwargs = {**updated_kwargs, **dace_symbols_concretization(grid, fuse_func, args, kwargs)}
 
                     sdfg_args = dace_program._create_sdfg_args(sdfg, updated_args, updated_kwargs)
@@ -179,7 +177,7 @@ if dace_orchestration():
             raise ValueError("The device type is not supported.")
 
 
-    def parse_compile_cache_sdfg(unique_id: int, compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], self: Any, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], fuse_func: Callable, compile_time_args_kwargs: dict[str, Any]):
+    def parse_compile_cache_sdfg(unique_id: int, compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Connectivity], fuse_func: Callable, compile_time_args_kwargs: dict[str, Any], self_name: Optional[str] = None, simplify_fused_sdfg: bool = True):
         """Function that parses, compiles and caches the fused SDFG along with adding the halo exchanges."""
         if unique_id in compiled_sdfgs:
             return
@@ -200,13 +198,18 @@ if dace_orchestration():
                                                                     distributed_compilation=False)(fuse_func)
             dace_program = compiled_sdfgs[unique_id]['dace_program']
 
-            compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(self, **compile_time_args_kwargs, simplify=False, validate=True)
+            if self_name:
+                self = compile_time_args_kwargs.pop(self_name)
+                compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(self, **compile_time_args_kwargs, simplify=False, validate=True)
+            else:
+                compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(**compile_time_args_kwargs, simplify=False, validate=True)
             sdfg = compiled_sdfgs[unique_id]['sdfg']
 
             # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
-            add_halo_exchanges(sdfg, exchange_obj, self.grid.offset_providers)
+            add_halo_exchanges(sdfg, exchange_obj, offset_providers, unique_id)
             
-            #sdfg.simplify(validate=True)
+            if simplify_fused_sdfg:
+                sdfg.simplify(validate=True)
 
             with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg_:
                 # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
@@ -252,10 +255,10 @@ if dace_orchestration():
         return numpy_array.strides[axis] // numpy_array.itemsize
 
 
-    def dace_specific_kwargs(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], grid: IconGrid) -> dict[str, Any]:
+    def dace_specific_kwargs(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Connectivity]) -> dict[str, Any]:
         return {
             # connectivity tables
-            **{connectivity_identifier(k): v.table for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{connectivity_identifier(k): v.table for k,v in offset_providers.items() if hasattr(v, "table")},
             # GHEX C++ ptrs
             "__context_ptr": expose_cpp_ptr(exchange_obj._context) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
             "__comm_ptr": expose_cpp_ptr(exchange_obj._comm) if isinstance(exchange_obj, GHexMultiNodeExchange) else 0,
@@ -300,7 +303,7 @@ if dace_orchestration():
         return tuple(new_args)
 
 
-    def add_halo_exchanges(sdfg: dace.SDFG, exchange: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Any]):
+    def add_halo_exchanges(sdfg: dace.SDFG, exchange: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Any], unique_id: int):
         '''Add halo exchange nodes to the SDFG only where needed.'''
         if not isinstance(exchange, GHexMultiNodeExchange):
             return
@@ -509,7 +512,7 @@ if dace_orchestration():
                 levels = ({len(arg.shape)} == 1) ? 1u : {arg.shape[1]};
                 '''
                                 
-                descr_unique_name = f'field_desc_{i}_{counter}_{id(exchange)}'
+                descr_unique_name = f'field_desc_{i}_{counter}_{unique_id}'
                 descr_unique_names.append(descr_unique_name)
                 descr_type_ = f"ghex::unstructured::data_descriptor<ghex::{'cpu' if arg.storage.value <= 5 else 'gpu'}, int, int, {arg.dtype.ctype}>"
                 if wait:
@@ -527,27 +530,27 @@ if dace_orchestration():
                 __pattern = ''
                 __domain_descriptor = ''
                 for dim_ in (CellDim, VertexDim, EdgeDim):
-                    __pattern += f"__pattern_{dim_.value}Dim_ptr_{id(exchange)} = IN___pattern_{dim_.value}Dim_ptr;\n" # IN_XXX comes from the DaCe connector
-                    __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{id(exchange)} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
+                    __pattern += f"__pattern_{dim_.value}Dim_ptr_{unique_id} = IN___pattern_{dim_.value}Dim_ptr;\n" # IN_XXX comes from the DaCe connector
+                    __domain_descriptor += f"__domain_descriptor_{dim_.value}Dim_ptr_{unique_id} = IN___domain_descriptor_{dim_.value}Dim_ptr;\n"
                     
                 code = f'''
-                    __context_ptr_{id(exchange)} = IN___context_ptr;
-                    __comm_ptr_{id(exchange)} = IN___comm_ptr;
+                    __context_ptr_{unique_id} = IN___context_ptr;
+                    __comm_ptr_{unique_id} = IN___comm_ptr;
                     {__pattern}
                     {__domain_descriptor}
                     '''
 
             code += f'''
-                    ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr_{id(exchange)});
+                    ghex::context* m = reinterpret_cast<ghex::context*>(__context_ptr_{unique_id});
                     
-                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim.value}Dim_ptr_{id(exchange)});
-                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim.value}Dim_ptr_{id(exchange)});
-                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr_{id(exchange)});
+                    {pattern_type}* pattern = reinterpret_cast<{pattern_type}*>(__pattern_{dim.value}Dim_ptr_{unique_id});
+                    {domain_descriptor_type}* domain_descriptor = reinterpret_cast<{domain_descriptor_type}*>(__domain_descriptor_{dim.value}Dim_ptr_{unique_id});
+                    {communication_object_type}* communication_object = reinterpret_cast<{communication_object_type}*>(__comm_ptr_{unique_id});
 
                     {fields_desc}
 
-                    h_{id(exchange)} = communication_object->exchange({", ".join([f'(*pattern)({"" if wait else "*"}{descr_unique_names[i]})' for i in range(len(global_buffers))])});
-                    { 'h_'+str(id(exchange))+'.wait();' if wait else ''}
+                    h_{unique_id} = communication_object->exchange({", ".join([f'(*pattern)({"" if wait else "*"}{descr_unique_names[i]})' for i in range(len(global_buffers))])});
+                    { 'h_'+str(unique_id)+'.wait();' if wait else ''}
                     '''
 
             tasklet.code = CodeBlock(code=code, language=dace.dtypes.Language.CPP)
@@ -557,16 +560,16 @@ if dace_orchestration():
                 __pattern = ''
                 __domain_descriptor = ''
                 for dim_ in (CellDim, VertexDim, EdgeDim):
-                    __pattern += f"{dace.uintp.dtype} __pattern_{dim_.value}Dim_ptr_{id(exchange)};\n"
-                    __domain_descriptor += f"{dace.uintp.dtype} __domain_descriptor_{dim_.value}Dim_ptr_{id(exchange)};\n"
+                    __pattern += f"{dace.uintp.dtype} __pattern_{dim_.value}Dim_ptr_{unique_id};\n"
+                    __domain_descriptor += f"{dace.uintp.dtype} __domain_descriptor_{dim_.value}Dim_ptr_{unique_id};\n"
                 
                 code = f'''
-                        {dace.uintp.dtype} __context_ptr_{id(exchange)};
-                        {dace.uintp.dtype} __comm_ptr_{id(exchange)};
+                        {dace.uintp.dtype} __context_ptr_{unique_id};
+                        {dace.uintp.dtype} __comm_ptr_{unique_id};
                         {__pattern}
                         {__domain_descriptor}
                         {fields_desc_glob_vars}
-                        ghex::communication_handle<{communication_handle_type}> h_{id(exchange)};
+                        ghex::communication_handle<{communication_handle_type}> h_{unique_id};
                         '''
             else:
                 code = fields_desc_glob_vars
