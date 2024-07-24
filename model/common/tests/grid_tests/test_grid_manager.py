@@ -312,10 +312,18 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
     grid = SimpleGrid()
     grid_parser = GridFile(data)
 
-    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.C2E), grid.connectivities[C2EDim])
-    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.E2C), grid.connectivities[E2CDim])
-    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.V2E), grid.connectivities[V2EDim])
-    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.V2C), grid.connectivities[V2CDim])
+    assert np.allclose(
+        grid_parser.int_field(GridFile.ConnectivityName.C2E), grid.connectivities[C2EDim]
+    )
+    assert np.allclose(
+        grid_parser.int_field(GridFile.ConnectivityName.E2C), grid.connectivities[E2CDim]
+    )
+    assert np.allclose(
+        grid_parser.int_field(GridFile.ConnectivityName.V2E), grid.connectivities[V2EDim]
+    )
+    assert np.allclose(
+        grid_parser.int_field(GridFile.ConnectivityName.V2C), grid.connectivities[V2CDim]
+    )
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -984,5 +992,3 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
         serialized_grid.get_offset_provider("C2E2C2E").table,
     )
     assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
-
-

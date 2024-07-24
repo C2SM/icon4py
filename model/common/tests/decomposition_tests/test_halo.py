@@ -15,7 +15,6 @@ import pathlib
 
 import mpi4py
 import mpi4py.MPI
-import numpy as np
 import pytest
 import xugrid as xu
 
@@ -26,7 +25,7 @@ from icon4py.model.common.decomposition import definitions as defs
 from icon4py.model.common.decomposition.halo import HaloGenerator
 from icon4py.model.common.grid import simple
 from icon4py.model.common.settings import xp
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
@@ -286,27 +285,29 @@ def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     )
     manager()
     return manager
-    
+
 
 def as_ugrid2d(file: pathlib.Path) -> xu.Ugrid2d:
     return as_xudataset(file).grid
 
+
 def as_xudataset(file: pathlib.Path) -> xu.UgridDataset:
     return xu.open_dataset(file.as_posix())
+
 
 def global_indices(dim: dims.Dimension) -> int:
     mesh = simple.SimpleGrid()
     return xp.arange(mesh.size[dim], dtype=xp.int32)
 
-def icon_distribution(props:defs.ProcessProperties, decomposition_info:defs.DecompositionInfo) -> xp.ndarray:
-    cell_index =  decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.OWNED)
+
+def icon_distribution(
+    props: defs.ProcessProperties, decomposition_info: defs.DecompositionInfo
+) -> xp.ndarray:
+    cell_index = decomposition_info.global_index(
+        dims.CellDim, defs.DecompositionInfo.EntryType.OWNED
+    )
     comm = props.comm
-    local_sizes = xp.array(comm.gather(cell_index.size, root=0))
-    if comm.rank == 0:
-        recv_buffer = xp.empty(sum(local_sizes), dtype=int)
-    else:
-        recv_buffer = None
-    comm.Gatherv(sendbuf=cell_index, recvbuf=(recv_buffer, local_sizes), root=0)
+    local_sizes, recv_buffer = gather_field(cell_index, comm)
     distribution = xp.empty((sum(local_sizes)), dtype=int)
     if comm.rank == 0:
         start_index = 0
@@ -314,17 +315,26 @@ def icon_distribution(props:defs.ProcessProperties, decomposition_info:defs.Deco
             end_index = local_sizes[s]
             distribution[recv_buffer[start_index:end_index]] = s
             start_index = end_index
-    
+
     comm.Bcast(distribution, root=0)
     return distribution
+
+
+def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm, dtype=int) -> tuple:
+    local_sizes = xp.array(comm.gather(field.size, root=0))
+    if comm.rank == 0:
+        recv_buffer = xp.empty(sum(local_sizes), dtype=dtype)
+    else:
+        recv_buffer = None
+    comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
+    return local_sizes, recv_buffer
+
 
 @pytest.mark.xfail(reason="This test is not yet implemented")
 def test_local_grid(processor_props, caplog):  # fixture
     caplog.set_level(logging.INFO)
     grid = as_ugrid2d(UGRID_FILE)
     icon_grid = grid_file_manager(GRID_FILE).grid
-    distributed_grids = grid.partition(n_part=4)
-    # TODO (@halungge): replace with the icon 4 nodes distribution from serialbox data.
     labels = grid.label_partitions(n_part=4)
     halo_generator = HaloGenerator(
         ugrid=grid,
@@ -337,19 +347,20 @@ def test_local_grid(processor_props, caplog):  # fixture
     )
     decomposition_info = halo_generator.construct_decomposition_info()
     local_grid = halo_generator.local_grid(decomposition_info)
-    
-    assert local_grid.num_cells == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.All).size
-    
-  
-#@pytest.mark.with_mpi(min_size=4)  
-def test_distributed_fields(processor_props): # fixture
-    #if processor_props.comm_size != 4:
-    #    pytest.skip("This test requires 4 MPI ranks.")
+
+    assert (
+        local_grid.num_cells
+        == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.All).size
+    )
+
+
+@pytest.mark.with_mpi
+def test_distributed_fields(processor_props):  # fixture
     grid_manager = grid_file_manager(GRID_FILE)
-    processor_props.rank = 2
+
     ugrid = as_ugrid2d(UGRID_FILE)
-    labels = ugrid.label_partitions(n_part=4)
-    local_patches = ugrid.partition(n_part=4)
+    labels = ugrid.label_partitions(n_part=processor_props.comm_size)
+
     halo_generator = HaloGenerator(
         ugrid=ugrid,
         rank_info=processor_props,
@@ -359,17 +370,60 @@ def test_distributed_fields(processor_props): # fixture
         node_face_connectivity=grid_manager.grid.connectivities[dims.V2CDim],
     )
     decomposition_info = halo_generator.construct_decomposition_info()
-    cell_area, edge_length = grid_manager.read_geometry(decomposition_info)
-    print(f"rank = {processor_props.rank} has size(cell_area): {cell_area.shape}, has size(edge_length): {edge_length.shape}")
-    assert cell_area.size == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL).size
-    assert cell_area.size <= grid_manager.grid.global_properties.num_cells
-    assert edge_length.size == decomposition_info.global_index(dims.EdgeDim,
-                                                             defs.DecompositionInfo.EntryType.ALL).size
-    owned_cell_area = cell_area[decomposition_info.local_index(dims.CellDim, defs.DecompositionInfo.EntryType.OWNED)]
-    assert np.allclose(local_patches[processor_props.rank]["cell_area"] , cell_area)
-    merged = xu.merge_partitions(local_patches)
+    # distributed read: read one field per dimension
+    local_geometry_fields = grid_manager.read_geometry(decomposition_info)
+    local_cell_area = local_geometry_fields[gm.GridFile.GeometryName.CELL_AREA]
+    local_edge_length = local_geometry_fields[gm.GridFile.GeometryName.EDGE_LENGTH]
+    local_vlon = grid_manager.read_coordinates(decomposition_info)[
+        gm.GridFile.CoordinateName.VERTEX_LONGITUDE
+    ]
+    print(
+        f"rank = {processor_props.rank} has size(cell_area): {local_cell_area.shape}, has size(edge_length): {local_edge_length.shape}"
+    )
+    # the local number of cells must be at most the global number of cells (analytically computed)
+    assert local_cell_area.size <= grid_manager.grid.global_properties.num_cells
+    # global read: read the same (global fields)
+    global_geometry_fields = grid_manager.read_geometry()
+    global_vlon = grid_manager.read_coordinates()[gm.GridFile.CoordinateName.VERTEX_LONGITUDE]
 
-    
-    
-    
+    global_cell_area = global_geometry_fields[gm.GridFile.GeometryName.CELL_AREA]
+    global_edge_length = global_geometry_fields[gm.GridFile.GeometryName.EDGE_LENGTH]
+    assert_gathered_field_against_global(
+        decomposition_info, processor_props, dims.CellDim, global_cell_area, local_cell_area
+    )
 
+    assert_gathered_field_against_global(
+        decomposition_info, processor_props, dims.EdgeDim, global_edge_length, local_edge_length
+    )
+    assert_gathered_field_against_global(
+        decomposition_info, processor_props, dims.VertexDim, global_vlon, local_vlon
+    )
+
+
+def assert_gathered_field_against_global(
+    decomposition_info: defs.DecompositionInfo,
+    processor_props: defs.ProcessProperties,
+    dim: dims.Dimension,
+    global_reference_field: xp.ndarray,
+    local_field: xp.ndarray,
+):
+    assert (
+        local_field.size
+        == decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.ALL).size
+    )
+    owned_entries = local_field[
+        decomposition_info.local_index(dim, defs.DecompositionInfo.EntryType.OWNED)
+    ]
+    gathered_sizes, gathered_field = gather_field(
+        owned_entries, processor_props.comm, dtype=xp.float64
+    )
+    global_index_sizes, gathered_global_indices = gather_field(
+        decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED),
+        processor_props.comm,
+        dtype=int,
+    )
+    if processor_props.rank == 0:
+        assert xp.all(gathered_sizes == global_index_sizes)
+        sorted = xp.zeros(global_reference_field.shape, dtype=xp.float64)
+        sorted[gathered_global_indices] = gathered_field
+        assert helpers.dallclose(sorted, global_reference_field)

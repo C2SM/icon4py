@@ -27,6 +27,7 @@ from icon4py.model.common.settings import xp
 
 log = logging.getLogger(__name__)
 
+
 # TODO do we need three of those?
 class DecompositionFlag(enum.IntEnum):
     #: cell is owned by this rank
@@ -257,13 +258,14 @@ class HaloGenerator:
         decomp_info.with_dimension(dims.VertexDim, all_vertices, v_owner_mask)
         return decomp_info
 
-    def construct_local_connectivity(self, field_offset: gtx.FieldOffset,
-                                     decom_info: defs.DecompositionInfo) -> xp.ndarray:
+    def construct_local_connectivity(
+        self, field_offset: gtx.FieldOffset, decom_info: defs.DecompositionInfo
+    ) -> xp.ndarray:
         """
         Construct a connectivity table for use on a given rank: it maps from source to target dimension in local indices.
-        
+
         Args:
-            field_offset: FieldOffset for which we want to construct the offset table 
+            field_offset: FieldOffset for which we want to construct the offset table
             decom_info: DecompositionInfo for the current rank
 
         Returns: array, containt the connectivity table for the field_offset with rank-local indices
@@ -288,12 +290,16 @@ class HaloGenerator:
         log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
         return sliced_connectivity
 
+
 # should be done in grid manager!
-def local_grid(props: defs.ProcessProperties, 
-               decomp_info:defs.DecompositionInfo, 
-               global_params:icon_grid.GlobalGridParams,
-               num_lev:int, 
-               limited_area:bool = False, on_gpu:bool=False, )->base_grid.BaseGrid:
+def local_grid(
+    props: defs.ProcessProperties,
+    decomp_info: defs.DecompositionInfo,
+    global_params: icon_grid.GlobalGridParams,
+    num_lev: int,
+    limited_area: bool = False,
+    on_gpu: bool = False,
+) -> base_grid.BaseGrid:
     """
     Constructs a local grid for this rank based on the decomposition info.
     TODO (@halungge): for now only returning BaseGrid as we have not start/end indices implementation yet
@@ -305,18 +311,21 @@ def local_grid(props: defs.ProcessProperties,
     Returns:
         local_grid: the local grid
     """
-    num_vertices = decomp_info.global_index(dims.VertexDim, defs.DecompositionInfo.EntryType.ALL).size
+    num_vertices = decomp_info.global_index(
+        dims.VertexDim, defs.DecompositionInfo.EntryType.ALL
+    ).size
     num_edges = decomp_info.global_index(dims.EdgeDim, defs.DecompositionInfo.EntryType.ALL).size
     num_cells = decomp_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL).size
     grid_size = base_grid.HorizontalGridSize(
         num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
     )
-    config = base_grid.GridConfig(horizontal_config = grid_size, 
-                                  vertical_size = num_lev, 
-                                  on_gpu=on_gpu, 
-                                  limited_area=limited_area)
-    
-    local_grid = icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_global_params(global_params)
+    config = base_grid.GridConfig(
+        horizontal_config=grid_size, vertical_size=num_lev, on_gpu=on_gpu, limited_area=limited_area
+    )
+
+    local_grid = (
+        icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_global_params(global_params)
+    )
     # add connectivities
 
     return local_grid
