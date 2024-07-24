@@ -15,6 +15,7 @@ import pathlib
 
 import mpi4py
 import mpi4py.MPI
+import numpy as np
 import pytest
 import xugrid as xu
 
@@ -23,7 +24,7 @@ import icon4py.model.common.grid.grid_manager as gm
 import icon4py.model.common.grid.vertical as v_grid
 from icon4py.model.common.decomposition import definitions as defs
 from icon4py.model.common.decomposition.halo import HaloGenerator
-from icon4py.model.common.grid import icon, simple
+from icon4py.model.common.grid import simple
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
@@ -123,7 +124,7 @@ owned = {dims.CellDim: cell_own, dims.EdgeDim: edge_own, dims.VertexDim: vertex_
 halos = {dims.CellDim: cell_halos, dims.EdgeDim: edge_halos, dims.VertexDim: vertex_halo}
 
 
-def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # noqa: F811  # fixture
+def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # fixture
     grid = simple_ugrid
     halo_generator = HaloGenerator(
         ugrid=grid,
@@ -142,7 +143,7 @@ def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # noqa: F
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-def test_element_ownership_is_unique(dim, processor_props, simple_ugrid):  # noqa: F811  # fixture
+def test_element_ownership_is_unique(dim, processor_props, simple_ugrid):  # fixture
     grid = simple_ugrid
     halo_generator = HaloGenerator(
         ugrid=grid,
@@ -190,7 +191,7 @@ def test_element_ownership_is_unique(dim, processor_props, simple_ugrid):  # noq
 # TODO (@halungge) this test can be run on 4 MPI ranks or should we rather switch to a single node,
 # and parametrizes the rank number
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
-def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim):  # noqa: F811  # fixture
+def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim):  # fixture
     grid = simple_ugrid
     halo_generator = HaloGenerator(
         ugrid=grid,
@@ -216,7 +217,7 @@ def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim)
 @pytest.mark.parametrize(
     "field_offset", [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.V2E, dims.C2E2C]
 )
-def test_local_connectivities(processor_props, caplog, field_offset):  # noqa: F811  # fixture
+def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     caplog.set_level(logging.INFO)
     grid = as_ugrid2d(UGRID_FILE)
     icon_grid = grid_file_manager(GRID_FILE).grid
@@ -279,18 +280,19 @@ GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
 )
 
 
-def grid_file_manager(file: pathlib.Path) -> icon.IconGrid:
+def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     manager = gm.GridManager(
-        gm.ToGt4PyTransformation(), file, v_grid.VerticalGridConfig(num_levels=1)
+        gm.ToGt4PyTransformation(), str(file), v_grid.VerticalGridConfig(num_levels=1)
     )
     manager()
     return manager
     
 
 def as_ugrid2d(file: pathlib.Path) -> xu.Ugrid2d:
-    xu_dataset = xu.open_dataset(file.as_posix())
-    return xu_dataset.grid
+    return as_xudataset(file).grid
 
+def as_xudataset(file: pathlib.Path) -> xu.UgridDataset:
+    return xu.open_dataset(file.as_posix())
 
 def global_indices(dim: dims.Dimension) -> int:
     mesh = simple.SimpleGrid()
@@ -317,7 +319,7 @@ def icon_distribution(props:defs.ProcessProperties, decomposition_info:defs.Deco
     return distribution
 
 @pytest.mark.xfail(reason="This test is not yet implemented")
-def test_local_grid(processor_props, caplog):  # noqa: F811  # fixture
+def test_local_grid(processor_props, caplog):  # fixture
     caplog.set_level(logging.INFO)
     grid = as_ugrid2d(UGRID_FILE)
     icon_grid = grid_file_manager(GRID_FILE).grid
@@ -339,7 +341,35 @@ def test_local_grid(processor_props, caplog):  # noqa: F811  # fixture
     assert local_grid.num_cells == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.All).size
     
   
-  
-def test_distributed_fields():
-    pass
+#@pytest.mark.with_mpi(min_size=4)  
+def test_distributed_fields(processor_props): # fixture
+    #if processor_props.comm_size != 4:
+    #    pytest.skip("This test requires 4 MPI ranks.")
+    grid_manager = grid_file_manager(GRID_FILE)
+    processor_props.rank = 2
+    ugrid = as_ugrid2d(UGRID_FILE)
+    labels = ugrid.label_partitions(n_part=4)
+    local_patches = ugrid.partition(n_part=4)
+    halo_generator = HaloGenerator(
+        ugrid=ugrid,
+        rank_info=processor_props,
+        rank_mapping=labels,
+        num_lev=1,
+        face_face_connectivity=grid_manager.grid.connectivities[dims.C2E2CDim],
+        node_face_connectivity=grid_manager.grid.connectivities[dims.V2CDim],
+    )
+    decomposition_info = halo_generator.construct_decomposition_info()
+    cell_area, edge_length = grid_manager.read_geometry(decomposition_info)
+    print(f"rank = {processor_props.rank} has size(cell_area): {cell_area.shape}, has size(edge_length): {edge_length.shape}")
+    assert cell_area.size == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL).size
+    assert cell_area.size <= grid_manager.grid.global_properties.num_cells
+    assert edge_length.size == decomposition_info.global_index(dims.EdgeDim,
+                                                             defs.DecompositionInfo.EntryType.ALL).size
+    owned_cell_area = cell_area[decomposition_info.local_index(dims.CellDim, defs.DecompositionInfo.EntryType.OWNED)]
+    assert np.allclose(local_patches[processor_props.rank]["cell_area"] , cell_area)
+    merged = xu.merge_partitions(local_patches)
+
     
+    
+    
+

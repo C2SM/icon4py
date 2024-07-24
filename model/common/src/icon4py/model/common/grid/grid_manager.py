@@ -32,6 +32,7 @@ except ImportError:
             raise ModuleNotFoundError("NetCDF4 is not installed.")
 
 
+import icon4py.model.common.dimension as dims
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
     C2E2CDim,
@@ -89,7 +90,7 @@ class GridFile:
         LEVEL = "grid_level"
         ROOT = "grid_root"
 
-    class OffsetName(GridFileName):
+    class ConnectivityName(GridFileName):
         """Names for connectivities used in the grid file."""
 
         # e2c2e/e2c2eO: diamond edges (including origin) not present in grid file-> construct
@@ -216,13 +217,19 @@ class GridFile:
             self._log.warning(msg)
             raise IconGridError(msg) from err
 
-    def float_field(self, name: GridFileName, indices:np.ndarray = [], dtype=gtx.float64) -> np.ndarray:
-        
+    def float_field(self, name: GridFileName, indices:np.ndarray = None, dtype=gtx.float64) -> np.ndarray:
+        """ Read a float field from the grid file.
+    
+        If a index array is given it only reads the values at those positions.
+        TODO (@halungge): currently only supports 1D fields
+        """
         try:
-            # use python slice?
-            nc_variable = self._dataset.variables[name]
-            self._log.debug(f"reading {name}: {nc_variable}")
-            data = nc_variable[:] if not indices else nc_variable[indices]
+            # use python slice? 2D fields 
+            #           (horizontal, vertical) not present in grid file
+            #           (sparse, horizontal) 
+            variable = self._dataset.variables[name]
+            self._log.debug(f"reading {name}: {variable}")
+            data = variable[:] if indices is None else variable[indices]
             data = np.array(data, dtype=dtype)
             return data
         except KeyError as err:
@@ -264,7 +271,7 @@ class GridManager:
     def __init__(
         self,
         transformation: IndexTransformation,
-        grid_file: str,
+        grid_file: str, # TODO use pathlib.Path?
         config: v_grid.VerticalGridConfig,
     ):
         self._log = logging.getLogger(__name__)
@@ -279,12 +286,7 @@ class GridManager:
         grid = self._construct_grid(self._dataset, on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
 
-    
-    def read_geometry(self, decomposition_info:defs.DecompositionInfo):
-        reader = GridFile(self._dataset)
-        cell_area = reader.int_field(GridFile.GeometryName.CELL_AREA)
-        edge_length = reader.int_field(GridFile.GeometryName.EDGE_LENGTH)
-        return cell_area, edge_length
+
         
         
     def _read_gridfile(self, fname: str) -> Dataset:
@@ -346,6 +348,21 @@ class GridManager:
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
 
+    def _read_geometry(self, dataset, decomposition_info:defs.DecompositionInfo):
+        reader = GridFile(dataset)
+        cells_on_node = decomposition_info.global_index(dims.CellDim,
+                                                        defs.DecompositionInfo.EntryType.ALL)
+        edges_on_node = decomposition_info.global_index(dims.EdgeDim,
+                                                        defs.DecompositionInfo.EntryType.ALL)
+        vertices_on_node = decomposition_info.global_index(dims.VertexDim,
+                                                           defs.DecompositionInfo.EntryType.ALL)
+        cell_area = reader.float_field(GridFile.GeometryName.CELL_AREA, cells_on_node)
+        edge_length = reader.float_field(GridFile.GeometryName.EDGE_LENGTH, edges_on_node)
+        return cell_area, edge_length
+
+    def read_geometry(self, decomposition_info:defs.DecompositionInfo):
+        return self._read_geometry(self._dataset, decomposition_info)
+    
     @property
     def grid(self):
         return self._grid
@@ -406,15 +423,15 @@ class GridManager:
         grid_size = grid_def.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
-        c2e = self._get_index_field(reader, GridFile.OffsetName.C2E)
+        c2e = self._get_index_field(reader, GridFile.ConnectivityName.C2E)
 
-        e2c = self._get_index_field(reader, GridFile.OffsetName.E2C) # edge_face_connectivity (optional)
-        c2v = self._get_index_field(reader, GridFile.OffsetName.C2V) # face_node_connectivity (required)
-        v2c = self._get_index_field(reader, GridFile.OffsetName.V2C) # node_face_connectivity -- (pentagon/hexagon)
-        e2v = self._get_index_field(reader, GridFile.OffsetName.E2V) # edge_node_connectivity (optionally required)
-        v2e = self._get_index_field(reader, GridFile.OffsetName.V2E) # node_edge_connectivity  -- (pentagon/hexagon)
-        v2e2v = self._get_index_field(reader, GridFile.OffsetName.V2E2V) #node_node_connectivity  -- ((pentagon/hexagon))
-        c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C) # face_face_connectivity (optional)
+        e2c = self._get_index_field(reader, GridFile.ConnectivityName.E2C) # edge_face_connectivity (optional)
+        c2v = self._get_index_field(reader, GridFile.ConnectivityName.C2V) # face_node_connectivity (required)
+        v2c = self._get_index_field(reader, GridFile.ConnectivityName.V2C) # node_face_connectivity -- (pentagon/hexagon)
+        e2v = self._get_index_field(reader, GridFile.ConnectivityName.E2V) # edge_node_connectivity (optionally required)
+        v2e = self._get_index_field(reader, GridFile.ConnectivityName.V2E) # node_edge_connectivity  -- (pentagon/hexagon)
+        v2e2v = self._get_index_field(reader, GridFile.ConnectivityName.V2E2V) #node_node_connectivity  -- ((pentagon/hexagon))
+        c2e2c = self._get_index_field(reader, GridFile.ConnectivityName.C2E2C) # face_face_connectivity (optional)
 
         e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
         e2c2e = self._construct_diamond_edges(e2c, c2e)

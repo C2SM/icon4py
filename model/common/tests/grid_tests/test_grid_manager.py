@@ -158,7 +158,7 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         grid.connectivities[C2EDim],
-        GridFile.OffsetName.C2E,
+        GridFile.ConnectivityName.C2E,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
             GridFile.DimensionName.CELL_NAME,
@@ -168,7 +168,7 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         grid.connectivities[E2CDim],
-        GridFile.OffsetName.E2C,
+        GridFile.ConnectivityName.E2C,
         (
             GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
             GridFile.DimensionName.EDGE_NAME,
@@ -177,7 +177,7 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         grid.connectivities[E2VDim],
-        GridFile.OffsetName.E2V,
+        GridFile.ConnectivityName.E2V,
         (
             GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE,
             GridFile.DimensionName.EDGE_NAME,
@@ -187,7 +187,7 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         grid.connectivities[V2CDim],
-        GridFile.OffsetName.V2C,
+        GridFile.ConnectivityName.V2C,
         (
             GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
             GridFile.DimensionName.VERTEX_NAME,
@@ -197,7 +197,7 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         grid.connectivities[C2VDim],
-        GridFile.OffsetName.C2V,
+        GridFile.ConnectivityName.C2V,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
             GridFile.DimensionName.CELL_NAME,
@@ -206,13 +206,13 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         np.zeros((grid.num_vertices, 4), dtype=np.int32),
-        GridFile.OffsetName.V2E2V,
+        GridFile.ConnectivityName.V2E2V,
         (GridFile.DimensionName.DIAMOND_EDGE_SIZE, GridFile.DimensionName.VERTEX_NAME),
     )
     _add_to_dataset(
         dataset,
         grid.connectivities[V2EDim],
-        GridFile.OffsetName.V2E,
+        GridFile.ConnectivityName.V2E,
         (
             GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE,
             GridFile.DimensionName.VERTEX_NAME,
@@ -221,7 +221,7 @@ def simple_grid_gridfile(tmp_path):
     _add_to_dataset(
         dataset,
         grid.connectivities[C2E2CDim],
-        GridFile.OffsetName.C2E2C,
+        GridFile.ConnectivityName.C2E2C,
         (
             GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE,
             GridFile.DimensionName.CELL_NAME,
@@ -312,10 +312,10 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
     grid = SimpleGrid()
     grid_parser = GridFile(data)
 
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.C2E), grid.connectivities[C2EDim])
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.E2C), grid.connectivities[E2CDim])
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2E), grid.connectivities[V2EDim])
-    assert np.allclose(grid_parser.int_field(GridFile.OffsetName.V2C), grid.connectivities[V2CDim])
+    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.C2E), grid.connectivities[C2EDim])
+    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.E2C), grid.connectivities[E2CDim])
+    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.V2E), grid.connectivities[V2EDim])
+    assert np.allclose(grid_parser.int_field(GridFile.ConnectivityName.V2C), grid.connectivities[V2CDim])
 
 
 # TODO @magdalena add test cases for hexagon vertices v2e2v
@@ -984,3 +984,5 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
         serialized_grid.get_offset_provider("C2E2C2E").table,
     )
     assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
+
+
