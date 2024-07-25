@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.add_interpolated_horizontal_advection_of_w import (
     _add_interpolated_horizontal_advection_of_w,
@@ -62,13 +63,13 @@ def _fused_stencils_4_5(
     gtx.Field[[EdgeDim, KDim], float],
     gtx.Field[[EdgeDim, KDim], float],
 ]:
-    z_w_concorr_me = gtx.where(
+    z_w_concorr_me = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
 
-    (vn_ie, z_vt_ie, z_kin_hor_e) = gtx.where(
+    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k_field == 0,
         _compute_horizontal_kinetic_energy(vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
@@ -147,13 +148,13 @@ def _fused_stencils_9_10(
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
 ) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
-    local_z_w_concorr_mc = gtx.where(
+    local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
         local_z_w_concorr_mc,
     )
 
-    w_concorr_c = gtx.where(
+    w_concorr_c = where(
         (k_field >= nflatlev_startindex + 1) & (k_field < nlev),
         _interpolate_to_half_levels_vp(interpolant=local_z_w_concorr_mc, wgtfac_c=wgtfac_c),
         w_concorr_c,
@@ -203,17 +204,15 @@ def _fused_stencils_11_to_13(
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
 ):
-    local_z_w_con_c = gtx.where(
+    local_z_w_con_c = where(
         (k_field >= 0) & (k_field < nlev),
         _copy_cell_kdim_field_to_vp(w),
         local_z_w_con_c,
     )
 
-    local_z_w_con_c = gtx.where(
-        k_field == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c
-    )
+    local_z_w_con_c = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), local_z_w_con_c)
 
-    local_z_w_con_c = gtx.where(
+    local_z_w_con_c = where(
         (k_field >= (nflatlev_startindex + 1)) & (k_field < nlev),
         _correct_contravariant_vertical_velocity(local_z_w_con_c, w_concorr_c),
         local_z_w_con_c,

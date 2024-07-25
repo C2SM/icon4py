@@ -12,6 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import (
+    abs,
+    broadcast,
+    maximum,
+)
 
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
@@ -37,9 +42,9 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
     ]
 ):
     return (
-        gtx.broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
-        gtx.broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
-        gtx.broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
+        broadcast(wpfloat("0.0"), (EdgeDim, KDim)),
     )
 
 
@@ -58,7 +63,7 @@ def _calculate_scal_divdamp(
     divdamp_fac_o2: float,
 ) -> gtx.Field[[KDim], float]:
     enh_divdamp_fac = (
-        gtx.maximum(0.0, enh_divdamp_fac - 0.25 * divdamp_fac_o2)
+        maximum(0.0, enh_divdamp_fac - 0.25 * divdamp_fac_o2)
         if divdamp_order == 24
         else enh_divdamp_fac
     )

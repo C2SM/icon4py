@@ -43,11 +43,11 @@ class TimeLoop:
 
     def __init__(
         self,
-        run_config: driver_config.IconRunConfig,
+        run_config: driver_config.Icon4pyRunConfig,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
-        self.run_config: driver_config.IconRunConfig = run_config
+        self.run_config: driver_config.Icon4pyRunConfig = run_config
         self.diffusion = diffusion_granule
         self.solve_nonhydro = solve_nonhydro_granule
 

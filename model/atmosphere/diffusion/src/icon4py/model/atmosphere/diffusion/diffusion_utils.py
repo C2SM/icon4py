@@ -13,9 +13,13 @@
 from typing import Tuple
 
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import (
+    broadcast,
+    minimum,
+)
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.math import smagorinsky
+from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
 
 
@@ -46,7 +50,7 @@ def scale_k(field: gtx.Field[[KDim], float], factor: float, scaled_field: gtx.Fi
 
 @gtx.field_operator
 def _init_zero_v_k() -> gtx.Field[[VertexDim, KDim], float]:
-    return gtx.broadcast(0.0, (VertexDim, KDim))
+    return broadcast(0.0, (VertexDim, KDim))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
@@ -63,12 +67,12 @@ def _setup_smag_limit(diff_multfac_vn: gtx.Field[[KDim], float]) -> gtx.Field[[K
 def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> gtx.Field[[KDim], float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
-    return gtx.broadcast(gtx.minimum(con, dyn), (KDim,))
+    return broadcast(minimum(con, dyn), (KDim,))
 
 
 @gtx.field_operator
 def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> gtx.Field[[KDim], float]:
-    return gtx.broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
+    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
 
 
 @gtx.field_operator
@@ -106,7 +110,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
 ) -> tuple[gtx.Field[[KDim], float], gtx.Field[[KDim], float], gtx.Field[[KDim], float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
-    enh_smag_fac = smagorinsky._en_smag_fac_for_zero_nshift(
+    enh_smag_fac = _en_smag_fac_for_zero_nshift(
         vect_a,
         hdiff_smag_fac,
         hdiff_smag_fac2,

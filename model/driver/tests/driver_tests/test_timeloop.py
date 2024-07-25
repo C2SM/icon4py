@@ -28,7 +28,7 @@ from icon4py.model.driver import icon4py_driver, serialbox_helpers as driver_sb
 
 from .utils import (
     construct_diffusion_config,
-    construct_iconrun_config,
+    construct_icon4pyrun_config,
     construct_nonhydrostatic_config,
 )
 
@@ -163,7 +163,7 @@ def test_run_timeloop_single_step(
     nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
-    iconrun_config = construct_iconrun_config(
+    icon4pyrun_config = construct_icon4pyrun_config(
         experiment,
         timeloop_date_init,
         timeloop_date_exit,
@@ -171,8 +171,8 @@ def test_run_timeloop_single_step(
         ndyn_substeps=ndyn_substeps,
     )
 
-    assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert iconrun_config.dtime.total_seconds() == diffusion_dtime
+    assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
+    assert icon4pyrun_config.dtime.total_seconds() == diffusion_dtime
 
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = solve_nh_states.InterpolationState(
@@ -280,7 +280,7 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = icon4py_driver.TimeLoop(iconrun_config, diffusion_granule, solve_nonhydro_granule)
+    timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)
 
     assert timeloop.substep_timestep == nonhydro_dtime
 

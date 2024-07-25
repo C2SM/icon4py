@@ -85,14 +85,14 @@ def r04b09_iconrun_config(
     timeloop_date_init,
     timeloop_date_exit,
     timeloop_diffusion_linit_init,
-) -> driver_config.IconRunConfig:
+) -> driver_config.Icon4pyRunConfig:
     """
-    Create IconRunConfig matching MCH_CH_r04b09_dsl.
+    Create Icon4pyRunConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return driver_config.IconRunConfig(
+    return driver_config.Icon4pyRunConfig(
         dtime=timedelta(seconds=10.0),
         start_date=datetime.fromisoformat(timeloop_date_init),
         end_date=datetime.fromisoformat(timeloop_date_exit),

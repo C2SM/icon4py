@@ -11,6 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction import (
     _compute_contravariant_correction,
@@ -118,12 +119,12 @@ def _predictor_stencils_2_3(
     k_field: gtx.Field[[KDim], gtx.int32],
     nlev: gtx.int32,
 ) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
-    (z_exner_ex_pr, exner_pr) = gtx.where(
+    (z_exner_ex_pr, exner_pr) = where(
         (k_field >= 0) & (k_field < nlev),
         _extrapolate_temporally_exner_pressure(exner_exfac, exner, exner_ref_mc, exner_pr),
         (z_exner_ex_pr, exner_pr),
     )
-    z_exner_ex_pr = gtx.where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
+    z_exner_ex_pr = where(k_field == nlev, _init_cell_kdim_field_with_zero_wp(), z_exner_ex_pr)
 
     return z_exner_ex_pr, exner_pr
 
@@ -170,7 +171,7 @@ def _predictor_stencils_4_5_6(
     nlev: gtx.int32,
 ) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
     # Perturbation Exner pressure on bottom half level
-    z_exner_ic = gtx.where(
+    z_exner_ic = where(
         k_field == nlev,
         _interpolate_to_surface(wgtfacq_c_dsl, z_exner_ex_pr),
         z_exner_ic,
@@ -178,14 +179,14 @@ def _predictor_stencils_4_5_6(
 
     # WS: moved full z_exner_ic calculation here to avoid OpenACC dependency on jk+1 below
     # possibly GZ will want to consider the cache ramifications of this change for CPU
-    z_exner_ic = gtx.where(
+    z_exner_ic = where(
         k_field < nlev,
         _interpolate_to_half_levels_vp(wgtfac_c=wgtfac_c, interpolant=z_exner_ex_pr),
         z_exner_ic,
     )
 
     # First vertical derivative of perturbation Exner pressure
-    z_dexner_dz_c_1 = gtx.where(
+    z_dexner_dz_c_1 = where(
         k_field < nlev,
         _compute_first_vertical_derivative(z_exner_ic, inv_ddqz_z_full),
         z_dexner_dz_c_1,
@@ -252,13 +253,13 @@ def _predictor_stencils_7_8_9(
     gtx.Field[[CellDim, KDim], float],
     gtx.Field[[CellDim, KDim], float],
 ]:
-    (z_rth_pr_1, z_rth_pr_2) = gtx.where(
+    (z_rth_pr_1, z_rth_pr_2) = where(
         k_field == 0,
         _compute_perturbation_of_rho_and_theta(rho, rho_ref_mc, theta_v, theta_ref_mc),
         (z_rth_pr_1, z_rth_pr_2),
     )
 
-    (rho_ic, z_rth_pr_1, z_rth_pr_2) = gtx.where(
+    (rho_ic, z_rth_pr_1, z_rth_pr_2) = where(
         k_field >= 1,
         _compute_perturbation_of_rho_and_theta_and_rho_interface_cell_centers(
             wgtfac_c, rho, rho_ref_mc, theta_v, theta_ref_mc
@@ -266,7 +267,7 @@ def _predictor_stencils_7_8_9(
         (rho_ic, z_rth_pr_1, z_rth_pr_2),
     )
 
-    (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = gtx.where(
+    (z_theta_v_pr_ic, theta_v_ic, z_th_ddz_exner_c) = where(
         k_field >= 1,
         _compute_virtual_potential_temperatures_and_pressure_gradient(
             wgtfac_c,
@@ -350,9 +351,9 @@ def _predictor_stencils_11_lower_upper(
     k_field: gtx.Field[[KDim], gtx.int32],
     nlev: gtx.int32,
 ) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
-    z_theta_v_pr_ic = gtx.where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
+    z_theta_v_pr_ic = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_theta_v_pr_ic)
 
-    (z_theta_v_pr_ic, theta_v_ic) = gtx.where(
+    (z_theta_v_pr_ic, theta_v_ic) = where(
         k_field == nlev,
         _set_theta_v_prime_ic_at_lower_boundary(wgtfacq_c_dsl, z_rth_pr, theta_ref_ic),
         (z_theta_v_pr_ic, theta_v_ic),
@@ -461,12 +462,12 @@ def _predictor_stencils_35_36(
     gtx.Field[[EdgeDim, KDim], float],
     gtx.Field[[EdgeDim, KDim], float],
 ]:
-    z_w_concorr_me = gtx.where(
+    z_w_concorr_me = where(
         k_field >= nflatlev_startindex,
         _compute_contravariant_correction(vn, ddxn_z_full, ddxt_z_full, vt),
         z_w_concorr_me,
     )
-    (vn_ie, z_vt_ie, z_kin_hor_e) = gtx.where(
+    (vn_ie, z_vt_ie, z_kin_hor_e) = where(
         k_field >= 1,
         _interpolate_vn_and_vt_to_ie_and_compute_ekin_on_edges(wgtfac_e, vn, vt),
         (vn_ie, z_vt_ie, z_kin_hor_e),
@@ -556,13 +557,13 @@ def _stencils_39_40(
     nflatlev_startindex_plus1: gtx.int32,
     nlev: gtx.int32,
 ) -> gtx.Field[[CellDim, KDim], float]:
-    w_concorr_c = gtx.where(
+    w_concorr_c = where(
         k_field >= nflatlev_startindex_plus1,  # TODO: @abishekg7 does this need to change
         _compute_contravariant_correction_of_w(e_bln_c_s, z_w_concorr_me, wgtfac_c),
         w_concorr_c,
     )
 
-    w_concorr_c = gtx.where(
+    w_concorr_c = where(
         k_field == nlev,
         _compute_contravariant_correction_of_w_for_lower_boundary(
             e_bln_c_s, z_w_concorr_me, wgtfacq_c_dsl
@@ -640,7 +641,7 @@ def _stencils_42_44_45_45b(
     gtx.Field[[CellDim, KDim], float],
     gtx.Field[[CellDim, KDim], float],
 ]:
-    (z_w_expl, z_contr_w_fl_l) = gtx.where(
+    (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= 1) & (k_field < nlev),
         _compute_explicit_vertical_wind_from_advection_and_vertical_wind_density(
             w_nnow,
@@ -658,7 +659,7 @@ def _stencils_42_44_45_45b(
         (z_w_expl, z_contr_w_fl_l),
     )
 
-    (z_beta, z_alpha) = gtx.where(
+    (z_beta, z_alpha) = where(
         (k_field >= 0) & (k_field < nlev),
         _compute_solver_coefficients_matrix(
             exner_nnow,
@@ -674,9 +675,9 @@ def _stencils_42_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = gtx.where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
 
-    z_q = gtx.where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
 
@@ -780,7 +781,7 @@ def _stencils_43_44_45_45b(
     gtx.Field[[CellDim, KDim], float],
     gtx.Field[[CellDim, KDim], float],
 ]:
-    (z_w_expl, z_contr_w_fl_l) = gtx.where(
+    (z_w_expl, z_contr_w_fl_l) = where(
         (k_field >= 1) & (k_field < nlev),
         _compute_explicit_vertical_wind_speed_and_vertical_wind_times_density(
             w_nnow,
@@ -794,7 +795,7 @@ def _stencils_43_44_45_45b(
         ),
         (z_w_expl, z_contr_w_fl_l),
     )
-    (z_beta, z_alpha) = gtx.where(
+    (z_beta, z_alpha) = where(
         (k_field >= 0) & (k_field < nlev),
         _compute_solver_coefficients_matrix(
             exner_nnow,
@@ -810,8 +811,8 @@ def _stencils_43_44_45_45b(
         ),
         (z_beta, z_alpha),
     )
-    z_alpha = gtx.where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
-    z_q = gtx.where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
+    z_alpha = where(k_field == nlev, _init_cell_kdim_field_with_zero_vp(), z_alpha)
+    z_q = where(k_field == 0, _init_cell_kdim_field_with_zero_vp(), z_q)
 
     return z_w_expl, z_contr_w_fl_l, z_beta, z_alpha, z_q
 
@@ -902,13 +903,13 @@ def _stencils_47_48_49(
     gtx.Field[[CellDim, KDim], float],
     gtx.Field[[CellDim, KDim], float],
 ]:
-    (w_nnew, z_contr_w_fl_l) = gtx.where(
+    (w_nnew, z_contr_w_fl_l) = where(
         k_field == nlev,
         _set_lower_boundary_condition_for_w_and_contravariant_correction(w_concorr_c),
         (w_nnew, z_contr_w_fl_l),
     )
     # 48 and 49 are identical except for bounds
-    (z_rho_expl, z_exner_expl) = gtx.where(
+    (z_rho_expl, z_exner_expl) = where(
         (k_field >= 0) & (k_field < nlev),
         _compute_explicit_part_for_rho_and_exner(
             rho_nnow,
@@ -994,14 +995,14 @@ def _stencils_61_62(
     gtx.Field[[CellDim, KDim], float],
     gtx.Field[[CellDim, KDim], float],
 ]:
-    (rho_new, exner_new, w_new) = gtx.where(
+    (rho_new, exner_new, w_new) = where(
         (k_field >= 0) & (k_field < nlev),
         _update_density_exner_wind(
             rho_now, grf_tend_rho, theta_v_now, grf_tend_thv, w_now, grf_tend_w, dtime
         ),
         (rho_new, exner_new, w_new),
     )
-    w_new = gtx.where(
+    w_new = where(
         k_field == nlev,
         _update_wind(w_now, grf_tend_w, dtime),
         w_new,

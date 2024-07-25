@@ -106,19 +106,19 @@ def construct_nonhydrostatic_config(name: str, ndyn_substeps: int = 5):
         return exclaim_ape_nonhydrostatic_config(ndyn_substeps)
 
 
-def mch_ch_r04b09_dsl_iconrun_config(
+def mch_ch_r04b09_dsl_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
     ndyn_substeps: int,
-) -> driver_config.IconRunConfig:
+) -> driver_config.Icon4pyRunConfig:
     """
-    Create IconRunConfig matching MCH_CH_r04b09_dsl.
+    Create Icon4pyRunConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return driver_config.IconRunConfig(
+    return driver_config.Icon4pyRunConfig(
         dtime=timedelta(seconds=10.0),
         start_date=datetime.fromisoformat(date_init),
         end_date=datetime.fromisoformat(date_exit),
@@ -128,19 +128,19 @@ def mch_ch_r04b09_dsl_iconrun_config(
     )
 
 
-def exclaim_ape_iconrun_config(
+def exclaim_ape_icon4pyrun_config(
     date_init: str,
     date_exit: str,
     diffusion_linit_init: bool,
     ndyn_substeps: int,
-) -> driver_config.IconRunConfig:
+) -> driver_config.Icon4pyRunConfig:
     """
-    Create IconRunConfig matching exclaim_ape_R02B04.
+    Create Icon4pyRunConfig matching exclaim_ape_R02B04.
 
     Set values to the ones used in the exclaim_ape_R02B04 experiment where they differ
     from the default.
     """
-    return driver_config.IconRunConfig(
+    return driver_config.Icon4pyRunConfig(
         dtime=timedelta(seconds=2.0),
         start_date=datetime.fromisoformat(date_init),
         end_date=datetime.fromisoformat(date_exit),
@@ -150,7 +150,7 @@ def exclaim_ape_iconrun_config(
     )
 
 
-def construct_iconrun_config(
+def construct_icon4pyrun_config(
     name: str,
     date_init: str,
     date_exit: str,
@@ -158,8 +158,10 @@ def construct_iconrun_config(
     ndyn_substeps: int = 5,
 ):
     if name.lower() in "mch_ch_r04b09_dsl":
-        return mch_ch_r04b09_dsl_iconrun_config(
+        return mch_ch_r04b09_dsl_icon4pyrun_config(
             date_init, date_exit, diffusion_linit_init, ndyn_substeps
         )
     elif name.lower() in "exclaim_ape_r02b04":
-        return exclaim_ape_iconrun_config(date_init, date_exit, diffusion_linit_init, ndyn_substeps)
+        return exclaim_ape_icon4pyrun_config(
+            date_init, date_exit, diffusion_linit_init, ndyn_substeps
+        )

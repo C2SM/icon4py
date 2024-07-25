@@ -26,7 +26,7 @@ n_substeps_reduced = 2
 
 
 @dataclasses.dataclass(frozen=True)
-class IconRunConfig:
+class Icon4pyRunConfig:
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
@@ -46,8 +46,8 @@ class IconRunConfig:
 
 
 @dataclasses.dataclass
-class IconConfig:
-    run_config: IconRunConfig
+class Icon4pyConfig:
+    run_config: Icon4pyRunConfig
     vertical_grid_config: v_grid.VerticalGridConfig
     diffusion_config: diffusion.DiffusionConfig
     solve_nonhydro_config: solve_nh.NonHydrostaticConfig
@@ -55,7 +55,7 @@ class IconConfig:
 
 def read_config(
     experiment_type: driver_init.ExperimentType = driver_init.ExperimentType.ANY,
-) -> IconConfig:
+) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
         return v_grid.VerticalGridConfig(
             num_levels=65,
@@ -120,7 +120,7 @@ def read_config(
 
     def _mch_ch_r04b09_config():
         return (
-            IconRunConfig(
+            Icon4pyRunConfig(
                 dtime=datetime.timedelta(seconds=10.0),
                 start_date=datetime.datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
@@ -133,7 +133,7 @@ def read_config(
         )
 
     def _jablownoski_Williamson_config():
-        icon_run_config = IconRunConfig(
+        icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
@@ -166,7 +166,7 @@ def read_config(
             diffusion_config,
             nonhydro_config,
         ) = _mch_ch_r04b09_config()
-    return IconConfig(
+    return Icon4pyConfig(
         run_config=model_run_config,
         vertical_grid_config=vertical_grid_config,
         diffusion_config=diffusion_config,
