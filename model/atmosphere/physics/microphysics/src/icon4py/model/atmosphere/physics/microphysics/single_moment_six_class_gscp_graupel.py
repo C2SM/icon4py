@@ -14,6 +14,7 @@
 
 """
 import sys
+import math
 from typing import Final, Optional
 import numpy as np
 import dataclasses
@@ -31,18 +32,18 @@ from gt4py.next.ffront.fbuiltins import (
 )
 #from gt4py.next.iterator.embedded import np_as_located_field
 #from gt4py.next.program_processors.runners import roundtrip
-
-from icon4py.model.common.math.math_utilities import gamma_fct
-from icon4py.model.common.math.math_constants import math_const
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import (
-    CellParams,
-    EdgeParams,
-    HorizontalMarkerIndex,
+from gt4py.next.program_processors.runners.gtfn import (
+    run_gtfn_cached,
+    run_gtfn_gpu_cached,
+    run_gtfn_imperative,
 )
+from icon4py.model.common.math.math_utilities import gamma_fct
+from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
+# TODO (Chia Rui): merge after fix_driver_imports PR
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -96,8 +97,7 @@ class SingleMomentSixClassIconGraupelConfig:
     rain_n0: wpfloat = 1.0
 
 
-#@dataclasses.dataclass(frozen=True)
-#class SingleMomentSixClassIconGraupelParams:
+ # TODO (Chia Rui): move parameters below to common/constants? But they need to be declared under FrozenNameSpace to be used in the big graupel scan operator.
 class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     """
     Contains numerical, physical, and empirical constants for the ICON graupel scheme.
@@ -248,7 +248,6 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     qc0: wpfloat = 0.0
     qi0: wpfloat = 0.0
 
-    # TODO (Chia Rui): move parameters below to common/constants? But they need to be declared under FrozenNameSpace to be used in the big graupel scan operator.
     #: Latent heat of vaporisation for water [J/kg]
     alv: wpfloat = 2.5008e6
     #: Latent heat of sublimation for water [J/kg]
@@ -308,10 +307,8 @@ class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
     alvdcp: wpfloat = alv / cpd
     alsdcp: wpfloat = als / cpd
 
-    pvsw0: wpfloat = c1es * np.exp(c3les * (tmelt - tmelt) / (tmelt - c4les)) # _fpvsw(tmelt)  # sat. vap. pressure for t = t0
+    pvsw0: wpfloat = c1es * np.exp(c3les * (tmelt - tmelt) / (tmelt - c4les))
 
-#_icon_graupel_params = SingleMomentSixClassIconGraupelParams()
-#icon_graupel_params: Final = FrozenNamespace(**vars(_icon_graupel_params))
 icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
 
 # Statement functions
@@ -358,9 +355,9 @@ class SingleMomentSixClassIconGraupel:
         if self.config.ice_autocon_sticking_efficiency_option != gtx.int32(1) and self.config.ice_autocon_sticking_efficiency_option != gtx.int32(2):
             raise NotImplementedError("ice_autocon_sticking_efficiency_option can only be 1 or 2.")
         # TODO (Chia Rui): clean up the naming system of these parameters and categorize them in a tuple
-        ccsrim: wpfloat = 0.25 * math_const.pi * icon_graupel_params.snow_cloud_collection_eff * self.config.snow_v0 * gamma_fct(
+        ccsrim: wpfloat = 0.25 * math.pi * icon_graupel_params.snow_cloud_collection_eff * self.config.snow_v0 * gamma_fct(
             icon_graupel_params.snow_exp_v + 3.0)
-        ccsagg: wpfloat = 0.25 * math_const.pi * self.config.snow_v0 * gamma_fct(icon_graupel_params.snow_exp_v + 3.0)
+        ccsagg: wpfloat = 0.25 * math.pi * self.config.snow_v0 * gamma_fct(icon_graupel_params.snow_exp_v + 3.0)
         _ccsvxp = -(icon_graupel_params.snow_exp_v / (icon_graupel_params.snow_exp_m + 1.0) + 1.0)
         ccsvel: wpfloat = icon_graupel_params.snow_m0 * self.config.snow_v0 * gamma_fct(
             icon_graupel_params.snow_exp_m + icon_graupel_params.snow_exp_v + 1.0) * (
@@ -377,7 +374,7 @@ class SingleMomentSixClassIconGraupel:
         _n0r: wpfloat = 8.0e6 * np.exp(3.2 * self.config.rain_mu) * 0.01 ** (
             -self.config.rain_mu)  # empirical relation adapted from Ulbrich (1983)
         _n0r: wpfloat = _n0r * self.config.rain_n0  # apply tuning factor to zn0r variable
-        _ar: wpfloat = math_const.pi * icon_graupel_params.water_density / 6.0 * _n0r * gamma_fct(
+        _ar: wpfloat = math.pi * icon_graupel_params.water_density / 6.0 * _n0r * gamma_fct(
             self.config.rain_mu + 4.0)  # pre-factor
 
         rain_exp_v: wpfloat = wpfloat(0.5) / (self.config.rain_mu + wpfloat(4.0))
@@ -385,7 +382,7 @@ class SingleMomentSixClassIconGraupel:
             -rain_exp_v)
 
         cevxp: wpfloat = (self.config.rain_mu + wpfloat(2.0)) / (self.config.rain_mu + 4.0)
-        cev: wpfloat = wpfloat(2.0) * math_const.pi * icon_graupel_params.diffusion_coeff_water_vapor / icon_graupel_params.howell_factor * _n0r * _ar ** (
+        cev: wpfloat = wpfloat(2.0) * math.pi * icon_graupel_params.diffusion_coeff_water_vapor / icon_graupel_params.howell_factor * _n0r * _ar ** (
             -cevxp) * gamma_fct(self.config.rain_mu + 2.0)
         bevxp: wpfloat = (wpfloat(2.0) * self.config.rain_mu + wpfloat(5.5)) / (2.0 * self.config.rain_mu + wpfloat(8.0)) - cevxp
         bev: wpfloat = 0.26 * np.sqrt(icon_graupel_params.ref_air_density * 130.0 / icon_graupel_params.eta) * _ar ** (

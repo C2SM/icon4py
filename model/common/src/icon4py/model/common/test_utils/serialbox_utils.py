@@ -1457,10 +1457,10 @@ class IconGscpSatadEntrySavepoint(IconSavepoint):
         return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
 
     def tolerance(self):
-        return self.serializer.read("ser_in_satad_satad_tol", self.savepoint)[0]
+        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
 
     def maxiter(self):
-        return self.serializer.read("ser_in_satad_maxiter", self.savepoint)[0]
+        return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
 
 
 class IconGscpSatadExitSavepoint(IconSavepoint):
@@ -1500,7 +1500,7 @@ class IconInterfaceSatadEntrySavepoint(IconSavepoint):
         return self.serializer.read("ser_in_satad_satad_tol", self.savepoint)[0]
 
     def maxiter(self):
-        return self.serializer.read("ser_in_satad_maxiter", self.savepoint)[0]
+        return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
 
 
 class IconInterfaceSatadExitSavepoint(IconSavepoint):
@@ -1761,17 +1761,17 @@ class IconSerialDataProvider:
         return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_gscp_satad_entry(self, date: str) -> IconGscpSatadEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = self.serializer.savepoint["call-gscp-satad-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
         return IconGscpSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGraupelExitSavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
-        return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+    def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGscpSatadExitSavepoint:
+        savepoint = self.serializer.savepoint["call-gscp-satad-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        return IconGscpSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_interface_satad_entry(self, date: str) -> IconInterfaceSatadEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = self.serializer.savepoint["call-interface-satad-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
         return IconInterfaceSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_interface_satad_exit(self, date: str) -> IconInterfaceSatadExitSavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = self.serializer.savepoint["call-interface-satad-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
         return IconInterfaceSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
