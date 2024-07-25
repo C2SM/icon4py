@@ -644,7 +644,7 @@ class Diffusion:
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
                 geofac_div=self.interpolation_state.geofac_div,
                 diff_multfac_smag=self.diff_multfac_smag,
-                wgtfac_c=self.metric_state.wgtfac_c, # TODO: analogous field in KHalfDim introduced in serialbox
+                wgtfac_c=self.metric_state.wgtfac_c,  # TODO: analogous field in KHalfDim introduced in serialbox
                 div_ic=diagnostic_state.div_ic,
                 hdef_ic=diagnostic_state.hdef_ic,
                 horizontal_start=cell_start_nudging,

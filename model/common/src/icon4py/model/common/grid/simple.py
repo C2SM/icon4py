@@ -38,7 +38,7 @@ from icon4py.model.common.dimension import (
     KDim,
     V2CDim,
     V2EDim,
-    VertexDim, KHalfDim,
+    VertexDim,
 )
 from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
 
