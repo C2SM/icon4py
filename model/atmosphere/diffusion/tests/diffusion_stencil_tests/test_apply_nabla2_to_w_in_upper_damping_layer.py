@@ -30,7 +30,8 @@ def apply_nabla2_to_w_in_upper_damping_layer_numpy(
     z_nabla2_c: np.array,
 ):
     cell_area = np.expand_dims(cell_area, axis=-1)
-    w = w + diff_multfac_n2w * cell_area * z_nabla2_c
+    diff_multfac_n2w_extend = np.insert(diff_multfac_n2w, diff_multfac_n2w.shape, 0.0, axis=0)
+    w = w + diff_multfac_n2w_extend * cell_area * z_nabla2_c
     return w
 
 

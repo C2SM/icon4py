@@ -15,7 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim, KHalfDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -23,11 +23,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _apply_nabla2_to_w(
     area: Field[[CellDim], wpfloat],
-    z_nabla2_c: Field[[CellDim, KDim], vpfloat],
+    z_nabla2_c: Field[[CellDim, KHalfDim], vpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     diff_multfac_w: wpfloat,
-) -> Field[[CellDim, KDim], wpfloat]:
+) -> Field[[CellDim, KHalfDim], wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
 
     w_wp = w - diff_multfac_w * (area * area) * neighbor_sum(
@@ -39,9 +39,9 @@ def _apply_nabla2_to_w(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_to_w(
     area: Field[[CellDim], wpfloat],
-    z_nabla2_c: Field[[CellDim, KDim], vpfloat],
+    z_nabla2_c: Field[[CellDim, KHalfDim], vpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     diff_multfac_w: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
@@ -57,6 +57,6 @@ def apply_nabla2_to_w(
         out=w,
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end + 1),
         },
     )

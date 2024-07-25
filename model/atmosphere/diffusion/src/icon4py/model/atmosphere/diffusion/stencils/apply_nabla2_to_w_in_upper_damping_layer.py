@@ -13,33 +13,30 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, KHalf2K, KHalfDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _apply_nabla2_to_w_in_upper_damping_layer(
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     diff_multfac_n2w: Field[[KDim], wpfloat],
     cell_area: Field[[CellDim], wpfloat],
-    z_nabla2_c: Field[[CellDim, KDim], vpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
-    z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
-    cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
-
-    w_wp = w + diff_multfac_n2w * cell_area_tmp * z_nabla2_c_wp
+    z_nabla2_c: Field[[CellDim, KHalfDim], vpfloat],
+) -> Field[[CellDim, KHalfDim], wpfloat]:
+    w_wp = w + diff_multfac_n2w(KHalf2K[0]) * cell_area * astype(z_nabla2_c, wpfloat)
     return w_wp
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_to_w_in_upper_damping_layer(
-    w: Field[[CellDim, KDim], wpfloat],
+    w: Field[[CellDim, KHalfDim], wpfloat],
     diff_multfac_n2w: Field[[KDim], wpfloat],
     cell_area: Field[[CellDim], wpfloat],
-    z_nabla2_c: Field[[CellDim, KDim], vpfloat],
+    z_nabla2_c: Field[[CellDim, KHalfDim], vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -53,6 +50,6 @@ def apply_nabla2_to_w_in_upper_damping_layer(
         out=w,
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KDim: (vertical_start, vertical_end + 1),
         },
     )

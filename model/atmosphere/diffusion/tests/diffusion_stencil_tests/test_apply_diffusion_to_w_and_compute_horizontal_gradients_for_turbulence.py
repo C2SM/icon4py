@@ -86,8 +86,8 @@ class TestApplyDiffusionToWAndComputeHorizontalGradientsForTurbulence(StencilTes
 
     @pytest.fixture
     def input_data(self, grid):
-        k = zero_field(grid, KDim, dtype=int32)
-        for lev in range(grid.num_levels):
+        k = zero_field(grid, KHalfDim, dtype=int32)
+        for lev in range(grid.num_levels + 1):
             k[lev] = lev
 
         cell = zero_field(grid, CellDim, dtype=int32)

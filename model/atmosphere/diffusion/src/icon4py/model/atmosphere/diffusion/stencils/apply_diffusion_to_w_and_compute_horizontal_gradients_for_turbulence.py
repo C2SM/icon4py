@@ -42,7 +42,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     dwdy: Field[[CellDim, KHalfDim], vpfloat],
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
-    k: Field[[KDim], int32],
+    k: Field[[KHalfDim], int32],
     cell: Field[[CellDim], int32],
     nrdmax: int32,
     interior_idx: int32,
@@ -52,7 +52,7 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     Field[[CellDim, KHalfDim], vpfloat],
     Field[[CellDim, KHalfDim], vpfloat],
 ]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (CellDim, KHalfDim))
     dwdx, dwdy = (
         where(
             0 < k,
@@ -86,14 +86,14 @@ def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    w_old: Field[[CellDim, KDim], wpfloat],
+    w_old: Field[[CellDim, KHalfDim], wpfloat],
     w: Field[[CellDim, KHalfDim], wpfloat],
     type_shear: int32,
     dwdx: Field[[CellDim, KHalfDim], vpfloat],
     dwdy: Field[[CellDim, KHalfDim], vpfloat],
     diff_multfac_w: wpfloat,
     diff_multfac_n2w: Field[[KDim], wpfloat],
-    k: Field[[KDim], int32],
+    k: Field[[KHalfDim], int32],
     cell: Field[[CellDim], int32],
     nrdmax: int32,
     interior_idx: int32,
