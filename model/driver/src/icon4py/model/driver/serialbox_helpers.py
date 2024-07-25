@@ -70,4 +70,5 @@ def construct_diagnostics_for_diffusion(
         div_ic=savepoint.div_ic(),
         dwdx=savepoint.dwdx(),
         dwdy=savepoint.dwdy(),
+        wgtfac_c=savepoint.wgtfac_c()
     )

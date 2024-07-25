@@ -174,4 +174,5 @@ def construct_diagnostics(
         div_ic=savepoint.div_ic(),
         dwdx=dwdx,
         dwdy=dwdy,
+        wgtfac_c=savepoint.wgtfac_c()
     )
