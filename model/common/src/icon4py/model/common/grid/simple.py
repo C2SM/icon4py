@@ -16,6 +16,7 @@ import uuid
 import gt4py.next as gtx
 import numpy as np
 
+
 from icon4py.model.common.dimension import (
     C2E2C2E2CDim,
     C2E2C2EDim,
@@ -38,7 +39,7 @@ from icon4py.model.common.dimension import (
     KDim,
     V2CDim,
     V2EDim,
-    VertexDim,
+    VertexDim, KHalfDim, KHalf2KDim,
 )
 from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
 
@@ -404,6 +405,14 @@ class SimpleGridData:
         dtype=gtx.int32,
     )
 
+    k_lev_ls = [0, 1]
+    nlev = 10
+    for k in range(nlev * 2):
+        k_lev_ls.append(k_lev_ls[k] + 1)
+    khalf2k_table = np.asarray(
+        k_lev_ls, dtype=gtx.int32,
+    ).reshape(nlev + 1, 2)
+
 
 class SimpleGrid(BaseGrid):
     _CELLS = 18
@@ -497,6 +506,7 @@ class SimpleGrid(BaseGrid):
             V2EDim: SimpleGridData.v2e_table,
             C2E2C2EDim: SimpleGridData.c2e2c2e_table,
             C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
+            KHalf2KDim: SimpleGridData.khalf2k_table
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)
