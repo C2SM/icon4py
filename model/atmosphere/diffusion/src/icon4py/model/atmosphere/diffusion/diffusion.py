@@ -26,7 +26,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 
 from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, KHalfDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
 
 import icon4py.model.common.states.prognostic_state as prognostics
@@ -445,7 +445,7 @@ class Diffusion:
         self.z_temp = _allocate(CellDim, KDim)
         self.diff_multfac_smag = _allocate(KDim)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
+        self.vertical_index = _index_field(KHalfDim, self.grid.num_levels + 1)
         self.horizontal_cell_index = _index_field(CellDim)
         self.horizontal_edge_index = _index_field(EdgeDim)
         self.w_tmp = gtx.as_field(
@@ -644,7 +644,7 @@ class Diffusion:
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
                 geofac_div=self.interpolation_state.geofac_div,
                 diff_multfac_smag=self.diff_multfac_smag,
-                wgtfac_c=self.metric_state.wgtfac_c,  # TODO: analogous field in KHalfDim introduced in serialbox
+                wgtfac_c=diagnostic_state.wgtfac_c,  # TODO: analogous field in KHalfDim introduced in serialbox
                 div_ic=diagnostic_state.div_ic,
                 hdef_ic=diagnostic_state.hdef_ic,
                 horizontal_start=cell_start_nudging,
