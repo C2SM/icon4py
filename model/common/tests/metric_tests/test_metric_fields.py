@@ -205,8 +205,8 @@ def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backen
         vct_a=grid_savepoint.vct_a(),
         damping_height=damping_height,
         rayleigh_type=rayleigh_type,
-        rayleigh_classic=constants.RayleighType.RAYLEIGH_CLASSIC,
-        rayleigh_klemp=constants.RayleighType.RAYLEIGH_KLEMP,
+        rayleigh_classic=constants.RayleighType.CLASSIC,
+        rayleigh_klemp=constants.RayleighType.KLEMP,
         rayleigh_coeff=rayleigh_coeff,
         vct_a_1=vct_a_1,
         pi_const=math.pi,
@@ -386,8 +386,6 @@ def test_compute_ddqz_z_full_e(
     vertical_start = 0
     vertical_end = icon_grid.num_levels
     ddqz_z_full_e = zero_field(icon_grid, EdgeDim, KDim)
-    # TODO: perhaps write a program with ddqz_z_full_e name and call fieldop _cells2edges... from there
-    # TODO: This way it's clear where this field is computed and we cna more easily avoid duplicates
     cell_2_edge_interpolation.with_backend(backend)(
         in_field=ddqz_z_full,
         coeff=c_lin_e,
