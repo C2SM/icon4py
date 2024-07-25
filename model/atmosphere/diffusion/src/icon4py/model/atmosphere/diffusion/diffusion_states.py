@@ -49,11 +49,6 @@ class DiffusionDiagnosticState:
         [CellDim, KHalfDim], float
     ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
 
-    # TODO: field present below as well, check where it's better to put it
-    wgtfac_c: Field[
-        [CellDim, KHalfDim], float
-    ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
-
 
 @dataclass(frozen=True)
 class DiffusionMetricState:
@@ -61,6 +56,11 @@ class DiffusionMetricState:
 
     theta_ref_mc: Field[[CellDim, KDim], float]
     wgtfac_c: Field[
+        [CellDim, KHalfDim], float
+    ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
+
+    # TODO: field present below as well, check where it's better to put it
+    wgtfac_c_khalf: Field[
         [CellDim, KHalfDim], float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: Field[[CellDim, KDim], bool]
