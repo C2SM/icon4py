@@ -15,7 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim, KHalfDim
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KHalfDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -44,6 +44,6 @@ def calculate_nabla2_for_w(
         out=z_nabla2_c,
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            KHalfDim: (vertical_start, vertical_end + 1),
         },
     )

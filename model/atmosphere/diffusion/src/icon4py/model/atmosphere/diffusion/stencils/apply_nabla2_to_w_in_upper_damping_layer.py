@@ -13,7 +13,7 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32
 
 from icon4py.model.common.dimension import CellDim, KDim, KHalf2K, KHalfDim
 from icon4py.model.common.settings import backend
@@ -27,7 +27,11 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     cell_area: Field[[CellDim], wpfloat],
     z_nabla2_c: Field[[CellDim, KHalfDim], vpfloat],
 ) -> Field[[CellDim, KHalfDim], wpfloat]:
-    w_wp = w + diff_multfac_n2w(KHalf2K[0]) * cell_area * astype(z_nabla2_c, wpfloat)
+    cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
+
+    w_wp = w + diff_multfac_n2w(KHalf2K[0]) * cell_area_tmp(KHalf2K[0]) * astype(
+        z_nabla2_c, wpfloat
+    )
     return w_wp
 
 
@@ -50,6 +54,6 @@ def apply_nabla2_to_w_in_upper_damping_layer(
         out=w,
         domain={
             CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end + 1),
+            KHalfDim: (vertical_start, vertical_end + 1),
         },
     )

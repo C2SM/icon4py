@@ -27,9 +27,7 @@ def calculate_diagnostics_for_turbulence_numpy(
 ) -> tuple[np.array, np.array]:
     khalf = grid.connectivities[KHalf2KDim]
 
-    kh_c_extend = np.insert(kh_c, kh_c.shape[1], [[0.0] * kh_c.shape[0]], axis=1)
-    div_extend = np.insert(div, div.shape[1], [[0.0] * div.shape[0]], axis=1)
-
+    div_extend = np.insert(div, div.shape[1], [[float("NaN")] * div.shape[0]], axis=1)
     div_ic_offset_1 = np.insert(div, div.shape[1], [[float("NaN")] * div.shape[0]], axis=1)
     div_ic_offset_1 = np.insert(
         div_ic_offset_1, div_ic_offset_1.shape[1], [[float("NaN")] * div.shape[0]], axis=1
@@ -37,6 +35,7 @@ def calculate_diagnostics_for_turbulence_numpy(
     div_offset_1 = div_ic_offset_1[:, khalf[:, 1]]
     div_ic = wgtfac_c * div_extend + (1.0 - wgtfac_c) * div_offset_1
 
+    kh_c_extend = np.insert(kh_c, kh_c.shape[1], [[float("NaN")] * kh_c.shape[0]], axis=1)
     khc_offset_1 = np.insert(kh_c, kh_c.shape[1], [[float("NaN")] * kh_c.shape[0]], axis=1)
     khc_offset_1 = np.insert(
         khc_offset_1, khc_offset_1.shape[1], [[float("NaN")] * kh_c.shape[0]], axis=1
