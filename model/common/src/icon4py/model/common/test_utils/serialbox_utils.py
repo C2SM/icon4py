@@ -685,6 +685,11 @@ class MetricSavepoint(IconSavepoint):
     def wgtfac_c(self):
         return self._get_field("wgtfac_c", CellDim, KDim)
 
+    def wgtfac_c_khalf(self):
+        return self._get_field(
+            "wgtfac_c", CellDim, KHalfDim
+        )  # TODO: temporary duplication to account for KhalfDin only being in diffusion
+
     def wgtfac_e(self):
         return self._get_field("wgtfac_e", EdgeDim, KDim)
 
@@ -758,9 +763,6 @@ class IconDiffusionInitSavepoint(IconSavepoint):
 
     def w(self):
         return self._get_field("w", CellDim, KHalfDim)  # TODO: KHalfDim
-
-    def wgtfac_c(self):
-        return self._get_field("wgtfac_c", CellDim, KHalfDim)
 
     def exner(self):
         return self._get_field("exner", CellDim, KDim)
