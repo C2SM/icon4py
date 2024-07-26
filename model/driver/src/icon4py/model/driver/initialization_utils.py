@@ -191,8 +191,8 @@ def model_initialization_jabw(
     grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
 
     p_sfc = 100000.0
-    jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
-    jw_u0 = 35.0
+    jw_up = 1.0 #1.e-4  # if doing baroclinic wave test, please set it to a nonzero value
+    jw_u0 = 35.0 #35.0
     jw_temp0 = 288.0
     # DEFINED PARAMETERS for jablonowski williamson:
     eta_0 = 0.252
@@ -215,6 +215,7 @@ def model_initialization_jabw(
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
     fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
+    # fac1 = - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
     fac2 = (
         (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
         * EARTH_RADIUS
@@ -253,10 +254,11 @@ def model_initialization_jabw(
 
             geopot_jw = geopot_avg + jw_u0 * (cos_etav**1.5) * (
                 fac1 * jw_u0 * (cos_etav**1.5) + fac2
-            )
+            )# * 0.4 / 0.75
             temperature_jw = (
                 temperature_avg
                 + 0.75
+                # + 0.4
                 * eta_old
                 * math.pi
                 * jw_u0
@@ -488,6 +490,7 @@ def model_initialization_jabw(
         ddt_w_adv_ntl1=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         ddt_w_adv_ntl2=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         vt=_allocate(EdgeDim, KDim, grid=icon_grid),
+        redundant_vt=_allocate(EdgeDim, KDim, grid=icon_grid),
         vn_ie=_allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
         w_concorr_c=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),

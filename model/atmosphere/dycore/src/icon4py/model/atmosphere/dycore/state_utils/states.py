@@ -37,6 +37,7 @@ class DiagnosticStateNonHydro:
     """Data class containing diagnostic fields that are calculated in the dynamical core (SolveNonHydro)."""
 
     vt: Field[[EdgeDim, KDim], float]
+    redundant_vt: Field[[EdgeDim, KDim], float]
     vn_ie: Field[
         [EdgeDim, KDim], float
     ]  # normal wind at half levels (nproma,nlevp1,nblks_e)   [m/s] # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
@@ -180,10 +181,12 @@ class OutputIntermediateFields:
     output_corrector_gradh_exner: Field[[EdgeDim, KDim], float]
     output_corrector_ddt_vn_apc_ntl2: Field[[EdgeDim, KDim], float]
     output_velocity_predictor_hgrad_kinetic_e: Field[[EdgeDim, KDim], float]
+    output_velocity_predictor_tangent_wind: Field[[EdgeDim, KDim], float]
     output_velocity_predictor_total_vorticity_e: Field[[EdgeDim, KDim], float]
     output_velocity_predictor_vertical_wind_e: Field[[EdgeDim, KDim], float]
     output_velocity_predictor_vgrad_vn_e: Field[[EdgeDim, KDim], float]
     output_velocity_corrector_hgrad_kinetic_e: Field[[EdgeDim, KDim], float]
+    output_velocity_corrector_tangent_wind: Field[[EdgeDim, KDim], float]
     output_velocity_corrector_total_vorticity_e: Field[[EdgeDim, KDim], float]
     output_velocity_corrector_vertical_wind_e: Field[[EdgeDim, KDim], float]
     output_velocity_corrector_vgrad_vn_e: Field[[EdgeDim, KDim], float]
@@ -201,10 +204,12 @@ class OutputIntermediateFields:
             output_corrector_gradh_exner=_allocate(EdgeDim, KDim, grid=grid),
             output_corrector_ddt_vn_apc_ntl2=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_predictor_hgrad_kinetic_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_predictor_tangent_wind=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_predictor_total_vorticity_e=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_predictor_vertical_wind_e=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_predictor_vgrad_vn_e=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_corrector_hgrad_kinetic_e=_allocate(EdgeDim, KDim, grid=grid),
+            output_velocity_corrector_tangent_wind=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_corrector_total_vorticity_e=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_corrector_vertical_wind_e=_allocate(EdgeDim, KDim, grid=grid),
             output_velocity_corrector_vgrad_vn_e=_allocate(EdgeDim, KDim, grid=grid),

@@ -52,6 +52,9 @@ from icon4py.model.atmosphere.dycore.apply_2nd_order_divergence_damping import (
 from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping import (
     apply_4th_order_divergence_damping as apply_4th_order_divergence_damping_orig,
 )
+from icon4py.model.atmosphere.dycore.apply_4th_order_divergence_damping_nonmeancell import (
+    apply_4th_order_divergence_damping_nonmeancell as apply_4th_order_divergence_damping_nonmeancell_orig,
+)
 from icon4py.model.atmosphere.dycore.apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure import (
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure as apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_orig,
 )
@@ -277,6 +280,8 @@ add_vertical_wind_derivative_to_divergence_damping = CachedProgram(
 apply_2nd_order_divergence_damping = CachedProgram(apply_2nd_order_divergence_damping_orig)
 
 apply_4th_order_divergence_damping = CachedProgram(apply_4th_order_divergence_damping_orig)
+
+apply_4th_order_divergence_damping_nonmeancell = CachedProgram(apply_4th_order_divergence_damping_nonmeancell_orig)
 
 apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure = CachedProgram(
     apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure_orig

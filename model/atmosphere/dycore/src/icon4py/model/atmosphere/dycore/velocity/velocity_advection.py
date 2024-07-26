@@ -515,6 +515,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
         output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e = self.output_hgrad_kinetic_e
+        output_intermediate_fields.output_velocity_predictor_tangent_wind = diagnostic_state.vt
         output_intermediate_fields.output_velocity_predictor_total_vorticity_e = self.output_total_vorticity_e
         output_intermediate_fields.output_velocity_predictor_vertical_wind_e = self.output_vertical_wind_e
         output_intermediate_fields.output_velocity_predictor_vgrad_vn_e = self.output_vgrad_vn_e
@@ -849,6 +850,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
         output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e = self.output_hgrad_kinetic_e
+        output_intermediate_fields.output_velocity_corrector_tangent_wind = diagnostic_state.vt
         output_intermediate_fields.output_velocity_corrector_total_vorticity_e = self.output_total_vorticity_e
         output_intermediate_fields.output_velocity_corrector_vertical_wind_e = self.output_vertical_wind_e
         output_intermediate_fields.output_velocity_corrector_vgrad_vn_e = self.output_vgrad_vn_e

@@ -42,32 +42,22 @@ from icon4py.model.common.decomposition.definitions import (
     get_processor_properties,
     get_runtype,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
-    diagnose_pressure,
-)
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
-    diagnose_surface_pressure,
-)
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
-    diagnose_temperature,
-)
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
     C2VDim,
     CellDim,
     E2C2VDim,
     EdgeDim,
+    V2CDim,
     KDim,
     V2C2VDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
-    edge_2_cell_vector_rbf_interpolation,
-)
+from icon4py.model.driver import cached as driver_cached
 from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.driver.icon_configuration import IconOutputConfig, IconRunConfig, read_config, OutputVariableList, OutputDimension, OutputScope
+from icon4py.model.driver.icon_configuration import IconOutputConfig, IconConfig, IconRunConfig, read_config, OutputVariableList, OutputDimension, OutputScope
 from icon4py.model.common.settings import device
 from icon4py.model.common.config import Device
 from icon4py.model.driver.initialization_utils import (
@@ -777,7 +767,7 @@ class TimeLoop:
         diagnostic_state: DiagnosticState,
         diagnostic_metric_state: DiagnosticMetricState,
     ):
-        edge_2_cell_vector_rbf_interpolation(
+        driver_cached.edge_2_cell_vector_rbf_interpolation(
             prognostic_state.vn,
             diagnostic_metric_state.rbf_vec_coeff_c1,
             diagnostic_metric_state.rbf_vec_coeff_c2,
@@ -793,7 +783,7 @@ class TimeLoop:
             f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}"
         )
 
-        diagnose_temperature(
+        driver_cached.diagnose_temperature(
             prognostic_state.theta_v,
             prognostic_state.exner,
             diagnostic_state.temperature,
@@ -804,7 +794,7 @@ class TimeLoop:
             offset_provider={},
         )
 
-        diagnose_surface_pressure(
+        driver_cached.diagnose_surface_pressure(
             prognostic_state.exner,
             diagnostic_state.temperature,
             diagnostic_metric_state.ddqz_z_full,
@@ -819,7 +809,7 @@ class TimeLoop:
             offset_provider=self.grid.offset_providers,
         )
 
-        diagnose_pressure(
+        driver_cached.diagnose_pressure(
             diagnostic_metric_state.ddqz_z_full,
             diagnostic_state.temperature,
             diagnostic_state.pressure_sfc,
@@ -958,10 +948,12 @@ class TimeLoop:
                 output_data['corrector_pressure_grad'] = self.solve_nonhydro.output_intermediate_fields.output_corrector_gradh_exner
                 output_data['corrector_advection'] = self.solve_nonhydro.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2
                 output_data['predictor_hgrad_kinetic'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e
+                output_data['predictor_tangent_wind'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
                 output_data['predictor_total_vorticity'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_total_vorticity_e
                 output_data['predictor_vertical_wind'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vertical_wind_e
                 output_data['predictor_vgrad_vn'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vgrad_vn_e
                 output_data['corrector_hgrad_kinetic'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e
+                output_data['corrector_tangent_wind'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_tangent_wind
                 output_data['corrector_total_vorticity'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_total_vorticity_e
                 output_data['corrector_vertical_wind'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vertical_wind_e
                 output_data['corrector_vgrad_vn'] = self.solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e
@@ -1135,6 +1127,21 @@ class TimeLoop:
         # TODO (Chia Rui): compute airmass for prognostic_state here
 
 
+def print_config(config: IconConfig):
+    config_vars = vars(config.run_config)
+    for item in config_vars: 
+        log.info(f"Icon4py run configuration detail: {item} {config_vars[item]}")
+    config_vars = vars(config.diffusion_config)
+    for item in config_vars: 
+        log.info(f"Diffusion configuration detail: {item} {config_vars[item]}")
+    config_vars = vars(config.solve_nonhydro_config)
+    for item in config_vars: 
+        log.info(f"Solve_nh configuration detail: {item} {config_vars[item]}")
+    config_vars = vars(config.output_config)
+    for item in config_vars: 
+        log.info(f"Output configuration detail: {item} {config_vars[item]}")
+    
+
 def initialize(
     file_path: Path,
     props: ProcessProperties,
@@ -1171,7 +1178,7 @@ def initialize(
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
     config = read_config(experiment_type)
-
+    print_config(config)
     decomp_info = read_decomp_info(file_path, props, serialization_type, grid_root, grid_level)
 
     log.info(f"initializing the grid from '{file_path}'")
@@ -1204,6 +1211,22 @@ def initialize(
         grid_root=grid_root,
         grid_level=grid_level,
     )
+    v2c = icon_grid.connectivities[V2CDim]
+    log.info(f"v2c shape {v2c.shape} {icon_grid.num_vertices} {icon_grid.num_cells}")
+    log.info(f"geofac_rot shape {solve_nonhydro_interpolation_state.geofac_rot.ndarray.shape} {icon_grid.num_vertices} {icon_grid.num_cells}")
+    for i in range(icon_grid.num_vertices):
+        for v2c_neighbor in v2c[i]:
+            if v2c_neighbor < 0:
+                log.info(f"{i} v2c table: {v2c[i]}")
+    for i in range(icon_grid.num_vertices):
+        v2c_neighbors_noduplicate = []
+        for v2c_neighbor in v2c[i]:
+            if v2c_neighbor not in v2c_neighbors_noduplicate:
+                v2c_neighbors_noduplicate.append(v2c_neighbor)
+        if not np.array_equal(v2c_neighbors_noduplicate, v2c[i]):
+            log.info(f"{i} v2c table duplicate: {v2c[i]}")
+            log.info(f"{i} geofac_rot table: {solve_nonhydro_interpolation_state.geofac_rot.ndarray[i]}")
+    
 
     log.info("initializing diffusion")
     diffusion_params = DiffusionParams(config.diffusion_config)
@@ -1272,10 +1295,12 @@ def initialize(
     output_data['corrector_pressure_grad'] = solve_nonhydro.output_intermediate_fields.output_corrector_gradh_exner
     output_data['corrector_advection'] = solve_nonhydro.output_intermediate_fields.output_corrector_ddt_vn_apc_ntl2
     output_data['predictor_hgrad_kinetic'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_hgrad_kinetic_e
+    output_data['predictor_tangent_wind'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
     output_data['predictor_total_vorticity'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_total_vorticity_e
     output_data['predictor_vertical_wind'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vertical_wind_e
     output_data['predictor_vgrad_vn'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_vgrad_vn_e
     output_data['corrector_hgrad_kinetic'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_hgrad_kinetic_e
+    output_data['corrector_tangent_wind'] = solve_nonhydro.output_intermediate_fields.output_velocity_predictor_tangent_wind
     output_data['corrector_total_vorticity'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_total_vorticity_e
     output_data['corrector_vertical_wind'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vertical_wind_e
     output_data['corrector_vgrad_vn'] = solve_nonhydro.output_intermediate_fields.output_velocity_corrector_vgrad_vn_e

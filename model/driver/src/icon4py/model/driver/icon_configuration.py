@@ -240,15 +240,16 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
     def _jabw_diffusion_config(n_substeps: int):
         return DiffusionConfig(
             diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
-            hdiff_w=False,
-            hdiff_vn=False,
+            hdiff_w=True,
+            hdiff_vn=True,
             hdiff_temp=False,
             n_substeps=n_substeps,
             type_t_diffu=2,
             type_vn_diffu=1,
             hdiff_efdt_ratio=10.0,
             hdiff_w_efdt_ratio=15.0,
-            smagorinski_scaling_factor=0.025,
+            # smagorinski_scaling_factor=0.025,
+            smagorinski_scaling_factor=0.0000025,
             zdiffu_t=False,
             velocity_boundary_diffusion_denom=200.0,
             max_nudging_coeff=0.075,
@@ -500,6 +501,24 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             )
         )
         output_variable_list.add_new_variable(
+            'predictor_tangent_wind',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-1',
+                standard_name='tangential wind speed',
+                long_name='tangential wind speed in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
             'predictor_total_vorticity',
             VariableDimension(
                 horizon_dimension=OutputDimension.EDGE_DIM,
@@ -565,6 +584,24 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
                 units='m s-2',
                 standard_name='hgrad_kinetic',
                 long_name='horizontal gradient of kinetic energy in horizontal momentum equation',
+                CDI_grid_type='unstructured',
+                param='0.0.0',
+                number_of_grid_in_reference='1',
+                coordinates='elat elon',
+                scope=OutputScope.diagnostic,
+            )
+        )
+        output_variable_list.add_new_variable(
+            'corrector_tangent_wind',
+            VariableDimension(
+                horizon_dimension=OutputDimension.EDGE_DIM,
+                vertical_dimension=OutputDimension.FULL_LEVEL,
+                time_dimension=OutputDimension.TIME,
+            ),
+            VariableAttributes(
+                units='m s-1',
+                standard_name='tangential wind speed',
+                long_name='tangential wind speed in horizontal momentum equation',
                 CDI_grid_type='unstructured',
                 param='0.0.0',
                 number_of_grid_in_reference='1',
@@ -684,15 +721,15 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
         icon_run_config = IconRunConfig(
             dtime=timedelta(seconds=60.0),
-            #end_date=datetime(1, 2, 8, 0, 0, 0),
-            end_date=datetime(1, 1, 1, 1, 0, 0),
+            end_date=datetime(1, 2, 8, 0, 0, 0),
+            # end_date=datetime(1, 1, 1, 0, 2, 0),
             damping_height=45000.0,
             apply_initial_stabilization=False,
             n_substeps=1,
         )
         jabw_output_config = IconOutputConfig(
-            output_time_interval=timedelta(seconds=60),
-            output_file_time_interval=timedelta(seconds=60),
+            output_time_interval=timedelta(seconds=14400),
+            output_file_time_interval=timedelta(seconds=14400),
             output_path=Path("./"),
             output_initial_condition_as_a_separate_file=True,
             output_variable_list=output_variable_list,
