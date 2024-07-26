@@ -29,18 +29,18 @@ if dace_orchestration():
      from icon4py.model.common import dimension
      from gt4py.next.ffront.fbuiltins import FieldOffset
      from gt4py.next.common import DimensionKind
-     from gt4py.next.program_processors.runners.dace_iterator.utility import connectivity_identifier, connectivity_table_size_symbol, connectivity_table_stride_symbol
+     from gt4py.next.program_processors.runners.dace_iterator.utility import connectivity_identifier, field_size_symbol_name, field_stride_symbol_name
      OffsetProviders_t_members = [name for name, value in inspect.getmembers(dimension) if isinstance(value, FieldOffset) and value.source.kind == DimensionKind.HORIZONTAL]
      connectivity_table_size_symbols = {
-          connectivity_table_size_symbol(connectivity_identifier(k), axis): dace.symbol(
-               connectivity_table_size_symbol(connectivity_identifier(k), axis)
+          field_size_symbol_name(connectivity_identifier(k), axis): dace.symbol(
+               field_size_symbol_name(connectivity_identifier(k), axis)
           )
           for k in OffsetProviders_t_members
           for axis in [0, 1]
      }
      connectivity_table_stride_symbols = {
-          connectivity_table_stride_symbol(connectivity_identifier(k), axis): dace.symbol(
-               connectivity_table_stride_symbol(connectivity_identifier(k), axis)
+          field_stride_symbol_name(connectivity_identifier(k), axis): dace.symbol(
+               field_stride_symbol_name(connectivity_identifier(k), axis)
           )
           for k in OffsetProviders_t_members
           for axis in [0, 1]
@@ -62,12 +62,12 @@ if dace_orchestration():
                                                   name = 'PrognosticState_t')
 
      OffsetProviders_int64_t_dict = {member: dace.data.Array(dtype=dace.int64,
-                                                             shape=[OffsetProviders_symbols[connectivity_table_size_symbol(connectivity_identifier(member), 0)], OffsetProviders_symbols[connectivity_table_size_symbol(connectivity_identifier(member), 1)]],
-                                                             strides=[OffsetProviders_symbols[connectivity_table_stride_symbol(connectivity_identifier(member), 0)], OffsetProviders_symbols[connectivity_table_stride_symbol(connectivity_identifier(member), 1)]])
+                                                             shape=[OffsetProviders_symbols[field_size_symbol_name(connectivity_identifier(member), 0)], OffsetProviders_symbols[field_size_symbol_name(connectivity_identifier(member), 1)]],
+                                                             strides=[OffsetProviders_symbols[field_stride_symbol_name(connectivity_identifier(member), 0)], OffsetProviders_symbols[field_stride_symbol_name(connectivity_identifier(member), 1)]])
                                     for member in OffsetProviders_t_members}
      OffsetProviders_int32_t_dict = {member: dace.data.Array(dtype=dace.int32,
-                                                             shape=[OffsetProviders_symbols[connectivity_table_size_symbol(connectivity_identifier(member), 0)], OffsetProviders_symbols[connectivity_table_size_symbol(connectivity_identifier(member), 1)]],
-                                                             strides=[OffsetProviders_symbols[connectivity_table_stride_symbol(connectivity_identifier(member), 0)], OffsetProviders_symbols[connectivity_table_stride_symbol(connectivity_identifier(member), 1)]])
+                                                             shape=[OffsetProviders_symbols[field_size_symbol_name(connectivity_identifier(member), 0)], OffsetProviders_symbols[field_size_symbol_name(connectivity_identifier(member), 1)]],
+                                                             strides=[OffsetProviders_symbols[field_stride_symbol_name(connectivity_identifier(member), 0)], OffsetProviders_symbols[field_stride_symbol_name(connectivity_identifier(member), 1)]])
                                      for member in OffsetProviders_t_members}
      OffsetProviders_int64_t = dace.data.Structure(OffsetProviders_int64_t_dict, name='OffsetProviders_int64_t')
      OffsetProviders_int32_t = dace.data.Structure(OffsetProviders_int32_t_dict, name='OffsetProviders_int32_t')

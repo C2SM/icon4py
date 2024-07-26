@@ -44,7 +44,7 @@ if dace_orchestration():
     from dace.memlet import Memlet
     from dace.properties import CodeBlock
     from gt4py._core import definitions as core_defs
-    from gt4py.next.program_processors.runners.dace_iterator.utility import connectivity_identifier, connectivity_table_size_symbol, connectivity_table_stride_symbol
+    from gt4py.next.program_processors.runners.dace_iterator.utility import connectivity_identifier, field_size_symbol_name, field_stride_symbol_name
     from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
     from icon4py.model.common.decomposition.definitions import DecompositionInfo, SingleNodeExchange
     from icon4py.model.common.orchestration.dtypes import *
@@ -273,10 +273,10 @@ if dace_orchestration():
             **{"CellDim_sym": grid.offset_providers['C2E'].table.shape[0], "EdgeDim_sym": grid.offset_providers['E2C'].table.shape[0], "KDim_sym": grid.num_levels},
             **{f"DiffusionDiagnosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["hdef_ic", "div_ic", "dwdx", "dwdy"] for stride in [0,1] if k_v[0] is DiffusionDiagnosticState_t},
             **{f"PrognosticState_{member}_s{str(stride)}_sym": get_stride_from_numpy_to_dace(getattr(k_v[1], member).ndarray, stride) for k_v in flattened_xargs_type_value for member in ["rho", "w", "vn", "exner", "theta_v"] for stride in [0,1] if k_v[0] is PrognosticState_t},
-            **{connectivity_table_size_symbol(connectivity_identifier(k), axis=0): v.table.shape[0] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            **{connectivity_table_size_symbol(connectivity_identifier(k), axis=1): v.table.shape[1] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            **{connectivity_table_stride_symbol(connectivity_identifier(k), axis=0): get_stride_from_numpy_to_dace(v.table, 0) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
-            **{connectivity_table_stride_symbol(connectivity_identifier(k), axis=1): get_stride_from_numpy_to_dace(v.table, 1) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{field_size_symbol_name(connectivity_identifier(k), axis=0): v.table.shape[0] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{field_size_symbol_name(connectivity_identifier(k), axis=1): v.table.shape[1] for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{field_stride_symbol_name(connectivity_identifier(k), axis=0): get_stride_from_numpy_to_dace(v.table, 0) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
+            **{field_stride_symbol_name(connectivity_identifier(k), axis=1): get_stride_from_numpy_to_dace(v.table, 1) for k,v in grid.offset_providers.items() if hasattr(v, "table")},
             }
 
 
