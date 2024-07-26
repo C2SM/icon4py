@@ -19,10 +19,12 @@ from icon4py.model.atmosphere.diffusion.diffusion_utils import scale_k
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.settings import backend
+from icon4py.model.common import settings
 from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.helpers import dallclose
 from icon4py.model.common.test_utils.reference_funcs import enhanced_smagorinski_factor_numpy
 from icon4py.model.common.test_utils.serialbox_utils import IconDiffusionInitSavepoint
+from icon4py.model.common.orchestration.decorator import dace_orchestration
 
 from .utils import (
     construct_config,
@@ -270,7 +272,7 @@ def test_verify_diffusion_init_against_savepoint(
     "experiment, step_date_init, step_date_exit",
     [
         (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -328,6 +330,139 @@ def test_run_diffusion_single_step(
     )
 
     verify_diffusion_fields(config, diagnostic_state, prognostic_state, diffusion_savepoint_exit)
+
+
+@pytest.mark.datatest
+@pytest.mark.parametrize(
+    "experiment, step_date_init, step_date_exit",
+    [
+        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        #(GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
+    ],
+)
+@pytest.mark.parametrize("ndyn_substeps", (2,))
+def test_run_diffusion_multiple_steps(
+    diffusion_savepoint_init,
+    diffusion_savepoint_exit,
+    interpolation_savepoint,
+    metrics_savepoint,
+    grid_savepoint,
+    icon_grid,
+    experiment,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
+    damping_height,
+    ndyn_substeps,
+):
+    if not dace_orchestration():
+        raise pytest.skip("This test is only executed for `--backend=dace_cpu_noopt_orch`")
+
+    dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    metric_state = construct_metric_state(metrics_savepoint)
+    vertical_config = VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
+        rayleigh_damping_height=damping_height,
+    )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    config = construct_config(experiment, ndyn_substeps)
+    additional_parameters = DiffusionParams(config)
+
+    ######################################################################
+    # DaCe NON-Orchestrated Backend
+    ######################################################################
+    from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
+    settings.backend_name = "run_dace_cpu_noopt"
+    settings.backend = run_dace_cpu_noopt
+
+    diagnostic_state_dace_non_orch = construct_diagnostics(diffusion_savepoint_init)
+    prognostic_state_dace_non_orch = diffusion_savepoint_init.construct_prognostics()
+
+    diffusion = Diffusion()
+    diffusion.init(
+        grid=icon_grid,
+        config=config,
+        params=additional_parameters,
+        vertical_params=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+    )
+
+    for _ in range(3):
+        diffusion.run(
+            diagnostic_state=diagnostic_state_dace_non_orch,
+            prognostic_state=prognostic_state_dace_non_orch,
+            dtime=dtime,
+        )
+
+    ######################################################################
+    # DaCe Orchestrated Backend
+    ######################################################################
+    settings.backend_name = "run_dace_cpu_noopt_orch"
+    settings.backend = run_dace_cpu_noopt
+
+    diagnostic_state_dace_orch = construct_diagnostics(diffusion_savepoint_init)
+    prognostic_state_dace_orch = diffusion_savepoint_init.construct_prognostics()
+
+    diffusion = Diffusion()
+    diffusion.init(
+        grid=icon_grid,
+        config=config,
+        params=additional_parameters,
+        vertical_params=vertical_params,
+        metric_state=metric_state,
+        interpolation_state=interpolation_state,
+        edge_params=edge_geometry,
+        cell_params=cell_geometry,
+    )
+
+    for _ in range(3):
+        diffusion.run(
+            diagnostic_state=diagnostic_state_dace_orch,
+            prognostic_state=prognostic_state_dace_orch,
+            dtime=dtime,
+        )
+
+    ######################################################################
+    # Verify the results
+    ######################################################################
+    div_ic_dace_non_orch = diagnostic_state_dace_non_orch.div_ic.asnumpy()
+    hdef_ic_dace_non_orch = diagnostic_state_dace_non_orch.hdef_ic.asnumpy()
+    dwdx_dace_non_orch = diagnostic_state_dace_non_orch.dwdx.asnumpy()
+    dwdy_dace_non_orch = diagnostic_state_dace_non_orch.dwdy.asnumpy()
+
+    div_ic_dace_orch = diagnostic_state_dace_orch.div_ic.asnumpy()
+    hdef_ic_dace_orch = diagnostic_state_dace_orch.hdef_ic.asnumpy()
+    dwdx_dace_orch = diagnostic_state_dace_orch.dwdx.asnumpy()
+    dwdy_dace_orch = diagnostic_state_dace_orch.dwdy.asnumpy()
+
+    assert np.allclose(div_ic_dace_non_orch, div_ic_dace_orch)
+    assert np.allclose(hdef_ic_dace_non_orch, hdef_ic_dace_orch)
+    assert np.allclose(dwdx_dace_non_orch, dwdx_dace_orch)
+    assert np.allclose(dwdy_dace_non_orch, dwdy_dace_orch)
+
+    w_dace_orch = prognostic_state_dace_non_orch.w.asnumpy()
+    theta_v_dace_orch = prognostic_state_dace_non_orch.theta_v.asnumpy()
+    exner_dace_orch = prognostic_state_dace_non_orch.exner.asnumpy()
+    vn_dace_orch = prognostic_state_dace_non_orch.vn.asnumpy()
+
+    w_dace_non_orch = prognostic_state_dace_orch.w.asnumpy()
+    theta_v_dace_non_orch = prognostic_state_dace_orch.theta_v.asnumpy()
+    exner_dace_non_orch = prognostic_state_dace_orch.exner.asnumpy()
+    vn_dace_non_orch = prognostic_state_dace_orch.vn.asnumpy()
+
+    assert np.allclose(w_dace_non_orch, w_dace_orch)
+    assert np.allclose(theta_v_dace_non_orch, theta_v_dace_orch)
+    assert np.allclose(exner_dace_non_orch, exner_dace_orch)
+    assert np.allclose(vn_dace_non_orch, vn_dace_orch)
 
 
 @pytest.mark.datatest

@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.model.common.settings import backend, backend_name
+from icon4py.model.common import settings
 
 from collections.abc import Callable
 from typing import Union
@@ -23,7 +23,7 @@ from gt4py.next import CompileTimeConnectivity
 
 def dace_orchestration() -> bool:
     """DaCe Orchestration: GT4Py Programs called in a dace.program annotated function"""
-    if "dace" in backend_name and "orch" in backend_name:
+    if "dace" in settings.backend_name and "orch" in settings.backend_name:
         return True
     return False
 
@@ -225,7 +225,7 @@ if dace_orchestration():
         dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
         dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
-        device_type = backend.executor.otf_workflow.step.translation.device_type
+        device_type = settings.backend.executor.otf_workflow.step.translation.device_type
         if device_type == core_defs.DeviceType.CPU:
             device = "cpu"
             compiler_args = dace.config.Config.get("compiler", "cpu", "args")
