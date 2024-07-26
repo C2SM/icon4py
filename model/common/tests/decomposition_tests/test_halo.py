@@ -19,10 +19,9 @@ import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.grid_manager as gm
-import icon4py.model.common.grid.vertical as v_grid
 from icon4py.model.common.decomposition import definitions as defs
 from icon4py.model.common.decomposition.halo import HaloGenerator, SimpleMetisDecomposer
-from icon4py.model.common.grid import simple
+from icon4py.model.common.grid import base as base_grid, simple, vertical as v_grid
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
@@ -30,6 +29,13 @@ from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # 
     processor_props,
 )
 
+
+UGRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
+    "icon_grid_0013_R02B04_R_ugrid.nc"
+)
+GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
+    "icon_grid_0013_R02B04_R.nc"
+)
 
 simple_distribution = xp.asarray(
     [
@@ -147,7 +153,7 @@ def test_element_ownership_is_unique(dim, processor_props):  # fixture
         run_properties=processor_props,
         rank_mapping=simple_distribution,
     )
-    
+
     decomposition_info = halo_generator.construct_decomposition_info()
     owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
@@ -180,12 +186,13 @@ def test_element_ownership_is_unique(dim, processor_props):  # fixture
         # check the buffer has all global indices
         assert xp.all(xp.sort(values) == global_indices(dim))
 
+
 @pytest.mark.with_mpi(min_size=4)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
-    
+
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
         ugrid=grid,
@@ -204,17 +211,14 @@ def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
     assert xp.setdiff1d(my_owned, owned[dim][processor_props.rank], assume_unique=True).size == 0
 
 
-# TODO V2E2V (from grid file vertices_of_vertex) do we use that at all?
 @pytest.mark.parametrize(
-    "field_offset", [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C]
+    "field_offset",
+    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
 )
 def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     caplog.set_level(logging.INFO)
-    grid =  grid_file_manager(GRID_FILE).grid
-    partitioner = SimpleMetisDecomposer()
-    processor_props.comm_size = 4
-    processor_props.rank = 3
-    labels = partitioner(grid.connectivities[dims.C2E2CDim], processor_props.comm_size)
+    grid = grid_file_manager(GRID_FILE).grid
+    labels = decompose(grid, processor_props)
     halo_generator = HaloGenerator(
         ugrid=grid,
         run_properties=processor_props,
@@ -224,25 +228,19 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     decomposition_info = halo_generator.construct_decomposition_info()
 
     connectivity = halo_generator.construct_local_connectivity(field_offset, decomposition_info)
-    # TODO (@halungge): think of more valuable assertions...
+    # there is an neighbor list for each index of the target dimension on the node
     assert (
         connectivity.shape[0]
         == decomposition_info.global_index(
             field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
         ).size
     )
+    # all neighbor indices are valid local indices
     assert xp.max(connectivity) == xp.max(
         decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
     )
-
-
-
-UGRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
-    "icon_grid_0013_R02B04_R_ugrid.nc"
-)
-GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
-    "icon_grid_0013_R02B04_R.nc"
-)
+    # TODO what else?
+    # outer halo entries have SKIP_VALUE neighbors (depends on offsets)
 
 
 def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
@@ -251,8 +249,6 @@ def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     )
     manager()
     return manager
-
-
 
 
 def global_indices(dim: dims.Dimension) -> int:
@@ -280,10 +276,10 @@ def icon_distribution(
     return distribution
 
 
-def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm, dtype=int) -> tuple:
+def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     local_sizes = xp.array(comm.gather(field.size, root=0))
     if comm.rank == 0:
-        recv_buffer = xp.empty(sum(local_sizes), dtype=dtype)
+        recv_buffer = xp.empty(sum(local_sizes), dtype=field.dtype)
     else:
         recv_buffer = None
     comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
@@ -293,11 +289,9 @@ def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm, dtype=int) -> tuple:
 @pytest.mark.xfail(reason="This test is not yet implemented")
 def test_local_grid(processor_props, caplog):  # fixture
     caplog.set_level(logging.INFO)
-    
+
     grid = grid_file_manager(GRID_FILE).grid
-    partitioner = SimpleMetisDecomposer()
-    labels = partitioner(grid.connectivities[dims.C2E2CDim],
-                         n_part=processor_props.comm_size)
+    labels = decompose(grid, processor_props)
     halo_generator = HaloGenerator(
         ugrid=grid,
         run_properties=processor_props,
@@ -316,11 +310,11 @@ def test_local_grid(processor_props, caplog):  # fixture
 def test_distributed_fields(processor_props):  # fixture
     grid_manager = grid_file_manager(GRID_FILE)
 
-    partitioner = SimpleMetisDecomposer()
-    labels = partitioner(grid_manager.grid.connectivities[dims.C2E2CDim], n_part=processor_props.comm_size)
-    
+    global_grid = grid_manager.grid
+    labels = decompose(global_grid, processor_props)
+
     halo_generator = HaloGenerator(
-        ugrid=grid_manager.grid,
+        ugrid=global_grid,
         run_properties=processor_props,
         rank_mapping=labels,
     )
@@ -336,13 +330,13 @@ def test_distributed_fields(processor_props):  # fixture
         f"rank = {processor_props.rank} has size(cell_area): {local_cell_area.shape}, has size(edge_length): {local_edge_length.shape}"
     )
     # the local number of cells must be at most the global number of cells (analytically computed)
-    assert local_cell_area.size <= grid_manager.grid.global_properties.num_cells
+    assert local_cell_area.size <= global_grid.global_properties.num_cells
     # global read: read the same (global fields)
     global_geometry_fields = grid_manager.read_geometry()
-    global_vlon = grid_manager.read_coordinates()[gm.GridFile.CoordinateName.VERTEX_LONGITUDE]
-
     global_cell_area = global_geometry_fields[gm.GridFile.GeometryName.CELL_AREA]
     global_edge_length = global_geometry_fields[gm.GridFile.GeometryName.EDGE_LENGTH]
+    global_vlon = grid_manager.read_coordinates()[gm.GridFile.CoordinateName.VERTEX_LONGITUDE]
+
     assert_gathered_field_against_global(
         decomposition_info, processor_props, dims.CellDim, global_cell_area, local_cell_area
     )
@@ -353,6 +347,12 @@ def test_distributed_fields(processor_props):  # fixture
     assert_gathered_field_against_global(
         decomposition_info, processor_props, dims.VertexDim, global_vlon, local_vlon
     )
+
+
+def decompose(grid: base_grid.BaseGrid, processor_props):
+    partitioner = SimpleMetisDecomposer()
+    labels = partitioner(grid.connectivities[dims.C2E2CDim], n_part=processor_props.comm_size)
+    return labels
 
 
 def assert_gathered_field_against_global(
@@ -369,16 +369,17 @@ def assert_gathered_field_against_global(
     owned_entries = local_field[
         decomposition_info.local_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     ]
-    gathered_sizes, gathered_field = gather_field(
-        owned_entries, processor_props.comm, dtype=xp.float64
-    )
+    gathered_sizes, gathered_field = gather_field(owned_entries, processor_props.comm)
     global_index_sizes, gathered_global_indices = gather_field(
         decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED),
         processor_props.comm,
-        dtype=int,
     )
     if processor_props.rank == 0:
         assert xp.all(gathered_sizes == global_index_sizes)
         sorted = xp.zeros(global_reference_field.shape, dtype=xp.float64)
         sorted[gathered_global_indices] = gathered_field
         assert helpers.dallclose(sorted, global_reference_field)
+
+
+# TODO add test including halo access:
+#  Will uses geofac_div and geofac_n2s

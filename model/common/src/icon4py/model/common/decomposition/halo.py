@@ -36,7 +36,10 @@ class DecompositionFlag(enum.IntEnum):
     #: cell is in the second halo line: that is cells that share only a vertex with an owned cell (and at least an edge with a FIRST_HALO_LINE cell)
     SECOND_HALO_LINE = 2
 
+
 SKIP_VALUE = gm.GridFile.INVALID_INDEX
+
+
 class HaloGenerator:
     """Creates necessary halo information for a given rank."""
 
@@ -58,20 +61,18 @@ class HaloGenerator:
         self._global_grid = ugrid
         self._connectivities = self._global_grid.connectivities
 
-
     @property
     def edge_face_connectivity(self):
         return self.connectivity(dims.E2CDim)
-    
+
     @property
     def face_face_connectivity(self):
         return self.connectivity(dims.C2E2CDim)
-    
-    
+
     @property
     def node_edge_connectivity(self):
         return self.connectivity(dims.V2EDim)
-    
+
     def _validate(self):
         assert self._mapping.ndim == 1
         # the decomposition should match the communicator size
@@ -86,7 +87,7 @@ class HaloGenerator:
             return conn_table
         except KeyError as err:
             raise (f"Connectivity for dimension {dim} is not available") from err
-    
+
     def next_halo_line(self, cell_line: xp.ndarray, depot=None):
         """Returns the global indices of the next halo line.
 
@@ -127,7 +128,7 @@ class HaloGenerator:
         owned_cells = self._mapping == self._props.rank
         return xp.asarray(owned_cells).nonzero()[0]
 
-    # TODO (@halungge): move out of halo generator
+    # TODO (@halungge): move out of halo generator?
     def construct_decomposition_info(self) -> defs.DecompositionInfo:
         """
         Constructs the DecompositionInfo for the current rank.
@@ -231,43 +232,52 @@ class HaloGenerator:
         return decomp_info
 
     def construct_local_connectivity(
-        self, field_offset: gtx.FieldOffset, decom_info: defs.DecompositionInfo
+        self, field_offset: gtx.FieldOffset, decomposition_info: defs.DecompositionInfo
     ) -> xp.ndarray:
         """
-        Construct a connectivity table for use on a given rank: it maps from source to target dimension in local indices.
+        Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
+
+        Starting from the connectivity table on the global grid
+        - we reduce it to the lines for the locally present entries of the the target dimension
+        - the reduced connectivity then still maps to global source dimension indices:
+            we replace those source dimension indices not present on the node to SKIP_VALUE and replace the rest with the local indices
 
         Args:
-            field_offset: FieldOffset for which we want to construct the offset table
-            decom_info: DecompositionInfo for the current rank
+            field_offset: FieldOffset for which we want to construct the local connectivity table
+            decomposition_info: DecompositionInfo for the current rank.
 
-        Returns: array, containing the connectivity table for the field_offset with rank-local indices
-        # TODO (@halungge): this does not properly work for outermost halo points: they have neighbors that are not present in the local decomposition_info.global_index list!!
-        # those should have an SKIP_VALUE entry in the local connectivity matrix -> revise the `global_to_local` handling!
+        Returns:
+            connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
         """
         source_dim = field_offset.source
         target_dim = field_offset.target[0]
         local_dim = field_offset.target[1]
-        connectivity = self.connectivity(local_dim)
-        global_idx = decom_info.global_index(source_dim, defs.DecompositionInfo.EntryType.ALL)
-        global_idx_sorted = xp.argsort(global_idx)
-        sliced_connectivity = connectivity[
-            decom_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
+        sliced_connectivity = self.connectivity(local_dim)[
+            decomposition_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
         ]
         log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
-        for i in xp.arange(sliced_connectivity.shape[0]):
-            valid_neighbor_mask = sliced_connectivity[i, :] != SKIP_VALUE
-            
+
+        global_idx = decomposition_info.global_index(
+            source_dim, defs.DecompositionInfo.EntryType.ALL
+        )
+
+        # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
+        local_connectivity = xp.where(
+            xp.isin(sliced_connectivity, global_idx), sliced_connectivity, SKIP_VALUE
+        )
+
+        # map to local source indices
+        sorted_index_of_global_idx = xp.argsort(global_idx)
+        global_idx_sorted = global_idx[sorted_index_of_global_idx]
+        for i in xp.arange(local_connectivity.shape[0]):
+            valid_neighbor_mask = local_connectivity[i, :] != SKIP_VALUE
             positions = xp.searchsorted(
-                global_idx[global_idx_sorted], sliced_connectivity[i, valid_neighbor_mask]
+                global_idx_sorted, local_connectivity[i, valid_neighbor_mask]
             )
-            # outer most halo points have neighbors that do not exist in the local 
-            # decomposition_info.global_index list. 
-            # those should have an SKIP_VALUE entry in the local connectivity matrix
-            global_idx_sorted = xp.append(global_idx_sorted,SKIP_VALUE)
-            indices = global_idx_sorted[positions]
-            sliced_connectivity[i, valid_neighbor_mask] = indices
-        log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
-        return sliced_connectivity
+            indices = sorted_index_of_global_idx[positions]
+            local_connectivity[i, valid_neighbor_mask] = indices
+        log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
+        return local_connectivity
 
 
 # should be done in grid manager!sor
@@ -309,7 +319,8 @@ def local_grid(
 
     return local_grid
 
-# TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and 
+
+# TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and
 #  the return value an array of shape (n_cells,)
 
 
@@ -317,18 +328,18 @@ class Decomposer(Protocol):
     def __call__(self, adjacency_matrix, n_part: int) -> xp.ndarray:
         ...
 
+
 class SimpleMetisDecomposer(Decomposer):
     """
     A simple decomposer using METIS for partitioning a grid topology.
-    
+
     We use the simple pythonic interface to pymetis: just passing the adjacency matrix
     if more control is needed (for example by using weights we need to switch to the C like interface)
     https://documen.tician.de/pymetis/functionality.html
     """
-    
 
     def __call__(self, adjacency_matrix, n_part: int) -> xp.ndarray:
-        """ 
+        """
         Generate partition labesl for this grid topology using METIS:
         https://github.com/KarypisLab/METIS
 
@@ -337,12 +348,10 @@ class SimpleMetisDecomposer(Decomposer):
 
         Args:
             n_part: int, number of partitions to create
-        Returns: np.ndarray: array with partition label (int, rank number) for each cell    
+        Returns: np.ndarray: array with partition label (int, rank number) for each cell
         """
 
         import pymetis
-        cut_count, partition_index = pymetis.part_graph(
-            nparts=n_part,
-            adjacency=adjacency_matrix
-        )
+
+        cut_count, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
         return xp.array(partition_index)
