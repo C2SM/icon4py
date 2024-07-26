@@ -124,7 +124,7 @@ def wait(comm_handle: Union[int, SingleNodeResult, MultiNodeResult]):
         comm_handle.wait()
 
 
-def build_connectivities(offset_providers: dict[str, Connectivity]) -> dict[str, Connectivity]:
+def build_compile_time_connectivities(offset_providers: dict[str, Connectivity]) -> dict[str, Connectivity]:
     connectivities = {}
     for k,v in offset_providers.items():
         if hasattr(v, "table"):
