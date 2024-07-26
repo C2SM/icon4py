@@ -20,7 +20,7 @@ import gt4py.next as gtx
 
 import icon4py.model.common.decomposition.definitions as defs
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base as base_grid, grid_manager as gm, icon as icon_grid
+from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.settings import xp
 
 
@@ -37,7 +37,7 @@ class DecompositionFlag(enum.IntEnum):
     SECOND_HALO_LINE = 2
 
 
-SKIP_VALUE = gm.GridFile.INVALID_INDEX
+SKIP_VALUE = -1
 
 
 class HaloGenerator:
@@ -47,32 +47,47 @@ class HaloGenerator:
         self,
         run_properties: defs.ProcessProperties,
         rank_mapping: xp.ndarray,
-        ugrid: base_grid.BaseGrid,
+        connectivities:dict,
+        num_levels:int,
     ):
         """
 
         Args:
             run_properties: contains information on the communicator and local compute node.
             rank_mapping: array with shape (global_num_cells,): mapping of global cell indices to their rank in the distribution
-            ugrid: the global grid
+            connectivities: connectivity arrays needed to construct the halos
+            num_levels: # TODO (@halungge): should not be needed here
         """
         self._props = run_properties
         self._mapping = rank_mapping
-        self._global_grid = ugrid
-        self._connectivities = self._global_grid.connectivities
-
-    @property
-    def edge_face_connectivity(self):
-        return self.connectivity(dims.E2CDim)
+        self._connectivities = connectivities
+        self._num_levels = num_levels
 
     @property
     def face_face_connectivity(self):
-        return self.connectivity(dims.C2E2CDim)
+        return self._connectivity(dims.C2E2CDim)
+    
+    @property
+    def edge_face_connectivity(self):
+        return self._connectivity(dims.E2CDim)
+    
+    @property
+    def face_edge_connectivity(self):
+        return self._connectivity(dims.C2EDim)
+
 
     @property
     def node_edge_connectivity(self):
-        return self.connectivity(dims.V2EDim)
+        return self._connectivity(dims.V2EDim)
 
+    @property
+    def node_face_connectivity(self):
+        return self._connectivity(dims.V2CDim)
+    
+    @property   
+    def face_node_connectivity(self):
+        return self._connectivity(dims.C2VDim)
+    
     def _validate(self):
         assert self._mapping.ndim == 1
         # the decomposition should match the communicator size
@@ -81,7 +96,7 @@ class HaloGenerator:
     def _post_init(self):
         self._validate()
 
-    def connectivity(self, dim) -> xp.ndarray:
+    def _connectivity(self, dim) -> xp.ndarray:
         try:
             conn_table = self._connectivities[dim]
             return conn_table
@@ -108,7 +123,7 @@ class HaloGenerator:
         return next_halo_cells
 
     def _cell_neighbors(self, cells: xp.ndarray):
-        return xp.unique(self.connectivity(dims.C2E2CDim)[cells, :])
+        return xp.unique(self.face_face_connectivity[cells, :])
 
     def _find_neighbors(self, cell_line: xp.ndarray, connectivity: xp.ndarray) -> xp.ndarray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
@@ -118,10 +133,12 @@ class HaloGenerator:
         return unique_neighbors
 
     def find_edge_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
-        return self._find_neighbors(cell_line, connectivity=self.connectivity(dims.C2EDim))
+        return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
+
+
 
     def find_vertex_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
-        return self._find_neighbors(cell_line, connectivity=self.connectivity(dims.C2VDim))
+        return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
     def owned_cells(self) -> xp.ndarray:
         """Returns the global indices of the cells owned by this rank"""
@@ -147,7 +164,7 @@ class HaloGenerator:
 
         c_owner_mask = xp.isin(all_cells, owned_cells)
 
-        decomp_info = defs.DecompositionInfo(klevels=self._global_grid.num_levels).with_dimension(
+        decomp_info = defs.DecompositionInfo(klevels=self._num_levels).with_dimension(
             dims.CellDim, all_cells, c_owner_mask
         )
 
@@ -226,10 +243,12 @@ class HaloGenerator:
         all_vertices = xp.unique(xp.hstack((vertices_on_owned_cells, vertices_on_first_halo_line)))
         v_owner_mask = xp.isin(all_vertices, vertices_on_owned_cells)
         v_owner_mask = _update_owner_mask_by_max_rank_convention(
-            v_owner_mask, all_vertices, intersect_owned_first_line, self.connectivity(dims.V2CDim)
+            v_owner_mask, all_vertices, intersect_owned_first_line, self.node_face_connectivity
         )
         decomp_info.with_dimension(dims.VertexDim, all_vertices, v_owner_mask)
         return decomp_info
+    
+
 
     def construct_local_connectivity(self, 
         field_offset: gtx.FieldOffset, decomposition_info: defs.DecompositionInfo) -> xp.ndarray:
@@ -247,11 +266,13 @@ class HaloGenerator:
 
         Returns:
             connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
+        
+        # TODO (@halungge): this should be done in the grid manager
         """
         source_dim = field_offset.source
         target_dim = field_offset.target[0]
         local_dim = field_offset.target[1]
-        sliced_connectivity = self.connectivity(local_dim)[
+        sliced_connectivity = self._connectivity(local_dim)[
             decomposition_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
         ]
         log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
@@ -283,8 +304,7 @@ class HaloGenerator:
     def local_grid(self,
                    props: defs.ProcessProperties,
                    decomposition_info: defs.DecompositionInfo,
-                   global_params: icon_grid.GlobalGridParams,
-                   num_lev: int,
+
                    limited_area: bool = False,
                    on_gpu: bool = False,
                    ) -> base_grid.BaseGrid:
@@ -311,11 +331,11 @@ class HaloGenerator:
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         config = base_grid.GridConfig(
-            horizontal_config=grid_size, vertical_size=num_lev, on_gpu=on_gpu, limited_area=limited_area
+            horizontal_config=grid_size, vertical_size=self._num_levels, on_gpu=on_gpu, limited_area=limited_area
         )
     
         local_grid = (
-            icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_global_params(global_params).with_connectivities({
+            icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_connectivities({
                 dims.C2EDim: self.construct_local_connectivity(dims.C2EDim, decomposition_info),
                 dims.E2CDim: self.construct_local_connectivity(dims.E2CDim, decomposition_info),
                 dims.E2VDim: self.construct_local_connectivity(dims.E2VDim, decomposition_info),
@@ -324,8 +344,8 @@ class HaloGenerator:
                 dims.V2CDim: self.construct_local_connectivity(dims.V2CDim, decomposition_info),
                 dims.C2E2CDim: self.construct_local_connectivity(dims.C2E2CDim, decomposition_info),
                 # dims.C2E2CODim
-                
-                
+                # etc... # TODO (@halungge): this should all go to grid_manager
+                    
                 
                 
             })

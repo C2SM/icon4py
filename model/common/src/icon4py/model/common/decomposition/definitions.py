@@ -34,6 +34,8 @@ class ProcessProperties(Protocol):
     rank: int
     comm_name: str
     comm_size: int
+    def single_node(self) -> bool:
+        return self.comm_size == 1
 
 
 @dataclass(frozen=True, init=False)

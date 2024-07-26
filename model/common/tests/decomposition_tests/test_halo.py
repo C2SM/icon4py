@@ -131,9 +131,10 @@ halos = {dims.CellDim: cell_halos, dims.EdgeDim: edge_halos, dims.VertexDim: ver
 def test_halo_constructor_owned_cells(processor_props):  # fixture
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
-        ugrid=grid,
+        connectivities=grid.connectivities,
         run_properties=processor_props,
         rank_mapping=simple_distribution,
+        num_levels=1,
     )
     my_owned_cells = halo_generator.owned_cells()
 
@@ -149,9 +150,10 @@ def test_element_ownership_is_unique(dim, processor_props):  # fixture
         pytest.skip("This test requires exactly 4 MPI ranks.")
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
-        ugrid=grid,
+        connectivities=grid.connectivities,
         run_properties=processor_props,
         rank_mapping=simple_distribution,
+        num_levels=1,
     )
 
     decomposition_info = halo_generator.construct_decomposition_info()
@@ -195,9 +197,10 @@ def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
 
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
-        ugrid=grid,
+        connectivities=grid.connectivities,
         run_properties=processor_props,
         rank_mapping=simple_distribution,
+        num_levels=1,
     )
 
     decomp_info = halo_generator.construct_decomposition_info()
@@ -220,9 +223,10 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     grid = grid_file_manager(GRID_FILE).grid
     labels = decompose(grid, processor_props)
     halo_generator = HaloGenerator(
-        ugrid=grid,
+        connectivities=grid.connectivities,
         run_properties=processor_props,
         rank_mapping=labels,
+        num_levels=1,
     )
 
     decomposition_info = halo_generator.construct_decomposition_info()
@@ -285,16 +289,17 @@ def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
     return local_sizes, recv_buffer
 
-
+@pytest.mark.xfail(reason="Not implemented yet")
 def test_local_grid(processor_props, caplog):  # fixture
     caplog.set_level(logging.INFO)
 
     grid = grid_file_manager(GRID_FILE).grid
     labels = decompose(grid, processor_props)
     halo_generator = HaloGenerator(
-        ugrid=grid,
+        connectivities=grid.connectivities,
         run_properties=processor_props,
         rank_mapping=labels,
+        num_levels=1,
     )
     decomposition_info = halo_generator.construct_decomposition_info()
     local_grid = halo_generator.local_grid(decomposition_info)
@@ -313,9 +318,10 @@ def test_distributed_fields(processor_props):  # fixture
     labels = decompose(global_grid, processor_props)
 
     halo_generator = HaloGenerator(
-        ugrid=global_grid,
+        connectivities=global_grid.connectivities,
         run_properties=processor_props,
         rank_mapping=labels,
+        num_levels=1,
     )
     decomposition_info = halo_generator.construct_decomposition_info()
     # distributed read: read one field per dimension

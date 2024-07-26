@@ -19,7 +19,7 @@ from typing import Optional, Sequence, Union
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.decomposition import definitions as defs
+from icon4py.model.common.decomposition import definitions as decomposition, halo
 
 
 try:
@@ -252,15 +252,18 @@ class GridManager:
 
     def __init__(
         self,
+        
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path,str],
-        config: v_grid.VerticalGridConfig,
+        config: v_grid.VerticalGridConfig, # TODO (@halungge) remove
+        run_properties: decomposition.ProcessProperties = decomposition.SingleNodeProcessProperties(),
     ):
         self._log = logging.getLogger(__name__)
+        self._run_properties = run_properties
         self._transformation = transformation
-        self._config = config # TODO (@halungge) remove
-        self._grid: Optional[icon_grid.IconGrid] = None
+        self._config = config
         self._file_name = str(grid_file)
+        self._grid: Optional[icon_grid.IconGrid] = None
         self._dataset = None
         self._reader = None
 
@@ -329,15 +332,15 @@ class GridManager:
 
     def _read(
         self,
-        decomposition_info: defs.DecompositionInfo,
+        decomposition_info: decomposition.DecompositionInfo,
         fields: dict[dims.Dimension, Sequence[GridFileName]],
     ):
         (cells_on_node, edges_on_node, vertices_on_node) = (
             (
-                decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL),
-                decomposition_info.global_index(dims.EdgeDim, defs.DecompositionInfo.EntryType.ALL),
+                decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL),
+                decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL),
                 decomposition_info.global_index(
-                    dims.VertexDim, defs.DecompositionInfo.EntryType.ALL
+                    dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL
                 ),
             )
             if decomposition_info is not None
@@ -358,7 +361,7 @@ class GridManager:
 
         return _read_local(fields)
 
-    def read_geometry(self, decomposition_info: Optional[defs.DecompositionInfo] = None):
+    def read_geometry(self, decomposition_info: Optional[decomposition.DecompositionInfo] = None):
         return self._read(
             decomposition_info,
             {
@@ -367,7 +370,7 @@ class GridManager:
             },
         )
 
-    def read_coordinates(self, decomposition_info: Optional[defs.DecompositionInfo] = None):
+    def read_coordinates(self, decomposition_info: Optional[decomposition.DecompositionInfo] = None):
         return self._read(
             decomposition_info,
             {
@@ -403,8 +406,23 @@ class GridManager:
             raise IconGridError(msg) from err
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon_grid.IconGrid:
-        return self._from_grid_dataset(on_gpu=on_gpu, limited_area=limited_area)
-
+        if self._run_properties.single_node(): 
+            return self._from_grid_dataset(on_gpu=on_gpu, limited_area=limited_area)
+        else:
+            # TODO decompose!
+            decompose = halo.SimpleMetisDecomposer(self._run_properties)
+            cell_neighbors = self._reader.int_field(GridFile.ConnectivityName.C2E2C)
+            cells_to_rank_mapping = decompose(cell_neighbors, self._run_properties.comm_size)
+            global_connectivities = {dims.C2E2CDim: cell_neighbors, 
+                                     dims.C2EDim: self._reader.int_field(GridFile.ConnectivityName.C2E),
+                                     dims.E2CDim: self._reader.int_field(GridFile.ConnectivityName.E2C),
+                                     dims.V2EDim: self._reader.int_field(GridFile.ConnectivityName.V2E),
+                                     dims.V2CDim: self._reader.int_field(GridFile.ConnectivityName.V2C),
+                                     dims.C2VDim: self._reader.int_field(GridFile.ConnectivityName.C2V),
+                                     }
+            
+            global_grid = icon_grid.IconGrid().with_connectivities(global_connectivities)
+            halo_constructor = halo.HaloGenerator(self._run_properties, cells_to_rank_mapping, global_connectivities, self._config.num_levels)
     def get_size(self, dim: gtx.Dimension):
         if dim == dims.VertexDim:
             return self._grid.config.num_vertices
@@ -423,7 +441,7 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_decomposition_info(self, decomposition_info: defs.DecompositionInfo, on_gpu: bool = False, limited_area:bool = False)-> base_grid.BaseGrid:
+    def _from_decomposition_info(self, decomposition_info: decomposition.DecompositionInfo, on_gpu: bool = False, limited_area:bool = False)-> base_grid.BaseGrid:
         pass
     def _from_grid_dataset(self, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
 
