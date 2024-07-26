@@ -46,6 +46,7 @@ from icon4py.model.common.states import prognostic_state as prognostics, diagnos
 # TODO (Chia Rui): merge after fix_driver_imports PR
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment as satad
 
 
 sys.setrecursionlimit(350000)
@@ -63,6 +64,8 @@ class SingleMomentSixClassIconGraupelConfig:
     ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.
     """
     # TODO (Chia RUi): Remove unwanted options
+    #: execute saturation adjustment right after microphysics
+    do_saturation_adjustment: bool = True
     #: liquid auto conversion mode. 1: Kessler (1969), 2: Seifert & Beheng (2006). Originally defined as iautocon in gscp_data.f90 in ICON.
     liquid_autoconversion_option: gtx.int32 = gtx.int32(1)
     #: Option for deriving snow size distribution interception parameter.
@@ -332,16 +335,18 @@ class SingleMomentSixClassIconGraupel:
 
     def __init__(
         self,
-        config: SingleMomentSixClassIconGraupelConfig,
+        graupel_config: SingleMomentSixClassIconGraupelConfig,
+        saturation_adjust_config: satad.SaturationAdjustmentConfig,
         grid: Optional[icon_grid.IconGrid],
         metric_state: Optional[MetricStateIconGraupel],
         vertical_params: Optional[v_grid.VerticalGridParams]
     ):
-        self.config = config
+        self.config = graupel_config
         self._validate_and_initialize_configurable_parameters()
         self.grid = grid
         self.metric_state = metric_state
         self.vertical_params = vertical_params
+        self.saturation_adjustment = satad.SaturationAdjustment(config=saturation_adjust_config, grid=grid)
 
         self._initialize_local_fields()
 
@@ -565,6 +570,14 @@ class SingleMomentSixClassIconGraupel:
             offset_provider={},
         )
 
+        if self.config.do_saturation_adjustment:
+            self.saturation_adjustment.run(
+                dtime=dtime,
+                prognostic_state=prognostic_state,
+                diagnostic_state=diagnostic_state,
+                tracer_state=tracer_state,
+            )
+
 
 @scan_operator(
     axis=KDim,
@@ -748,50 +761,50 @@ def _icon_graupel_scan(
     #----------------------------------------------------------------------------
 
     # initialization of source terms (all set to zero)
-    szdep_v2i = 0.0 # vapor   -> ice,     ice vapor deposition
-    szsub_v2i = 0.0 # vapor   -> ice,     ice vapor sublimation
-    sidep_v2i = 0.0 # vapor   -> ice,     ice vapor net deposition
-    #ssdpc_v2s = 0.0 # vapor   -> snow,    snow vapor deposition below freezing temperature
-    #sgdpc_v2g = 0.0 # vapor   -> graupel, graupel vapor deposition below freezing temperature
-    #ssdph_v2s = 0.0 # vapor   -> snow,    snow vapor deposition above freezing temperature
-    #sgdph_v2g = 0.0 # vapor   -> graupel, graupel vapor deposition above freezing temperature
-    ssdep_v2s = 0.0 # vapor   -> snow,    snow vapor deposition
-    sgdep_v2g = 0.0 # vapor   -> graupel, graupel vapor deposition
-    #sdnuc_v2i = 0.0 # vapor   -> ice,     low temperature heterogeneous ice deposition nucleation
-    #scnuc_v2i = 0.0 # vapor   -> ice,     incloud ice nucleation
-    snucl_v2i = 0.0 # vapor   -> ice,     ice nucleation
-    sconr_v2r = 0.0 # vapor   -> rain,    rain condensation on melting snow/graupel
-    scaut_c2r = 0.0 # cloud   -> rain,    cloud autoconversion into rain
-    scfrz_c2i = 0.0 # cloud   -> ice,     cloud freezing
-    scacr_c2r = 0.0 # cloud   -> rain,    rain-cloud accretion
-    sshed_c2r = 0.0 # cloud   -> rain,    rain shedding from riming above freezing
-    srims_c2s = 0.0 # cloud   -> snow,    snow riming
-    srimg_c2g = 0.0 # cloud   -> graupel, graupel riming
-    simlt_i2c = 0.0 # ice     -> cloud,   ice melting
-    sicri_i2g = 0.0 # ice     -> graupel, ice loss in rain-ice accretion
-    sdaut_i2s = 0.0 # ice     -> snow,    ice vapor depositional autoconversion into snow
-    saggs_i2s = 0.0 # ice     -> snow,    snow-ice aggregation
-    saggg_i2g = 0.0 # ice     -> graupel, graupel-ice aggregation
-    siaut_i2s = 0.0 # ice     -> snow,    ice autoconversion into snow
-    srcri_r2g = 0.0 # rain    -> graupel, rain loss in rain-ice accretion
-    #scrfr_r2g = 0.0 # rain    -> graupel, rain freezing in clouds
-    #ssrfr_r2g = 0.0 # rain    -> graupel, rain freezing in clear sky
-    srfrz_r2g = 0.0 # rain    -> graupel, rain freezing
-    sevap_r2v = 0.0 # rain    -> vapor,   rain evaporation
-    ssmlt_s2r = 0.0 # snow    -> rain,    snow melting
-    scosg_s2g = 0.0 # snow    -> graupel, snow autoconversion into graupel
-    sgmlt_g2r = 0.0 # graupel -> rain,    graupel melting
+    szdep_v2i = vpfloat("0.0") # vapor   -> ice,     ice vapor deposition
+    szsub_v2i = vpfloat("0.0") # vapor   -> ice,     ice vapor sublimation
+    sidep_v2i = vpfloat("0.0") # vapor   -> ice,     ice vapor net deposition
+    #ssdpc_v2s = vpfloat("0.0") # vapor   -> snow,    snow vapor deposition below freezing temperature
+    #sgdpc_v2g = vpfloat("0.0") # vapor   -> graupel, graupel vapor deposition below freezing temperature
+    #ssdph_v2s = vpfloat("0.0") # vapor   -> snow,    snow vapor deposition above freezing temperature
+    #sgdph_v2g = vpfloat("0.0") # vapor   -> graupel, graupel vapor deposition above freezing temperature
+    ssdep_v2s = vpfloat("0.0") # vapor   -> snow,    snow vapor deposition
+    sgdep_v2g = vpfloat("0.0") # vapor   -> graupel, graupel vapor deposition
+    #sdnuc_v2i = vpfloat("0.0") # vapor   -> ice,     low temperature heterogeneous ice deposition nucleation
+    #scnuc_v2i = vpfloat("0.0") # vapor   -> ice,     incloud ice nucleation
+    snucl_v2i = vpfloat("0.0") # vapor   -> ice,     ice nucleation
+    sconr_v2r = vpfloat("0.0") # vapor   -> rain,    rain condensation on melting snow/graupel
+    scaut_c2r = vpfloat("0.0") # cloud   -> rain,    cloud autoconversion into rain
+    scfrz_c2i = vpfloat("0.0") # cloud   -> ice,     cloud freezing
+    scacr_c2r = vpfloat("0.0") # cloud   -> rain,    rain-cloud accretion
+    sshed_c2r = vpfloat("0.0") # cloud   -> rain,    rain shedding from riming above freezing
+    srims_c2s = vpfloat("0.0") # cloud   -> snow,    snow riming
+    srimg_c2g = vpfloat("0.0") # cloud   -> graupel, graupel riming
+    simlt_i2c = vpfloat("0.0") # ice     -> cloud,   ice melting
+    sicri_i2g = vpfloat("0.0") # ice     -> graupel, ice loss in rain-ice accretion
+    sdaut_i2s = vpfloat("0.0") # ice     -> snow,    ice vapor depositional autoconversion into snow
+    saggs_i2s = vpfloat("0.0") # ice     -> snow,    snow-ice aggregation
+    saggg_i2g = vpfloat("0.0") # ice     -> graupel, graupel-ice aggregation
+    siaut_i2s = vpfloat("0.0") # ice     -> snow,    ice autoconversion into snow
+    srcri_r2g = vpfloat("0.0") # rain    -> graupel, rain loss in rain-ice accretion
+    #scrfr_r2g = vpfloat("0.0") # rain    -> graupel, rain freezing in clouds
+    #ssrfr_r2g = vpfloat("0.0") # rain    -> graupel, rain freezing in clear sky
+    srfrz_r2g = vpfloat("0.0") # rain    -> graupel, rain freezing
+    sevap_r2v = vpfloat("0.0") # rain    -> vapor,   rain evaporation
+    ssmlt_s2r = vpfloat("0.0") # snow    -> rain,    snow melting
+    scosg_s2g = vpfloat("0.0") # snow    -> graupel, snow autoconversion into graupel
+    sgmlt_g2r = vpfloat("0.0") # graupel -> rain,    graupel melting
 
-    reduce_dep = 1.0 # FR: Reduction coeff. for dep. growth of rain and ice
+    reduce_dep = vpfloat("1.0")  # FR: Reduction coeff. for dep. growth of rain and ice
 
     #----------------------------------------------------------------------------
     # 2.1: Preparations for computations and to check the different conditions
     #----------------------------------------------------------------------------
 
     #..for density correction of fall speeds
-    c1orho = 1.0 / rho
+    c1orho = vpfloat("1.0")  / rho
     chlp = log(icon_graupel_params.ref_air_density * c1orho)
-    crho1o2 = exp(chlp / 2.0)
+    crho1o2 = exp(chlp / vpfloat("2.0") )
     crhofac_qi = exp(chlp * ice_sedi_density_factor_exp)
 
     # NOT WORKING, NOT SURE WHY THIS WILL LEAD TO DIVISION BY ZERO
@@ -835,7 +848,7 @@ def _icon_graupel_scan(
             # Calculate n0s using the temperature-dependent
             # formula of Field et al. (2005)
             local_tc = temperature - icon_graupel_params.tmelt
-            local_tc = minimum( local_tc , 0.0 )
+            local_tc = minimum( local_tc , vpfloat("0.0") )
             local_tc = maximum( local_tc , -40.0 )
             n0s = icon_graupel_params.snow_n0s1 * exp(icon_graupel_params.snow_n0s2 * local_tc)
             n0s = minimum( n0s , 1.0e9 )
@@ -845,7 +858,7 @@ def _icon_graupel_scan(
             # Calculate n0s using the temperature-dependent moment
             # relations of Field et al. (2005)
             local_tc = temperature - icon_graupel_params.tmelt
-            local_tc = minimum( local_tc , 0.0 )
+            local_tc = minimum( local_tc , vpfloat("0.0") )
             local_tc = maximum( local_tc , -40.0 )
 
             local_nnr = 3.0
@@ -898,10 +911,10 @@ def _icon_graupel_scan(
         cbsdep = icon_graupel_params.ccsdep * sqrt(snow_v0)
     else:
         n0s = icon_graupel_params.snow_n0
-        snow_sed0 = 0.0
-        crim = 0.0
-        cagg = 0.0
-        cbsdep = 0.0
+        snow_sed0 = vpfloat("0.0")
+        crim = vpfloat("0.0")
+        cagg = vpfloat("0.0")
+        cbsdep = vpfloat("0.0")
 
 
     #----------------------------------------------------------------------------
@@ -912,10 +925,10 @@ def _icon_graupel_scan(
     rhoqsv_new_kup = qs_kup * rho_kup * vnew_s
     rhoqgv_new_kup = qg_kup * rho_kup * vnew_g
     rhoqiv_new_kup = qi_kup * rho_kup * vnew_i
-    if rhoqrv_new_kup <= icon_graupel_params.qmin: rhoqrv_new_kup = 0.0
-    if rhoqsv_new_kup <= icon_graupel_params.qmin: rhoqsv_new_kup = 0.0
-    if rhoqgv_new_kup <= icon_graupel_params.qmin: rhoqgv_new_kup = 0.0
-    if rhoqiv_new_kup <= icon_graupel_params.qmin: rhoqiv_new_kup = 0.0
+    if rhoqrv_new_kup <= icon_graupel_params.qmin: rhoqrv_new_kup = vpfloat("0.0")
+    if rhoqsv_new_kup <= icon_graupel_params.qmin: rhoqsv_new_kup = vpfloat("0.0")
+    if rhoqgv_new_kup <= icon_graupel_params.qmin: rhoqgv_new_kup = vpfloat("0.0")
+    if rhoqiv_new_kup <= icon_graupel_params.qmin: rhoqiv_new_kup = vpfloat("0.0")
 
     rhoqr_intermediate = rhoqr / cdtdh + rhoqrv_new_kup + rhoqrv_old_kup
     rhoqs_intermediate = rhoqs / cdtdh + rhoqsv_new_kup + rhoqsv_old_kup
@@ -926,10 +939,10 @@ def _icon_graupel_scan(
     # qs_sedi, qr_sedi, qg_sedi, qi_sedi:
     #-------------------------------------------------------------------------
     if k_lev > kstart_moist:
-        vnew_s = snow_sed0_kup * exp(icon_graupel_params.ccswxp * log((qs_kup + qs) * 0.5 * rho_kup)) * crho1o2_kup if qs_kup + qs > icon_graupel_params.qmin else 0.0
-        vnew_r = rain_v0 * exp(rain_exp_v * log((qr_kup + qr) * 0.5 * rho_kup)) * crho1o2_kup if qr_kup + qr > icon_graupel_params.qmin else 0.0
-        vnew_g = icon_graupel_params.graupel_sed0 * exp(icon_graupel_params.graupel_exp_sed * log((qg_kup + qg) * 0.5 * rho_kup)) * crho1o2_kup if qg_kup + qg > icon_graupel_params.qmin else 0.0
-        vnew_i = ice_v0 * exp(icon_graupel_params.ice_exp_v * log((qi_kup + qi) * 0.5 * rho_kup)) * crhofac_qi_kup if qi_kup + qi > icon_graupel_params.qmin else 0.0
+        vnew_s = snow_sed0_kup * exp(icon_graupel_params.ccswxp * log((qs_kup + qs) * 0.5 * rho_kup)) * crho1o2_kup if qs_kup + qs > icon_graupel_params.qmin else vpfloat("0.0")
+        vnew_r = rain_v0 * exp(rain_exp_v * log((qr_kup + qr) * 0.5 * rho_kup)) * crho1o2_kup if qr_kup + qr > icon_graupel_params.qmin else vpfloat("0.0")
+        vnew_g = icon_graupel_params.graupel_sed0 * exp(icon_graupel_params.graupel_exp_sed * log((qg_kup + qg) * 0.5 * rho_kup)) * crho1o2_kup if qg_kup + qg > icon_graupel_params.qmin else vpfloat("0.0")
+        vnew_i = ice_v0 * exp(icon_graupel_params.ice_exp_v * log((qi_kup + qi) * 0.5 * rho_kup)) * crhofac_qi_kup if qi_kup + qi > icon_graupel_params.qmin else vpfloat("0.0")
 
     if llqs:
         terminal_velocity = snow_sed0 * exp(icon_graupel_params.ccswxp * log(rhoqs)) * crho1o2
@@ -939,10 +952,10 @@ def _icon_graupel_scan(
         rhoqsv = rhoqs * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
-        if vnew_s == 0.0: vnew_s = terminal_velocity * icon_graupel_params.ccswxp_ln1o2
+        if vnew_s == vpfloat("0.0"): vnew_s = terminal_velocity * icon_graupel_params.ccswxp_ln1o2
 
     else:
-        rhoqsv = 0.0
+        rhoqsv = vpfloat("0.0")
 
     if llqr:
         terminal_velocity = rain_v0 * exp(rain_exp_v * log(rhoqr)) * crho1o2
@@ -952,10 +965,10 @@ def _icon_graupel_scan(
         rhoqrv = rhoqr * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
-        if vnew_r == 0.0: vnew_r = terminal_velocity * rain_exp_v_ln1o2
+        if vnew_r == vpfloat("0.0"): vnew_r = terminal_velocity * rain_exp_v_ln1o2
 
     else:
-        rhoqrv = 0.0
+        rhoqrv = vpfloat("0.0")
 
     if llqg:
         terminal_velocity = icon_graupel_params.graupel_sed0 * exp(icon_graupel_params.graupel_exp_sed * log(rhoqg)) * crho1o2
@@ -965,10 +978,10 @@ def _icon_graupel_scan(
         rhoqgv = rhoqg * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
-        if vnew_g == 0.0: vnew_g = terminal_velocity * graupel_exp_sed_ln1o2
+        if vnew_g == vpfloat("0.0"): vnew_g = terminal_velocity * graupel_exp_sed_ln1o2
 
     else:
-        rhoqgv = 0.0
+        rhoqgv = vpfloat("0.0")
 
     if llqi:
         terminal_velocity = ice_v0 * exp(icon_graupel_params.ice_exp_v * log(rhoqi)) * crhofac_qi
@@ -976,10 +989,10 @@ def _icon_graupel_scan(
         rhoqiv = rhoqi * terminal_velocity
 
         # because we are at the model top, simply multiply by a factor of (0.5)^(V_intg_exp)
-        if vnew_i == 0.0: vnew_i = terminal_velocity * ice_exp_v_ln1o2
+        if vnew_i == vpfloat("0.0"): vnew_i = terminal_velocity * ice_exp_v_ln1o2
 
     else:
-        rhoqiv = 0.0
+        rhoqiv = vpfloat("0.0")
 
     # Prevent terminal fall speeds of precip hydrometeors from being zero at the surface level
     if is_surface:
@@ -995,7 +1008,7 @@ def _icon_graupel_scan(
     # limit the precipitation flux at this k level such that mixing ratio won't go below zero
     rhoqrv = minimum( rhoqrv , rhoqr_intermediate )
     rhoqsv = minimum( rhoqsv , rhoqs_intermediate )
-    rhoqgv = minimum( rhoqgv , maximum(0.0 , rhoqg_intermediate) )
+    rhoqgv = minimum( rhoqgv , maximum(vpfloat("0.0") , rhoqg_intermediate) )
     rhoqiv = minimum( rhoqiv , rhoqi_intermediate )
 
     rhoqr_intermediate = cdtdh * (rhoqr_intermediate - rhoqrv)
@@ -1061,23 +1074,23 @@ def _icon_graupel_scan(
         if ( qi + qc > icon_graupel_params.qmin ):
             celn7o8qrk   = exp(7.0/8.0 * clnrhoqr)
         else:
-            celn7o8qrk = 0.0
+            celn7o8qrk = vpfloat("0.0")
         if temperature < icon_graupel_params.threshold_freeze_temperature:
             celn7o4qrk   = exp(7.0/4.0 * clnrhoqr) #FR new
             celn27o16qrk = exp(27.0/16.0 * clnrhoqr)
         else:
-            celn7o4qrk = 0.0
-            celn27o16qrk = 0.0
+            celn7o4qrk = vpfloat("0.0")
+            celn27o16qrk = vpfloat("0.0")
         if llqi:
             celn13o8qrk  = exp(13.0/8.0 * clnrhoqr)
         else:
-            celn13o8qrk = 0.0
+            celn13o8qrk = vpfloat("0.0")
     else:
-        csrmax = 0.0
-        celn7o8qrk = 0.0
-        celn7o4qrk = 0.0
-        celn27o16qrk = 0.0
-        celn13o8qrk = 0.0
+        csrmax = vpfloat("0.0")
+        celn7o8qrk = vpfloat("0.0")
+        celn7o4qrk = vpfloat("0.0")
+        celn27o16qrk = vpfloat("0.0")
+        celn13o8qrk = vpfloat("0.0")
 
     ##----------------------------------------------------------------------------
     ## 2.5: IF (llqs): ic2
@@ -1090,12 +1103,12 @@ def _icon_graupel_scan(
         if qi + qc > icon_graupel_params.qmin:
             celn3o4qsk = exp(3.0/4.0 * clnrhoqs)
         else:
-            celn3o4qsk = 0.0
+            celn3o4qsk = vpfloat("0.0")
         celn8qsk = exp(0.8 * clnrhoqs)
     else:
-        cssmax = 0.0
-        celn3o4qsk = 0.0
-        celn8qsk = 0.0
+        cssmax = vpfloat("0.0")
+        celn3o4qsk = vpfloat("0.0")
+        celn8qsk = vpfloat("0.0")
 
     ##----------------------------------------------------------------------------
     ## 2.6: IF (llqg): ic3
@@ -1107,12 +1120,12 @@ def _icon_graupel_scan(
         if qi + qc > icon_graupel_params.qmin:
             celnrimexp_g = exp(icon_graupel_params.graupel_exp_rim * clnrhoqg)
         else:
-            celnrimexp_g = 0.0
+            celnrimexp_g = vpfloat("0.0")
         celn6qgk = exp(0.6 * clnrhoqg)
     else:
-        csgmax = 0.0
-        celnrimexp_g = 0.0
-        celn6qgk = 0.0
+        csgmax = vpfloat("0.0")
+        celnrimexp_g = vpfloat("0.0")
+        celn6qgk = vpfloat("0.0")
 
         ##----------------------------------------------------------------------------
     ## 2.7:  slope of snow PSD and coefficients for depositional growth (llqi,llqs)
@@ -1150,7 +1163,7 @@ def _icon_graupel_scan(
     #
     #------------------------------------------------------------------------------
 
-    if ( (temperature < icon_graupel_params.heterogeneous_freeze_temperature) & (qv > 8.e-6) & (qi <= 0.0) & (qv > qvsi) ):
+    if ( (temperature < icon_graupel_params.heterogeneous_freeze_temperature) & (qv > 8.e-6) & (qi <= vpfloat("0.0")) & (qv > qvsi) ):
         snucl_v2i = icon_graupel_params.ice_initial_mass * c1orho * cnin * dtr
 
 
@@ -1176,7 +1189,7 @@ def _icon_graupel_scan(
 
         if liquid_autoconversion_option == 1:
             # Kessler(1969) autoconversion rate
-            scaut_c2r = icon_graupel_params.kessler_cloud2rain_autoconversion_coeff_for_cloud * maximum( qc - icon_graupel_params.qc0 , 0.0 )
+            scaut_c2r = icon_graupel_params.kessler_cloud2rain_autoconversion_coeff_for_cloud * maximum( qc - icon_graupel_params.qc0 , vpfloat("0.0") )
             scacr_c2r = icon_graupel_params.kessler_cloud2rain_autoconversion_coeff_for_rain * qc * celn7o8qrk
 
         elif liquid_autoconversion_option == 2:
@@ -1255,8 +1268,8 @@ def _icon_graupel_scan(
 
         if temperature >= icon_graupel_params.tmelt:
             sshed_c2r = srims_c2s + srimg_c2g
-            srims_c2s = 0.0
-            srimg_c2g = 0.0
+            srims_c2s = vpfloat("0.0")
+            srimg_c2g = vpfloat("0.0")
         else:
             if qc >= icon_graupel_params.qc0:
                 scosg_s2g = icon_graupel_params.csg * qc * celn3o4qsk
@@ -1299,7 +1312,7 @@ def _icon_graupel_scan(
             # distance from cloud top
             if (qv_kup + qc_kup < qvsw_kup) & (cqcgk_1 < icon_graupel_params.qmin):
                 # upper cloud layer
-                dist_cldtop = 0.0  # reset distance to upper cloud layer
+                dist_cldtop = vpfloat("0.0")  # reset distance to upper cloud layer
             else:
                 dist_cldtop = dist_cldtop + dz
 
@@ -1382,7 +1395,7 @@ def _icon_graupel_scan(
             local_eff = minimum( exp(0.09 * (temperature - icon_graupel_params.tmelt)) , 1.0 )
             local_eff = maximum( local_eff , 0.2 )
         else:
-            local_eff = 0.0
+            local_eff = vpfloat("0.0")
 
         local_nid = rho * qi / cmi
         local_lnlogmi = log(cmi)
@@ -1392,7 +1405,7 @@ def _icon_graupel_scan(
 
         saggs_i2s = local_eff * qi * cagg * exp(icon_graupel_params.ccsaxp * log(cslam))
         saggg_i2g = local_eff * qi * icon_graupel_params.cagg_g * celnrimexp_g
-        siaut_i2s = local_eff * icon_graupel_params.ciau * maximum( qi - icon_graupel_params.qi0 , 0.0 )
+        siaut_i2s = local_eff * icon_graupel_params.ciau * maximum( qi - icon_graupel_params.qi0 , vpfloat("0.0") )
 
         sicri_i2g = icon_graupel_params.cicri * qi * celn7o8qrk
         if (qs > 1.e-7):
@@ -1407,11 +1420,11 @@ def _icon_graupel_scan(
         # allowed depletion is determined by the predictor value.
         local_simax = rhoqi_intermediate * c1orho * dtr if do_ice_sedimentation else qi * dtr
 
-        if local_icetotaldeposition > 0.0:
+        if local_icetotaldeposition > vpfloat("0.0"):
             if do_reduced_icedeposition:
                 local_iceTotalDeposition = local_icetotaldeposition * reduce_dep  # FR new: depositional growth reduction
             szdep_v2i = minimum(local_icetotaldeposition, local_svmax)
-        elif local_icetotaldeposition < 0.0:
+        elif local_icetotaldeposition < vpfloat("0.0"):
             szsub_v2i = maximum(local_icetotaldeposition, local_svmax)
             szsub_v2i = - maximum(szsub_v2i, -local_simax)
 
@@ -1457,17 +1470,17 @@ def _icon_graupel_scan(
             local_xfac = 1.0 + cbsdep * exp(icon_graupel_params.ccsdxp * log(cslam))
             ssdep_v2s = csdep * local_xfac * local_qvsidiff / (cslam + icon_graupel_params.eps)**2.0
             #FR new: depositional growth reduction
-            if do_reduced_icedeposition & (ssdep_v2s > 0.0):
+            if do_reduced_icedeposition & (ssdep_v2s > vpfloat("0.0")):
                 ssdep_v2s = ssdep_v2s * reduce_dep
 
             # GZ: This limitation, which was missing in the original graupel scheme,
             # is crucial for numerical stability in the tropics!
-            if ssdep_v2s > 0.0:
+            if ssdep_v2s > vpfloat("0.0"):
                 ssdep_v2s = minimum( ssdep_v2s , local_svmax - szdep_v2i )
             # Suppress depositional growth of snow if the existing amount is too small for a
             # a meaningful distiction between cloud ice and snow
             if qs <= 1.e-7:
-                ssdep_v2s = minimum( ssdep_v2s , 0.0 )
+                ssdep_v2s = minimum( ssdep_v2s , vpfloat("0.0") )
             # ** GZ: this numerical fit should be replaced with a physically more meaningful formulation **
             sgdep_v2g = (
                 0.398561 -
@@ -1515,22 +1528,22 @@ def _icon_graupel_scan(
                 #calculation without howell-factor!
                 ssdep_v2s  = (31282.3 / pres + 0.241897) * local_qvsw0diff * celn8qsk
                 sgdep_v2g  = (0.153907 - pres * 7.86703e-07) * local_qvsw0diff * celn6qgk
-                if local_qvsw0diff < 0.0:
+                if local_qvsw0diff < vpfloat("0.0"):
                     #melting + evaporation of snow/graupel
                     ssdep_v2s = maximum( -cssmax , ssdep_v2s )
                     sgdep_v2g = maximum( -csgmax , sgdep_v2g )
                     #melt water evaporates
                     ssmlt_s2r = ssmlt_s2r + ssdep_v2s
                     sgmlt_g2r = sgmlt_g2r + sgdep_v2g
-                    ssmlt_s2r = maximum( ssmlt_s2r , 0.0 )
-                    sgmlt_g2r = maximum( sgmlt_g2r , 0.0 )
+                    ssmlt_s2r = maximum( ssmlt_s2r , vpfloat("0.0") )
+                    sgmlt_g2r = maximum( sgmlt_g2r , vpfloat("0.0") )
                 else:
                     #deposition on snow/graupel is interpreted as increase
                     #in rain water ( qv --> qr, sconr)
                     #therefore,  sconr=(zssdep+zsgdep)
                     sconr_v2r = ssdep_v2s + sgdep_v2g
-                    ssdep_v2s = 0.0
-                    sgdep_v2g = 0.0
+                    ssdep_v2s = vpfloat("0.0")
+                    sgdep_v2g = vpfloat("0.0")
             else:
                 #if t<t_crit
                 #no melting, only evaporation of snow/graupel
@@ -1624,33 +1637,33 @@ def _icon_graupel_scan(
             # this is a always a fraction of the gain rate due to
             # deposition (i.e the sum of this rates is always positive)
             csum = siaut_i2s + saggs_i2s + saggg_i2g + sicri_i2g + szsub_v2i
-            ccorr = csimax / maximum(csimax, csum) if csimax > 0.0 else 0.0
+            ccorr = csimax / maximum(csimax, csum) if csimax > vpfloat("0.0") else vpfloat("0.0")
             sidep_v2i = szdep_v2i - ccorr * szsub_v2i
             siaut_i2s = ccorr * siaut_i2s
             saggs_i2s = ccorr * saggs_i2s
             saggg_i2g = ccorr * saggg_i2g
             sicri_i2g = ccorr * sicri_i2g
-            if qvsidiff < 0.0:
+            if qvsidiff < vpfloat("0.0"):
                 ssdep_v2s = maximum(ssdep_v2s, -cssmax)
                 sgdep_v2g = maximum(sgdep_v2g, -csgmax)
 
     csum = sevap_r2v + srfrz_r2g + srcri_r2g
-    ccorr = csrmax / maximum(csrmax, csum) if csum > 0.0 else 1.0
+    ccorr = csrmax / maximum(csrmax, csum) if csum > vpfloat("0.0") else vpfloat("1.0")
     sevap_r2v = ccorr * sevap_r2v
     srfrz_r2g = ccorr * srfrz_r2g
     srcri_r2g = ccorr * srcri_r2g
 
     # limit snow depletion in order to avoid negative values of qs
-    ccorr = 1.0
-    if ssdep_v2s <= 0.0:
+    ccorr = vpfloat("1.0")
+    if ssdep_v2s <= vpfloat("0.0"):
         Csum = ssmlt_s2r + scosg_s2g - ssdep_v2s
-        if Csum > 0.0: ccorr = cssmax / maximum(cssmax, csum)
+        if Csum > vpfloat("0.0"): ccorr = cssmax / maximum(cssmax, csum)
         ssmlt_s2r = ccorr * ssmlt_s2r
         scosg_s2g = ccorr * scosg_s2g
         ssdep_v2s = ccorr * ssdep_v2s
     else:
         csum = ssmlt_s2r + scosg_s2g
-        if csum > 0.0: ccorr = cssmax / maximum(cssmax, csum)
+        if csum > vpfloat("0.0"): ccorr = cssmax / maximum(cssmax, csum)
         ssmlt_s2r = ccorr * ssmlt_s2r
         scosg_s2g = ccorr * scosg_s2g
 
@@ -1674,15 +1687,15 @@ def _icon_graupel_scan(
     #Ctt = heat_cap_r * CLHs * (v2s_phase_change + l2s_phase_change) + heat_cap_r * lhv * (v2l_phase_change - l2s_phase_change)
 
     # Update variables and add qi to qrs for water loading
-    qi = maximum( 0.0 , (rhoqi_intermediate * c1orho + cqit * dt) * cimi ) if do_ice_sedimentation else maximum( 0.0 , qi + cqit * dt )
-    qr = maximum( 0.0 , (rhoqr_intermediate * c1orho + cqrt * dt) * cimr )
-    qs = maximum( 0.0 , (rhoqs_intermediate * c1orho + cqst * dt) * cims )
-    qg = maximum( 0.0 , (rhoqg_intermediate * c1orho + cqgt * dt) * cimg )
+    qi = maximum( vpfloat("0.0") , (rhoqi_intermediate * c1orho + cqit * dt) * cimi ) if do_ice_sedimentation else maximum( vpfloat("0.0") , qi + cqit * dt )
+    qr = maximum( vpfloat("0.0") , (rhoqr_intermediate * c1orho + cqrt * dt) * cimr )
+    qs = maximum( vpfloat("0.0") , (rhoqs_intermediate * c1orho + cqst * dt) * cims )
+    qg = maximum( vpfloat("0.0") , (rhoqg_intermediate * c1orho + cqgt * dt) * cimg )
 
     # Update of prognostic variables or tendencies
     temperature = temperature + ctt * dt
-    qv = maximum( 0.0 , qv + cqvt * dt )
-    qc = maximum( 0.0 , qc + cqct * dt )
+    qv = maximum( vpfloat("0.0") , qv + cqvt * dt )
+    qc = maximum( vpfloat("0.0") , qc + cqct * dt )
 
     # tracing current k level
     k_lev = k_lev + 1
@@ -2055,8 +2068,8 @@ def icon_graupel(
     axis=KDim,
     forward=True,
     init=(
-        *(0.0,) * 5,  # rain, snow, graupel, ice, solid predicitation fluxes
-        0
+        *(vpfloat("0.0"),) * 5,  # rain, snow, graupel, ice, solid predicitation fluxes
+        gtx.int32(0)
     ),
 )
 def _icon_graupel_flux_scan(
@@ -2102,11 +2115,11 @@ def _icon_graupel_flux_scan(
         # tracing current k level
         k_lev = k_lev + 1
         return(
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
+            vpfloat("0.0"),
+            vpfloat("0.0"),
+            vpfloat("0.0"),
+            vpfloat("0.0"),
+            vpfloat("0.0"),
             k_lev
         )
 
@@ -2115,19 +2128,19 @@ def _icon_graupel_flux_scan(
         rain_flux = 0.5 * (qr * rho * vnew_r + rhoqrv_old_kup)
         snow_flux = 0.5 * (qs * rho * vnew_s + rhoqsv_old_kup)
         graupel_flux = 0.5 * (qg * rho * vnew_g + rhoqgv_old_kup)
-        ice_flux = 0.5 * (qi * rho * vnew_i + rhoqiv_old_kup) if do_ice_sedimentation else 0.0
+        ice_flux = 0.5 * (qi * rho * vnew_i + rhoqiv_old_kup) if do_ice_sedimentation else vpfloat("0.0")
         # TODO (CHia Rui): check whether lpres_ice is redundant, prs_gsp = 0.5 * (rho * (qs * Vnew_s + qi * Vnew_i) + rhoqsV_old_kup + rhoqiV_old_kup)
         # for the latent heat nudging
-        total_flux = rain_flux + snow_flux + graupel_flux if do_latent_heat_nudging else 0.0
+        total_flux = rain_flux + snow_flux + graupel_flux if do_latent_heat_nudging else vpfloat("0.0")
     else:
         rain_flux = qr * rho * vnew_r
         snow_flux = qs * rho * vnew_s
         graupel_flux = qg * rho * vnew_g
-        ice_flux = qi * rho * vnew_i if do_ice_sedimentation else 0.0
-        if rain_flux <= icon_graupel_params.qmin: rain_flux = 0.0
-        if snow_flux <= icon_graupel_params.qmin: snow_flux = 0.0
-        if graupel_flux <= icon_graupel_params.qmin: graupel_flux = 0.0
-        if ice_flux <= icon_graupel_params.qmin: ice_flux = 0.0
+        ice_flux = qi * rho * vnew_i if do_ice_sedimentation else vpfloat("0.0")
+        if rain_flux <= icon_graupel_params.qmin: rain_flux = vpfloat("0.0")
+        if snow_flux <= icon_graupel_params.qmin: snow_flux = vpfloat("0.0")
+        if graupel_flux <= icon_graupel_params.qmin: graupel_flux = vpfloat("0.0")
+        if ice_flux <= icon_graupel_params.qmin: ice_flux = vpfloat("0.0")
 
         if do_latent_heat_nudging:
             if do_ice_sedimentation:
@@ -2137,7 +2150,7 @@ def _icon_graupel_flux_scan(
                 total_flux = rain_flux + snow_flux + graupel_flux
                 total_flux = 0.5 * (total_flux + rhoqrv_old_kup + rhoqsv_old_kup + rhoqgv_old_kup)
         else:
-            total_flux = 0.0
+            total_flux = vpfloat("0.0")
 
     # tracing current k level
     k_lev = k_lev + 1
