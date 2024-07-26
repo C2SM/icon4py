@@ -252,7 +252,7 @@ class IndexTransformation:
         return np.zeros(array.shape, dtype=gtx.int32)
 
 
-class ToGt4PyTransformation(IndexTransformation):
+class ToZeroBasedIndexTransformation(IndexTransformation):
     def get_offset_for_index_field(self, array: np.ndarray):
         """
         Calculate the index offset needed for usage with python.

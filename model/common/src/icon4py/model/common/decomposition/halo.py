@@ -231,9 +231,8 @@ class HaloGenerator:
         decomp_info.with_dimension(dims.VertexDim, all_vertices, v_owner_mask)
         return decomp_info
 
-    def construct_local_connectivity(
-        self, field_offset: gtx.FieldOffset, decomposition_info: defs.DecompositionInfo
-    ) -> xp.ndarray:
+    def construct_local_connectivity(self, 
+        field_offset: gtx.FieldOffset, decomposition_info: defs.DecompositionInfo) -> xp.ndarray:
         """
         Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
 
@@ -280,44 +279,61 @@ class HaloGenerator:
         return local_connectivity
 
 
-# should be done in grid manager!sor
-def local_grid(
-    props: defs.ProcessProperties,
-    decomp_info: defs.DecompositionInfo,
-    global_params: icon_grid.GlobalGridParams,
-    num_lev: int,
-    limited_area: bool = False,
-    on_gpu: bool = False,
-) -> base_grid.BaseGrid:
-    """
-    Constructs a local grid for this rank based on the decomposition info.
-    TODO (@halungge): for now only returning BaseGrid as we have not start/end indices implementation yet
-    TODO (@halungge): make sure the INVALID_INDEX is set correctly: - when set in the original (global index) connectivity it should remain
-    TODO (@halungge): how to handle the (source) indices of last halo line: their (global) neighbors are not all present on the local grid, set INVALID_INDEX (that is what xugrid does)
-                                                                           check what ICON does, (they probably duplicate the valid indices...)
-    Args:
-        decomp_info: the decomposition info for this rank
-    Returns:
-        local_grid: the local grid
-    """
-    num_vertices = decomp_info.global_index(
-        dims.VertexDim, defs.DecompositionInfo.EntryType.ALL
-    ).size
-    num_edges = decomp_info.global_index(dims.EdgeDim, defs.DecompositionInfo.EntryType.ALL).size
-    num_cells = decomp_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.ALL).size
-    grid_size = base_grid.HorizontalGridSize(
-        num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
-    )
-    config = base_grid.GridConfig(
-        horizontal_config=grid_size, vertical_size=num_lev, on_gpu=on_gpu, limited_area=limited_area
-    )
+# should be done in grid manager!
+    def local_grid(self,
+                   props: defs.ProcessProperties,
+                   decomposition_info: defs.DecompositionInfo,
+                   global_params: icon_grid.GlobalGridParams,
+                   num_lev: int,
+                   limited_area: bool = False,
+                   on_gpu: bool = False,
+                   ) -> base_grid.BaseGrid:
 
-    local_grid = (
-        icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_global_params(global_params)
-    )
-    # add connectivities
+        """
+        Constructs a local grid for this rank based on the decomposition info.
+        TODO (@halungge): for now only returning BaseGrid as we have not start/end indices implementation yet
+        TODO (@halungge): make sure the INVALID_INDEX is set correctly: - when set in the original (global index) connectivity it should remain
+        TODO (@halungge): how to handle the (source) indices of last halo line: their (global) neighbors are not all present on the local grid, set INVALID_INDEX (that is what xugrid does)
+                                                                               check what ICON does, (they probably duplicate the valid indices...)
+        Args:
+            decomposition_info: the decomposition info for this rank
+        Returns:
+            local_grid: the local grid
+        """
+        num_vertices = decomposition_info.global_index(
+            dims.VertexDim, defs.DecompositionInfo.EntryType.ALL
+        ).size
+        num_edges = decomposition_info.global_index(dims.EdgeDim,
+                                                    defs.DecompositionInfo.EntryType.ALL).size
+        num_cells = decomposition_info.global_index(dims.CellDim,
+                                                    defs.DecompositionInfo.EntryType.ALL).size
+        grid_size = base_grid.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
+        config = base_grid.GridConfig(
+            horizontal_config=grid_size, vertical_size=num_lev, on_gpu=on_gpu, limited_area=limited_area
+        )
+    
+        local_grid = (
+            icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_global_params(global_params).with_connectivities({
+                dims.C2EDim: self.construct_local_connectivity(dims.C2EDim, decomposition_info),
+                dims.E2CDim: self.construct_local_connectivity(dims.E2CDim, decomposition_info),
+                dims.E2VDim: self.construct_local_connectivity(dims.E2VDim, decomposition_info),
+                dims.V2EDim: self.construct_local_connectivity(dims.V2EDim, decomposition_info),
+                dims.C2VDim: self.construct_local_connectivity(dims.C2VDim, decomposition_info),
+                dims.V2CDim: self.construct_local_connectivity(dims.V2CDim, decomposition_info),
+                dims.C2E2CDim: self.construct_local_connectivity(dims.C2E2CDim, decomposition_info),
+                # dims.C2E2CODim
+                
+                
+                
+                
+            })
+        )
 
-    return local_grid
+    
+    
+        return local_grid
 
 
 # TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and

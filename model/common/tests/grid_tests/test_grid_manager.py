@@ -54,7 +54,7 @@ from icon4py.model.common.grid.grid_manager import (
     GridFileName,
     GridManager,
     IndexTransformation,
-    ToGt4PyTransformation,
+    ToZeroBasedIndexTransformation,
 )
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.grid.simple import SimpleGrid
@@ -593,7 +593,7 @@ def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
 @functools.cache
 def init_grid_manager(fname, num_levels=65, transformation=None):
     if transformation is None:
-        transformation = ToGt4PyTransformation()
+        transformation = ToZeroBasedIndexTransformation()
     grid_manager = GridManager(transformation, fname, VerticalGridConfig(num_levels))
     grid_manager()
     return grid_manager
@@ -643,7 +643,7 @@ def test_gridmanager_given_file_not_found_then_abort():
 @pytest.mark.parametrize("size", [100, 1500, 20000])
 @pytest.mark.with_netcdf
 def test_gt4py_transform_offset_by_1_where_valid(size):
-    trafo = ToGt4PyTransformation()
+    trafo = ToZeroBasedIndexTransformation()
     rng = np.random.default_rng()
     input_field = rng.integers(-1, size, size)
     offset = trafo.get_offset_for_index_field(input_field)

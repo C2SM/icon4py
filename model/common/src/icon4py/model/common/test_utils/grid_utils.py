@@ -65,7 +65,7 @@ def load_grid_from_file(
     grid_file: str, num_levels: int, on_gpu: bool, limited_area: bool
 ) -> icon_grid.IconGrid:
     manager = gm.GridManager(
-        gm.ToGt4PyTransformation(),
+        gm.ToZeroBasedIndexTransformation(),
         str(grid_file),
         v_grid.VerticalGridConfig(num_levels=num_levels),
     )

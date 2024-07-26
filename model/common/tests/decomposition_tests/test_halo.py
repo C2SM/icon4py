@@ -239,13 +239,13 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     assert xp.max(connectivity) == xp.max(
         decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
     )
-    # TODO what else?
+    # TODO what else to assert?
     # outer halo entries have SKIP_VALUE neighbors (depends on offsets)
 
 
 def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     manager = gm.GridManager(
-        gm.ToGt4PyTransformation(), str(file), v_grid.VerticalGridConfig(num_levels=1)
+        gm.ToZeroBasedIndexTransformation(), str(file), v_grid.VerticalGridConfig(num_levels=1)
     )
     manager()
     return manager
@@ -255,7 +255,7 @@ def global_indices(dim: dims.Dimension) -> int:
     mesh = simple.SimpleGrid()
     return xp.arange(mesh.size[dim], dtype=xp.int32)
 
-
+# TODO unused - remove or fix and use?
 def icon_distribution(
     props: defs.ProcessProperties, decomposition_info: defs.DecompositionInfo
 ) -> xp.ndarray:
@@ -286,7 +286,6 @@ def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     return local_sizes, recv_buffer
 
 
-@pytest.mark.xfail(reason="This test is not yet implemented")
 def test_local_grid(processor_props, caplog):  # fixture
     caplog.set_level(logging.INFO)
 
