@@ -13,7 +13,8 @@
 import dataclasses
 import enum
 import logging
-from typing import Optional, Sequence
+import pathlib
+from typing import Optional, Sequence, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -274,21 +275,21 @@ class GridManager:
     def __init__(
         self,
         transformation: IndexTransformation,
-        grid_file: str,  # TODO use pathlib.Path?
+        grid_file: Union[pathlib.Path,str],
         config: v_grid.VerticalGridConfig,
     ):
         self._log = logging.getLogger(__name__)
         self._transformation = transformation
-        self._config = config
+        self._config = config # TODO (@halungge) remove
         self._grid: Optional[icon_grid.IconGrid] = None
-        self._file_name = grid_file
+        self._file_name = str(grid_file)
         self._dataset = None
         self._reader = None
 
     def __call__(self, on_gpu: bool = False, limited_area=True):
         self._read_gridfile(self._file_name)
 
-        grid = self._construct_grid(self._dataset, on_gpu=on_gpu, limited_area=limited_area)
+        grid = self._construct_grid(on_gpu=on_gpu, limited_area=limited_area)
         self._grid = grid
 
     def _read_gridfile(self, fname: str) -> None:
@@ -331,9 +332,7 @@ class GridManager:
             GridFile.GridRefinementName.START_INDEX_VERTICES,
         ]
         start_indices = {
-            dim: self._get_index_field(
-                reader, start_index_dims[dim_i], transpose=False, dtype=gtx.int32
-            )[_CHILD_DOM]
+            dim: self._get_index_field(start_index_dims[dim_i], transpose=False, dtype=gtx.int32)[_CHILD_DOM]
             for dim_i, dim in enumerate(global_dimensions.values())
         }
 
@@ -343,9 +342,8 @@ class GridManager:
             GridFile.GridRefinementName.END_INDEX_VERTICES,
         ]
         end_indices = {
-            dim: self._get_index_field(
-                reader, end_index_dims[dim_i], transpose=False, apply_offset=False, dtype=gtx.int32
-            )[_CHILD_DOM]
+            dim: self._get_index_field(end_index_dims[dim_i], transpose=False, apply_offset=False,
+                                       dtype=gtx.int32)[_CHILD_DOM]
             for dim_i, dim in enumerate(global_dimensions.values())
         }
 
@@ -426,10 +424,8 @@ class GridManager:
             self._log.error(msg)
             raise IconGridError(msg) from err
 
-    def _construct_grid(
-        self, dataset: Dataset, on_gpu: bool, limited_area: bool
-    ) -> icon_grid.IconGrid:
-        return self._from_grid_dataset(dataset, on_gpu=on_gpu, limited_area=limited_area)
+    def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon_grid.IconGrid:
+        return self._from_grid_dataset(on_gpu=on_gpu, limited_area=limited_area)
 
     def get_size(self, dim: gtx.Dimension):
         if dim == VertexDim:
@@ -442,57 +438,42 @@ class GridManager:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")
 
-    def _get_index_field(
-        self,
-        reader,
-        field: GridFileName,
-        transpose=True,
-        apply_offset=True,
-        dtype=gtx.int32,
-    ):
-        field = reader.int_field(field, transpose=transpose, dtype=dtype)
+    def _get_index_field(self, field: GridFileName, transpose=True, apply_offset=True,
+                         dtype=gtx.int32):
+        field = self._reader.int_field(field, transpose=transpose, dtype=dtype)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
-    def _from_grid_dataset(
-        self, dataset: Dataset, on_gpu: bool, limited_area=True
-    ) -> icon_grid.IconGrid:
-        reader = GridFile(dataset)
-        num_cells = reader.dimension(GridFile.DimensionName.CELL_NAME)
-        num_edges = reader.dimension(GridFile.DimensionName.EDGE_NAME)
-        num_vertices = reader.dimension(GridFile.DimensionName.VERTEX_NAME)
-        uuid = dataset.getncattr(GridFile.PropertyName.GRID_ID)
-        grid_level = dataset.getncattr(GridFile.PropertyName.LEVEL)
-        grid_root = dataset.getncattr(GridFile.PropertyName.ROOT)
+    def _from_grid_dataset(self, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
+
+        num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(GridFile.DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(GridFile.DimensionName.VERTEX_NAME)
+        uuid = self._dataset.getncattr(GridFile.PropertyName.GRID_ID)
+        grid_level = self._dataset.getncattr(GridFile.PropertyName.LEVEL)
+        grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
         global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
 
         grid_size = grid_def.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
-        c2e = self._get_index_field(reader, GridFile.ConnectivityName.C2E)
+        c2e = self._get_index_field(GridFile.ConnectivityName.C2E)
 
         e2c = self._get_index_field(
-            reader, GridFile.ConnectivityName.E2C
-        )  # edge_face_connectivity (optional)
+            GridFile.ConnectivityName.E2C)  # edge_face_connectivity (optional)
         c2v = self._get_index_field(
-            reader, GridFile.ConnectivityName.C2V
-        )  # face_node_connectivity (required)
+            GridFile.ConnectivityName.C2V)  # face_node_connectivity (required)
         v2c = self._get_index_field(
-            reader, GridFile.ConnectivityName.V2C
-        )  # node_face_connectivity -- (pentagon/hexagon)
+            GridFile.ConnectivityName.V2C)  # node_face_connectivity -- (pentagon/hexagon)
         e2v = self._get_index_field(
-            reader, GridFile.ConnectivityName.E2V
-        )  # edge_node_connectivity (optionally required)
+            GridFile.ConnectivityName.E2V)  # edge_node_connectivity (optionally required)
         v2e = self._get_index_field(
-            reader, GridFile.ConnectivityName.V2E
-        )  # node_edge_connectivity  -- (pentagon/hexagon)
+            GridFile.ConnectivityName.V2E)  # node_edge_connectivity  -- (pentagon/hexagon)
         v2e2v = self._get_index_field(
-            reader, GridFile.ConnectivityName.V2E2V
-        )  # node_node_connectivity  -- ((pentagon/hexagon))
+            GridFile.ConnectivityName.V2E2V)  # node_node_connectivity  -- ((pentagon/hexagon))
         c2e2c = self._get_index_field(
-            reader, GridFile.ConnectivityName.C2E2C
-        )  # face_face_connectivity (optional)
+            GridFile.ConnectivityName.C2E2C)  # face_face_connectivity (optional)
 
         e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
         e2c2e = self._construct_diamond_edges(e2c, c2e)
@@ -505,7 +486,7 @@ class GridManager:
             end_indices,
             refine_ctrl,
             refine_ctrl_max,
-        ) = self._read_grid_refinement_information(dataset)
+        ) = self._read_grid_refinement_information(self._dataset)
 
         config = grid_def.GridConfig(
             horizontal_config=grid_size,
