@@ -19,3 +19,7 @@ class InvalidConfigError(Exception):
 class IncompleteStateError(Exception):
     def __init__(self, field_name):
         super().__init__(f"Field '{field_name}' is missing in state.")
+
+
+class MissingConnectivity(ValueError):
+    pass

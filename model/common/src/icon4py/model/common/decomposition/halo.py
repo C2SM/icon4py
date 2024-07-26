@@ -15,12 +15,15 @@ import enum
 import logging
 from typing import Protocol
 
+import gt4py.next as gtx
+
 import icon4py.model.common.decomposition.definitions as defs
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
+
 
 
 # TODO (@halungge) do we need three of those: one for each dimension?
@@ -40,7 +43,7 @@ class HaloGenerator:
         self,
         run_properties: defs.ProcessProperties,
         rank_mapping: xp.ndarray,
-        connectivities:dict,
+        connectivities:dict[gtx.Dimension, xp.ndarray],
         num_levels:int,
     ):
         """
@@ -89,12 +92,12 @@ class HaloGenerator:
     def _post_init(self):
         self._validate()
 
-    def _connectivity(self, dim) -> xp.ndarray:
+    def _connectivity(self, dim: gtx.Dimension) -> xp.ndarray:
         try:
             conn_table = self._connectivities[dim]
             return conn_table
         except KeyError as err:
-            raise (f"Connectivity for dimension {dim} is not available") from err
+            raise exceptions.MissingConnectivity(f"Connectivity for offset {dim} is not available") from err
 
     def next_halo_line(self, cell_line: xp.ndarray, depot=None):
         """Returns the global indices of the next halo line.

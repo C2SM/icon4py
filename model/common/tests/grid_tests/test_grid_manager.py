@@ -998,7 +998,7 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
 
     decomposition_info = halo_generator.construct_decomposition_info()
 
-    connectivity = construct_local_connectivity(field_offset, decomposition_info, connectivities=grid.connectivities)
+    connectivity = construct_local_connectivity(field_offset, decomposition_info, connectivity=grid.connectivities[field_offset.target[1]])
     # there is an neighbor list for each index of the target dimension on the node
     assert (
         connectivity.shape[0]
