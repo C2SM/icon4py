@@ -21,6 +21,10 @@ import numpy as np
 import pytest
 
 import icon4py.model.common.test_utils.datatest_utils as dt_utils
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import definitions as defs, halo
+from icon4py.model.common.decomposition.halo import HaloGenerator
+from icon4py.model.common.settings import xp
 
 
 if typing.TYPE_CHECKING:
@@ -31,7 +35,6 @@ try:
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
-import icon4py.model.common.dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, simple, vertical as v_grid
 from icon4py.model.common.grid.grid_manager import (
     GridFile,
@@ -39,6 +42,7 @@ from icon4py.model.common.grid.grid_manager import (
     GridManager,
     IndexTransformation,
     ToZeroBasedIndexTransformation,
+    construct_local_connectivity,
 )
 
 from . import utils
@@ -973,3 +977,38 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
         serialized_grid.get_offset_provider("C2E2C2E").table,
     )
     assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
+
+@pytest.mark.with_mpi
+@pytest.mark.parametrize(
+    "field_offset",
+    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
+)
+def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
+    caplog.set_level(logging.INFO)
+    file = utils.resolve_file_from_gridfile_name(utils.R02B04_GLOBAL)
+    grid = init_grid_manager(file).grid
+    partitioner = halo.SimpleMetisDecomposer()
+    labels = partitioner(grid.connectivities[dims.C2E2CDim], n_part=processor_props.comm_size)
+    halo_generator = HaloGenerator(
+        connectivities=grid.connectivities,
+        run_properties=processor_props,
+        rank_mapping=labels,
+        num_levels=1,
+    )
+
+    decomposition_info = halo_generator.construct_decomposition_info()
+
+    connectivity = construct_local_connectivity(field_offset, decomposition_info, connectivities=grid.connectivities)
+    # there is an neighbor list for each index of the target dimension on the node
+    assert (
+        connectivity.shape[0]
+        == decomposition_info.global_index(
+            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
+        ).size
+    )
+    # all neighbor indices are valid local indices
+    assert xp.max(connectivity) == xp.max(
+        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
+    )
+    # TODO what else to assert?
+    # outer halo entries have SKIP_VALUE neighbors (depends on offsets)

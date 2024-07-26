@@ -14,12 +14,19 @@ import dataclasses
 import enum
 import logging
 import pathlib
+import uuid
 from typing import Optional, Sequence, Union
 
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.decomposition import definitions as decomposition, halo
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.decomposition import (
+    definitions as decomposition,
+    definitions as defs,
+    halo,
+)
+from icon4py.model.common.settings import xp
 
 
 try:
@@ -33,7 +40,6 @@ except ImportError:
             raise ModuleNotFoundError("NetCDF4 is not installed.")
 
 
-import icon4py.model.common.dimension as dims
 from icon4py.model.common.grid import (
     base as base_grid,
     icon as icon_grid,
@@ -409,20 +415,26 @@ class GridManager:
         if self._run_properties.single_node(): 
             return self._from_grid_dataset(on_gpu=on_gpu, limited_area=limited_area)
         else:
-            # TODO decompose!
-            decompose = halo.SimpleMetisDecomposer(self._run_properties)
-            cell_neighbors = self._reader.int_field(GridFile.ConnectivityName.C2E2C)
-            cells_to_rank_mapping = decompose(cell_neighbors, self._run_properties.comm_size)
-            global_connectivities = {dims.C2E2CDim: cell_neighbors, 
-                                     dims.C2EDim: self._reader.int_field(GridFile.ConnectivityName.C2E),
-                                     dims.E2CDim: self._reader.int_field(GridFile.ConnectivityName.E2C),
-                                     dims.V2EDim: self._reader.int_field(GridFile.ConnectivityName.V2E),
-                                     dims.V2CDim: self._reader.int_field(GridFile.ConnectivityName.V2C),
-                                     dims.C2VDim: self._reader.int_field(GridFile.ConnectivityName.C2V),
-                                     }
+            decompose = halo.SimpleMetisDecomposer()
             
-            global_grid = icon_grid.IconGrid().with_connectivities(global_connectivities)
-            halo_constructor = halo.HaloGenerator(self._run_properties, cells_to_rank_mapping, global_connectivities, self._config.num_levels)
+            global_connectivities = {
+                dims.C2E2CDim: self._reader.int_field(GridFile.ConnectivityName.C2E2C),
+                dims.C2EDim: self._reader.int_field(GridFile.ConnectivityName.C2E),
+                dims.E2CDim: self._reader.int_field(GridFile.ConnectivityName.E2C),
+                dims.V2EDim: self._reader.int_field(GridFile.ConnectivityName.V2E),
+                dims.E2VDim: self._reader.int_field(GridFile.ConnectivityName.E2V),
+                dims.V2CDim: self._reader.int_field(GridFile.ConnectivityName.V2C),
+                dims.C2VDim: self._reader.int_field(GridFile.ConnectivityName.C2V),
+                dims.V2E2VDim: self._reader.int_field(GridFile.ConnectivityName.V2E2V),
+            }
+            cells_to_rank_mapping = decompose(
+                global_connectivities[dims.C2EDim], self._run_properties.comm_size)
+            halo_constructor = halo.HaloGenerator(self._run_properties, cells_to_rank_mapping,
+                                                  global_connectivities, self._config.num_levels)
+            decomposition_info = halo_constructor.construct_decomposition_info()
+            self._from_decomposition_info(decomposition_info, on_gpu=on_gpu, limited_area=limited_area)
+            
+
     def get_size(self, dim: gtx.Dimension):
         if dim == dims.VertexDim:
             return self._grid.config.num_vertices
@@ -442,22 +454,15 @@ class GridManager:
         return field
 
     def _from_decomposition_info(self, decomposition_info: decomposition.DecompositionInfo, on_gpu: bool = False, limited_area:bool = False)-> base_grid.BaseGrid:
-        pass
+        grid = self._initialize_global(limited_area, on_gpu)
+        
+        
+        
     def _from_grid_dataset(self, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
 
-        num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(GridFile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(GridFile.DimensionName.VERTEX_NAME)
-        uuid = self._dataset.getncattr(GridFile.PropertyName.GRID_ID)
-        grid_level = self._dataset.getncattr(GridFile.PropertyName.LEVEL)
-        grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
-        global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
+        grid = self._initialize_global(limited_area, on_gpu)
 
-        grid_size = base_grid.HorizontalGridSize(
-            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
-        )
         c2e = self._get_index_field(GridFile.ConnectivityName.C2E)
-
         e2c = self._get_index_field(
             GridFile.ConnectivityName.E2C)  # edge_face_connectivity (optional)
         c2v = self._get_index_field(
@@ -479,24 +484,9 @@ class GridManager:
 
         c2e2c2e = self._construct_triangle_edges(c2e2c, c2e)
         c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
-        (
-            start_indices,
-            end_indices,
-            refine_ctrl,
-            refine_ctrl_max,
-        ) = self._read_grid_refinement_information(self._dataset)
+        
 
-        config = base_grid.GridConfig(
-            horizontal_config=grid_size,
-            vertical_size=self._config.num_levels,
-            on_gpu=on_gpu,
-            limited_area=limited_area,
-        )
-        grid = (
-            icon_grid.IconGrid(uuid)
-            .with_config(config)
-            .with_global_params(global_params)
-            .with_connectivities(
+        grid.with_connectivities(
                 {
                     dims.C2EDim: c2e,
                     dims.E2CDim: e2c,
@@ -513,10 +503,14 @@ class GridManager:
                     dims.E2C2EODim: e2c2e0,
                 }
             )
-            .with_start_end_indices(dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim])
-            .with_start_end_indices(dims.EdgeDim, start_indices[dims.EdgeDim], end_indices[dims.EdgeDim])
-            .with_start_end_indices(dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim])
-        )
+        (
+            start_indices,
+            end_indices,
+            refine_ctrl,
+            refine_ctrl_max,
+        ) = self._read_grid_refinement_information(self._dataset)
+        grid.with_start_end_indices(dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim]).with_start_end_indices(dims.EdgeDim, start_indices[dims.EdgeDim], end_indices[dims.EdgeDim]).with_start_end_indices(dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim])
+        
         grid.update_size_connectivities(
             {
                 dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
@@ -525,6 +519,26 @@ class GridManager:
             }
         )
 
+        return grid
+
+    def _initialize_global(self, limited_area, on_gpu):
+        num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(GridFile.DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(GridFile.DimensionName.VERTEX_NAME)
+        uuid = self._dataset.getncattr(GridFile.PropertyName.GRID_ID)
+        grid_level = self._dataset.getncattr(GridFile.PropertyName.LEVEL)
+        grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
+        global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
+        grid_size = base_grid.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
+        config = base_grid.GridConfig(
+            horizontal_config=grid_size,
+            vertical_size=self._config.num_levels,
+            on_gpu=on_gpu,
+            limited_area=limited_area,
+        )
+        grid = icon_grid.IconGrid(uuid).with_config(config).with_global_params(global_params)
         return grid
 
     @staticmethod
@@ -653,3 +667,110 @@ def _patch_with_dummy_lastline(ar):
         axis=0,
     )
     return patched_ar
+
+
+SKIP_VALUE = -1
+
+
+def construct_local_connectivity(
+        field_offset: gtx.FieldOffset, decomposition_info: defs.DecompositionInfo, connectivities:dict) -> xp.ndarray:
+    """
+    Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
+
+    Starting from the connectivity table on the global grid
+    - we reduce it to the lines for the locally present entries of the the target dimension
+    - the reduced connectivity then still maps to global source dimension indices:
+        we replace those source dimension indices not present on the node to SKIP_VALUE and replace the rest with the local indices
+
+    Args:
+        field_offset: FieldOffset for which we want to construct the local connectivity table
+        decomposition_info: DecompositionInfo for the current rank.
+
+    Returns:
+        connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
+    """
+    source_dim = field_offset.source
+    target_dim = field_offset.target[0]
+    local_dim = field_offset.target[1]
+    sliced_connectivity = connectivities[local_dim][
+        decomposition_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
+    ]
+    #log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
+
+    global_idx = decomposition_info.global_index(
+        source_dim, defs.DecompositionInfo.EntryType.ALL
+    )
+
+    # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
+    local_connectivity = xp.where(
+        xp.isin(sliced_connectivity, global_idx), sliced_connectivity, SKIP_VALUE
+    )
+
+    # map to local source indices
+    sorted_index_of_global_idx = xp.argsort(global_idx)
+    global_idx_sorted = global_idx[sorted_index_of_global_idx]
+    for i in xp.arange(local_connectivity.shape[0]):
+        valid_neighbor_mask = local_connectivity[i, :] != SKIP_VALUE
+        positions = xp.searchsorted(
+            global_idx_sorted, local_connectivity[i, valid_neighbor_mask]
+        )
+        indices = sorted_index_of_global_idx[positions]
+        local_connectivity[i, valid_neighbor_mask] = indices
+    #log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
+    return local_connectivity
+
+
+    # should be done in grid manager!
+    def local_grid(self,
+                   props: defs.ProcessProperties,
+                   decomposition_info: defs.DecompositionInfo,
+
+                   limited_area: bool = False,
+                   on_gpu: bool = False,
+                   ) -> base_grid.BaseGrid:
+
+        """
+        Constructs a local grid for this rank based on the decomposition info.
+        TODO (@halungge): for now only returning BaseGrid as we have not start/end indices implementation yet
+        TODO (@halungge): make sure the INVALID_INDEX is set correctly: - when set in the original (global index) connectivity it should remain
+        TODO (@halungge): how to handle the (source) indices of last halo line: their (global) neighbors are not all present on the local grid, set INVALID_INDEX (that is what xugrid does)
+                                                                               check what ICON does, (they probably duplicate the valid indices...)
+        Args:
+            decomposition_info: the decomposition info for this rank
+        Returns:
+            local_grid: the local grid
+        """
+        num_vertices = decomposition_info.global_index(
+            dims.VertexDim, defs.DecompositionInfo.EntryType.ALL
+        ).size
+        num_edges = decomposition_info.global_index(dims.EdgeDim,
+                                                    defs.DecompositionInfo.EntryType.ALL).size
+        num_cells = decomposition_info.global_index(dims.CellDim,
+                                                    defs.DecompositionInfo.EntryType.ALL).size
+        grid_size = base_grid.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
+        config = base_grid.GridConfig(
+            horizontal_config=grid_size, vertical_size=self._num_levels, on_gpu=on_gpu, limited_area=limited_area
+        )
+    
+        local_grid = (
+            icon_grid.IconGrid(uuid.uuid4()).with_config(config).with_connectivities({
+                dims.C2EDim: self.construct_local_connectivity(dims.C2EDim, decomposition_info),
+                dims.E2CDim: self.construct_local_connectivity(dims.E2CDim, decomposition_info),
+                dims.E2VDim: self.construct_local_connectivity(dims.E2VDim, decomposition_info),
+                dims.V2EDim: self.construct_local_connectivity(dims.V2EDim, decomposition_info),
+                dims.C2VDim: self.construct_local_connectivity(dims.C2VDim, decomposition_info),
+                dims.V2CDim: self.construct_local_connectivity(dims.V2CDim, decomposition_info),
+                dims.C2E2CDim: self.construct_local_connectivity(dims.C2E2CDim, decomposition_info),
+                # dims.C2E2CODim
+                # etc... # TODO (@halungge): this should all go to grid_manager
+                    
+                
+                
+            })
+        )
+
+    
+    
+        return local_grid

@@ -20,7 +20,10 @@ import pytest
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.grid_manager as gm
 from icon4py.model.common.decomposition import definitions as defs
-from icon4py.model.common.decomposition.halo import HaloGenerator, SimpleMetisDecomposer
+from icon4py.model.common.decomposition.halo import (
+    HaloGenerator,
+    SimpleMetisDecomposer,
+)
 from icon4py.model.common.grid import base as base_grid, simple, vertical as v_grid
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
@@ -212,39 +215,6 @@ def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
     print(f"rank {processor_props.rank} owns {dim} : {my_owned} ")
     assert my_owned.size == len(owned[dim][processor_props.rank])
     assert xp.setdiff1d(my_owned, owned[dim][processor_props.rank], assume_unique=True).size == 0
-
-
-@pytest.mark.parametrize(
-    "field_offset",
-    [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
-)
-def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
-    caplog.set_level(logging.INFO)
-    grid = grid_file_manager(GRID_FILE).grid
-    labels = decompose(grid, processor_props)
-    halo_generator = HaloGenerator(
-        connectivities=grid.connectivities,
-        run_properties=processor_props,
-        rank_mapping=labels,
-        num_levels=1,
-    )
-
-    decomposition_info = halo_generator.construct_decomposition_info()
-
-    connectivity = halo_generator.construct_local_connectivity(field_offset, decomposition_info)
-    # there is an neighbor list for each index of the target dimension on the node
-    assert (
-        connectivity.shape[0]
-        == decomposition_info.global_index(
-            field_offset.target[0], defs.DecompositionInfo.EntryType.ALL
-        ).size
-    )
-    # all neighbor indices are valid local indices
-    assert xp.max(connectivity) == xp.max(
-        decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
-    )
-    # TODO what else to assert?
-    # outer halo entries have SKIP_VALUE neighbors (depends on offsets)
 
 
 def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
