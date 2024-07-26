@@ -14,21 +14,20 @@
 import enum
 import logging
 import uuid
+from typing import Protocol
 
 import gt4py.next as gtx
-import scipy as sp
-import xugrid.ugrid.ugrid2d as ux
 
 import icon4py.model.common.decomposition.definitions as defs
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import base as base_grid, icon as icon_grid
+from icon4py.model.common.grid import base as base_grid, grid_manager as gm, icon as icon_grid
 from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
 
 
-# TODO do we need three of those?
+# TODO (@halungge) do we need three of those: one for each dimension?
 class DecompositionFlag(enum.IntEnum):
     #: cell is owned by this rank
     OWNED = (0,)
@@ -37,53 +36,42 @@ class DecompositionFlag(enum.IntEnum):
     #: cell is in the second halo line: that is cells that share only a vertex with an owned cell (and at least an edge with a FIRST_HALO_LINE cell)
     SECOND_HALO_LINE = 2
 
-
+SKIP_VALUE = gm.GridFile.INVALID_INDEX
 class HaloGenerator:
     """Creates necessary halo information for a given rank."""
 
     def __init__(
         self,
-        rank_info: defs.ProcessProperties,
+        run_properties: defs.ProcessProperties,
         rank_mapping: xp.ndarray,
-        ugrid: ux.Ugrid2d,
-        num_lev: int,
-        face_face_connectivity: xp.ndarray = None,
-        node_face_connectivity=None,
-        node_edge_connectivity=None,
+        ugrid: base_grid.BaseGrid,
     ):
         """
 
         Args:
-            rank_info: contains information on the communicator and local compute node.
-            rank_mapping: array with shape (global_num_cells) mapping of global cell indices to their rank in the distribution
+            run_properties: contains information on the communicator and local compute node.
+            rank_mapping: array with shape (global_num_cells,): mapping of global cell indices to their rank in the distribution
             ugrid: the global grid
-            num_lev: number of vertical levels
-            face_face_connectivity: face-face connectivity matrix: (n_cells, 3) xugrid uses a
-                    scipy.sparse matrix for this which causes problems with zero based indices so we
-                    allow to pass it directly as a workaround
-            node_face_connectivity: node-face connectivity matrix: (n_vertex, 6) xugrid uses a
-                sparse matrix for this which causes problems with zero based indices so wes
         """
-        self._props = rank_info
+        self._props = run_properties
         self._mapping = rank_mapping
         self._global_grid = ugrid
-        self._num_lev = num_lev
-        self._connectivities = {
-            dims.C2E2CDim: face_face_connectivity
-            if face_face_connectivity is not None
-            else self._global_grid.face_face_connectivity,
-            dims.C2EDim: self._global_grid.face_edge_connectivity,
-            dims.C2VDim: self._global_grid.face_node_connectivity,
-            dims.E2CDim: self._global_grid.edge_face_connectivity,
-            dims.E2VDim: self._global_grid.edge_node_connectivity,
-            dims.V2CDim: node_face_connectivity
-            if node_face_connectivity is not None
-            else self._global_grid.node_face_connectivity,
-            dims.V2EDim: node_edge_connectivity
-            if node_edge_connectivity is not None
-            else self._global_grid.node_edge_connectivity,
-        }
+        self._connectivities = self._global_grid.connectivities
 
+
+    @property
+    def edge_face_connectivity(self):
+        return self.connectivity(dims.E2CDim)
+    
+    @property
+    def face_face_connectivity(self):
+        return self.connectivity(dims.C2E2CDim)
+    
+    
+    @property
+    def node_edge_connectivity(self):
+        return self.connectivity(dims.V2EDim)
+    
     def _validate(self):
         assert self._mapping.ndim == 1
         # the decomposition should match the communicator size
@@ -91,20 +79,14 @@ class HaloGenerator:
 
     def _post_init(self):
         self._validate()
-        # TODO handle sparse neibhbors tables?
 
     def connectivity(self, dim) -> xp.ndarray:
         try:
             conn_table = self._connectivities[dim]
-            if sp.sparse.issparse(conn_table):
-                raise NotImplementedError("Scipy sparse for connectivity tables are not supported")
-                # TODO this is not tested/working. It returns a (N x N) matrix not a (N x sparse_dim) matrix
-                # _and_ we cannot make the difference between a valid "0" and a missing-value 0
-                # return conn_table.toarray(order="C")
             return conn_table
         except KeyError as err:
             raise (f"Connectivity for dimension {dim} is not available") from err
-
+    
     def next_halo_line(self, cell_line: xp.ndarray, depot=None):
         """Returns the global indices of the next halo line.
 
@@ -126,16 +108,6 @@ class HaloGenerator:
 
     def _cell_neighbors(self, cells: xp.ndarray):
         return xp.unique(self.connectivity(dims.C2E2CDim)[cells, :])
-
-    def _cell_neighbors_from_sparse(self, cells: xp.ndarray):
-        """In xugrid face-face connectivity is a scipy spars matrix, so we reduce it to the regular sparse matrix format: (n_cells, 3)"""
-        conn = self.connectivity(dims.C2E2CDim)
-
-        neighbors = conn[cells, :]
-        # There is an issue with explicit 0 (for zero based indices) since sparse.find projects them out...
-        i, j, vals = sp.sparse.find(neighbors)
-
-        return j
 
     def _find_neighbors(self, cell_line: xp.ndarray, connectivity: xp.ndarray) -> xp.ndarray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
@@ -174,7 +146,7 @@ class HaloGenerator:
 
         c_owner_mask = xp.isin(all_cells, owned_cells)
 
-        decomp_info = defs.DecompositionInfo(klevels=self._num_lev).with_dimension(
+        decomp_info = defs.DecompositionInfo(klevels=self._global_grid.num_levels).with_dimension(
             dims.CellDim, all_cells, c_owner_mask
         )
 
@@ -235,7 +207,7 @@ class HaloGenerator:
             edge_owner_mask,
             all_edges,
             intersect_owned_first_line,
-            self._global_grid.edge_face_connectivity,
+            self.edge_face_connectivity,
         )
         decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask)
 
@@ -268,30 +240,37 @@ class HaloGenerator:
             field_offset: FieldOffset for which we want to construct the offset table
             decom_info: DecompositionInfo for the current rank
 
-        Returns: array, containt the connectivity table for the field_offset with rank-local indices
-
+        Returns: array, containing the connectivity table for the field_offset with rank-local indices
+        # TODO (@halungge): this does not properly work for outermost halo points: they have neighbors that are not present in the local decomposition_info.global_index list!!
+        # those should have an SKIP_VALUE entry in the local connectivity matrix -> revise the `global_to_local` handling!
         """
         source_dim = field_offset.source
         target_dim = field_offset.target[0]
         local_dim = field_offset.target[1]
         connectivity = self.connectivity(local_dim)
-        global_node_idx = decom_info.global_index(source_dim, defs.DecompositionInfo.EntryType.ALL)
-        global_node_sorted = xp.argsort(global_node_idx)
+        global_idx = decom_info.global_index(source_dim, defs.DecompositionInfo.EntryType.ALL)
+        global_idx_sorted = xp.argsort(global_idx)
         sliced_connectivity = connectivity[
             decom_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
         ]
         log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
         for i in xp.arange(sliced_connectivity.shape[0]):
+            valid_neighbor_mask = sliced_connectivity[i, :] != SKIP_VALUE
+            
             positions = xp.searchsorted(
-                global_node_idx[global_node_sorted], sliced_connectivity[i, :]
+                global_idx[global_idx_sorted], sliced_connectivity[i, valid_neighbor_mask]
             )
-            indices = global_node_sorted[positions]
-            sliced_connectivity[i, :] = indices
+            # outer most halo points have neighbors that do not exist in the local 
+            # decomposition_info.global_index list. 
+            # those should have an SKIP_VALUE entry in the local connectivity matrix
+            global_idx_sorted = xp.append(global_idx_sorted,SKIP_VALUE)
+            indices = global_idx_sorted[positions]
+            sliced_connectivity[i, valid_neighbor_mask] = indices
         log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
         return sliced_connectivity
 
 
-# should be done in grid manager!
+# should be done in grid manager!sor
 def local_grid(
     props: defs.ProcessProperties,
     decomp_info: defs.DecompositionInfo,
@@ -329,3 +308,41 @@ def local_grid(
     # add connectivities
 
     return local_grid
+
+# TODO (@halungge): refine type hints: adjacency_matrix should be a connectivity matrix of C2E2C and 
+#  the return value an array of shape (n_cells,)
+
+
+class Decomposer(Protocol):
+    def __call__(self, adjacency_matrix, n_part: int) -> xp.ndarray:
+        ...
+
+class SimpleMetisDecomposer(Decomposer):
+    """
+    A simple decomposer using METIS for partitioning a grid topology.
+    
+    We use the simple pythonic interface to pymetis: just passing the adjacency matrix
+    if more control is needed (for example by using weights we need to switch to the C like interface)
+    https://documen.tician.de/pymetis/functionality.html
+    """
+    
+
+    def __call__(self, adjacency_matrix, n_part: int) -> xp.ndarray:
+        """ 
+        Generate partition labesl for this grid topology using METIS:
+        https://github.com/KarypisLab/METIS
+
+        This method utilizes the pymetis Python bindings:
+        https://github.com/inducer/pymetis
+
+        Args:
+            n_part: int, number of partitions to create
+        Returns: np.ndarray: array with partition label (int, rank number) for each cell    
+        """
+
+        import pymetis
+        cut_count, partition_index = pymetis.part_graph(
+            nparts=n_part,
+            adjacency=adjacency_matrix
+        )
+        return xp.array(partition_index)

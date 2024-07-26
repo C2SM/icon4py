@@ -16,13 +16,12 @@ import pathlib
 import mpi4py
 import mpi4py.MPI
 import pytest
-import xugrid as xu
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.grid_manager as gm
 import icon4py.model.common.grid.vertical as v_grid
 from icon4py.model.common.decomposition import definitions as defs
-from icon4py.model.common.decomposition.halo import HaloGenerator
+from icon4py.model.common.decomposition.halo import HaloGenerator, SimpleMetisDecomposer
 from icon4py.model.common.grid import simple
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
@@ -123,15 +122,12 @@ owned = {dims.CellDim: cell_own, dims.EdgeDim: edge_own, dims.VertexDim: vertex_
 halos = {dims.CellDim: cell_halos, dims.EdgeDim: edge_halos, dims.VertexDim: vertex_halo}
 
 
-def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # fixture
-    grid = simple_ugrid
+def test_halo_constructor_owned_cells(processor_props):  # fixture
+    grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
         ugrid=grid,
-        rank_info=processor_props,
+        run_properties=processor_props,
         rank_mapping=simple_distribution,
-        num_lev=1,
-        face_face_connectivity=simple.SimpleGridData.c2e2c_table,
-        node_face_connectivity=simple.SimpleGridData.v2c_table,
     )
     my_owned_cells = halo_generator.owned_cells()
 
@@ -142,18 +138,16 @@ def test_halo_constructor_owned_cells(processor_props, simple_ugrid):  # fixture
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-def test_element_ownership_is_unique(dim, processor_props, simple_ugrid):  # fixture
-    grid = simple_ugrid
+def test_element_ownership_is_unique(dim, processor_props):  # fixture
+    if processor_props.comm_size != 4:
+        pytest.skip("This test requires exactly 4 MPI ranks.")
+    grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
         ugrid=grid,
-        rank_info=processor_props,
+        run_properties=processor_props,
         rank_mapping=simple_distribution,
-        num_lev=1,
-        face_face_connectivity=simple.SimpleGridData.c2e2c_table,
-        node_face_connectivity=simple.SimpleGridData.v2c_table,
     )
-    assert processor_props.comm_size == 4, "This test requires 4 MPI ranks."
-
+    
     decomposition_info = halo_generator.construct_decomposition_info()
     owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
@@ -186,19 +180,17 @@ def test_element_ownership_is_unique(dim, processor_props, simple_ugrid):  # fix
         # check the buffer has all global indices
         assert xp.all(xp.sort(values) == global_indices(dim))
 
-
-# TODO (@halungge) this test can be run on 4 MPI ranks or should we rather switch to a single node,
-# and parametrizes the rank number
+@pytest.mark.with_mpi(min_size=4)
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
-def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim):  # fixture
-    grid = simple_ugrid
+def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
+    if processor_props.comm_size != 4:
+        pytest.skip("This test requires exactly 4 MPI ranks.")
+    
+    grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
         ugrid=grid,
-        rank_info=processor_props,
+        run_properties=processor_props,
         rank_mapping=simple_distribution,
-        num_lev=1,
-        face_face_connectivity=simple.SimpleGridData.c2e2c_table,
-        node_face_connectivity=simple.SimpleGridData.v2c_table,
     )
 
     decomp_info = halo_generator.construct_decomposition_info()
@@ -214,28 +206,25 @@ def test_halo_constructor_decomposition_info(processor_props, simple_ugrid, dim)
 
 # TODO V2E2V (from grid file vertices_of_vertex) do we use that at all?
 @pytest.mark.parametrize(
-    "field_offset", [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.V2E, dims.C2E2C]
+    "field_offset", [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C]
 )
 def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     caplog.set_level(logging.INFO)
-    grid = as_ugrid2d(UGRID_FILE)
-    icon_grid = grid_file_manager(GRID_FILE).grid
-    distributed_grids = grid.partition(n_part=4)
-    labels = grid.label_partitions(n_part=4)
+    grid =  grid_file_manager(GRID_FILE).grid
+    partitioner = SimpleMetisDecomposer()
+    processor_props.comm_size = 4
+    processor_props.rank = 3
+    labels = partitioner(grid.connectivities[dims.C2E2CDim], processor_props.comm_size)
     halo_generator = HaloGenerator(
         ugrid=grid,
-        rank_info=processor_props,
+        run_properties=processor_props,
         rank_mapping=labels,
-        num_lev=1,
-        face_face_connectivity=icon_grid.connectivities[dims.C2E2CDim],
-        node_face_connectivity=icon_grid.connectivities[dims.V2CDim],
-        node_edge_connectivity=icon_grid.connectivities[dims.V2EDim],
     )
 
     decomposition_info = halo_generator.construct_decomposition_info()
 
     connectivity = halo_generator.construct_local_connectivity(field_offset, decomposition_info)
-    # TODO (@halungge): think of more valuable assertions
+    # TODO (@halungge): think of more valuable assertions...
     assert (
         connectivity.shape[0]
         == decomposition_info.global_index(
@@ -246,29 +235,6 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
         decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
     )
 
-
-@pytest.fixture
-def simple_ugrid() -> xu.Ugrid2d:
-    """
-    Programmatically construct a xugrid.ugrid.ugrid2d.Ugrid2d object
-
-    Returns: a Ugrid2d object base on the SimpleGrid
-
-    """
-    simple_mesh = simple.SimpleGrid()
-    fill_value = -1
-    node_x = xp.arange(simple_mesh.num_vertices, dtype=xp.float64)
-    node_y = xp.arange(simple_mesh.num_vertices, dtype=xp.float64)
-    grid = xu.Ugrid2d(
-        node_x,
-        node_y,
-        fill_value,
-        projected=True,
-        face_node_connectivity=simple_mesh.connectivities[dims.C2VDim],
-        edge_node_connectivity=simple_mesh.connectivities[dims.E2VDim],
-    )
-
-    return grid
 
 
 UGRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
@@ -287,12 +253,6 @@ def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
     return manager
 
 
-def as_ugrid2d(file: pathlib.Path) -> xu.Ugrid2d:
-    return as_xudataset(file).grid
-
-
-def as_xudataset(file: pathlib.Path) -> xu.UgridDataset:
-    return xu.open_dataset(file.as_posix())
 
 
 def global_indices(dim: dims.Dimension) -> int:
@@ -333,17 +293,15 @@ def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm, dtype=int) -> tuple:
 @pytest.mark.xfail(reason="This test is not yet implemented")
 def test_local_grid(processor_props, caplog):  # fixture
     caplog.set_level(logging.INFO)
-    grid = as_ugrid2d(UGRID_FILE)
-    icon_grid = grid_file_manager(GRID_FILE).grid
-    labels = grid.label_partitions(n_part=4)
+    
+    grid = grid_file_manager(GRID_FILE).grid
+    partitioner = SimpleMetisDecomposer()
+    labels = partitioner(grid.connectivities[dims.C2E2CDim],
+                         n_part=processor_props.comm_size)
     halo_generator = HaloGenerator(
         ugrid=grid,
-        rank_info=processor_props,
+        run_properties=processor_props,
         rank_mapping=labels,
-        num_lev=1,
-        face_face_connectivity=icon_grid.connectivities[dims.C2E2CDim],
-        node_face_connectivity=icon_grid.connectivities[dims.V2CDim],
-        node_edge_connectivity=icon_grid.connectivities[dims.V2EDim],
     )
     decomposition_info = halo_generator.construct_decomposition_info()
     local_grid = halo_generator.local_grid(decomposition_info)
@@ -358,16 +316,13 @@ def test_local_grid(processor_props, caplog):  # fixture
 def test_distributed_fields(processor_props):  # fixture
     grid_manager = grid_file_manager(GRID_FILE)
 
-    ugrid = as_ugrid2d(UGRID_FILE)
-    labels = ugrid.label_partitions(n_part=processor_props.comm_size)
-
+    partitioner = SimpleMetisDecomposer()
+    labels = partitioner(grid_manager.grid.connectivities[dims.C2E2CDim], n_part=processor_props.comm_size)
+    
     halo_generator = HaloGenerator(
-        ugrid=ugrid,
-        rank_info=processor_props,
+        ugrid=grid_manager.grid,
+        run_properties=processor_props,
         rank_mapping=labels,
-        num_lev=1,
-        face_face_connectivity=grid_manager.grid.connectivities[dims.C2E2CDim],
-        node_face_connectivity=grid_manager.grid.connectivities[dims.V2CDim],
     )
     decomposition_info = halo_generator.construct_decomposition_info()
     # distributed read: read one field per dimension
