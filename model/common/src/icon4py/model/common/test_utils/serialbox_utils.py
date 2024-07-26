@@ -40,6 +40,7 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
+    KHalf2KDim,
     KHalfDim,
     V2CDim,
     V2EDim,
@@ -331,6 +332,16 @@ class IconGridSavepoint(IconSavepoint):
     def c2v(self):
         return self._get_connectivity_array("c2v", CellDim)
 
+    def khalf2k(self):
+        k_lev_ls = [0, 1]
+        nlev = self.num(KDim)
+        for k in range(nlev * 2):
+            k_lev_ls.append(k_lev_ls[k] + 1)
+        khalf2k_table = np.asarray(
+            k_lev_ls,
+        ).reshape(nlev + 1, 2)
+        return khalf2k_table
+
     def nrdmax(self):
         return self._read_int32_shift1("nrdmax")
 
@@ -415,6 +426,8 @@ class IconGridSavepoint(IconSavepoint):
             .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
             .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
+            .with_start_end_indices(KHalfDim, 0, self.num(KDim) + 1)
+            # TODO: why not merge the .with_connectivities below?
             .with_connectivities(
                 {
                     C2EDim: self.c2e(),
@@ -424,6 +437,7 @@ class IconGridSavepoint(IconSavepoint):
                     C2E2C2EDim: self.c2e2c2e(),
                     E2C2EDim: e2c2e,
                     E2C2EODim: e2c2e0,
+                    KHalf2KDim: self.khalf2k(),
                 }
             )
             .with_connectivities(
@@ -1352,6 +1366,7 @@ class IconSerialDataProvider:
             EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(int32)[0],
             VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(int32)[0],
             KDim: sp.metainfo.to_dict()["nlev"],
+            KHalfDim: sp.metainfo.to_dict()["nlev"] + 1,
         }
         return grid_sizes
 
