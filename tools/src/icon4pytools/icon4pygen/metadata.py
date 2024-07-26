@@ -17,7 +17,6 @@ import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
-import icon4py.model.common.dimension
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
@@ -26,9 +25,10 @@ from gt4py.next.ffront.fbuiltins import FieldOffset
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common.dimension import Koff, global_dimensions
-
 from icon4pytools.icon4pygen.bindings.utils import calc_num_neighbors
+
+import icon4py.model.common.dimension
+from icon4py.model.common.dimension import HORIZONTAL_DIMENSIONS, Koff
 
 
 H_START = "horizontal_start"
@@ -187,8 +187,8 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         skip_values = True
 
     include_center = True if chain.count("O") > 0 else False
-    dims_initials = [key[0] for key in global_dimensions.keys()]
-    map_to_dim = {d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)}
+    dims_initials = [key[0] for key in HORIZONTAL_DIMENSIONS.keys()]
+    map_to_dim = {d: list(HORIZONTAL_DIMENSIONS.values())[d_i] for d_i, d in enumerate(dims_initials)}
     location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
 
     return DummyConnectivity(

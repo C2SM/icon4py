@@ -44,7 +44,7 @@ except ImportError:
     unstructured = None
 
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import DimensionKind, global_dimensions
+from icon4py.model.common.dimension import HORIZONTAL_DIMENSIONS, DimensionKind
 
 
 if TYPE_CHECKING:
@@ -135,14 +135,14 @@ class GHexMultiNodeExchange:
             dim: self._create_domain_descriptor(
                 dim,
             )
-            for dim in global_dimensions.values()
+            for dim in HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
         self._patterns = {
             dim: self._create_pattern(
                 dim,
             )
-            for dim in global_dimensions.values()
+            for dim in HORIZONTAL_DIMENSIONS.values()
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
@@ -194,7 +194,7 @@ class GHexMultiNodeExchange:
         return pattern
 
     def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
-        assert dim in global_dimensions.values()
+        assert dim in HORIZONTAL_DIMENSIONS.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]

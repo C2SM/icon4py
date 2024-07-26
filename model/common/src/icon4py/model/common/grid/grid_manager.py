@@ -34,30 +34,8 @@ except ImportError:
 
 
 import icon4py.model.common.dimension as dims
-from icon4py.model.common.dimension import (
-    C2E2C2EDim,
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    C2VDim,
-    CEDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    ECDim,
-    ECVDim,
-    EdgeDim,
-    V2CDim,
-    V2E2VDim,
-    V2EDim,
-    VertexDim,
-    global_dimensions,
-)
 from icon4py.model.common.grid import (
-    base as grid_def,
+    base as base_grid,
     icon as icon_grid,
     vertical as v_grid,
 )
@@ -313,7 +291,7 @@ class GridManager:
         ]
         refin_ctrl = {
             dim: reader.int_field(control_dims[dim_i])
-            for dim_i, dim in enumerate(global_dimensions.values())
+            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
         }
 
         grf_dims = [
@@ -323,7 +301,7 @@ class GridManager:
         ]
         refin_ctrl_max = {
             dim: reader.dimension(grf_dims[dim_i])
-            for dim_i, dim in enumerate(global_dimensions.values())
+            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
         }
 
         start_index_dims = [
@@ -333,7 +311,7 @@ class GridManager:
         ]
         start_indices = {
             dim: self._get_index_field(start_index_dims[dim_i], transpose=False, dtype=gtx.int32)[_CHILD_DOM]
-            for dim_i, dim in enumerate(global_dimensions.values())
+            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
         }
 
         end_index_dims = [
@@ -344,7 +322,7 @@ class GridManager:
         end_indices = {
             dim: self._get_index_field(end_index_dims[dim_i], transpose=False, apply_offset=False,
                                        dtype=gtx.int32)[_CHILD_DOM]
-            for dim_i, dim in enumerate(global_dimensions.values())
+            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
         }
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
@@ -384,8 +362,8 @@ class GridManager:
         return self._read(
             decomposition_info,
             {
-                CellDim: [GridFile.GeometryName.CELL_AREA],
-                EdgeDim: [GridFile.GeometryName.EDGE_LENGTH],
+                dims.CellDim: [GridFile.GeometryName.CELL_AREA],
+                dims.EdgeDim: [GridFile.GeometryName.EDGE_LENGTH],
             },
         )
 
@@ -393,15 +371,15 @@ class GridManager:
         return self._read(
             decomposition_info,
             {
-                CellDim: [
+                dims.CellDim: [
                     GridFile.CoordinateName.CELL_LONGITUDE,
                     GridFile.CoordinateName.CELL_LATITUDE,
                 ],
-                EdgeDim: [
+                dims.EdgeDim: [
                     GridFile.CoordinateName.EDGE_LONGITUDE,
                     GridFile.CoordinateName.EDGE_LATITUDE,
                 ],
-                VertexDim: [
+                dims.VertexDim: [
                     GridFile.CoordinateName.VERTEX_LONGITUDE,
                     GridFile.CoordinateName.VERTEX_LATITUDE,
                 ],
@@ -428,11 +406,11 @@ class GridManager:
         return self._from_grid_dataset(on_gpu=on_gpu, limited_area=limited_area)
 
     def get_size(self, dim: gtx.Dimension):
-        if dim == VertexDim:
+        if dim == dims.VertexDim:
             return self._grid.config.num_vertices
-        elif dim == CellDim:
+        elif dim == dims.CellDim:
             return self._grid.config.num_cells
-        elif dim == EdgeDim:
+        elif dim == dims.EdgeDim:
             return self._grid.config.num_edges
         else:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
@@ -445,6 +423,8 @@ class GridManager:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
 
+    def _from_decomposition_info(self, decomposition_info: defs.DecompositionInfo, on_gpu: bool = False, limited_area:bool = False)-> base_grid.BaseGrid:
+        pass
     def _from_grid_dataset(self, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
 
         num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
@@ -455,7 +435,7 @@ class GridManager:
         grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
         global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
 
-        grid_size = grid_def.HorizontalGridSize(
+        grid_size = base_grid.HorizontalGridSize(
             num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
         )
         c2e = self._get_index_field(GridFile.ConnectivityName.C2E)
@@ -488,7 +468,7 @@ class GridManager:
             refine_ctrl_max,
         ) = self._read_grid_refinement_information(self._dataset)
 
-        config = grid_def.GridConfig(
+        config = base_grid.GridConfig(
             horizontal_config=grid_size,
             vertical_size=self._config.num_levels,
             on_gpu=on_gpu,
@@ -500,30 +480,30 @@ class GridManager:
             .with_global_params(global_params)
             .with_connectivities(
                 {
-                    C2EDim: c2e,
-                    E2CDim: e2c,
-                    E2VDim: e2v,
-                    V2EDim: v2e,
-                    V2CDim: v2c,
-                    C2VDim: c2v,
-                    C2E2CDim: c2e2c,
-                    C2E2CODim: c2e2c0,
-                    C2E2C2EDim: c2e2c2e,
-                    E2C2VDim: e2c2v,
-                    V2E2VDim: v2e2v,
-                    E2C2EDim: e2c2e,
-                    E2C2EODim: e2c2e0,
+                    dims.C2EDim: c2e,
+                    dims.E2CDim: e2c,
+                    dims.E2VDim: e2v,
+                    dims.V2EDim: v2e,
+                    dims.V2CDim: v2c,
+                    dims.C2VDim: c2v,
+                    dims.C2E2CDim: c2e2c,
+                    dims.C2E2CODim: c2e2c0,
+                    dims.C2E2C2EDim: c2e2c2e,
+                    dims.E2C2VDim: e2c2v,
+                    dims.V2E2VDim: v2e2v,
+                    dims.E2C2EDim: e2c2e,
+                    dims.E2C2EODim: e2c2e0,
                 }
             )
-            .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])
-            .with_start_end_indices(EdgeDim, start_indices[EdgeDim], end_indices[EdgeDim])
-            .with_start_end_indices(VertexDim, start_indices[VertexDim], end_indices[VertexDim])
+            .with_start_end_indices(dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim])
+            .with_start_end_indices(dims.EdgeDim, start_indices[dims.EdgeDim], end_indices[dims.EdgeDim])
+            .with_start_end_indices(dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim])
         )
         grid.update_size_connectivities(
             {
-                ECVDim: grid.size[EdgeDim] * grid.size[E2C2VDim],
-                CEDim: grid.size[CellDim] * grid.size[C2EDim],
-                ECDim: grid.size[EdgeDim] * grid.size[E2CDim],
+                dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
+                dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
+                dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
             }
         )
 
