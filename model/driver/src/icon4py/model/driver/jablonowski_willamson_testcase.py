@@ -14,12 +14,11 @@
 import numpy as np
 
 from icon4py.model.common.dimension import EdgeDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 
 
 def zonalwind_2_normalwind_jabw_numpy(
-    icon_grid: IconGrid,
+    grid: icon_grid.IconGrid,
     jw_u0: float,
     jw_up: float,
     lat_perturbation_center: float,
@@ -33,7 +32,7 @@ def zonalwind_2_normalwind_jabw_numpy(
     Compute normal wind at edge center from vertical eta coordinate (eta_v_e).
 
     Args:
-        icon_grid: IconGrid
+        grid: IconGrid
         jw_u0: base zonal wind speed factor
         jw_up: perturbation amplitude
         lat_perturbation_center: perturbation center in latitude
@@ -44,9 +43,10 @@ def zonalwind_2_normalwind_jabw_numpy(
         eta_v_e: vertical eta coordinate at edge center
     Returns: normal wind
     """
-    mask = np.ones((icon_grid.num_edges, icon_grid.num_levels), dtype=bool)
+    mask = np.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :
+        0 : grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1),
+        :,
     ] = False
     edge_lat = np.repeat(np.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
     edge_lon = np.repeat(np.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)

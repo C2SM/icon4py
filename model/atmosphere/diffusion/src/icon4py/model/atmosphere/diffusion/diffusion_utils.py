@@ -12,94 +12,89 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from typing import Tuple
 
-from gt4py.next import as_field
-from gt4py.next.common import Dimension, Field, GridType
-from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import (
+    broadcast,
+    minimum,
+)
 
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
 
 
-# TODO(Magdalena): fix duplication: duplicated from test testutils/utils.py
-def zero_field(grid, *dims: Dimension, dtype=float):
-    shapex = tuple(map(lambda x: grid.size[x], dims))
-    return as_field(dims, xp.zeros(shapex, dtype=dtype))
-
-
-@field_operator
-def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
+@gtx.field_operator
+def _identity_c_k(field: gtx.Field[[CellDim, KDim], float]) -> gtx.Field[[CellDim, KDim], float]:
     return field
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+def copy_field(old_f: gtx.Field[[CellDim, KDim], float], new_f: gtx.Field[[CellDim, KDim], float]):
     _identity_c_k(old_f, out=new_f)
 
 
-@field_operator
-def _identity_e_k(field: Field[[EdgeDim, KDim], float]) -> Field[[EdgeDim, KDim], float]:
+@gtx.field_operator
+def _identity_e_k(field: gtx.Field[[EdgeDim, KDim], float]) -> gtx.Field[[EdgeDim, KDim], float]:
     return field
 
 
-@field_operator
-def _scale_k(field: Field[[KDim], float], factor: float) -> Field[[KDim], float]:
+@gtx.field_operator
+def _scale_k(field: gtx.Field[[KDim], float], factor: float) -> gtx.Field[[KDim], float]:
     return field * factor
 
 
-@program(backend=backend)
-def scale_k(field: Field[[KDim], float], factor: float, scaled_field: Field[[KDim], float]):
+@gtx.program(backend=backend)
+def scale_k(field: gtx.Field[[KDim], float], factor: float, scaled_field: gtx.Field[[KDim], float]):
     _scale_k(field, factor, out=scaled_field)
 
 
-@field_operator
-def _init_zero_v_k() -> Field[[VertexDim, KDim], float]:
+@gtx.field_operator
+def _init_zero_v_k() -> gtx.Field[[VertexDim, KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
-@program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def init_zero_v_k(field: Field[[VertexDim, KDim], float]):
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+def init_zero_v_k(field: gtx.Field[[VertexDim, KDim], float]):
     _init_zero_v_k(out=field)
 
 
-@field_operator
-def _setup_smag_limit(diff_multfac_vn: Field[[KDim], float]) -> Field[[KDim], float]:
+@gtx.field_operator
+def _setup_smag_limit(diff_multfac_vn: gtx.Field[[KDim], float]) -> gtx.Field[[KDim], float]:
     return 0.125 - 4.0 * diff_multfac_vn
 
 
-@field_operator
-def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> Field[[KDim], float]:
+@gtx.field_operator
+def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> gtx.Field[[KDim], float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
     return broadcast(minimum(con, dyn), (KDim,))
 
 
-@field_operator
-def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> Field[[KDim], float]:
+@gtx.field_operator
+def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> gtx.Field[[KDim], float]:
     return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
 
 
-@field_operator
+@gtx.field_operator
 def _setup_fields_for_initial_step(
     k4: float, hdiff_efdt_ratio: float
-) -> Tuple[Field[[KDim], float], Field[[KDim], float]]:
+) -> Tuple[gtx.Field[[KDim], float], gtx.Field[[KDim], float]]:
     diff_multfac_vn = _setup_initial_diff_multfac_vn(k4, hdiff_efdt_ratio)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     return diff_multfac_vn, smag_limit
 
 
-@program(backend=backend)
+@gtx.program(backend=backend)
 def setup_fields_for_initial_step(
     k4: float,
     hdiff_efdt_ratio: float,
-    diff_multfac_vn: Field[[KDim], float],
-    smag_limit: Field[[KDim], float],
+    diff_multfac_vn: gtx.Field[[KDim], float],
+    smag_limit: gtx.Field[[KDim], float],
 ):
     _setup_fields_for_initial_step(k4, hdiff_efdt_ratio, out=(diff_multfac_vn, smag_limit))
 
 
-@field_operator
+@gtx.field_operator
 def _init_diffusion_local_fields_for_regular_timestemp(
     k4: float,
     dyn_substeps: float,
@@ -111,8 +106,8 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: Field[[KDim], float],
-) -> tuple[Field[[KDim], float], Field[[KDim], float], Field[[KDim], float]]:
+    vect_a: gtx.Field[[KDim], float],
+) -> tuple[gtx.Field[[KDim], float], gtx.Field[[KDim], float], gtx.Field[[KDim], float]]:
     diff_multfac_vn = _setup_runtime_diff_multfac_vn(k4, dyn_substeps)
     smag_limit = _setup_smag_limit(diff_multfac_vn)
     enh_smag_fac = _en_smag_fac_for_zero_nshift(
@@ -133,7 +128,7 @@ def _init_diffusion_local_fields_for_regular_timestemp(
     )
 
 
-@program(backend=backend)
+@gtx.program(backend=backend)
 def init_diffusion_local_fields_for_regular_timestep(
     k4: float,
     dyn_substeps: float,
@@ -145,10 +140,10 @@ def init_diffusion_local_fields_for_regular_timestep(
     hdiff_smag_z2: float,
     hdiff_smag_z3: float,
     hdiff_smag_z4: float,
-    vect_a: Field[[KDim], float],
-    diff_multfac_vn: Field[[KDim], float],
-    smag_limit: Field[[KDim], float],
-    enh_smag_fac: Field[[KDim], float],
+    vect_a: gtx.Field[[KDim], float],
+    diff_multfac_vn: gtx.Field[[KDim], float],
+    smag_limit: gtx.Field[[KDim], float],
+    enh_smag_fac: gtx.Field[[KDim], float],
 ):
     _init_diffusion_local_fields_for_regular_timestemp(
         k4,
@@ -171,8 +166,8 @@ def init_diffusion_local_fields_for_regular_timestep(
 
 
 def init_nabla2_factor_in_upper_damping_zone(
-    k_size: int, nrdmax: int32, nshift: int, physical_heights: Field[[KDim], float]
-) -> Field[[KDim], float]:
+    k_size: int, nrdmax: gtx.int32, nshift: int, physical_heights: gtx.Field[[KDim], float]
+) -> gtx.Field[[KDim], float]:
     """
     Calculate diff_multfac_n2w.
 
@@ -196,4 +191,4 @@ def init_nabla2_factor_in_upper_damping_zone(
         )
         ** 4
     )
-    return as_field((KDim,), buffer)
+    return gtx.as_field((KDim,), buffer)

@@ -13,7 +13,7 @@
 
 import numpy as np
 
-from icon4py.model.common.constants import CVD_O_RD, P0REF, RD
+from icon4py.model.common import constants as phy_const
 
 
 def hydrostatic_adjustment_numpy(
@@ -49,6 +49,8 @@ def hydrostatic_adjustment_numpy(
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
-        rho[:, k] = exner[:, k] ** CVD_O_RD * P0REF / (RD * theta_v[:, k])
+        rho[:, k] = (
+            exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
+        )
 
     return rho, exner, theta_v
