@@ -17,7 +17,7 @@ from gt4py.next.common import Dimension, Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, minimum
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
 
@@ -29,12 +29,12 @@ def zero_field(grid, *dims: Dimension, dtype=float):
 
 
 @field_operator
-def _identity_c_k(field: Field[[CellDim, KDim], float]) -> Field[[CellDim, KDim], float]:
+def _identity_c_k(field: Field[[CellDim, KHalfDim], float]) -> Field[[CellDim, KHalfDim], float]:
     return field
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def copy_field(old_f: Field[[CellDim, KDim], float], new_f: Field[[CellDim, KDim], float]):
+def copy_field(old_f: Field[[CellDim, KHalfDim], float], new_f: Field[[CellDim, KHalfDim], float]):
     _identity_c_k(old_f, out=new_f)
 
 

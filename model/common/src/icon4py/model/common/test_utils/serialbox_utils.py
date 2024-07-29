@@ -426,7 +426,7 @@ class IconGridSavepoint(IconSavepoint):
             .with_start_end_indices(VertexDim, vertex_starts, vertex_ends)
             .with_start_end_indices(EdgeDim, edge_starts, edge_ends)
             .with_start_end_indices(CellDim, cell_starts, cell_ends)
-            #.with_start_end_indices(KHalfDim, 0, self.num(KDim) + 1)
+            # .with_start_end_indices(KHalfDim, 0, self.num(KDim) + 1)
             # TODO: why not merge the .with_connectivities below?
             .with_connectivities(
                 {
