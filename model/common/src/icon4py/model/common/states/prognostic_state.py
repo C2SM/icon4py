@@ -27,7 +27,7 @@ class PrognosticState:
     Corresponds to ICON t_nh_prog
     """
 
-    rho: fa.CellKField[float]  # density, rho(nproma, nlev, nblks_c) [m/s]
+    rho: fa.CellKField[float]  # density, rho(nproma, nlev, nblks_c) [kg/m^3]
     w: fa.CellKField[float]  # vertical_wind field, w(nproma, nlevp1, nblks_c) [m/s]
     vn: Field[
         [EdgeDim, KDim], float
