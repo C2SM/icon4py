@@ -36,12 +36,12 @@ def compute_c_lin_e(
     Compute E2C average inverse distance.
 
     Args:
-        edge_cell_length: numpy array, representing a Field[[EdgeDim, E2CDim], float]
-        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[[EdgeDim], float]
-        owner_mask: numpy array, representing a Field[[EdgeDim], bool]boolean field, True for all edges owned by this compute node
+        edge_cell_length: numpy array, representing a Field[Dims[EdgeDim, E2CDim], float]
+        inv_dual_edge_length: inverse dual edge length, numpy array representing a Field[Dims[EdgeDim], float]
+        owner_mask: numpy array, representing a Field[Dims[EdgeDim], bool] boolean field, True for all edges owned by this compute node
         second_boundary_layer_start_index: start index of the 2nd boundary line: c_lin_e is not calculated for the first boundary layer
 
-    Returns: c_lin_e: numpy array  representing Field[[EdgeDim, E2CDim], float]
+    Returns: c_lin_e: numpy array  representing Field[Dims[EdgeDim, E2CDim], float]
 
     """
     c_lin_e_ = edge_cell_length[:, 1] * inv_dual_edge_length

@@ -666,9 +666,9 @@ def test_compute_pg_exdist_dsl(
         pytest.skip("skipping: slow backend")
     pg_exdist_ref = metrics_savepoint.pg_exdist()
     nlev = icon_grid.num_levels
-    k_lev = gtx.as_field((KDim,), np.arange(nlev, dtype=int))
-    pg_edgeidx = zero_field(icon_grid, EdgeDim, KDim, dtype=int)
-    pg_vertidx = zero_field(icon_grid, EdgeDim, KDim, dtype=int)
+    k_lev = gtx.as_field((KDim,), np.arange(nlev, dtype=gtx.int32))
+    pg_edgeidx = zero_field(icon_grid, EdgeDim, KDim, dtype=gtx.int32)
+    pg_vertidx = zero_field(icon_grid, EdgeDim, KDim, dtype=gtx.int32)
     pg_exdist_dsl = zero_field(icon_grid, EdgeDim, KDim)
     z_me = zero_field(icon_grid, EdgeDim, KDim)
     z_aux2 = zero_field(icon_grid, EdgeDim)
@@ -723,12 +723,12 @@ def test_compute_pg_exdist_dsl(
         z_aux2=z_aux2,
         z_me=z_me,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=int),
+        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=gtx.int32),
         k_lev=k_lev,
         pg_exdist_dsl=pg_exdist_dsl,
         horizontal_start=start_edge_nudging,
         horizontal_end=icon_grid.num_edges,
-        vertical_start=int(0),
+        vertical_start=0,
         vertical_end=nlev,
         offset_provider={},
     )
@@ -738,13 +738,13 @@ def test_compute_pg_exdist_dsl(
         z_ifc=z_ifc,
         z_aux2=z_aux2,
         e_owner_mask=grid_savepoint.e_owner_mask(),
-        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=int),
+        flat_idx_max=gtx.as_field((EdgeDim,), flat_idx_np, dtype=gtx.int32),
         e_lev=e_lev,
         k_lev=k_lev,
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         out=(pg_edgeidx, pg_vertidx),
-        domain={EdgeDim: (start_edge_nudging, icon_grid.num_edges), KDim: (int(0), nlev)},
+        domain={EdgeDim: (start_edge_nudging, icon_grid.num_edges), KDim: (0, nlev)},
         offset_provider={
             "E2C": icon_grid.get_offset_provider("E2C"),
             "Koff": icon_grid.get_offset_provider("Koff"),
