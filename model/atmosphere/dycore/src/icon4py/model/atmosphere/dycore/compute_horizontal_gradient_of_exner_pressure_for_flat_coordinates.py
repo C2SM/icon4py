@@ -26,7 +26,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_flat_coordinates(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
-    """Formerly konwn as _mo_solve_nonhydro_stencil_18."""
+    """Formerly known as _mo_solve_nonhydro_stencil_18."""
     z_gradh_exner_wp = inv_dual_edge_length * astype(
         z_exner_ex_pr(E2C[1]) - z_exner_ex_pr(E2C[0]), wpfloat
     )
