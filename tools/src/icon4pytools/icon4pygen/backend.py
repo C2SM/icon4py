@@ -54,7 +54,7 @@ def transform_and_configure_fencil(
             vertical_axis, itir.AxisLiteral
         )
         assert horizontal_axis.value in ["Vertex", "Edge", "Cell"]
-        assert vertical_axis.value == "K"
+        assert vertical_axis.value == "K, KHalf"
 
         closure.domain = itir.FunCall(
             fun=itir.SymRef(id="unstructured_domain"),
