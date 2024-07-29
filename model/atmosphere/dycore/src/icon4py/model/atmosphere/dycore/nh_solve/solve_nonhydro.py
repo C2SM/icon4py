@@ -154,6 +154,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common import field_type_aliases as fa
 import enum
 
 # flake8: noqa
@@ -224,26 +225,26 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    z_gradh_exner: gtx.Field[[EdgeDim, KDim], float]
-    z_alpha: gtx.Field[
-        [EdgeDim, KDim], float
+    z_gradh_exner: fa.EdgeKField[float]
+    z_alpha: fa.EdgeKField[
+        float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_beta: gtx.Field[[CellDim, KDim], float]
-    z_w_expl: gtx.Field[
-        [EdgeDim, KDim], float
+    z_beta: fa.CellKField[float]
+    z_w_expl: fa.EdgeKField[
+        float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_exner_expl: gtx.Field[[CellDim, KDim], float]
-    z_q: gtx.Field[[CellDim, KDim], float]
-    z_contr_w_fl_l: gtx.Field[
-        [EdgeDim, KDim], float
+    z_exner_expl: fa.CellKField[float]
+    z_q: fa.CellKField[float]
+    z_contr_w_fl_l: fa.EdgeKField[
+        float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_rho_e: gtx.Field[[EdgeDim, KDim], float]
-    z_theta_v_e: gtx.Field[[EdgeDim, KDim], float]
-    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float]
-    z_vt_ie: gtx.Field[[EdgeDim, KDim], float]
-    z_graddiv_vn: gtx.Field[[EdgeDim, KDim], float]
-    z_rho_expl: gtx.Field[[CellDim, KDim], float]
-    z_dwdz_dd: gtx.Field[[CellDim, KDim], float]
+    z_rho_e: fa.EdgeKField[float]
+    z_theta_v_e: fa.EdgeKField[float]
+    z_kin_hor_e: fa.EdgeKField[float]
+    z_vt_ie: fa.EdgeKField[float]
+    z_graddiv_vn: fa.EdgeKField[float]
+    z_rho_expl: fa.CellKField[float]
+    z_dwdz_dd: fa.CellKField[float]
 
     @classmethod
     def allocate(cls, grid: grid_def.BaseGrid):
@@ -425,9 +426,9 @@ class SolveNonhydro:
         self.cell_params: Optional[h_grid.CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac: Optional[gtx.Field[[KDim], float]] = None
-        self.scal_divdamp: Optional[gtx.Field[[KDim], float]] = None
-        self._bdy_divdamp: Optional[gtx.Field[[KDim], float]] = None
+        self.enh_divdamp_fac: Optional[fa.KField[float]] = None
+        self.scal_divdamp: Optional[fa.KField[float]] = None
+        self._bdy_divdamp: Optional[fa.KField[float]] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
@@ -443,7 +444,7 @@ class SolveNonhydro:
         vertical_params: v_grid.VerticalGridParams,
         edge_geometry: h_grid.EdgeParams,
         cell_geometry: h_grid.CellParams,
-        owner_mask: gtx.Field[[CellDim], bool],
+        owner_mask: fa.CellField[bool],
     ):
         """
         Initialize NonHydrostatic granule with configuration.

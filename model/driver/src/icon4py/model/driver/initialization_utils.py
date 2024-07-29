@@ -23,7 +23,7 @@ import numpy as np
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import constants as phy_const
+from icon4py.model.common import constants as phy_const, field_type_aliases as fa
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
@@ -599,9 +599,7 @@ def read_geometry_fields(
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
-) -> tuple[
-    h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGridParams, gtx.Field[[CellDim], bool]
-]:
+) -> tuple[h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGridParams, fa.CellField[bool]]:
     """
     Read fields containing grid properties.
 

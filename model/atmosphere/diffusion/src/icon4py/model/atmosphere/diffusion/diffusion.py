@@ -18,6 +18,7 @@ import dataclasses
 import enum
 from typing import Final, Optional
 
+from icon4py.model.common import field_type_aliases as fa
 import gt4py.next as gtx
 
 
@@ -335,7 +336,7 @@ class Diffusion:
         self.interpolation_state: diffusion_states.DiffusionInterpolationState = None
         self.metric_state: diffusion_states.DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
-        self.diff_multfac_n2w: gtx.Field[[KDim], float] = None
+        self.diff_multfac_n2w: fa.KField[float] = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
@@ -525,8 +526,8 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
-        diff_multfac_vn: gtx.Field[[KDim], float],
-        smag_limit: gtx.Field[[KDim], float],
+        diff_multfac_vn: fa.KField[float],
+        smag_limit: fa.KField[float],
         smag_offset: float,
     ):
         """

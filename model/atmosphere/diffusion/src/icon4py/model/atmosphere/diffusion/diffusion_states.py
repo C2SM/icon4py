@@ -15,12 +15,12 @@ import functools
 
 import gt4py.next as gtx
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import (
     C2E2CODim,
     CECDim,
     CEDim,
     CellDim,
-    EdgeDim,
     KDim,
     V2EDim,
     VertexDim,
@@ -32,32 +32,27 @@ class DiffusionDiagnosticState:
     """Represents the diagnostic fields needed in diffusion."""
 
     # fields for 3D elements in turbdiff
-    hdef_ic: gtx.Field[
-        [CellDim, KDim], float
-    ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
-    div_ic: gtx.Field[
-        [CellDim, KDim], float
+    hdef_ic: fa.CellKField[float]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
+    div_ic: fa.CellKField[
+        float
     ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
-    dwdx: gtx.Field[
-        [CellDim, KDim], float
+    dwdx: fa.CellKField[
+        float
     ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
-
-    dwdy: gtx.Field[
-        [CellDim, KDim], float
-    ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
+    dwdy: fa.CellKField[float]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
 
 
 @dataclasses.dataclass(frozen=True)
 class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
-    theta_ref_mc: gtx.Field[[CellDim, KDim], float]
-    wgtfac_c: gtx.Field[
-        [CellDim, KDim], float
+    theta_ref_mc: fa.CellKField[float]
+    wgtfac_c: fa.CellKField[
+        float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
-    mask_hdiff: gtx.Field[[CellDim, KDim], bool]
+    mask_hdiff: fa.CellKField[bool]
     zd_vertoffset: gtx.Field[[CECDim, KDim], gtx.int32]
-    zd_diffcoef: gtx.Field[[CellDim, KDim], float]
+    zd_diffcoef: fa.CellKField[float]
     zd_intcoef: gtx.Field[[CECDim, KDim], float]
 
 
@@ -84,10 +79,10 @@ class DiffusionInterpolationState:
     geofac_grg_y: gtx.Field[
         [CellDim, C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
-    nudgecoeff_e: gtx.Field[[EdgeDim], float]  # Nudgeing coeffients for edges
+    nudgecoeff_e: fa.EdgeField[float]  # Nudgeing coeffients for edges
 
     @functools.cached_property
-    def geofac_n2s_c(self) -> gtx.Field[[CellDim], float]:
+    def geofac_n2s_c(self) -> fa.CellField[float]:
         return gtx.as_field((CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property
