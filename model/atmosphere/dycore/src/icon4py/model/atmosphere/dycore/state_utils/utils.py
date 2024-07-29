@@ -11,14 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import numpy as np
-from gt4py.next import as_field
-from gt4py.next.common import Dimension
-from gt4py.next.ffront.decorator import field_operator, program
+import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import (
     abs,
     broadcast,
-    int32,
     maximum,
 )
 
@@ -28,38 +24,17 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-def indices_field(dim: Dimension, grid, is_halfdim, dtype=int):
-    shapex = grid.size[dim] + 1 if is_halfdim else grid.size[dim]
-    return as_field((dim,), np.arange(shapex, dtype=dtype))
-
-
-def zero_field(grid, *dims: Dimension, is_halfdim=False, dtype=float):
-    shapex = tuple(map(lambda x: grid.size[x], dims))
-    if is_halfdim:
-        assert len(shapex) == 2
-        shapex = (shapex[0], shapex[1] + 1)
-    return as_field(dims, np.zeros(shapex, dtype=dtype))
-
-
-def _allocate(*dims: Dimension, grid, is_halfdim=False, dtype=float):
-    return zero_field(grid, *dims, is_halfdim=is_halfdim, dtype=dtype)
-
-
-def _allocate_indices(*dims: Dimension, grid, is_halfdim=False, dtype=int32):
-    return indices_field(*dims, grid=grid, is_halfdim=is_halfdim, dtype=dtype)
-
-
-@field_operator
+@gtx.field_operator
 def _scale_k(field: fa.KField[float], factor: float) -> fa.KField[float]:
     return field * factor
 
 
-@program(backend=backend)
+@gtx.program(backend=backend)
 def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[float]):
     _scale_k(field, factor, out=scaled_field)
 
 
-@field_operator
+@gtx.field_operator
 def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
     tuple[
         fa.EdgeKField[wpfloat],
@@ -74,17 +49,17 @@ def _broadcast_zero_to_three_edge_kdim_fields_wp() -> (
     )
 
 
-@field_operator
+@gtx.field_operator
 def _calculate_bdy_divdamp(
     scal_divdamp: fa.KField[float], nudge_max_coeff: float, dbl_eps: float
 ) -> fa.KField[float]:
     return 0.75 / (nudge_max_coeff + dbl_eps) * abs(scal_divdamp)
 
 
-@field_operator
+@gtx.field_operator
 def _calculate_scal_divdamp(
     enh_divdamp_fac: fa.KField[float],
-    divdamp_order: int32,
+    divdamp_order: gtx.int32,
     mean_cell_area: float,
     divdamp_fac_o2: float,
 ) -> fa.KField[float]:
@@ -96,10 +71,10 @@ def _calculate_scal_divdamp(
     return -enh_divdamp_fac * mean_cell_area**2
 
 
-@field_operator
+@gtx.field_operator
 def _calculate_divdamp_fields(
     enh_divdamp_fac: fa.KField[float],
-    divdamp_order: int32,
+    divdamp_order: gtx.int32,
     mean_cell_area: float,
     divdamp_fac_o2: float,
     nudge_max_coeff: float,
@@ -112,11 +87,11 @@ def _calculate_divdamp_fields(
     return (scal_divdamp, bdy_divdamp)
 
 
-@field_operator
+@gtx.field_operator
 def _compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float) -> fa.KField[float]:
     return 1.0 / (1.0 + dtime * rayleigh_w)
 
 
-@program(backend=backend)
+@gtx.program(backend=backend)
 def compute_z_raylfac(rayleigh_w: fa.KField[float], dtime: float, z_raylfac: fa.KField[float]):
     _compute_z_raylfac(rayleigh_w, dtime, out=z_raylfac)

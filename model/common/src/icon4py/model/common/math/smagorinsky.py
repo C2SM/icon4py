@@ -11,15 +11,19 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next import field_operator, program
-from gt4py.next.ffront.fbuiltins import broadcast, maximum, minimum
+import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import (
+    broadcast,
+    maximum,
+    minimum,
+)
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, Koff
 from icon4py.model.common.settings import backend
 
 
-@field_operator
+@gtx.field_operator
 def _en_smag_fac_for_zero_nshift(
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,
@@ -49,7 +53,7 @@ def _en_smag_fac_for_zero_nshift(
     return enh_smag_fac
 
 
-@program(backend=backend)
+@gtx.program(backend=backend)
 def en_smag_fac_for_zero_nshift(
     vect_a: fa.KField[float],
     hdiff_smag_fac: float,

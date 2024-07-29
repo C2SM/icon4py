@@ -18,10 +18,10 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
     fused_velocity_advection_stencil_1_to_7,
 )
-from icon4py.model.atmosphere.dycore.state_utils.utils import indices_field
 from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from .test_compute_contravariant_correction import compute_contravariant_correction_numpy
 from .test_compute_horizontal_advection_term_for_vertical_velocity import (
@@ -231,7 +231,7 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
         z_v_grad_w = zero_field(grid, EdgeDim, KDim)
         wgtfacq_e = random_field(grid, EdgeDim, KDim)
 
-        k = indices_field(KDim, grid, is_halfdim=True, dtype=int32)
+        k = field_alloc.allocate_indices(KDim, grid=grid, is_halfdim=True)
 
         edge = zero_field(grid, EdgeDim, dtype=int32)
         for e in range(grid.num_edges):
