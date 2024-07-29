@@ -550,6 +550,7 @@ class Diffusion:
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
         )
+        self._sync_edge_fields(prognostic_state)
 
     def _sync_cell_fields(self, prognostic_state):
         """
@@ -737,8 +738,10 @@ class Diffusion:
             offset_provider=offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
-        log.debug("communication of prognistic.vn : start")
-        handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
+        
+        # TODO(kotsaloscv): Remove it from here since I have added _sync_edge_fields?
+        # log.debug("communication of prognistic.vn : start")
+        # handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -846,5 +849,7 @@ class Diffusion:
             offset_provider={},
         )
         log.debug("running stencil 16 (update_theta_and_exner): end")
-        wait(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
-        log.debug("communication of prognogistic.vn - end")
+
+        # TODO(kotsaloscv): Remove it from here since I have added _sync_edge_fields?
+        # wait(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
+        # log.debug("communication of prognogistic.vn - end")

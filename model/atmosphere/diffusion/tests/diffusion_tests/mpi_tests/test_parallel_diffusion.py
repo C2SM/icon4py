@@ -36,7 +36,7 @@ from ..utils import (
 @pytest.mark.mpi
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT])
 @pytest.mark.parametrize("ndyn_substeps", [2])
-@pytest.mark.parametrize("linit", [True, ])
+@pytest.mark.parametrize("linit", [True, False])
 def test_parallel_diffusion(
     experiment,
     step_date_init,
