@@ -29,6 +29,7 @@ def dace_orchestration() -> bool:
 
 
 if dace_orchestration():
+    import os
     import sys
     from collections.abc import Sequence
     from dace.frontend.python.common import SDFGConvertible
@@ -94,7 +95,7 @@ def orchestration(method=True):
                 compiled_sdfg = compiled_sdfgs[unique_id]['compiled_sdfg']
 
                 with dace.config.temporary_config():
-                    configure_dace_temp_env()
+                    configure_dace_temp_env(exchange_obj)
 
                     updated_args = mod_args_for_dace_structures(fuse_func, args)
                     updated_kwargs = {**kwargs, **dace_specific_kwargs(exchange_obj, grid.offset_providers)}
@@ -184,44 +185,57 @@ if dace_orchestration():
 
         compiled_sdfgs[unique_id] = {}
 
-        # Replace the manually placed halo exchanges with dummy sdfgs
-        tmp_exchange_and_wait = exchange_obj.exchange_and_wait
-        tmp_exchange = exchange_obj.exchange
-        exchange_obj.exchange_and_wait = DummyNestedSDFG()
-        exchange_obj.exchange = DummyNestedSDFG()
-
         with dace.config.temporary_config():
-            device_type = configure_dace_temp_env()
+            device_type = configure_dace_temp_env(exchange_obj)
 
             compiled_sdfgs[unique_id]['dace_program'] = dace.program(auto_optimize=False,
-                                                                    device=dev_type_from_gt4py_to_dace(device_type),
-                                                                    distributed_compilation=False)(fuse_func)
+                                                                     device=dev_type_from_gt4py_to_dace(device_type),
+                                                                     distributed_compilation=False)(fuse_func)
             dace_program = compiled_sdfgs[unique_id]['dace_program']
 
-            if self_name:
-                self = compile_time_args_kwargs.pop(self_name)
-                compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(self, **compile_time_args_kwargs, simplify=False, validate=True)
+            default_build_folder = os.path.join('.dacecache', f'MPI_rank_{exchange_obj.my_rank()}', f'{fuse_func.__module__}.{fuse_func.__name__}'.replace('.','_'))
+            if os.path.exists(os.path.join(default_build_folder, f'program.sdfg')):
+                if self_name:
+                    self = compile_time_args_kwargs.pop(self_name)
+                    compiled_sdfgs[unique_id]['sdfg'], _ = dace_program.load_sdfg(os.path.join(default_build_folder, f'program.sdfg'), self, **compile_time_args_kwargs)
+                    compiled_sdfgs[unique_id]['compiled_sdfg'], _ = dace_program.load_precompiled_sdfg(default_build_folder, self, **compile_time_args_kwargs)
+                else:
+                    compiled_sdfgs[unique_id]['sdfg'], _ = dace_program.load_sdfg(os.path.join(default_build_folder, f'program.sdfg'), **compile_time_args_kwargs)
+                    compiled_sdfgs[unique_id]['compiled_sdfg'], _ = dace_program.load_precompiled_sdfg(default_build_folder, **compile_time_args_kwargs)
             else:
-                compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(**compile_time_args_kwargs, simplify=False, validate=True)
-            sdfg = compiled_sdfgs[unique_id]['sdfg']
+                # Replace the manually placed halo exchanges with dummy sdfgs
+                tmp_exchange_and_wait = exchange_obj.exchange_and_wait
+                tmp_exchange = exchange_obj.exchange
+                exchange_obj.exchange_and_wait = DummyNestedSDFG()
+                exchange_obj.exchange = DummyNestedSDFG()
 
-            # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
-            add_halo_exchanges(sdfg, exchange_obj, offset_providers, unique_id)
-            
-            if simplify_fused_sdfg:
-                sdfg.simplify(validate=True)
+                if self_name:
+                    self = compile_time_args_kwargs.pop(self_name)
+                    compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(self, **compile_time_args_kwargs, simplify=False, validate=True)
+                else:
+                    compiled_sdfgs[unique_id]['sdfg'] = dace_program.to_sdfg(**compile_time_args_kwargs, simplify=False, validate=True)
+                sdfg = compiled_sdfgs[unique_id]['sdfg']
+                
+                if sdfg.name != f"{fuse_func.__module__}.{fuse_func.__name__}".replace('.','_'):
+                    raise ValueError("fused_SDFG.name != {fuse_func.__module__}.{fuse_func.__name__}")
 
-            with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg_:
-                # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
-                compiled_sdfgs[unique_id]['compiled_sdfg'] = sdfg_.compile(validate=dace_program.validate)
+                # Be sure that no simplification/optimization in the fused SDFG is done before placing the halo exchanges -need for sequential placement of the nested SDFGs-
+                add_halo_exchanges(sdfg, exchange_obj, offset_providers, unique_id)
+                
+                if simplify_fused_sdfg:
+                    sdfg.simplify(validate=True)
 
-        # Restore the original exchange methods
-        exchange_obj.exchange_and_wait = tmp_exchange_and_wait
-        exchange_obj.exchange = tmp_exchange
+                with hooks.invoke_sdfg_call_hooks(sdfg) as sdfg_:
+                    # TODO(kotsaloscv): Re-think the distributed compilation -all args need to be type annotated and not dace.compiletime-
+                    compiled_sdfgs[unique_id]['compiled_sdfg'] = sdfg_.compile(validate=dace_program.validate)
+
+                # Restore the original exchange methods
+                exchange_obj.exchange_and_wait = tmp_exchange_and_wait
+                exchange_obj.exchange = tmp_exchange
 
 
-    def configure_dace_temp_env():
-        dace.config.Config.set("cache", value="unique") # no caching or clashes can happen between different processes (MPI)
+    def configure_dace_temp_env(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange]) -> core_defs.DeviceType:
+        dace.config.Config.set("default_build_folder", value=os.path.join('.dacecache', f'MPI_rank_{exchange_obj.my_rank()}'))
         dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
         dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
