@@ -34,6 +34,7 @@ from .utils import (
     diff_multfac_vn_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
+    compare_dace_orchestration_multiple_steps,
 )
 
 
@@ -358,6 +359,9 @@ def test_run_diffusion_multiple_steps(
     if not dace_orchestration():
         raise pytest.skip("This test is only executed for `--backend=dace_cpu_noopt_orch`")
 
+    ######################################################################
+    # Diffusion initialization
+    ######################################################################
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
@@ -434,35 +438,8 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # Verify the results
     ######################################################################
-    div_ic_dace_non_orch = diagnostic_state_dace_non_orch.div_ic.asnumpy()
-    hdef_ic_dace_non_orch = diagnostic_state_dace_non_orch.hdef_ic.asnumpy()
-    dwdx_dace_non_orch = diagnostic_state_dace_non_orch.dwdx.asnumpy()
-    dwdy_dace_non_orch = diagnostic_state_dace_non_orch.dwdy.asnumpy()
-
-    div_ic_dace_orch = diagnostic_state_dace_orch.div_ic.asnumpy()
-    hdef_ic_dace_orch = diagnostic_state_dace_orch.hdef_ic.asnumpy()
-    dwdx_dace_orch = diagnostic_state_dace_orch.dwdx.asnumpy()
-    dwdy_dace_orch = diagnostic_state_dace_orch.dwdy.asnumpy()
-
-    assert np.allclose(div_ic_dace_non_orch, div_ic_dace_orch)
-    assert np.allclose(hdef_ic_dace_non_orch, hdef_ic_dace_orch)
-    assert np.allclose(dwdx_dace_non_orch, dwdx_dace_orch)
-    assert np.allclose(dwdy_dace_non_orch, dwdy_dace_orch)
-
-    w_dace_orch = prognostic_state_dace_non_orch.w.asnumpy()
-    theta_v_dace_orch = prognostic_state_dace_non_orch.theta_v.asnumpy()
-    exner_dace_orch = prognostic_state_dace_non_orch.exner.asnumpy()
-    vn_dace_orch = prognostic_state_dace_non_orch.vn.asnumpy()
-
-    w_dace_non_orch = prognostic_state_dace_orch.w.asnumpy()
-    theta_v_dace_non_orch = prognostic_state_dace_orch.theta_v.asnumpy()
-    exner_dace_non_orch = prognostic_state_dace_orch.exner.asnumpy()
-    vn_dace_non_orch = prognostic_state_dace_orch.vn.asnumpy()
-
-    assert np.allclose(w_dace_non_orch, w_dace_orch)
-    assert np.allclose(theta_v_dace_non_orch, theta_v_dace_orch)
-    assert np.allclose(exner_dace_non_orch, exner_dace_orch)
-    assert np.allclose(vn_dace_non_orch, vn_dace_orch)
+    compare_dace_orchestration_multiple_steps(diagnostic_state_dace_non_orch, diagnostic_state_dace_orch)
+    compare_dace_orchestration_multiple_steps(prognostic_state_dace_non_orch, prognostic_state_dace_orch)
 
 
 @pytest.mark.datatest
