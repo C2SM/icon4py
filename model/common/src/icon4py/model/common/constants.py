@@ -76,6 +76,9 @@ DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 # TODO (magdalena) not a constant, this is a default config parameter
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 
+#: average earth radius in [m]
+EARTH_RADIUS: Final[wpfloat] = 6.371229e6
+
 
 class RayleighType(enum.IntEnum):
     #: classical Rayleigh damping, which makes use of a reference state.
