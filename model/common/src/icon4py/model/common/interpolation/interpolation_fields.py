@@ -83,7 +83,7 @@ def compute_geofac_rot(
     dual_edge_length: fa.EdgeField[ta.wpfloat],
     edge_orientation: gtx.Field[[VertexDim, V2EDim], ta.wpfloat],
     dual_area: fa.VertexField[ta.wpfloat],
-    owner_mask: fa.VertexField[ bool],
+    owner_mask: fa.VertexField[bool],
 ) -> gtx.Field[[VertexDim, V2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for curl.

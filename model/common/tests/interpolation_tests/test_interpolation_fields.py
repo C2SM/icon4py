@@ -104,7 +104,9 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
     geofac_rot = test_helpers.zero_field(mesh, dims.VertexDim, dims.V2EDim)
     horizontal_start = gtx.int32(
-        icon_grid.get_start_index(dims.VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1)
+        icon_grid.get_start_index(
+            dims.VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1
+        )
     )
     compute_geofac_rot(
         dual_edge_length,
@@ -173,8 +175,12 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         c2e2c,
         horizontal_start,
     )
-    assert test_helpers.dallclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7)
-    assert test_helpers.dallclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(
+        geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7
+    )
+    assert test_helpers.dallclose(
+        geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7
+    )
 
 
 @pytest.mark.datatest
