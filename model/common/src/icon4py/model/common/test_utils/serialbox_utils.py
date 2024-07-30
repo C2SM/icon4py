@@ -354,7 +354,7 @@ class IconGridSavepoint(IconSavepoint):
 
     def khalf2k(self):
         k_lev_ls = [0, 1]
-        nlev = self.num(KDim)
+        nlev = self.num(dims.KDim)
         for k in range(nlev * 2):
             k_lev_ls.append(k_lev_ls[k] + 1)
         khalf2k_table = np.asarray(
@@ -732,7 +732,7 @@ class MetricSavepoint(IconSavepoint):
 
     def wgtfac_c_khalf(self):
         return self._get_field(
-            "wgtfac_c", CellDim, KHalfDim
+            "wgtfac_c", dims.CellDim, dims.KHalfDim
         )  # TODO: temporary duplication to account for KhalfDin only being in diffusion
 
     def wgtfac_e(self):
@@ -796,7 +796,7 @@ class IconDiffusionInitSavepoint(IconSavepoint):
     def dwdx(self):
         return self._get_field("dwdx", dims.CellDim, dims.KHalfDim)  # TODO: KHalfDim
 
-    @IconSavepoint.optionally_registered(dims.CellDim, KHalfDim)
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KHalfDim)
     def dwdy(self):
         return self._get_field("dwdy", dims.CellDim, dims.KHalfDim)  # TODO: KHalfDim
 
@@ -1074,10 +1074,10 @@ class IconDiffusionExitSavepoint(IconSavepoint):
         return self._get_field("x_w", dims.CellDim, dims.KDim)
 
     def dwdx(self):
-        return self._get_field("x_dwdx", CellDim, dims.KHalfDim)  # TODO: KHalfDim
+        return self._get_field("x_dwdx", dims.CellDim, dims.KHalfDim)  # TODO: KHalfDim
 
     def dwdy(self):
-        return self._get_field("x_dwdy", CellDim, dims.KHalfDim)  # TODO: KHalfDim
+        return self._get_field("x_dwdy", dims.CellDim, dims.KHalfDim)  # TODO: KHalfDim
 
     def exner(self):
         return self._get_field("x_exner", dims.CellDim, dims.KDim)
@@ -1086,10 +1086,10 @@ class IconDiffusionExitSavepoint(IconSavepoint):
         return self._get_field("x_z_temp", dims.CellDim, dims.KDim)
 
     def div_ic(self):
-        return self._get_field("x_div_ic", CellDim, dims.KHalfDim)  # TODO: KHalfDim
+        return self._get_field("x_div_ic", dims.CellDim, dims.KHalfDim)  # TODO: KHalfDim
 
     def hdef_ic(self):
-        return self._get_field("x_hdef_ic", CellDim, dims.KHalfDim)  # TODO: KHalfDim
+        return self._get_field("x_hdef_ic", dims.CellDim, dims.KHalfDim)  # TODO: KHalfDim
 
 
 class IconNonhydroExitSavepoint(IconSavepoint):
