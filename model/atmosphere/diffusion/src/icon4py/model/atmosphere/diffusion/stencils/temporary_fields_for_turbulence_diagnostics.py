@@ -15,19 +15,20 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _temporary_fields_for_turbulence_diagnostics(
-    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    kh_smag_ec: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     kh_smag_ec_wp, diff_multfac_smag_wp = astype((kh_smag_ec, diff_multfac_smag), wpfloat)
 
     kh_c_wp = neighbor_sum(kh_smag_ec_wp(C2E) * e_bln_c_s(C2CE), axis=C2EDim) / diff_multfac_smag_wp
@@ -37,13 +38,13 @@ def _temporary_fields_for_turbulence_diagnostics(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def temporary_fields_for_turbulence_diagnostics(
-    kh_smag_ec: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    kh_smag_ec: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
     geofac_div: Field[[CEDim], wpfloat],
     diff_multfac_smag: Field[[KDim], vpfloat],
-    kh_c: Field[[CellDim, KDim], vpfloat],
-    div: Field[[CellDim, KDim], vpfloat],
+    kh_c: fa.CellKField[vpfloat],
+    div: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

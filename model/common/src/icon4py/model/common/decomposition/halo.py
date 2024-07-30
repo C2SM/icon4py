@@ -25,7 +25,6 @@ from icon4py.model.common.settings import xp
 log = logging.getLogger(__name__)
 
 
-
 # TODO (@halungge) do we need three of those: one for each dimension?
 class DecompositionFlag(enum.IntEnum):
     #: cell is owned by this rank
@@ -43,8 +42,8 @@ class HaloGenerator:
         self,
         run_properties: defs.ProcessProperties,
         rank_mapping: xp.ndarray,
-        connectivities:dict[gtx.Dimension, xp.ndarray],
-        num_levels:int,
+        connectivities: dict[gtx.Dimension, xp.ndarray],
+        num_levels: int,
     ):
         """
 
@@ -62,15 +61,14 @@ class HaloGenerator:
     @property
     def face_face_connectivity(self):
         return self._connectivity(dims.C2E2CDim)
-    
+
     @property
     def edge_face_connectivity(self):
         return self._connectivity(dims.E2CDim)
-    
+
     @property
     def face_edge_connectivity(self):
         return self._connectivity(dims.C2EDim)
-
 
     @property
     def node_edge_connectivity(self):
@@ -79,11 +77,11 @@ class HaloGenerator:
     @property
     def node_face_connectivity(self):
         return self._connectivity(dims.V2CDim)
-    
-    @property   
+
+    @property
     def face_node_connectivity(self):
         return self._connectivity(dims.C2VDim)
-    
+
     def _validate(self):
         assert self._mapping.ndim == 1
         # the decomposition should match the communicator size
@@ -97,7 +95,9 @@ class HaloGenerator:
             conn_table = self._connectivities[dim]
             return conn_table
         except KeyError as err:
-            raise exceptions.MissingConnectivity(f"Connectivity for offset {dim} is not available") from err
+            raise exceptions.MissingConnectivity(
+                f"Connectivity for offset {dim} is not available"
+            ) from err
 
     def next_halo_line(self, cell_line: xp.ndarray, depot=None):
         """Returns the global indices of the next halo line.
@@ -130,8 +130,6 @@ class HaloGenerator:
 
     def find_edge_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
-
-
 
     def find_vertex_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)

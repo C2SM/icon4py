@@ -211,7 +211,6 @@ class GridFile:
         """
         try:
             # use python slice? 2D fields
-            #           (horizontal, vertical) not present in grid file
             #           (sparse, horizontal)
             variable = self._dataset.variables[name]
             self._log.debug(f"reading {name}: {variable}")
@@ -257,10 +256,9 @@ class GridManager:
 
     def __init__(
         self,
-        
         transformation: IndexTransformation,
-        grid_file: Union[pathlib.Path,str],
-        config: v_grid.VerticalGridConfig, # TODO (@halungge) remove
+        grid_file: Union[pathlib.Path, str],
+        config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove
         run_properties: decomposition.ProcessProperties = decomposition.SingleNodeProcessProperties(),
     ):
         self._log = logging.getLogger(__name__)
@@ -318,7 +316,9 @@ class GridManager:
             GridFile.GridRefinementName.START_INDEX_VERTICES,
         ]
         start_indices = {
-            dim: self._get_index_field(start_index_dims[dim_i], transpose=False, dtype=gtx.int32)[_CHILD_DOM]
+            dim: self._get_index_field(start_index_dims[dim_i], transpose=False, dtype=gtx.int32)[
+                _CHILD_DOM
+            ]
             for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
         }
 
@@ -328,8 +328,9 @@ class GridManager:
             GridFile.GridRefinementName.END_INDEX_VERTICES,
         ]
         end_indices = {
-            dim: self._get_index_field(end_index_dims[dim_i], transpose=False, apply_offset=False,
-                                       dtype=gtx.int32)[_CHILD_DOM]
+            dim: self._get_index_field(
+                end_index_dims[dim_i], transpose=False, apply_offset=False, dtype=gtx.int32
+            )[_CHILD_DOM]
             for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
         }
 
@@ -342,8 +343,12 @@ class GridManager:
     ):
         (cells_on_node, edges_on_node, vertices_on_node) = (
             (
-                decomposition_info.global_index(dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL),
-                decomposition_info.global_index(dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL),
+                decomposition_info.global_index(
+                    dims.CellDim, decomposition.DecompositionInfo.EntryType.ALL
+                ),
+                decomposition_info.global_index(
+                    dims.EdgeDim, decomposition.DecompositionInfo.EntryType.ALL
+                ),
                 decomposition_info.global_index(
                     dims.VertexDim, decomposition.DecompositionInfo.EntryType.ALL
                 ),
@@ -375,7 +380,9 @@ class GridManager:
             },
         )
 
-    def read_coordinates(self, decomposition_info: Optional[decomposition.DecompositionInfo] = None):
+    def read_coordinates(
+        self, decomposition_info: Optional[decomposition.DecompositionInfo] = None
+    ):
         return self._read(
             decomposition_info,
             {
@@ -408,19 +415,27 @@ class GridManager:
         except KeyError:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
-    def _from_grid_dataset(self, grid, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
 
-        e2c2v = self._construct_diamond_vertices(grid.connectivities[dims.E2VDim],
-                                                 grid.connectivities[dims.C2VDim],
-                                                 grid.connectivities[dims.E2CDim])
-        e2c2e = self._construct_diamond_edges(grid.connectivities[dims.E2CDim],
-                                              grid.connectivities[dims.C2EDim])
+    def _from_grid_dataset(self, grid, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
+        e2c2v = self._construct_diamond_vertices(
+            grid.connectivities[dims.E2VDim],
+            grid.connectivities[dims.C2VDim],
+            grid.connectivities[dims.E2CDim],
+        )
+        e2c2e = self._construct_diamond_edges(
+            grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
+        )
         e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
-        c2e2c2e = self._construct_triangle_edges(grid.connectivities[dims.C2E2CDim],
-                                                 grid.connectivities[dims.C2EDim])
-        c2e2c0 = np.column_stack((np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
-                                  (grid.connectivities[dims.C2E2CDim])))
+        c2e2c2e = self._construct_triangle_edges(
+            grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
+        )
+        c2e2c0 = np.column_stack(
+            (
+                np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
+                (grid.connectivities[dims.C2E2CDim]),
+            )
+        )
 
         grid.with_connectivities(
             {
@@ -438,7 +453,6 @@ class GridManager:
                 dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
             }
         )
-        
 
         return grid
 
@@ -449,17 +463,17 @@ class GridManager:
             refine_ctrl,
             refine_ctrl_max,
         ) = self._read_grid_refinement_information(self._dataset)
-        grid.with_start_end_indices(dims.CellDim, start_indices[dims.CellDim],
-                                    end_indices[dims.CellDim]).with_start_end_indices(dims.EdgeDim,
-                                                                                      start_indices[
-                                                                                          dims.EdgeDim],
-                                                                                      end_indices[
-                                                                                          dims.EdgeDim]).with_start_end_indices(
-            dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim])
+        grid.with_start_end_indices(
+            dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim]
+        ).with_start_end_indices(
+            dims.EdgeDim, start_indices[dims.EdgeDim], end_indices[dims.EdgeDim]
+        ).with_start_end_indices(
+            dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim]
+        )
 
     def _construct_grid(self, on_gpu: bool, limited_area: bool) -> icon_grid.IconGrid:
         grid = self._initialize_global(limited_area, on_gpu)
-        
+
         global_connectivities = {
             dims.C2E2CDim: self._reader.int_field(GridFile.ConnectivityName.C2E2C),
             dims.C2EDim: self._reader.int_field(GridFile.ConnectivityName.C2E),
@@ -474,33 +488,48 @@ class GridManager:
         grid.with_connectivities(global_connectivities)
         self._add_start_end_indices(grid)
         return self._compute_derived_connectivities(grid)
-        #return self._add_derived_connectivities(grid)
-        if self._run_properties.single_node(): 
+        # return self._add_derived_connectivities(grid)
+        if self._run_properties.single_node():
             grid.with_connectivities(global_connectivities)
         else:
             decompose = halo.SimpleMetisDecomposer()
             cells_to_rank_mapping = decompose(
-                global_connectivities[dims.C2E2CDim], self._run_properties.comm_size)
-            halo_constructor = halo.HaloGenerator(self._run_properties, cells_to_rank_mapping,
-                                                  global_connectivities, self._config.num_levels)
+                global_connectivities[dims.C2E2CDim], self._run_properties.comm_size
+            )
+            halo_constructor = halo.HaloGenerator(
+                self._run_properties,
+                cells_to_rank_mapping,
+                global_connectivities,
+                self._config.num_levels,
+            )
             decomposition_info = halo_constructor.construct_decomposition_info()
-           
+
             local_connectivities = {
-                offset.target[1]: construct_local_connectivity(offset, decomposition_info, global_connectivities[offset])
+                offset.target[1]: construct_local_connectivity(
+                    offset, decomposition_info, global_connectivities[offset]
+                )
                 for offset, conn in global_connectivities.keys()
             }
             grid.with_connectivities(local_connectivities)
-        e2c2v = self._construct_diamond_vertices(grid.connectivities[dims.E2VDim],
-                                                 grid.connectivities[dims.C2VDim],
-                                                 grid.connectivities[dims.E2CDim])
-        e2c2e = self._construct_diamond_edges(grid.connectivities[dims.E2CDim],
-                                              grid.connectivities[dims.C2EDim])
+        e2c2v = self._construct_diamond_vertices(
+            grid.connectivities[dims.E2VDim],
+            grid.connectivities[dims.C2VDim],
+            grid.connectivities[dims.E2CDim],
+        )
+        e2c2e = self._construct_diamond_edges(
+            grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
+        )
         e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
-        c2e2c2e = self._construct_triangle_edges(grid.connectivities[dims.C2E2CDim],
-                                                 grid.connectivities[dims.C2EDim])
-        c2e2c0 = np.column_stack((np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
-                                  (grid.connectivities[dims.C2E2CDim])))
+        c2e2c2e = self._construct_triangle_edges(
+            grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
+        )
+        c2e2c0 = np.column_stack(
+            (
+                np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
+                (grid.connectivities[dims.C2E2CDim]),
+            )
+        )
         grid.with_connectivities(
             {
                 dims.C2E2CODim: c2e2c0,
@@ -517,13 +546,13 @@ class GridManager:
             refine_ctrl,
             refine_ctrl_max,
         ) = self._read_grid_refinement_information(self._dataset)
-        grid.with_start_end_indices(dims.CellDim, start_indices[dims.CellDim],
-                                    end_indices[dims.CellDim]).with_start_end_indices(dims.EdgeDim,
-                                                                                      start_indices[
-                                                                                          dims.EdgeDim],
-                                                                                      end_indices[
-                                                                                          dims.EdgeDim]).with_start_end_indices(
-            dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim])
+        grid.with_start_end_indices(
+            dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim]
+        ).with_start_end_indices(
+            dims.EdgeDim, start_indices[dims.EdgeDim], end_indices[dims.EdgeDim]
+        ).with_start_end_indices(
+            dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim]
+        )
 
         grid.update_size_connectivities(
             {
@@ -533,7 +562,7 @@ class GridManager:
             }
         )
         return grid
-    
+
     def get_size(self, dim: gtx.Dimension):
         if dim == dims.VertexDim:
             return self._grid.config.num_vertices
@@ -545,33 +574,37 @@ class GridManager:
             self._log.warning(f"cannot determine size of unknown dimension {dim}")
             raise IconGridError(f"Unknown dimension {dim}")
 
-    def _get_index_field(self, field: GridFileName, transpose=True, apply_offset=True,
-                         dtype=gtx.int32):
+    def _get_index_field(
+        self, field: GridFileName, transpose=True, apply_offset=True, dtype=gtx.int32
+    ):
         field = self._reader.int_field(field, transpose=transpose, dtype=dtype)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
-        
-        
-        
-    def _compute_derived_connectivities(self, grid) -> icon_grid.IconGrid:
 
-       
+    def _compute_derived_connectivities(self, grid) -> icon_grid.IconGrid:
         c2e = self._get_index_field(GridFile.ConnectivityName.C2E)
         e2c = self._get_index_field(
-            GridFile.ConnectivityName.E2C)  # edge_face_connectivity (optional)
+            GridFile.ConnectivityName.E2C
+        )  # edge_face_connectivity (optional)
         c2v = self._get_index_field(
-            GridFile.ConnectivityName.C2V)  # face_node_connectivity (required)
+            GridFile.ConnectivityName.C2V
+        )  # face_node_connectivity (required)
         v2c = self._get_index_field(
-            GridFile.ConnectivityName.V2C)  # node_face_connectivity -- (pentagon/hexagon)
+            GridFile.ConnectivityName.V2C
+        )  # node_face_connectivity -- (pentagon/hexagon)
         e2v = self._get_index_field(
-            GridFile.ConnectivityName.E2V)  # edge_node_connectivity (optionally required)
+            GridFile.ConnectivityName.E2V
+        )  # edge_node_connectivity (optionally required)
         v2e = self._get_index_field(
-            GridFile.ConnectivityName.V2E)  # node_edge_connectivity  -- (pentagon/hexagon)
+            GridFile.ConnectivityName.V2E
+        )  # node_edge_connectivity  -- (pentagon/hexagon)
         v2e2v = self._get_index_field(
-            GridFile.ConnectivityName.V2E2V)  # node_node_connectivity  -- ((pentagon/hexagon))
+            GridFile.ConnectivityName.V2E2V
+        )  # node_node_connectivity  -- ((pentagon/hexagon))
         c2e2c = self._get_index_field(
-            GridFile.ConnectivityName.C2E2C)  # face_face_connectivity (optional)
+            GridFile.ConnectivityName.C2E2C
+        )  # face_face_connectivity (optional)
 
         e2c2v = self._construct_diamond_vertices(e2v, c2v, e2c)
         e2c2e = self._construct_diamond_edges(e2c, c2e)
@@ -579,26 +612,25 @@ class GridManager:
 
         c2e2c2e = self._construct_triangle_edges(c2e2c, c2e)
         c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
-        
 
         grid.with_connectivities(
-                {
-                    dims.C2EDim: c2e,
-                    dims.E2CDim: e2c,
-                    dims.E2VDim: e2v,
-                    dims.V2EDim: v2e,
-                    dims.V2CDim: v2c,
-                    dims.C2VDim: c2v,
-                    dims.C2E2CDim: c2e2c,
-                    dims.C2E2CODim: c2e2c0,
-                    dims.C2E2C2EDim: c2e2c2e,
-                    dims.E2C2VDim: e2c2v,
-                    dims.V2E2VDim: v2e2v,
-                    dims.E2C2EDim: e2c2e,
-                    dims.E2C2EODim: e2c2e0,
-                }
-            )
-        
+            {
+                dims.C2EDim: c2e,
+                dims.E2CDim: e2c,
+                dims.E2VDim: e2v,
+                dims.V2EDim: v2e,
+                dims.V2CDim: v2c,
+                dims.C2VDim: c2v,
+                dims.C2E2CDim: c2e2c,
+                dims.C2E2CODim: c2e2c0,
+                dims.C2E2C2EDim: c2e2c2e,
+                dims.E2C2VDim: e2c2v,
+                dims.V2E2VDim: v2e2v,
+                dims.E2C2EDim: e2c2e,
+                dims.E2C2EODim: e2c2e0,
+            }
+        )
+
         grid.update_size_connectivities(
             {
                 dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
@@ -757,10 +789,11 @@ def _patch_with_dummy_lastline(ar):
     return patched_ar
 
 
-
-
 def construct_local_connectivity(
-        field_offset: gtx.FieldOffset, decomposition_info: defs.DecompositionInfo, connectivity:xp.ndarray) -> xp.ndarray:
+    field_offset: gtx.FieldOffset,
+    decomposition_info: defs.DecompositionInfo,
+    connectivity: xp.ndarray,
+) -> xp.ndarray:
     """
     Construct a connectivity table for use on a given rank: it maps from source to target dimension in _local_ indices.
 
@@ -781,11 +814,9 @@ def construct_local_connectivity(
     sliced_connectivity = connectivity[
         decomposition_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
     ]
-    #log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
+    # log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
 
-    global_idx = decomposition_info.global_index(
-        source_dim, defs.DecompositionInfo.EntryType.ALL
-    )
+    global_idx = decomposition_info.global_index(source_dim, defs.DecompositionInfo.EntryType.ALL)
 
     # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
     local_connectivity = xp.where(
@@ -797,13 +828,8 @@ def construct_local_connectivity(
     global_idx_sorted = global_idx[sorted_index_of_global_idx]
     for i in xp.arange(local_connectivity.shape[0]):
         valid_neighbor_mask = local_connectivity[i, :] != GridFile.INVALID_INDEX
-        positions = xp.searchsorted(
-            global_idx_sorted, local_connectivity[i, valid_neighbor_mask]
-        )
+        positions = xp.searchsorted(global_idx_sorted, local_connectivity[i, valid_neighbor_mask])
         indices = sorted_index_of_global_idx[positions]
         local_connectivity[i, valid_neighbor_mask] = indices
-    #log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
+    # log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
     return local_connectivity
-
-
-   

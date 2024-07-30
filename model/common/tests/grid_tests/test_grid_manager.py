@@ -110,7 +110,9 @@ def simple_grid_gridfile(tmp_path):
 
     dataset.createDimension(GridFile.DimensionName.EDGE_NAME, size=grid.num_edges)
     dataset.createDimension(GridFile.DimensionName.CELL_NAME, size=grid.num_cells)
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[dims.E2VDim])
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_EDGE_SIZE, size=grid.size[dims.E2VDim]
+    )
     dataset.createDimension(GridFile.DimensionName.DIAMOND_EDGE_SIZE, size=grid.size[dims.E2C2EDim])
     dataset.createDimension(GridFile.DimensionName.MAX_CHILD_DOMAINS, size=1)
     # add dummy values for the grf dimensions
@@ -137,8 +139,12 @@ def simple_grid_gridfile(tmp_path):
         (GridFile.DimensionName.VERTEX_NAME,),
     )
 
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[dims.C2EDim])
-    dataset.createDimension(GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[dims.V2CDim])
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_CELL_SIZE, size=grid.size[dims.C2EDim]
+    )
+    dataset.createDimension(
+        GridFile.DimensionName.NEIGHBORS_TO_VERTEX_SIZE, size=grid.size[dims.V2CDim]
+    )
 
     _add_to_dataset(
         dataset,
@@ -278,7 +284,10 @@ def test_gridparser_dimension(simple_grid_gridfile):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
     file = utils.resolve_file_from_gridfile_name(grid_file)
@@ -287,7 +296,9 @@ def test_gridfile_vertex_cell_edge_dimensions(grid_savepoint, grid_file):
 
     assert grid_file.dimension(GridFile.DimensionName.CELL_NAME) == grid_savepoint.num(dims.CellDim)
     assert grid_file.dimension(GridFile.DimensionName.EDGE_NAME) == grid_savepoint.num(dims.EdgeDim)
-    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(dims.VertexDim)
+    assert grid_file.dimension(GridFile.DimensionName.VERTEX_NAME) == grid_savepoint.num(
+        dims.VertexDim
+    )
 
 
 @pytest.mark.with_netcdf
@@ -320,7 +331,10 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -342,7 +356,10 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_v2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -392,7 +409,10 @@ def reset_invalid_index(index_array: np.ndarray):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_e2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -445,7 +465,10 @@ def assert_invalid_indices(e2c_table: np.ndarray, grid_file: str):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -463,7 +486,10 @@ def test_gridmanager_eval_e2c(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -484,7 +510,10 @@ def test_gridmanager_eval_c2e(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -500,7 +529,10 @@ def test_gridmanager_eval_c2e2c(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (dt_utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -518,7 +550,10 @@ def test_gridmanager_eval_c2e2cO(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_e2c2e(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -548,7 +583,10 @@ def assert_unless_invalid(table, serialized_ref):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -565,7 +603,10 @@ def test_gridmanager_eval_e2c2v(caplog, grid_savepoint, grid_file):
 @pytest.mark.with_netcdf
 @pytest.mark.parametrize(
     "grid_file, experiment",
-    [(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT), (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT)],
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
 )
 def test_gridmanager_eval_c2v(caplog, grid_savepoint, grid_file):
     caplog.set_level(logging.DEBUG)
@@ -873,7 +914,12 @@ def test_get_start_end_index_for_local_grid(
     "dim, marker,start_index,end_index",
     [
         (dims.CellDim, h_grid.HorizontalMarkerIndex.interior(dims.CellDim), 0, 0),
-        (dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim), 0, R02B04_GLOBAL_NUM_CELLS),
+        (
+            dims.CellDim,
+            h_grid.HorizontalMarkerIndex.local(dims.CellDim),
+            0,
+            R02B04_GLOBAL_NUM_CELLS,
+        ),
         (dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim), 0, 0),
         (dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim), 0, 0),
         (
@@ -889,7 +935,12 @@ def test_get_start_end_index_for_local_grid(
             R02B04_GLOBAL_NUM_CELLS,
         ),
         (dims.EdgeDim, h_grid.HorizontalMarkerIndex.interior(dims.EdgeDim), 0, 0),
-        (dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim), 0, R02B04_GLOBAL_NUM_EDGES),
+        (
+            dims.EdgeDim,
+            h_grid.HorizontalMarkerIndex.local(dims.EdgeDim),
+            0,
+            R02B04_GLOBAL_NUM_EDGES,
+        ),
         (dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim), 0, 0),
         (dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim), 0, 0),
         (
@@ -978,6 +1029,7 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     )
     assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
 
+
 @pytest.mark.with_mpi
 @pytest.mark.parametrize(
     "field_offset",
@@ -998,7 +1050,9 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
 
     decomposition_info = halo_generator.construct_decomposition_info()
 
-    connectivity = construct_local_connectivity(field_offset, decomposition_info, connectivity=grid.connectivities[field_offset.target[1]])
+    connectivity = construct_local_connectivity(
+        field_offset, decomposition_info, connectivity=grid.connectivities[field_offset.target[1]]
+    )
     # there is an neighbor list for each index of the target dimension on the node
     assert (
         connectivity.shape[0]

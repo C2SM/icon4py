@@ -229,6 +229,7 @@ def global_indices(dim: dims.Dimension) -> int:
     mesh = simple.SimpleGrid()
     return xp.arange(mesh.size[dim], dtype=xp.int32)
 
+
 # TODO unused - remove or fix and use?
 def icon_distribution(
     props: defs.ProcessProperties, decomposition_info: defs.DecompositionInfo
@@ -258,6 +259,7 @@ def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
         recv_buffer = None
     comm.Gatherv(sendbuf=field, recvbuf=(recv_buffer, local_sizes), root=0)
     return local_sizes, recv_buffer
+
 
 @pytest.mark.xfail(reason="Not implemented yet")
 def test_local_grid(processor_props, caplog):  # fixture
