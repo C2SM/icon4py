@@ -48,6 +48,7 @@ from icon4py.model.driver.initialization_utils import (
     read_static_fields,
 )
 
+from icon4py.model.common.io import io
 
 
 log = logging.getLogger(__name__)
@@ -63,6 +64,7 @@ class TimeLoop:
         run_config: IconRunConfig,
         diffusion: Diffusion,
         solve_nonhydro: SolveNonhydro,
+        io_monitor: io.IOMonitor,
     ):
         self.run_config: IconRunConfig = run_config
         self.diffusion = diffusion
@@ -84,6 +86,8 @@ class TimeLoop:
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
+
+        self.io_monitor = io_monitor
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -181,6 +185,9 @@ class TimeLoop:
                 prognostic_state_list[self._now],
                 self.dtime_in_seconds,
             )
+        
+        self.io_monitor.store(prognostic_state_list[self._now], self._simulation_date)
+
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
@@ -209,6 +216,8 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
+
+            self.io_monitor.store(prognostic_state_list[self._now], self._simulation_date)
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
@@ -413,10 +422,19 @@ def initialize(
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
+    io_monitor = io.IOMonitor(
+        config=config.io_config,
+        vertical_size=vertical_geometry,
+        horizontal_size=icon_grid.config.horizontal_config,
+        grid_file_name='testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc', # TODO (Jacopo) this is temporary
+        grid_id=icon_grid.id,
+        )
+
     timeloop = TimeLoop(
         run_config=config.run_config,
         diffusion=diffusion,
         solve_nonhydro=solve_nonhydro,
+        io_monitor=io_monitor,
     )
 
 

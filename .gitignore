@@ -9,6 +9,7 @@ _external_src
 _reports
 tmp
 testdata
+simulation_output
 simple_mesh*.nc
 /prof
 .profile
