@@ -246,11 +246,11 @@ def diffusion_init(
 
 
 def diffusion_run(
-    w: Field[[CellDim, KHalfDim], float64],
-    vn: Field[[EdgeDim, KDim], float64],
-    exner: Field[[CellDim, KDim], float64],
-    theta_v: Field[[CellDim, KDim], float64],
-    rho: Field[[CellDim, KDim], float64],
+    w: fa.CellKHalfField[float64],
+    vn: fa.EdgeKField[float64],
+    exner: fa.CellKField[float64],
+    theta_v: fa.CellKField[float64],
+    rho: fa.CellKField[float64],
     hdef_ic: fa.CellKHalfField[float64],
     div_ic: fa.CellKHalfField[float64],
     dwdx: fa.CellKHalfField[float64],

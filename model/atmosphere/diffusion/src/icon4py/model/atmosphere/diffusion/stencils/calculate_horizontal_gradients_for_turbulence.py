@@ -35,7 +35,7 @@ def _calculate_horizontal_gradients_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_horizontal_gradients_for_turbulence(
-    w: gtx.Field[[CellDim, KHalfDim], wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     geofac_grg_x: gtx.Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: gtx.Field[[CellDim, C2E2CODim], wpfloat],
     dwdx: fa.CellKHalfField[vpfloat],

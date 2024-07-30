@@ -22,7 +22,6 @@ from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
     KDim,
-    KHalfDim,
     V2EDim,
     VertexDim,
 )
@@ -52,8 +51,8 @@ class DiffusionMetricState:
     """Represents the metric state fields needed in diffusion."""
 
     theta_ref_mc: fa.CellKField[float]
-    wgtfac_c: gtx.Field[
-        [CellDim, KHalfDim], float
+    wgtfac_c: fa.CellKHalfField[
+        float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
 
     # TODO: field present below as well, check where it's better to put it

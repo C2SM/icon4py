@@ -27,7 +27,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     w: fa.CellKHalfField[wpfloat],
     diff_multfac_n2w: fa.KField[wpfloat],
     cell_area: fa.CellField[wpfloat],
-    z_nabla2_c: gtx.Field[[CellDim, KHalfDim], vpfloat],
+    z_nabla2_c: fa.CellKHalfField[vpfloat],
 ) -> fa.CellKHalfField[wpfloat]:
     cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
 
