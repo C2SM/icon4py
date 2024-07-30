@@ -16,12 +16,9 @@ import functools
 import logging
 import pathlib
 
-import gt4py.next as gtx
-
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
-from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import constants as phy_const, field_type_aliases as fa
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
@@ -32,10 +29,6 @@ from icon4py.model.common.dimension import (
     KDim,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.interpolation.stencils import (
-    cell_2_edge_interpolation,
-    edge_2_cell_vector_rbf_interpolation,
-)
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -47,9 +40,7 @@ from icon4py.model.common.test_utils import (
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver import (
-    jablonowski_willamson_testcase as jw_func,
     serialbox_helpers as driver_sb,
-    testcase_functions as testcase_func,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
 

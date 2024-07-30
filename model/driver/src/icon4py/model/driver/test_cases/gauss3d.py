@@ -26,13 +26,13 @@ from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver.test_cases import utils as testcases_utils
 
 
@@ -141,9 +141,9 @@ def model_initialization_gauss3d(
     # Lower boundary condition for exner pressure
     if nh_brunt_vais != 0.0:
         z_help = (nh_brunt_vais / phy_const.GRAV) ** 2 * geopot[:, num_levels - 1]
-        exner_numpy[:, num_levels - 1] = (phy_const.GRAV / nh_brunt_vais) ** 2 / nh_t0 / phy_const.CPD * (
-            xp.exp(-z_help) - 1.0
-        ) + 1.0
+        exner_numpy[:, num_levels - 1] = (
+            phy_const.GRAV / nh_brunt_vais
+        ) ** 2 / nh_t0 / phy_const.CPD * (xp.exp(-z_help) - 1.0) + 1.0
     else:
         exner_numpy[:, num_levels - 1] = 1.0 - geopot[:, num_levels - 1] / phy_const.CPD / nh_t0
     log.info("Vertical computations completed.")

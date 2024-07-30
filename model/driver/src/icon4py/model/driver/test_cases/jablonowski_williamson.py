@@ -27,13 +27,13 @@ from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
 )
 from icon4py.model.common.test_utils import serialbox_utils as sb
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.driver.test_cases import utils as testcases_utils
 
 

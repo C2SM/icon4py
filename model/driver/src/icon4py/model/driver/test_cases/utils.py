@@ -50,7 +50,9 @@ def hydrostatic_adjustment_numpy(
             2.0 * quadratic_a
         )
         theta_v[:, k] = temp_v[:, k] / exner[:, k]
-        rho[:, k] = exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
+        rho[:, k] = (
+            exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
+        )
 
     return rho, exner, theta_v
 
@@ -88,7 +90,9 @@ def hydrostatic_adjustment_constant_thetav_numpy(
         )
 
     for k in range(num_levels - 1, -1, -1):
-        rho[:, k] = exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
+        rho[:, k] = (
+            exner[:, k] ** phy_const.CVD_O_RD * phy_const.P0REF / (phy_const.RD * theta_v[:, k])
+        )
 
     return rho, exner
 
@@ -123,7 +127,8 @@ def zonalwind_2_normalwind_numpy(
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1), :
+        0 : grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1),
+        :,
     ] = False
     edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)
     edge_lon = xp.repeat(xp.expand_dims(edge_lon, axis=-1), eta_v_e.shape[1], axis=1)
