@@ -12,9 +12,10 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, FieldOffset, int32, minimum, where
+from gt4py.next.ffront.fbuiltins import FieldOffset, int32, minimum, where
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
@@ -22,10 +23,10 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _v_limit_prbl_sm_stencil_02(
-    l_limit: Field[[CellDim, KDim], int32],
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-) -> tuple[Field[[CellDim, KDim], float], Field[[CellDim, KDim], float]]:
+    l_limit: fa.CellKField[int32],
+    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
     q_face_up, q_face_low = where(
         l_limit != 0,
         where(
@@ -45,11 +46,11 @@ def _v_limit_prbl_sm_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_02(
-    l_limit: Field[[CellDim, KDim], int32],
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    p_face_up: Field[[CellDim, KDim], float],
-    p_face_low: Field[[CellDim, KDim], float],
+    l_limit: fa.CellKField[int32],
+    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+    p_face_up: fa.CellKField[float],
+    p_face_low: fa.CellKField[float],
 ):
     _v_limit_prbl_sm_stencil_02(
         l_limit,

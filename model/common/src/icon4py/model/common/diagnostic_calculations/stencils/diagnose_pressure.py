@@ -15,6 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, exp, int32, sqrt
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -41,22 +42,22 @@ def _scan_pressure(
 
 @field_operator
 def _diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
-    temperature: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+    temperature: fa.CellKField[vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
     grav_o_rd: wpfloat,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, temperature, pressure_sfc, grav_o_rd)
     return pressure, pressure_ifc
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
-    temperature: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+    temperature: fa.CellKField[vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
-    pressure: Field[[CellDim, KDim], vpfloat],
-    pressure_ifc: Field[[CellDim, KDim], vpfloat],
+    pressure: fa.CellKField[vpfloat],
+    pressure_ifc: fa.CellKField[vpfloat],
     grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

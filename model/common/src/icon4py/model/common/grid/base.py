@@ -20,10 +20,10 @@ from typing import Callable, Dict
 import gt4py.next as gtx
 import numpy as np
 
-import icon4py.model.common.utils as common_utils
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
+from icon4py.model.common.utils import builder
 
 
 class MissingConnectivity(ValueError):
@@ -122,12 +122,12 @@ class BaseGrid(ABC):
 
         return offset_providers
 
-    @common_utils.builder
+    @builder.builder
     def with_connectivities(self, connectivity: Dict[gtx.Dimension, np.ndarray]):
         self.connectivities.update({d: k.astype(gtx.int32) for d, k in connectivity.items()})
         self.size.update({d: t.shape[1] for d, t in connectivity.items()})
 
-    @common_utils.builder
+    @builder.builder
     def with_config(self, config: GridConfig):
         self.config = config
         self._update_size()

@@ -924,7 +924,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def scal_divdamp_o2(self) -> float:
         return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
 
-    def scal_divdamp(self) -> Field[[KDim], float]:
+    def scal_divdamp(self):
         return self._get_field("scal_divdamp", KDim)
 
     def theta_v_ic(self):

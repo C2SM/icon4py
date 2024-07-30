@@ -12,8 +12,9 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, broadcast, int32, maximum
+from gt4py.next.ffront.fbuiltins import astype, broadcast, int32, maximum
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -21,15 +22,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_nabla2_and_nabla4_to_vn(
-    area_edge: Field[[EdgeDim], wpfloat],
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
-    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
-    diff_multfac_vn: Field[[KDim], wpfloat],
-    nudgecoeff_e: Field[[EdgeDim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
-) -> Field[[EdgeDim, KDim], wpfloat]:
+) -> fa.EdgeKField[wpfloat]:
     kh_smag_e_wp, z_nabla4_e2_wp, nudgezone_diff_wp = astype(
         (kh_smag_e, z_nabla4_e2, nudgezone_diff), wpfloat
     )
@@ -44,13 +45,13 @@ def _apply_nabla2_and_nabla4_to_vn(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_nabla2_and_nabla4_to_vn(
-    area_edge: Field[[EdgeDim], wpfloat],
-    kh_smag_e: Field[[EdgeDim, KDim], vpfloat],
-    z_nabla2_e: Field[[EdgeDim, KDim], wpfloat],
-    z_nabla4_e2: Field[[EdgeDim, KDim], vpfloat],
-    diff_multfac_vn: Field[[KDim], wpfloat],
-    nudgecoeff_e: Field[[EdgeDim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    area_edge: fa.EdgeField[wpfloat],
+    kh_smag_e: fa.EdgeKField[vpfloat],
+    z_nabla2_e: fa.EdgeKField[wpfloat],
+    z_nabla4_e2: fa.EdgeKField[vpfloat],
+    diff_multfac_vn: fa.KField[wpfloat],
+    nudgecoeff_e: fa.EdgeField[wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     nudgezone_diff: vpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
