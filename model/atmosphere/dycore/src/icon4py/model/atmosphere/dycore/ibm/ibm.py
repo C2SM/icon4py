@@ -69,5 +69,9 @@ class ImmersedBoundaryMethod:
         ):
         log.info("IBM set BCs ")
 
+        # cell centre variables
+        prognostic_state.w = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)
+        prognostic_state.theta_v = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)
+
+        # edge variables
         prognostic_state.vn = gtx.where(self.edge_mask, self.test_value, prognostic_state.vn)
-        prognostic_state.w  = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)
