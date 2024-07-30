@@ -14,7 +14,7 @@
 
 import pytest
 
-from icon4py.model.driver import icon_configuration
+from icon4py.model.driver import icon4py_configuration
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -129,7 +129,7 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_exit,
 ):
     if experiment == dt_utils.GAUSS3D_EXPERIMENT:
-        config = icon_configuration.read_config(experiment)
+        config = icon4py_configuration.read_config(experiment)
         diffusion_config = config.diffusion_config
         nonhydro_config = config.solve_nonhydro_config
         icon4pyrun_config = config.run_config
