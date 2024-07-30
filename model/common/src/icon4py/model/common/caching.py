@@ -23,42 +23,20 @@ from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
 from icon4py.model.common.settings import device
 
 
-try:
-    import cupy as cp
-    from gt4py.next.embedded.nd_array_field import CuPyArrayField
-except ImportError:
-    cp: Optional = None  # type:ignore[no-redef]
-
-from gt4py.next.embedded.nd_array_field import NumPyArrayField
-
-
 def handle_numpy_integer(value):
     return int(value)
-
-
-def handle_common_field(value, sizes):
-    sizes.extend(value.shape)
-    return value  # Return the value unmodified, but side-effect on sizes
 
 
 def handle_default(value):
     return value  # Return the value unchanged
 
 
-if cp:
-    type_handlers = {
-        np.integer: handle_numpy_integer,
-        NumPyArrayField: handle_common_field,
-        CuPyArrayField: handle_common_field,
-    }
-else:
-    type_handlers = {
-        np.integer: handle_numpy_integer,
-        NumPyArrayField: handle_common_field,
-    }
+type_handlers = {
+    np.integer: handle_numpy_integer,
+}
 
 
-def process_arg(value, sizes):
+def process_arg(value):
     handler = type_handlers.get(type(value), handle_default)
     return handler(value)
 
