@@ -37,6 +37,7 @@ if dace_orchestration():
     import site
     import inspect
     import copy
+    import shutil
 
     import numpy as np
     import dace
@@ -89,13 +90,15 @@ def orchestration(method=True):
                         compile_time_args_kwargs[k] = all_args_kwargs[i]
                 unique_id = hash(tuple([id(e) for e in compile_time_args_kwargs.values()]))
 
-                parse_compile_cache_sdfg(unique_id, compiled_sdfgs, exchange_obj, grid.offset_providers, fuse_func, compile_time_args_kwargs, self_name, simplify_fused_sdfg=True)
+                default_build_folder = os.path.join('.dacecache', f'MPI_rank_{exchange_obj.my_rank()}')
+
+                parse_compile_cache_sdfg(unique_id, compiled_sdfgs, default_build_folder, exchange_obj, grid.offset_providers, fuse_func, compile_time_args_kwargs, self_name, simplify_fused_sdfg=True)
                 dace_program = compiled_sdfgs[unique_id]['dace_program']
                 sdfg = compiled_sdfgs[unique_id]['sdfg']
                 compiled_sdfg = compiled_sdfgs[unique_id]['compiled_sdfg']
 
                 with dace.config.temporary_config():
-                    configure_dace_temp_env(exchange_obj)
+                    configure_dace_temp_env(default_build_folder)
 
                     updated_args = mod_args_for_dace_structures(fuse_func, args)
                     updated_kwargs = {**kwargs, **dace_specific_kwargs(exchange_obj, grid.offset_providers)}
@@ -178,7 +181,7 @@ if dace_orchestration():
             raise ValueError("The device type is not supported.")
 
 
-    def parse_compile_cache_sdfg(unique_id: int, compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Connectivity], fuse_func: Callable, compile_time_args_kwargs: dict[str, Any], self_name: Optional[str] = None, simplify_fused_sdfg: bool = True):
+    def parse_compile_cache_sdfg(unique_id: int, compiled_sdfgs: dict[int, dace.codegen.compiled_sdfg.CompiledSDFG], default_build_folder: str, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange], offset_providers: dict[str, Connectivity], fuse_func: Callable, compile_time_args_kwargs: dict[str, Any], self_name: Optional[str] = None, simplify_fused_sdfg: bool = True) -> None:
         """Function that parses, compiles and caches the fused SDFG along with adding the halo exchanges."""
         if unique_id in compiled_sdfgs:
             return
@@ -186,22 +189,29 @@ if dace_orchestration():
         compiled_sdfgs[unique_id] = {}
 
         with dace.config.temporary_config():
-            device_type = configure_dace_temp_env(exchange_obj)
+            device_type = configure_dace_temp_env(default_build_folder)
 
             compiled_sdfgs[unique_id]['dace_program'] = dace.program(auto_optimize=False,
                                                                      device=dev_type_from_gt4py_to_dace(device_type),
                                                                      distributed_compilation=False)(fuse_func)
             dace_program = compiled_sdfgs[unique_id]['dace_program']
 
-            default_build_folder = os.path.join('.dacecache', f'MPI_rank_{exchange_obj.my_rank()}', f'{fuse_func.__module__}.{fuse_func.__name__}'.replace('.','_'))
-            if os.path.exists(os.path.join(default_build_folder, f'program.sdfg')):
-                if self_name:
-                    self = compile_time_args_kwargs.pop(self_name)
-                    compiled_sdfgs[unique_id]['sdfg'], _ = dace_program.load_sdfg(os.path.join(default_build_folder, f'program.sdfg'), self, **compile_time_args_kwargs)
-                    compiled_sdfgs[unique_id]['compiled_sdfg'], _ = dace_program.load_precompiled_sdfg(default_build_folder, self, **compile_time_args_kwargs)
-                else:
-                    compiled_sdfgs[unique_id]['sdfg'], _ = dace_program.load_sdfg(os.path.join(default_build_folder, f'program.sdfg'), **compile_time_args_kwargs)
-                    compiled_sdfgs[unique_id]['compiled_sdfg'], _ = dace_program.load_precompiled_sdfg(default_build_folder, **compile_time_args_kwargs)
+            cache_sanitization(default_build_folder, exchange_obj)
+
+            cache_from_disk = get_env_bool('DACE_ORCH_CACHE_FROM_DISK', default=False)
+            dace_program_location = os.path.join(default_build_folder, f"{fuse_func.__module__}.{fuse_func.__name__}".replace('.','_'))
+            
+            if cache_from_disk and os.path.exists(os.path.join(dace_program_location, f'program.sdfg')):
+                try:
+                    if self_name:
+                        self = compile_time_args_kwargs.pop(self_name)
+                        compiled_sdfgs[unique_id]['sdfg'], _ = dace_program.load_sdfg(os.path.join(dace_program_location, f'program.sdfg'), self, **compile_time_args_kwargs)
+                        compiled_sdfgs[unique_id]['compiled_sdfg'], _ = dace_program.load_precompiled_sdfg(dace_program_location, self, **compile_time_args_kwargs)
+                    else:
+                        compiled_sdfgs[unique_id]['sdfg'], _ = dace_program.load_sdfg(os.path.join(dace_program_location, f'program.sdfg'), **compile_time_args_kwargs)
+                        compiled_sdfgs[unique_id]['compiled_sdfg'], _ = dace_program.load_precompiled_sdfg(dace_program_location, **compile_time_args_kwargs)
+                except:
+                    raise ValueError("Corrupted cache. Remove `.dacecache` folder and re-run the program.")
             else:
                 # Replace the manually placed halo exchanges with dummy sdfgs
                 tmp_exchange_and_wait = exchange_obj.exchange_and_wait
@@ -234,8 +244,33 @@ if dace_orchestration():
                 exchange_obj.exchange = tmp_exchange
 
 
-    def configure_dace_temp_env(exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange]) -> core_defs.DeviceType:
-        dace.config.Config.set("default_build_folder", value=os.path.join('.dacecache', f'MPI_rank_{exchange_obj.my_rank()}'))
+    def get_env_bool(env_var_name: str, default: bool = False) -> bool:
+        value = os.getenv(env_var_name, str(default)).lower()
+        return value in ('true', '1')
+
+
+    def count_folders_in_directory(directory: str) -> int:
+        try:
+            entries = os.listdir(directory)
+            folders = [entry for entry in entries if os.path.isdir(os.path.join(directory, entry))]
+            return len(folders)
+        except Exception as e:
+            return str(e)
+
+
+    def cache_sanitization(default_build_folder: str, exchange_obj: Union[SingleNodeExchange, GHexMultiNodeExchange]) -> None:
+        normalized_path = os.path.normpath(default_build_folder)
+        parts = normalized_path.split(os.sep)
+        dacecache = next(part for part in parts if part) # normally .dacecache
+        if count_folders_in_directory(dacecache) != exchange_obj.get_size():
+            try:
+                shutil.rmtree(dacecache)
+            except Exception as e:
+                print(f"Error: {e}")
+
+
+    def configure_dace_temp_env(default_build_folder: str) -> core_defs.DeviceType:
+        dace.config.Config.set("default_build_folder", value=default_build_folder)
         dace.config.Config.set("compiler", "allow_view_arguments", value=True) # Allow numpy views as arguments: If true, allows users to call DaCe programs with NumPy views (for example, “A[:,1]” or “w.T”)
         dace.config.Config.set("optimizer", "automatic_simplification", value=False) # simplifications & optimizations after placing halo exchanges -need a sequential structure of nested sdfgs-
         dace.config.Config.set("optimizer", "autooptimize", value=False)
