@@ -19,33 +19,17 @@ from typing import Callable
 import click
 from devtools import Timer
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.atmosphere.diffusion.diffusion_states import DiffusionDiagnosticState
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    NonHydrostaticParams,
-    SolveNonhydro,
+from icon4py.model.atmosphere.diffusion import (
+    diffusion,
+    diffusion_states,
 )
-from icon4py.model.atmosphere.dycore.state_utils.states import (
-    DiagnosticStateNonHydro,
-    PrepAdvection,
-)
-from icon4py.model.common.decomposition.definitions import (
-    ProcessProperties,
-    create_exchange,
-    get_processor_properties,
-    get_runtype,
-)
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.driver.icon_configuration import IconRunConfig, read_config
-from icon4py.model.driver.initialization_utils import (
-    ExperimentType,
-    SerializationType,
-    configure_logging,
-    read_decomp_info,
-    read_geometry_fields,
-    read_icon_grid,
-    read_initial_state,
-    read_static_fields,
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.driver import (
+    icon4py_configuration as driver_config,
+    initialization_utils as driver_init,
 )
 
 
@@ -59,13 +43,13 @@ class TimeLoop:
 
     def __init__(
         self,
-        run_config: IconRunConfig,
-        diffusion: Diffusion,
-        solve_nonhydro: SolveNonhydro,
+        run_config: driver_config.Icon4pyRunConfig,
+        diffusion_granule: diffusion.Diffusion,
+        solve_nonhydro_granule: solve_nh.SolveNonhydro,
     ):
-        self.run_config: IconRunConfig = run_config
-        self.diffusion = diffusion
-        self.solve_nonhydro = solve_nonhydro
+        self.run_config: driver_config.Icon4pyRunConfig = run_config
+        self.diffusion = diffusion_granule
+        self.solve_nonhydro = solve_nonhydro_granule
 
         self._n_time_steps: int = int(
             (self.run_config.end_date - self.run_config.start_date) / self.run_config.dtime
@@ -147,12 +131,12 @@ class TimeLoop:
 
     def time_integration(
         self,
-        diffusion_diagnostic_state: DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
+        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
         # TODO (Chia Rui): expand the PrognosticState to include indices of now and next, now it is always assumed that now = 0, next = 1 at the beginning
-        prognostic_state_list: list[PrognosticState],
+        prognostic_state_list: list[prognostics.PrognosticState],
         # below is a long list of arguments for dycore time_step that many can be moved to initialization of SolveNonhydro)
-        prep_adv: PrepAdvection,
+        prep_adv: solve_nh_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -219,10 +203,10 @@ class TimeLoop:
 
     def _integrate_one_time_step(
         self,
-        diffusion_diagnostic_state: DiffusionDiagnosticState,
-        solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
-        prognostic_state_list: list[PrognosticState],
-        prep_adv: PrepAdvection,
+        diffusion_diagnostic_state: diffusion_states.DiffusionDiagnosticState,
+        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state_list: list[prognostics.PrognosticState],
+        prep_adv: solve_nh_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -247,9 +231,9 @@ class TimeLoop:
 
     def _do_dyn_substepping(
         self,
-        solve_nonhydro_diagnostic_state: DiagnosticStateNonHydro,
-        prognostic_state_list: list[PrognosticState],
-        prep_adv: PrepAdvection,
+        solve_nonhydro_diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state_list: list[prognostics.PrognosticState],
+        prep_adv: solve_nh_states.PrepAdvection,
         inital_divdamp_fac_o2: float,
         do_prep_adv: bool,
     ):
@@ -292,9 +276,9 @@ class TimeLoop:
 
 def initialize(
     file_path: pathlib.Path,
-    props: ProcessProperties,
-    serialization_type: SerializationType,
-    experiment_type: ExperimentType,
+    props: decomposition.ProcessProperties,
+    serialization_type: driver_init.SerializationType,
+    experiment_type: driver_init.ExperimentType,
     grid_id: uuid.UUID,
     grid_root,
     grid_level,
@@ -325,14 +309,14 @@ def initialize(
     """
     log.info("initialize parallel runtime")
     log.info(f"reading configuration: experiment {experiment_type}")
-    config = read_config(experiment_type)
+    config = driver_config.read_config(experiment_type)
 
-    decomp_info = read_decomp_info(
+    decomp_info = driver_init.read_decomp_info(
         file_path, props, serialization_type, grid_id, grid_root, grid_level
     )
 
     log.info(f"initializing the grid from '{file_path}'")
-    icon_grid = read_icon_grid(
+    icon_grid = driver_init.read_icon_grid(
         file_path,
         rank=props.rank,
         ser_type=serialization_type,
@@ -341,7 +325,12 @@ def initialize(
         grid_level=grid_level,
     )
     log.info(f"reading input fields from '{file_path}'")
-    (edge_geometry, cell_geometry, vertical_geometry, c_owner_mask) = read_geometry_fields(
+    (
+        edge_geometry,
+        cell_geometry,
+        vertical_geometry,
+        c_owner_mask,
+    ) = driver_init.read_geometry_fields(
         file_path,
         vertical_grid_config=config.vertical_grid_config,
         rank=props.rank,
@@ -356,19 +345,18 @@ def initialize(
         solve_nonhydro_metric_state,
         solve_nonhydro_interpolation_state,
         diagnostic_metric_state,
-    ) = read_static_fields(
+    ) = driver_init.read_static_fields(
+        icon_grid,
         file_path,
         rank=props.rank,
         ser_type=serialization_type,
-        grid_root=grid_root,
-        grid_level=grid_level,
     )
 
     log.info("initializing diffusion")
-    diffusion_params = DiffusionParams(config.diffusion_config)
-    exchange = create_exchange(props, decomp_info)
-    diffusion = Diffusion(exchange)
-    diffusion.init(
+    diffusion_params = diffusion.DiffusionParams(config.diffusion_config)
+    exchange = decomposition.create_exchange(props, decomp_info)
+    diffusion_granule = diffusion.Diffusion(exchange)
+    diffusion_granule.init(
         icon_grid,
         config.diffusion_config,
         diffusion_params,
@@ -379,10 +367,10 @@ def initialize(
         cell_geometry,
     )
 
-    nonhydro_params = NonHydrostaticParams(config.solve_nonhydro_config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(config.solve_nonhydro_config)
 
-    solve_nonhydro = SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule.init(
         grid=icon_grid,
         config=config.solve_nonhydro_config,
         params=nonhydro_params,
@@ -402,7 +390,7 @@ def initialize(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = read_initial_state(
+    ) = driver_init.read_initial_state(
         icon_grid,
         cell_geometry,
         edge_geometry,
@@ -414,8 +402,8 @@ def initialize(
 
     timeloop = TimeLoop(
         run_config=config.run_config,
-        diffusion=diffusion,
-        solve_nonhydro=solve_nonhydro,
+        diffusion_granule=diffusion_granule,
+        solve_nonhydro_granule=solve_nonhydro_granule,
     )
     return (
         timeloop,
@@ -468,9 +456,9 @@ def main(
 
     2. run time loop
     """
-    parallel_props = get_processor_properties(get_runtype(with_mpi=mpi))
+    parallel_props = decomposition.get_processor_properties(decomposition.get_runtype(with_mpi=mpi))
     grid_id = uuid.UUID(grid_id)
-    configure_logging(run_path, experiment_type, parallel_props)
+    driver_init.configure_logging(run_path, experiment_type, parallel_props)
     (
         timeloop,
         diffusion_diagnostic_state,

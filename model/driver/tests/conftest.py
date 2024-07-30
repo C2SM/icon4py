@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
+from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     damping_height,
     data_provider,
@@ -47,7 +47,7 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401
     top_height_limit_for_maximal_layer_thickness,
     vn_only,
 )
-from icon4py.model.driver.icon_configuration import IconRunConfig
+from icon4py.model.driver import icon4py_configuration as driver_config
 
 
 # TODO (Chia Rui): Reuse those pytest fixtures for diffusion test instead of creating here
@@ -56,15 +56,15 @@ from icon4py.model.driver.icon_configuration import IconRunConfig
 @pytest.fixture
 def r04b09_diffusion_config(
     ndyn_substeps,  # noqa: F811 # imported `ndyn_substeps` fixture
-) -> DiffusionConfig:
+) -> diffusion.DiffusionConfig:
     """
     Create DiffusionConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return DiffusionConfig(
-        diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+    return diffusion.DiffusionConfig(
+        diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
         hdiff_w=True,
         hdiff_vn=True,
         type_t_diffu=2,
@@ -85,14 +85,14 @@ def r04b09_iconrun_config(
     timeloop_date_init,
     timeloop_date_exit,
     timeloop_diffusion_linit_init,
-) -> IconRunConfig:
+) -> driver_config.Icon4pyRunConfig:
     """
-    Create IconRunConfig matching MCH_CH_r04b09_dsl.
+    Create Icon4pyRunConfig matching MCH_CH_r04b09_dsl.
 
     Set values to the ones used in the  MCH_CH_r04b09_dsl experiment where they differ
     from the default.
     """
-    return IconRunConfig(
+    return driver_config.Icon4pyRunConfig(
         dtime=timedelta(seconds=10.0),
         start_date=datetime.fromisoformat(timeloop_date_init),
         end_date=datetime.fromisoformat(timeloop_date_exit),

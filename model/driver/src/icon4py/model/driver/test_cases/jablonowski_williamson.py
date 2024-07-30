@@ -17,24 +17,21 @@ import pathlib
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.diffusion import diffusion_states as diff_states
+from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
-from icon4py.model.atmosphere.dycore.state_utils import (
-    states as states_utils,
-    utils as dycore_utils,
-)
-from icon4py.model.common import constants as const
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.common import constants as phy_const
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation.stencils import (
-    cell_2_edge_interpolation as c2e_interp,
-    edge_2_cell_vector_rbf_interpolation as e2c_interp,
+    cell_2_edge_interpolation,
+    edge_2_cell_vector_rbf_interpolation,
 )
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import (
-    diagnostic_state as diag_states,
-    prognostic_state as prog_states,
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
 )
 from icon4py.model.common.test_utils import serialbox_utils as sb
 from icon4py.model.driver.test_cases import utils as testcases_utils
@@ -44,26 +41,26 @@ log = logging.getLogger(__name__)
 
 
 def model_initialization_jabw(
-    icon_grid: icon_grid.IconGrid,
-    cell_param: CellParams,
-    edge_param: EdgeParams,
+    grid: icon_grid.IconGrid,
+    cell_param: h_grid.CellParams,
+    edge_param: h_grid.EdgeParams,
     path: pathlib.Path,
     rank=0,
 ) -> tuple[
-    diff_states.DiffusionDiagnosticState,
-    states_utils.DiagnosticStateNonHydro,
-    states_utils.PrepAdvection,
+    diffus_states.DiffusionDiagnosticState,
+    solve_nh_states.DiagnosticStateNonHydro,
+    solve_nh_states.PrepAdvection,
     float,
-    diag_states.DiagnosticState,
-    prog_states.PrognosticState,
-    prog_states.PrognosticState,
+    diagnostics.DiagnosticState,
+    prognostics.PrognosticState,
+    prognostics.PrognosticState,
 ]:
     """
     Initial condition of Jablonowski-Williamson test. Set jw_up to values larger than 0.01 if
     you want to run baroclinic case.
 
     Args:
-        icon_grid: IconGrid
+        grid: IconGrid
         cell_param: cell properties
         edge_param: edge properties
         path: path where to find the input data
@@ -93,20 +90,20 @@ def model_initialization_jabw(
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
-    cell_size = icon_grid.num_cells
-    num_levels = icon_grid.num_levels
+    cell_size = grid.num_cells
+    num_levels = grid.num_levels
 
-    grid_idx_edge_start_plus1 = icon_grid.get_end_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+    grid_idx_edge_start_plus1 = grid.get_end_index(
+        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
-    grid_idx_edge_end = icon_grid.get_end_index(EdgeDim, HorizontalMarkerIndex.end(EdgeDim))
-    grid_idx_cell_interior_start = icon_grid.get_start_index(
-        CellDim, HorizontalMarkerIndex.interior(CellDim)
+    grid_idx_edge_end = grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.end(EdgeDim))
+    grid_idx_cell_interior_start = grid.get_start_index(
+        CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim)
     )
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
-        CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    grid_idx_cell_start_plus1 = grid.get_end_index(
+        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
-    grid_idx_cell_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.end(CellDim))
+    grid_idx_cell_end = grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.end(CellDim))
 
     p_sfc = 100000.0
     jw_up = 0.0  # if doing baroclinic wave test, please set it to a nonzero value
@@ -120,7 +117,7 @@ def model_initialization_jabw(
     # for baroclinic wave test
     lon_perturbation_center = math.pi / 9.0  # longitude of the perturb centre
     lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
-    ps_o_p0ref = p_sfc / const.P0REF
+    ps_o_p0ref = p_sfc / phy_const.P0REF
 
     w_numpy = xp.zeros((cell_size, num_levels + 1), dtype=float)
     exner_numpy = xp.zeros((cell_size, num_levels), dtype=float)
@@ -135,10 +132,10 @@ def model_initialization_jabw(
     fac1 = 1.0 / 6.3 - 2.0 * (sin_lat**6) * (cos_lat**2 + 1.0 / 3.0)
     fac2 = (
         (8.0 / 5.0 * (cos_lat**3) * (sin_lat**2 + 2.0 / 3.0) - 0.25 * math.pi)
-        * const.EARTH_RADIUS
-        * const.EARTH_ANGULAR_VELOCITY
+        * phy_const.EARTH_RADIUS
+        * phy_const.EARTH_ANGULAR_VELOCITY
     )
-    lapse_rate = const.RD * gamma / const.GRAV
+    lapse_rate = phy_const.RD * gamma / phy_const.GRAV
     for k_index in range(num_levels - 1, -1, -1):
         eta_old = xp.full(cell_size, fill_value=1.0e-7, dtype=float)
         log.info(f"In Newton iteration, k = {k_index}")
@@ -149,14 +146,14 @@ def model_initialization_jabw(
             sin_etav = xp.sin(eta_v_numpy[:, k_index])
 
             temperature_avg = jw_temp0 * (eta_old**lapse_rate)
-            geopot_avg = jw_temp0 * const.GRAV / gamma * (1.0 - eta_old**lapse_rate)
+            geopot_avg = jw_temp0 * phy_const.GRAV / gamma * (1.0 - eta_old**lapse_rate)
             temperature_avg = xp.where(
                 eta_old < eta_t, temperature_avg + dtemp * ((eta_t - eta_old) ** 5), temperature_avg
             )
             geopot_avg = xp.where(
                 eta_old < eta_t,
                 geopot_avg
-                - const.RD
+                - phy_const.RD
                 * dtemp
                 * (
                     (xp.log(eta_old / eta_t) + 137.0 / 60.0) * (eta_t**5)
@@ -178,34 +175,34 @@ def model_initialization_jabw(
                 * eta_old
                 * math.pi
                 * jw_u0
-                / const.RD
+                / phy_const.RD
                 * sin_etav
                 * xp.sqrt(cos_etav)
                 * (2.0 * jw_u0 * fac1 * (cos_etav**1.5) + fac2)
             )
             newton_function = geopot_jw - geopot[:, k_index]
-            newton_function_prime = -const.RD / eta_old * temperature_jw
+            newton_function_prime = -phy_const.RD / eta_old * temperature_jw
             eta_old = eta_old - newton_function / newton_function_prime
 
         # Final update for zeta_v
         eta_v_numpy[:, k_index] = (eta_old - eta_0) * math.pi * 0.5
         # Use analytic expressions at all model level
-        exner_numpy[:, k_index] = (eta_old * ps_o_p0ref) ** const.RD_O_CPD
+        exner_numpy[:, k_index] = (eta_old * ps_o_p0ref) ** phy_const.RD_O_CPD
         theta_v_numpy[:, k_index] = temperature_jw / exner_numpy[:, k_index]
         rho_numpy[:, k_index] = (
-            exner_numpy[:, k_index] ** const.CVD_O_RD
-            * const.P0REF
-            / const.RD
+            exner_numpy[:, k_index] ** phy_const.CVD_O_RD
+            * phy_const.P0REF
+            / phy_const.RD
             / theta_v_numpy[:, k_index]
         )
         # initialize diagnose pressure and temperature variables
-        pressure_numpy[:, k_index] = const.P0REF * exner_numpy[:, k_index] ** const.CPD_O_RD
+        pressure_numpy[:, k_index] = phy_const.P0REF * exner_numpy[:, k_index] ** phy_const.CPD_O_RD
         temperature_numpy[:, k_index] = temperature_jw
     log.info("Newton iteration completed!")
 
     eta_v = gtx.as_field((CellDim, KDim), eta_v_numpy)
-    eta_v_e = dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid)
-    c2e_interp.cell_2_edge_interpolation(
+    eta_v_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid)
+    cell_2_edge_interpolation.cell_2_edge_interpolation(
         eta_v,
         cell_2_edge_coeff,
         eta_v_e,
@@ -213,12 +210,12 @@ def model_initialization_jabw(
         grid_idx_edge_end,
         0,
         num_levels,
-        offset_provider=icon_grid.offset_providers,
+        offset_provider=grid.offset_providers,
     )
     log.info("Cell-to-edge eta_v computation completed.")
 
     vn_numpy = testcases_utils.zonalwind_2_normalwind_numpy(
-        icon_grid,
+        grid,
         jw_u0,
         jw_up,
         lat_perturbation_center,
@@ -261,9 +258,9 @@ def model_initialization_jabw(
     rho_next = gtx.as_field((CellDim, KDim), rho_numpy)
     theta_v_next = gtx.as_field((CellDim, KDim), theta_v_numpy)
 
-    u = dycore_utils._allocate(CellDim, KDim, grid=icon_grid)
-    v = dycore_utils._allocate(CellDim, KDim, grid=icon_grid)
-    e2c_interp.edge_2_cell_vector_rbf_interpolation(
+    u = field_alloc.allocate_zero_field(CellDim, KDim, grid=grid)
+    v = field_alloc.allocate_zero_field(CellDim, KDim, grid=grid)
+    edge_2_cell_vector_rbf_interpolation.edge_2_cell_vector_rbf_interpolation(
         vn,
         rbf_vec_coeff_c1,
         rbf_vec_coeff_c2,
@@ -273,12 +270,12 @@ def model_initialization_jabw(
         grid_idx_cell_end,
         0,
         num_levels,
-        offset_provider=icon_grid.offset_providers,
+        offset_provider=grid.offset_providers,
     )
 
     log.info("U, V computation completed.")
 
-    exner_pr = dycore_utils._allocate(CellDim, KDim, grid=icon_grid)
+    exner_pr = field_alloc.allocate_zero_field(CellDim, KDim, grid=grid)
     init_exner_pr.init_exner_pr(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
@@ -286,12 +283,12 @@ def model_initialization_jabw(
         grid_idx_cell_interior_start,
         grid_idx_cell_end,
         0,
-        icon_grid.num_levels,
+        grid.num_levels,
         offset_provider={},
     )
     log.info("exner_pr initialization completed.")
 
-    diagnostic_state = diag_states.DiagnosticState(
+    diagnostic_state = diagnostics.DiagnosticState(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
         temperature=temperature,
@@ -299,14 +296,14 @@ def model_initialization_jabw(
         v=v,
     )
 
-    prognostic_state_now = prog_states.PrognosticState(
+    prognostic_state_now = prognostics.PrognosticState(
         w=w,
         vn=vn,
         theta_v=theta_v,
         rho=rho,
         exner=exner,
     )
-    prognostic_state_next = prog_states.PrognosticState(
+    prognostic_state_next = prognostics.PrognosticState(
         w=w_next,
         vn=vn_next,
         theta_v=theta_v_next,
@@ -314,41 +311,41 @@ def model_initialization_jabw(
         exner=exner_next,
     )
 
-    diffusion_diagnostic_state = diff_states.DiffusionDiagnosticState(
-        hdef_ic=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        div_ic=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        dwdx=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        dwdy=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+    diffusion_diagnostic_state = diffus_states.DiffusionDiagnosticState(
+        hdef_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        div_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        dwdx=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        dwdy=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
     )
-    solve_nonhydro_diagnostic_state = states_utils.DiagnosticStateNonHydro(
-        theta_v_ic=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+    solve_nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
+        theta_v_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
         exner_pr=exner_pr,
-        rho_ic=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        ddt_exner_phy=dycore_utils._allocate(CellDim, KDim, grid=icon_grid),
-        grf_tend_rho=dycore_utils._allocate(CellDim, KDim, grid=icon_grid),
-        grf_tend_thv=dycore_utils._allocate(CellDim, KDim, grid=icon_grid),
-        grf_tend_w=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        mass_fl_e=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        ddt_vn_phy=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        grf_tend_vn=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        ddt_vn_apc_ntl1=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        ddt_vn_apc_ntl2=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        ddt_w_adv_ntl1=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        ddt_w_adv_ntl2=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        vt=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        vn_ie=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid, is_halfdim=True),
-        w_concorr_c=dycore_utils._allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
+        rho_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        ddt_exner_phy=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        grf_tend_rho=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        grf_tend_thv=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        grf_tend_w=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        mass_fl_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        ddt_vn_phy=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        grf_tend_vn=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        ddt_vn_apc_ntl1=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        ddt_vn_apc_ntl2=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        ddt_w_adv_ntl1=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        ddt_w_adv_ntl2=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        vt=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        vn_ie=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid, is_halfdim=True),
+        w_concorr_c=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
         rho_incr=None,  # solve_nonhydro_init_savepoint.rho_incr(),
         vn_incr=None,  # solve_nonhydro_init_savepoint.vn_incr(),
         exner_incr=None,  # solve_nonhydro_init_savepoint.exner_incr(),
-        exner_dyn_incr=dycore_utils._allocate(CellDim, KDim, grid=icon_grid),
+        exner_dyn_incr=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
     )
 
-    prep_adv = states_utils.PrepAdvection(
-        vn_traj=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        mass_flx_me=dycore_utils._allocate(EdgeDim, KDim, grid=icon_grid),
-        mass_flx_ic=dycore_utils._allocate(CellDim, KDim, grid=icon_grid),
-        vol_flx_ic=dycore_utils.zero_field(icon_grid, CellDim, KDim, dtype=float),
+    prep_adv = solve_nh_states.PrepAdvection(
+        vn_traj=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        mass_flx_me=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+        mass_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
     )
     log.info("Initialization completed.")
 

@@ -18,40 +18,38 @@ import pathlib
 
 import gt4py.next as gtx
 
-from icon4py.model.atmosphere.diffusion.diffusion_states import (
-    DiffusionDiagnosticState,
-    DiffusionInterpolationState,
-    DiffusionMetricState,
+from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
+from icon4py.model.atmosphere.dycore import init_exner_pr
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.common import constants as phy_const, field_type_aliases as fa
+from icon4py.model.common.decomposition import (
+    definitions as decomposition,
+    mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.atmosphere.dycore.state_utils.states import (
-    DiagnosticStateNonHydro,
-    InterpolationState,
-    MetricStateNonHydro,
-    PrepAdvection,
-)
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
-from icon4py.model.common.decomposition.definitions import DecompositionInfo, ProcessProperties
-from icon4py.model.common.decomposition.mpi_decomposition import ParallelLogger
 from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
     KDim,
 )
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import (
-    VerticalGridConfig,
-    VerticalGridParams,
-    get_vct_a_and_vct_b,
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.interpolation.stencils import (
+    cell_2_edge_interpolation,
+    edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.states.diagnostic_state import DiagnosticMetricState, DiagnosticState
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field
-from icon4py.model.driver.serialbox_helpers import (
-    construct_diagnostics_for_diffusion,
-    construct_interpolation_state_for_diffusion,
-    construct_metric_state_for_diffusion,
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+)
+from icon4py.model.common.test_utils import (
+    datatest_utils as dt_utils,
+    helpers,
+    serialbox_utils as sb,
+)
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.driver import (
+    jablonowski_willamson_testcase as jw_func,
+    serialbox_helpers as driver_sb,
+    testcase_functions as testcase_func,
 )
 from icon4py.model.driver.test_cases import gauss3d, jablonowski_williamson
 
@@ -86,9 +84,9 @@ def read_icon_grid(
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
-    grid_root=2,
-    grid_level=4,
-) -> IconGrid:
+    grid_root=GRID_ROOT,
+    grid_level=GRID_LEVEL,
+) -> icon_grid.IconGrid:
     """
     Read icon grid.
 
@@ -112,22 +110,22 @@ def read_icon_grid(
 
 
 def model_initialization_serialbox(
-    icon_grid: IconGrid, path: pathlib.Path, rank=0
+    grid: icon_grid.IconGrid, path: pathlib.Path, rank=0
 ) -> tuple[
-    DiffusionDiagnosticState,
-    DiagnosticStateNonHydro,
-    PrepAdvection,
+    diffus_states.DiffusionDiagnosticState,
+    solve_nh_states.DiagnosticStateNonHydro,
+    solve_nh_states.PrepAdvection,
     float,
-    DiagnosticState,
-    PrognosticState,
-    PrognosticState,
+    diagnostics.DiagnosticState,
+    prognostics.PrognosticState,
+    prognostics.PrognosticState,
 ]:
     """
     Initial condition read from serialized data. Diagnostic variables are allocated as zero
     fields.
 
     Args:
-        icon_grid: IconGrid
+        grid: IconGrid
         path: path where to find the input data
         rank: mpi rank of the current compute node
     Returns:  A tuple containing Diagnostic variables for diffusion and solve_nonhydro granules,
@@ -146,10 +144,10 @@ def model_initialization_serialbox(
         istep=1, vn_only=False, date=SIMULATION_START_DATE, jstep=0
     )
     prognostic_state_now = diffusion_init_savepoint.construct_prognostics()
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
         diffusion_init_savepoint,
     )
-    solve_nonhydro_diagnostic_state = DiagnosticStateNonHydro(
+    solve_nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
         theta_v_ic=solve_nonhydro_init_savepoint.theta_v_ic(),
         exner_pr=solve_nonhydro_init_savepoint.exner_pr(),
         rho_ic=solve_nonhydro_init_savepoint.rho_ic(),
@@ -173,15 +171,15 @@ def model_initialization_serialbox(
         exner_dyn_incr=None,
     )
 
-    diagnostic_state = DiagnosticState(
-        pressure=_allocate(CellDim, KDim, grid=icon_grid),
-        pressure_ifc=_allocate(CellDim, KDim, grid=icon_grid, is_halfdim=True),
-        temperature=_allocate(CellDim, KDim, grid=icon_grid),
-        u=_allocate(CellDim, KDim, grid=icon_grid),
-        v=_allocate(CellDim, KDim, grid=icon_grid),
+    diagnostic_state = diagnostics.DiagnosticState(
+        pressure=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        pressure_ifc=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid, is_halfdim=True),
+        temperature=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        u=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        v=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
     )
 
-    prognostic_state_next = PrognosticState(
+    prognostic_state_next = prognostics.PrognosticState(
         w=solve_nonhydro_init_savepoint.w_new(),
         vn=solve_nonhydro_init_savepoint.vn_new(),
         theta_v=solve_nonhydro_init_savepoint.theta_v_new(),
@@ -189,7 +187,7 @@ def model_initialization_serialbox(
         exner=solve_nonhydro_init_savepoint.exner_new(),
     )
 
-    prep_adv = PrepAdvection(
+    prep_adv = solve_nh_states.PrepAdvection(
         vn_traj=solve_nonhydro_init_savepoint.vn_traj(),
         mass_flx_me=solve_nonhydro_init_savepoint.mass_flx_me(),
         mass_flx_ic=solve_nonhydro_init_savepoint.mass_flx_ic(),
@@ -207,26 +205,26 @@ def model_initialization_serialbox(
 
 
 def read_initial_state(
-    icon_grid: IconGrid,
-    cell_param: CellParams,
-    edge_param: EdgeParams,
+    grid: icon_grid.IconGrid,
+    cell_param: h_grid.CellParams,
+    edge_param: h_grid.EdgeParams,
     path: pathlib.Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
 ) -> tuple[
-    DiffusionDiagnosticState,
-    DiagnosticStateNonHydro,
-    PrepAdvection,
+    diffus_states.DiffusionDiagnosticState,
+    solve_nh_states.DiagnosticStateNonHydro,
+    solve_nh_states.PrepAdvection,
     float,
-    DiagnosticState,
-    PrognosticState,
-    PrognosticState,
+    diagnostics.DiagnosticState,
+    prognostics.PrognosticState,
+    prognostics.PrognosticState,
 ]:
     """
     Read initial prognostic and diagnostic fields.
 
     Args:
-        icon_grid: IconGrid
+        grid: IconGrid
         cell_param: cell properties
         edge_param: edge properties
         path: path to the serialized input data
@@ -247,7 +245,7 @@ def read_initial_state(
             prognostic_state_now,
             prognostic_state_next,
         ) = jablonowski_williamson.model_initialization_jabw(
-            icon_grid, cell_param, edge_param, path, rank
+            grid, cell_param, edge_param, path, rank
         )
     elif experiment_type == ExperimentType.GAUSS3D:
         (
@@ -258,7 +256,7 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = gauss3d.model_initialization_gauss3d(icon_grid, edge_param, path, rank)
+        ) = gauss3d.model_initialization_gauss3d(grid, edge_param, path, rank)
     elif experiment_type == ExperimentType.ANY:
         (
             diffusion_diagnostic_state,
@@ -268,7 +266,7 @@ def read_initial_state(
             diagnostic_state,
             prognostic_state_now,
             prognostic_state_next,
-        ) = model_initialization_serialbox(icon_grid, path, rank)
+        ) = model_initialization_serialbox(grid, path, rank)
     else:
         raise NotImplementedError(INITIALIZATION_ERROR_MSG)
 
@@ -285,13 +283,13 @@ def read_initial_state(
 
 def read_geometry_fields(
     path: pathlib.Path,
-    vertical_grid_config: VerticalGridConfig,
+    vertical_grid_config: v_grid.VerticalGridConfig,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
-    grid_root=2,
-    grid_level=4,
-) -> tuple[EdgeParams, CellParams, VerticalGridParams, gtx.Field[[CellDim], bool]]:
+    grid_root=GRID_ROOT,
+    grid_level=GRID_LEVEL,
+) -> tuple[h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGridParams, fa.CellField[bool]]:
     """
     Read fields containing grid properties.
 
@@ -311,8 +309,8 @@ def read_geometry_fields(
         sp = _grid_savepoint(path, rank, grid_id, grid_root, grid_level)
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
-        vct_a, vct_b = get_vct_a_and_vct_b(vertical_grid_config)
-        vertical_geometry = VerticalGridParams(
+        vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
+        vertical_geometry = v_grid.VerticalGridParams(
             vertical_config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
@@ -336,12 +334,12 @@ def _grid_savepoint(path, rank, grid_id, grid_root, grid_level) -> sb.IconGridSa
 
 def read_decomp_info(
     path: pathlib.Path,
-    procs_props: ProcessProperties,
+    procs_props: decomposition.ProcessProperties,
     ser_type=SerializationType.SB,
     grid_id=GLOBAL_GRID_ID,
-    grid_root=2,
-    grid_level=4,
-) -> DecompositionInfo:
+    grid_root=GRID_ROOT,
+    grid_level=GRID_LEVEL,
+) -> decomposition.DecompositionInfo:
     if ser_type == SerializationType.SB:
         return _grid_savepoint(
             path, procs_props.rank, grid_id, grid_root, grid_level
@@ -351,29 +349,25 @@ def read_decomp_info(
 
 
 def read_static_fields(
+    grid: icon_grid.IconGrid,
     path: pathlib.Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
-    grid_id=GLOBAL_GRID_ID,
-    grid_root=2,
-    grid_level=4,
 ) -> tuple[
-    DiffusionMetricState,
-    DiffusionInterpolationState,
-    MetricStateNonHydro,
-    InterpolationState,
-    DiagnosticMetricState,
+    diffus_states.DiffusionMetricState,
+    diffus_states.DiffusionInterpolationState,
+    solve_nh_states.MetricStateNonHydro,
+    solve_nh_states.InterpolationState,
+    diagnostics.DiagnosticMetricState,
 ]:
     """
     Read fields for metric and interpolation state.
 
      Args:
+        grid: IconGrid
         path: path to the serialized input data
         rank: mpi rank, defaults to 0 for serial run
         ser_type: (optional) defaults to SB=serialbox, type of input data to be read
-        grid_id: id (uuid) of the horizontal grid
-        grid_root: global grid root division number
-        grid_level: global grid refinement number
 
     Returns:
         a tuple containing the metric_state and interpolation state,
@@ -383,19 +377,15 @@ def read_static_fields(
     if ser_type == SerializationType.SB:
         data_provider = _serial_data_provider(path, rank)
 
-        icon_grid = _grid_savepoint(path, rank, grid_id, grid_root, grid_level).construct_icon_grid(
-            on_gpu=False
-        )
-
-        diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+        diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
         )
-        diffusion_metric_state = construct_metric_state_for_diffusion(
+        diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(
             data_provider.from_metrics_savepoint()
         )
         interpolation_savepoint = data_provider.from_interpolation_savepoint()
         grg = interpolation_savepoint.geofac_grg()
-        solve_nonhydro_interpolation_state = InterpolationState(
+        solve_nonhydro_interpolation_state = solve_nh_states.InterpolationState(
             c_lin_e=interpolation_savepoint.c_lin_e(),
             c_intp=interpolation_savepoint.c_intp(),
             e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -404,17 +394,17 @@ def read_static_fields(
             pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
             pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
             rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-            e_bln_c_s=as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+            e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
             rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
             rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-            geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+            geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
             geofac_n2s=interpolation_savepoint.geofac_n2s(),
             geofac_grg_x=grg[0],
             geofac_grg_y=grg[1],
             nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
         )
         metrics_savepoint = data_provider.from_metrics_savepoint()
-        solve_nonhydro_metric_state = MetricStateNonHydro(
+        solve_nonhydro_metric_state = solve_nh_states.MetricStateNonHydro(
             bdy_halo_c=metrics_savepoint.bdy_halo_c(),
             mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
             rayleigh_w=metrics_savepoint.rayleigh_w(),
@@ -441,7 +431,7 @@ def read_static_fields(
             ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
             ddxt_z_full=metrics_savepoint.ddxt_z_full(),
             wgtfac_e=metrics_savepoint.wgtfac_e(),
-            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
+            wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid.num_levels),
             vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
             hmask_dd3d=metrics_savepoint.hmask_dd3d(),
             scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
@@ -450,7 +440,7 @@ def read_static_fields(
             coeff_gradekin=metrics_savepoint.coeff_gradekin(),
         )
 
-        diagnostic_metric_state = DiagnosticMetricState(
+        diagnostic_metric_state = diagnostics.DiagnosticMetricState(
             ddqz_z_full=metrics_savepoint.ddqz_z_full(),
             rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
             rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
@@ -468,7 +458,7 @@ def read_static_fields(
 
 
 def configure_logging(
-    run_path: str, experiment_name: str, processor_procs: ProcessProperties = None
+    run_path: str, experiment_name: str, processor_procs: decomposition.ProcessProperties = None
 ) -> None:
     """
     Configure logging.
@@ -494,7 +484,7 @@ def configure_logging(
     )
     console_handler = logging.StreamHandler()
     # TODO (Chia Rui): modify here when single_dispatch is ready
-    console_handler.addFilter(ParallelLogger(processor_procs))
+    console_handler.addFilter(mpi_decomp.ParallelLogger(processor_procs))
 
     log_format = "{rank} {asctime} - {filename}: {funcName:<20}: {levelname:<7} {message}"
     formatter = logging.Formatter(fmt=log_format, style="{", defaults={"rank": None})
