@@ -265,8 +265,9 @@ def _compute_rayleigh_w(
     if rayleigh_type == rayleigh_classic:
         rayleigh_w = (
             rayleigh_coeff
-            * sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height)) ** 2
+            * (sin(pi_const / 2.0 * z_sin_diff / maximum(0.001, vct_a_1 - damping_height))) ** 2
         )
+
     elif rayleigh_type == rayleigh_klemp:
         rayleigh_w = rayleigh_coeff * (
             1.0 - tanh(3.8 * z_tanh_diff / maximum(0.000001, vct_a_1 - damping_height))
@@ -1014,22 +1015,17 @@ def _compute_hmask_dd3d(
     e_refin_ctrl: fa.EdgeField[int32], grf_nudge_start_e: int32, grf_nudgezone_width: int32
 ) -> fa.EdgeField[wpfloat]:
     hmask_dd3d = (
-        1.0
-        / (astype(grf_nudgezone_width, wpfloat) - 1.0)
-        * (
-            astype(e_refin_ctrl, wpfloat)
-            - (astype(grf_nudge_start_e, wpfloat) + astype(grf_nudgezone_width, wpfloat) - 1.0)
-        )
+        1
+        / (grf_nudgezone_width - 1)
+        * (e_refin_ctrl - (grf_nudge_start_e + grf_nudgezone_width - 1))
     )
     hmask_dd3d = where(
         (e_refin_ctrl <= 0) | (e_refin_ctrl >= (grf_nudge_start_e + 2 * (grf_nudgezone_width - 1))),
-        1.0,
+        1,
         hmask_dd3d,
     )
-    hmask_dd3d = where(
-        e_refin_ctrl <= (grf_nudge_start_e + grf_nudgezone_width - 1), 0.0, hmask_dd3d
-    )
-    return hmask_dd3d
+    hmask_dd3d = where(e_refin_ctrl <= (grf_nudge_start_e + grf_nudgezone_width - 1), 0, hmask_dd3d)
+    return astype(hmask_dd3d, wpfloat)
 
 
 @program

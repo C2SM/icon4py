@@ -18,10 +18,12 @@ from icon4py.model.common.metrics.stencils.compute_wgtfacq import (
     compute_wgtfacq_c_dsl,
     compute_wgtfacq_e_dsl,
 )
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfacq_c_dsl(icon_grid, metrics_savepoint):
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
 

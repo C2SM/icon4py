@@ -17,6 +17,7 @@ import pytest
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
 from icon4py.model.common.metrics.stencils.compute_nudgecoeffs import compute_nudgecoeffs
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
     download_ser_data,
@@ -32,6 +33,7 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_nudgecoeffs_e(
     grid_savepoint,  # noqa: F811 # fixture
     interpolation_savepoint,  # noqa: F811 # fixture
