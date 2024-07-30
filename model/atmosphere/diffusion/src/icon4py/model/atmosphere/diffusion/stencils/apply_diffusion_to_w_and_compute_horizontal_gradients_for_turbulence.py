@@ -25,6 +25,7 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_horizontal_gradients_
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_w import (
     _calculate_nabla2_for_w,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -32,25 +33,25 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
-    area: Field[[CellDim], wpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    w_old: Field[[CellDim, KDim], wpfloat],
+    w_old: fa.CellKField[wpfloat],
     type_shear: int32,
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: fa.CellKField[vpfloat],
+    dwdy: fa.CellKField[vpfloat],
     diff_multfac_w: wpfloat,
-    diff_multfac_n2w: Field[[KDim], wpfloat],
-    k: Field[[KDim], int32],
-    cell: Field[[CellDim], int32],
+    diff_multfac_n2w: fa.KField[wpfloat],
+    k: fa.KField[int32],
+    cell: fa.CellField[int32],
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], wpfloat],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    fa.CellKField[wpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     k = broadcast(k, (CellDim, KDim))
     dwdx, dwdy = (
@@ -82,19 +83,19 @@ def _apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence(
-    area: Field[[CellDim], wpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
-    w_old: Field[[CellDim, KDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
+    w_old: fa.CellKField[wpfloat],
+    w: fa.CellKField[wpfloat],
     type_shear: int32,
-    dwdx: Field[[CellDim, KDim], vpfloat],
-    dwdy: Field[[CellDim, KDim], vpfloat],
+    dwdx: fa.CellKField[vpfloat],
+    dwdy: fa.CellKField[vpfloat],
     diff_multfac_w: wpfloat,
-    diff_multfac_n2w: Field[[KDim], wpfloat],
-    k: Field[[KDim], int32],
-    cell: Field[[CellDim], int32],
+    diff_multfac_n2w: fa.KField[wpfloat],
+    k: fa.KField[int32],
+    cell: fa.CellField[int32],
     nrdmax: int32,
     interior_idx: int32,
     halo_idx: int32,

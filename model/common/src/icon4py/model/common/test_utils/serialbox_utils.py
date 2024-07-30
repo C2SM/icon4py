@@ -21,6 +21,7 @@ from gt4py.next.common import Dimension, DimensionKind, Field
 from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.common.decomposition.definitions as decomposition
+import icon4py.model.common.field_type_aliases as fa
 from icon4py.model.common import dimension
 from icon4py.model.common.dimension import (
     C2E2C2EDim,
@@ -144,6 +145,19 @@ class IconSavepoint:
 
 
 class IconGridSavepoint(IconSavepoint):
+    def __init__(
+        self,
+        sp: serialbox.Savepoint,
+        ser: serialbox.Serializer,
+        grid_id: uuid.UUID,
+        size: dict,
+        root: int,
+        level: int,
+    ):
+        super().__init__(sp, ser, size)
+        self._grid_id = grid_id
+        self.global_grid_params = icon.GlobalGridParams(root, level)
+
     def verts_vertex_lat(self):
         return self._get_field("verts_vertex_lat", VertexDim)
 
@@ -170,19 +184,6 @@ class IconGridSavepoint(IconSavepoint):
 
     def v_num_edges(self):
         return self._get_field("v_num_edges", VertexDim)
-
-    def __init__(
-        self,
-        sp: serialbox.Savepoint,
-        ser: serialbox.Serializer,
-        grid_id: uuid.UUID,
-        size: dict,
-        root: int,
-        level: int,
-    ):
-        super().__init__(sp, ser, size)
-        self._grid_id = grid_id
-        self.global_grid_params = icon.GlobalGridParams(root, level)
 
     def v_dual_area(self):
         return self._get_field("v_dual_area", VertexDim)
@@ -264,6 +265,12 @@ class IconGridSavepoint(IconSavepoint):
 
     def cell_center_lon(self):
         return self._get_field("cell_center_lon", CellDim)
+
+    def edge_center_lat(self):
+        return self._get_field("edges_center_lat", EdgeDim)
+
+    def edge_center_lon(self):
+        return self._get_field("edges_center_lon", EdgeDim)
 
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
@@ -540,7 +547,7 @@ class IconGridSavepoint(IconSavepoint):
 
 class InterpolationSavepoint(IconSavepoint):
     def c_bln_avg(self):
-        return self._get_field("c_bln_avg", CellDim, C2EDim)
+        return self._get_field("c_bln_avg", CellDim, C2E2CODim)
 
     def c_intp(self):
         return self._get_field("c_intp", VertexDim, V2CDim)
@@ -753,6 +760,7 @@ class MetricSavepoint(IconSavepoint):
 
     def _read_and_reorder_sparse_field(self, name: str, sparse_size=3):
         ser_input = np.squeeze(self.serializer.read(name, self.savepoint))[:, :, :]
+        ser_input = self._reduce_to_dim_size(ser_input, (CellDim, C2E2CDim, KDim))
         if ser_input.shape[1] != sparse_size:
             ser_input = np.moveaxis(ser_input, 1, -1)
 
@@ -948,7 +956,7 @@ class IconNonHydroInitSavepoint(IconSavepoint):
     def scal_divdamp_o2(self) -> float:
         return self.serializer.read("scal_divdamp_o2", self.savepoint)[0]
 
-    def scal_divdamp(self) -> Field[[KDim], float]:
+    def scal_divdamp(self) -> fa.KField[float]:
         return self._get_field("scal_divdamp", KDim)
 
     def theta_v_ic(self):

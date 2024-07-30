@@ -14,10 +14,10 @@ import dataclasses
 import datetime
 import logging
 
-from icon4py.model.atmosphere.diffusion.diffusion import DiffusionConfig, DiffusionType
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import NonHydrostaticConfig
-from icon4py.model.common.grid.vertical import VerticalGridConfig
-from icon4py.model.driver.initialization_utils import ExperimentType
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.driver import initialization_utils as driver_init
 
 
 log = logging.getLogger(__name__)
@@ -26,7 +26,7 @@ n_substeps_reduced = 2
 
 
 @dataclasses.dataclass(frozen=True)
-class IconRunConfig:
+class Icon4pyRunConfig:
     dtime: datetime.timedelta = datetime.timedelta(seconds=600.0)  # length of a time step
     start_date: datetime.datetime = datetime.datetime(1, 1, 1, 0, 0, 0)
     end_date: datetime.datetime = datetime.datetime(1, 1, 1, 1, 0, 0)
@@ -46,16 +46,18 @@ class IconRunConfig:
 
 
 @dataclasses.dataclass
-class IconConfig:
-    run_config: IconRunConfig
-    vertical_grid_config: VerticalGridConfig
-    diffusion_config: DiffusionConfig
-    solve_nonhydro_config: NonHydrostaticConfig
+class Icon4pyConfig:
+    run_config: Icon4pyRunConfig
+    vertical_grid_config: v_grid.VerticalGridConfig
+    diffusion_config: diffusion.DiffusionConfig
+    solve_nonhydro_config: solve_nh.NonHydrostaticConfig
 
 
-def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconConfig:
+def read_config(
+    experiment_type: driver_init.ExperimentType = driver_init.ExperimentType.ANY,
+) -> Icon4pyConfig:
     def _mch_ch_r04b09_vertical_config():
-        return VerticalGridConfig(
+        return v_grid.VerticalGridConfig(
             num_levels=65,
             lowest_layer_thickness=20.0,
             model_top_height=23000.0,
@@ -64,8 +66,8 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
 
     def _mch_ch_r04b09_diffusion_config():
-        return DiffusionConfig(
-            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             n_substeps=n_substeps_reduced,
             hdiff_vn=True,
@@ -80,19 +82,19 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
 
     def _mch_ch_r04b09_nonhydro_config():
-        return NonHydrostaticConfig(
+        return solve_nh.NonHydrostaticConfig(
             ndyn_substeps_var=n_substeps_reduced,
         )
 
     def _jabw_vertical_config():
-        return VerticalGridConfig(
+        return v_grid.VerticalGridConfig(
             num_levels=35,
             rayleigh_damping_height=45000.0,
         )
 
     def _jabw_diffusion_config(n_substeps: int):
-        return DiffusionConfig(
-            diffusion_type=DiffusionType.SMAGORINSKY_4TH_ORDER,
+        return diffusion.DiffusionConfig(
+            diffusion_type=diffusion.DiffusionType.SMAGORINSKY_4TH_ORDER,
             hdiff_w=True,
             hdiff_vn=True,
             hdiff_temp=False,
@@ -108,7 +110,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
 
     def _jabw_nonhydro_config(n_substeps: int):
-        return NonHydrostaticConfig(
+        return solve_nh.NonHydrostaticConfig(
             # original igradp_method is 2
             # original divdamp_order is 4
             ndyn_substeps_var=n_substeps,
@@ -118,7 +120,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
 
     def _mch_ch_r04b09_config():
         return (
-            IconRunConfig(
+            Icon4pyRunConfig(
                 dtime=datetime.timedelta(seconds=10.0),
                 start_date=datetime.datetime(2021, 6, 20, 12, 0, 0),
                 end_date=datetime.datetime(2021, 6, 20, 12, 0, 10),
@@ -131,7 +133,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
         )
 
     def _jablownoski_Williamson_config():
-        icon_run_config = IconRunConfig(
+        icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
             end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
             apply_initial_stabilization=False,
@@ -147,7 +149,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             jabw_nonhydro_config,
         )
 
-    if experiment_type == ExperimentType.JABW:
+    if experiment_type == driver_init.ExperimentType.JABW:
         (
             model_run_config,
             vertical_grid_config,
@@ -164,7 +166,7 @@ def read_config(experiment_type: ExperimentType = ExperimentType.ANY) -> IconCon
             diffusion_config,
             nonhydro_config,
         ) = _mch_ch_r04b09_config()
-    return IconConfig(
+    return Icon4pyConfig(
         run_config=model_run_config,
         vertical_grid_config=vertical_grid_config,
         diffusion_config=diffusion_config,
