@@ -91,7 +91,7 @@ class FieldGroupIOConfig(Config):
     """
 
     output_interval: str
-    start_time: Optional[str]
+    start_time: Optional[str] # TODO (halungge) make it possible to pass datetime.datetime objects other than strings?
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
@@ -184,7 +184,8 @@ class IOMonitor(monitor.Monitor):
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
         except OSError as error:
-            log.error(f"Output directory at {path} exists: {error}.")
+            log.error(f"Output directory at {path} exists: {error}. Re-run with another output directory. Aborting.")
+            exit(1)
 
     def _write_ugrid(self) -> None:
         writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)
