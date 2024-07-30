@@ -23,24 +23,14 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-from gt4py.next.iterator.builtins import int32
 
-from icon4py.model.common.constants import EARTH_RADIUS
-from icon4py.model.common.dimension import (
-    C2E2CDim,
-    C2EDim,
-    CellDim,
-    E2C2EDim,
-    E2CDim,
-    E2VDim,
-    EdgeDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
-)
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
+import icon4py.model.common.dimension as dims
+import icon4py.model.common.grid.horizontal as h_grid
+import icon4py.model.common.test_utils.helpers as test_helpers
+from icon4py.model.common import constants
 from icon4py.model.common.interpolation.interpolation_fields import (
     compute_c_bln_avg,
     compute_c_lin_e,
@@ -63,7 +53,6 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
     processor_props,
     ranked_data_path,
 )
-from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 
 
 @pytest.mark.datatest
@@ -73,8 +62,8 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
     owner_mask = grid_savepoint.e_owner_mask()
     c_lin_e_ref = interpolation_savepoint.c_lin_e()
     horizontal_start = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+        dims.EdgeDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
     )
     c_lin_e = compute_c_lin_e(
         edge_cell_length.asnumpy(),
@@ -83,7 +72,7 @@ def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  #
         horizontal_start,
     )
 
-    assert dallclose(c_lin_e, c_lin_e_ref.asnumpy())
+    assert test_helpers.dallclose(c_lin_e, c_lin_e_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -93,7 +82,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid):
     edge_orientation = grid_savepoint.edge_orientation()
     area = grid_savepoint.cell_areas()
     geofac_div_ref = interpolation_savepoint.geofac_div()
-    geofac_div = zero_field(mesh, CellDim, C2EDim)
+    geofac_div = test_helpers.zero_field(mesh, dims.CellDim, dims.C2EDim)
     compute_geofac_div(
         primal_edge_length,
         edge_orientation,
@@ -102,7 +91,7 @@ def test_compute_geofac_div(grid_savepoint, interpolation_savepoint, icon_grid):
         offset_provider={"C2E": mesh.get_offset_provider("C2E")},
     )
 
-    assert dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
+    assert test_helpers.dallclose(geofac_div.asnumpy(), geofac_div_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -113,9 +102,9 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
     dual_area = grid_savepoint.vertex_dual_area()
     owner_mask = grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
-    geofac_rot = zero_field(mesh, VertexDim, V2EDim)
-    horizontal_start = int32(
-        icon_grid.get_start_index(VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1)
+    geofac_rot = test_helpers.zero_field(mesh, dims.VertexDim, dims.V2EDim)
+    horizontal_start = gtx.int32(
+        icon_grid.get_start_index(dims.VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1)
     )
     compute_geofac_rot(
         dual_edge_length,
@@ -126,7 +115,7 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
         offset_provider={"V2E": mesh.get_offset_provider("V2E")},
     )
 
-    assert dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
+    assert test_helpers.dallclose(geofac_rot.asnumpy(), geofac_rot_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -134,12 +123,12 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
     dual_edge_length = grid_savepoint.dual_edge_length()
     geofac_div = interpolation_savepoint.geofac_div()
     geofac_n2s_ref = interpolation_savepoint.geofac_n2s()
-    c2e = icon_grid.connectivities[C2EDim]
-    e2c = icon_grid.connectivities[E2CDim]
-    c2e2c = icon_grid.connectivities[C2E2CDim]
+    c2e = icon_grid.connectivities[dims.C2EDim]
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+        dims.CellDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
     )
     geofac_n2s = compute_geofac_n2s(
         dual_edge_length.asnumpy(),
@@ -149,7 +138,7 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
         c2e2c,
         horizontal_start,
     )
-    assert dallclose(geofac_n2s, geofac_n2s_ref.asnumpy())
+    assert test_helpers.dallclose(geofac_n2s, geofac_n2s_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -160,12 +149,12 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     c_lin_e = interpolation_savepoint.c_lin_e()
     geofac_grg_ref = interpolation_savepoint.geofac_grg()
     owner_mask = grid_savepoint.c_owner_mask()
-    c2e = icon_grid.connectivities[C2EDim]
-    e2c = icon_grid.connectivities[E2CDim]
-    c2e2c = icon_grid.connectivities[C2E2CDim]
+    c2e = icon_grid.connectivities[dims.C2EDim]
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+        dims.CellDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
     )
     primal_normal_ec = compute_primal_normal_ec(
         primal_normal_cell_x,
@@ -184,8 +173,8 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
         c2e2c,
         horizontal_start,
     )
-    assert dallclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7)
-    assert dallclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(geofac_grg[:, :, 0], geofac_grg_ref[0].asnumpy(), atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(geofac_grg[:, :, 1], geofac_grg_ref[1].asnumpy(), atol=1e-6, rtol=1e-7)
 
 
 @pytest.mark.datatest
@@ -194,12 +183,12 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     geofac_grdiv_ref = interpolation_savepoint.geofac_grdiv()
     owner_mask = grid_savepoint.c_owner_mask()
-    c2e = icon_grid.connectivities[C2EDim]
-    e2c = icon_grid.connectivities[E2CDim]
-    e2c2e = icon_grid.connectivities[E2C2EDim]
+    c2e = icon_grid.connectivities[dims.C2EDim]
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
     horizontal_start = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+        dims.EdgeDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
     )
     geofac_grdiv = compute_geofac_grdiv(
         geofac_div.asnumpy(),
@@ -210,7 +199,7 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
         e2c2e,
         horizontal_start,
     )
-    assert dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
+    assert test_helpers.dallclose(geofac_grdiv, geofac_grdiv_ref.asnumpy())
 
 
 @pytest.mark.datatest
@@ -219,14 +208,14 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     divavg_cntrwgt = 0.5
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    c2e2c = icon_grid.connectivities[C2E2CDim]
+    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     horizontal_start = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+        dims.CellDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
     )
     horizontal_start_p2 = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 2,
+        dims.CellDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2,
     )
     lat = grid_savepoint.cell_center_lat().asnumpy()
     lon = grid_savepoint.cell_center_lon().asnumpy()
@@ -247,7 +236,7 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start,
         horizontal_start_p2,
     )
-    assert dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
+    assert test_helpers.dallclose(c_bln_avg, c_bln_avg_ref, atol=1e-4, rtol=1e-5)
 
 
 @pytest.mark.datatest
@@ -262,17 +251,17 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     primal_cart_normal = np.transpose(
         np.stack((primal_cart_normal_x, primal_cart_normal_y, primal_cart_normal_z))
     )
-    e2c = icon_grid.connectivities[E2CDim]
-    c2e = icon_grid.connectivities[C2EDim]
-    c2e2c = icon_grid.connectivities[C2E2CDim]
-    e2c2e = icon_grid.connectivities[E2C2EDim]
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    c2e = icon_grid.connectivities[dims.C2EDim]
+    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
     horizontal_start_p3 = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 3,
+        dims.EdgeDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 3,
     )
     horizontal_start_p4 = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4,
+        dims.EdgeDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4,
     )
     e_flx_avg = compute_e_flx_avg(
         c_bln_avg,
@@ -286,7 +275,7 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
         horizontal_start_p3,
         horizontal_start_p4,
     )
-    assert dallclose(e_flx_avg, e_flx_avg_ref)
+    assert test_helpers.dallclose(e_flx_avg, e_flx_avg_ref)
 
 
 @pytest.mark.datatest
@@ -298,13 +287,13 @@ def test_compute_cells_aw_verts(
     edge_vert_length = grid_savepoint.edge_vert_length().asnumpy()
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
     owner_mask = grid_savepoint.v_owner_mask()
-    e2c = icon_grid.connectivities[E2CDim]
-    v2c = icon_grid.connectivities[V2CDim]
-    v2e = icon_grid.connectivities[V2EDim]
-    e2v = icon_grid.connectivities[E2VDim]
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    v2c = icon_grid.connectivities[dims.V2CDim]
+    v2e = icon_grid.connectivities[dims.V2EDim]
+    e2v = icon_grid.connectivities[dims.E2VDim]
     horizontal_start_vertex = icon_grid.get_start_index(
-        VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1,
+        dims.VertexDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1,
     )
 
     cells_aw_verts = compute_cells_aw_verts(
@@ -318,14 +307,14 @@ def test_compute_cells_aw_verts(
         e2c,
         horizontal_start_vertex,
     )
-    assert dallclose(cells_aw_verts, cells_aw_verts_ref)
+    assert test_helpers.dallclose(cells_aw_verts, cells_aw_verts_ref)
 
 
 @pytest.mark.datatest
 def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
     e_bln_c_s_ref = interpolation_savepoint.e_bln_c_s().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
-    c2e = icon_grid.connectivities[C2EDim]
+    c2e = icon_grid.connectivities[dims.C2EDim]
     cells_lat = grid_savepoint.cell_center_lat().asnumpy()
     cells_lon = grid_savepoint.cell_center_lon().asnumpy()
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
@@ -338,14 +327,14 @@ def test_compute_e_bln_c_s(grid_savepoint, interpolation_savepoint, icon_grid):
         edges_lat,
         edges_lon,
     )
-    assert dallclose(e_bln_c_s, e_bln_c_s_ref, atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(e_bln_c_s, e_bln_c_s_ref, atol=1e-6, rtol=1e-7)
 
 
 @pytest.mark.datatest
 def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_grid):
     pos_on_tplane_e_x_ref = interpolation_savepoint.pos_on_tplane_e_x().asnumpy()
     pos_on_tplane_e_y_ref = interpolation_savepoint.pos_on_tplane_e_y().asnumpy()
-    sphere_radius = EARTH_RADIUS
+    sphere_radius = constants.EARTH_RADIUS
     primal_normal_v1 = grid_savepoint.primal_normal_v1().asnumpy()
     primal_normal_v2 = grid_savepoint.primal_normal_v2().asnumpy()
     dual_normal_v1 = grid_savepoint.dual_normal_v1().asnumpy()
@@ -357,12 +346,12 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
     edges_lat = grid_savepoint.edges_center_lat().asnumpy()
     verts_lon = grid_savepoint.verts_vertex_lon().asnumpy()
     verts_lat = grid_savepoint.verts_vertex_lat().asnumpy()
-    e2c = icon_grid.connectivities[E2CDim]
-    e2v = icon_grid.connectivities[E2VDim]
-    e2c2e = icon_grid.connectivities[E2C2EDim]
+    e2c = icon_grid.connectivities[dims.E2CDim]
+    e2v = icon_grid.connectivities[dims.E2VDim]
+    e2c2e = icon_grid.connectivities[dims.E2C2EDim]
     horizontal_start = icon_grid.get_start_index(
-        EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1,
+        dims.EdgeDim,
+        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
     )
     pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
         sphere_radius,
@@ -382,5 +371,5 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
         e2c2e,
         horizontal_start,
     )
-    assert dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-6, rtol=1e-7)
-    assert dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(pos_on_tplane_e_x, pos_on_tplane_e_x_ref, atol=1e-6, rtol=1e-7)
+    assert test_helpers.dallclose(pos_on_tplane_e_y, pos_on_tplane_e_y_ref, atol=1e-6, rtol=1e-7)
