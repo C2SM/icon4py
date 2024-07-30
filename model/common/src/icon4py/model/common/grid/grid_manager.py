@@ -405,11 +405,9 @@ class GridManager:
             raise IconGridError(msg)
         try:
             return index_dict[dim][start_marker]
-        except KeyError as err:
+        except KeyError:
             msg = f"start, end indices for dimension {dim} not present"
             self._log.error(msg)
-            raise IconGridError(msg) from err
-
     def _from_grid_dataset(self, grid, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
 
         e2c2v = self._construct_diamond_vertices(grid.connectivities[dims.E2VDim],
@@ -440,7 +438,7 @@ class GridManager:
                 dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
             }
         )
-        self._add_start_end_indices(grid)
+        
 
         return grid
 
@@ -463,24 +461,26 @@ class GridManager:
         grid = self._initialize_global(limited_area, on_gpu)
         
         global_connectivities = {
-            dims.C2E2C: self._reader.int_field(GridFile.ConnectivityName.C2E2C),
-            dims.C2E: self._reader.int_field(GridFile.ConnectivityName.C2E),
-            dims.E2C: self._reader.int_field(GridFile.ConnectivityName.E2C),
-            dims.V2E: self._reader.int_field(GridFile.ConnectivityName.V2E),
-            dims.E2V: self._reader.int_field(GridFile.ConnectivityName.E2V),
-            dims.V2C: self._reader.int_field(GridFile.ConnectivityName.V2C),
-            dims.C2V: self._reader.int_field(GridFile.ConnectivityName.C2V),
-            dims.V2E2V: self._reader.int_field(GridFile.ConnectivityName.V2E2V),
+            dims.C2E2CDim: self._reader.int_field(GridFile.ConnectivityName.C2E2C),
+            dims.C2EDim: self._reader.int_field(GridFile.ConnectivityName.C2E),
+            dims.E2CDim: self._reader.int_field(GridFile.ConnectivityName.E2C),
+            dims.V2EDim: self._reader.int_field(GridFile.ConnectivityName.V2E),
+            dims.E2VDim: self._reader.int_field(GridFile.ConnectivityName.E2V),
+            dims.V2CDim: self._reader.int_field(GridFile.ConnectivityName.V2C),
+            dims.C2VDim: self._reader.int_field(GridFile.ConnectivityName.C2V),
+            dims.V2E2VDim: self._reader.int_field(GridFile.ConnectivityName.V2E2V),
         }
-        conn = {o.target[1]: global_connectivities[o] for o in global_connectivities.keys()}
-        grid.with_connectivities(conn)
-        return self._compute_derived_connectivities(grid, on_gpu, limited_area)
+
+        grid.with_connectivities(global_connectivities)
+        self._add_start_end_indices(grid)
+        return self._compute_derived_connectivities(grid)
+        #return self._add_derived_connectivities(grid)
         if self._run_properties.single_node(): 
-            grid.with_connectivities({o.target[1]:global_connectivities[o] for o in global_connectivities.keys()})
+            grid.with_connectivities(global_connectivities)
         else:
             decompose = halo.SimpleMetisDecomposer()
             cells_to_rank_mapping = decompose(
-                global_connectivities[dims.C2E2C], self._run_properties.comm_size)
+                global_connectivities[dims.C2E2CDim], self._run_properties.comm_size)
             halo_constructor = halo.HaloGenerator(self._run_properties, cells_to_rank_mapping,
                                                   global_connectivities, self._config.num_levels)
             decomposition_info = halo_constructor.construct_decomposition_info()
@@ -554,7 +554,7 @@ class GridManager:
         
         
         
-    def _compute_derived_connectivities(self, grid, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
+    def _compute_derived_connectivities(self, grid) -> icon_grid.IconGrid:
 
        
         c2e = self._get_index_field(GridFile.ConnectivityName.C2E)
@@ -598,13 +598,6 @@ class GridManager:
                     dims.E2C2EODim: e2c2e0,
                 }
             )
-        (
-            start_indices,
-            end_indices,
-            refine_ctrl,
-            refine_ctrl_max,
-        ) = self._read_grid_refinement_information(self._dataset)
-        grid.with_start_end_indices(dims.CellDim, start_indices[dims.CellDim], end_indices[dims.CellDim]).with_start_end_indices(dims.EdgeDim, start_indices[dims.EdgeDim], end_indices[dims.EdgeDim]).with_start_end_indices(dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim])
         
         grid.update_size_connectivities(
             {
