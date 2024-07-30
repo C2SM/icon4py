@@ -24,6 +24,7 @@ from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_gpu_cached,
 )
 
+
 try:
     import dace
     from gt4py.next.program_processors.runners.dace import (
@@ -33,9 +34,9 @@ try:
         run_dace_gpu_noopt,
     )
 except ImportError:
-    from typing import Optional
     from types import ModuleType
-    
+    from typing import Optional
+
     dace: Optional[ModuleType] = None
 
 
@@ -68,8 +69,10 @@ class Icon4PyConfig:
         if hasattr(GT4PyBackend, backend):
             return backend
         else:
-            raise ValueError(f"Invalid ICON4Py backend: {backend}. \n"
-                             f"Available backends: {', '.join([f'{k}' for k in GT4PyBackend.__members__.keys()])}")
+            raise ValueError(
+                f"Invalid ICON4Py backend: {backend}. \n"
+                f"Available backends: {', '.join([f'{k}' for k in GT4PyBackend.__members__.keys()])}"
+            )
 
     @cached_property
     def array_ns(self):

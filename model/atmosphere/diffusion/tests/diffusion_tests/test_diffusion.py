@@ -15,11 +15,11 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_utils
+from icon4py.model.common import settings
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common import settings
-from icon4py.model.common.settings import backend
 from icon4py.model.common.orchestration.decorator import dace_orchestration
+from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import (
     datatest_utils as dt_utils,
     helpers,
@@ -28,6 +28,7 @@ from icon4py.model.common.test_utils import (
 )
 
 from .utils import (
+    compare_dace_orchestration_multiple_steps,
     construct_config,
     construct_diagnostics,
     construct_interpolation_state,
@@ -35,7 +36,6 @@ from .utils import (
     diff_multfac_vn_numpy,
     smag_limit_numpy,
     verify_diffusion_fields,
-    compare_dace_orchestration_multiple_steps,
 )
 
 
@@ -350,7 +350,6 @@ def test_run_diffusion_single_step(
     "experiment, step_date_init, step_date_exit",
     [
         (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
-        #(dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 @pytest.mark.parametrize("ndyn_substeps", (2,))
@@ -394,6 +393,7 @@ def test_run_diffusion_multiple_steps(
     # DaCe NON-Orchestrated Backend
     ######################################################################
     from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
+
     settings.backend_name = "run_dace_cpu_noopt"
     settings.backend = run_dace_cpu_noopt
 
@@ -450,8 +450,12 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # Verify the results
     ######################################################################
-    compare_dace_orchestration_multiple_steps(diagnostic_state_dace_non_orch, diagnostic_state_dace_orch)
-    compare_dace_orchestration_multiple_steps(prognostic_state_dace_non_orch, prognostic_state_dace_orch)
+    compare_dace_orchestration_multiple_steps(
+        diagnostic_state_dace_non_orch, diagnostic_state_dace_orch
+    )
+    compare_dace_orchestration_multiple_steps(
+        prognostic_state_dace_non_orch, prognostic_state_dace_orch
+    )
 
 
 @pytest.mark.datatest

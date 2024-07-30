@@ -13,27 +13,26 @@
 
 
 import pytest
-import numpy as np
 
-from icon4py.model.common import settings
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
+from icon4py.model.common import settings
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.orchestration.decorator import dace_orchestration
 from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
     processor_props,
 )
-from icon4py.model.common.orchestration.decorator import dace_orchestration
 
 from ..utils import (
+    compare_dace_orchestration_multiple_steps,
     construct_config,
     construct_diagnostics,
     construct_interpolation_state,
     construct_metric_state,
     verify_diffusion_fields,
-    compare_dace_orchestration_multiple_steps,
 )
 
 
@@ -161,7 +160,7 @@ def test_parallel_diffusion_multiple_steps(
 ):
     if not dace_orchestration():
         raise pytest.skip("This test is only executed for `--backend=dace_cpu_noopt_orch`")
-    
+
     ######################################################################
     # Diffusion initialization
     ######################################################################
@@ -205,6 +204,7 @@ def test_parallel_diffusion_multiple_steps(
     # DaCe NON-Orchestrated Backend
     ######################################################################
     from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
+
     settings.backend_name = "run_dace_cpu_noopt"
     settings.backend = run_dace_cpu_noopt
 
@@ -289,5 +289,9 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # Verify the results
     ######################################################################
-    compare_dace_orchestration_multiple_steps(diagnostic_state_dace_non_orch, diagnostic_state_dace_orch)
-    compare_dace_orchestration_multiple_steps(prognostic_state_dace_non_orch, prognostic_state_dace_orch)
+    compare_dace_orchestration_multiple_steps(
+        diagnostic_state_dace_non_orch, diagnostic_state_dace_orch
+    )
+    compare_dace_orchestration_multiple_steps(
+        prognostic_state_dace_non_orch, prognostic_state_dace_orch
+    )

@@ -15,12 +15,13 @@ import os
 
 import pytest
 from gt4py.next import gtfn_cpu, gtfn_gpu, itir_python
-import icon4py.model.common.settings as settings
 
+import icon4py.model.common.settings as settings
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
     REGIONAL_EXPERIMENT,
 )
+
 
 backends = {
     "embedded": None,
@@ -33,8 +34,8 @@ gpu_backends = ["gtfn_gpu"]
 try:
     from gt4py.next.program_processors.runners.dace import (
         run_dace_cpu,
-        run_dace_gpu,
         run_dace_cpu_noopt,
+        run_dace_gpu,
         run_dace_gpu_noopt,
     )
 
@@ -78,7 +79,7 @@ def pytest_configure(config):
     # Check if the --enable-mixed-precision option is set and set the environment variable accordingly
     if config.getoption("--enable-mixed-precision"):
         os.environ["FLOAT_PRECISION"] = "mixed"
-    
+
     if config.getoption("--backend"):
         backend = config.getoption("--backend")
         check_backend_validity(backend)

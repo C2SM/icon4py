@@ -10,7 +10,7 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.model.common.config import Icon4PyConfig, GT4PyBackend
+from icon4py.model.common.config import GT4PyBackend, Icon4PyConfig
 
 
 config = Icon4PyConfig()

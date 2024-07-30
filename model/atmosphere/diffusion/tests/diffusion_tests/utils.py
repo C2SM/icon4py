@@ -163,7 +163,10 @@ def construct_diagnostics(
     )
 
 
-def compare_dace_orchestration_multiple_steps(non_orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState, orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState):
+def compare_dace_orchestration_multiple_steps(
+    non_orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState,
+    orch_field: diffusion_states.DiffusionDiagnosticState | prognostics.PrognosticState,
+):
     if isinstance(non_orch_field, diffusion_states.DiffusionDiagnosticState):
         div_ic_dace_non_orch = non_orch_field.div_ic.asnumpy()
         hdef_ic_dace_non_orch = non_orch_field.hdef_ic.asnumpy()
