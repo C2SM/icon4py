@@ -11,9 +11,9 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, int32
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbulence import (
     _calculate_diagnostics_for_turbulence,
@@ -31,11 +31,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
-    diff_multfac_smag: Field[[KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KHalfDim], vpfloat],
-) -> tuple[Field[[CellDim, KHalfDim], vpfloat], Field[[CellDim, KHalfDim], vpfloat]]:
+    e_bln_c_s: gtx.Field[[CEDim], wpfloat],
+    geofac_div: gtx.Field[[CEDim], wpfloat],
+    diff_multfac_smag: gtx.Field[[KDim], vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[vpfloat]]:
     kh_c, div = _temporary_fields_for_turbulence_diagnostics(
         kh_smag_ec, vn, e_bln_c_s, geofac_div, diff_multfac_smag
     )
@@ -47,16 +47,16 @@ def _calculate_diagnostic_quantities_for_turbulence(
 def calculate_diagnostic_quantities_for_turbulence(
     kh_smag_ec: fa.EdgeKField[vpfloat],
     vn: fa.EdgeKField[wpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
-    diff_multfac_smag: Field[[KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KHalfDim], vpfloat],
-    div_ic: Field[[CellDim, KHalfDim], vpfloat],
-    hdef_ic: Field[[CellDim, KHalfDim], vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    e_bln_c_s: gtx.Field[[CEDim], wpfloat],
+    geofac_div: gtx.Field[[CEDim], wpfloat],
+    diff_multfac_smag: gtx.Field[[KDim], vpfloat],
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+    div_ic: fa.CellKHalfField[vpfloat],
+    hdef_ic: fa.CellKHalfField[vpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _calculate_diagnostic_quantities_for_turbulence(
         kh_smag_ec,

@@ -24,11 +24,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _apply_nabla2_to_w_in_upper_damping_layer(
-    w: gtx.Field[[CellDim, KHalfDim], wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     diff_multfac_n2w: fa.KField[wpfloat],
     cell_area: fa.CellField[wpfloat],
     z_nabla2_c: gtx.Field[[CellDim, KHalfDim], vpfloat],
-) -> gtx.Field[[CellDim, KHalfDim], wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
 
     w_wp = w + diff_multfac_n2w(KHalf2K[0]) * cell_area_tmp(KHalf2K[0]) * astype(
@@ -42,7 +42,7 @@ def apply_nabla2_to_w_in_upper_damping_layer(
     w: gtx.Field[[CellDim, KHalfDim], wpfloat],
     diff_multfac_n2w: fa.KField[wpfloat],
     cell_area: fa.CellField[wpfloat],
-    z_nabla2_c: gtx.Field[[CellDim, KHalfDim], vpfloat],
+    z_nabla2_c: fa.CellKHalfField[vpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

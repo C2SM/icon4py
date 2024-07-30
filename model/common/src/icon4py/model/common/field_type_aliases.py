@@ -13,20 +13,21 @@
 
 from typing import TypeAlias, TypeVar
 
-from gt4py.next import Dims, Field
-from gt4py.next.ffront.fbuiltins import int32, int64
+import gt4py.next as gtx
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-T = TypeVar("T", wpfloat, vpfloat, float, bool, int32, int64)
+T = TypeVar("T", wpfloat, vpfloat, float, bool, gtx.int32, gtx.int64)
 
-CellField: TypeAlias = Field[Dims[CellDim], T]
-EdgeField: TypeAlias = Field[Dims[EdgeDim], T]
-VertexField: TypeAlias = Field[Dims[VertexDim], T]
-KField: TypeAlias = Field[Dims[KDim], T]
+CellField: TypeAlias = gtx.Field[gtx.Dims[CellDim], T]
+EdgeField: TypeAlias = gtx.Field[gtx.Dims[EdgeDim], T]
+VertexField: TypeAlias = gtx.Field[gtx.Dims[VertexDim], T]
+KField: TypeAlias = gtx.Field[gtx.Dims[KDim], T]
 
-CellKField: TypeAlias = Field[Dims[CellDim, KDim], T]
-EdgeKField: TypeAlias = Field[Dims[EdgeDim, KDim], T]
-VertexKField: TypeAlias = Field[Dims[VertexDim, KDim], T]
+CellKField: TypeAlias = gtx.Field[gtx.Dims[CellDim, KDim], T]
+EdgeKField: TypeAlias = gtx.Field[gtx.Dims[EdgeDim, KDim], T]
+VertexKField: TypeAlias = gtx.Field[gtx.Dims[VertexDim, KDim], T]
+
+CellKHalfField: TypeAlias = gtx.Field[gtx.Dims[CellDim, KHalfDim], T]

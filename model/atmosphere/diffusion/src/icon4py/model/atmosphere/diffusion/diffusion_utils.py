@@ -19,22 +19,20 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim, KHalfDim, VertexDim
+from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
 
 
 @gtx.field_operator
 def _identity_c_k(
-    field: gtx.Field[[CellDim, KHalfDim], float],
-) -> gtx.Field[[CellDim, KHalfDim], float]:
+    field: fa.CellKHalfField[float],
+) -> fa.CellKHalfField[float]:
     return field
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def copy_field(
-    old_f: gtx.Field[[CellDim, KHalfDim], float], new_f: gtx.Field[[CellDim, KHalfDim], float]
-):
+def copy_field(old_f: fa.CellKHalfField[float], new_f: fa.CellKHalfField[float]):
     _identity_c_k(old_f, out=new_f)
 
 

@@ -25,11 +25,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _apply_nabla2_to_w(
     area: fa.CellField[wpfloat],
-    z_nabla2_c: gtx.Field[[CellDim, KHalfDim], vpfloat],
+    z_nabla2_c: fa.CellKHalfField[vpfloat],
     geofac_n2s: gtx.Field[[CellDim, C2E2CODim], wpfloat],
     w: gtx.Field[[CellDim, KHalfDim], wpfloat],
     diff_multfac_w: wpfloat,
-) -> gtx.Field[[CellDim, KHalfDim], wpfloat]:
+) -> fa.CellKHalfField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
 
     w_wp = w - diff_multfac_w * (area * area) * neighbor_sum(
@@ -43,7 +43,7 @@ def apply_nabla2_to_w(
     area: fa.CellField[wpfloat],
     z_nabla2_c: gtx.Field[[CellDim, KHalfDim], vpfloat],
     geofac_n2s: gtx.Field[[CellDim, C2E2CODim], wpfloat],
-    w: gtx.Field[[CellDim, KHalfDim], wpfloat],
+    w: fa.CellKHalfField[wpfloat],
     diff_multfac_w: wpfloat,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,

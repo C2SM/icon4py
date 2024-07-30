@@ -11,9 +11,10 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KHalf2K, KHalfDim
@@ -25,8 +26,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _calculate_diagnostics_for_turbulence(
     div: fa.CellKField[vpfloat],
     kh_c: fa.CellKField[vpfloat],
-    wgtfac_c: Field[[CellDim, KHalfDim], vpfloat],
-) -> tuple[Field[[CellDim, KHalfDim], vpfloat], Field[[CellDim, KHalfDim], vpfloat]]:
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+) -> tuple[fa.CellKHalfField[vpfloat], fa.CellKHalfField[vpfloat]]:
     wgtfac_c_wp, div_wp, kh_c_wp = astype((wgtfac_c, div, kh_c), wpfloat)
     div_ic_wp = wgtfac_c_wp * div_wp(KHalf2K[0]) + (wpfloat("1.0") - wgtfac_c_wp) * div_wp(
         KHalf2K[1]
@@ -43,13 +44,13 @@ def _calculate_diagnostics_for_turbulence(
 def calculate_diagnostics_for_turbulence(
     div: fa.CellKField[vpfloat],
     kh_c: fa.CellKField[vpfloat],
-    wgtfac_c: Field[[CellDim, KHalfDim], vpfloat],
-    div_ic: Field[[CellDim, KHalfDim], vpfloat],
-    hdef_ic: Field[[CellDim, KHalfDim], vpfloat],
-    horizontal_start: int32,
-    horizontal_end: int32,
-    vertical_start: int32,
-    vertical_end: int32,
+    wgtfac_c: fa.CellKHalfField[vpfloat],
+    div_ic: fa.CellKHalfField[vpfloat],
+    hdef_ic: fa.CellKHalfField[vpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _calculate_diagnostics_for_turbulence(
         div,

@@ -37,6 +37,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
     DiffusionInterpolationState,
     DiffusionMetricState,
 )
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.dimension import (
     C2E2CDim,
@@ -87,7 +88,7 @@ def profile_disable():
 def diffusion_init(
     vct_a: Field[[KHalfDim], float64],
     theta_ref_mc: Field[[CellDim, KDim], float64],
-    wgtfac_c: Field[[CellDim, KHalfDim], float64],
+    wgtfac_c: fa.CellKHalfField[float64],
     e_bln_c_s: Field[[CellDim, C2EDim], float64],
     geofac_div: Field[[CellDim, C2EDim], float64],
     geofac_grg_x: Field[[CellDim, C2E2CODim], float64],
@@ -250,10 +251,10 @@ def diffusion_run(
     exner: Field[[CellDim, KDim], float64],
     theta_v: Field[[CellDim, KDim], float64],
     rho: Field[[CellDim, KDim], float64],
-    hdef_ic: Field[[CellDim, KHalfDim], float64],
-    div_ic: Field[[CellDim, KHalfDim], float64],
-    dwdx: Field[[CellDim, KHalfDim], float64],
-    dwdy: Field[[CellDim, KHalfDim], float64],
+    hdef_ic: fa.CellKHalfField[float64],
+    div_ic: fa.CellKHalfField[float64],
+    dwdx: fa.CellKHalfField[float64],
+    dwdy: fa.CellKHalfField[float64],
     dtime: float64,
     linit: bool,
 ):

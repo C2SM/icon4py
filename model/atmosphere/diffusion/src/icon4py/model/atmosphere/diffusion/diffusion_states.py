@@ -33,18 +33,17 @@ class DiffusionDiagnosticState:
     """Represents the diagnostic fields needed in diffusion."""
 
     # fields for 3D elements in turbdiff
-    hdef_ic: gtx.Field[
-        [CellDim, KHalfDim], float
+    hdef_ic: fa.CellKHalfField[
+        float
     ]  # ! divergence at half levels(nproma,nlevp1,nblks_c)     [1/s]
-    div_ic: gtx.Field[
-        [CellDim, KDim], float
+    div_ic: fa.CellKHalfField[
+        float
     ]  # ! horizontal wind field deformation (nproma,nlevp1,nblks_c)     [1/s^2]
-    dwdx: gtx.Field[
-        [CellDim, KHalfDim], float
+    dwdx: fa.CellKHalfField[
+        float
     ]  # zonal gradient of vertical wind speed (nproma,nlevp1,nblks_c)     [1/s]
-
-    dwdy: gtx.Field[
-        [CellDim, KHalfDim], float
+    dwdy: fa.CellKHalfField[
+        float
     ]  # meridional gradient of vertical wind speed (nproma,nlevp1,nblks_c)
 
 
@@ -58,8 +57,8 @@ class DiffusionMetricState:
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
 
     # TODO: field present below as well, check where it's better to put it
-    wgtfac_c_khalf: gtx.Field[
-        [CellDim, KHalfDim], float
+    wgtfac_c_khalf: fa.CellKHalfField[
+        float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: fa.CellKField[bool]
     zd_vertoffset: gtx.Field[[CECDim, KDim], gtx.int32]
