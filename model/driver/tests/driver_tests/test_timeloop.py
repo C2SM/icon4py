@@ -14,7 +14,6 @@
 
 import pytest
 
-from icon4py.model.driver import icon4py_configuration
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -23,7 +22,11 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4py.model.driver import icon4py_driver, serialbox_helpers as driver_sb
+from icon4py.model.driver import (
+    icon4py_configuration,
+    icon4py_driver,
+    serialbox_helpers as driver_sb,
+)
 
 from .utils import (
     construct_diffusion_config,
