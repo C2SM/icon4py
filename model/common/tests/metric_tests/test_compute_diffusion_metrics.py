@@ -43,11 +43,10 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
-# TODO: check why this test does not validate for GLOBAL_EXPERIMENT
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
-    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
@@ -149,5 +148,8 @@ def test_compute_diffusion_metrics(
 
     assert dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
     assert dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11)
-    assert dallclose(zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy())
-    assert dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())
+    if (
+        experiment == dt_utils.REGIONAL_EXPERIMENT
+    ):  # zd_vertoffset and zd_intcoef not present in GLOBAL_EXPERIMENT
+        assert dallclose(zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy())
+        assert dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())

@@ -36,7 +36,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_z_mc,
 )
 from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
-from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
     flatten_first_two_dims,
@@ -45,9 +44,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
-# TODO: check why this test# TODO: check why this test does not validate for GLOBAL_EXPERIMENT does not validate for GLOBAL_EXPERIMENT
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_zdiff_gradp_dsl(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")

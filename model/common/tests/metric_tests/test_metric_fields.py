@@ -509,24 +509,28 @@ def test_compute_ddxt_z_full(
     assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
 
 
-# TODO: check why this test does not validate for GLOBAL_EXPERIMENT
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_exner_exfac(
-    grid_savepoint, interpolation_savepoint, icon_grid, metrics_savepoint, backend
+    grid_savepoint, experiment, interpolation_savepoint, icon_grid, metrics_savepoint, backend
 ):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     horizontal_start = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
-    exner_exfac = constant_field(icon_grid, MetricsConfig.exner_expol, CellDim, KDim)
+    exner_experiment = (
+        MetricsConfig.exner_expol_global
+        if experiment == dt_utils.GLOBAL_EXPERIMENT
+        else MetricsConfig.exner_expol_regional
+    )
+    exner_exfac = constant_field(icon_grid, exner_experiment, CellDim, KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
-        exner_expol=MetricsConfig.exner_expol,
+        exner_expol=exner_experiment,
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_cells,
         vertical_start=gtx.int32(0),
@@ -537,11 +541,10 @@ def test_compute_exner_exfac(
     assert dallclose(exner_exfac.asnumpy(), exner_exfac_ref.asnumpy(), rtol=1.0e-10)
 
 
-# TODO: check why this test does not validate for GLOBAL_EXPERIMENT
 @pytest.mark.datatest
-@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_vwind_impl_wgt(
-    icon_grid, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
+    icon_grid, experiment, grid_savepoint, metrics_savepoint, interpolation_savepoint, backend
 ):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
@@ -622,7 +625,8 @@ def test_compute_vwind_impl_wgt(
     dual_edge_length = grid_savepoint.dual_edge_length()
     vwind_offctr = 0.2
     vwind_impl_wgt_full = constant_field(icon_grid, 0.5 + vwind_offctr, CellDim)
-    vwind_impl_wgt_k = constant_field(icon_grid, 0.7, CellDim, KDim)
+    init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
+    vwind_impl_wgt_k = constant_field(icon_grid, init_val, CellDim, KDim)
 
     compute_vwind_impl_wgt.with_backend(backend)(
         z_ddxn_z_half_e=gtx.as_field(
@@ -647,7 +651,11 @@ def test_compute_vwind_impl_wgt(
         },
     )
 
-    vwind_impl_wgt = np.amax(vwind_impl_wgt_k.asnumpy(), axis=1)
+    vwind_impl_wgt = (
+        np.amin(vwind_impl_wgt_k.asnumpy(), axis=1)
+        if experiment == dt_utils.GLOBAL_EXPERIMENT
+        else np.amax(vwind_impl_wgt_k.asnumpy(), axis=1)
+    )
     assert dallclose(vwind_impl_wgt_ref.asnumpy(), vwind_impl_wgt)
 
 
