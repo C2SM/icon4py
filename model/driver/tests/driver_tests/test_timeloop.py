@@ -117,7 +117,7 @@ def test_run_timeloop_single_step(
     timeloop_date_exit,
     timeloop_diffusion_linit_init,
     grid_savepoint,
-    grid,
+    icon_grid,
     metrics_savepoint,
     interpolation_savepoint,
     lowest_layer_thickness,
@@ -157,7 +157,7 @@ def test_run_timeloop_single_step(
     diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(metrics_savepoint)
 
     vertical_config = v_grid.VerticalGridConfig(
-        grid.num_levels,
+        icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
@@ -173,7 +173,7 @@ def test_run_timeloop_single_step(
 
     diffusion_granule = diffusion.Diffusion()
     diffusion_granule.init(
-        grid=grid,
+        grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
         vertical_params=vertical_params,
@@ -234,7 +234,7 @@ def test_run_timeloop_single_step(
         ddqz_z_full_e=metrics_savepoint.ddqz_z_full_e(),
         ddxt_z_full=metrics_savepoint.ddxt_z_full(),
         wgtfac_e=metrics_savepoint.wgtfac_e(),
-        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(grid.num_levels),
+        wgtfacq_e=metrics_savepoint.wgtfacq_e_dsl(icon_grid.num_levels),
         vwind_impl_wgt=metrics_savepoint.vwind_impl_wgt(),
         hmask_dd3d=metrics_savepoint.hmask_dd3d(),
         scalfac_dd3d=metrics_savepoint.scalfac_dd3d(),
@@ -245,7 +245,7 @@ def test_run_timeloop_single_step(
 
     solve_nonhydro_granule = solve_nh.SolveNonhydro()
     solve_nonhydro_granule.init(
-        grid=grid,
+        grid=icon_grid,
         config=nonhydro_config,
         params=nonhydro_params,
         metric_state_nonhydro=nonhydro_metric_state,
@@ -264,7 +264,7 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
     )
 
     nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(

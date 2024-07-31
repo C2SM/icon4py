@@ -30,7 +30,7 @@ def test_gauss3d_initial_condition(
     rank,
     data_provider,
     grid_savepoint,
-    grid,
+    icon_grid,
 ):
     edge_geometry = grid_savepoint.construct_edge_geometry()
 
@@ -43,7 +43,7 @@ def test_gauss3d_initial_condition(
         prognostic_state_now,
         prognostic_state_next,
     ) = gauss3d.model_initialization_gauss3d(
-        grid,
+        icon_grid,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
         rank,

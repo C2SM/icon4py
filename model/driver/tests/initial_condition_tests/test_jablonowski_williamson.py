@@ -30,7 +30,7 @@ def test_jabw_initial_condition(
     rank,
     data_provider,
     grid_savepoint,
-    grid,
+    icon_grid,
 ):
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
@@ -44,7 +44,7 @@ def test_jabw_initial_condition(
         prognostic_state_now,
         prognostic_state_next,
     ) = jabw.model_initialization_jabw(
-        grid,
+        icon_grid,
         cell_geometry,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
