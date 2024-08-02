@@ -498,7 +498,6 @@ class SolveNonhydro:
             offset_provider={"Koff": KDim},
         )
 
-
         self.p_test_run = True
         self._initialized = True
 
@@ -600,7 +599,6 @@ class SolveNonhydro:
 
         self.set_timelevels(nnow, nnew)
 
-
         if self.config.use_ibm:
             v1 = prognostic_state_ls[nnow].vn.asnumpy().copy()
             self.ibm.set_boundary_conditions(
@@ -608,7 +606,9 @@ class SolveNonhydro:
                 prognostic_state=prognostic_state_ls[nnow],
             )
             v2 = prognostic_state_ls[nnow].vn.asnumpy().copy()
-            import pdb; pdb.set_trace()
+            import pdb
+
+            pdb.set_trace()
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,

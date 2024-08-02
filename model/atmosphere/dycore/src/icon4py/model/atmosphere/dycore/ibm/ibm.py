@@ -13,12 +13,11 @@
 import logging
 
 import gt4py.next as gtx
-from icon4py.model.common.settings import xp
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-
-from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.atmosphere.dycore.state_utils import states as states_utils
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prog_state
 
 
@@ -29,6 +28,7 @@ Immersed boundary method module
 
 log = logging.getLogger(__name__)
 
+
 class ImmersedBoundaryMethod:
     """
     Main class for the immersed boundary method.
@@ -37,8 +37,7 @@ class ImmersedBoundaryMethod:
     def __init__(
         self,
         icon_grid: icon_grid.IconGrid,
-        ):
-
+    ):
         self.test_value = 313
 
         num_cells = icon_grid.num_cells
@@ -47,8 +46,8 @@ class ImmersedBoundaryMethod:
 
         self._validate_config()
 
-        cell_mask=xp.zeros((num_cells, num_levels), dtype=bool)
-        edge_mask=xp.zeros((num_edges, num_levels), dtype=bool)
+        cell_mask = xp.zeros((num_cells, num_levels), dtype=bool)
+        edge_mask = xp.zeros((num_edges, num_levels), dtype=bool)
 
         cell_mask[313, 17] = True
         edge_mask[313, 17] = True
@@ -66,7 +65,7 @@ class ImmersedBoundaryMethod:
         self,
         diagnostic_state: states_utils.DiagnosticStateNonHydro,
         prognostic_state: prog_state.PrognosticState,
-        ):
+    ):
         log.info("IBM set BCs ")
 
         # cell centre variables
