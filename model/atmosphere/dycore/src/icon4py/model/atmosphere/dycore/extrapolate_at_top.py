@@ -13,8 +13,9 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim, KDim, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -22,9 +23,9 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _extrapolate_at_top(
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
-) -> Field[[EdgeDim, KDim], vpfloat]:
+    wgtfacq_e: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as mo_velocity_advection_stencil_06 or mo_solve_nonhydro_stencil_38."""
     wgtfacq_e_wp = astype(wgtfacq_e, wpfloat)
 
@@ -39,9 +40,9 @@ def _extrapolate_at_top(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_at_top(
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
+    vn: fa.EdgeKField[wpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
