@@ -15,11 +15,8 @@ variables:
 .build_baseimage:
   stage: baseimage
   before_script:
-    - DATA_TAG=`mktemp`
-    - cat $DOCKERFILE > $DATA_TAG
-    - echo $DOCKER_BUILD_ARGS >> $DATA_TAG
-    - DOCKER_TAG=`sha256sum $DATA_TAG | head -c 16`
-    - rm -f $DATA_TAG
+    # include build arguments in hash since we use a parameterized Docker file
+    - DOCKER_TAG=`echo "$(cat $DOCKERFILE) $DOCKER_BUILD_ARGS" | sha256sum | head -c 16`
     - export PERSIST_IMAGE_NAME=$CSCS_REGISTRY_PATH/public/$ARCH/base/icon4py:$DOCKER_TAG-$PYVERSION
     - echo "BASE_IMAGE_${PYVERSION_PREFIX}=$PERSIST_IMAGE_NAME" >> build.env
   artifacts:
