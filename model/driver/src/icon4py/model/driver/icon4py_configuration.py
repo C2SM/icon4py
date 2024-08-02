@@ -17,6 +17,7 @@ import logging
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.io import io
 from icon4py.model.driver import initialization_utils as driver_init
 
 
@@ -51,6 +52,7 @@ class Icon4pyConfig:
     vertical_grid_config: v_grid.VerticalGridConfig
     diffusion_config: diffusion.DiffusionConfig
     solve_nonhydro_config: solve_nh.NonHydrostaticConfig
+    io_config: io.IOConfig
 
 
 def read_config(
@@ -166,6 +168,28 @@ def read_config(
             divdamp_fac=0.0025,
         )
 
+    def _gauss3d_io_config():
+        output_group_01 = io.FieldGroupIOConfig(
+            start_time=datetime.datetime(
+                1, 1, 1, 0, 0, 0
+            ).isoformat(),  # TODO (Jacopo) this should be simulation start_date, but that's not accessible here
+            output_interval="4 seconds",
+            filename="icon4py_output",
+            timesteps_per_file=1,
+            variables=[
+                "air_density",
+                "normal_velocity",
+                "tangential_velocity",
+                "upward_air_velocity",
+            ],
+            nc_title="Output from Gauss3D experiment",
+            nc_comment="Writing data from icon4py ",
+        )
+        return io.IOConfig(
+            output_path="simulation_output",
+            field_groups=[output_group_01],
+        )
+
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=4.0),
@@ -176,11 +200,13 @@ def read_config(
         vertical_config = _gauss3d_vertical_config()
         diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
         nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
+        io_config = _gauss3d_io_config()
         return (
             icon_run_config,
             vertical_config,
             diffusion_config,
             nonhydro_config,
+            io_config,
         )
 
     if experiment_type == driver_init.ExperimentType.JABW:
@@ -196,6 +222,7 @@ def read_config(
             vertical_grid_config,
             diffusion_config,
             nonhydro_config,
+            io_config,
         ) = _gauss3d_config()
     else:
         log.warning(
@@ -212,4 +239,5 @@ def read_config(
         vertical_grid_config=vertical_grid_config,
         diffusion_config=diffusion_config,
         solve_nonhydro_config=nonhydro_config,
+        io_config=io_config,
     )

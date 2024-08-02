@@ -26,6 +26,7 @@ from icon4py.model.atmosphere.diffusion import (
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.io import io
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.driver import (
     icon4py_configuration as driver_config,
@@ -46,6 +47,7 @@ class TimeLoop:
         run_config: driver_config.Icon4pyRunConfig,
         diffusion_granule: diffusion.Diffusion,
         solve_nonhydro_granule: solve_nh.SolveNonhydro,
+        io_monitor: io.IOMonitor,
     ):
         self.run_config: driver_config.Icon4pyRunConfig = run_config
         self.diffusion = diffusion_granule
@@ -67,6 +69,8 @@ class TimeLoop:
 
         self._now: int = 0  # TODO (Chia Rui): move to PrognosticState
         self._next: int = 1  # TODO (Chia Rui): move to PrognosticState
+
+        self.io_monitor = io_monitor
 
     def re_init(self):
         self._simulation_date = self.run_config.start_date
@@ -164,6 +168,10 @@ class TimeLoop:
                 prognostic_state_list[self._now],
                 self.dtime_in_seconds,
             )
+
+        # Store initial condition
+        self.io_monitor.store(prognostic_state_list[self._now], self._simulation_date)
+
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
         )
@@ -192,6 +200,8 @@ class TimeLoop:
                 do_prep_adv,
             )
             timer.capture()
+
+            self.io_monitor.store(prognostic_state_list[self._now], self._simulation_date)
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 
@@ -400,10 +410,19 @@ def initialize(
     )
     prognostic_state_list = [prognostic_state_now, prognostic_state_next]
 
+    io_monitor = io.IOMonitor(
+        config=config.io_config,
+        vertical_size=vertical_geometry,
+        horizontal_size=icon_grid.config.horizontal_config,
+        grid_file_name="testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc",  # TODO (Jacopo) this is temporary
+        grid_id=icon_grid.id,
+    )
+
     timeloop = TimeLoop(
         run_config=config.run_config,
         diffusion_granule=diffusion_granule,
         solve_nonhydro_granule=solve_nonhydro_granule,
+        io_monitor=io_monitor,
     )
     return (
         timeloop,
