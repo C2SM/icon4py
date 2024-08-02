@@ -13,8 +13,9 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, exp, int32, log, where
+from gt4py.next.ffront.fbuiltins import exp, int32, log, where
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
@@ -22,13 +23,13 @@ from icon4py.model.common.type_alias import wpfloat
 
 @field_operator
 def _compute_theta_and_exner(
-    bdy_halo_c: Field[[CellDim], bool],
-    rho: Field[[CellDim, KDim], wpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    exner: Field[[CellDim, KDim], wpfloat],
+    bdy_halo_c: fa.CellField[bool],
+    rho: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_66."""
     theta_v_wp = where(bdy_halo_c, exner, theta_v)
     exner_wp = where(bdy_halo_c, exp(rd_o_cvd * log(rd_o_p0ref * rho * exner)), exner)
@@ -37,10 +38,10 @@ def _compute_theta_and_exner(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_theta_and_exner(
-    bdy_halo_c: Field[[CellDim], bool],
-    rho: Field[[CellDim, KDim], wpfloat],
-    theta_v: Field[[CellDim, KDim], wpfloat],
-    exner: Field[[CellDim, KDim], wpfloat],
+    bdy_halo_c: fa.CellField[bool],
+    rho: fa.CellKField[wpfloat],
+    theta_v: fa.CellKField[wpfloat],
+    exner: fa.CellKField[wpfloat],
     rd_o_cvd: wpfloat,
     rd_o_p0ref: wpfloat,
     horizontal_start: int32,

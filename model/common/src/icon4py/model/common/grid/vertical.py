@@ -18,6 +18,7 @@ from typing import Final
 
 import gt4py.next as gtx
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import KDim
 from icon4py.model.common.settings import xp
 
@@ -70,10 +71,10 @@ class VerticalGridParams:
     """
 
     vertical_config: dataclasses.InitVar[VerticalGridConfig]
-    vct_a: dataclasses.InitVar[gtx.Field[[KDim], float]]
-    vct_b: dataclasses.InitVar[gtx.Field[[KDim], float]]
-    _vct_a: gtx.Field[[KDim], float] = dataclasses.field(init=False)
-    _vct_b: gtx.Field[[KDim], float] = dataclasses.field(init=False)
+    vct_a: dataclasses.InitVar[fa.KField[float]]
+    vct_b: dataclasses.InitVar[fa.KField[float]]
+    _vct_a: fa.KField[float] = dataclasses.field(init=False)
+    _vct_b: fa.KField[float] = dataclasses.field(init=False)
     _end_index_of_damping_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
@@ -138,7 +139,7 @@ class VerticalGridParams:
         )
 
     @property
-    def inteface_physical_height(self) -> gtx.Field[[KDim], float]:
+    def inteface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
 
     @property

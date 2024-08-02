@@ -13,8 +13,9 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -22,17 +23,17 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _compute_solver_coefficients_matrix(
-    exner_nnow: Field[[CellDim, KDim], wpfloat],
-    rho_nnow: Field[[CellDim, KDim], wpfloat],
-    theta_v_nnow: Field[[CellDim, KDim], wpfloat],
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    exner_nnow: fa.CellKField[wpfloat],
+    rho_nnow: fa.CellKField[wpfloat],
+    theta_v_nnow: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_44."""
     inv_ddqz_z_full_wp = astype(inv_ddqz_z_full, wpfloat)
 
@@ -43,15 +44,15 @@ def _compute_solver_coefficients_matrix(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_solver_coefficients_matrix(
-    z_beta: Field[[CellDim, KDim], vpfloat],
-    exner_nnow: Field[[CellDim, KDim], wpfloat],
-    rho_nnow: Field[[CellDim, KDim], wpfloat],
-    theta_v_nnow: Field[[CellDim, KDim], wpfloat],
-    inv_ddqz_z_full: Field[[CellDim, KDim], vpfloat],
-    z_alpha: Field[[CellDim, KDim], vpfloat],
-    vwind_impl_wgt: Field[[CellDim], wpfloat],
-    theta_v_ic: Field[[CellDim, KDim], wpfloat],
-    rho_ic: Field[[CellDim, KDim], wpfloat],
+    z_beta: fa.CellKField[vpfloat],
+    exner_nnow: fa.CellKField[wpfloat],
+    rho_nnow: fa.CellKField[wpfloat],
+    theta_v_nnow: fa.CellKField[wpfloat],
+    inv_ddqz_z_full: fa.CellKField[vpfloat],
+    z_alpha: fa.CellKField[vpfloat],
+    vwind_impl_wgt: fa.CellField[wpfloat],
+    theta_v_ic: fa.CellKField[wpfloat],
+    rho_ic: fa.CellKField[wpfloat],
     dtime: wpfloat,
     rd: wpfloat,
     cvd: wpfloat,

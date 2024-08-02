@@ -23,6 +23,7 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -31,18 +32,18 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    z_w_con_c: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    w: fa.CellKField[wpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CellKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_18."""
     z_w_con_c_wp, ddqz_z_half_wp, ddt_w_adv_wp, cfl_w_limit_wp = astype(
         (z_w_con_c, ddqz_z_half, ddt_w_adv, cfl_w_limit), wpfloat
@@ -70,14 +71,14 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_w_con_approaching_cfl(
     levmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    z_w_con_c: fa.CellKField[vpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    w: fa.CellKField[wpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,

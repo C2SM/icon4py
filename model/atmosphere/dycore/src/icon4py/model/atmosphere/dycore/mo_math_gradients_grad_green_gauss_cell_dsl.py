@@ -15,6 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -22,15 +23,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _mo_math_gradients_grad_green_gauss_cell_dsl(
-    p_ccpr1: Field[[CellDim, KDim], vpfloat],
-    p_ccpr2: Field[[CellDim, KDim], vpfloat],
+    p_ccpr1: fa.CellKField[vpfloat],
+    p_ccpr2: fa.CellKField[vpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
 ) -> tuple[
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     p_ccpr1_wp, p_ccpr2_wp = astype((p_ccpr1, p_ccpr2), wpfloat)
 
@@ -43,12 +44,12 @@ def _mo_math_gradients_grad_green_gauss_cell_dsl(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_math_gradients_grad_green_gauss_cell_dsl(
-    p_grad_1_u: Field[[CellDim, KDim], vpfloat],
-    p_grad_1_v: Field[[CellDim, KDim], vpfloat],
-    p_grad_2_u: Field[[CellDim, KDim], vpfloat],
-    p_grad_2_v: Field[[CellDim, KDim], vpfloat],
-    p_ccpr1: Field[[CellDim, KDim], vpfloat],
-    p_ccpr2: Field[[CellDim, KDim], vpfloat],
+    p_grad_1_u: fa.CellKField[vpfloat],
+    p_grad_1_v: fa.CellKField[vpfloat],
+    p_grad_2_u: fa.CellKField[vpfloat],
+    p_grad_2_v: fa.CellKField[vpfloat],
+    p_ccpr1: fa.CellKField[vpfloat],
+    p_ccpr2: fa.CellKField[vpfloat],
     geofac_grg_x: Field[[CellDim, C2E2CODim], wpfloat],
     geofac_grg_y: Field[[CellDim, C2E2CODim], wpfloat],
     horizontal_start: int32,

@@ -13,14 +13,14 @@
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
-    Field,
     FieldOffset,
     abs,
     int32,
     where,
 )
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
@@ -28,9 +28,9 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _v_limit_prbl_sm_stencil_01(
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], int32]:
+    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+) -> fa.CellKField[int32]:
     z_delta = p_face - p_face(Koff[1])
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 
@@ -41,9 +41,9 @@ def _v_limit_prbl_sm_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_01(
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    l_limit: Field[[CellDim, KDim], int32],
+    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+    l_limit: fa.CellKField[int32],
 ):
     _v_limit_prbl_sm_stencil_01(
         p_face,

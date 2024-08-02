@@ -11,26 +11,26 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field, GridType
+from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, minimum, where
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_02(
-    refin_ctrl: Field[[CellDim], int32],
-    p_cc: Field[[CellDim, KDim], float],
-    z_tracer_new_low: Field[[CellDim, KDim], float],
-    z_tracer_max: Field[[CellDim, KDim], float],
-    z_tracer_min: Field[[CellDim, KDim], float],
+    refin_ctrl: fa.CellField[int32],
+    p_cc: fa.CellKField[float],
+    z_tracer_new_low: fa.CellKField[float],
+    z_tracer_max: fa.CellKField[float],
+    z_tracer_min: fa.CellKField[float],
     lo_bound: int32,
     hi_bound: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     condition = (refin_ctrl == lo_bound) | (refin_ctrl == hi_bound)
     z_tracer_new_out = where(
@@ -47,16 +47,16 @@ def _hflx_limiter_mo_stencil_02(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def hflx_limiter_mo_stencil_02(
-    refin_ctrl: Field[[CellDim], int32],
-    p_cc: Field[[CellDim, KDim], float],
-    z_tracer_new_low: Field[[CellDim, KDim], float],
-    z_tracer_max: Field[[CellDim, KDim], float],
-    z_tracer_min: Field[[CellDim, KDim], float],
+    refin_ctrl: fa.CellField[int32],
+    p_cc: fa.CellKField[float],
+    z_tracer_new_low: fa.CellKField[float],
+    z_tracer_max: fa.CellKField[float],
+    z_tracer_min: fa.CellKField[float],
     lo_bound: int32,
     hi_bound: int32,
-    z_tracer_new_low_out: Field[[CellDim, KDim], float],
-    z_tracer_max_out: Field[[CellDim, KDim], float],
-    z_tracer_min_out: Field[[CellDim, KDim], float],
+    z_tracer_new_low_out: fa.CellKField[float],
+    z_tracer_max_out: fa.CellKField[float],
+    z_tracer_min_out: fa.CellKField[float],
 ):
     _hflx_limiter_mo_stencil_02(
         refin_ctrl,

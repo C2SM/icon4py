@@ -14,12 +14,13 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim, CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import C2CECEC, C2E2C2E2C, CECECDim
 
 
 @field_operator
 def _recon_lsq_cell_c_svd_stencil(
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CellKField[float],
     lsq_pseudoinv_1: Field[[CECECDim], float],
     lsq_pseudoinv_2: Field[[CECECDim], float],
     lsq_pseudoinv_3: Field[[CECECDim], float],
@@ -29,26 +30,26 @@ def _recon_lsq_cell_c_svd_stencil(
     lsq_pseudoinv_7: Field[[CECECDim], float],
     lsq_pseudoinv_8: Field[[CECECDim], float],
     lsq_pseudoinv_9: Field[[CECECDim], float],
-    lsq_moments_1: Field[[CellDim], float],
-    lsq_moments_2: Field[[CellDim], float],
-    lsq_moments_3: Field[[CellDim], float],
-    lsq_moments_4: Field[[CellDim], float],
-    lsq_moments_5: Field[[CellDim], float],
-    lsq_moments_6: Field[[CellDim], float],
-    lsq_moments_7: Field[[CellDim], float],
-    lsq_moments_8: Field[[CellDim], float],
-    lsq_moments_9: Field[[CellDim], float],
+    lsq_moments_1: fa.CellField[float],
+    lsq_moments_2: fa.CellField[float],
+    lsq_moments_3: fa.CellField[float],
+    lsq_moments_4: fa.CellField[float],
+    lsq_moments_5: fa.CellField[float],
+    lsq_moments_6: fa.CellField[float],
+    lsq_moments_7: fa.CellField[float],
+    lsq_moments_8: fa.CellField[float],
+    lsq_moments_9: fa.CellField[float],
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     p_coeff_10_dsl = (
         lsq_pseudoinv_9(C2CECEC[0]) * (p_cc(C2E2C2E2C[0]) - p_cc)
@@ -178,7 +179,7 @@ def _recon_lsq_cell_c_svd_stencil(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def recon_lsq_cell_c_svd_stencil(
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CellKField[float],
     lsq_pseudoinv_1: Field[[CECECDim], float],
     lsq_pseudoinv_2: Field[[CECECDim], float],
     lsq_pseudoinv_3: Field[[CECECDim], float],
@@ -188,25 +189,25 @@ def recon_lsq_cell_c_svd_stencil(
     lsq_pseudoinv_7: Field[[CECECDim], float],
     lsq_pseudoinv_8: Field[[CECECDim], float],
     lsq_pseudoinv_9: Field[[CECECDim], float],
-    lsq_moments_1: Field[[CellDim], float],
-    lsq_moments_2: Field[[CellDim], float],
-    lsq_moments_3: Field[[CellDim], float],
-    lsq_moments_4: Field[[CellDim], float],
-    lsq_moments_5: Field[[CellDim], float],
-    lsq_moments_6: Field[[CellDim], float],
-    lsq_moments_7: Field[[CellDim], float],
-    lsq_moments_8: Field[[CellDim], float],
-    lsq_moments_9: Field[[CellDim], float],
-    p_coeff_1_dsl: Field[[CellDim, KDim], float],
-    p_coeff_2_dsl: Field[[CellDim, KDim], float],
-    p_coeff_3_dsl: Field[[CellDim, KDim], float],
-    p_coeff_4_dsl: Field[[CellDim, KDim], float],
-    p_coeff_5_dsl: Field[[CellDim, KDim], float],
-    p_coeff_6_dsl: Field[[CellDim, KDim], float],
-    p_coeff_7_dsl: Field[[CellDim, KDim], float],
-    p_coeff_8_dsl: Field[[CellDim, KDim], float],
-    p_coeff_9_dsl: Field[[CellDim, KDim], float],
-    p_coeff_10_dsl: Field[[CellDim, KDim], float],
+    lsq_moments_1: fa.CellField[float],
+    lsq_moments_2: fa.CellField[float],
+    lsq_moments_3: fa.CellField[float],
+    lsq_moments_4: fa.CellField[float],
+    lsq_moments_5: fa.CellField[float],
+    lsq_moments_6: fa.CellField[float],
+    lsq_moments_7: fa.CellField[float],
+    lsq_moments_8: fa.CellField[float],
+    lsq_moments_9: fa.CellField[float],
+    p_coeff_1_dsl: fa.CellKField[float],
+    p_coeff_2_dsl: fa.CellKField[float],
+    p_coeff_3_dsl: fa.CellKField[float],
+    p_coeff_4_dsl: fa.CellKField[float],
+    p_coeff_5_dsl: fa.CellKField[float],
+    p_coeff_6_dsl: fa.CellKField[float],
+    p_coeff_7_dsl: fa.CellKField[float],
+    p_coeff_8_dsl: fa.CellKField[float],
+    p_coeff_9_dsl: fa.CellKField[float],
+    p_coeff_10_dsl: fa.CellKField[float],
 ):
     _recon_lsq_cell_c_svd_stencil(
         p_cc,

@@ -26,28 +26,29 @@ from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency im
 from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
     _interpolate_contravariant_vertical_velocity_to_full_levels,
 )
-from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import C2E2CODim, CEDim, CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _fused_velocity_advection_stencil_16_to_18(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
-    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     levelmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    cell: Field[[CellDim], int32],
-    k: Field[[KDim], int32],
+    cell: fa.CellField[int32],
+    k: fa.KField[int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -56,7 +57,7 @@ def _fused_velocity_advection_stencil_16_to_18(
     nlev: int32,
     nrdmax: int32,
     extra_diffu: bool,
-) -> Field[[CellDim, KDim], vpfloat]:
+) -> fa.CellKField[vpfloat]:
     k = broadcast(k, (CellDim, KDim))
 
     ddt_w_adv = where(
@@ -98,21 +99,21 @@ def _fused_velocity_advection_stencil_16_to_18(
 
 @field_operator
 def _fused_velocity_advection_stencil_15_to_18(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
-    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     levelmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    cell: Field[[CellDim], int32],
-    k: Field[[KDim], int32],
+    cell: fa.CellField[int32],
+    k: fa.KField[int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -122,7 +123,7 @@ def _fused_velocity_advection_stencil_15_to_18(
     nrdmax: int32,
     lvn_only: bool,
     extra_diffu: bool,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     z_w_con_c_full = _interpolate_contravariant_vertical_velocity_to_full_levels(z_w_con_c)
     ddt_w_adv = (
         _fused_velocity_advection_stencil_16_to_18(
@@ -159,22 +160,22 @@ def _fused_velocity_advection_stencil_15_to_18(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_15_to_18(
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    coeff1_dwdz: Field[[CellDim, KDim], vpfloat],
-    coeff2_dwdz: Field[[CellDim, KDim], vpfloat],
-    ddt_w_adv: Field[[CellDim, KDim], vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    coeff1_dwdz: fa.CellKField[vpfloat],
+    coeff2_dwdz: fa.CellKField[vpfloat],
+    ddt_w_adv: fa.CellKField[vpfloat],
     e_bln_c_s: Field[[CEDim], wpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
     levelmask: Field[[KDim], bool],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    owner_mask: Field[[CellDim], bool],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    area: Field[[CellDim], wpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    owner_mask: fa.CellField[bool],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    area: fa.CellField[wpfloat],
     geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
-    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
-    cell: Field[[CellDim], int32],
-    k: Field[[KDim], int32],
+    z_w_con_c_full: fa.CellKField[vpfloat],
+    cell: fa.CellField[int32],
+    k: fa.KField[int32],
     scalfac_exdiff: wpfloat,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,

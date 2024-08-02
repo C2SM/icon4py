@@ -49,8 +49,6 @@ class Offset(Node, OffsetEntity):
         self.includes_center = self._includes_center(chain)
         chain_ls = self._split_chain(chain)
         self.source = self._handle_source(chain_ls)
-        if self.is_compound_location():
-            chain_ls = chain_ls[1:]
         self.target = self._make_target(chain_ls, self.source)
         self.renderer = OffsetRenderer(self)
 
@@ -63,7 +61,7 @@ class Offset(Node, OffsetEntity):
     def _split_chain(self, chain: str) -> list:
         chain_ls = chain.split("2")
         if "O" in chain_ls[-1]:
-            chain_ls.pop()
+            chain_ls[-1] = chain_ls[-1].replace("O", "")
         return chain_ls
 
     @staticmethod
@@ -74,15 +72,17 @@ class Offset(Node, OffsetEntity):
 
     @staticmethod
     def _handle_source(chain_ls: list) -> BasicLocation | CompoundLocation:
-        source = "".join(chain_ls)
-
-        if source in [str(loc()) for loc in BASIC_LOCATIONS.values()]:
-            return chain_from_str(source)[0]
-        elif all(char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source):
-            source = source[1:]
-            return CompoundLocation(chain_from_str(source))
+        if all(
+            chain_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()] for chain_loc in chain_ls
+        ):
+            return chain_from_str(chain_ls[1])[0]
+        elif all(
+            source_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()]
+            for source_loc in chain_ls[1]
+        ):
+            return CompoundLocation(chain_from_str(chain_ls[1]))
         else:
-            raise BindingsTypeConsistencyException(f"Invalid source {source}")
+            raise BindingsTypeConsistencyException(f"Invalid source {chain_ls[1]}")
 
     @staticmethod
     def _make_target(

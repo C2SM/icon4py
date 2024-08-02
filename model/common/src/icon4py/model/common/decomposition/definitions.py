@@ -71,7 +71,7 @@ class DecompositionInfo:
         OWNED = 1
         HALO = 2
 
-    @builder
+    @builder.builder
     def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
         masked_global_index = ma.array(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index

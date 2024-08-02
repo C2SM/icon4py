@@ -14,18 +14,19 @@
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.common.dimension import C2CEC, C2E2C, CECDim, CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import C2CEC, C2E2C, CECDim
 
 
 @field_operator
 def _recon_lsq_cell_l_svd_stencil(
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CellKField[float],
     lsq_pseudoinv_1: Field[[CECDim], float],
     lsq_pseudoinv_2: Field[[CECDim], float],
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     p_coeff_1_dsl = p_cc
     p_coeff_2_dsl = (
@@ -43,12 +44,12 @@ def _recon_lsq_cell_l_svd_stencil(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def recon_lsq_cell_l_svd_stencil(
-    p_cc: Field[[CellDim, KDim], float],
+    p_cc: fa.CellKField[float],
     lsq_pseudoinv_1: Field[[CECDim], float],
     lsq_pseudoinv_2: Field[[CECDim], float],
-    p_coeff_1_dsl: Field[[CellDim, KDim], float],
-    p_coeff_2_dsl: Field[[CellDim, KDim], float],
-    p_coeff_3_dsl: Field[[CellDim, KDim], float],
+    p_coeff_1_dsl: fa.CellKField[float],
+    p_coeff_2_dsl: fa.CellKField[float],
+    p_coeff_3_dsl: fa.CellKField[float],
 ):
     _recon_lsq_cell_l_svd_stencil(
         p_cc,

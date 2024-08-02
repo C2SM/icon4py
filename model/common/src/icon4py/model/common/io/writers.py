@@ -21,7 +21,7 @@ import netCDF4 as nc
 import numpy as np
 import xarray as xr
 
-from icon4py.model.common.decomposition import definitions as decomp_defs
+from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.io import cf_utils
 
@@ -34,7 +34,7 @@ MODEL_LEVEL: Final[str] = "level"
 TIME: Final[str] = "time"
 
 log = logging.getLogger(__name__)
-processor_properties = decomp_defs.SingleNodeProcessProperties()
+processor_properties = decomposition.SingleNodeProcessProperties()
 
 
 @dataclasses.dataclass
@@ -59,7 +59,7 @@ class NETCDFWriter:
         horizontal: h_grid.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: dict,
-        process_properties: decomp_defs.ProcessProperties = processor_properties,
+        process_properties: decomposition.ProcessProperties = processor_properties,
     ):
         self._file_name = str(file_name)
         self._process_properties = process_properties
