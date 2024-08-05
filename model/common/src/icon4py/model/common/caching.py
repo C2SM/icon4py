@@ -16,7 +16,6 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 from gt4py import next as gtx
-from gt4py.next.otf import arguments, workflow
 from gt4py.next.ffront import signature
 from gt4py.next.program_processors.runners.gtfn import extract_connectivity_args
 
@@ -54,7 +53,6 @@ class CachedProgram:
         with_domain (bool): Flag to indicate if the program should be compiled with domain information. Defaults to True.
         _compiled_program (Optional[Callable]): The compiled GT4Py program.
         _conn_args (Any): Connectivity arguments extracted from the offset provider.
-        _compiled_args (tuple): Arguments used during the compilation of the program.
 
     Properties:
         compiled_program (Callable): Returns the compiled GT4Py program.
@@ -98,5 +96,4 @@ class CachedProgram:
         # Convert numpy integers in args to int and handle gtx.common.Field
         args = tuple(process_arg(arg) for arg in args)
 
-        # todo(samkellerhals): if we merge gt4py PR we can also pass connectivity args here conn_args=self.conn_args
         return self.compiled_program(*args, offset_provider=offset_provider)
