@@ -530,7 +530,7 @@ config = MetricsConfig(exner_expol = 0.333) if experiment == dt_utils.REGIONAL_E
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
         dual_edge_length=grid_savepoint.dual_edge_length(),
         exner_exfac=exner_exfac,
-        exner_expol=exner_experiment,
+        exner_expol=config.exner_expol,
         horizontal_start=horizontal_start,
         horizontal_end=icon_grid.num_cells,
         vertical_start=gtx.int32(0),
