@@ -374,8 +374,9 @@ def _compute_d2dexdz2_fac1_mc(
     cpd: float,
     grav: wpfloat,
     igradp_method: int32,
+    igradp_constant: int32,
 ) -> fa.CellKField[vpfloat]:
-    if igradp_method <= 3:
+    if igradp_method <= igradp_constant:
         d2dexdz2_fac1_mc = -grav / (cpd * theta_ref_mc**2) * inv_ddqz_z_full
 
     return d2dexdz2_fac1_mc
@@ -392,8 +393,9 @@ def _compute_d2dexdz2_fac2_mc(
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
     igradp_method: int32,
+    igradp_constant: int32,
 ) -> fa.CellKField[vpfloat]:
-    if igradp_method <= 3:
+    if igradp_method <= igradp_constant:
         d2dexdz2_fac2_mc = (
             2.0
             * grav
@@ -417,6 +419,7 @@ def compute_d2dexdz2_fac_mc(
     del_t_bg: wpfloat,
     h_scal_bg: wpfloat,
     igradp_method: int32,
+    igradp_constant: int32,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -452,6 +455,7 @@ def compute_d2dexdz2_fac_mc(
         cpd,
         grav,
         igradp_method,
+        igradp_constant,
         out=d2dexdz2_fac1_mc,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
@@ -466,6 +470,7 @@ def compute_d2dexdz2_fac_mc(
         del_t_bg,
         h_scal_bg,
         igradp_method,
+        igradp_constant,
         out=d2dexdz2_fac2_mc,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )
