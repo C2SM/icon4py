@@ -17,7 +17,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-
 from icon4py.model.atmosphere.diffusion.stencils.calculate_vwind_impl_wgt import (
     compute_vwind_impl_wgt_final,
 )
