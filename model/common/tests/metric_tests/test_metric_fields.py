@@ -519,7 +519,7 @@ def test_compute_exner_exfac(
     horizontal_start = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
-    exner_experiment = (
+config = MetricsConfig(exner_expol = 0.333) if experiment == dt_utils.REGIONAL_EXPERIMENT else MetricsConfig()
         MetricsConfig.exner_expol_global
         if experiment == dt_utils.GLOBAL_EXPERIMENT
         else MetricsConfig.exner_expol_regional
