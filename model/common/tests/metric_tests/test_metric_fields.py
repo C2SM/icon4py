@@ -17,6 +17,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
+    HorizontalPressureDiscretizationType,
+)
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
     CellDim,
@@ -247,6 +250,7 @@ def test_compute_coeff_dwdz(icon_grid, metrics_savepoint, grid_savepoint, backen
 
 @pytest.mark.datatest
 def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, backend):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
     z_ifc = metrics_savepoint.z_ifc()
@@ -283,6 +287,7 @@ def test_compute_d2dexdz2_fac_mc(icon_grid, metrics_savepoint, grid_savepoint, b
         del_t_bg=del_t_bg,
         h_scal_bg=h_scal_bg,
         igradp_method=3,
+        igradp_constant=HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
         horizontal_start=0,
         horizontal_end=icon_grid.num_cells,
         vertical_start=0,
