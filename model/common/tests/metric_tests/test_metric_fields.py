@@ -193,6 +193,8 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
 
 # TODO: convert this to a stenciltest once it is possible to have only KDim in domain
 # TODO: check why this test does not validate for GLOBAL_EXPERIMENT
+    rayleigh_coeff = 0.1  if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
+    damping_height = 50000.0  if experiment == dt_utils.GLOBAL_EXPERIMENT 12500.0
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
 def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
