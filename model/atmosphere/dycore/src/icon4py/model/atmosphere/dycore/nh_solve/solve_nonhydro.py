@@ -173,8 +173,6 @@ class TimeSteppingScheme(enum.IntEnum):
 
 
 class DivergenceDampingType(enum.IntEnum):
-    #: divergence damping acting on 2D divergence
-    TWO_DIMENSIONAL = 2
     #: divergence damping acting on 3D divergence
     THREE_DIMENSIONAL = 3
     #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
