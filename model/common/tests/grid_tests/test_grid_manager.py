@@ -1040,7 +1040,8 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     file = utils.resolve_file_from_gridfile_name(utils.R02B04_GLOBAL)
     grid = init_grid_manager(file).grid
     partitioner = halo.SimpleMetisDecomposer()
-    labels = partitioner(grid.connectivities[dims.C2E2CDim], n_part=processor_props.comm_size)
+    face_face_connectivity = grid.connectivities[dims.C2E2CDim]
+    labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
     halo_generator = HaloGenerator(
         connectivities=grid.connectivities,
         run_properties=processor_props,
@@ -1048,7 +1049,7 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
         num_levels=1,
     )
 
-    decomposition_info = halo_generator.construct_decomposition_info()
+    decomposition_info = halo_generator()
 
     connectivity = construct_local_connectivity(
         field_offset, decomposition_info, connectivity=grid.connectivities[field_offset.target[1]]
@@ -1065,4 +1066,4 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
         decomposition_info.local_index(field_offset.source, defs.DecompositionInfo.EntryType.ALL)
     )
     # TODO what else to assert?
-    # outer halo entries have SKIP_VALUE neighbors (depends on offsets)
+    # - outer halo entries have SKIP_VALUE neighbors (depends on offsets)

@@ -75,12 +75,20 @@ class DecompositionInfo:
         HALO = 2
 
     @builder.builder
-    def with_dimension(self, dim: Dimension, global_index: np.ndarray, owner_mask: np.ndarray):
+    def with_dimension(
+        self,
+        dim: Dimension,
+        global_index: np.ndarray,
+        owner_mask: np.ndarray,
+        halo_levels: np.ndarray,
+    ):
         masked_global_index = ma.array(global_index, mask=owner_mask)
         self._global_index[dim] = masked_global_index
+        self._halo_levels[dim] = halo_levels
 
     def __init__(self, klevels: int):
         self._global_index = {}
+        self._halo_levels = {}
         self._klevels = klevels
 
     @property
@@ -120,6 +128,9 @@ class DecompositionInfo:
                 return ma.getdata(global_index[~global_index.mask])
             case _:
                 raise NotImplementedError()
+
+    def halo_levels(self, dim: Dimension):
+        return self._halo_levels[dim]
 
 
 class ExchangeResult(Protocol):

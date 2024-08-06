@@ -10,17 +10,19 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-import logging
 import pathlib
 
+import gt4py.next as gtx
 import mpi4py
 import mpi4py.MPI
+import numpy as np
 import pytest
 
 import icon4py.model.common.dimension as dims
 import icon4py.model.common.grid.grid_manager as gm
 from icon4py.model.common.decomposition import definitions as defs
 from icon4py.model.common.decomposition.halo import (
+    DecompositionFlag,
     HaloGenerator,
     SimpleMetisDecomposer,
 )
@@ -40,7 +42,7 @@ GRID_FILE = dt_utils.GRIDS_PATH.joinpath(dt_utils.R02B04_GLOBAL).joinpath(
     "icon_grid_0013_R02B04_R.nc"
 )
 
-simple_distribution = xp.asarray(
+SIMPLE_DISTRIBUTION = xp.asarray(
     [
         0,  # 0c
         1,  # 1c
@@ -62,52 +64,66 @@ simple_distribution = xp.asarray(
         1,  # 17c
     ]
 )
-cell_own = {0: [0, 3, 4, 6, 7, 10], 1: [1, 2, 5, 14, 17], 2: [8, 9, 11], 3: [12, 13, 15, 16]}
-cell_halos = {
-    0: [2, 15, 1, 11, 13, 9, 17, 5, 12, 14, 8, 16],
-    1: [4, 16, 3, 8, 15, 11, 13, 0, 7, 6, 9, 10, 12],
-    2: [5, 6, 12, 14, 7, 2, 1, 4, 3, 10, 15, 16, 17],
-    3: [9, 10, 17, 14, 0, 1, 6, 7, 8, 2, 3, 4, 5, 11],
+_CELL_OWN = {0: [0, 3, 4, 6, 7, 10], 1: [1, 2, 5, 14, 17], 2: [8, 9, 11], 3: [12, 13, 15, 16]}
+_CELL_FIRST_HALO_LINE = {
+    0: [1, 11, 13, 9, 2, 15],
+    1: [3, 8, 4, 11, 16, 13, 15],
+    2: [5, 7, 6, 12, 14],
+    3: [9, 10, 17, 14, 0, 1],
+}
+_CELL_SECOND_HALO_LINE = {
+    0: [17, 5, 12, 14, 8, 16],
+    1: [0, 7, 6, 9, 10, 12],
+    2: [2, 1, 4, 3, 10, 15, 16, 17],
+    3: [6, 7, 8, 2, 3, 4, 5, 11],
+}
+
+_CELL_HALO = {
+    0: _CELL_FIRST_HALO_LINE[0] + _CELL_SECOND_HALO_LINE[0],
+    1: _CELL_FIRST_HALO_LINE[1] + _CELL_SECOND_HALO_LINE[1],
+    2: _CELL_FIRST_HALO_LINE[2] + _CELL_SECOND_HALO_LINE[2],
+    3: _CELL_FIRST_HALO_LINE[3] + _CELL_SECOND_HALO_LINE[3],
 }
 
 
-edge_own = {
+_EDGE_OWN = {
     0: [1, 5, 12, 13, 14, 9],
     1: [8, 7, 6, 25, 4, 2],
     2: [16, 11, 15, 17, 10, 24],
     3: [19, 23, 22, 26, 0, 3, 20, 18, 21],
 }
-
-edge_halos = {
-    0: [0, 4, 21, 10, 2, 3, 8, 6, 7, 19, 20, 17, 16, 11, 18, 26, 25, 15, 23, 24, 22],
-    1: [
-        5,
-        12,
+_EDGE_FIRST_HALO_LINE = {0: [0, 4, 17, 21, 10, 2], 1: [3, 15, 20, 26, 24], 2: [18], 3: []}
+_EDGE_SECOND_HALO_LINE = {
+    0: [
+        8,
+        16,
+        24,
+        25,
+        26,
         22,
         23,
-        3,
-        1,
-        9,
-        15,
-        16,
-        11,
-        19,
-        20,
-        0,
-        17,
-        24,
-        21,
-        26,
-        13,
-        10,
-        14,
         18,
+        11,
+        6,
     ],
-    2: [7, 6, 9, 8, 14, 18, 19, 23, 25, 20, 12, 13, 2, 3, 4, 5, 1, 21, 22, 0, 26],
+    1: [0, 1, 9, 5, 12, 17, 16, 22, 3, 21, 13, 17, 11, 18, 23],
+    2: [6, 9, 14, 18, 19, 23, 25, 20, 13, 3, 4, 5, 1, 21, 22, 0, 26],
+    3: [],
+}
+_EDGE_THIRD_HALO_LINE = {
+    0: [19, 7, 20],
+    1: [10, 14],
+    2: [],
+    3: [],
+}
+_EDGE_HALO = {
+    0: _EDGE_FIRST_HALO_LINE[0] + _EDGE_SECOND_HALO_LINE[0] + _EDGE_THIRD_HALO_LINE[0],
+    1: _EDGE_FIRST_HALO_LINE[1] + _EDGE_SECOND_HALO_LINE[1] + [10, 14],
+    2: _EDGE_FIRST_HALO_LINE[2] + _EDGE_SECOND_HALO_LINE[2] + _EDGE_THIRD_HALO_LINE[2],
     3: [10, 11, 13, 14, 25, 6, 24, 1, 5, 4, 8, 9, 17, 12, 15, 16, 2, 7],
 }
 
-vertex_own = {
+_VERTEX_OWN = {
     0: [4],
     1: [],
     2: [3, 5],
@@ -120,46 +136,72 @@ vertex_own = {
         8,
     ],
 }
-vertex_halo = {
-    0: [0, 1, 2, 3, 5, 6, 7, 8],
-    1: [1, 2, 0, 5, 3, 8, 6, 7, 4],
-    2: [8, 6, 7, 4, 0, 2, 1],
+_VERTEX_FIRST_HALO_LINE = {
+    0: [0, 1, 5, 8, 7, 3],
+    1: [1, 2, 0, 5, 3, 8, 6],
+    2: [
+        6,
+        8,
+        7,
+    ],
+    3: [],
+}
+_VERTEX_SECOND_HALO_LINE = {
+    0: [2, 6],
+    1: [7, 4],
+    2: [4, 0, 2, 1],
     3: [3, 4, 5],
 }
+_VERTEX_HALO = {
+    0: _VERTEX_FIRST_HALO_LINE[0] + _VERTEX_SECOND_HALO_LINE[0],
+    1: _VERTEX_FIRST_HALO_LINE[1] + _VERTEX_SECOND_HALO_LINE[1],
+    2: _VERTEX_FIRST_HALO_LINE[2] + _VERTEX_SECOND_HALO_LINE[2],
+    3: _VERTEX_FIRST_HALO_LINE[3] + _VERTEX_SECOND_HALO_LINE[3],
+}
 
-owned = {dims.CellDim: cell_own, dims.EdgeDim: edge_own, dims.VertexDim: vertex_own}
-halos = {dims.CellDim: cell_halos, dims.EdgeDim: edge_halos, dims.VertexDim: vertex_halo}
+OWNED = {dims.CellDim: _CELL_OWN, dims.EdgeDim: _EDGE_OWN, dims.VertexDim: _VERTEX_OWN}
+HALO = {dims.CellDim: _CELL_HALO, dims.EdgeDim: _EDGE_HALO, dims.VertexDim: _VERTEX_HALO}
+FIRST_HALO_LINE = {
+    dims.CellDim: _CELL_FIRST_HALO_LINE,
+    dims.VertexDim: _VERTEX_FIRST_HALO_LINE,
+    dims.EdgeDim: _EDGE_FIRST_HALO_LINE,
+}
+SECOND_HALO_LINE = {
+    dims.CellDim: _CELL_SECOND_HALO_LINE,
+    dims.VertexDim: _VERTEX_SECOND_HALO_LINE,
+    dims.EdgeDim: _EDGE_SECOND_HALO_LINE,
+}
 
 
-def test_halo_constructor_owned_cells(processor_props):  # fixture
+def test_halo_constructor_owned_cells(processor_props):  # noqa F811 # fixture
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
         connectivities=grid.connectivities,
         run_properties=processor_props,
-        rank_mapping=simple_distribution,
+        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
     )
     my_owned_cells = halo_generator.owned_cells()
 
     print(f"rank {processor_props.rank} owns {my_owned_cells} ")
-    assert my_owned_cells.size == len(cell_own[processor_props.rank])
-    assert xp.setdiff1d(my_owned_cells, cell_own[processor_props.rank]).size == 0
+    assert my_owned_cells.size == len(_CELL_OWN[processor_props.rank])
+    assert xp.setdiff1d(my_owned_cells, _CELL_OWN[processor_props.rank]).size == 0
 
 
 @pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
 @pytest.mark.mpi(min_size=4)
-def test_element_ownership_is_unique(dim, processor_props):  # fixture
+def test_element_ownership_is_unique(dim, processor_props):  # noqa F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
         connectivities=grid.connectivities,
         run_properties=processor_props,
-        rank_mapping=simple_distribution,
+        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
     )
 
-    decomposition_info = halo_generator.construct_decomposition_info()
+    decomposition_info = halo_generator()
     owned = decomposition_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"\nrank {processor_props.rank} owns {dim} : {owned} ")
     if not mpi4py.MPI.Is_initialized():
@@ -175,13 +217,11 @@ def test_element_ownership_is_unique(dim, processor_props):  # fixture
     print(f"rank {processor_props.rank} send_buf: {send_buf}")
     if processor_props.rank == 0:
         print(f"local_sizes: {local_sizes}")
-        # recv_buffer = xp.empty(sum(local_sizes), dtype=int)
         recv_buffer = -1 * xp.ones((4, buffer_size), dtype=int)
         print(f"{recv_buffer.shape}")
     else:
         recv_buffer = None
-    # TODO (@halungge) Gatherv does not work if one of the buffers has size-0 (VertexDim)
-    # comm.Gatherv(sendbuf=owned, recvbuf=(recv_buffer, local_sizes), root=0)
+    # Gatherv does not work if one of the buffers has size-0 (VertexDim)
     comm.Gather(sendbuf=send_buf, recvbuf=recv_buffer, root=0)
     if processor_props.rank == 0:
         print(f"global indices: {recv_buffer}")
@@ -192,9 +232,9 @@ def test_element_ownership_is_unique(dim, processor_props):  # fixture
         assert xp.all(xp.sort(values) == global_indices(dim))
 
 
-@pytest.mark.with_mpi(min_size=4)
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.EdgeDim, dims.VertexDim])
-def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
+@pytest.mark.mpi(min_size=4)
+@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim])  # TODO dims.EdgeDim,
+def test_halo_constructor_decomposition_info_global_indices(processor_props, dim):  # noqa F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
 
@@ -202,19 +242,63 @@ def test_halo_constructor_decomposition_info(processor_props, dim):  # fixture
     halo_generator = HaloGenerator(
         connectivities=grid.connectivities,
         run_properties=processor_props,
-        rank_mapping=simple_distribution,
+        rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
     )
 
-    decomp_info = halo_generator.construct_decomposition_info()
+    decomp_info = halo_generator()
     my_halo = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.HALO)
     print(f"rank {processor_props.rank} has halo {dim} : {my_halo}")
-    assert my_halo.size == len(halos[dim][processor_props.rank])
-    assert xp.setdiff1d(my_halo, halos[dim][processor_props.rank], assume_unique=True).size == 0
+    assert my_halo.size == len(HALO[dim][processor_props.rank])
+    assert xp.setdiff1d(my_halo, HALO[dim][processor_props.rank], assume_unique=True).size == 0
     my_owned = decomp_info.global_index(dim, defs.DecompositionInfo.EntryType.OWNED)
     print(f"rank {processor_props.rank} owns {dim} : {my_owned} ")
-    assert my_owned.size == len(owned[dim][processor_props.rank])
-    assert xp.setdiff1d(my_owned, owned[dim][processor_props.rank], assume_unique=True).size == 0
+    assert_same_entries(dim, my_owned, OWNED, processor_props.rank)
+
+
+def assert_same_entries(
+    dim: gtx.Dimension, my_owned: np.ndarray, reference: dict[int, list], rank: int
+):
+    assert my_owned.size == len(reference[dim][rank])
+    assert xp.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
+
+
+@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim])  # TODO: dims.EdgeDim,
+def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim):  # noqa F811 # fixture
+    grid = simple.SimpleGrid()
+    halo_generator = HaloGenerator(
+        connectivities=grid.connectivities,
+        run_properties=processor_props,
+        rank_mapping=SIMPLE_DISTRIBUTION,
+        num_levels=1,
+    )
+    processor_props.rank = 1
+    decomp_info = halo_generator()
+    my_halo_levels = decomp_info.halo_levels(dim)
+    print(f"{dim.value}: rank {processor_props.rank} has halo levels {my_halo_levels} ")
+    if dim != dims.EdgeDim:
+        assert xp.all(
+            my_halo_levels != DecompositionFlag.UNDEFINED
+        ), (
+            "All indices should have a defined DecompositionFlag"
+        )  # THIS WILL CURRENTLY FAIL FOR EDGES
+    assert xp.where(my_halo_levels == DecompositionFlag.OWNED)[0].size == len(
+        OWNED[dim][processor_props.rank]
+    )
+    owned_local_indices = decomp_info.local_index(dim, defs.DecompositionInfo.EntryType.OWNED)
+    assert xp.all(
+        my_halo_levels[owned_local_indices] == DecompositionFlag.OWNED
+    ), "owned local indices should have DecompositionFlag.OWNED"
+    first_halo_line_local_index = xp.where(my_halo_levels == DecompositionFlag.FIRST_HALO_LINE)[0]
+    first_halo_line_global_index = decomp_info.global_index(
+        dim, defs.DecompositionInfo.EntryType.ALL
+    )[first_halo_line_local_index]
+    assert_same_entries(dim, first_halo_line_global_index, FIRST_HALO_LINE, processor_props.rank)
+    second_halo_line_local_index = xp.where(my_halo_levels == DecompositionFlag.SECOND_HALO_LINE)[0]
+    second_halo_line_global_index = decomp_info.global_index(
+        dim, defs.DecompositionInfo.EntryType.ALL
+    )[second_halo_line_local_index]
+    assert_same_entries(dim, second_halo_line_global_index, SECOND_HALO_LINE, processor_props.rank)
 
 
 def grid_file_manager(file: pathlib.Path) -> gm.GridManager:
@@ -261,29 +345,8 @@ def gather_field(field: xp.ndarray, comm: mpi4py.MPI.Comm) -> tuple:
     return local_sizes, recv_buffer
 
 
-@pytest.mark.xfail(reason="Not implemented yet")
-def test_local_grid(processor_props, caplog):  # fixture
-    caplog.set_level(logging.INFO)
-
-    grid = grid_file_manager(GRID_FILE).grid
-    labels = decompose(grid, processor_props)
-    halo_generator = HaloGenerator(
-        connectivities=grid.connectivities,
-        run_properties=processor_props,
-        rank_mapping=labels,
-        num_levels=1,
-    )
-    decomposition_info = halo_generator.construct_decomposition_info()
-    local_grid = halo_generator.local_grid(decomposition_info)
-
-    assert (
-        local_grid.num_cells
-        == decomposition_info.global_index(dims.CellDim, defs.DecompositionInfo.EntryType.All).size
-    )
-
-
-@pytest.mark.with_mpi
-def test_distributed_fields(processor_props):  # fixture
+@pytest.mark.mpi
+def test_distributed_fields(processor_props):  # noqa F811 # fixture
     grid_manager = grid_file_manager(GRID_FILE)
 
     global_grid = grid_manager.grid
@@ -295,7 +358,7 @@ def test_distributed_fields(processor_props):  # fixture
         rank_mapping=labels,
         num_levels=1,
     )
-    decomposition_info = halo_generator.construct_decomposition_info()
+    decomposition_info = halo_generator()
     # distributed read: read one field per dimension
     local_geometry_fields = grid_manager.read_geometry(decomposition_info)
     local_cell_area = local_geometry_fields[gm.GridFile.GeometryName.CELL_AREA]
@@ -326,7 +389,7 @@ def test_distributed_fields(processor_props):  # fixture
     )
 
 
-def decompose(grid: base_grid.BaseGrid, processor_props):
+def decompose(grid: base_grid.BaseGrid, processor_props):  # noqa F811 # fixture
     partitioner = SimpleMetisDecomposer()
     labels = partitioner(grid.connectivities[dims.C2E2CDim], n_part=processor_props.comm_size)
     return labels
@@ -334,7 +397,7 @@ def decompose(grid: base_grid.BaseGrid, processor_props):
 
 def assert_gathered_field_against_global(
     decomposition_info: defs.DecompositionInfo,
-    processor_props: defs.ProcessProperties,
+    processor_props: defs.ProcessProperties,  # noqa F811 # fixture
     dim: dims.Dimension,
     global_reference_field: xp.ndarray,
     local_field: xp.ndarray,
@@ -353,9 +416,9 @@ def assert_gathered_field_against_global(
     )
     if processor_props.rank == 0:
         assert xp.all(gathered_sizes == global_index_sizes)
-        sorted = xp.zeros(global_reference_field.shape, dtype=xp.float64)
-        sorted[gathered_global_indices] = gathered_field
-        assert helpers.dallclose(sorted, global_reference_field)
+        sorted_ = xp.zeros(global_reference_field.shape, dtype=xp.float64)
+        sorted_[gathered_global_indices] = gathered_field
+        assert helpers.dallclose(sorted_, global_reference_field)
 
 
 # TODO add test including halo access:

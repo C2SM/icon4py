@@ -27,12 +27,34 @@ log = logging.getLogger(__name__)
 
 # TODO (@halungge) do we need three of those: one for each dimension?
 class DecompositionFlag(enum.IntEnum):
-    #: cell is owned by this rank
-    OWNED = (0,)
-    #: cell is in the first halo line: that is cells that share and edge with an owned cell
-    FIRST_HALO_LINE = (1,)
-    #: cell is in the second halo line: that is cells that share only a vertex with an owned cell (and at least an edge with a FIRST_HALO_LINE cell)
+    UNDEFINED = -1
+    OWNED = 0
+    """used for locally owned cells, vertices, edges"""
+
+    FIRST_HALO_LINE = 1
+    """
+    used for:
+    - cells that share 1 edge with an OWNED cell
+    - vertices that are on OWNED cell 
+    - edges that are on OWNED cell
+    """
+
     SECOND_HALO_LINE = 2
+    """
+    used for:
+    - cells that share a vertex with an OWNED cell
+    - vertices that are on a cell(FIRST_HALO_LINE) but not on an owned cell
+    - edges that have _exactly_ one vertex shared with and OWNED Cell
+    """
+
+    THIRD_HALO_LINE = 3
+    """
+    This type does not exist in ICON. It denotes the "closing/far" edges of the SECOND_HALO_LINE cells
+    used for:
+    - cells (NOT USED)
+    - vertices (NOT USED)
+    - edges that are only on the cell(SECOND_HALO_LINE)
+    """
 
 
 class HaloGenerator:
@@ -140,7 +162,7 @@ class HaloGenerator:
         return xp.asarray(owned_cells).nonzero()[0]
 
     # TODO (@halungge): move out of halo generator?
-    def construct_decomposition_info(self) -> defs.DecompositionInfo:
+    def __call__(self) -> defs.DecompositionInfo:
         """
         Constructs the DecompositionInfo for the current rank.
 
@@ -156,10 +178,13 @@ class HaloGenerator:
         total_halo_cells = xp.hstack((first_halo_cells, second_halo_cells))
         all_cells = xp.hstack((owned_cells, total_halo_cells))
 
-        c_owner_mask = xp.isin(all_cells, owned_cells)
-
+        cell_owner_mask = xp.isin(all_cells, owned_cells)
+        cell_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_cells.size, dtype=int)
+        cell_halo_levels[cell_owner_mask] = DecompositionFlag.OWNED
+        cell_halo_levels[xp.isin(all_cells, first_halo_cells)] = DecompositionFlag.FIRST_HALO_LINE
+        cell_halo_levels[xp.isin(all_cells, second_halo_cells)] = DecompositionFlag.SECOND_HALO_LINE
         decomp_info = defs.DecompositionInfo(klevels=self._num_levels).with_dimension(
-            dims.CellDim, all_cells, c_owner_mask
+            dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
         )
 
         #: edges
@@ -167,17 +192,20 @@ class HaloGenerator:
         edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
         edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
 
+        level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
         all_edges = xp.hstack(
             (
                 edges_on_owned_cells,
-                xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells),
+                level_two_edges,
                 xp.setdiff1d(edges_on_second_halo_line, edges_on_first_halo_line),
             )
         )
         all_edges = xp.unique(all_edges)
         # We need to reduce the overlap:
         # `edges_on_owned_cells` and `edges_on_first_halo_line` both contain the edges on the cutting line.
-        intersect_owned_first_line = xp.intersect1d(edges_on_owned_cells, edges_on_first_halo_line)
+        edge_intersect_owned_first_line = xp.intersect1d(
+            edges_on_owned_cells, edges_on_first_halo_line
+        )
 
         def _update_owner_mask_by_max_rank_convention(
             owner_mask, all_indices, indices_on_cutting_line, target_connectivity
@@ -218,28 +246,53 @@ class HaloGenerator:
         edge_owner_mask = _update_owner_mask_by_max_rank_convention(
             edge_owner_mask,
             all_edges,
-            intersect_owned_first_line,
+            edge_intersect_owned_first_line,
             self.edge_face_connectivity,
         )
-        decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask)
+        edge_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_edges.shape, dtype=int)
+        edge_halo_levels[edge_owner_mask] = DecompositionFlag.OWNED
+        edge_halo_levels[
+            xp.logical_and(
+                xp.logical_not(edge_owner_mask), xp.isin(all_edges, edge_intersect_owned_first_line)
+            )
+        ] = DecompositionFlag.FIRST_HALO_LINE
+        edge_halo_levels[xp.isin(all_edges, level_two_edges)] = DecompositionFlag.SECOND_HALO_LINE
+        decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
 
         # vertices
-        vertices_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
-        vertices_on_first_halo_line = self.find_vertex_neighbors_for_cells(first_halo_cells)
-        vertices_on_second_halo_line = self.find_vertex_neighbors_for_cells(
+        vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
+        vertex_on_first_halo_line = self.find_vertex_neighbors_for_cells(first_halo_cells)
+        vertex_on_second_halo_line = self.find_vertex_neighbors_for_cells(
             second_halo_cells
-        )  # TODO (@halungge): do we need that?
-        intersect_owned_first_line = xp.intersect1d(
-            vertices_on_owned_cells, vertices_on_first_halo_line
+        )  # TODO (@halungge): do we need that at all?
+        vertex_intersect_owned_first_line = xp.intersect1d(
+            vertex_on_owned_cells, vertex_on_first_halo_line
         )
 
         # create decomposition_info for vertices
-        all_vertices = xp.unique(xp.hstack((vertices_on_owned_cells, vertices_on_first_halo_line)))
-        v_owner_mask = xp.isin(all_vertices, vertices_on_owned_cells)
-        v_owner_mask = _update_owner_mask_by_max_rank_convention(
-            v_owner_mask, all_vertices, intersect_owned_first_line, self.node_face_connectivity
+        all_vertices = xp.unique(xp.hstack((vertex_on_owned_cells, vertex_on_first_halo_line)))
+        vertex_owner_mask = xp.isin(all_vertices, vertex_on_owned_cells)
+        vertex_owner_mask = _update_owner_mask_by_max_rank_convention(
+            vertex_owner_mask,
+            all_vertices,
+            vertex_intersect_owned_first_line,
+            self.node_face_connectivity,
         )
-        decomp_info.with_dimension(dims.VertexDim, all_vertices, v_owner_mask)
+        vertex_second_level = xp.setdiff1d(vertex_on_first_halo_line, vertex_on_owned_cells)
+        vertex_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_vertices.size, dtype=int)
+        vertex_halo_levels[vertex_owner_mask] = DecompositionFlag.OWNED
+        vertex_halo_levels[
+            xp.logical_and(
+                xp.logical_not(vertex_owner_mask),
+                xp.isin(all_vertices, vertex_intersect_owned_first_line),
+            )
+        ] = DecompositionFlag.FIRST_HALO_LINE
+        vertex_halo_levels[
+            xp.isin(all_vertices, vertex_second_level)
+        ] = DecompositionFlag.SECOND_HALO_LINE
+        decomp_info.with_dimension(
+            dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
+        )
         return decomp_info
 
 
@@ -261,7 +314,7 @@ class SimpleMetisDecomposer(Decomposer):
     https://documen.tician.de/pymetis/functionality.html
     """
 
-    def __call__(self, adjacency_matrix, n_part: int) -> xp.ndarray:
+    def __call__(self, adjacency_matrix: xp.ndarray, n_part: int) -> xp.ndarray:
         """
         Generate partition labesl for this grid topology using METIS:
         https://github.com/KarypisLab/METIS
@@ -278,3 +331,8 @@ class SimpleMetisDecomposer(Decomposer):
 
         cut_count, partition_index = pymetis.part_graph(nparts=n_part, adjacency=adjacency_matrix)
         return xp.array(partition_index)
+
+
+class SingleNodeDecomposer(Decomposer):
+    def __call__(self, adjacency_matrix: xp.ndarray, n_part: int) -> xp.ndarray:
+        return xp.zeros(adjacency_matrix.shape[0], dtype=xp.int32)
