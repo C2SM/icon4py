@@ -69,8 +69,6 @@ class MetricsConfig:
     #: Temporal extrapolation of Exner for computation of horizontal pressure gradient, defined in `mo_nonhydrostatic_nml.f90` used only in metrics fields calculation.
     exner_expol: Final[wpfloat] = 0.3333333333333
 
-    exner_expol_global: Final[wpfloat] = 0.333333333333333
-
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_z_mc(

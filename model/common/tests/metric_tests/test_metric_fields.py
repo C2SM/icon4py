@@ -17,6 +17,9 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
+from icon4py.model.atmosphere.diffusion.stencils.calculate_vwind_impl_wgt import (
+    compute_vwind_impl_wgt_final,
+)
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import (
     CellDim,
@@ -192,18 +195,15 @@ def test_compute_scalfac_dd3d(icon_grid, metrics_savepoint, grid_savepoint, back
 
 
 # TODO: convert this to a stenciltest once it is possible to have only KDim in domain
-# TODO: check why this test does not validate for GLOBAL_EXPERIMENT
-    rayleigh_coeff = 0.1  if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
-    damping_height = 50000.0  if experiment == dt_utils.GLOBAL_EXPERIMENT 12500.0
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT])
-def test_compute_rayleigh_w(icon_grid, metrics_savepoint, grid_savepoint, backend):
+def test_compute_rayleigh_w(icon_grid, experiment, metrics_savepoint, grid_savepoint, backend):
     rayleigh_w_ref = metrics_savepoint.rayleigh_w()
     vct_a_1 = grid_savepoint.vct_a().asnumpy()[0]
     rayleigh_w_full = zero_field(icon_grid, KDim, extend={KDim: 1})
     rayleigh_type = 2
-    rayleigh_coeff = 5.0
-    damping_height = 12500.0
+    rayleigh_coeff = 0.1 if experiment == dt_utils.GLOBAL_EXPERIMENT else 5.0
+    damping_height = 50000.0 if experiment == dt_utils.GLOBAL_EXPERIMENT else 12500.0
     compute_rayleigh_w.with_backend(backend=backend)(
         rayleigh_w=rayleigh_w_full,
         vct_a=grid_savepoint.vct_a(),
@@ -521,12 +521,13 @@ def test_compute_exner_exfac(
     horizontal_start = icon_grid.get_start_index(
         CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
-config = MetricsConfig(exner_expol = 0.333) if experiment == dt_utils.REGIONAL_EXPERIMENT else MetricsConfig()
-        MetricsConfig.exner_expol_global
-        if experiment == dt_utils.GLOBAL_EXPERIMENT
-        else MetricsConfig.exner_expol_regional
+    config = (
+        MetricsConfig(exner_expol=0.333)
+        if experiment == dt_utils.REGIONAL_EXPERIMENT
+        else MetricsConfig.exner_expol
     )
-    exner_exfac = constant_field(icon_grid, exner_experiment, CellDim, KDim)
+
+    exner_exfac = constant_field(icon_grid, config, CellDim, KDim)
     exner_exfac_ref = metrics_savepoint.exner_exfac()
     compute_exner_exfac.with_backend(backend)(
         ddxn_z_full=metrics_savepoint.ddxn_z_full(),
@@ -653,11 +654,7 @@ def test_compute_vwind_impl_wgt(
         },
     )
 
-    vwind_impl_wgt = (
-        np.amin(vwind_impl_wgt_k.asnumpy(), axis=1)
-        if experiment == dt_utils.GLOBAL_EXPERIMENT
-        else np.amax(vwind_impl_wgt_k.asnumpy(), axis=1)
-    )
+    vwind_impl_wgt = compute_vwind_impl_wgt_final(vwind_impl_wgt_k, dt_utils, experiment)
     assert dallclose(vwind_impl_wgt_ref.asnumpy(), vwind_impl_wgt)
 
 
