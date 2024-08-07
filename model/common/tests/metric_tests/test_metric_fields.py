@@ -807,7 +807,7 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
     horizontal_start = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.local(CellDim) - 1)
     horizontal_end = icon_grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-    compute_mask_prog_halo_c(
+    compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
         mask_prog_halo_c=mask_prog_halo_c_full,
         horizontal_start=horizontal_start,
