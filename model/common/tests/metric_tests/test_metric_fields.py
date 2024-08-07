@@ -17,7 +17,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.stencils.calculate_vwind_impl_wgt import (
+from icon4py.model.atmosphere.diffusion.stencils.compute_vwind_impl_wgt import (
     compute_vwind_impl_wgt,
 )
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
