@@ -48,7 +48,6 @@ from icon4py.model.common.test_utils.helpers import (
 def test_compute_diffusion_metrics(
     metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
-    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
