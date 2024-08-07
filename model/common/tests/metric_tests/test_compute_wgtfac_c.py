@@ -14,7 +14,7 @@
 import pytest
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
+from icon4py.model.common.metrics.compute_wgtfac_c import compute_wgtfac_c
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat

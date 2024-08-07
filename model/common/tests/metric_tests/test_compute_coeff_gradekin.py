@@ -15,7 +15,7 @@ import pytest
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.metrics.stencils.compute_coeff_gradekin import compute_coeff_gradekin
+from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose
 

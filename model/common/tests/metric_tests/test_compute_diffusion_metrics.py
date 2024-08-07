@@ -24,14 +24,14 @@ from icon4py.model.common.dimension import (
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
 )
+from icon4py.model.common.metrics.compute_diffusion_metrics import (
+    compute_diffusion_metrics,
+)
 from icon4py.model.common.metrics.metric_fields import (
     compute_max_nbhgt,
     compute_maxslp_maxhgtd,
     compute_weighted_cell_neighbor_sum,
     compute_z_mc,
-)
-from icon4py.model.common.metrics.stencils.compute_diffusion_metrics import (
-    compute_diffusion_metrics,
 )
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import (
@@ -50,6 +50,10 @@ def test_compute_diffusion_metrics(
 ):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
+
+    if experiment == dt_utils.REGIONAL_EXPERIMENT:
+        pytest.mark.skip("Fields not computed for {experiment}")
+
     mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
     zd_vertoffset_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
     z_vintcoeff = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
@@ -148,8 +152,5 @@ def test_compute_diffusion_metrics(
 
     assert dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())
     assert dallclose(zd_diffcoef_dsl, metrics_savepoint.zd_diffcoef().asnumpy(), rtol=1.0e-11)
-    if (
-        experiment == dt_utils.REGIONAL_EXPERIMENT
-    ):  # zd_vertoffset and zd_intcoef not present in GLOBAL_EXPERIMENT
-        assert dallclose(zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy())
-        assert dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())
+    assert dallclose(zd_vertoffset_dsl.asnumpy(), metrics_savepoint.zd_vertoffset().asnumpy())
+    assert dallclose(zd_intcoef_dsl.asnumpy(), metrics_savepoint.zd_intcoef().asnumpy())

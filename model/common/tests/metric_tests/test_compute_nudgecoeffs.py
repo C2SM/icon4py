@@ -16,7 +16,7 @@ import pytest
 
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
-from icon4py.model.common.metrics.stencils.compute_nudgecoeffs import compute_nudgecoeffs
+from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  # import fixtures from test_utils package
     data_provider,
