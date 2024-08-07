@@ -528,7 +528,7 @@ def test_compute_exner_exfac(
     config = (
         MetricsConfig(exner_expol=0.333)
         if experiment == dt_utils.REGIONAL_EXPERIMENT
-        else MetricsConfig
+        else MetricsConfig()
     )
 
     exner_exfac = constant_field(icon_grid, config.exner_expol, CellDim, KDim)
