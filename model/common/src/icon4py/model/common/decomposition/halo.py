@@ -161,6 +161,40 @@ class HaloGenerator:
         owned_cells = self._mapping == self._props.rank
         return xp.asarray(owned_cells).nonzero()[0]
 
+    def _update_owner_mask_by_max_rank_convention(self,
+        owner_mask, all_indices, indices_on_cutting_line, target_connectivity
+    ):
+        """
+        In order to have unique ownership of edges (and vertices) among nodes there needs to be
+        a convention as to where those elements on the cutting line go:
+        according to a remark in `mo_decomposition_tools.f90` ICON puts them to the node
+        with the higher rank.
+
+        # TODO (@halungge): can we add an assert for the target dimension of the connectivity being cells.
+        Args:
+            owner_mask: owner mask for the dimension
+            all_indices: (global) indices of the dimension
+            indices_on_cutting_line: global indices of the elements on the cutting line
+            target_connectivity: connectivity matrix mapping the dimension d to faces
+        Returns:
+            updated owner mask
+        """
+        for index in indices_on_cutting_line:
+            local_index = xp.nonzero(all_indices == index)[0][0]
+            owning_ranks = self._mapping[target_connectivity[index]]
+            assert (
+                xp.unique(owning_ranks).size > 1
+            ), f"rank {self._props.rank}: all neighboring cells are owned by the same rank"
+            assert (
+                self._props.rank in owning_ranks
+            ), f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
+            # assign the index to the rank with the higher rank
+            if max(owning_ranks) > self._props.rank:
+                owner_mask[local_index] = False
+            else:
+                owner_mask[local_index] = True
+        return owner_mask
+
     # TODO (@halungge): move out of halo generator?
     def __call__(self) -> defs.DecompositionInfo:
         """
@@ -187,79 +221,7 @@ class HaloGenerator:
             dims.CellDim, all_cells, cell_owner_mask, cell_halo_levels
         )
 
-        #: edges
-        edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
-        edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
-        edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
-
-        level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
-        all_edges = xp.hstack(
-            (
-                edges_on_owned_cells,
-                level_two_edges,
-                xp.setdiff1d(edges_on_second_halo_line, edges_on_first_halo_line),
-            )
-        )
-        all_edges = xp.unique(all_edges)
-        # We need to reduce the overlap:
-        # `edges_on_owned_cells` and `edges_on_first_halo_line` both contain the edges on the cutting line.
-        edge_intersect_owned_first_line = xp.intersect1d(
-            edges_on_owned_cells, edges_on_first_halo_line
-        )
-
-        def _update_owner_mask_by_max_rank_convention(
-            owner_mask, all_indices, indices_on_cutting_line, target_connectivity
-        ):
-            """
-            In order to have unique ownership of edges (and vertices) among nodes there needs to be
-            a convention as to where those elements on the cutting line go:
-            according to a remark in `mo_decomposition_tools.f90` ICON puts them to the node
-            with the higher rank.
-
-            # TODO (@halungge): can we add an assert for the target dimension of the connectivity being cells.
-            Args:
-                owner_mask: owner mask for the dimension
-                all_indices: (global) indices of the dimension
-                indices_on_cutting_line: global indices of the elements on the cutting line
-                target_connectivity: connectivity matrix mapping the dimension d to faces
-            Returns:
-                updated owner mask
-            """
-            for index in indices_on_cutting_line:
-                local_index = xp.nonzero(all_indices == index)[0][0]
-                owning_ranks = self._mapping[target_connectivity[index]]
-                assert (
-                    xp.unique(owning_ranks).size > 1
-                ), f"rank {self._props.rank}: all neighboring cells are owned by the same rank"
-                assert (
-                    self._props.rank in owning_ranks
-                ), f"rank {self._props.rank}: neither of the neighboring cells: {owning_ranks} is owned by me"
-                # assign the index to the rank with the higher rank
-                if max(owning_ranks) > self._props.rank:
-                    owner_mask[local_index] = False
-                else:
-                    owner_mask[local_index] = True
-            return owner_mask
-
-        # construct the owner mask
-        edge_owner_mask = xp.isin(all_edges, edges_on_owned_cells)
-        edge_owner_mask = _update_owner_mask_by_max_rank_convention(
-            edge_owner_mask,
-            all_edges,
-            edge_intersect_owned_first_line,
-            self.edge_face_connectivity,
-        )
-        edge_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_edges.shape, dtype=int)
-        edge_halo_levels[edge_owner_mask] = DecompositionFlag.OWNED
-        edge_halo_levels[
-            xp.logical_and(
-                xp.logical_not(edge_owner_mask), xp.isin(all_edges, edge_intersect_owned_first_line)
-            )
-        ] = DecompositionFlag.FIRST_HALO_LINE
-        edge_halo_levels[xp.isin(all_edges, level_two_edges)] = DecompositionFlag.SECOND_HALO_LINE
-        decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
-
-        # vertices
+        #: vertices
         vertex_on_owned_cells = self.find_vertex_neighbors_for_cells(owned_cells)
         vertex_on_first_halo_line = self.find_vertex_neighbors_for_cells(first_halo_cells)
         vertex_on_second_halo_line = self.find_vertex_neighbors_for_cells(
@@ -272,7 +234,7 @@ class HaloGenerator:
         # create decomposition_info for vertices
         all_vertices = xp.unique(xp.hstack((vertex_on_owned_cells, vertex_on_first_halo_line)))
         vertex_owner_mask = xp.isin(all_vertices, vertex_on_owned_cells)
-        vertex_owner_mask = _update_owner_mask_by_max_rank_convention(
+        vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
             vertex_owner_mask,
             all_vertices,
             vertex_intersect_owned_first_line,
@@ -293,6 +255,47 @@ class HaloGenerator:
         decomp_info.with_dimension(
             dims.VertexDim, all_vertices, vertex_owner_mask, vertex_halo_levels
         )
+
+        #: edges
+        edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
+        edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
+        edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
+
+        level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
+        all_edges = xp.hstack(
+            (
+                edges_on_owned_cells,
+                level_two_edges,
+                xp.setdiff1d(edges_on_second_halo_line, edges_on_first_halo_line),
+            )
+        )
+        all_edges = xp.unique(all_edges)
+        # We need to reduce the overlap:
+        # `edges_on_owned_cells` and `edges_on_first_halo_line` both contain the edges on the cutting line.
+        edge_intersect_owned_first_line = xp.intersect1d(
+            edges_on_owned_cells, edges_on_first_halo_line
+        )
+
+
+
+        # construct the owner mask
+        edge_owner_mask = xp.isin(all_edges, edges_on_owned_cells)
+        edge_owner_mask = self._update_owner_mask_by_max_rank_convention(
+            edge_owner_mask,
+            all_edges,
+            edge_intersect_owned_first_line,
+            self.edge_face_connectivity,
+        )
+        edge_halo_levels = DecompositionFlag.UNDEFINED * xp.ones(all_edges.shape, dtype=int)
+        edge_halo_levels[edge_owner_mask] = DecompositionFlag.OWNED
+        edge_halo_levels[
+            xp.logical_and(
+                xp.logical_not(edge_owner_mask), xp.isin(all_edges, edge_intersect_owned_first_line)
+            )
+        ] = DecompositionFlag.FIRST_HALO_LINE
+        edge_halo_levels[xp.isin(all_edges, level_two_edges)] = DecompositionFlag.SECOND_HALO_LINE
+        decomp_info.with_dimension(dims.EdgeDim, all_edges, edge_owner_mask, edge_halo_levels)
+
         return decomp_info
 
 
