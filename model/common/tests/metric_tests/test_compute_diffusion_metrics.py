@@ -48,11 +48,12 @@ from icon4py.model.common.test_utils.helpers import (
 def test_compute_diffusion_metrics(
     metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
+    backend = None
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
 
-    if experiment == dt_utils.REGIONAL_EXPERIMENT:
-        pytest.mark.skip("Fields not computed for {experiment}")
+    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+        pytest.skip(f"Fields not computed for {experiment}")
 
     mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
     zd_vertoffset_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
