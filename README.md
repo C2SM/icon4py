@@ -126,14 +126,14 @@ The documentation is at a very early stage given the constant state of developme
 
 ```bash
 # Install the required packages
-pip install sphinx==7.3.7 myst-parser sphinx-rtd-theme
+pip install sphinx==7.3.7 myst-parser sphinx-rtd-theme sphinx-math-dollar
 
 # Move to the dycore docs folder
 cd model/atmosphere/dycore/docs
 
 # Build the documentation
 sphinx-apidoc --implicit-namespaces -o . ../src/icon4py/
-make html
+sphinx-build -j 4 . _build/html
 ```
 
 The documentation can then be accessed at `docs/_build/html/index.html`

@@ -8,13 +8,18 @@ Welcome to icon4py-atmosphere-dycore's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: "Manually written" dycore documentation:
 
    dycore_numerics.rst
-   icon4py.model.atmosphere.rst
 
-.. modules.rst
-.. icon4py.model.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Automatically generated docs:
+
+   modules.rst
+   icon4py.model.rst
+   icon4py.model.atmosphere.rst
 
 Indices and tables
 ==================

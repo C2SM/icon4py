@@ -808,7 +808,7 @@ class SolveNonhydro:
             )
 
         """
-        ``nhsolve_prog.predictor_stencils_2_3()``
+        :meth:`predictor_stencils_2_3()<icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program.predictor_stencils_2_3>`
 
         z_exner_ex_pr (0:nlev):
             Compute the temporal extrapolation of perturbed exner function at
@@ -816,24 +816,26 @@ class SolveNonhydro:
             icon tutorial 2023) for horizontal momentum equations. Note that it
             has nlev+1 levels. This last level is underground and set to zero.
 
-        .. math:: \pi_k^{\prime\tilde{n}} = (1 + \gamma) \pi_k^{\prime n} - \gamma \pi_k^{\prime n-1}
-
-        .. code-block:: python
-
-            z_exner_ex_pr = (1 + exner_exfac) * (exner - exner_ref_mc) - exner_exfac * exner_pr
+        $$
+        \pi_k^{\prime\tilde{n}} = (1 + \gamma) \pi_k^{\prime n} - \gamma \pi_k^{\prime n-1}
+        $$
 
         exner_pr (0:nlev-1):
             Store perturbed exner function at full levels of current time step.
 
-        .. code-block:: python
+        $$
+        \pi_k^{\prime n-1} = \pi_k^{\prime n}
+        $$
 
-            exner_pr = exner - exner_ref_mc
-        
         FIXME:
-            In the stencil, _extrapolate_temporally_exner_pressure doesn't only
-            do what the name suggests: it also updates exner_pr, which is not
-            what the name implies.
+            - The first operation on z_exner_ex_pr should be done in a generic
+              math (1+a)*x - a*y program
+            - In the stencil, _extrapolate_temporally_exner_pressure doesn't only
+              do what the name suggests: it also updates exner_pr, which is not
+              what the name implies.
         """
+        import pdb; pdb.set_trace()
+
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
             exner=prognostic_state[nnow].exner,
@@ -858,31 +860,26 @@ class SolveNonhydro:
                 exner function computed in previous stencil to half levels. The
                 ground level is based on quadratic interpolation (with
                 hydrostatic assumption?).
-            FIXME:
-                The value of z_exner_ic at the model top level is not updated
-                and assumed to be zero. It should be treated in the same way as
-                the ground level.
 
-            .. math:: \pi_{k-1/2}^{\prime \tilde{n}} = wgtfac_c \pi_k^{\prime\tilde{n}} + (1 - wgtfac_c) \pi_{k-1}^{\prime\tilde{n}}
-
-            .. code-block:: python
-
-                z_exner_ic = wgtfac_c * z_exner_ex_pr + (1 - wgtfac_c) * z_exner_ex_pr(Koff[-1])
+            $$
+            \pi_{k-1/2}^{\prime \tilde{n}} = \nu \pi_k^{\prime\tilde{n}} + (1 - \nu) \pi_{k-1}^{\prime\tilde{n}} \\
+            \nu = \text{wgtfa_c}
+            $$
 
             z_dexner_dz_c_1 (1 or flat_lev:nlev-1):
                 Vertical derivative of the temporal extrapolation of exner
                 function at full levels is also computed (first order scheme).
+                flat_lev is the height (inclusive) above which the grid is not
+                affected by terrain following.
 
-            .. math::
+            $$
+            \frac{\partial \pi_{k}^{\prime\tilde{n}}}{\partial z} = \frac{\pi_{k-1/2}^{\prime\tilde{n}} - \pi_{k+1/2}^{\prime\tilde{n}}}{\Delta z_{k}}
+            $$
 
-                \frac{\partial \pi_{k}^{\prime\tilde{n}}}{\partial z} = \frac{\pi_{k-1/2}^{\prime\tilde{n}} - \pi_{k+1/2}^{\prime\tilde{n}}}{\Delta z_{k}}
-
-            .. code-block:: python
-
-                z_dexner_dz_c_1 = (z_exner_ic - z_exner_ic(Koff[1])) * inv_ddqz_z_full
-
-            flat_lev:
-                height (inclusive) above which the grid is not affected by terrain following.
+            FIXME:
+                - The value of z_exner_ic at the model top level is not updated
+                  and assumed to be zero. It should be treated in the same way as
+                  the ground level.
             """
             nhsolve_prog.predictor_stencils_4_5_6(
                 wgtfacq_c_dsl=self.metric_state_nonhydro.wgtfacq_c,

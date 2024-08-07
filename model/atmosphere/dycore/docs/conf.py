@@ -17,12 +17,25 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
     "sphinx.ext.mathjax",
+    "sphinx.ext.autosectionlabel",
     "myst_parser",
+    "sphinx_math_dollar",
+    "icon4py.model.atmosphere.dycore.sphinx"
 ]
+
+# Make sure that the autosection target is unique
+autosectionlabel_prefix_document = True
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 source_suffix = ['.rst', '.md']
+
+MatJax = {
+    'tex2jax': {
+        'inlineMath': [ ["\\(","\\)"] ],
+        'displayMath': [["\\[","\\]"] ],
+    },
+}
 
 
 # -- Options for HTML output -------------------------------------------------
@@ -32,7 +45,7 @@ html_theme = 'sphinx_rtd_theme'
 html_static_path = ['_static']
 
 # -- Options for module names -------------------------------------------------
-#add_module_names = False
+add_module_names = False
 
 # -- More involved stuff ------------------------------------------------------
 
@@ -40,17 +53,15 @@ from sphinx.ext import autodoc
 import re
 import inspect
 
-class SimpleMethodDocumenter(autodoc.MethodDocumenter):
-    objtype = 'simple'
-    #content_indent = '' # do not indent the content
+class FullMethodDocumenter(autodoc.MethodDocumenter):
+    """Fully document a method."""
 
-    # do not display the method signature
-    def format_args(self):
-        return None
+    objtype = 'full'
 
     def get_doc(self):
 
         docstrings = re.findall(r'"""(.*?)"""', inspect.getsource(self.object), re.DOTALL)
+
         docstrings_list = []
         for docstring in docstrings:
             docstr = docstring.splitlines()
@@ -71,9 +82,6 @@ class SimpleMethodDocumenter(autodoc.MethodDocumenter):
             docstr.append('')
             # add the processed docstring to the list
             docstrings_list.append(docstr)
-
-        #super_doc = super().get_doc()
-        #import pdb; pdb.set_trace()
         
         if docstrings_list:
             # remove the last aesthetic horizontal line
@@ -83,4 +91,4 @@ class SimpleMethodDocumenter(autodoc.MethodDocumenter):
         return docstrings_list
     
 def setup(app):
-    app.add_autodocumenter(SimpleMethodDocumenter)
+    app.add_autodocumenter(FullMethodDocumenter)
