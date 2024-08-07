@@ -14,7 +14,7 @@ import dataclasses
 import enum
 import logging
 import pathlib
-from typing import Optional, Sequence, Union
+from typing import Callable, Optional, Sequence, Union
 
 import gt4py.next as gtx
 import numpy as np
@@ -245,7 +245,7 @@ class ToZeroBasedIndexTransformation(IndexTransformation):
         """
         return np.asarray(np.where(array == GridFile.INVALID_INDEX, 0, -1), dtype=gtx.int32)
 
-
+# TODO make this a context manager
 class GridManager:
     """
     Read ICON grid file and set up  IconGrid.
@@ -259,13 +259,20 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove
+        decomposer: Callable[[np.ndarray, int], np.ndarray] = None,
         run_properties: decomposition.ProcessProperties = decomposition.SingleNodeProcessProperties(),
+         
     ):
         self._log = logging.getLogger(__name__)
         self._run_properties = run_properties
         self._transformation = transformation
-        self._config = config
         self._file_name = str(grid_file)
+
+        if decomposer is None:
+            self._decompose = halo.SingleNodeDecomposer() if run_properties.single_node() else halo.SimpleMetisDecomposer()
+        else: 
+            self._decompose = decomposer
+        self._config = config
         self._grid: Optional[icon_grid.IconGrid] = None
         self._dataset = None
         self._reader = None
