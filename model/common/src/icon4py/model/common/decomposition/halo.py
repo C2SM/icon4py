@@ -143,16 +143,19 @@ class HaloGenerator:
     def _cell_neighbors(self, cells: xp.ndarray):
         return xp.unique(self.face_face_connectivity[cells, :])
 
-    def _find_neighbors(self, cell_line: xp.ndarray, connectivity: xp.ndarray) -> xp.ndarray:
+    def _find_neighbors(self, source_indices: xp.ndarray, connectivity: xp.ndarray) -> xp.ndarray:
         """Get a flattened list of all (unique) neighbors to a given global index list"""
-        neighbors = connectivity[cell_line, :]
+        neighbors = connectivity[source_indices, :]
         shp = neighbors.shape
         unique_neighbors = xp.unique(neighbors.reshape(shp[0] * shp[1]))
         return unique_neighbors
 
     def find_edge_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
-
+    
+    def find_edge_neighbors_for_vertices(self, vertex_line: xp.ndarray) -> xp.ndarray:
+        return self._find_neighbors(vertex_line, connectivity=self.node_edge_connectivity)
+    
     def find_vertex_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
@@ -227,7 +230,8 @@ class HaloGenerator:
         vertex_on_second_halo_line = self.find_vertex_neighbors_for_cells(
             second_halo_cells
         )  # TODO (@halungge): do we need that at all?
-        vertex_intersect_owned_first_line = xp.intersect1d(
+        
+        vertex_on_cutting_line = xp.intersect1d(
             vertex_on_owned_cells, vertex_on_first_halo_line
         )
 
@@ -237,7 +241,7 @@ class HaloGenerator:
         vertex_owner_mask = self._update_owner_mask_by_max_rank_convention(
             vertex_owner_mask,
             all_vertices,
-            vertex_intersect_owned_first_line,
+            vertex_on_cutting_line,
             self.node_face_connectivity,
         )
         vertex_second_level = xp.setdiff1d(vertex_on_first_halo_line, vertex_on_owned_cells)
@@ -246,7 +250,7 @@ class HaloGenerator:
         vertex_halo_levels[
             xp.logical_and(
                 xp.logical_not(vertex_owner_mask),
-                xp.isin(all_vertices, vertex_intersect_owned_first_line),
+                xp.isin(all_vertices, vertex_on_cutting_line),
             )
         ] = DecompositionFlag.FIRST_HALO_LINE
         vertex_halo_levels[
@@ -260,8 +264,10 @@ class HaloGenerator:
         edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
         edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
         edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
-
-        level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
+    
+        level_two_edges = xp.setdiff1d(self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells)
+        
+        #level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
         all_edges = xp.hstack(
             (
                 edges_on_owned_cells,
