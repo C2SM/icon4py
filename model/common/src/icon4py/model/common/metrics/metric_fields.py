@@ -705,7 +705,7 @@ def _compute_vwind_impl_wgt_2(
 
 
 @program(grid_type=GridType.UNSTRUCTURED)
-def compute_vwind_impl_wgt(
+def compute_vwind_impl_wgt_partial(
     z_ddxn_z_half_e: fa.EdgeField[wpfloat],
     z_ddxt_z_half_e: fa.EdgeField[wpfloat],
     dual_edge_length: fa.EdgeField[wpfloat],

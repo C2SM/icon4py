@@ -18,7 +18,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion.stencils.calculate_vwind_impl_wgt import (
-    compute_vwind_impl_wgt_final,
+    compute_vwind_impl_wgt,
 )
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     HorizontalPressureDiscretizationType,
@@ -63,7 +63,6 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_rayleigh_w,
     compute_scalfac_dd3d,
     compute_vwind_expl_wgt,
-    compute_vwind_impl_wgt,
     compute_wgtfac_e,
     compute_z_mc,
 )
@@ -636,7 +635,11 @@ def test_compute_vwind_impl_wgt(
     init_val = 0.65 if experiment == dt_utils.GLOBAL_EXPERIMENT else 0.7
     vwind_impl_wgt_k = constant_field(icon_grid, init_val, CellDim, KDim)
 
-    compute_vwind_impl_wgt.with_backend(backend)(
+    vwind_impl_wgt = compute_vwind_impl_wgt(
+        backend=backend,
+        icon_grid=icon_grid,
+        vct_a=grid_savepoint.vct_a(),
+        z_ifc=metrics_savepoint.z_ifc(),
         z_ddxn_z_half_e=gtx.as_field(
             (EdgeDim,), z_ddxn_z_half_e.asnumpy()[:, icon_grid.num_levels]
         ),
@@ -644,25 +647,12 @@ def test_compute_vwind_impl_wgt(
             (EdgeDim,), z_ddxt_z_half_e.asnumpy()[:, icon_grid.num_levels]
         ),
         dual_edge_length=dual_edge_length,
-        vct_a=grid_savepoint.vct_a(),
-        z_ifc=metrics_savepoint.z_ifc(),
-        vwind_impl_wgt=vwind_impl_wgt_full,
+        vwind_impl_wgt_full=vwind_impl_wgt_full,
         vwind_impl_wgt_k=vwind_impl_wgt_k,
-        vwind_offctr=vwind_offctr,
-        horizontal_start=horizontal_start_cell,
-        horizontal_end=icon_grid.num_cells,
-        vertical_start=max(10, icon_grid.num_levels - 8),
-        vertical_end=icon_grid.num_levels,
-        offset_provider={
-            "C2E": icon_grid.get_offset_provider("C2E"),
-            "Koff": icon_grid.get_offset_provider("Koff"),
-        },
-    )
-
-    vwind_impl_wgt = compute_vwind_impl_wgt_final(
-        vwind_impl_wgt_k=vwind_impl_wgt_k.asnumpy(),
         global_exp=dt_utils.GLOBAL_EXPERIMENT,
         experiment=experiment,
+        vwind_offctr=vwind_offctr,
+        horizontal_start_cell=horizontal_start_cell,
     )
     assert dallclose(vwind_impl_wgt_ref.asnumpy(), vwind_impl_wgt)
 
