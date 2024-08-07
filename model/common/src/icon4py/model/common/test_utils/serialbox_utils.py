@@ -1344,10 +1344,10 @@ class IconJabwDiagnosticSavepoint(IconSavepoint):
     def pressure_sfc(self):
         return self._get_field("output_diag_pressure_sfc", dims.CellDim)
 
-    def zonal_Wind(self):
+    def zonal_wind(self):
         return self._get_field("output_diag_u", dims.CellDim, dims.KDim)
 
-    def meridional_Wind(self):
+    def meridional_wind(self):
         return self._get_field("output_diag_v", dims.CellDim, dims.KDim)
 
 
