@@ -17,9 +17,6 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common.metrics.stencils.compute_vwind_impl_wgt import (
-    compute_vwind_impl_wgt,
-)
 from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
     HorizontalPressureDiscretizationType,
 )
@@ -65,6 +62,9 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_vwind_expl_wgt,
     compute_wgtfac_e,
     compute_z_mc,
+)
+from icon4py.model.common.metrics.stencils.compute_vwind_impl_wgt import (
+    compute_vwind_impl_wgt,
 )
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import (
