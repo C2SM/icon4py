@@ -94,33 +94,22 @@ _EDGE_OWN = {
 }
 _EDGE_FIRST_HALO_LINE = {0: [0, 4, 17, 21, 10, 2], 1: [3, 15, 20, 26, 24], 2: [18], 3: []}
 _EDGE_SECOND_HALO_LINE = {
-    0: [
-        8,
-        16,
-        24,
-        25,
-        26,
-        22,
-        23,
-        18,
-        11,
-        6,
-    ],
-    1: [0, 1, 9, 5, 12, 17, 16, 22, 3, 21, 13, 17, 11, 18, 23],
-    2: [6, 9, 14, 18, 19, 23, 25, 20, 13, 3, 4, 5, 1, 21, 22, 0, 26],
-    3: [],
+    0: [3,6,7,8,15,24,25,26,16,22,23,18,19,20,11],
+    1: [0,1,2,5,9,12,11,10,13,16,17,18,19,21,22,23],
+    2: [2,9,12,4,8,7,14,21,13,20,19,23,22,26,25],
+    3: [11,10,14,13,17,24,25,6,2,1,5,4,8,7],
 }
 _EDGE_THIRD_HALO_LINE = {
-    0: [19, 7, 20],
-    1: [10, 14],
-    2: [],
-    3: [],
+    0: [],
+    1: [14],
+    2: [0,3,6,1],
+    3: [9,12,15,16],
 }
 _EDGE_HALO = {
     0: _EDGE_FIRST_HALO_LINE[0] + _EDGE_SECOND_HALO_LINE[0] + _EDGE_THIRD_HALO_LINE[0],
-    1: _EDGE_FIRST_HALO_LINE[1] + _EDGE_SECOND_HALO_LINE[1] + [10, 14],
+    1: _EDGE_FIRST_HALO_LINE[1] + _EDGE_SECOND_HALO_LINE[1] + _EDGE_THIRD_HALO_LINE[1],
     2: _EDGE_FIRST_HALO_LINE[2] + _EDGE_SECOND_HALO_LINE[2] + _EDGE_THIRD_HALO_LINE[2],
-    3: [10, 11, 13, 14, 25, 6, 24, 1, 5, 4, 8, 9, 17, 12, 15, 16, 2, 7],
+    3: _EDGE_FIRST_HALO_LINE[3] + _EDGE_SECOND_HALO_LINE[3] + _EDGE_THIRD_HALO_LINE[3]
 }
 
 _VERTEX_OWN = {
@@ -233,7 +222,7 @@ def test_element_ownership_is_unique(dim, processor_props):  # noqa F811 # fixtu
 
 
 @pytest.mark.mpi(min_size=4)
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim])  # TODO dims.EdgeDim,
+@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim]) 
 def test_halo_constructor_decomposition_info_global_indices(processor_props, dim):  # noqa F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
@@ -263,7 +252,7 @@ def assert_same_entries(
     assert xp.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
 
 
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim])  # TODO: dims.EdgeDim,
+@pytest.mark.parametrize("dim", [dims.EdgeDim])  #dims.CellDim, dims.VertexDim, 
 def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim):  # noqa F811 # fixture
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(
@@ -272,7 +261,7 @@ def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim): 
         rank_mapping=SIMPLE_DISTRIBUTION,
         num_levels=1,
     )
-    processor_props.rank = 1
+    processor_props.rank = 0
     decomp_info = halo_generator()
     my_halo_levels = decomp_info.halo_levels(dim)
     print(f"{dim.value}: rank {processor_props.rank} has halo levels {my_halo_levels} ")
