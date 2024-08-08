@@ -12,25 +12,11 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 
-import contextlib
-import io
-import trace
 import pytest
-import numpy as np
-from hypothesis import given, settings, target
 from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment
 from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
-from icon4py.model.common.test_utils import serialbox_utils as sb, datatest_utils as dt_utils
-from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid import simple
-from icon4py.model.common.test_utils import helpers
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose
-
-from gt4py.next.program_processors.runners.gtfn import (
-    run_gtfn,
-    run_gtfn_cached,
-    run_gtfn_imperative,
-)
 
 
 
@@ -63,7 +49,6 @@ def test_saturation_adjustment(
     config = saturation_adjustment.SaturationAdjustmentConfig(
         tolerance=entry_savepoint.tolerance(),
         max_iter=entry_savepoint.maxiter(),
-        #max_iter=1,
     )
 
     saturation_adjustment_granule = saturation_adjustment.SaturationAdjustment(

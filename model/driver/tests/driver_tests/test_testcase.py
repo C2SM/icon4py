@@ -51,6 +51,9 @@ def test_jabw_initial_condition(
         rank,
     )
 
+    print(grid_savepoint.cells_start_index())
+    print(grid_savepoint.cells_end_index())
+
     # note that w is not verified because we decided to force w to zero in python framework after discussion
     assert helpers.dallclose(
         prognostic_state_now.rho.asnumpy(),

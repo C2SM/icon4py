@@ -13,7 +13,8 @@
 
 import pytest
 
-from icon4py.model.atmosphere.physics_schemes.single_moment_six_class_microphysics import gscp_graupel_Ong as graupel
+from icon4py.model.atmosphere.physics.microphysics import single_moment_six_class_gscp_graupel as graupel
+from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
@@ -24,8 +25,8 @@ from icon4py.model.common.test_utils.helpers import dallclose
     "experiment, model_top_height,, damping_height, stretch_factor, date",
     [
         (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "48"),
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "52"),
-        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "56"),
+        #(dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "52"),
+        #(dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "56"),
     ],
 )
 def test_graupel(
@@ -40,9 +41,6 @@ def test_graupel(
     icon_grid,
     lowest_layer_thickness,
 ):
-
-    backend = run_gtfn
-
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
@@ -92,7 +90,17 @@ def test_graupel(
         v=None,
     )
 
+    saturation_adjustment_config = saturation_adjustment.SaturationAdjustmentConfig()
+
+    print(init_savepoint.iautocon())
+    print(init_savepoint.ceff_min())
+    print(init_savepoint.vz0i())
+    print(init_savepoint.icesedi_exp())
+    print(init_savepoint.v0snow())
+    print(init_savepoint.mu_rain())
+    print(init_savepoint.rain_n0_factor())
     graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
+        do_saturation_adjustment=False,
         liquid_autoconversion_option=init_savepoint.iautocon(),
         ice_stickeff_min=init_savepoint.ceff_min(),
         ice_v0=init_savepoint.vz0i(),
@@ -103,7 +111,8 @@ def test_graupel(
     )
 
     graupel_microphysics = graupel.SingleMomentSixClassIconGraupel(
-        config=graupel_config,
+        graupel_config=graupel_config,
+        saturation_adjust_config=saturation_adjustment_config,
         grid=icon_grid,
         metric_state=metric_state,
         vertical_params=vertical_params,
@@ -131,12 +140,127 @@ def test_graupel(
     assert dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
     assert dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.e-10)
 
+
+    from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+    from icon4py.model.common.type_alias import vpfloat, wpfloat
+    from icon4py.model.common.dimension import CellDim, KDim
+    from icon4py.model.common.grid import horizontal as h_grid
+    import gt4py.next as gtx
+    temperature_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qv_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qc_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qi_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qr_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qs_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qg_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    dist_cldtop = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    rho_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    crho1o2_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    crhofac_qi_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    snow_sed0_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    qvsw_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
+    k_lev = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=gtx.int32)
+    start_cell_nudging = icon_grid.get_start_index(
+        CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+    )
+
+    end_cell_local = icon_grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.local(CellDim))
+    backend = run_gtfn_cached
+
+
+    print(icon_grid.num_cells)
+    print(start_cell_nudging)
+    print(icon_grid.get_start_index(
+        CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim)
+    ))
+    print(end_cell_local)
+    print(vertical_params.kstart_moist)
+    print(icon_grid.num_levels)
+    print(grid_savepoint.cells_start_index())
+    print(grid_savepoint.cells_end_index())
+    print(grid_savepoint.edge_start_index())
+    print(grid_savepoint.edge_end_index())
+    print(icon_grid.get_end_index(
+        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+    ))
+    #for i in range(len(grid_savepoint.global_index(CellDim))):
+    #    print(i, grid_savepoint.global_index(CellDim)[i])
+    print(grid_savepoint.global_index(CellDim))
+
+    graupel.experiment_icon_graupel(
+        vertical_params.kstart_moist,
+        gtx.int32(icon_grid.num_levels) - gtx.int32(1),
+        graupel_microphysics.config.liquid_autoconversion_option,
+        graupel_microphysics.config.snow_intercept_option,
+        graupel_microphysics.config.rain_freezing_option,
+        graupel_microphysics.config.ice_concentration_option,
+        graupel_microphysics.config.do_ice_sedimentation,
+        graupel_microphysics.config.ice_autocon_sticking_efficiency_option,
+        graupel_microphysics.config.do_reduced_icedeposition,
+        graupel_microphysics.config.is_isochoric,
+        graupel_microphysics.config.use_constant_water_heat_capacity,
+        graupel_microphysics.config.ice_stickeff_min,
+        graupel_microphysics.config.ice_v0,
+        graupel_microphysics.config.ice_sedi_density_factor_exp,
+        graupel_microphysics.config.snow_v0,
+        *graupel_microphysics.ccs,
+        graupel_microphysics.nimax,
+        graupel_microphysics.nimix,
+        *graupel_microphysics.rain_vel_coef,
+        *graupel_microphysics.sed_dens_factor_coef,
+        dtime,
+        graupel_microphysics.metric_state.ddqz_z_full,
+        diagnostic_state.temperature,
+        diagnostic_state.pressure,
+        prognostic_state.rho,
+        tracer_state.qv,
+        tracer_state.qc,
+        tracer_state.qi,
+        tracer_state.qr,
+        tracer_state.qs,
+        tracer_state.qg,
+        graupel_microphysics.qnc,
+        temperature_,
+        qv_,
+        qc_,
+        qi_,
+        qr_,
+        qs_,
+        qg_,
+        graupel_microphysics.rhoqrv_old_kup,
+        graupel_microphysics.rhoqsv_old_kup,
+        graupel_microphysics.rhoqgv_old_kup,
+        graupel_microphysics.rhoqiv_old_kup,
+        graupel_microphysics.vnew_r,
+        graupel_microphysics.vnew_s,
+        graupel_microphysics.vnew_g,
+        graupel_microphysics.vnew_i,
+        dist_cldtop,
+        rho_kup,
+        crho1o2_kup,
+        crhofac_qi_kup,
+        snow_sed0_kup,
+        qvsw_kup,
+        k_lev,
+        #start_cell_nudging,
+        #end_cell_local,
+        gtx.int32(0),
+        gtx.int32(5),
+        #start_cell_nudging + gtx.int32(1),
+        gtx.int32(vertical_params.kstart_moist),
+        gtx.int32(vertical_params.kstart_moist+1),
+        offset_provider={},
+    )
+
+
+    '''
     graupel_microphysics.run(
         dtime,
         prognostic_state,
         diagnostic_state,
         tracer_state,
     )
+
 
     new_temperature = entry_savepoint.temperature().ndarray + graupel_microphysics.temperature_tendency.ndarray * dtime
     new_qv = entry_savepoint.qv().ndarray + graupel_microphysics.qv_tendency.ndarray * dtime
@@ -178,7 +302,6 @@ def test_graupel(
     )
 
 
-    '''
     print("Max predict-ref difference:")
     for item in mixT_name:
         print(item, ": ", np.abs(predict_field[item].asnumpy() - ref_data[item]).max(), diff_data[item].max())

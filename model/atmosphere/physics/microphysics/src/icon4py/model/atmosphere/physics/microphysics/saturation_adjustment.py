@@ -37,7 +37,7 @@ from icon4py.model.common.settings import xp, backend
 from icon4py.model.common.grid import icon as icon_grid
 from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 from typing import Final
 from gt4py.eve.utils import FrozenNamespace
 import dataclasses
@@ -101,14 +101,14 @@ class SaturationAdjustment:
         self._allocate_tendencies()
 
     def _allocate_tendencies(self):
-        self.new_temperature1 = _allocate(CellDim, KDim, grid=self.grid, dtype=vpfloat)
-        self.new_temperature2 = _allocate(CellDim, KDim, grid=self.grid, dtype=vpfloat)
-        self.temperature_tendency = _allocate(CellDim, KDim, grid=self.grid, dtype=vpfloat)
-        self.qv_tendency = _allocate(CellDim, KDim, grid=self.grid, dtype=vpfloat)
-        self.qc_tendency = _allocate(CellDim, KDim, grid=self.grid, dtype=vpfloat)
-        self.subsaturated_mask = _allocate(CellDim, KDim, grid=self.grid, dtype=bool)
-        self.newton_iteration_mask = _allocate(CellDim, KDim, grid=self.grid, dtype=bool)
-        self.lwdocvd = _allocate(CellDim, KDim, grid=self.grid, dtype=vpfloat)
+        self.new_temperature1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=vpfloat)
+        self.new_temperature2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=vpfloat)
+        self.temperature_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=vpfloat)
+        self.qv_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=vpfloat)
+        self.qc_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=vpfloat)
+        self.subsaturated_mask = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=bool)
+        self.newton_iteration_mask = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=bool)
+        self.lwdocvd = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=vpfloat)
 
     def run(
         self,
