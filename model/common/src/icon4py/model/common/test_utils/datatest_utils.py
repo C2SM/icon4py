@@ -11,10 +11,11 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 import os
+import pathlib
 import re
-from pathlib import Path
+import uuid
 
-from icon4py.model.common.decomposition.definitions import get_processor_properties
+from icon4py.model.common.decomposition import definitions as decomposition
 
 
 DEFAULT_TEST_DATA_FOLDER = "testdata"
@@ -22,6 +23,7 @@ GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 JABW_EXPERIMENT = "jabw_R02B04"
+GAUSS3D_EXPERIMENT = "gauss3d_torus"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
@@ -30,15 +32,22 @@ GRID_URIS = {
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
 }
 
+GRID_IDS = {
+    GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
+    JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
+}
 
-def get_test_data_root_path() -> Path:
-    test_utils_path = Path(__file__).parent
+
+def get_test_data_root_path() -> pathlib.Path:
+    test_utils_path = pathlib.Path(__file__).parent
     model_path = test_utils_path.parent.parent
     common_path = model_path.parent.parent.parent.parent
     env_base_path = os.getenv("TEST_DATA_PATH")
 
     if env_base_path:
-        return Path(env_base_path)
+        return pathlib.Path(env_base_path)
     else:
         return common_path.parent.joinpath(DEFAULT_TEST_DATA_FOLDER)
 
@@ -54,6 +63,7 @@ DATA_URIS = {
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
+DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
@@ -65,6 +75,10 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Args: experiment: str: The experiment name.
         Returns: tuple[int, int]: The grid root and level.
     """
+    if "torus" in experiment:
+        # these magic values seem to mark a torus: they are set in all torus grid files.
+        return 0, 2
+
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
         return root, level
@@ -74,8 +88,21 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         ) from err
 
 
+def get_grid_id_for_experiment(experiment) -> uuid.UUID:
+    """Get the unique id of the grid used in the experiment.
+
+    These ids are encoded in the original grid file that was used to run the simulation, but not serialized when generating the test data. So we duplicate the information here.
+
+    TODO (@halungge): this becomes obsolete once we get the connectivities from the grid files.
+    """
+    try:
+        return GRID_IDS[experiment]
+    except KeyError as err:
+        raise ValueError(f"Experiment '{experiment}' has no grid id ") from err
+
+
 def get_processor_properties_for_run(run_instance):
-    return get_processor_properties(run_instance)
+    return decomposition.get_processor_properties(run_instance)
 
 
 def get_ranked_data_path(base_path, processor_properties):

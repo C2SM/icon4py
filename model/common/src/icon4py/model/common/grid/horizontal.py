@@ -15,18 +15,14 @@ from dataclasses import dataclass
 from functools import cached_property
 from typing import ClassVar, Final
 
-from gt4py.next import Dimension, Field, field_operator, neighbor_sum
+from gt4py.next import Dimension, Field
 
-from icon4py.model.common import constants, dimension
+from icon4py.model.common import constants, dimension, field_type_aliases as fa
 from icon4py.model.common.dimension import (
-    V2C,
     CellDim,
     ECDim,
     ECVDim,
     EdgeDim,
-    KDim,
-    V2CDim,
-    VertexDim,
 )
 
 
@@ -194,7 +190,7 @@ class EdgeParams:
         primal_normal_x=None,
         primal_normal_y=None,
     ):
-        self.tangent_orientation: Field[[EdgeDim], float] = tangent_orientation
+        self.tangent_orientation: fa.EdgeField[float] = tangent_orientation
         """
         Orientation of vector product of the edge and the adjacent cell centers
              v3
@@ -214,21 +210,21 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%tangent_orientation
         """
 
-        self.primal_edge_lengths: Field[[EdgeDim], float] = primal_edge_lengths
+        self.primal_edge_lengths: fa.EdgeField[float] = primal_edge_lengths
         """
         Length of the triangle edge.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%primal_edge_length
         """
 
-        self.inverse_primal_edge_lengths: Field[[EdgeDim], float] = inverse_primal_edge_lengths
+        self.inverse_primal_edge_lengths: fa.EdgeField[float] = inverse_primal_edge_lengths
         """
         Inverse of the triangle edge length: 1.0/primal_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_primal_edge_length
         """
 
-        self.dual_edge_lengths: Field[[EdgeDim], float] = dual_edge_lengths
+        self.dual_edge_lengths: fa.EdgeField[float] = dual_edge_lengths
         """
         Length of the hexagon/pentagon edge.
         vertices of the hexagon/pentagon are cell centers and its center
@@ -238,14 +234,14 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%dual_edge_length
         """
 
-        self.inverse_dual_edge_lengths: Field[[EdgeDim], float] = inverse_dual_edge_lengths
+        self.inverse_dual_edge_lengths: fa.EdgeField[float] = inverse_dual_edge_lengths
         """
         Inverse of hexagon/pentagon edge length: 1.0/dual_edge_length.
 
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_dual_edge_length
         """
 
-        self.inverse_vertex_vertex_lengths: Field[[EdgeDim], float] = inverse_vertex_vertex_lengths
+        self.inverse_vertex_vertex_lengths: fa.EdgeField[float] = inverse_vertex_vertex_lengths
         """
         Inverse distance between outer vertices of adjacent cells.
 
@@ -310,7 +306,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.edge_areas: Field[[EdgeDim], float] = edge_areas
+        self.edge_areas: fa.EdgeField[float] = edge_areas
         """
         Area of the quadrilateral whose edges are the primal edge and
         the associated dual edge.
@@ -319,12 +315,12 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.f_e: Field[[EdgeDim], float] = f_e
+        self.f_e: fa.EdgeField[float] = f_e
         """
         Coriolis parameter at cell edges
         """
 
-        self.edge_center: tuple[Field[[EdgeDim], float], Field[[EdgeDim], float]] = (
+        self.edge_center: tuple[fa.EdgeField[float], fa.EdgeField[float]] = (
             edge_center_lat,
             edge_center_lon,
         )
@@ -348,11 +344,11 @@ class EdgeParams:
 @dataclass(frozen=True)
 class CellParams:
     #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
-    cell_center_lat: Field[[CellDim], float] = None
+    cell_center_lat: fa.CellField[float] = None
     #: Longitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
-    cell_center_lon: Field[[CellDim], float] = None
+    cell_center_lon: fa.CellField[float] = None
     #: Area of a cell, defined in ICON in mo_model_domain.f90:t_grid_cells%area
-    area: Field[[CellDim], float] = None
+    area: fa.CellField[float] = None
     #: Mean area of a cell [m^2] = total surface area / numer of cells defined in ICON in in mo_model_domimp_patches.f90
     mean_cell_area: float = None
     length_rescale_factor: float = 1.0
@@ -360,13 +356,20 @@ class CellParams:
     @classmethod
     def from_global_num_cells(
         cls,
-        cell_center_lat: Field[[CellDim], float],
-        cell_center_lon: Field[[CellDim], float],
-        area: Field[[CellDim], float],
+        cell_center_lat: fa.CellField[float],
+        cell_center_lon: fa.CellField[float],
+        area: fa.CellField[float],
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
-        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        if global_num_cells == 0:
+            # Compute from the area array (should be a torus grid)
+            # TODO (Magdalena) this would not work for a distributed setup (at
+            # least not for a sphere) for the torus it would because cell area
+            # is constant.
+            mean_cell_area = area.asnumpy().mean()
+        else:
+            mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
         return cls(
             cell_center_lat=cell_center_lat,
             cell_center_lon=cell_center_lon,
@@ -414,12 +417,3 @@ class RefinCtrlLevel:
             raise ValueError(
                 f"nudging start level only exists for {CellDim} and {EdgeDim}"
             ) from err
-
-
-@field_operator
-def _compute_cells2verts(
-    p_cell_in: Field[[CellDim, KDim], float],
-    c_int: Field[[VertexDim, V2CDim], float],
-) -> Field[[VertexDim, KDim], float]:
-    p_vert_out = neighbor_sum(c_int * p_cell_in(V2C), axis=V2CDim)
-    return p_vert_out

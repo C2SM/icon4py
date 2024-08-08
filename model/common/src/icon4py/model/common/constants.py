@@ -10,8 +10,8 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
+import enum
 import sys
-from enum import IntEnum
 from typing import Final
 
 from icon4py.model.common.type_alias import wpfloat
@@ -69,16 +69,19 @@ DEL_T_BG: Final[wpfloat] = DELTA_TEMPERATURE
 _H_SCAL_BG: Final[wpfloat] = 10000.0
 
 # Math constants
-dbl_eps = sys.float_info.epsilon  # EPSILON(1._wp)
+DBL_EPS = sys.float_info.epsilon  # EPSILON(1._wp)
 
 # Implementation constants
 #: default physics to dynamics time step ratio
 # TODO (magdalena) not a constant, this is a default config parameter
 DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO: Final[float] = 5.0
 
+#: average earth radius in [m]
+EARTH_RADIUS: Final[wpfloat] = 6.371229e6
 
-class RayleighType(IntEnum):
-    RAYLEIGH_CLASSIC: Final[
-        int
-    ] = 1  # classical Rayleigh damping, which makes use of a reference state.
-    RAYLEIGH_KLEMP: Final[int] = 2  # Klemp (2008) type Rayleigh damping
+
+class RayleighType(enum.IntEnum):
+    #: classical Rayleigh damping, which makes use of a reference state.
+    CLASSIC = 1
+    #: Klemp (2008) type Rayleigh damping
+    KLEMP = 2

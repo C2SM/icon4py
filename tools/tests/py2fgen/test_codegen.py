@@ -238,7 +238,9 @@ end module
 
 
 def test_python_wrapper(dummy_plugin):
-    interface = generate_python_wrapper(dummy_plugin, "GPU", False, limited_area=True)
+    interface = generate_python_wrapper(
+        dummy_plugin, "GPU", False, limited_area=True, profile=False
+    )
     expected = '''
 # imports for generated wrapper code
 import logging

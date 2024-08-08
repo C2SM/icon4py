@@ -17,17 +17,18 @@ import types
 from dataclasses import dataclass
 from typing import Any, Optional, TypeGuard
 
+import icon4py.model.common.dimension
 from gt4py import eve
 from gt4py.next.common import Connectivity, Dimension, DimensionKind
 from gt4py.next.ffront import program_ast as past
 from gt4py.next.ffront.decorator import FieldOperator, Program, program
+from gt4py.next.ffront.fbuiltins import FieldOffset
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common.dimension import CellDim, EdgeDim, Koff, VertexDim
+from icon4py.model.common.dimension import Koff, global_dimensions
 
-from icon4pytools.icon4pygen.exceptions import InvalidConnectivityException
-from icon4pytools.icon4pygen.icochainsize import IcoChainSize
+from icon4pytools.icon4pygen.bindings.utils import calc_num_neighbors
 
 
 H_START = "horizontal_start"
@@ -86,7 +87,7 @@ def _ignore_subscript(node: past.Expr) -> past.Name:
     elif is_subscript(node):
         return node.value
     else:
-        raise Exception("Need only past.Name in output kwargs.")
+        raise Exception("Can only have past.Name in output kwargs.")
 
 
 def _get_field_infos(fvprog: Program) -> dict[str, FieldInfo]:
@@ -174,64 +175,54 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
     A new sparse dimension may look like C2CE or V2CVEC. In this case, we need to strip the 2
     and pass the tokens after to the algorithm below
     """
+    offset = getattr(icon4py.model.common.dimension, chain)
+    assert isinstance(offset, FieldOffset)
+
     # note: this seems really brittle. maybe agree on a keyword to indicate new sparse fields?
     new_sparse_field = any(len(token) > 1 for token in chain.split("2")) and not chain.endswith("O")
-    if new_sparse_field:
-        chain = chain.split("2")[1]
+    chain = chain.split("2")[1] if new_sparse_field else chain
+
     skip_values = False
-    if is_global and "V" in chain:
-        if chain.count("V") > 1 or not chain.endswith("V"):
-            skip_values = True
-    location_chain = []
-    include_center = False
-    for letter in chain:
-        if letter == "C":
-            location_chain.append(CellDim)
-        elif letter == "E":
-            location_chain.append(EdgeDim)
-        elif letter == "V":
-            location_chain.append(VertexDim)
-        elif letter == "O":
-            include_center = True
-        elif letter == "2":
-            pass
-        else:
-            raise InvalidConnectivityException(location_chain)
+    if is_global and "V" in chain and (chain.count("V") > 1 or not chain.endswith("V")):
+        skip_values = True
+
+    include_center = True if chain.count("O") > 0 else False
+    dims_initials = [key[0] for key in global_dimensions.keys()]
+    map_to_dim = {d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)}
+    location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
+
     return DummyConnectivity(
-        max_neighbors=IcoChainSize.get(location_chain) + include_center,
+        max_neighbors=calc_num_neighbors(location_chain, include_center),
         has_skip_values=skip_values,
-        origin_axis=location_chain[0],
-        neighbor_axis=location_chain[-1],
+        origin_axis=offset.target[0],
+        neighbor_axis=offset.source,
     )
 
 
 def scan_for_offsets(fvprog: Program) -> list[eve.concepts.SymbolRef]:
     """Scan PAST node for offsets and return a set of all offsets."""
-    all_types = (
+    all_fields_types = (
         fvprog.past_stage.past_node.pre_walk_values()
         .if_isinstance(past.Symbol)
         .getattr("type")
+        .if_isinstance(ts.FieldType)
         .to_list()
     )
-    all_field_types = [
-        symbol_type for symbol_type in all_types if isinstance(symbol_type, ts.FieldType)
-    ]
 
-    all_dims = set(i for j in all_field_types for i in j.dims)
-
-    fendef = fvprog.itir
+    all_dims = list(
+        set(i.value for j in all_fields_types for i in j.dims if i.kind == DimensionKind.LOCAL)
+    )
 
     all_offset_labels = (
-        fendef.pre_walk_values()
+        fvprog.itir.pre_walk_values()
         .if_isinstance(itir.OffsetLiteral)
         .getattr("value")
         .if_isinstance(str)
         .to_list()
     )
-    all_dim_labels = [dim.value for dim in all_dims if dim.kind == DimensionKind.LOCAL]
 
     # we want to preserve order in the offsets for code generation reproducibility
-    sorted_dims = sorted(set(all_offset_labels + all_dim_labels))
+    sorted_dims = sorted(set(all_offset_labels + all_dims))
     return sorted_dims
 
 
@@ -247,7 +238,9 @@ def get_stencil_info(
     fields = _get_field_infos(fvprog)
 
     offset_provider = {}
+    connectivity_chains = []
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset, is_global)
-    connectivity_chains = [offset for offset in offsets if offset != Koff.value]
+        if offset != Koff.value:
+            connectivity_chains.append(offset)
     return StencilInfo(fendef, fields, connectivity_chains, offset_provider)

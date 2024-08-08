@@ -11,10 +11,8 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next import as_field
-from gt4py.next.common import Field
-from gt4py.next.iterator.builtins import int32
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
@@ -33,7 +31,9 @@ from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tang
 from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels,
 )
-from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
+    interpolate_to_cell_center,
+)
 from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
 )
@@ -46,33 +46,28 @@ from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_sc
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.model.atmosphere.dycore.state_utils.states import (
-    DiagnosticStateNonHydro,
-    InterpolationState,
-    MetricStateNonHydro,
-)
-from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
-from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.states.prognostic_state import PrognosticState
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 class VelocityAdvection:
     def __init__(
         self,
-        grid: IconGrid,
-        metric_state: MetricStateNonHydro,
-        interpolation_state: InterpolationState,
-        vertical_params: VerticalModelParams,
-        edge_params: EdgeParams,
-        owner_mask: Field[[CellDim], bool],
+        grid: icon_grid.IconGrid,
+        metric_state: solve_nh_states.MetricStateNonHydro,
+        interpolation_state: solve_nh_states.InterpolationState,
+        vertical_params: v_grid.VerticalGridParams,
+        edge_params: h_grid.EdgeParams,
+        owner_mask: fa.CellField[bool],
     ):
         self._initialized = False
-        self.grid: IconGrid = grid
-        self.metric_state: MetricStateNonHydro = metric_state
-        self.interpolation_state: InterpolationState = interpolation_state
+        self.grid: icon_grid.IconGrid = grid
+        self.metric_state: solve_nh_states.MetricStateNonHydro = metric_state
+        self.interpolation_state: solve_nh_states.InterpolationState = interpolation_state
         self.vertical_params = vertical_params
         self.edge_params = edge_params
         self.c_owner_mask = owner_mask
@@ -88,66 +83,76 @@ class VelocityAdvection:
         return self._initialized
 
     def _allocate_local_fields(self):
-        self.z_w_v = _allocate(VertexDim, KDim, is_halfdim=True, grid=self.grid)
-        self.z_v_grad_w = _allocate(EdgeDim, KDim, grid=self.grid)
-        self.z_ekinh = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_w_concorr_mc = _allocate(CellDim, KDim, grid=self.grid)
-        self.z_w_con_c = _allocate(CellDim, KDim, is_halfdim=True, grid=self.grid)
-        self.zeta = _allocate(VertexDim, KDim, grid=self.grid)
-        self.z_w_con_c_full = _allocate(CellDim, KDim, grid=self.grid)
-        self.cfl_clipping = _allocate(CellDim, KDim, grid=self.grid, dtype=bool)
-        self.levmask = _allocate(KDim, grid=self.grid, dtype=bool)
-        self.vcfl_dsl = _allocate(CellDim, KDim, grid=self.grid)
-        self.k_field = _allocate_indices(KDim, grid=self.grid, is_halfdim=True)
+        self.z_w_v = field_alloc.allocate_zero_field(
+            VertexDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.z_v_grad_w = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_ekinh = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_w_concorr_mc = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_w_con_c = field_alloc.allocate_zero_field(
+            CellDim, KDim, is_halfdim=True, grid=self.grid
+        )
+        self.zeta = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
+        self.z_w_con_c_full = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.cfl_clipping = field_alloc.allocate_zero_field(
+            CellDim, KDim, grid=self.grid, dtype=bool
+        )
+        self.levmask = field_alloc.allocate_zero_field(KDim, grid=self.grid, dtype=bool)
+        self.vcfl_dsl = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.k_field = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
 
     def run_predictor_step(
         self,
         vn_only: bool,
-        diagnostic_state: DiagnosticStateNonHydro,
-        prognostic_state: PrognosticState,
-        z_w_concorr_me: Field[[EdgeDim, KDim], float],
-        z_kin_hor_e: Field[[EdgeDim, KDim], float],
-        z_vt_ie: Field[[EdgeDim, KDim], float],
+        diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state: prognostics.PrognosticState,
+        z_w_concorr_me: fa.EdgeKField[float],
+        z_kin_hor_e: fa.EdgeKField[float],
+        z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
-        cell_areas: Field[[CellDim], float],
+        cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         start_vertex_lb_plus1 = self.grid.get_start_index(
-            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+            VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
         end_vertex_local_minus1 = self.grid.get_end_index(
-            VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+            VertexDim, h_grid.HorizontalMarkerIndex.local(VertexDim) - 1
         )
 
         start_edge_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
         )
         start_edge_lb_plus6 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
         start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+        end_edge_local = self.grid.get_end_index(
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+        )
 
         end_edge_local_minus1 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 1
         )
         end_edge_local_minus2 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 2
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
         )
 
         start_cell_lb_plus3 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
         )
         start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
         )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        end_cell_local = self.grid.get_end_index(
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+        )
         end_cell_local_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) - 1
         )
 
         if not vn_only:
@@ -305,8 +310,10 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_local_minus1,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 3),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
+            vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
@@ -353,8 +360,10 @@ class VelocityAdvection:
                 dtime=dtime,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
-                vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-                vertical_end=int32(self.grid.num_levels - 3),
+                vertical_start=gtx.int32(
+                    max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+                ),
+                vertical_end=gtx.int32(self.grid.num_levels - 3),
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -396,13 +405,15 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2) - 1),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(
+                max(3, self.vertical_params.end_index_of_damping_layer - 2) - 1
+            ),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
     def _update_levmask_from_cfl_clipping(self):
-        self.levmask = as_field(
+        self.levmask = gtx.as_field(
             domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
@@ -414,43 +425,47 @@ class VelocityAdvection:
     def run_corrector_step(
         self,
         vn_only: bool,
-        diagnostic_state: DiagnosticStateNonHydro,
-        prognostic_state: PrognosticState,
-        z_kin_hor_e: Field[[EdgeDim, KDim], float],
-        z_vt_ie: Field[[EdgeDim, KDim], float],
+        diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
+        prognostic_state: prognostics.PrognosticState,
+        z_kin_hor_e: fa.EdgeKField[float],
+        z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
-        cell_areas: Field[[CellDim], float],
+        cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
         start_vertex_lb_plus1 = self.grid.get_start_index(
-            VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+            VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
         )
         end_vertex_local_minus1 = self.grid.get_end_index(
-            VertexDim, HorizontalMarkerIndex.local(VertexDim) - 1
+            VertexDim, h_grid.HorizontalMarkerIndex.local(VertexDim) - 1
         )
 
         start_edge_lb_plus6 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
         )
         start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim) + 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
         )
-        end_edge_local = self.grid.get_end_index(EdgeDim, HorizontalMarkerIndex.local(EdgeDim))
+        end_edge_local = self.grid.get_end_index(
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+        )
         end_edge_local_minus1 = self.grid.get_end_index(
-            EdgeDim, HorizontalMarkerIndex.local(EdgeDim) - 1
+            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 1
         )
 
         start_cell_lb_plus3 = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
+            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 3
         )
         start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
+            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
         )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
+        end_cell_local = self.grid.get_end_index(
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+        )
         end_cell_lb_minus1 = self.grid.get_end_index(
-            CellDim, HorizontalMarkerIndex.local(CellDim) - 1
+            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) - 1
         )
 
         if not vn_only:
@@ -527,8 +542,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_lb_plus3,
             horizontal_end=end_cell_lb_minus1,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 3),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 3),
             offset_provider={},
         )
 
@@ -574,8 +589,8 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )
 
@@ -618,7 +633,7 @@ class VelocityAdvection:
             dtime=dtime,
             horizontal_start=start_edge_nudging_plus1,
             horizontal_end=end_edge_local,
-            vertical_start=int32(max(3, self.vertical_params.index_of_damping_layer - 2)),
-            vertical_end=int32(self.grid.num_levels - 4),
+            vertical_start=gtx.int32(max(3, self.vertical_params.end_index_of_damping_layer - 2)),
+            vertical_end=gtx.int32(self.grid.num_levels - 4),
             offset_provider=self.grid.offset_providers,
         )

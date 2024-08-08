@@ -12,24 +12,30 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.state_utils.states import DiagnosticStateNonHydro
-from icon4py.model.atmosphere.dycore.velocity.velocity_advection import VelocityAdvection
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.atmosphere.dycore.velocity import velocity_advection as vel_adv
 from icon4py.model.common.dimension import CellDim, EdgeDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams, HorizontalMarkerIndex
-from icon4py.model.common.grid.vertical import VerticalModelParams
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_utils import GLOBAL_EXPERIMENT, REGIONAL_EXPERIMENT
-from icon4py.model.common.test_utils.helpers import dallclose
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metric_state
+
+
+def create_vertical_params(vertical_config, grid_savepoint):
+    return v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
 
 
 @pytest.mark.datatest
 def test_scalfactors(savepoint_velocity_init, icon_grid):
     dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
-    velocity_advection = VelocityAdvection(
+    velocity_advection = vel_adv.VelocityAdvection(
         grid=icon_grid,
         metric_state=None,
         interpolation_state=None,
@@ -50,19 +56,24 @@ def test_velocity_init(
     icon_grid,
     metrics_savepoint,
     step_date_init,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
 ):
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-        nflatlev=int32(grid_savepoint.nflatlev()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = VelocityAdvection(
+    velocity_advection = vel_adv.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -71,9 +82,9 @@ def test_velocity_init(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    assert dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
-    assert dallclose(velocity_advection.levmask.asnumpy(), False)
-    assert dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
+    assert helpers.dallclose(velocity_advection.cfl_clipping.asnumpy(), 0.0)
+    assert helpers.dallclose(velocity_advection.levmask.asnumpy(), False)
+    assert helpers.dallclose(velocity_advection.vcfl_dsl.asnumpy(), 0.0)
 
     assert velocity_advection.cfl_w_limit == 0.65
     assert velocity_advection.scalfac_exdiff == 0.05
@@ -81,10 +92,10 @@ def test_velocity_init(
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "experiment, step_date_init, damping_height",
+    "experiment, step_date_init",
     [
-        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000", 12500.0),
-        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000", 50000.0),
+        ("mch_ch_r04b09_dsl", "2021-06-20T12:00:10.000"),
+        ("exclaim_ape_R02B04", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_verify_velocity_init_against_regular_savepoint(
@@ -93,6 +104,9 @@ def test_verify_velocity_init_against_regular_savepoint(
     grid_savepoint,
     icon_grid,
     metrics_savepoint,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     experiment,
 ):
@@ -101,14 +115,16 @@ def test_verify_velocity_init_against_regular_savepoint(
 
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
-        nflatlev=int32(grid_savepoint.nflatlev()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = VelocityAdvection(
+    velocity_advection = vel_adv.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -126,10 +142,10 @@ def test_verify_velocity_init_against_regular_savepoint(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(1, 1)])
 @pytest.mark.parametrize(
-    "experiment,step_date_init, step_date_exit, damping_height",
+    "experiment,step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_predictor_step(
@@ -138,6 +154,9 @@ def test_velocity_predictor_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -151,7 +170,7 @@ def test_velocity_predictor_step(
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
 
-    diagnostic_state = DiagnosticStateNonHydro(
+    diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
@@ -174,7 +193,7 @@ def test_velocity_predictor_step(
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
     )
-    prognostic_state = PrognosticState(
+    prognostic_state = prognostics.PrognosticState(
         w=sp_v.w(),
         vn=sp_v.vn(),
         theta_v=None,
@@ -185,17 +204,19 @@ def test_velocity_predictor_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=int32(grid_savepoint.nflatlev()),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = VelocityAdvection(
+    velocity_advection = vel_adv.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -225,29 +246,31 @@ def test_velocity_predictor_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 01
-    assert dallclose(diagnostic_state.vt.asnumpy(), icon_result_vt, atol=1.0e-14)
+    assert helpers.dallclose(diagnostic_state.vt.asnumpy(), icon_result_vt, atol=1.0e-14)
     # stencil 02,05
-    assert dallclose(diagnostic_state.vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
+    assert helpers.dallclose(diagnostic_state.vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
 
     start_edge_lateral_boundary_6 = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
     )
     # stencil 07
     if not vn_only:
-        assert dallclose(
+        assert helpers.dallclose(
             icon_result_z_v_grad_w[start_edge_lateral_boundary_6:, :],
             velocity_advection.z_v_grad_w.asnumpy()[start_edge_lateral_boundary_6:, :],
             atol=1.0e-16,
         )
 
     # stencil 08
-    start_cell_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
-    assert dallclose(
+    start_cell_nudging = icon_grid.get_start_index(
+        CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+    )
+    assert helpers.dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
     )
     # stencil 09
-    assert dallclose(
+    assert helpers.dallclose(
         velocity_advection.z_w_concorr_mc.asnumpy()[
             start_cell_nudging:, vertical_params.nflatlev : icon_grid.num_levels
         ],
@@ -257,7 +280,7 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
     # stencil 10
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.w_concorr_c.asnumpy()[
             start_cell_nudging:, vertical_params.nflatlev + 1 : icon_grid.num_levels
         ],
@@ -267,20 +290,20 @@ def test_velocity_predictor_step(
         atol=1.0e-15,
     )
     # stencil 11,12,13,14
-    assert dallclose(
+    assert helpers.dallclose(
         velocity_advection.z_w_con_c.asnumpy()[start_cell_nudging:, :],
         savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
         atol=1.0e-15,
     )
     # stencil 16
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
         rtol=1.0e-10,
     )
     # stencil 19
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=1.0e-15,
@@ -290,10 +313,10 @@ def test_velocity_predictor_step(
 @pytest.mark.datatest
 @pytest.mark.parametrize("istep_init, istep_exit", [(2, 2)])
 @pytest.mark.parametrize(
-    "experiment, step_date_init, step_date_exit, damping_height",
+    "experiment, step_date_init, step_date_exit",
     [
-        (REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000", 12500.0),
-        (GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000", 50000.0),
+        (dt_utils.REGIONAL_EXPERIMENT, "2021-06-20T12:00:10.000", "2021-06-20T12:00:10.000"),
+        (dt_utils.GLOBAL_EXPERIMENT, "2000-01-01T00:00:02.000", "2000-01-01T00:00:02.000"),
     ],
 )
 def test_velocity_corrector_step(
@@ -301,6 +324,9 @@ def test_velocity_corrector_step(
     istep_exit,
     step_date_init,
     step_date_exit,
+    lowest_layer_thickness,
+    model_top_height,
+    stretch_factor,
     damping_height,
     icon_grid,
     grid_savepoint,
@@ -314,7 +340,7 @@ def test_velocity_corrector_step(
     ntnd = sp_v.get_metadata("ntnd").get("ntnd")
     dtime = sp_v.get_metadata("dtime").get("dtime")
 
-    diagnostic_state = DiagnosticStateNonHydro(
+    diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
         vt=sp_v.vt(),
         vn_ie=sp_v.vn_ie(),
         w_concorr_c=sp_v.w_concorr_c(),
@@ -337,7 +363,7 @@ def test_velocity_corrector_step(
         exner_incr=None,  # sp.exner_incr(),
         exner_dyn_incr=None,
     )
-    prognostic_state = PrognosticState(
+    prognostic_state = prognostics.PrognosticState(
         w=sp_v.w(),
         vn=sp_v.vn(),
         theta_v=None,
@@ -349,17 +375,19 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
 
-    vertical_params = VerticalModelParams(
-        vct_a=grid_savepoint.vct_a(),
+    vertical_config = v_grid.VerticalGridConfig(
+        icon_grid.num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
-        nflatlev=int32(grid_savepoint.nflatlev()),
-        nflat_gradp=int32(grid_savepoint.nflat_gradp()),
     )
+    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
 
-    velocity_advection = VelocityAdvection(
+    velocity_advection = vel_adv.VelocityAdvection(
         grid=icon_grid,
         metric_state=metric_state_nonhydro,
         interpolation_state=interpolation_state,
@@ -385,33 +413,35 @@ def test_velocity_corrector_step(
 
     # stencil 07
     start_cells_lateral_boundary_d = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
     )
-    assert dallclose(
+    assert helpers.dallclose(
         velocity_advection.z_v_grad_w.asnumpy()[start_cells_lateral_boundary_d:, :],
         icon_result_z_v_grad_w[start_cells_lateral_boundary_d:, :],
         atol=1e-16,
     )
     # stencil 08
-    start_cell_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
-    assert dallclose(
+    start_cell_nudging = icon_grid.get_start_index(
+        CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+    )
+    assert helpers.dallclose(
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
     )
 
     # stencil 11,12,13,14
-    assert dallclose(
+    assert helpers.dallclose(
         velocity_advection.z_w_con_c.asnumpy()[start_cell_nudging:, :],
         savepoint_velocity_exit.z_w_con_c().asnumpy()[start_cell_nudging:, :],
     )
     # stencil 16
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.ddt_w_adv_pc[ntnd - 1].asnumpy()[start_cell_nudging:, :],
         icon_result_ddt_w_adv_pc[start_cell_nudging:, :],
         atol=5.0e-16,
     )
     # stencil 19
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.ddt_vn_apc_pc[ntnd - 1].asnumpy(),
         icon_result_ddt_vn_apc_pc,
         atol=5.0e-16,
