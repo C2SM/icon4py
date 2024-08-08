@@ -15,7 +15,6 @@ import dataclasses
 from typing import Final, Optional
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
@@ -1393,7 +1392,7 @@ class SolveNonhydro:
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
-                vertical_end=int32(
+                vertical_end=gtx.int32(
                     self.grid.num_levels + 1
                 ),  # TODO: num_levels + 1 seems to break fortran integration test
                 offset_provider={},
