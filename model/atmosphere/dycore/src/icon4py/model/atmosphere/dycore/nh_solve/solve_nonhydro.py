@@ -863,7 +863,7 @@ class SolveNonhydro:
             horizontal_end=end_cell_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels
-            + 1,  # todo: num_levels + 1 seems to break fortran integration test
+            + 1,  # TODO: num_levels + 1 seems to break fortran integration test
             offset_provider=self.grid.offset_providers,
         )
 
