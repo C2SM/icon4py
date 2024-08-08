@@ -14,17 +14,17 @@
 import pytest
 
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.driver import initialization_utils as driver_init
+from icon4py.model.driver.test_cases import gauss3d
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (dt_utils.JABW_EXPERIMENT, 0),
+        (dt_utils.GAUSS3D_EXPERIMENT, 0),
     ],
 )
-def test_jabw_initial_condition(
+def test_gauss3d_initial_condition(
     experiment,
     ranked_data_path,
     rank,
@@ -33,7 +33,6 @@ def test_jabw_initial_condition(
     icon_grid,
 ):
     edge_geometry = grid_savepoint.construct_edge_geometry()
-    cell_geometry = grid_savepoint.construct_cell_geometry()
 
     (
         diffusion_diagnostic_state,
@@ -43,52 +42,31 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = driver_init.model_initialization_jabw(
+    ) = gauss3d.model_initialization_gauss3d(
         icon_grid,
-        cell_geometry,
         edge_geometry,
         ranked_data_path.joinpath(f"{experiment}/ser_data"),
         rank,
     )
 
-    # note that w is not verified because we decided to force w to zero in python framework after discussion
+    # only verifying those assigned in the IC rather than all (at least for now)
     assert helpers.dallclose(
         prognostic_state_now.rho.asnumpy(),
-        data_provider.from_savepoint_jabw_final().rho().asnumpy(),
+        data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
+        .rho_now()
+        .asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.exner.asnumpy(),
-        data_provider.from_savepoint_jabw_final().exner().asnumpy(),
+        data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
+        .exner_now()
+        .asnumpy(),
     )
 
     assert helpers.dallclose(
         prognostic_state_now.theta_v.asnumpy(),
-        data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
-    )
-
-    assert helpers.dallclose(
-        prognostic_state_now.vn.asnumpy(),
-        data_provider.from_savepoint_jabw_final().vn().asnumpy(),
-    )
-
-    assert helpers.dallclose(
-        diagnostic_state.pressure.asnumpy(),
-        data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
-    )
-
-    assert helpers.dallclose(
-        diagnostic_state.temperature.asnumpy(),
-        data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
-    )
-
-    assert helpers.dallclose(
-        diagnostic_state.pressure_sfc.asnumpy(),
-        data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
-    )
-
-    assert helpers.dallclose(
-        solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
-        data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
-        atol=1.0e-14,
+        data_provider.from_savepoint_nonhydro_init(1, "2001-01-01T00:00:04.000", 0)
+        .theta_v_now()
+        .asnumpy(),
     )
