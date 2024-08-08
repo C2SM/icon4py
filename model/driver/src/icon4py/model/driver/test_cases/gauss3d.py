@@ -91,10 +91,6 @@ def model_initialization_gauss3d(
         EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
     grid_idx_edge_end = grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.end(EdgeDim))
-    #grid_idx_cell_interior_start = grid.get_start_index(
-    #    CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim)
-    #)
-    grid_idx_cell_interior_start = 0
     grid_idx_cell_start_plus1 = grid.get_end_index(
         CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )
@@ -219,8 +215,8 @@ def model_initialization_gauss3d(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
-        grid_idx_cell_interior_start,
-        grid_idx_cell_end,
+        0
+        num_cells
         0,
         num_levels,
         offset_provider={},

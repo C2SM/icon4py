@@ -90,7 +90,7 @@ def model_initialization_jabw(
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbf_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
 
-    cell_size = grid.num_cells
+    num_cells = grid.num_cells
     num_levels = grid.num_levels
 
     grid_idx_edge_start_plus1 = grid.get_end_index(
@@ -119,13 +119,13 @@ def model_initialization_jabw(
     lat_perturbation_center = 2.0 * lon_perturbation_center  # latitude of the perturb centre
     ps_o_p0ref = p_sfc / phy_const.P0REF
 
-    w_numpy = xp.zeros((cell_size, num_levels + 1), dtype=float)
-    exner_numpy = xp.zeros((cell_size, num_levels), dtype=float)
-    rho_numpy = xp.zeros((cell_size, num_levels), dtype=float)
-    temperature_numpy = xp.zeros((cell_size, num_levels), dtype=float)
-    pressure_numpy = xp.zeros((cell_size, num_levels), dtype=float)
-    theta_v_numpy = xp.zeros((cell_size, num_levels), dtype=float)
-    eta_v_numpy = xp.zeros((cell_size, num_levels), dtype=float)
+    w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
+    exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    rho_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    temperature_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    pressure_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    theta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
+    eta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
 
     sin_lat = xp.sin(cell_lat)
     cos_lat = xp.cos(cell_lat)
@@ -137,7 +137,7 @@ def model_initialization_jabw(
     )
     lapse_rate = phy_const.RD * gamma / phy_const.GRAV
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(cell_size, fill_value=1.0e-7, dtype=float)
+        eta_old = xp.full(num_cells, fill_value=1.0e-7, dtype=float)
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
@@ -248,7 +248,7 @@ def model_initialization_jabw(
     temperature = gtx.as_field((CellDim, KDim), temperature_numpy)
     pressure = gtx.as_field((CellDim, KDim), pressure_numpy)
     theta_v = gtx.as_field((CellDim, KDim), theta_v_numpy)
-    pressure_ifc_numpy = xp.zeros((cell_size, num_levels + 1), dtype=float)
+    pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
     pressure_ifc_numpy[:, -1] = p_sfc
     pressure_ifc = gtx.as_field((CellDim, KDim), pressure_ifc_numpy)
 
@@ -280,10 +280,10 @@ def model_initialization_jabw(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
-        grid_idx_cell_interior_start,
-        grid_idx_cell_end,
         0,
-        grid.num_levels,
+        num_cells,
+        0,
+        num_levels,
         offset_provider={},
     )
     log.info("exner_pr initialization completed.")
