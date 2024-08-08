@@ -770,9 +770,11 @@ class MetricSavepoint(IconSavepoint):
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def hdef_ic(self):
         return self._get_field("hdef_ic", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def div_ic(self):
         return self._get_field("div_ic", dims.CellDim, dims.KDim)
 
