@@ -97,9 +97,6 @@ def model_initialization_jabw(
         EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
     )
     grid_idx_edge_end = grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.end(EdgeDim))
-    grid_idx_cell_interior_start = grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim)
-    )
     grid_idx_cell_start_plus1 = grid.get_end_index(
         CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
     )

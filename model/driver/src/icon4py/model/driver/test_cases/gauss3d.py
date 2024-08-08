@@ -215,8 +215,8 @@ def model_initialization_gauss3d(
         exner,
         data_provider.from_metrics_savepoint().exner_ref_mc(),
         exner_pr,
-        0
-        num_cells
+        0,
+        num_cells,
         0,
         num_levels,
         offset_provider={},
