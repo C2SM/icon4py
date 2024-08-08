@@ -14,13 +14,15 @@
 import pytest
 
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.metrics.stencils.compute_wgtfac_c import compute_wgtfac_c
+from icon4py.model.common.metrics.compute_wgtfac_c import compute_wgtfac_c
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose, zero_field
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_wgtfac_c(icon_grid, metrics_savepoint):  # fixture
     wgtfac_c = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat, extend={KDim: 1})
     wgtfac_c_ref = metrics_savepoint.wgtfac_c()
