@@ -749,7 +749,8 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,  # todo: num_levels + 1 seems to break fortran integration test
+            vertical_end=self.grid.num_levels
+            + 1,  # todo: num_levels + 1 seems to break fortran integration test
             offset_provider={},
         )
 
@@ -811,7 +812,8 @@ class SolveNonhydro:
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,  # todo: num_levels + 1 seems to break fortran integration test
+            vertical_end=self.grid.num_levels
+            + 1,  # todo: num_levels + 1 seems to break fortran integration test
             offset_provider=self.grid.offset_providers,
         )
 
@@ -1002,7 +1004,7 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level])
+        hydro_corr_horizontal = as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
 
         if self.config.igradp_method == 3:
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
@@ -1342,7 +1344,7 @@ class SolveNonhydro:
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
                 vertical_end=int32(
-                    self.grid.num_levels
+                    self.grid.num_levels + 1
                 ),  # todo: num_levels + 1 seems to break fortran integration test
                 offset_provider={},
             )
