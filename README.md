@@ -9,10 +9,13 @@ ICON4Py hosts Python implementations of various components from the ICON climate
 The repository is organized into directories, each containing independent Python namespace packages for different ICON components or utility packages. These packages can be installed independently. Since these packages are not available from a package repository (yet), you need to specify the location of dependencies within this repository. This can be done by installing the required dependencies first. Refer to the [Installation instructions](#installation-instructions) below.
 
 ## Installation instructions
-
+### Dependencies
+A minimal installation of ICON4Py needs 
+- Python 3.10 or Python 3.11
+- boost >= 1.85.0
 
 You can install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository. For example:
-
+The `-dev.txt` file installs ICON4Py packages and GT4Py in editable mode, such that source changes are immediatly picked up and used in the virtual environment. 
 ```bash
 # Clone the repository
 git clone git@github.com:C2SM/icon4py.git
