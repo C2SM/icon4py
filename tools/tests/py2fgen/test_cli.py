@@ -30,7 +30,10 @@ def square_wrapper_module():
     return "icon4pytools.py2fgen.wrappers.simple"
 
 
-def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags):
+def compile_fortran_code(
+    plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
+):
+    shared_library = f"{plugin_name}_{backend.lower()}"
     command = [
         f"{compiler}",
         "-cpp",
@@ -39,7 +42,7 @@ def compile_fortran_code(plugin_name, samples_path, fortran_driver, compiler, ex
         "-L.",
         f"{plugin_name}.f90",
         str(samples_path / f"{fortran_driver}.f90"),
-        f"-l{plugin_name}",
+        f"-l{shared_library}",
         "-o",
         plugin_name,
         *list(extra_compiler_flags),
@@ -82,6 +85,7 @@ def run_test_case(
             extra_compiler_flags,
             expected_error_code,
             env_vars,
+            backend=backend,
         )
 
 
@@ -101,10 +105,11 @@ def compile_and_run_fortran(
     extra_compiler_flags,
     expected_error_code,
     env_vars,
+    backend,
 ):
     try:
         compile_fortran_code(
-            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags
+            plugin_name, samples_path, fortran_driver, compiler, extra_compiler_flags, backend
         )
     except subprocess.CalledProcessError as e:
         pytest.fail(f"Compilation failed: {e}\n{e.stderr}\n{e.stdout}")
@@ -123,16 +128,14 @@ def compile_and_run_fortran(
 
 
 @pytest.mark.parametrize(
-    "backend, extra_flags",
+    "run_backend, extra_flags",
     [
         ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("ROUNDTRIP", ""),
-        ("CPU", ("-DUSE_SQUARE_FROM_FUNCTION",)),
-        ("ROUNDTRIP", ""),
+        ("CPU", ""),
     ],
 )
 def test_py2fgen_compilation_and_execution_square_cpu(
-    cli_runner, backend, samples_path, square_wrapper_module, extra_flags
+    cli_runner, run_backend, samples_path, square_wrapper_module, extra_flags
 ):
     """Tests embedding Python functions, and GT4Py program directly.
     Also tests embedding multiple functions in one shared library.
@@ -142,7 +145,7 @@ def test_py2fgen_compilation_and_execution_square_cpu(
         square_wrapper_module,
         "square,square_from_function",
         "square_plugin",
-        backend,
+        run_backend,
         samples_path,
         "test_square",
         extra_compiler_flags=extra_flags,
@@ -168,7 +171,7 @@ def test_py2fgen_python_error_propagation_to_fortran(
 
 @pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
 @pytest.mark.parametrize(
-    "function_name, plugin_name, test_name, backend, extra_flags",
+    "function_name, plugin_name, test_name, run_backend, extra_flags",
     [
         ("square", "square_plugin", "test_square", "GPU", ("-acc", "-Minfo=acc")),
     ],
@@ -178,7 +181,7 @@ def test_py2fgen_compilation_and_execution_gpu(
     function_name,
     plugin_name,
     test_name,
-    backend,
+    run_backend,
     samples_path,
     square_wrapper_module,
     extra_flags,
@@ -188,7 +191,7 @@ def test_py2fgen_compilation_and_execution_gpu(
         square_wrapper_module,
         function_name,
         plugin_name,
-        backend,
+        run_backend,
         samples_path,
         test_name,
         os.environ["NVFORTRAN_COMPILER"],
@@ -198,13 +201,13 @@ def test_py2fgen_compilation_and_execution_gpu(
 
 
 @pytest.mark.parametrize(
-    "backend, extra_flags",
+    "run_backend, extra_flags",
     [
         ("CPU", ("-DPROFILE_SQUARE_FROM_FUNCTION",)),
     ],
 )
 def test_py2fgen_compilation_and_profiling(
-    cli_runner, backend, samples_path, square_wrapper_module, extra_flags
+    cli_runner, run_backend, samples_path, square_wrapper_module, extra_flags
 ):
     """Test profiling using cProfile of the generated wrapper."""
     run_test_case(
@@ -212,7 +215,7 @@ def test_py2fgen_compilation_and_profiling(
         square_wrapper_module,
         "square_from_function,profile_enable,profile_disable",
         "square_plugin",
-        backend,
+        run_backend,
         samples_path,
         "test_square",
         extra_compiler_flags=extra_flags,

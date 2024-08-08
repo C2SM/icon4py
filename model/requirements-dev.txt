@@ -2,5 +2,5 @@
 -e ./atmosphere/dycore
 -e ./atmosphere/diffusion
 -e ./atmosphere/advection
--e ./common[netcdf]
+-e ./common[io]
 -e ./driver
