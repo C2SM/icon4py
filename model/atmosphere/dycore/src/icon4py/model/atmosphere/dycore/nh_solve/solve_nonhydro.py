@@ -313,7 +313,7 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        htop_moist_proc: float = 22500.0, 
+        htop_moist_proc: float = 22500.0,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme

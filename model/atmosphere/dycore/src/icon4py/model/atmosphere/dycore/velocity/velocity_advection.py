@@ -11,7 +11,6 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
 import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
@@ -51,9 +50,9 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 )
 from icon4py.model.atmosphere.dycore.state_utils.utils import _allocate, _allocate_indices
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.grid import vertical
 from icon4py.model.common.grid.horizontal import EdgeParams, HorizontalMarkerIndex
 from icon4py.model.common.grid.icon import IconGrid
-from icon4py.model.common.grid.vertical import VerticalModelParams
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states.prognostic_state import PrognosticState
 
@@ -64,7 +63,7 @@ class VelocityAdvection:
         grid: IconGrid,
         metric_state: MetricStateNonHydro,
         interpolation_state: InterpolationState,
-        vertical_params: VerticalGridParams,
+        vertical_params: vertical.VerticalGridParams,
         edge_params: EdgeParams,
         owner_mask: gtx.Field[[CellDim], bool],
     ):

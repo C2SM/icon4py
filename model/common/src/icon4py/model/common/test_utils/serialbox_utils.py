@@ -14,9 +14,9 @@ import functools
 import logging
 import uuid
 
+import gt4py.next as gtx
 import numpy as np
 import serialbox
-import gt4py.next as gtx
 from gt4py.next.common import Dimension, DimensionKind, Field
 
 import icon4py.model.common.decomposition.definitions as decomposition
@@ -43,11 +43,8 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
-from icon4py.model.common.grid.base import GridConfig, HorizontalGridSize, VerticalGridSize
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.icon import GlobalGridParams, IconGrid
+from icon4py.model.common.grid import base, horizontal, icon
 from icon4py.model.common.settings import xp
-
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
@@ -138,7 +135,7 @@ class IconSavepoint:
         this accounts for being exclusive python exclusive bounds: [from:to)
         field values are convert to int32
         """
-        return self._read(name, offset, dtype=int32)
+        return self._read(name, offset, dtype=gtx.int32)
 
     def _read_bool(self, name: str):
         return self._read(name, offset=0, dtype=bool)
@@ -658,7 +655,7 @@ class MetricSavepoint(IconSavepoint):
         return flatten_first_two_dims(ECDim, KDim, field=field)
 
     def vertoffset_gradp(self):
-        field = self._get_field("vertoffset_gradp_dsl", EdgeDim, E2CDim, KDim, dtype=int32)
+        field = self._get_field("vertoffset_gradp_dsl", EdgeDim, E2CDim, KDim, dtype=gtx.int32)
         return flatten_first_two_dims(ECDim, KDim, field=field)
 
     def coeff1_dwdz(self):
@@ -1351,9 +1348,9 @@ class IconSerialDataProvider:
     def _grid_size(self):
         sp = self._get_icon_grid_savepoint()
         grid_sizes = {
-            CellDim: self.serializer.read("num_cells", savepoint=sp).astype(int32)[0],
-            EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(int32)[0],
-            VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(int32)[0],
+            CellDim: self.serializer.read("num_cells", savepoint=sp).astype(gtx.int32)[0],
+            EdgeDim: self.serializer.read("num_edges", savepoint=sp).astype(gtx.int32)[0],
+            VertexDim: self.serializer.read("num_vert", savepoint=sp).astype(gtx.int32)[0],
             KDim: sp.metainfo.to_dict()["nlev"],
         }
         return grid_sizes

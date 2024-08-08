@@ -17,8 +17,6 @@ import logging
 import math
 import pathlib
 
-
-from gt4py.next.common import Field
 import gt4py.next as gtx
 
 from icon4py.model.atmosphere.diffusion.diffusion_states import (
@@ -340,7 +338,7 @@ def model_initialization_jabw(
     pressure = gtx.as_field((CellDim, KDim), pressure_numpy)
     theta_v = gtx.as_field((CellDim, KDim), theta_v_numpy)
     pressure_ifc_numpy = xp.zeros((cell_size, num_levels + 1), dtype=float)
-    
+
     pressure_ifc_numpy[:, -1] = p_sfc
     pressure_ifc = gtx.as_field((CellDim, KDim), pressure_ifc_numpy)
 
