@@ -4,22 +4,20 @@ from enum import IntEnum
 from typing import Optional, Protocol, Sequence, TypeAlias, TypeVar, Union
 
 import gt4py.next as gtx
+import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
-from gt4py.next.ffront.decorator import Program
 
-import icon4py.model.common.metrics.metric_fields as mf
 import icon4py.model.common.type_alias as ta
-from icon4py.model.common import settings
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
+from icon4py.model.common import dimension as dims, settings
 from icon4py.model.common.grid import icon
 from icon4py.model.common.settings import xp
 
 
 T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
-DimT = TypeVar("DimT", KDim, KHalfDim, CellDim, EdgeDim, VertexDim)
+DimT = TypeVar("DimT", dims.KDim, dims.KHalfDim, dims.CellDim, dims.EdgeDim, dims.VertexDim)
 Scalar: TypeAlias = Union[ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64]
 
-FieldType:TypeAlias = gtx.Field[gtx.Dims[DimT], T]
+FieldType:TypeAlias = gtx.Field[Sequence[gtx.Dims[DimT]], T]
 class RetrievalType(IntEnum):
     FIELD = 0,
     DATA_ARRAY = 1,
@@ -29,116 +27,99 @@ _attrs = {"functional_determinant_of_the_metrics_on_half_levels":dict(
             standard_name="functional_determinant_of_the_metrics_on_half_levels",
             long_name="functional determinant of the metrics [sqrt(gamma)] on half levels",
             units="",
-            dims=(CellDim, KHalfDim),
+            dims=(dims.CellDim, dims.KHalfDim),
             dtype=ta.wpfloat,
             icon_var_name="ddqz_z_half",
             ), 
         "height": dict(standard_name="height", 
                        long_name="height", 
                        units="m", 
-                       dims=(CellDim, KDim), 
+                       dims=(dims.CellDim, dims.KDim), 
                        icon_var_name="z_mc", dtype = ta.wpfloat) ,
         "height_on_interface_levels": dict(standard_name="height_on_interface_levels", 
                                            long_name="height_on_interface_levels", 
                                            units="m", 
-                                           dims=(CellDim, KHalfDim), 
+                                           dims=(dims.CellDim, dims.KHalfDim), 
                                            icon_var_name="z_ifc", 
                                            dtype = ta.wpfloat),
         "model_level_number": dict(standard_name="model_level_number", 
                                    long_name="model level number", 
-                                   units="", dims=(KHalfDim,), 
+                                   units="", dims=(dims.KHalfDim,), 
                                    icon_var_name="k_index", 
                                    dtype = gtx.int32),
     }
 
 class FieldProvider(Protocol):
+    """
+    Protocol for field providers.
+    
+    A field provider is responsible for the computation and caching of a set of fields.
+    The fields can be accessed by their field_name (str).
+    
+    A FieldProvider has to methods:
+     - evaluate: computes the fields based on the instructions of concrete implementation
+     - get: returns the field with the given field_name.
+    
+    """
     def evaluate(self) -> None:
         pass
     
     def get(self, field_name: str) -> FieldType:
         pass
     
+    def fields(self) -> Sequence[str]:
+        pass
         
 
 
 class PrecomputedFieldsProvider:
+    """Simple FieldProvider that does not do any computation but gets its fields at construction and returns it upon provider.get(field_name)."""
     
-    def __init__(self,fields: dict[str, FieldType]):
+    def __init__(self, fields: dict[str, FieldType]):
         self._fields = fields
         
     def evaluate(self):
         pass
     def get(self, field_name: str) -> FieldType:
         return self._fields[field_name]
-        
-        
 
-class MetricsFieldsFactory:
-    """
-    Factory for metric fields.
-    """
+    def fields(self) -> Sequence[str]:
+        return self._fields.keys()
 
-    
-    def __init__(self, grid:icon.IconGrid, z_ifc:gtx.Field, backend=settings.backend):
-        self._grid = grid
-        self._sizes = grid.size
-        self._sizes[KHalfDim] = self._sizes[KDim] + 1
-        self._providers: dict[str, 'FieldProvider'] = {}
-        self._params = {"num_lev": grid.num_levels, }
-        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
-            
-        k_index = gtx.as_field((KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
-
-        pre_computed_fields = PrecomputedFieldsProvider(
-            {"height_on_interface_levels": z_ifc, "model_level_number": k_index})
-        self._providers["height_on_interface_levels"] = pre_computed_fields
-        self._providers["model_level_number"] = pre_computed_fields
-        self._providers["height"] = self.ProgramFieldProvider(self, 
-                                                              func = mf.compute_z_mc, 
-                                                              domain = {CellDim: (0, grid.num_cells), KDim: (0, grid.num_levels)}, 
-                                                              fields=["height"], 
-                                                              deps=["height_on_interface_levels"])
-        self._providers["functional_determinant_of_the_metrics_on_half_levels"] = self.ProgramFieldProvider(self,
-                                                                                    func = mf.compute_ddqz_z_half,
-                                                                                                                domain = {CellDim: (0, grid.num_cells), KHalfDim: (0, grid.num_levels + 1)},
-                                                                                                                fields=["functional_determinant_of_the_metrics_on_half_levels"],
-                                                                                                                deps=["height_on_interface_levels", "height", "model_level_number"],
-                                                                                                                params=["num_lev"])
-
-    class ProgramFieldProvider:
+class ProgramFieldProvider:
         """
-        In charge of computing a field and providing metadata about it.
+        Computes a field defined by a GT4Py Program.
 
         """
+
         def __init__(self,
                      outer: 'MetricsFieldsFactory',  #
-                     func: Program,
+                     func: gtx_decorator.Program,
                      domain: dict[gtx.Dimension:tuple[int, int]],  # the compute domain 
                      fields: Sequence[str],
                      deps: Sequence[str] = [],  # the dependencies of func
                      params: Sequence[str] = [],  # the parameters of func
                      ):
-            self._outer = outer
+            self._factory = outer
             self._compute_domain = domain
             self._dims = domain.keys()
             self._func = func
-            self._dependencies = {k: self._outer._providers[k] for k in deps}
-            self._params = {k: self._outer._params[k] for k in params}
+            self._dependencies = {k: self._factory._providers[k] for k in deps}
+            self._params = {k: self._factory._params[k] for k in params}
 
             self._fields: dict[str, Optional[gtx.Field | Scalar]] = {name: None for name in fields}
 
         def _map_dim(self, dim: gtx.Dimension) -> gtx.Dimension:
-            if dim == KHalfDim:
-                return KDim
+            if dim == dims.KHalfDim:
+                return dims.KDim
             return dim
 
         def _allocate(self):
-            # TODO (@halungge) get dimes from attrs?
-            field_domain = {self._map_dim(dim): (0, self._outer._sizes[dim]) for dim in self._dims}
-            return {k: self._outer._allocator(field_domain, dtype=_attrs[k]["dtype"]) for k, v in
+            field_domain = {self._map_dim(dim): (0, self._factory._sizes[dim]) for dim in
+                            self._dims}
+            return {k: self._factory._allocator(field_domain, dtype=_attrs[k]["dtype"]) for k, v in
                     self._fields.items()}
 
-        
         def _unallocated(self) -> bool:
             return not all(self._fields.values())
 
@@ -151,8 +132,10 @@ class MetricsFieldsFactory:
             params = [p for p in self._params.values()]
             output = [f for f in self._fields.values()]
             self._func(*args, *output, *params, *domain,
-                       offset_provider=self._outer._grid.offset_providers)
+                       offset_provider=self._factory._grid.offset_providers)
 
+        def fields(self):
+            return self._fields.keys()
         def get(self, field_name: str):
             if field_name not in self._fields.keys():
                 raise ValueError(f"Field {field_name} not provided by f{self._func.__name__}")
@@ -160,6 +143,32 @@ class MetricsFieldsFactory:
                 self.evaluate()
             return self._fields[field_name]
 
+
+class MetricsFieldsFactory:
+    """
+    Factory for metric fields.
+    """
+
+    
+    def __init__(self, grid:icon.IconGrid, z_ifc:gtx.Field, backend=settings.backend):
+        self._grid = grid
+        self._sizes = grid.size
+        self._sizes[dims.KHalfDim] = self._sizes[dims.KDim] + 1
+        self._providers: dict[str, 'FieldProvider'] = {}
+        self._params = {"num_lev": grid.num_levels, }
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
+
+        k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
+
+        pre_computed_fields = PrecomputedFieldsProvider(
+            {"height_on_interface_levels": z_ifc, "model_level_number": k_index})
+        self.register_provider(pre_computed_fields)
+        
+    def register_provider(self, provider:FieldProvider):
+        for field in provider.fields():
+            self._providers[field] = provider
+        
+    
     def get(self, field_name: str, type_: RetrievalType):
         if field_name not in _attrs:
             raise ValueError(f"Field {field_name} not found in metric fields")
