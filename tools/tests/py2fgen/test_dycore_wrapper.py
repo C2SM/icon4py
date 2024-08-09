@@ -13,7 +13,6 @@
 
 import logging
 
-import numpy as np
 from gt4py.next import as_field
 from icon4py.model.common.dimension import (
     C2E2CODim,
@@ -29,6 +28,7 @@ from icon4py.model.common.dimension import (
     V2EDim,
     VertexDim,
 )
+from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 
 from icon4pytools.py2fgen.wrappers.dycore import solve_nh_init, solve_nh_run
@@ -91,9 +91,82 @@ def test_solve_nh_wrapper():
     linit = False
 
     # Input data - numpy
-    rng = np.random.default_rng()
+    rng = xp.random.default_rng()
 
-    vct_a = rng.uniform(low=0, high=75000, size=(num_levels,))
+    # The vct_a array must be set to the same values as the ones in ICON.
+    # It represents the reference heights of vertical levels in meters, and many key vertical indices are derived from it.
+    # Accurate computation of bounds relies on using the same vct_a values as those in ICON.
+    vct_a = xp.asarray(
+        [
+            23000.0,
+            20267.579776144084,
+            18808.316862872744,
+            17645.20947843258,
+            16649.573524156993,
+            15767.598849006221,
+            14970.17804229092,
+            14239.283693028447,
+            13562.75820630252,
+            12931.905058984285,
+            12340.22824884565,
+            11782.711681133735,
+            11255.378878851721,
+            10755.009592797565,
+            10278.949589989745,
+            9824.978499468381,
+            9391.215299185755,
+            8976.0490382992,
+            8578.086969013575,
+            8196.11499008041,
+            7829.066987285794,
+            7476.0007272129105,
+            7136.078660578203,
+            6808.552460051288,
+            6492.750437928688,
+            6188.067212417723,
+            5893.955149722682,
+            5609.917223280037,
+            5335.501014932097,
+            5070.293644636082,
+            4813.9174616536775,
+            4566.0263653241045,
+            4326.302650484456,
+            4094.4542934937413,
+            3870.212611174545,
+            3653.3302379273473,
+            3443.5793766239703,
+            3240.750287267658,
+            3044.649984289428,
+            2855.101119099911,
+            2671.9410294241347,
+            2495.0209412555105,
+            2324.2053131841913,
+            2159.371316580089,
+            2000.4084488403732,
+            1847.2182808658658,
+            1699.7143443769428,
+            1557.8221699649202,
+            1421.479493379662,
+            1290.63665617212,
+            1165.2572384824416,
+            1045.3189781024735,
+            930.8150535208842,
+            821.7558437251436,
+            718.1713313259359,
+            620.1144009054101,
+            527.6654250683475,
+            440.93877255014786,
+            360.09231087410603,
+            285.34182080238656,
+            216.98400030452174,
+            155.43579225710877,
+            101.30847966961008,
+            55.56948426298202,
+            20.00000000000001,
+            0.0,
+        ]
+    )
+
     theta_ref_mc = rng.uniform(low=0, high=1, size=(num_cells, num_levels))
     wgtfac_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
     e_bln_c_s = rng.uniform(low=0, high=1, size=(num_cells, num_c2e))
@@ -101,7 +174,7 @@ def test_solve_nh_wrapper():
     geofac_grg_x = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
     geofac_grg_y = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
     geofac_n2s = rng.uniform(low=0, high=1, size=(num_cells, num_c2ec2o))
-    nudgecoeff_e = np.zeros((num_edges,))
+    nudgecoeff_e = xp.zeros((num_edges,))
     rbf_coeff_1 = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
     rbf_coeff_2 = rng.uniform(low=0, high=1, size=(num_verts, num_v2e))
     w_now = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
@@ -152,9 +225,9 @@ def test_solve_nh_wrapper():
     theta_ref_me = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
     ddxn_z_full = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
     zdiff_gradp = rng.uniform(low=0, high=1, size=(num_edges, num_e2c, num_levels))
-    vertoffset_gradp = np.round(
+    vertoffset_gradp = xp.round(
         rng.uniform(low=0, high=1, size=(num_edges, num_e2c, num_levels))
-    ).astype(np.int32)
+    ).astype(xp.int32)
     ipeidx_dsl = rng.uniform(low=0, high=1, size=(num_edges, num_levels)) < 0.5
     pg_exdist = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
     ddqz_z_full_e = rng.uniform(low=0, high=1, size=(num_edges, num_levels))
