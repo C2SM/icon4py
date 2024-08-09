@@ -13,12 +13,15 @@
 
 import pytest
 
+import numpy as np
+from icon4py.model.common.dimension import CellDim
+import gt4py.next as gtx
 from icon4py.model.atmosphere.physics.microphysics import single_moment_six_class_gscp_graupel as graupel
 from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment
 from gt4py.next.program_processors.runners.gtfn import run_gtfn, run_gtfn_cached
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
-from icon4py.model.common.grid import vertical as v_grid
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.test_utils.helpers import dallclose
 
 @pytest.mark.parametrize(
@@ -140,26 +143,6 @@ def test_graupel(
     assert dallclose(graupel_microphysics.rain_vel_coef[0], init_savepoint.vzxp())
     assert dallclose(graupel_microphysics.rain_vel_coef[1], init_savepoint.vz0r(), atol=1.e-10)
 
-
-    from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-    from icon4py.model.common.type_alias import vpfloat, wpfloat
-    from icon4py.model.common.dimension import CellDim, KDim
-    from icon4py.model.common.grid import horizontal as h_grid
-    import gt4py.next as gtx
-    temperature_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qv_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qc_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qi_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qr_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qs_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qg_ = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    dist_cldtop = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    rho_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    crho1o2_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    crhofac_qi_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    snow_sed0_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    qvsw_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=vpfloat)
-    k_lev = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid, dtype=gtx.int32)
     start_cell_nudging = icon_grid.get_start_index(
         CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
     )
@@ -167,27 +150,10 @@ def test_graupel(
     end_cell_local = icon_grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.local(CellDim))
     backend = run_gtfn_cached
 
+    max_index = np.unravel_index(np.abs(entry_savepoint.qv().ndarray - exit_savepoint.qv().ndarray).argmax(), exit_savepoint.qv().ndarray.shape)
+    print("max", max_index, vertical_params.kstart_moist)
 
-    print(icon_grid.num_cells)
-    print(start_cell_nudging)
-    print(icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.interior(CellDim)
-    ))
-    print(end_cell_local)
-    print(vertical_params.kstart_moist)
-    print(icon_grid.num_levels)
-    print(grid_savepoint.cells_start_index())
-    print(grid_savepoint.cells_end_index())
-    print(grid_savepoint.edge_start_index())
-    print(grid_savepoint.edge_end_index())
-    print(icon_grid.get_end_index(
-        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
-    ))
-    #for i in range(len(grid_savepoint.global_index(CellDim))):
-    #    print(i, grid_savepoint.global_index(CellDim)[i])
-    print(grid_savepoint.global_index(CellDim))
-
-    graupel.experiment_icon_graupel(
+    graupel.icon_graupel(
         vertical_params.kstart_moist,
         gtx.int32(icon_grid.num_levels) - gtx.int32(1),
         graupel_microphysics.config.liquid_autoconversion_option,
@@ -220,13 +186,13 @@ def test_graupel(
         tracer_state.qs,
         tracer_state.qg,
         graupel_microphysics.qnc,
-        temperature_,
-        qv_,
-        qc_,
-        qi_,
-        qr_,
-        qs_,
-        qg_,
+        graupel_microphysics.temperature_tendency,
+        graupel_microphysics.qv_tendency,
+        graupel_microphysics.qc_tendency,
+        graupel_microphysics.qi_tendency,
+        graupel_microphysics.qr_tendency,
+        graupel_microphysics.qs_tendency,
+        graupel_microphysics.qg_tendency,
         graupel_microphysics.rhoqrv_old_kup,
         graupel_microphysics.rhoqsv_old_kup,
         graupel_microphysics.rhoqgv_old_kup,
@@ -235,22 +201,190 @@ def test_graupel(
         graupel_microphysics.vnew_s,
         graupel_microphysics.vnew_g,
         graupel_microphysics.vnew_i,
-        dist_cldtop,
-        rho_kup,
-        crho1o2_kup,
-        crhofac_qi_kup,
-        snow_sed0_kup,
-        qvsw_kup,
-        k_lev,
+        #dist_cldtop,
+        #rho_kup,
+        #crho1o2_kup,
+        #crhofac_qi_kup,
+        #snow_sed0_kup,
+        #qvsw_kup,
+        #k_lev,
         #start_cell_nudging,
         #end_cell_local,
-        gtx.int32(0),
-        gtx.int32(5),
+        gtx.int32(max_index[0])-gtx.int32(2),
+        gtx.int32(max_index[0])+gtx.int32(2),
         #start_cell_nudging + gtx.int32(1),
         gtx.int32(vertical_params.kstart_moist),
-        gtx.int32(vertical_params.kstart_moist+1),
+        gtx.int32(max_index[1]),
+        #gtx.int32(icon_grid.num_levels),
         offset_provider={},
     )
+    cell_start = max_index[0]-2
+    cell_end = max_index[0]+2
+    k_start = vertical_params.kstart_moist
+    k_end = max_index[1]+2
+
+    graupel.icon_graupel_flux_above_ground(
+        graupel_microphysics.config.do_ice_sedimentation,
+        graupel_microphysics.config.do_latent_heat_nudging,
+        prognostic_state.rho,
+        tracer_state.qr,
+        tracer_state.qs,
+        tracer_state.qg,
+        tracer_state.qi,
+        graupel_microphysics.qr_tendency,
+        graupel_microphysics.qs_tendency,
+        graupel_microphysics.qg_tendency,
+        graupel_microphysics.qi_tendency,
+        graupel_microphysics.vnew_r,
+        graupel_microphysics.vnew_s,
+        graupel_microphysics.vnew_g,
+        graupel_microphysics.vnew_i,
+        graupel_microphysics.rain_precipitation_flux,
+        graupel_microphysics.snow_precipitation_flux,
+        graupel_microphysics.graupel_precipitation_flux,
+        graupel_microphysics.ice_precipitation_flux,
+        graupel_microphysics.total_precipitation_flux,
+        start_cell_nudging,
+        end_cell_local,
+        gtx.int32(vertical_params.kstart_moist),
+        gtx.int32(icon_grid.num_levels) - gtx.int32(1),
+        offset_provider={},
+    )
+
+    graupel.icon_graupel_flux_ground(
+        graupel_microphysics.config.do_ice_sedimentation,
+        graupel_microphysics.config.do_latent_heat_nudging,
+        prognostic_state.rho,
+        tracer_state.qr,
+        tracer_state.qs,
+        tracer_state.qg,
+        tracer_state.qi,
+        graupel_microphysics.qr_tendency,
+        graupel_microphysics.qs_tendency,
+        graupel_microphysics.qg_tendency,
+        graupel_microphysics.qi_tendency,
+        graupel_microphysics.rhoqrv_old_kup,
+        graupel_microphysics.rhoqsv_old_kup,
+        graupel_microphysics.rhoqgv_old_kup,
+        graupel_microphysics.rhoqiv_old_kup,
+        graupel_microphysics.vnew_r,
+        graupel_microphysics.vnew_s,
+        graupel_microphysics.vnew_g,
+        graupel_microphysics.vnew_i,
+        graupel_microphysics.rain_precipitation_flux,
+        graupel_microphysics.snow_precipitation_flux,
+        graupel_microphysics.graupel_precipitation_flux,
+        graupel_microphysics.ice_precipitation_flux,
+        graupel_microphysics.total_precipitation_flux,
+        start_cell_nudging,
+        end_cell_local,
+        gtx.int32(icon_grid.num_levels) - gtx.int32(1),
+        gtx.int32(icon_grid.num_levels),
+        offset_provider={},
+    )
+
+    new_temperature = entry_savepoint.temperature().ndarray + graupel_microphysics.temperature_tendency.ndarray * dtime
+    new_qv = entry_savepoint.qv().ndarray + graupel_microphysics.qv_tendency.ndarray * dtime
+    new_qc = entry_savepoint.qc().ndarray + graupel_microphysics.qc_tendency.ndarray * dtime
+    new_qr = entry_savepoint.qr().ndarray + graupel_microphysics.qr_tendency.ndarray * dtime
+    new_qi = entry_savepoint.qi().ndarray + graupel_microphysics.qi_tendency.ndarray * dtime
+    new_qs = entry_savepoint.qs().ndarray + graupel_microphysics.qs_tendency.ndarray * dtime
+    new_qg = entry_savepoint.qg().ndarray + graupel_microphysics.qg_tendency.ndarray * dtime
+
+
+    print("check")
+    print(
+        np.abs(graupel_microphysics.temperature_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(graupel_microphysics.qv_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(graupel_microphysics.qc_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(graupel_microphysics.qi_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(graupel_microphysics.qr_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(graupel_microphysics.qs_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(graupel_microphysics.qg_tendency.ndarray[cell_start:cell_end, k_start:k_end]).max()
+    )
+
+    print(
+        np.abs(exit_savepoint.temperature().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_temperature[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.temperature().ndarray[cell_start:cell_end, k_start:k_end]
+        ).max()
+    )
+    print(
+        np.abs(exit_savepoint.qv().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_qv[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.qv().ndarray[cell_start:cell_end,k_start:k_end]
+        ).max()
+    )
+    print(
+        np.abs(exit_savepoint.qc().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_qc[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.qc().ndarray[cell_start:cell_end, k_start:k_end]
+        ).max()
+    )
+    print(
+        np.abs(exit_savepoint.qi().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_qi[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.qi().ndarray[cell_start:cell_end, k_start:k_end]
+        ).max()
+    )
+    print(
+        np.abs(exit_savepoint.qr().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_qr[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.qr().ndarray[cell_start:cell_end, k_start:k_end]
+        ).max()
+    )
+    print(
+        np.abs(exit_savepoint.qs().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_qs[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.qs().ndarray[cell_start:cell_end, k_start:k_end]
+        ).max()
+    )
+    print(
+        np.abs(exit_savepoint.qg().ndarray[cell_start:cell_end, k_start:k_end]).max(),
+        np.abs(
+            new_qg[cell_start:cell_end, k_start:k_end] -
+            exit_savepoint.qg().ndarray[cell_start:cell_end, k_start:k_end]
+        ).max()
+    )
+    assert dallclose(
+        new_temperature[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.temperature().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+    assert dallclose(
+        new_qv[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.qv().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+    assert dallclose(
+        new_qc[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.qc().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+    assert dallclose(
+        new_qr[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.qr().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+    assert dallclose(
+        new_qi[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.qi().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+    assert dallclose(
+        new_qs[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.qs().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+    assert dallclose(
+        new_qg[cell_start:cell_end, k_start:k_end],
+        exit_savepoint.qg().ndarray[cell_start:cell_end, k_start:k_end]
+    )
+
+
+
+
+
 
 
     '''

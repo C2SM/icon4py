@@ -217,7 +217,7 @@ timer = Timer("embedded graupel")
 
 for time_step in range(1):
     timer.start()
-    graupel.experiment_icon_graupel(
+    graupel.icon_graupel(
         gtx.int32(k_size),
         graupel_microphysics.config.liquid_autoconversion_option,
         graupel_microphysics.config.snow_intercept_option,
