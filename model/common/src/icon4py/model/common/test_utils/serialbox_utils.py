@@ -1761,7 +1761,7 @@ class IconSerialDataProvider:
         return IconGraupelEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelExitSavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = self.serializer.savepoint["call-graupel-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
         return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_gscp_satad_entry(self, date: str) -> IconGscpSatadEntrySavepoint:
