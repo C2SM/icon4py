@@ -11,7 +11,7 @@ The repository is organized into directories, each containing independent Python
 ## Installation instructions
 ### Dependencies
 A minimal installation of ICON4Py needs 
-- Python 3.10 or Python 3.11
+- Python 3.10
 - boost >= 1.85.0
 
 You can install all packages at once by using the provided `requirements.txt` or `requirements-dev.txt` files in the root of the repository. For example:
