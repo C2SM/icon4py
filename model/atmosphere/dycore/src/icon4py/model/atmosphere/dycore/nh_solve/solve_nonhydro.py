@@ -1013,10 +1013,10 @@ class SolveNonhydro:
                 c_lin_e=self.interpolation_state.c_lin_e,
                 z_dexner_dz_c_1=self.z_dexner_dz_c_1,
                 z_gradh_exner=z_fields.z_gradh_exner,
-                horizontal_start=start_edge_nudging_plus1,
-                horizontal_end=end_edge_local,
-                vertical_start=self.vertical_params.nflatlev,
-                vertical_end=gtx.int32(self.vertical_params.nflat_gradp + 1),
+                horizontal_start=0,
+                horizontal_end=gtx.int32(self.grid.num_edges),
+                vertical_start=0,
+                vertical_end=gtx.int32(self.grid.num_levels),
                 offset_provider=self.grid.offset_providers,
             )
 
