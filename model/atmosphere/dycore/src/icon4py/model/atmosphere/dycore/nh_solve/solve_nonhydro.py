@@ -805,8 +805,7 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
-            vertical_end=self.grid.num_levels
-            + 1,  # TODO: num_levels + 1 seems to break fortran integration test
+            vertical_end=self.grid.num_levels + 1,
             offset_provider={},
         )
 
@@ -868,8 +867,7 @@ class SolveNonhydro:
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels
-            + 1,  # TODO: num_levels + 1 seems to break fortran integration test
+            vertical_end=self.grid.num_levels + 1,
             offset_provider=self.grid.offset_providers,
         )
 
@@ -1399,9 +1397,7 @@ class SolveNonhydro:
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
-                vertical_end=gtx.int32(
-                    self.grid.num_levels + 1
-                ),  # TODO: num_levels + 1 seems to break fortran integration test
+                vertical_end=gtx.int32(self.grid.num_levels + 1),
                 offset_provider={},
             )
 

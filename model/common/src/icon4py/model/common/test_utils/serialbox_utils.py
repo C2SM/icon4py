@@ -62,7 +62,6 @@ class IconSavepoint:
 
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
-        buffer = xp.asarray(buffer)
         buffer = self._reduce_to_dim_size(buffer, dimensions)
 
         self.log.debug(f"{name} {buffer.shape}")
@@ -70,7 +69,6 @@ class IconSavepoint:
 
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[gtx.Dimension, gtx]):
         buffer = self.serializer.read(name, self.savepoint).astype(float)
-        buffer = xp.asarray(buffer)
         buffer = xp.squeeze(buffer)[:, :, ntnd - 1]
         buffer = self._reduce_to_dim_size(buffer, dims)
         self.log.debug(f"{name} {buffer.shape}")
@@ -361,10 +359,8 @@ class IconGridSavepoint(IconSavepoint):
         field_name = "refin_ctl"
         return gtx.as_field(
             (dim,),
-            xp.asarray(
-                xp.squeeze(
-                    self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
-                )
+            xp.squeeze(
+                self._read_field_for_dim(field_name, self._read_int32, dim)[: self.num(dim)], 1
             ),
         )
 
@@ -388,7 +384,7 @@ class IconGridSavepoint(IconSavepoint):
     def owner_mask(self, dim: gtx.Dimension):
         field_name = "owner_mask"
         mask = self._read_field_for_dim(field_name, self._read_bool, dim)
-        return xp.asarray(xp.squeeze(mask))
+        return xp.squeeze(mask)
 
     def global_index(self, dim: gtx.Dimension):
         field_name = "glb_index"
@@ -431,8 +427,8 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
-        e2c2e0 = xp.column_stack(((xp.asarray(range(e2c2e.shape[0]))), e2c2e))
+        c2e2c0 = xp.column_stack(((range(c2e2c.shape[0])), c2e2c))
+        e2c2e0 = xp.column_stack(((range(e2c2e.shape[0])), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
@@ -803,16 +799,16 @@ class IconDiffusionInitSavepoint(IconSavepoint):
         return self._get_field("exner", dims.CellDim, dims.KDim)
 
     def diff_multfac_smag(self):
-        return xp.asarray(xp.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint)))
+        return xp.squeeze(self.serializer.read("diff_multfac_smag", self.savepoint))
 
     def enh_smag_fac(self):
-        return xp.asarray(xp.squeeze(self.serializer.read("enh_smag_fac", self.savepoint)))
+        return xp.squeeze(self.serializer.read("enh_smag_fac", self.savepoint))
 
     def smag_limit(self):
-        return xp.asarray(xp.squeeze(self.serializer.read("smag_limit", self.savepoint)))
+        return xp.squeeze(self.serializer.read("smag_limit", self.savepoint))
 
     def diff_multfac_n2w(self):
-        return xp.asarray(xp.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint)))
+        return xp.squeeze(self.serializer.read("diff_multfac_n2w", self.savepoint))
 
     def nudgezone_diff(self) -> int:
         return self.serializer.read("nudgezone_diff", self.savepoint)[0]
