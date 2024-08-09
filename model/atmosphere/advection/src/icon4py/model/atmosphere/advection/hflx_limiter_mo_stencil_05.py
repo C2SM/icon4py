@@ -11,20 +11,20 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import minimum, where
 
-from icon4py.model.common.dimension import E2C, CellDim, EdgeDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import E2C
 
 
 @field_operator
 def _hflx_limiter_mo_stencil_05(
-    z_anti: Field[[EdgeDim, KDim], float],
-    z_mflx_low: Field[[EdgeDim, KDim], float],
-    r_m: Field[[CellDim, KDim], float],
-    r_p: Field[[CellDim, KDim], float],
-) -> Field[[EdgeDim, KDim], float]:
+    z_anti: fa.EdgeKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    r_m: fa.CellKField[float],
+    r_p: fa.CellKField[float],
+) -> fa.EdgeKField[float]:
     z_signum = where((z_anti > 0.0), 1.0, -1.0)
 
     r_frac = 0.5 * (
@@ -39,10 +39,10 @@ def _hflx_limiter_mo_stencil_05(
 
 @program
 def hflx_limiter_mo_stencil_05(
-    z_anti: Field[[EdgeDim, KDim], float],
-    z_mflx_low: Field[[EdgeDim, KDim], float],
-    r_m: Field[[CellDim, KDim], float],
-    r_p: Field[[CellDim, KDim], float],
-    p_mflx_tracer_h: Field[[EdgeDim, KDim], float],
+    z_anti: fa.EdgeKField[float],
+    z_mflx_low: fa.EdgeKField[float],
+    r_m: fa.CellKField[float],
+    r_p: fa.CellKField[float],
+    p_mflx_tracer_h: fa.EdgeKField[float],
 ):
     _hflx_limiter_mo_stencil_05(z_anti, z_mflx_low, r_m, r_p, out=p_mflx_tracer_h)

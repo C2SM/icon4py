@@ -90,14 +90,14 @@ class IconGrid(BaseGrid):
             ),
         }
 
-    @builder
+    @builder.builder
     def with_start_end_indices(
         self, dim: gt_common.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
         self.start_indices[dim] = start_indices.astype(gt_builtins.int32)
         self.end_indices[dim] = end_indices.astype(gt_builtins.int32)
 
-    @builder
+    @builder.builder
     def with_global_params(self, global_params: GlobalGridParams):
         self.global_properties = global_params
 

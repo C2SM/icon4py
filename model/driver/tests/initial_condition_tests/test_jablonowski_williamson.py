@@ -13,18 +13,15 @@
 
 import pytest
 
-from icon4py.model.common.test_utils.datatest_utils import JABW_EXPERIMENT
-from icon4py.model.common.test_utils.helpers import (
-    dallclose,
-)
-from icon4py.model.driver.initialization_utils import model_initialization_jabw
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
     "experiment, rank",
     [
-        (JABW_EXPERIMENT, 0),
+        (dt_utils.JABW_EXPERIMENT, 0),
     ],
 )
 def test_jabw_initial_condition(
@@ -46,7 +43,7 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = model_initialization_jabw(
+    ) = jabw.model_initialization_jabw(
         icon_grid,
         cell_geometry,
         edge_geometry,
@@ -55,42 +52,42 @@ def test_jabw_initial_condition(
     )
 
     # note that w is not verified because we decided to force w to zero in python framework after discussion
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.rho.asnumpy(),
         data_provider.from_savepoint_jabw_final().rho().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.exner.asnumpy(),
         data_provider.from_savepoint_jabw_final().exner().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.theta_v.asnumpy(),
         data_provider.from_savepoint_jabw_final().theta_v().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_now.vn.asnumpy(),
         data_provider.from_savepoint_jabw_final().vn().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.pressure.asnumpy(),
         data_provider.from_savepoint_jabw_final().pressure().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.temperature.asnumpy(),
         data_provider.from_savepoint_jabw_final().temperature().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         diagnostic_state.pressure_sfc.asnumpy(),
         data_provider.from_savepoint_jabw_init().pressure_sfc().asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         solve_nonhydro_diagnostic_state.exner_pr.asnumpy(),
         data_provider.from_savepoint_jabw_diagnostic().exner_pr().asnumpy(),
         atol=1.0e-14,

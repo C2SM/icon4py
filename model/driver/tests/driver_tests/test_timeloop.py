@@ -11,56 +11,36 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-import os
 
-import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
-    NonHydrostaticParams,
-    SolveNonhydro,
-)
-from icon4py.model.atmosphere.dycore.state_utils.states import (
-    DiagnosticStateNonHydro,
-    InterpolationState,
-    MetricStateNonHydro,
-    PrepAdvection,
-)
-from icon4py.model.atmosphere.dycore.state_utils.utils import zero_field
+from icon4py.model.atmosphere.diffusion import diffusion
+from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common.dimension import CEDim, CellDim, KDim
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
-from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.datatest_utils import (
-    GLOBAL_EXPERIMENT,
-    REGIONAL_EXPERIMENT,
-)
-from icon4py.model.common.test_utils.helpers import (
-    as_1D_sparse_field,
-    dallclose,
-)
-from icon4py.model.driver.dycore_driver import TimeLoop
-from icon4py.model.driver.serialbox_helpers import (
-    construct_diagnostics_for_diffusion,
-    construct_interpolation_state_for_diffusion,
-    construct_metric_state_for_diffusion,
+from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.driver import (
+    icon4py_configuration,
+    icon4py_driver,
+    serialbox_helpers as driver_sb,
 )
 
 from .utils import (
     construct_diffusion_config,
-    construct_iconrun_config,
+    construct_icon4pyrun_config,
     construct_nonhydrostatic_config,
 )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
+    "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            False,
-            REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
             0,
@@ -74,8 +54,7 @@ from .utils import (
             False,
         ),
         (
-            False,
-            REGIONAL_EXPERIMENT,
+            dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
             0,
@@ -89,8 +68,7 @@ from .utils import (
             True,
         ),
         (
-            False,
-            GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
             0,
@@ -104,8 +82,7 @@ from .utils import (
             False,
         ),
         (
-            False,
-            GLOBAL_EXPERIMENT,
+            dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
             0,
@@ -118,10 +95,23 @@ from .utils import (
             False,
             True,
         ),
+        (
+            dt_utils.GAUSS3D_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+            False,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
-    debug_mode,
     experiment,
     timeloop_date_init,
     timeloop_date_exit,
@@ -141,32 +131,48 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
 ):
-    diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    diffusion_interpolation_state = construct_interpolation_state_for_diffusion(
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        config = icon4py_configuration.read_config(experiment)
+        diffusion_config = config.diffusion_config
+        nonhydro_config = config.solve_nonhydro_config
+        icon4pyrun_config = config.run_config
+
+    else:
+        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+        nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
+        icon4pyrun_config = construct_icon4pyrun_config(
+            experiment,
+            timeloop_date_init,
+            timeloop_date_exit,
+            timeloop_diffusion_linit_init,
+            ndyn_substeps=ndyn_substeps,
+        )
+
+    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
+
+    diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
         interpolation_savepoint
     )
-    diffusion_metric_state = construct_metric_state_for_diffusion(metrics_savepoint)
+    diffusion_metric_state = driver_sb.construct_metric_state_for_diffusion(metrics_savepoint)
 
-    vertical_config = VerticalGridConfig(
+    vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalGridParams(
+    vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    additional_parameters = DiffusionParams(diffusion_config)
+    additional_parameters = diffusion.DiffusionParams(diffusion_config)
 
-    diffusion = Diffusion()
-    diffusion.init(
+    diffusion_granule = diffusion.Diffusion()
+    diffusion_granule.init(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
@@ -177,26 +183,13 @@ def test_run_timeloop_single_step(
         cell_params=cell_geometry,
     )
 
-    nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
-    nonhydro_params = NonHydrostaticParams(nonhydro_config)
+    nonhydro_params = solve_nh.NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
-    nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
 
-    iconrun_config = construct_iconrun_config(
-        experiment,
-        timeloop_date_init,
-        timeloop_date_exit,
-        timeloop_diffusion_linit_init,
-        ndyn_substeps=ndyn_substeps,
-    )
-
-    assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion.fac_bdydiff_v
-    assert iconrun_config.dtime.total_seconds() == diffusion_dtime
-
     grg = interpolation_savepoint.geofac_grg()
-    nonhydro_interpolation_state = InterpolationState(
+    nonhydro_interpolation_state = solve_nh_states.InterpolationState(
         c_lin_e=interpolation_savepoint.c_lin_e(),
         c_intp=interpolation_savepoint.c_intp(),
         e_flx_avg=interpolation_savepoint.e_flx_avg(),
@@ -205,16 +198,16 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
         nudgecoeff_e=interpolation_savepoint.nudgecoeff_e(),
     )
-    nonhydro_metric_state = MetricStateNonHydro(
+    nonhydro_metric_state = solve_nh_states.MetricStateNonHydro(
         bdy_halo_c=metrics_savepoint.bdy_halo_c(),
         mask_prog_halo_c=metrics_savepoint.mask_prog_halo_c(),
         rayleigh_w=metrics_savepoint.rayleigh_w(),
@@ -250,11 +243,8 @@ def test_run_timeloop_single_step(
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
-    cell_geometry: CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: EdgeParams = grid_savepoint.construct_edge_geometry()
-
-    solve_nonhydro = SolveNonhydro()
-    solve_nonhydro.init(
+    solve_nonhydro_granule = solve_nh.SolveNonhydro()
+    solve_nonhydro_granule.init(
         grid=icon_grid,
         config=nonhydro_config,
         params=nonhydro_params,
@@ -266,18 +256,18 @@ def test_run_timeloop_single_step(
         owner_mask=grid_savepoint.c_owner_mask(),
     )
 
-    diffusion_diagnostic_state = construct_diagnostics_for_diffusion(
+    diffusion_diagnostic_state = driver_sb.construct_diagnostics_for_diffusion(
         timeloop_diffusion_savepoint_init,
     )
 
-    prep_adv = PrepAdvection(
+    prep_adv = solve_nh_states.PrepAdvection(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
     )
 
-    nonhydro_diagnostic_state = DiagnosticStateNonHydro(
+    nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(
         theta_v_ic=sp.theta_v_ic(),
         exner_pr=sp.exner_pr(),
         rho_ic=sp.rho_ic(),
@@ -301,25 +291,20 @@ def test_run_timeloop_single_step(
         exner_dyn_incr=sp.exner_dyn_incr(),
     )
 
-    timeloop = TimeLoop(iconrun_config, diffusion, solve_nonhydro)
+    timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)
 
-    assert timeloop.substep_timestep == nonhydro_dtime
-
-    initial_prognostic_date = "2021-06-20T12:00:10.000"
-    if experiment == GLOBAL_EXPERIMENT:
-        initial_prognostic_date = "2000-01-01T00:00:00.000"
-
-    if timeloop_date_exit == initial_prognostic_date:
+    if timeloop_diffusion_linit_init:
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
     else:
-        prognostic_state = PrognosticState(
+        prognostic_state = prognostics.PrognosticState(
             w=sp.w_now(),
             vn=sp.vn_now(),
             theta_v=sp.theta_v_now(),
             rho=sp.rho_now(),
             exner=sp.exner_now(),
         )
-    prognostic_state_new = PrognosticState(
+
+    prognostic_state_new = prognostics.PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
         theta_v=sp.theta_v_new(),
@@ -344,77 +329,30 @@ def test_run_timeloop_single_step(
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
 
-    if debug_mode:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = script_dir + "/"
-
-        def printing(ref, predict, title: str):
-            with open(base_dir + "analysis_" + timeloop_date_init + "_" + title + ".dat", "w") as f:
-                cell_size = ref.shape[0]
-                k_size = ref.shape[1]
-                print(title, cell_size, k_size)
-                difference = np.abs(ref - predict)
-                print(np.max(difference), np.min(difference))
-                for i in range(cell_size):
-                    for k in range(k_size):
-                        f.write("{0:7d} {1:7d}".format(i, k))
-                        f.write(
-                            " {0:.20e} {1:.20e} {2:.20e} ".format(
-                                difference[i, k], ref[i, k], predict[i, k]
-                            )
-                        )
-                        f.write("\n")
-
-        printing(
-            rho_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-            "rho",
-        )
-        printing(
-            exner_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-            "exner",
-        )
-        printing(
-            theta_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-            "theta_v",
-        )
-        printing(
-            w_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-            "w",
-        )
-        printing(
-            vn_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-            "vn",
-        )
-
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
         vn_sp.asnumpy(),
         atol=6e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
         w_sp.asnumpy(),
         atol=8e-14,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
         exner_sp.asnumpy(),
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
         theta_sp.asnumpy(),
         atol=4e-12,
     )
 
-    assert dallclose(
+    assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
         rho_sp.asnumpy(),
     )
