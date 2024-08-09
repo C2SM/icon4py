@@ -26,7 +26,7 @@ from gt4py.next.ffront.fbuiltins import FieldOffset
 from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.runtime import FendefDispatcher
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common.dimension import Koff, global_dimensions
+from icon4py.model.common import dimension as dims
 
 from icon4pytools.icon4pygen.bindings.utils import calc_num_neighbors
 
@@ -155,10 +155,10 @@ def get_fvprog(fencil_def: Program | Any) -> Program:
 
 
 def provide_offset(offset: str, is_global: bool = False) -> DummyConnectivity | Dimension:
-    if offset == Koff.value:
-        assert len(Koff.target) == 1
-        assert Koff.source == Koff.target[0]
-        return Koff.source
+    if offset == dims.Koff.value:
+        assert len(dims.Koff.target) == 1
+        assert dims.Koff.source == dims.Koff.target[0]
+        return dims.Koff.source
     else:
         return provide_neighbor_table(offset, is_global)
 
@@ -187,8 +187,10 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         skip_values = True
 
     include_center = True if chain.count("O") > 0 else False
-    dims_initials = [key[0] for key in global_dimensions.keys()]
-    map_to_dim = {d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)}
+    dims_initials = [key[0] for key in dims.global_dimensions.keys()]
+    map_to_dim = {
+        d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
+    }
     location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
 
     return DummyConnectivity(
@@ -241,6 +243,6 @@ def get_stencil_info(
     connectivity_chains = []
     for offset in offsets:
         offset_provider[offset] = provide_offset(offset, is_global)
-        if offset != Koff.value:
+        if offset != dims.Koff.value:
             connectivity_chains.append(offset)
     return StencilInfo(fendef, fields, connectivity_chains, offset_provider)

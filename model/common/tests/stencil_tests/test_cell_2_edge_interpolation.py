@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
@@ -29,7 +29,7 @@ class TestCell2EdgeInterpolation(StencilTest):
 
     @staticmethod
     def reference(grid, in_field: np.array, coeff: np.array, **kwargs) -> dict:
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         coeff_ = np.expand_dims(coeff, axis=-1)
         out_field = np.sum(in_field[e2c] * coeff_, axis=1)
 
@@ -39,9 +39,9 @@ class TestCell2EdgeInterpolation(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        in_field = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        coeff = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        out_field = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        in_field = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        coeff = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        out_field = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             in_field=in_field,

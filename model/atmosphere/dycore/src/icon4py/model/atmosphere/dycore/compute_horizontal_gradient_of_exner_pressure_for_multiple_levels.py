@@ -16,8 +16,8 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.experimental import as_offset
 from gt4py.next.ffront.fbuiltins import Field, astype, int32
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C, E2EC, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -26,8 +26,8 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    zdiff_gradp: Field[[ECDim, KDim], vpfloat],
-    ikoffset: Field[[ECDim, KDim], int32],
+    zdiff_gradp: Field[[dims.ECDim, dims.KDim], vpfloat],
+    ikoffset: Field[[dims.ECDim, dims.KDim], int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
@@ -64,8 +64,8 @@ def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
 def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
-    zdiff_gradp: Field[[ECDim, KDim], vpfloat],
-    ikoffset: Field[[ECDim, KDim], int32],
+    zdiff_gradp: Field[[dims.ECDim, dims.KDim], vpfloat],
+    ikoffset: Field[[dims.ECDim, dims.KDim], int32],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_dexner_dz_c_2: fa.CellKField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
@@ -83,7 +83,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         z_dexner_dz_c_2,
         out=z_gradh_exner,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

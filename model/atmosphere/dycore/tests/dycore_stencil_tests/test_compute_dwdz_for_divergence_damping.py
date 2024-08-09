@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_dwdz_for_divergence_damping import (
     compute_dwdz_for_divergence_damping,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -38,10 +38,12 @@ class TestComputeDwdzForDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        inv_ddqz_z_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-        w_concorr_c = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=vpfloat)
-        z_dwdz_dd = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        inv_ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        w_concorr_c = random_field(
+            grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=vpfloat
+        )
+        z_dwdz_dd = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_ddqz_z_full=inv_ddqz_z_full,

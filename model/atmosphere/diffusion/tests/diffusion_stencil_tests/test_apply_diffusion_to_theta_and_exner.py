@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.apply_diffusion_to_theta_and_exner import (
     apply_diffusion_to_theta_and_exner,
 )
-from icon4py.model.common.dimension import C2E2CDim, CECDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
@@ -88,12 +88,12 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 
-        kh_smag_e = random_field(grid, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        theta_v_in = random_field(grid, CellDim, KDim)
-        geofac_div = random_field(grid, CEDim)
-        mask = random_mask(grid, CellDim, KDim)
-        zd_vertoffset = zero_field(grid, CellDim, C2E2CDim, KDim, dtype=int32)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim)
+        theta_v_in = random_field(grid, dims.CellDim, dims.KDim)
+        geofac_div = random_field(grid, dims.CEDim)
+        mask = random_mask(grid, dims.CellDim, dims.KDim)
+        zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -102,18 +102,18 @@ class TestApplyDiffusionToThetaAndExner(StencilTest):
                 high=grid.num_levels - k - 1,
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
-        zd_diffcoef = random_field(grid, CellDim, KDim)
-        geofac_n2s_c = random_field(grid, CellDim)
-        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim)
-        vcoef = random_field(grid, CellDim, C2E2CDim, KDim)
-        area = random_field(grid, CellDim)
-        theta_v = random_field(grid, CellDim, KDim)
-        exner = random_field(grid, CellDim, KDim)
+        zd_diffcoef = random_field(grid, dims.CellDim, dims.KDim)
+        geofac_n2s_c = random_field(grid, dims.CellDim)
+        geofac_n2s_nbh = random_field(grid, dims.CellDim, dims.C2E2CDim)
+        vcoef = random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim)
+        area = random_field(grid, dims.CellDim)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim)
+        exner = random_field(grid, dims.CellDim, dims.KDim)
         rd_o_cvd = 5.0
 
-        vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
-        zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)
-        geofac_n2s_nbh_new = flatten_first_two_dims(CECDim, field=geofac_n2s_nbh)
+        vcoef_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=vcoef)
+        zd_vertoffset_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset)
+        geofac_n2s_nbh_new = flatten_first_two_dims(dims.CECDim, field=geofac_n2s_nbh)
 
         return dict(
             kh_smag_e=kh_smag_e,

@@ -16,7 +16,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_01 import v_limit_prbl_sm_stencil_01
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -33,7 +33,7 @@ class TestVLimitPrblSmStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_cc = random_field(grid, CellDim, KDim)
-        p_face = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        l_limit = zero_field(grid, CellDim, KDim, dtype=int32)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
+        p_face = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        l_limit = zero_field(grid, dims.CellDim, dims.KDim, dtype=int32)
         return dict(p_face=p_face, p_cc=p_cc, l_limit=l_limit)

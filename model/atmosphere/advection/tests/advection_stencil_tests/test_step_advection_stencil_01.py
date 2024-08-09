@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.advection.step_advection_stencil_01 import step_advection_stencil_01
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field, zero_field
 
 
@@ -48,11 +48,11 @@ class TestStepAdvectionStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        rhodz_ast = random_field(grid, CellDim, KDim)
-        p_mflx_contra_v = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        deepatmo_divzl = random_field(grid, KDim)
-        deepatmo_divzu = random_field(grid, KDim)
-        rhodz_ast2 = zero_field(grid, CellDim, KDim)
+        rhodz_ast = random_field(grid, dims.CellDim, dims.KDim)
+        p_mflx_contra_v = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        deepatmo_divzl = random_field(grid, dims.KDim)
+        deepatmo_divzu = random_field(grid, dims.KDim)
+        rhodz_ast2 = zero_field(grid, dims.CellDim, dims.KDim)
         p_dtime = 0.1
         return dict(
             rhodz_ast=rhodz_ast,

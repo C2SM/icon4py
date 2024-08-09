@@ -18,8 +18,8 @@ from gt4py.next.ffront.fbuiltins import (
     minimum,
 )
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.settings import backend
 
 
@@ -45,10 +45,10 @@ def _en_smag_fac_for_zero_nshift(
     bqdr = (df42 * dz32 - df32 * dz42) / (dz32 * dz42 * (dz42 - dz32))
     aqdr = df32 / dz32 - bqdr * dz32
     zf = 0.5 * (vect_a + vect_a(Koff[1]))
-    zero = broadcast(0.0, (KDim,))
+    zero = broadcast(0.0, (dims.KDim,))
 
-    dzlin = minimum(broadcast(dz21, (KDim,)), maximum(zero, zf - hdiff_smag_z))
-    dzqdr = minimum(broadcast(dz42, (KDim,)), maximum(zero, zf - hdiff_smag_z2))
+    dzlin = minimum(broadcast(dz21, (dims.KDim,)), maximum(zero, zf - hdiff_smag_z))
+    dzqdr = minimum(broadcast(dz42, (dims.KDim,)), maximum(zero, zf - hdiff_smag_z2))
     enh_smag_fac = hdiff_smag_fac + (dzlin * alin) + dzqdr * (aqdr + dzqdr * bqdr)
     return enh_smag_fac
 

@@ -12,8 +12,8 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 import gt4py.next as gtx
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 
 
 @gtx.field_operator
@@ -66,5 +66,8 @@ def face_val_ppm_stencil_05(
         p_cellhgt_mc_now,
         z_slope,
         out=p_face,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )

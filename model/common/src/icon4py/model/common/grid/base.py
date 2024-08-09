@@ -20,7 +20,7 @@ from typing import Callable, Dict
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
@@ -129,10 +129,10 @@ class BaseGrid(ABC):
         self._update_size()
 
     def _update_size(self):
-        self.size[VertexDim] = self.config.num_vertices
-        self.size[CellDim] = self.config.num_cells
-        self.size[EdgeDim] = self.config.num_edges
-        self.size[KDim] = self.config.num_levels
+        self.size[dims.VertexDim] = self.config.num_vertices
+        self.size[dims.CellDim] = self.config.num_cells
+        self.size[dims.EdgeDim] = self.config.num_edges
+        self.size[dims.KDim] = self.config.num_levels
 
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:

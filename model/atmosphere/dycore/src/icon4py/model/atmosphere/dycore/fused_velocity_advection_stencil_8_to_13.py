@@ -25,8 +25,7 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -34,7 +33,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_predictor(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -81,7 +80,7 @@ def _fused_velocity_advection_stencil_8_to_13_predictor(
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_corrector(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -120,7 +119,7 @@ def _fused_velocity_advection_stencil_8_to_13_corrector(
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -172,7 +171,7 @@ def _fused_velocity_advection_stencil_8_to_13(
 @field_operator
 def _fused_velocity_advection_stencil_8_to_13_restricted(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -203,7 +202,7 @@ def _fused_velocity_advection_stencil_8_to_13_restricted(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_13(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w: fa.CellKField[wpfloat],
@@ -235,8 +234,8 @@ def fused_velocity_advection_stencil_8_to_13(
         nflatlev,
         out=(z_ekinh, w_concorr_c, z_w_con_c),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
     _fused_velocity_advection_stencil_8_to_13_restricted(
@@ -254,7 +253,7 @@ def fused_velocity_advection_stencil_8_to_13(
         nflatlev,
         out=z_w_con_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )

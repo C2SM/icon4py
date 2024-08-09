@@ -15,8 +15,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C, E2EC
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -25,12 +25,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 def _compute_btraj(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
-    primal_normal_cell_1: Field[[ECDim], wpfloat],
-    dual_normal_cell_1: Field[[ECDim], wpfloat],
-    primal_normal_cell_2: Field[[ECDim], wpfloat],
-    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
@@ -131,12 +131,12 @@ def _sten_16(
 def _compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
-    primal_normal_cell_1: Field[[ECDim], wpfloat],
-    dual_normal_cell_1: Field[[ECDim], wpfloat],
-    primal_normal_cell_2: Field[[ECDim], wpfloat],
-    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],
@@ -181,12 +181,12 @@ def _compute_horizontal_advection_of_rho_and_theta(
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
-    primal_normal_cell_1: Field[[ECDim], wpfloat],
-    dual_normal_cell_1: Field[[ECDim], wpfloat],
-    primal_normal_cell_2: Field[[ECDim], wpfloat],
-    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],
@@ -223,7 +223,7 @@ def compute_horizontal_advection_of_rho_and_theta(
         z_rth_pr_2,
         out=(z_rho_e, z_theta_v_e),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_02 import (
     upwind_hflux_miura_cycl_stencil_02,
 )
-from icon4py.model.common.dimension import C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -44,7 +44,7 @@ class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
         z_dtsub: float,
         **kwargs,
     ):
-        c2e = grid.connectivities[C2EDim]
+        c2e = grid.connectivities[dims.C2EDim]
         p_mass_flx_e_c2e = p_mass_flx_e[c2e]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         z_tracer_mflx_c2e = z_tracer_mflx[c2e]
@@ -66,17 +66,17 @@ class TestUpwindHfluxMiuraCyclStencil02(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         nsub = 1
-        p_mass_flx_e = random_field(grid, EdgeDim, KDim)
-        geofac_div = random_field(grid, CellDim, C2EDim)
-        z_rhofluxdiv_c = random_field(grid, CellDim, KDim)
-        z_tracer_mflx = random_field(grid, EdgeDim, KDim)
-        z_rho_now = random_field(grid, CellDim, KDim)
-        z_tracer_now = random_field(grid, CellDim, KDim)
+        p_mass_flx_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        geofac_div = random_field(grid, dims.CellDim, dims.C2EDim)
+        z_rhofluxdiv_c = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_mflx = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_rho_now = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_now = random_field(grid, dims.CellDim, dims.KDim)
         z_dtsub = 0.5
-        z_rhofluxdiv_c_out = zero_field(grid, CellDim, KDim)
-        z_fluxdiv_c_dsl = zero_field(grid, CellDim, KDim)
-        z_rho_new_dsl = zero_field(grid, CellDim, KDim)
-        z_tracer_new_dsl = zero_field(grid, CellDim, KDim)
+        z_rhofluxdiv_c_out = zero_field(grid, dims.CellDim, dims.KDim)
+        z_fluxdiv_c_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        z_rho_new_dsl = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_dsl = zero_field(grid, dims.CellDim, dims.KDim)
         return dict(
             nsub=nsub,
             p_mass_flx_e=p_mass_flx_e,

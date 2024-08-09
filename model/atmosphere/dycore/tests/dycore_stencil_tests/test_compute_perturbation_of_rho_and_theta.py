@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_perturbation_of_rho_and_theta import (
     compute_perturbation_of_rho_and_theta,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -42,12 +42,12 @@ class TestComputePerturbationOfRhoAndTheta(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        rho = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        theta_ref_mc = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_1 = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_2 = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        rho = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        theta_ref_mc = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_1 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             rho=rho,

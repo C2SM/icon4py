@@ -27,8 +27,7 @@ from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabl
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     _update_theta_and_exner,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CECDim, CEDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -38,13 +37,13 @@ def _apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
+    geofac_div: Field[[dims.CEDim], wpfloat],
     mask: fa.CellKField[bool],
-    zd_vertoffset: Field[[CECDim, KDim], int32],
+    zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: Field[[CECDim], wpfloat],
-    vcoef: Field[[CECDim, KDim], wpfloat],
+    geofac_n2s_nbh: Field[[dims.CECDim], wpfloat],
+    vcoef: Field[[dims.CECDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
     exner: fa.CellKField[wpfloat],
     rd_o_cvd: vpfloat,
@@ -70,13 +69,13 @@ def apply_diffusion_to_theta_and_exner(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v_in: fa.CellKField[wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
+    geofac_div: Field[[dims.CEDim], wpfloat],
     mask: fa.CellKField[bool],
-    zd_vertoffset: Field[[CECDim, KDim], int32],
+    zd_vertoffset: Field[[dims.CECDim, dims.KDim], int32],
     zd_diffcoef: fa.CellKField[wpfloat],
     geofac_n2s_c: fa.CellField[wpfloat],
-    geofac_n2s_nbh: Field[[CECDim], wpfloat],
-    vcoef: Field[[CECDim, KDim], wpfloat],
+    geofac_n2s_nbh: Field[[dims.CECDim], wpfloat],
+    vcoef: Field[[dims.CECDim, dims.KDim], wpfloat],
     area: fa.CellField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],

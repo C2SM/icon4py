@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_1_to_7 import (
     fused_velocity_advection_stencil_1_to_7,
 )
-from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -213,27 +213,27 @@ class TestFusedVelocityAdvectionStencil1To7(StencilTest):
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 
-        c_intp = random_field(grid, VertexDim, V2CDim)
-        vn = random_field(grid, EdgeDim, KDim)
-        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim)
-        vt = zero_field(grid, EdgeDim, KDim)
-        wgtfac_e = random_field(grid, EdgeDim, KDim)
-        vn_ie = zero_field(grid, EdgeDim, KDim, extend={KDim: 1})
-        z_kin_hor_e = zero_field(grid, EdgeDim, KDim)
-        z_vt_ie = zero_field(grid, EdgeDim, KDim)
-        ddxn_z_full = random_field(grid, EdgeDim, KDim)
-        ddxt_z_full = random_field(grid, EdgeDim, KDim)
-        z_w_concorr_me = zero_field(grid, EdgeDim, KDim)
-        inv_dual_edge_length = random_field(grid, EdgeDim)
-        w = random_field(grid, CellDim, KDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        z_v_grad_w = zero_field(grid, EdgeDim, KDim)
-        wgtfacq_e = random_field(grid, EdgeDim, KDim)
+        c_intp = random_field(grid, dims.VertexDim, dims.V2CDim)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim)
+        vt = zero_field(grid, dims.EdgeDim, dims.KDim)
+        wgtfac_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
+        z_kin_hor_e = zero_field(grid, dims.EdgeDim, dims.KDim)
+        z_vt_ie = zero_field(grid, dims.EdgeDim, dims.KDim)
+        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim)
+        ddxt_z_full = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_w_concorr_me = zero_field(grid, dims.EdgeDim, dims.KDim)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim)
+        w = random_field(grid, dims.CellDim, dims.KDim)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
+        tangent_orientation = random_field(grid, dims.EdgeDim)
+        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim)
+        wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim)
 
-        k = field_alloc.allocate_indices(KDim, grid=grid, is_halfdim=True)
+        k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
-        edge = zero_field(grid, EdgeDim, dtype=int32)
+        edge = zero_field(grid, dims.EdgeDim, dtype=int32)
         for e in range(grid.num_edges):
             edge[e] = e
 

@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.stencils.calculate_diagnostics_for_turbulence import (
     calculate_diagnostics_for_turbulence,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -45,9 +45,9 @@ class TestCalculateDiagnosticsForTurbulence(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        div = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        kh_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        div_ic = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        hdef_ic = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        div = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        kh_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        div_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        hdef_ic = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         return dict(wgtfac_c=wgtfac_c, div=div, kh_c=kh_c, div_ic=div_ic, hdef_ic=hdef_ic)

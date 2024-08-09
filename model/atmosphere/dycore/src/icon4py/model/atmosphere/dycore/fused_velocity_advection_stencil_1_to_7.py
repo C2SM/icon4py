@@ -34,8 +34,7 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -87,7 +86,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_6(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
@@ -130,14 +129,14 @@ def _fused_velocity_advection_stencil_1_to_6(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_predictor(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -178,7 +177,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
         lvn_only,
     )
 
-    k = broadcast(k, (EdgeDim, KDim))
+    k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
@@ -206,14 +205,14 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_corrector(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -236,7 +235,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    k = broadcast(k, (EdgeDim, KDim))
+    k = broadcast(k, (dims.EdgeDim, dims.KDim))
 
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
@@ -264,14 +263,14 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -357,14 +356,14 @@ def _fused_velocity_advection_stencil_1_to_7(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_restricted(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -414,14 +413,14 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_1_to_7(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -471,8 +470,8 @@ def fused_velocity_advection_stencil_1_to_7(
         halo_1,
         out=(vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end - 1),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end - 1),
         },
     )
     _fused_velocity_advection_stencil_1_to_7_restricted(
@@ -503,7 +502,7 @@ def fused_velocity_advection_stencil_1_to_7(
         halo_1,
         out=vn_ie,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_end - 1, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_end - 1, vertical_end),
         },
     )

@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.fused_solve_nonhydro_stencil_39_40 import (
     fused_solve_nonhydro_stencil_39_40,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -67,13 +67,13 @@ class TestFusedSolveNonhydroStencil39To40(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        e_bln_c_s = random_field(grid, CEDim, dtype=wpfloat)
-        z_w_concorr_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        wgtfac_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        wgtfacq_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        w_concorr_c = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        e_bln_c_s = random_field(grid, dims.CEDim, dtype=wpfloat)
+        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        wgtfacq_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        vert_idx = zero_field(grid, KDim, dtype=int32)
+        vert_idx = zero_field(grid, dims.KDim, dtype=int32)
         for level in range(grid.num_levels):
             vert_idx[level] = level
 

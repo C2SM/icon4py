@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_divergence_of_fluxes_of_rho_and_theta import (
     compute_divergence_of_fluxes_of_rho_and_theta,
 )
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -40,7 +40,7 @@ class TestComputeDivergenconnectivityceOfFluxesOfRhoAndTheta(StencilTest):
         z_theta_v_fl_e: np.array,
         **kwargs,
     ) -> tuple[np.array]:
-        c2e = grid.connectivities[C2EDim]
+        c2e = grid.connectivities[dims.C2EDim]
         geofac_div = np.expand_dims(geofac_div, axis=-1)
         c2ce = grid.get_offset_provider("C2CE").table
 
@@ -56,11 +56,13 @@ class TestComputeDivergenconnectivityceOfFluxesOfRhoAndTheta(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        geofac_div = as_1D_sparse_field(random_field(grid, CellDim, C2EDim, dtype=wpfloat), CEDim)
-        z_theta_v_fl_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_flxdiv_theta = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        mass_fl_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_flxdiv_mass = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        geofac_div = as_1D_sparse_field(
+            random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat), dims.CEDim
+        )
+        z_theta_v_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_flxdiv_theta = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        mass_fl_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_flxdiv_mass = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             geofac_div=geofac_div,

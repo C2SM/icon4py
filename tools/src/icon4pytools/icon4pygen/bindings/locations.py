@@ -15,7 +15,7 @@ from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from gt4py.next.ffront.fbuiltins import Dimension
-from icon4py.model.common.dimension import global_dimensions
+from icon4py.model.common import dimension as dims
 
 from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
 
@@ -73,9 +73,9 @@ class MultiLocation(metaclass=ABCMeta):
         return self.chain[item]
 
     def to_dim_list(self) -> list[Dimension]:
-        dims_initials = [key[0] for key in global_dimensions.keys()]
+        dims_initials = [key[0] for key in dims.global_dimensions.keys()]
         map_to_dim = {
-            d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
+            d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
         }
         return [map_to_dim[str(c)] for c in self.chain]
 

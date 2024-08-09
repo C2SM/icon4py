@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_multiple_levels import (
     compute_horizontal_gradient_of_exner_pressure_for_multiple_levels,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -54,7 +54,7 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
                         ]
             return indexed
 
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         full_shape = e2c.shape + zdiff_gradp.shape[1:]
         zdiff_gradp = zdiff_gradp.reshape(full_shape)
         ikoffset = ikoffset.reshape(full_shape)
@@ -77,13 +77,13 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[E2CDim] == -1):
+        if np.any(grid.connectivities[dims.E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
-        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        zdiff_gradp = random_field(grid, EdgeDim, E2CDim, KDim, dtype=vpfloat)
-        ikoffset = zero_field(grid, EdgeDim, E2CDim, KDim, dtype=int32)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        zdiff_gradp = random_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=vpfloat)
+        ikoffset = zero_field(grid, dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=int32)
 
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
@@ -94,12 +94,12 @@ class TestComputeHorizontalGradientOfExnerPressureForMultipleLevels(StencilTest)
                 size=(ikoffset.shape[0], ikoffset.shape[1]),
             )
 
-        zdiff_gradp_new = flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp)
-        ikoffset_new = flatten_first_two_dims(ECDim, KDim, field=ikoffset)
+        zdiff_gradp_new = flatten_first_two_dims(dims.ECDim, dims.KDim, field=zdiff_gradp)
+        ikoffset_new = flatten_first_two_dims(dims.ECDim, dims.KDim, field=ikoffset)
 
-        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_dexner_dz_c_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_gradh_exner = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        z_dexner_dz_c_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_dexner_dz_c_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_gradh_exner = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_maximum_cfl_and_clip_contravariant_vertical_velocity import (
     compute_maximum_cfl_and_clip_contravariant_vertical_velocity,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     random_field,
@@ -75,10 +75,10 @@ class TestComputeMaximumCflAndClipContravariantVerticalVelocity(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        ddqz_z_half = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_w_con_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        cfl_clipping = random_mask(grid, CellDim, KDim, dtype=bool)
-        vcfl = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        cfl_clipping = random_mask(grid, dims.CellDim, dims.KDim, dtype=bool)
+        vcfl = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
         cfl_w_limit = vpfloat("5.0")
         dtime = wpfloat("9.0")
 

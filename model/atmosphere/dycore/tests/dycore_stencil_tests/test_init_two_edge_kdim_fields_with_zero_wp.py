@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     init_two_edge_kdim_fields_with_zero_wp,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, zero_field
 from icon4py.model.common.type_alias import wpfloat
 
@@ -43,8 +43,8 @@ class TestInitTwoEdgeKdimFieldsWithZeroWp(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        edge_kdim_field_with_zero_wp_1 = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        edge_kdim_field_with_zero_wp_2 = zero_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        edge_kdim_field_with_zero_wp_1 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        edge_kdim_field_with_zero_wp_2 = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             edge_kdim_field_with_zero_wp_1=edge_kdim_field_with_zero_wp_1,

@@ -18,15 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
 )
-from icon4py.model.common.dimension import (
-    CellDim,
-    E2C2EODim,
-    E2CDim,
-    E2VDim,
-    EdgeDim,
-    KDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -64,8 +56,8 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
         (levelmask_offset_0) | (levelmask_offset_1),
         np.sum(
             np.where(
-                (grid.connectivities[E2CDim] != -1)[:, :, np.newaxis],
-                c_lin_e * z_w_con_c_full[grid.connectivities[E2CDim]],
+                (grid.connectivities[dims.E2CDim] != -1)[:, :, np.newaxis],
+                c_lin_e * z_w_con_c_full[grid.connectivities[dims.E2CDim]],
                 0,
             ),
             axis=1,
@@ -91,15 +83,18 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl_numpy(
         * (
             np.sum(
                 np.where(
-                    (grid.connectivities[E2C2EODim] != -1)[:, :, np.newaxis],
-                    geofac_grdiv * vn[grid.connectivities[E2C2EODim]],
+                    (grid.connectivities[dims.E2C2EODim] != -1)[:, :, np.newaxis],
+                    geofac_grdiv * vn[grid.connectivities[dims.E2C2EODim]],
                     0,
                 ),
                 axis=1,
             )
             + tangent_orientation
             * inv_primal_edge_length
-            * (zeta[grid.connectivities[E2VDim]][:, 1] - zeta[grid.connectivities[E2VDim]][:, 0])
+            * (
+                zeta[grid.connectivities[dims.E2VDim]][:, 1]
+                - zeta[grid.connectivities[dims.E2VDim]][:, 0]
+            )
         ),
         ddt_vn_apc,
     )
@@ -112,17 +107,17 @@ class TestAddExtraDiffusionForNormalWindTendencyApproachingCfl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        levelmask = random_mask(grid, KDim, extend={KDim: 1})
-        c_lin_e = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        z_w_con_c_full = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddqz_z_full_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        area_edge = random_field(grid, EdgeDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        inv_primal_edge_length = random_field(grid, EdgeDim)
-        zeta = random_field(grid, VertexDim, KDim, dtype=vpfloat)
-        geofac_grdiv = random_field(grid, EdgeDim, E2C2EODim)
-        vn = random_field(grid, EdgeDim, KDim)
-        ddt_vn_apc = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        levelmask = random_mask(grid, dims.KDim, extend={dims.KDim: 1})
+        c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        z_w_con_c_full = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_full_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        area_edge = random_field(grid, dims.EdgeDim)
+        tangent_orientation = random_field(grid, dims.EdgeDim)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim)
+        zeta = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        geofac_grdiv = random_field(grid, dims.EdgeDim, dims.E2C2EODim)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        ddt_vn_apc = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
         cfl_w_limit = vpfloat("4.0")
         scalfac_exdiff = 6.0
         dtime = 2.0

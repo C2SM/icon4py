@@ -15,15 +15,15 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2CE, C2E, C2EDim, CEDim, CellDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2CE, C2E, C2EDim, Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _compute_contravariant_correction_of_w(
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[vpfloat]:
@@ -50,7 +50,7 @@ def _compute_contravariant_correction_of_w(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_contravariant_correction_of_w(
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     w_concorr_c: fa.CellKField[vpfloat],
@@ -65,7 +65,7 @@ def compute_contravariant_correction_of_w(
         wgtfac_c,
         out=w_concorr_c,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

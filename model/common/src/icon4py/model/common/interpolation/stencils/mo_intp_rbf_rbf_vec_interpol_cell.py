@@ -15,13 +15,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import (
-    C2E,
-    C2EDim,
-    CellDim,
-    KDim,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E, C2EDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
@@ -29,8 +24,8 @@ from icon4py.model.common.type_alias import wpfloat
 @field_operator
 def _mo_intp_rbf_rbf_vec_interpol_cell(
     p_vn_in: fa.EdgeKField[wpfloat],
-    ptr_coeff_1: Field[[CellDim, C2EDim], wpfloat],
-    ptr_coeff_2: Field[[CellDim, C2EDim], wpfloat],
+    ptr_coeff_1: Field[[dims.CellDim, C2EDim], wpfloat],
+    ptr_coeff_2: Field[[dims.CellDim, C2EDim], wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     p_u_out = neighbor_sum(ptr_coeff_1 * p_vn_in(C2E), axis=C2EDim)
     p_v_out = neighbor_sum(ptr_coeff_2 * p_vn_in(C2E), axis=C2EDim)
@@ -40,8 +35,8 @@ def _mo_intp_rbf_rbf_vec_interpol_cell(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def mo_intp_rbf_rbf_vec_interpol_cell(
     p_vn_in: fa.EdgeKField[wpfloat],
-    ptr_coeff_1: Field[[CellDim, C2EDim], wpfloat],
-    ptr_coeff_2: Field[[CellDim, C2EDim], wpfloat],
+    ptr_coeff_1: Field[[dims.CellDim, C2EDim], wpfloat],
+    ptr_coeff_2: Field[[dims.CellDim, C2EDim], wpfloat],
     p_u_out: fa.CellKField[wpfloat],
     p_v_out: fa.CellKField[wpfloat],
     horizontal_start: int32,
@@ -55,7 +50,7 @@ def mo_intp_rbf_rbf_vec_interpol_cell(
         ptr_coeff_2,
         out=(p_u_out, p_v_out),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

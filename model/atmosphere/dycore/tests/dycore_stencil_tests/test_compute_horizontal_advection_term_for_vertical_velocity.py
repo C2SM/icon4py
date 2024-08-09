@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, E2VDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -37,8 +37,8 @@ def compute_horizontal_advection_term_for_vertical_velocity_numpy(
     inv_primal_edge_length = np.expand_dims(inv_primal_edge_length, axis=-1)
     tangent_orientation = np.expand_dims(tangent_orientation, axis=-1)
 
-    w_e2c = w[grid.connectivities[E2CDim]]
-    z_w_v_e2v = z_w_v[grid.connectivities[E2VDim]]
+    w_e2c = w[grid.connectivities[dims.E2CDim]]
+    z_w_v_e2v = z_w_v[grid.connectivities[dims.E2VDim]]
 
     red_w = w_e2c[:, 0] - w_e2c[:, 1]
     red_z_w_v = z_w_v_e2v[:, 0] - z_w_v_e2v[:, 1]
@@ -80,17 +80,19 @@ class TestComputeHorizontalAdvectionTermForVerticalVelocity(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[E2CDim] == -1) or np.any(grid.connectivities[E2VDim] == -1):
+        if np.any(grid.connectivities[dims.E2CDim] == -1) or np.any(
+            grid.connectivities[dims.E2VDim] == -1
+        ):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        vn_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_vt_ie = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        inv_primal_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
-        tangent_orientation = random_field(grid, EdgeDim, dtype=wpfloat)
-        z_w_v = random_field(grid, VertexDim, KDim, dtype=vpfloat)
-        z_v_grad_w = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_vt_ie = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        inv_primal_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        tangent_orientation = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        z_w_v = random_field(grid, dims.VertexDim, dims.KDim, dtype=vpfloat)
+        z_v_grad_w = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn_ie=vn_ie,

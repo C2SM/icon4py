@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_explicit_vertical_wind_from_advection_and_vertical_wind_density import (
     compute_explicit_vertical_wind_from_advection_and_vertical_wind_density,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -52,15 +52,15 @@ class TestComputeExplicitVerticalWindFromAdvectionAndVerticalWindDensity(Stencil
 
     @pytest.fixture
     def input_data(self, grid):
-        w_nnow = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        ddt_w_adv_ntl1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddt_w_adv_ntl2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_th_ddz_exner_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_w_expl = zero_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        w_concorr_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        vwind_expl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-        z_contr_w_fl_l = zero_field(grid, CellDim, KDim, dtype=wpfloat)
+        w_nnow = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddt_w_adv_ntl1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddt_w_adv_ntl2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_th_ddz_exner_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_w_expl = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        w_concorr_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        vwind_expl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        z_contr_w_fl_l = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         dtime = wpfloat("5.0")
         wgt_nnow_vel = wpfloat("8.0")
         wgt_nnew_vel = wpfloat("9.0")

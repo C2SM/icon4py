@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
     calculate_nabla2_of_theta,
 )
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -29,7 +29,7 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def calculate_nabla2_of_theta_numpy(grid, z_nabla2_e: np.array, geofac_div: np.array) -> np.array:
-    c2e = grid.connectivities[C2EDim]
+    c2e = grid.connectivities[dims.C2EDim]
     geofac_div = geofac_div.reshape(c2e.shape)
     geofac_div = np.expand_dims(geofac_div, axis=-1)
     z_temp = np.sum(z_nabla2_e[c2e] * geofac_div, axis=1)  # sum along edge dimension
@@ -47,11 +47,11 @@ class TestCalculateNabla2OfTheta(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        geofac_div = random_field(grid, CellDim, C2EDim, dtype=wpfloat)
-        geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        geofac_div = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
+        geofac_div_new = as_1D_sparse_field(geofac_div, dims.CEDim)
 
-        z_temp = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_temp = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_nabla2_e=z_nabla2_e,

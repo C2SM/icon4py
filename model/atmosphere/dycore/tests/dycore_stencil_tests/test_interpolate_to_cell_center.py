@@ -16,7 +16,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import interpolate_to_cell_center
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -33,7 +33,7 @@ def interpolate_to_cell_center_numpy(
     c2ce = grid.get_offset_provider("C2CE").table
 
     interpolation = np.sum(
-        interpolant[grid.connectivities[C2EDim]] * e_bln_c_s[c2ce],
+        interpolant[grid.connectivities[dims.C2EDim]] * e_bln_c_s[c2ce],
         axis=1,
     )
     return interpolation
@@ -50,13 +50,13 @@ class TestInterpolateToCellCenter(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        interpolant = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        e_bln_c_s = random_field(grid, CellDim, C2EDim, dtype=wpfloat)
-        interpolation = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        interpolant = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim, dtype=wpfloat)
+        interpolation = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             interpolant=interpolant,
-            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
+            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
             interpolation=interpolation,
             horizontal_start=0,
             horizontal_end=int32(grid.num_cells),

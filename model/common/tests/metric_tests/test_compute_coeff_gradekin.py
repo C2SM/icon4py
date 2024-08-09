@@ -13,7 +13,7 @@
 
 import pytest
 
-from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
@@ -27,7 +27,7 @@ def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
     coeff_gradekin_ref = metrics_savepoint.coeff_gradekin()
     horizontal_start = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+        dims.EdgeDim, HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1
     )
     horizontal_end = icon_grid.num_edges
 

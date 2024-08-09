@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.solve_tridiagonal_matrix_for_w_back_substitution import (
     solve_tridiagonal_matrix_for_w_back_substitution,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -40,8 +40,8 @@ class TestSolveTridiagonalMatrixForWBackSubstitution(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_q = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_q = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         h_start = 0
         h_end = int32(grid.num_cells)
         v_start = 1

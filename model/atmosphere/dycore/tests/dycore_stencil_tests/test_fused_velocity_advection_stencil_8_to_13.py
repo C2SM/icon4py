@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.dycore.fused_velocity_advection_stencil_8_to_13 import (
     fused_velocity_advection_stencil_8_to_13,
 )
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -105,17 +105,17 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
         pytest.xfail(
             "Verification of w_concorr_c currently not working, because numpy version is incorrect."
         )
-        z_kin_hor_e = random_field(grid, EdgeDim, KDim)
-        e_bln_c_s = random_field(grid, CellDim, C2EDim)
-        z_ekinh = zero_field(grid, CellDim, KDim)
-        z_w_concorr_me = random_field(grid, EdgeDim, KDim)
-        z_w_concorr_mc = zero_field(grid, CellDim, KDim)
-        wgtfac_c = random_field(grid, CellDim, KDim)
-        w_concorr_c = zero_field(grid, CellDim, KDim)
-        w = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        z_w_con_c = zero_field(grid, CellDim, KDim, extend={KDim: 1})
+        z_kin_hor_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        e_bln_c_s = random_field(grid, dims.CellDim, dims.C2EDim)
+        z_ekinh = zero_field(grid, dims.CellDim, dims.KDim)
+        z_w_concorr_me = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_w_concorr_mc = zero_field(grid, dims.CellDim, dims.KDim)
+        wgtfac_c = random_field(grid, dims.CellDim, dims.KDim)
+        w_concorr_c = zero_field(grid, dims.CellDim, dims.KDim)
+        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_w_con_c = zero_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
 
-        k = field_alloc.allocate_indices(KDim, grid=grid, is_halfdim=True)
+        k = field_alloc.allocate_indices(dims.KDim, grid=grid, is_halfdim=True)
 
         nlev = grid.num_levels
         nflatlev = 4
@@ -129,7 +129,7 @@ class TestFusedVelocityAdvectionStencil8To13(StencilTest):
 
         return dict(
             z_kin_hor_e=z_kin_hor_e,
-            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
+            e_bln_c_s=as_1D_sparse_field(e_bln_c_s, dims.CEDim),
             z_w_concorr_me=z_w_concorr_me,
             wgtfac_c=wgtfac_c,
             w=w,

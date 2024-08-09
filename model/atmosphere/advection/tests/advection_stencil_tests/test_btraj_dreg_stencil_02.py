@@ -16,7 +16,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_02 import btraj_dreg_stencil_02
-from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     numpy_to_1D_sparse_field,
@@ -36,7 +36,7 @@ class TestBtrajDregStencil02(StencilTest):
         traj_length = np.sqrt(p_vn**2 + p_vt**2) * p_dt
 
         edge_cell_length = np.expand_dims(
-            np.asarray(grid.connectivities[E2CDim], dtype=float), axis=-1
+            np.asarray(grid.connectivities[dims.E2CDim], dtype=float), axis=-1
         )
         e2c_length = np.where(lvn_pos, edge_cell_length[:, 0], edge_cell_length[:, 1])
 
@@ -50,12 +50,12 @@ class TestBtrajDregStencil02(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_vn = random_field(grid, EdgeDim, KDim)
-        p_vt = random_field(grid, EdgeDim, KDim)
-        edge_cell_length = np.asarray(grid.connectivities[E2CDim], dtype=float)
-        edge_cell_length_new = numpy_to_1D_sparse_field(edge_cell_length, ECDim)
+        p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_vt = random_field(grid, dims.EdgeDim, dims.KDim)
+        edge_cell_length = np.asarray(grid.connectivities[dims.E2CDim], dtype=float)
+        edge_cell_length_new = numpy_to_1D_sparse_field(edge_cell_length, dims.ECDim)
         p_dt = 1.0
-        opt_famask_dsl = zero_field(grid, EdgeDim, KDim, dtype=int32)
+        opt_famask_dsl = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=int32)
 
         return dict(
             p_vn=p_vn,

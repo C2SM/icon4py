@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
     hflx_limiter_mo_stencil_01b,
 )
-from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -49,7 +49,7 @@ class TestHflxLimiterMoStencil01b(StencilTest):
         p_dtime: float,
         **kwargs,
     ):
-        c2e = grid.connectivities[C2EDim]
+        c2e = grid.connectivities[dims.C2EDim]
         z_anti_c2e = z_anti[c2e]
 
         geofac_div = reshape(geofac_div, c2e.shape)
@@ -89,20 +89,20 @@ class TestHflxLimiterMoStencil01b(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        geofac_div = random_field(grid, CellDim, C2EDim)
-        geofac_div_new = as_1D_sparse_field(geofac_div, CEDim)
-        p_rhodz_now = random_field(grid, CellDim, KDim)
-        p_rhodz_new = random_field(grid, CellDim, KDim)
-        z_mflx_low = random_field(grid, EdgeDim, KDim)
-        z_anti = random_field(grid, EdgeDim, KDim)
-        p_cc = random_field(grid, CellDim, KDim)
+        geofac_div = random_field(grid, dims.CellDim, dims.C2EDim)
+        geofac_div_new = as_1D_sparse_field(geofac_div, dims.CEDim)
+        p_rhodz_now = random_field(grid, dims.CellDim, dims.KDim)
+        p_rhodz_new = random_field(grid, dims.CellDim, dims.KDim)
+        z_mflx_low = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_anti = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
         p_dtime = 5.0
 
-        z_mflx_anti_in = zero_field(grid, CellDim, KDim)
-        z_mflx_anti_out = zero_field(grid, CellDim, KDim)
-        z_tracer_new_low = zero_field(grid, CellDim, KDim)
-        z_tracer_max = zero_field(grid, CellDim, KDim)
-        z_tracer_min = zero_field(grid, CellDim, KDim)
+        z_mflx_anti_in = zero_field(grid, dims.CellDim, dims.KDim)
+        z_mflx_anti_out = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_low = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min = zero_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             geofac_div=geofac_div_new,

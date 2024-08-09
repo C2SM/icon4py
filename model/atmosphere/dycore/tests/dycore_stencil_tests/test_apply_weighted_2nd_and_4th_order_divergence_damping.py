@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.apply_weighted_2nd_and_4th_order_divergence_damping import (
     apply_weighted_2nd_and_4th_order_divergence_damping,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -43,11 +43,11 @@ class TestApplyWeighted2ndAnd4thOrderDivergenceDamping(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        scal_divdamp = random_field(grid, KDim, dtype=wpfloat)
-        bdy_divdamp = random_field(grid, KDim, dtype=wpfloat)
-        nudgecoeff_e = random_field(grid, EdgeDim, dtype=wpfloat)
-        z_graddiv2_vn = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        scal_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
+        bdy_divdamp = random_field(grid, dims.KDim, dtype=wpfloat)
+        nudgecoeff_e = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        z_graddiv2_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             scal_divdamp=scal_divdamp,

@@ -26,15 +26,13 @@ from gt4py.next.ffront.fbuiltins import (
 from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     _init_two_edge_kdim_fields_with_zero_wp,
 )
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     E2C,
     E2C2EO,
     E2V,
     E2C2EODim,
     E2CDim,
-    EdgeDim,
-    KDim,
     Koff,
 )
 from icon4py.model.common.settings import backend
@@ -43,15 +41,15 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: Field[[KDim], bool],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    levelmask: Field[[dims.KDim], bool],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     zeta: fa.VertexKField[vpfloat],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     ddt_vn_apc: fa.EdgeKField[vpfloat],
     cfl_w_limit: vpfloat,
@@ -99,15 +97,15 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: Field[[KDim], bool],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    levelmask: Field[[dims.KDim], bool],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     zeta: fa.VertexKField[vpfloat],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
     ddt_vn_apc: fa.EdgeKField[vpfloat],
     cfl_w_limit: vpfloat,
@@ -135,7 +133,7 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         dtime,
         out=ddt_vn_apc,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

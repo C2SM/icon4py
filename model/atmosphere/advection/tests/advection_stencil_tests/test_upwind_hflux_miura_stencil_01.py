@@ -18,7 +18,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
     upwind_hflux_miura_stencil_01,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     constant_field,
@@ -43,7 +43,7 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
         cell_rel_idx_dsl: np.array,
         **kwargs,
     ):
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         z_lsq_coeff_1_e2c = z_lsq_coeff_1[e2c]
         z_lsq_coeff_2_e2c = z_lsq_coeff_2[e2c]
         z_lsq_coeff_3_e2c = z_lsq_coeff_3[e2c]
@@ -72,14 +72,14 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_lsq_coeff_1 = random_field(grid, CellDim, KDim)
-        z_lsq_coeff_2 = random_field(grid, CellDim, KDim)
-        z_lsq_coeff_3 = random_field(grid, CellDim, KDim)
-        distv_bary_1 = random_field(grid, EdgeDim, KDim)
-        distv_bary_2 = random_field(grid, EdgeDim, KDim)
-        p_mass_flx_e = random_field(grid, EdgeDim, KDim)
-        cell_rel_idx_dsl = constant_field(grid, 0, EdgeDim, KDim, dtype=int32)
-        p_out_e = zero_field(grid, EdgeDim, KDim)
+        z_lsq_coeff_1 = random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_2 = random_field(grid, dims.CellDim, dims.KDim)
+        z_lsq_coeff_3 = random_field(grid, dims.CellDim, dims.KDim)
+        distv_bary_1 = random_field(grid, dims.EdgeDim, dims.KDim)
+        distv_bary_2 = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        cell_rel_idx_dsl = constant_field(grid, 0, dims.EdgeDim, dims.KDim, dtype=int32)
+        p_out_e = zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             z_lsq_coeff_1=z_lsq_coeff_1,
             z_lsq_coeff_2=z_lsq_coeff_2,

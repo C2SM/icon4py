@@ -14,7 +14,7 @@
 import pytest
 from gt4py.next.common import Field
 from gt4py.next.ffront.decorator import field_operator, program
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 
 from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
 
@@ -74,16 +74,16 @@ def test_provide_neighbor_table_global_true_skipvalues(chain):
 
 @field_operator
 def _add(
-    field1: Field[[CellDim, KDim], float], field2: Field[[CellDim, KDim], float]
-) -> Field[[CellDim, KDim], float]:
+    field1: Field[[dims.CellDim, dims.KDim], float], field2: Field[[dims.CellDim, dims.KDim], float]
+) -> Field[[dims.CellDim, dims.KDim], float]:
     return field1 + field2
 
 
 @program
 def with_domain(
-    a: Field[[CellDim, KDim], float],
-    b: Field[[CellDim, KDim], float],
-    result: Field[[CellDim, KDim], float],
+    a: Field[[dims.CellDim, dims.KDim], float],
+    b: Field[[dims.CellDim, dims.KDim], float],
+    result: Field[[dims.CellDim, dims.KDim], float],
     horizontal_start: int,
     horizontal_end: int,
     vertical_start: int,
@@ -93,26 +93,29 @@ def with_domain(
         a,
         b,
         out=result,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
+        },
     )
 
 
 @program
 def without_domain(
-    a: Field[[CellDim, KDim], float],
-    b: Field[[CellDim, KDim], float],
-    result: Field[[CellDim, KDim], float],
+    a: Field[[dims.CellDim, dims.KDim], float],
+    b: Field[[dims.CellDim, dims.KDim], float],
+    result: Field[[dims.CellDim, dims.KDim], float],
 ):
     _add(a, b, out=result)
 
 
 @program
 def with_constant_domain(
-    a: Field[[CellDim, KDim], float],
-    b: Field[[CellDim, KDim], float],
-    result: Field[[CellDim, KDim], float],
+    a: Field[[dims.CellDim, dims.KDim], float],
+    b: Field[[dims.CellDim, dims.KDim], float],
+    result: Field[[dims.CellDim, dims.KDim], float],
 ):
-    _add(a, b, out=result, domain={CellDim: (0, 3), KDim: (1, 8)})
+    _add(a, b, out=result, domain={dims.CellDim: (0, 3), dims.KDim: (1, 8)})
 
 
 @pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])

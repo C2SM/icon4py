@@ -15,7 +15,7 @@ import pytest
 from numpy import int32
 
 from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     constant_field,
@@ -61,15 +61,15 @@ class TestHflxLimiterMoStencil02(StencilTest):
     @pytest.fixture()
     def input_data(self, grid):
         hi_bound, lo_bound = 3, 1
-        refin_ctrl = constant_field(grid, 2, CellDim, dtype=int32)
-        p_cc = random_field(grid, CellDim, KDim)
-        z_tracer_new_low_in = random_field(grid, CellDim, KDim)
-        z_tracer_max_in = random_field(grid, CellDim, KDim)
-        z_tracer_min_in = random_field(grid, CellDim, KDim)
+        refin_ctrl = constant_field(grid, 2, dims.CellDim, dtype=int32)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_new_low_in = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max_in = random_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min_in = random_field(grid, dims.CellDim, dims.KDim)
 
-        z_tracer_new_low_out = zero_field(grid, CellDim, KDim)
-        z_tracer_max_out = zero_field(grid, CellDim, KDim)
-        z_tracer_min_out = zero_field(grid, CellDim, KDim)
+        z_tracer_new_low_out = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_max_out = zero_field(grid, dims.CellDim, dims.KDim)
+        z_tracer_min_out = zero_field(grid, dims.CellDim, dims.KDim)
 
         return dict(
             refin_ctrl=refin_ctrl,

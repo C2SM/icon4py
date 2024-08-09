@@ -17,7 +17,7 @@ import pytest
 from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
     hflux_ffsl_hybrid_stencil_02,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 
 
@@ -39,9 +39,9 @@ class TestHfluxFfslHybridStencil02(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_out_e_hybrid_2 = random_field(grid, EdgeDim, KDim)
-        p_mass_flx_e = random_field(grid, EdgeDim, KDim)
-        z_dreg_area = random_field(grid, EdgeDim, KDim)
+        p_out_e_hybrid_2 = random_field(grid, dims.EdgeDim, dims.KDim)
+        p_mass_flx_e = random_field(grid, dims.EdgeDim, dims.KDim)
+        z_dreg_area = random_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             p_mass_flx_e=p_mass_flx_e,
             z_dreg_area=z_dreg_area,

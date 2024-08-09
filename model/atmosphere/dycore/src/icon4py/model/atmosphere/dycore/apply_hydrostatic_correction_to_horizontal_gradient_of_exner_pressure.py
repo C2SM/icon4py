@@ -15,8 +15,7 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
@@ -25,7 +24,7 @@ from icon4py.model.common.type_alias import vpfloat
 def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[vpfloat],
-    z_hydro_corr: Field[[EdgeDim], vpfloat],
+    z_hydro_corr: Field[[dims.EdgeDim], vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_22."""
@@ -37,7 +36,7 @@ def _apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
 def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
     ipeidx_dsl: fa.EdgeKField[bool],
     pg_exdist: fa.EdgeKField[vpfloat],
-    z_hydro_corr: Field[[EdgeDim], vpfloat],
+    z_hydro_corr: Field[[dims.EdgeDim], vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
@@ -51,7 +50,7 @@ def apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
         z_gradh_exner,
         out=z_gradh_exner,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
