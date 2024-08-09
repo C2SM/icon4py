@@ -272,6 +272,29 @@ program solve_nh_simulation
     integer(c_int), dimension(:, :, :), allocatable :: vertoffset_gradp
     real(c_double), dimension(:, :, :), allocatable :: zdiff_gradp
 
+   !$acc enter data create (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
+   !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
+   !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
+   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+   !$acc rho_now, rho_new, &
+
+   !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+   !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+   !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+   !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
+
+
 
    ! Allocate arrays
    allocate(vct_a(num_levels))
@@ -375,8 +398,30 @@ program solve_nh_simulation
    allocate(vertoffset_gradp(num_edges, num_e2c, num_levels))
    allocate(zdiff_gradp(num_edges, num_e2c, num_levels))
 
+
+    ! The vct_a array must be set to the same values as the ones in ICON.
+    ! It represents the reference heights of vertical levels in meters, and many key vertical indices are derived from it.
+    ! Accurate computation of bounds relies on using the same vct_a values as those in ICON.
+
+   vct_a = (/ 23000.0, 20267.579776144084, 18808.316862872744, 17645.20947843258, &
+          16649.573524156993, 15767.598849006221, 14970.17804229092, 14239.283693028447, &
+          13562.75820630252, 12931.905058984285, 12340.22824884565, 11782.711681133735, &
+          11255.378878851721, 10755.009592797565, 10278.949589989745, 9824.978499468381, &
+          9391.215299185755, 8976.0490382992, 8578.086969013575, 8196.11499008041, &
+          7829.066987285794, 7476.0007272129105, 7136.078660578203, 6808.552460051288, &
+          6492.750437928688, 6188.067212417723, 5893.955149722682, 5609.917223280037, &
+          5335.501014932097, 5070.293644636082, 4813.9174616536775, 4566.0263653241045, &
+          4326.302650484456, 4094.4542934937413, 3870.212611174545, 3653.3302379273473, &
+          3443.5793766239703, 3240.750287267658, 3044.649984289428, 2855.101119099911, &
+          2671.9410294241347, 2495.0209412555105, 2324.2053131841913, 2159.371316580089, &
+          2000.4084488403732, 1847.2182808658658, 1699.7143443769428, 1557.8221699649202, &
+          1421.479493379662, 1290.63665617212, 1165.2572384824416, 1045.3189781024735, &
+          930.8150535208842, 821.7558437251436, 718.1713313259359, 620.1144009054101, &
+          527.6654250683475, 440.93877255014786, 360.09231087410603, 285.34182080238656, &
+          216.98400030452174, 155.43579225710877, 101.30847966961008, 55.56948426298202, &
+          20.00000000000001, 0.0 /)
+
    ! Fill arrays with random numbers
-   call fill_random_1d(vct_a, 0.0_c_double, 75000.0_c_double)
    call fill_random_1d(rayleigh_w, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(tangent_orientation, 0.0_c_double, 1.0_c_double)
    call fill_random_1d(nudgecoeff_e, 0.0_c_double, 1.0_c_double)
@@ -393,6 +438,7 @@ program solve_nh_simulation
    call fill_random_1d_bool(mask_prog_halo_c)
    call fill_random_1d_bool(c_owner_mask)
    call fill_random_1d_bool(bdy_halo_c)
+
 
    call fill_random_2d(theta_ref_mc, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(exner_pr, 0.0_c_double, 1.0_c_double)
@@ -473,9 +519,34 @@ program solve_nh_simulation
    call fill_random_2d(rho_ic, 0.0_c_double, 1.0_c_double)
    call fill_random_2d(ddt_exner_phy, 0.0_c_double, 1.0_c_double)
 
+
+
    ! For 3D arrays
    call fill_random_3d(zdiff_gradp, 0.0_c_double, 1.0_c_double)
    call fill_random_3d_int(vertoffset_gradp, 0, 1)
+
+   !$acc data copyin (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
+   !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
+   !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
+   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+   !$acc rho_now, rho_new, &
+
+   !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+   !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+   !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+   !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
+
 
    ! Call solve_nh_init
    call solve_nh_init(vct_a, nflat_gradp, nflatlev, num_levels, mean_cell_area, &
@@ -530,6 +601,52 @@ program solve_nh_simulation
       call exit(1)
   end if
 
+   !$acc update host (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+   !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+   !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+   !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
+   !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
+   !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
+   !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+   !$acc rho_now, rho_new, &
+
+   !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+   !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+   !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+   !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+   !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+   !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+   !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+   !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+   !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+   !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
 
    print *, "passed"
+
+  !$acc end data
+  !$acc exit data delete (vct_a, rayleigh_w, tangent_orientation, inverse_primal_edge_lengths, &
+  !$acc inv_dual_edge_length, inv_vert_vert_length, edge_areas, f_e, cell_areas, vwind_expl_wgt, &
+  !$acc vwind_impl_wgt, scalfac_dd3d, nudgecoeff_e, &
+  !$acc hmask_dd3d, bdy_halo_c, mask_prog_halo_c, c_owner_mask, & ! L 191
+
+  !$acc theta_ref_mc, exner_pr, exner_dyn_incr, wgtfac_c, e_bln_c_s, &
+  !$acc geofac_div, geofac_grg_x, geofac_grg_y, geofac_n2s, rbf_coeff_1, rbf_coeff_2, &
+  !$acc w_now, w_new, vn_now, vn_new, exner_now, exner_new, theta_v_now, theta_v_new, & ! L 213
+  !$acc rho_now, rho_new, &
+
+  !$acc dual_normal_cell_x, dual_normal_cell_y, dual_normal_vert_x, dual_normal_vert_y, &
+  !$acc primal_normal_cell_x, primal_normal_cell_y, primal_normal_vert_x, primal_normal_vert_y, &
+  !$acc exner_exfac, exner_ref_mc, wgtfacq_c_dsl, inv_ddqz_z_full, d_exner_dz_ref_ic, & ! L 226
+  !$acc ddqz_z_half, theta_ref_ic, d2dexdz2_fac1_mc, d2dexdz2_fac2_mc, rho_ref_me, theta_ref_me, &
+  !$acc ddxn_z_full, pg_exdist, ddqz_z_full_e, ddxt_z_full, wgtfac_e, wgtfacq_e, coeff1_dwdz, &
+  !$acc coeff2_dwdz, grf_tend_rho, grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, grf_tend_vn, & ! L 246
+
+  !$acc vn_ie, vt, mass_flx_me, mass_flx_ic, vn_traj, ddt_vn_apc_ntl1, ddt_vn_apc_ntl2, ddt_w_adv_ntl1, &
+  !$acc ddt_w_adv_ntl2, c_lin_e, pos_on_tplane_e_1, pos_on_tplane_e_2, rbf_vec_coeff_e, w_concorr_c, &
+  !$acc theta_v_ic, rho_ref_mc, rho_ic, e_flx_avg, ddt_exner_phy, ipeidx_dsl, coeff_gradekin, &
+  !$acc geofac_grdiv, geofac_rot, c_intp, vertoffset_gradp, zdiff_gradp)
+
+
 end program solve_nh_simulation

@@ -15,7 +15,6 @@ import dataclasses
 from typing import Final, Optional
 
 import gt4py.next as gtx
-from gt4py.next.ffront.fbuiltins import int32
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
 import icon4py.model.common.constants as constants
@@ -313,7 +312,7 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        htop_moist_proc: float = 22500.0, 
+        htop_moist_proc: float = 22500.0,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -799,7 +798,8 @@ class SolveNonhydro:
             k_field=self.k_field,
             nlev=self.grid.num_levels,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,  # todo: num_levels + 1 seems to break fortran integration test
+            vertical_end=self.grid.num_levels
+            + 1,  # TODO: num_levels + 1 seems to break fortran integration test
             offset_provider={},
         )
 
@@ -861,7 +861,8 @@ class SolveNonhydro:
             horizontal_start=start_cell_lb_plus2,
             horizontal_end=end_cell_halo,
             vertical_start=0,
-            vertical_end=self.grid.num_levels,  # todo: num_levels + 1 seems to break fortran integration test
+            vertical_end=self.grid.num_levels
+            + 1,  # TODO: num_levels + 1 seems to break fortran integration test
             offset_provider=self.grid.offset_providers,
         )
 
@@ -1052,9 +1053,7 @@ class SolveNonhydro:
             )
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
-        hydro_corr_horizontal = gtx.as_field(
-            (EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
-        )
+        hydro_corr_horizontal = gtx.as_field((EdgeDim,), self.z_hydro_corr.ndarray[:, lowest_level])
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             apply_hydrostatic_correction_to_horizontal_gradient_of_exner_pressure(
@@ -1393,9 +1392,9 @@ class SolveNonhydro:
                 horizontal_start=start_cell_lb,
                 horizontal_end=end_cell_nudging_minus1,
                 vertical_start=0,
-                vertical_end=int32(
-                    self.grid.num_levels
-                ),  # todo: num_levels + 1 seems to break fortran integration test
+                vertical_end=gtx.int32(
+                    self.grid.num_levels + 1
+                ),  # TODO: num_levels + 1 seems to break fortran integration test
                 offset_provider={},
             )
 

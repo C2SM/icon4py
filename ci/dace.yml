@@ -2,7 +2,7 @@ include:
   - local: 'ci/base.yml'
 
 variables:
-  DACE_VERSION: "0.16.1"
+  DACE_VERSION: "d0db188db"
 
 test_model_stencils:
   extends: .test_template

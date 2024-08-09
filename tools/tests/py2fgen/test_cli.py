@@ -263,3 +263,20 @@ def test_py2fgen_compilation_and_execution_dycore(cli_runner, samples_path):
         "test_dycore",
         limited_area=True,
     )
+
+
+@pytest.mark.skipif(os.getenv("PY2F_GPU_TESTS") is None, reason="GPU tests only run on CI.")
+def test_py2fgen_compilation_and_execution_dycore_gpu(cli_runner, samples_path):
+    run_test_case(
+        cli_runner,
+        "icon4pytools.py2fgen.wrappers.dycore",
+        "solve_nh_init,solve_nh_run,profile_enable,profile_disable",
+        "dycore_plugin",
+        "GPU",
+        samples_path,
+        "test_dycore",
+        os.environ["NVFORTRAN_COMPILER"],
+        ("-acc", "-Minfo=acc"),
+        limited_area=True,
+        env_vars={"ICON4PY_BACKEND": "GPU"},
+    )
