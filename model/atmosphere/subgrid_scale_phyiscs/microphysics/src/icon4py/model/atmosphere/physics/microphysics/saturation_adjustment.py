@@ -17,13 +17,6 @@ Changes.
 - Only implemented Tetens (ipsat = 1). Dropped Murphy-Koop.
 - Harmonized name of constants
 - Only implementend gpu version. Maybe further optimizations possible for CPU (check original code)
-
-TODO:
-1. Implement Newtonian iteration! -> Needs fixted-size for loop feature in GT4Py
-
-Comment from FORTRAN version:
-- Suggested by U. Blahak: Replace pres_sat_water, pres_sat_ice and spec_humi by
-lookup tables in mo_convect_tables. Bit incompatible change!
 """
 import dataclasses
 from typing import Final

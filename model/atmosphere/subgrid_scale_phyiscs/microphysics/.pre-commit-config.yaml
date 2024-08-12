@@ -6,7 +6,7 @@ default_stages: [commit, push]
 default_language_version:
   python: python3.10
 minimum_pre_commit_version: 2.20.0
-files: "model/atmosphere/physics/microphysics/.*"
+files: "model/atmosphere/subgrid_scale_physics/microphysics/.*"
 
 repos:
 - repo: meta
@@ -71,7 +71,7 @@ repos:
   - id: mypy
     name: mypy static type checker
     entry: bash -c 'echo mypy temporarily disabled'
-            #entry: bash -c 'cd model/atmosphere/physics/microphysics; mypy src/' --
+            #entry: bash -c 'cd model/atmosphere/subgrid_scale_physics/microphysics; mypy src/' --
     language: system
     types_or: [python, pyi]
     always_run: true

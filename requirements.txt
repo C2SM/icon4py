@@ -4,7 +4,7 @@
 ./model/atmosphere/dycore
 ./model/atmosphere/diffusion
 ./model/atmosphere/advection
-./model/atmosphere/physics/microphysics
+./model/atmosphere/subgrid_scale_physics/microphysics
 ./model/common[io]
 ./model/driver
 ./model/physics/microphysics

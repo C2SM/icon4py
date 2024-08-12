@@ -5,7 +5,7 @@ git+https://github.com/ghex-org/GHEX.git@master#subdirectory=bindings/python
 -e ./model/atmosphere/dycore
 -e ./model/atmosphere/advection
 -e ./model/atmosphere/diffusion
--e ./model/atmosphere/physics/microphysics
+-e ./model/atmosphere/subgrid_scale_physics/microphysics
 -e ./model/driver
 
 # icon4pytools

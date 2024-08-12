@@ -28,7 +28,7 @@ dependencies = [
 description = "ICON microphysics."
 dynamic = ['version']
 license = {file = "LICENSE"}
-name = "icon4py-atmosphere-physics-microphysics"
+name = "icon4py-atmosphere-subgrid_scale_physics-microphysics"
 readme = "README.md"
 requires-python = ">=3.10"
 
@@ -133,7 +133,7 @@ lines-after-imports = 2
 max-complexity = 15
 
 [tool.setuptools.dynamic]
-version = {attr = 'icon4py.model.atmosphere.physics.microphysics.__init__.__version__'}
+version = {attr = 'icon4py.model.atmosphere.subgrid_scale_physics.microphysics.__init__.__version__'}
 
 [tool.setuptools.package-data]
-'icon4py.model.atmosphere.physics.microphysics' = ['py.typed']
+'icon4py.model.atmosphere.subgrid_scale_physics.microphysics' = ['py.typed']

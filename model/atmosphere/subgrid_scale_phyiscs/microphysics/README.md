@@ -2,7 +2,7 @@
 
 ## Description
 
-Port of ICON microphysics module to gt4py.
+Port of ICON microphysics module 'saturation_adjustment' to gt4py.   
 
 ## Installation instructions
 

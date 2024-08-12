@@ -38,7 +38,7 @@ repos:
 
       - id: run-atmosphere-microphysics-precommit
         name: Run Model Atmosphere Microphysics Pre-commit
-        entry: pre-commit run --config model/atmosphere/physics/microphysics/.pre-commit-config.yaml --all-files
+        entry: pre-commit run --config model/atmosphere/subgrid_scale_physics/microphysics/.pre-commit-config.yaml --all-files
         language: system
         pass_filenames: false
         always_run: true
