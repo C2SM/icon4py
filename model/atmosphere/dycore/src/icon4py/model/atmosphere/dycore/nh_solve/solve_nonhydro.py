@@ -809,6 +809,7 @@ class SolveNonhydro:
 
         """
         :meth:`predictor_stencils_2_3()<icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program.predictor_stencils_2_3>`
+        ========================================================================================================================
 
         z_exner_ex_pr (0:nlev):
             Compute the temporal extrapolation of perturbed exner function at
@@ -834,7 +835,6 @@ class SolveNonhydro:
               do what the name suggests: it also updates exner_pr, which is not
               what the name implies.
         """
-        import pdb; pdb.set_trace()
 
         nhsolve_prog.predictor_stencils_2_3(
             exner_exfac=self.metric_state_nonhydro.exner_exfac,
@@ -853,7 +853,8 @@ class SolveNonhydro:
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
             """
-            ``nhsolve_prog.predictor_stencils_4_5_6()``
+            :meth:`predictor_stencils_4_5_6()<icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program.predictor_stencils_4_5_6>`
+            ============================================================================================================================
 
             z_exner_ic (1 or flat_lev:nlev):
                 Linearly interpolate the temporal extrapolation of perturbed

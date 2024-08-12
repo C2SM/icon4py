@@ -58,6 +58,8 @@ class FullMethodDocumenter(autodoc.MethodDocumenter):
 
     objtype = 'full'
 
+    priority = autodoc.MethodDocumenter.priority - 1
+
     def get_doc(self):
 
         docstrings = re.findall(r'"""(.*?)"""', inspect.getsource(self.object), re.DOTALL)
