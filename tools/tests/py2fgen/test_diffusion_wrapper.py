@@ -108,8 +108,8 @@ def test_diffusion_wrapper_interface():
     mask_hdiff = mask_hdiff < 0.5
 
     # input data - gt4py fields
-    theta_ref_mc = as_field((dims.dims.CellDim, dims.KDim), theta_ref_mc)
-    wgtfac_c = as_field((dims.dims.CellDim, dims.KDim), wgtfac_c)
+    theta_ref_mc = as_field((dims.CellDim, dims.KDim), theta_ref_mc)
+    wgtfac_c = as_field((dims.CellDim, dims.KDim), wgtfac_c)
     vct_a = as_field((dims.KDim,), vct_a)
     e_bln_c_s = as_field((dims.CellDim, dims.C2EDim), e_bln_c_s)
     geofac_div = as_field((dims.CellDim, dims.C2EDim), geofac_div)
