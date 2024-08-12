@@ -28,7 +28,7 @@ KDim = dims.KDim
 
 @field_operator
 def _cell_2_edge_interpolation(
-    in_field: fa.CellKField[vpfloat], coeff: Field[[dims.EdgeDim, E2CDim], vpfloat]
+    in_field: fa.CellKField[vpfloat], coeff: Field[[dims.EdgeDim, dims.E2CDim], vpfloat]
 ) -> fa.EdgeKField[vpfloat]:
     """
     Interpolate a Cell Field to Edges.
@@ -44,7 +44,7 @@ def _cell_2_edge_interpolation(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def cell_2_edge_interpolation(
     in_field: fa.CellKField[vpfloat],
-    coeff: Field[[dims.EdgeDim, E2CDim], wpfloat],
+    coeff: Field[[dims.EdgeDim, dims.E2CDim], wpfloat],
     out_field: fa.EdgeKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
