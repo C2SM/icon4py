@@ -14,7 +14,7 @@
 
 import pytest
 
-from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment
+from icon4py.model.atmosphere.subgrid_scale_physics.microphysics import saturation_adjustment
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
