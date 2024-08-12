@@ -66,7 +66,7 @@ class ImmersedBoundaryMethod:
         diagnostic_state: states_utils.DiagnosticStateNonHydro,
         prognostic_state: prog_state.PrognosticState,
     ):
-        log.info("IBM set BCs ")
+        log.info("IBM set BCs...")
 
         # cell centre variables
         prognostic_state.w = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)
@@ -74,3 +74,4 @@ class ImmersedBoundaryMethod:
 
         # edge variables
         prognostic_state.vn = gtx.where(self.edge_mask, self.test_value, prognostic_state.vn)
+        log.info("IBM set BCs DONE")

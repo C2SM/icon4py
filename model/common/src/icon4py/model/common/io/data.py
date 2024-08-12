@@ -56,12 +56,6 @@ PROGNOSTIC_CF_ATTRIBUTES: Final[dict[str, FieldMetaData]] = dict(
         units="m s-1",
         icon_var_name="vn",
     ),
-    tangential_velocity=dict(
-        standard_name="tangential_velocity",
-        long_name="velocity tangential to edge",
-        units="m s-1",
-        icon_var_name="vt",
-    ),
 )
 
 #: CF attributes of diagnostic variables
@@ -77,6 +71,12 @@ DIAGNOSTIC_CF_ATTRIBUTES: Final[dict[str, FieldMetaData]] = dict(
         long_name="northward wind component",
         units="m s-1",
         icon_var_name="v",
+    ),
+    tangential_velocity=dict(
+        standard_name="tangential_velocity",
+        long_name="velocity tangential to edge",
+        units="m s-1",
+        icon_var_name="vt",
     ),
 )
 

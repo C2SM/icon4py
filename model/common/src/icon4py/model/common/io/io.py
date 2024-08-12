@@ -385,3 +385,35 @@ class FieldGroupMonitor(monitor.Monitor):
 def generate_name(fname: str, counter: int) -> str:
     stem = fname.split(".")[0]
     return f"{stem}_{counter:0>4}.nc"
+
+
+import xarray as xr
+from . import data
+from icon4py.model.common.states import prognostic_state as prognostics
+from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+def model_state(
+        p_st: prognostics.PrognosticState,
+        d_st: solve_nh_states.DiagnosticStateNonHydro
+        ) -> dict[str, xr.DataArray]:
+    return {
+        "air_density": data.to_data_array(p_st.rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
+        "exner_function": data.to_data_array(
+            p_st.exner, data.PROGNOSTIC_CF_ATTRIBUTES["exner_function"]
+        ),
+        "theta_v": data.to_data_array(
+            p_st.theta_v,
+            data.PROGNOSTIC_CF_ATTRIBUTES["virtual_potential_temperature"],
+            is_on_interface=False,
+        ),
+        "upward_air_velocity": data.to_data_array(
+            p_st.w,
+            data.PROGNOSTIC_CF_ATTRIBUTES["upward_air_velocity"],
+            is_on_interface=True,
+        ),
+        "normal_velocity": data.to_data_array(
+            p_st.vn, data.PROGNOSTIC_CF_ATTRIBUTES["normal_velocity"],
+        ),
+        "tangential_velocity": data.to_data_array(
+            d_st.vt, data.DIAGNOSTIC_CF_ATTRIBUTES["tangential_velocity"],
+        ),
+    }

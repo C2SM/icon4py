@@ -170,7 +170,9 @@ class TimeLoop:
             )
 
         # Store initial condition
-        self.io_monitor.store(prognostic_state_list[self._now], self._simulation_date)
+        log.info("storing output...")
+        self.io_monitor.store(io.model_state(prognostic_state_list[self._now], solve_nonhydro_diagnostic_state), self._simulation_date)
+        log.info("storing output...DONE")
 
         log.info(
             f"starting real time loop for dtime={self.dtime_in_seconds} n_timesteps={self._n_time_steps}"
@@ -201,7 +203,9 @@ class TimeLoop:
             )
             timer.capture()
 
-            self.io_monitor.store(prognostic_state_list[self._now], self._simulation_date)
+            log.info("storing output...")
+            self.io_monitor.store(io.model_state(prognostic_state_list[self._now], solve_nonhydro_diagnostic_state), self._simulation_date)
+            log.info("storing output...DONE")
 
             # TODO (Chia Rui): modify n_substeps_var if cfl condition is not met. (set_dyn_substeps subroutine)
 

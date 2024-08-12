@@ -178,6 +178,7 @@ def read_config(
             timesteps_per_file=1,
             variables=[
                 "air_density",
+                "theta_v",
                 "normal_velocity",
                 "tangential_velocity",
                 "upward_air_velocity",
@@ -193,7 +194,7 @@ def read_config(
     def _gauss3d_config():
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=4.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
+            end_date=datetime.datetime(1, 1, 1, 0, 0, 16),
             apply_initial_stabilization=False,
             n_substeps=5,
         )
