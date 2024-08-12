@@ -20,6 +20,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @scan_operator(axis=dims.KDim, forward=False, init=wpfloat("0.0"))
 def _solve_tridiagonal_matrix_for_w_back_substitution_scan(
     w_state: wpfloat, z_q: vpfloat, w: wpfloat
@@ -42,7 +47,7 @@ def solve_tridiagonal_matrix_for_w_back_substitution(
         w,
         out=w,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

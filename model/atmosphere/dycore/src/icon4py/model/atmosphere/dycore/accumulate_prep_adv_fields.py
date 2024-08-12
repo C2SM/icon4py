@@ -20,6 +20,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _accumulate_prep_adv_fields(
     z_vn_avg: fa.EdgeKField[wpfloat],
@@ -54,7 +59,7 @@ def accumulate_prep_adv_fields(
         r_nsubsteps,
         out=(vn_traj, mass_flx_me),
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

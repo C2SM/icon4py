@@ -39,6 +39,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
     levelmask: Field[[dims.KDim], bool],
@@ -133,7 +138,7 @@ def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
         dtime,
         out=ddt_vn_apc,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

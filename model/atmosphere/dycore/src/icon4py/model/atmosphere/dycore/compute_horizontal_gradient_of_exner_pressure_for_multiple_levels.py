@@ -22,6 +22,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
@@ -83,7 +88,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_multiple_levels(
         z_dexner_dz_c_2,
         out=z_gradh_exner,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

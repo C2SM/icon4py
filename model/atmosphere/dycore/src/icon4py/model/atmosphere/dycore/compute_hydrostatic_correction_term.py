@@ -22,6 +22,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_hydrostatic_correction_term(
     theta_v: fa.CellKField[wpfloat],
@@ -89,7 +94,7 @@ def compute_hydrostatic_correction_term(
         grav_o_cpd,
         out=z_hydro_corr,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

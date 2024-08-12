@@ -26,6 +26,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
     ddqz_z_half: fa.CellKField[vpfloat],
@@ -42,7 +47,7 @@ def _compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
 
     cfl_clipping = where(
         abs(z_w_con_c) > cfl_w_limit * ddqz_z_half,
-        broadcast(True, (dims.CellDim, dims.KDim)),
+        broadcast(True, (CellDim, KDim)),
         False,
     )
 
@@ -84,7 +89,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         dtime,
         out=(cfl_clipping, vcfl, z_w_con_c),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

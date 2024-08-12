@@ -20,6 +20,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _add_analysis_increments_to_vn(
     vn_incr: fa.EdgeKField[vpfloat],
@@ -49,7 +54,7 @@ def add_analysis_increments_to_vn(
         iau_wgt_dyn,
         out=vn,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

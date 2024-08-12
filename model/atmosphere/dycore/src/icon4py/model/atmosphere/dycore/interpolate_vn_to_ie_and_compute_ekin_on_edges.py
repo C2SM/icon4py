@@ -24,6 +24,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _interpolate_vn_to_ie_and_compute_ekin_on_edges(
     wgtfac_e: fa.EdgeKField[vpfloat],
@@ -57,7 +62,7 @@ def interpolate_vn_to_ie_and_compute_ekin_on_edges(
         vt,
         out=(vn_ie, z_kin_hor_e),
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

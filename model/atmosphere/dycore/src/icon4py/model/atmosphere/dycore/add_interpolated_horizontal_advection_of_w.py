@@ -21,6 +21,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _add_interpolated_horizontal_advection_of_w(
     e_bln_c_s: Field[[dims.CEDim], wpfloat],
@@ -49,7 +54,7 @@ def add_interpolated_horizontal_advection_of_w(
         ddt_w_adv,
         out=ddt_w_adv,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

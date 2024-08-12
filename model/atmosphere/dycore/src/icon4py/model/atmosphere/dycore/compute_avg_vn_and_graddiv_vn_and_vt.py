@@ -23,12 +23,17 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_avg_vn_and_graddiv_vn_and_vt(
     e_flx_avg: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
-    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
 ) -> tuple[
     fa.EdgeKField[wpfloat],
     fa.EdgeKField[vpfloat],
@@ -43,10 +48,10 @@ def _compute_avg_vn_and_graddiv_vn_and_vt(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_avg_vn_and_graddiv_vn_and_vt(
-    e_flx_avg: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
+    e_flx_avg: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     vn: fa.EdgeKField[wpfloat],
-    geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
-    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     z_vn_avg: fa.EdgeKField[wpfloat],
     z_graddiv_vn: fa.EdgeKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
@@ -62,7 +67,7 @@ def compute_avg_vn_and_graddiv_vn_and_vt(
         rbf_vec_coeff_e,
         out=(z_vn_avg, z_graddiv_vn, vt),
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

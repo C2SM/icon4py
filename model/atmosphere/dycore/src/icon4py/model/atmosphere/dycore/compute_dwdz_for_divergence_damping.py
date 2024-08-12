@@ -21,6 +21,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_dwdz_for_divergence_damping(
     inv_ddqz_z_full: fa.CellKField[vpfloat],
@@ -53,7 +58,7 @@ def compute_dwdz_for_divergence_damping(
         w_concorr_c,
         out=z_dwdz_dd,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

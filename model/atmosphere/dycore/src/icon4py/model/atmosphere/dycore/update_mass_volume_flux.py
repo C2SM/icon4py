@@ -20,6 +20,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _update_mass_volume_flux(
     z_contr_w_fl_l: fa.CellKField[wpfloat],
@@ -61,7 +66,7 @@ def update_mass_volume_flux(
         r_nsubsteps,
         out=(mass_flx_ic, vol_flx_ic),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

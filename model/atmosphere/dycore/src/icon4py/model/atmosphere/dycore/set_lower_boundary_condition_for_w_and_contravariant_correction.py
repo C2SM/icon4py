@@ -23,6 +23,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _set_lower_boundary_condition_for_w_and_contravariant_correction(
     w_concorr_c: fa.CellKField[vpfloat],
@@ -49,7 +54,7 @@ def set_lower_boundary_condition_for_w_and_contravariant_correction(
         w_concorr_c,
         out=(w_nnew, z_contr_w_fl_l),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -20,6 +20,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _update_dynamical_exner_time_increment(
     exner: fa.CellKField[wpfloat],
@@ -55,7 +60,7 @@ def update_dynamical_exner_time_increment(
         dtime,
         out=exner_dyn_incr,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

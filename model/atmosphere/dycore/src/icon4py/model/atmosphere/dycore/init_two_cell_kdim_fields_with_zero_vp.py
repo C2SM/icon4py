@@ -23,6 +23,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _init_two_cell_kdim_fields_with_zero_vp() -> (
     tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]
@@ -43,7 +48,7 @@ def init_two_cell_kdim_fields_with_zero_vp(
     _init_two_cell_kdim_fields_with_zero_vp(
         out=(cell_kdim_field_with_zero_vp_1, cell_kdim_field_with_zero_vp_2),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

@@ -21,6 +21,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_graddiv2_of_vn(
     geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
@@ -48,7 +53,7 @@ def compute_graddiv2_of_vn(
         z_graddiv_vn,
         out=z_graddiv2_vn,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

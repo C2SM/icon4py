@@ -19,6 +19,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _extrapolate_temporally_exner_pressure(
     exner_exfac: fa.CellKField[vpfloat],
@@ -55,7 +60,7 @@ def extrapolate_temporally_exner_pressure(
         exner_pr,
         out=(z_exner_ex_pr, exner_pr),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

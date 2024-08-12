@@ -21,6 +21,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _update_density_exner_wind(
     rho_now: fa.CellKField[wpfloat],
@@ -69,7 +74,7 @@ def update_density_exner_wind(
         dtime,
         out=(rho_new, exner_new, w_new),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

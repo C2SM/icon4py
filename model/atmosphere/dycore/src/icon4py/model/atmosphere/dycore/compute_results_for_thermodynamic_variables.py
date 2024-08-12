@@ -21,6 +21,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_results_for_thermodynamic_variables(
     z_rho_expl: fa.CellKField[wpfloat],
@@ -105,7 +110,7 @@ def compute_results_for_thermodynamic_variables(
         cvd_o_rd,
         out=(rho_new, exner_new, theta_v_new),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

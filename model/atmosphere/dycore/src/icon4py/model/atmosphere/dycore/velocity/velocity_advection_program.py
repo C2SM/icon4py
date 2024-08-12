@@ -44,6 +44,12 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @gtx.field_operator
 def _fused_stencils_4_5(
     vn: fa.EdgeKField[float],
@@ -110,8 +116,8 @@ def fused_stencils_4_5(
         nlev,
         out=(z_w_concorr_me, vn_ie, z_vt_ie, z_kin_hor_e),
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -131,8 +137,8 @@ def extrapolate_at_top(
         vn,
         out=vn_ie,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -189,8 +195,8 @@ def fused_stencils_9_10(
         nlev,
         out=(local_z_w_concorr_mc, w_concorr_c),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -242,8 +248,8 @@ def fused_stencils_11_to_13(
         nlev,
         out=local_z_w_con_c,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -289,8 +295,8 @@ def fused_stencil_14(
         dtime,
         out=(local_cfl_clipping, local_vcfl, local_z_w_con_c),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -335,7 +341,7 @@ def fused_stencils_16_to_17(
         coeff2_dwdz,
         out=ddt_w_adv,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
