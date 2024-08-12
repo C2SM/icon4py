@@ -39,6 +39,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def compute_interface_vt_vn_and_kinetic_energy(
     vn: fa.EdgeKField[wpfloat],
@@ -177,7 +182,7 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
         lvn_only,
     )
 
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
+    k = broadcast(k, (EdgeDim, KDim))
 
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
@@ -235,7 +240,7 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
     fa.EdgeKField[vpfloat],
     fa.EdgeKField[vpfloat],
 ]:
-    k = broadcast(k, (dims.EdgeDim, dims.KDim))
+    k = broadcast(k, (EdgeDim, KDim))
 
     z_w_v = _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(w, c_intp)
 
@@ -470,8 +475,8 @@ def fused_velocity_advection_stencil_1_to_7(
         halo_1,
         out=(vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w),
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end - 1),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end - 1),
         },
     )
     _fused_velocity_advection_stencil_1_to_7_restricted(
@@ -502,7 +507,7 @@ def fused_velocity_advection_stencil_1_to_7(
         halo_1,
         out=vn_ie,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_end - 1, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_end - 1, vertical_end),
         },
     )

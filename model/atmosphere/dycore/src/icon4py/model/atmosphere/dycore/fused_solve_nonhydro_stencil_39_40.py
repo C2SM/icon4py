@@ -25,6 +25,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _fused_solve_nonhydro_stencil_39_40(
     e_bln_c_s: Field[[dims.CEDim], wpfloat],
@@ -70,7 +75,7 @@ def fused_solve_nonhydro_stencil_39_40(
         nflatlev,
         out=w_concorr_c,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

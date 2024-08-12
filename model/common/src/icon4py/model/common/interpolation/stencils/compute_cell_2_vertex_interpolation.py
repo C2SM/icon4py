@@ -20,6 +20,11 @@ from icon4py.model.common import dimension as dims
 from icon4py.model.common.dimension import V2C, V2CDim
 
 
+# TODO: this will have to be removed once domain allows for imports
+VertexDim = dims.VertexDim
+KDim = dims.KDim
+
+
 @gtx.field_operator
 def _compute_cell_2_vertex_interpolation(
     cell_in: gtx.Field[[dims.CellDim, dims.KDim], types.wpfloat],
@@ -56,7 +61,7 @@ def compute_cell_2_vertex_interpolation(
         c_int,
         out=vert_out,
         domain={
-            dims.VertexDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

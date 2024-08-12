@@ -19,6 +19,10 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+
+
 @field_operator
 def _compute_nudgecoeffs(
     refin_ctrl: fa.EdgeField[int32],
@@ -54,5 +58,5 @@ def compute_nudgecoeffs(
         nudge_efold_width,
         nudge_zone_width,
         out=nudgecoeffs_e,
-        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
+        domain={EdgeDim: (horizontal_start, horizontal_end)},
     )

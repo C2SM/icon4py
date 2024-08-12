@@ -48,7 +48,7 @@ class TestMoAdvectionTrajBtrajComputeO1Dsl(StencilTest):
         p_dthalf: float,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[dims.dims.E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         cell_idx = cell_idx.reshape(e2c.shape)
         cell_blk = cell_blk.reshape(e2c.shape)
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)

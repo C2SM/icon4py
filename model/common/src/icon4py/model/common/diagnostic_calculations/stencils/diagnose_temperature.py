@@ -20,6 +20,12 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _diagnose_temperature(
     theta_v: fa.CellKField[vpfloat],
@@ -44,7 +50,7 @@ def diagnose_temperature(
         exner,
         out=(temperature),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

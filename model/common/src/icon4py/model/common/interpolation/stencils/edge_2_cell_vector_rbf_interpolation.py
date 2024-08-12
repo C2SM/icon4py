@@ -21,6 +21,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[vpfloat],
@@ -50,7 +55,7 @@ def edge_2_cell_vector_rbf_interpolation(
         ptr_coeff_2,
         out=(p_u_out, p_v_out),
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
