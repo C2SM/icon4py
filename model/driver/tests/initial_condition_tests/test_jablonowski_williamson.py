@@ -14,7 +14,7 @@
 import pytest
 
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.driver import initialization_utils as driver_init
+from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
 
 
 @pytest.mark.datatest
@@ -43,7 +43,7 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = driver_init.model_initialization_jabw(
+    ) = jabw.model_initialization_jabw(
         icon_grid,
         cell_geometry,
         edge_geometry,

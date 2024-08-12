@@ -47,6 +47,7 @@ from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
@@ -61,7 +62,7 @@ class VelocityAdvection:
         interpolation_state: solve_nh_states.InterpolationState,
         vertical_params: v_grid.VerticalGridParams,
         edge_params: h_grid.EdgeParams,
-        owner_mask: gtx.Field[[CellDim], bool],
+        owner_mask: fa.CellField[bool],
     ):
         self._initialized = False
         self.grid: icon_grid.IconGrid = grid
@@ -105,12 +106,12 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
-        z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
-        z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
+        z_w_concorr_me: fa.EdgeKField[float],
+        z_kin_hor_e: fa.EdgeKField[float],
+        z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
-        cell_areas: gtx.Field[[CellDim], float],
+        cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 
@@ -426,11 +427,11 @@ class VelocityAdvection:
         vn_only: bool,
         diagnostic_state: solve_nh_states.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
-        z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
-        z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
+        z_kin_hor_e: fa.EdgeKField[float],
+        z_vt_ie: fa.EdgeKField[float],
         dtime: float,
         ntnd: int,
-        cell_areas: gtx.Field[[CellDim], float],
+        cell_areas: fa.CellField[float],
     ):
         cfl_w_limit, scalfac_exdiff = self._scale_factors_by_dtime(dtime)
 

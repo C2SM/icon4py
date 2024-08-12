@@ -161,7 +161,7 @@ class SaturationAdjustment:
         ncurrent, nnext = 0, 1
         for _ in range(self.config.max_iter):
             if xp.any(self.newton_iteration_mask.ndarray[start_cell_nudging:end_cell_local, 0:self.grid.num_levels]):
-                compute_temperature_by_newton_iteration(
+                update_temperature_by_newton_iteration(
                     diagnostic_state.temperature,
                     tracer_state.qv,
                     prognostic_state.rho,
@@ -284,7 +284,7 @@ def _new_temperature_in_newton_iteration(
 
 
 @gtx.field_operator
-def _compute_temperature_by_newton_iteration(
+def _update_temperature_by_newton_iteration(
     temperature: gtx.Field[[CellDim, KDim], vpfloat],
     qv: gtx.Field[[CellDim, KDim], vpfloat],
     rho: gtx.Field[[CellDim, KDim], vpfloat],
@@ -300,7 +300,7 @@ def _compute_temperature_by_newton_iteration(
     return new_temperature1
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def compute_temperature_by_newton_iteration(
+def update_temperature_by_newton_iteration(
     temperature: gtx.Field[[CellDim, KDim], vpfloat],
     qv: gtx.Field[[CellDim, KDim], vpfloat],
     rho: gtx.Field[[CellDim, KDim], vpfloat],
@@ -313,7 +313,7 @@ def compute_temperature_by_newton_iteration(
     vertical_start: gtx.int32,
     vertical_end: gtx.int32,
 ):
-    _compute_temperature_by_newton_iteration(
+    _update_temperature_by_newton_iteration(
         temperature,
         qv,
         rho,

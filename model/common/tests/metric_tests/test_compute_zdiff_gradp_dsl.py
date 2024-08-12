@@ -30,12 +30,12 @@ from icon4py.model.common.grid.horizontal import (
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
 )
+from icon4py.model.common.metrics.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.metrics.metric_fields import (
     _compute_flat_idx,
     _compute_z_aux2,
     compute_z_mc,
 )
-from icon4py.model.common.metrics.stencils.compute_zdiff_gradp_dsl import compute_zdiff_gradp_dsl
 from icon4py.model.common.test_utils.helpers import (
     dallclose,
     flatten_first_two_dims,

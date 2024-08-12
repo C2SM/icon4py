@@ -23,6 +23,7 @@ GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 JABW_EXPERIMENT = "jabw_R02B04"
+GAUSS3D_EXPERIMENT = "gauss3d_torus"
 WEISMAN_KLEMP_EXPERIMENT = "weisman_klemp_torus"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
@@ -38,6 +39,7 @@ GRID_IDS = {
     GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
     WEISMAN_KLEMP_EXPERIMENT: uuid.UUID("24fe2406-8066-11e8-bc5b-f3dc5af69303"),
 }
 
@@ -65,6 +67,7 @@ DATA_URIS = {
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
+DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
 DATA_URIS_WK = {1: "https://polybox.ethz.ch/index.php/s/pruE9yYGeiuIP6d/download"}
 
 
@@ -77,6 +80,10 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Args: experiment: str: The experiment name.
         Returns: tuple[int, int]: The grid root and level.
     """
+    if "torus" in experiment:
+        # these magic values seem to mark a torus: they are set in all torus grid files.
+        return 0, 2
+
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
         return root, level
