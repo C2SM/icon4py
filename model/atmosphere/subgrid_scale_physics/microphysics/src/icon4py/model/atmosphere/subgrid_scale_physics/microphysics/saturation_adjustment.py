@@ -11,13 +11,7 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-"""
-Changes.
 
-- Only implemented Tetens (ipsat = 1). Dropped Murphy-Koop.
-- Harmonized name of constants
-- Only implementend gpu version. Maybe further optimizations possible for CPU (check original code)
-"""
 import dataclasses
 from typing import Final
 
@@ -131,19 +125,16 @@ class SaturationAdjustment:
     ):
         """
         Adjust saturation at each grid point.
-
-        Synopsis:
         Saturation adjustment condenses/evaporates specific humidity (qv) into/from
         cloud water content (qc) such that a gridpoint is just saturated. Temperature (t)
         is adapted accordingly and pressure adapts itself in ICON.
 
-        Method:
         Saturation adjustment at constant total density (adjustment of T and p accordingly)
         assuming chemical equilibrium of water and vapor. For the heat capacity of
         of the total system (dry air, vapor, and hydrometeors) the value of dry air
         is taken, which is a common approximation and introduces only a small error.
 
-        Originally inspirered from satad_v_3D_gpu of ICON release 2.6.4.
+        Originally inspirered from satad_v_3D of ICON.
         """
 
         start_cell_nudging = self.grid.get_start_index(
@@ -171,13 +162,13 @@ class SaturationAdjustment:
             offset_provider={},
         )
 
-        # TODO (Chia Rui): refactor this code when break and for loop features are ready in gt4py.
+        # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
         temperature_list = [self._new_temperature1, self._new_temperature2]
         ncurrent, nnext = 0, 1
         for _ in range(self.config.max_iter):
             if xp.any(
                 self._newton_iteration_mask.ndarray[
-                    start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
+                    start_cell_nudging:end_cell_local, 0:self.grid.num_levels
                 ]
             ):
                 update_temperature_by_newton_iteration(
@@ -349,7 +340,7 @@ def _new_temperature_in_newton_iteration(
         temperature: initial temperature [K]
         qv: specific humidity
         rho: total air density [kg m-3]
-        lwdocvd:
+        lwdocvd: Lv / cvd [K]
         new_temperature2: temperature at previous iteration [K]
     Returns:
         updated temperature [K]
