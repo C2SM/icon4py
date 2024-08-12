@@ -44,8 +44,6 @@ def test_saturation_adjustment(
     icon_grid,
     lowest_layer_thickness,
 ):
-    """Test satad aginst a numpy implementaion."""
-
     entry_microphysics_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(
         date=date
     )
