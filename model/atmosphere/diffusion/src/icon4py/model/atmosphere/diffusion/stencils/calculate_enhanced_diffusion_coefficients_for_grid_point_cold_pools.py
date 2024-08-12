@@ -26,6 +26,11 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
     theta_v: fa.CellKField[wpfloat],
@@ -64,7 +69,7 @@ def calculate_enhanced_diffusion_coefficients_for_grid_point_cold_pools(
         kh_smag_e,
         out=kh_smag_e,
         domain={
-            dims.EdgeDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )

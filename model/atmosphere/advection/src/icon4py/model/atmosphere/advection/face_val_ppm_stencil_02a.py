@@ -18,6 +18,11 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _face_val_ppm_stencil_02a(
     p_cc: fa.CellKField[float],
@@ -45,7 +50,7 @@ def face_val_ppm_stencil_02a(
         p_cellhgt_mc_now,
         out=p_face,
         domain={
-            dims.CellDim: (horizontal_start, horizontal_end),
-            dims.KDim: (vertical_start, vertical_end),
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
         },
     )
