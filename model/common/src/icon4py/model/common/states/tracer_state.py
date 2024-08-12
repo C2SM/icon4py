@@ -13,10 +13,9 @@
 
 from dataclasses import dataclass
 
-from gt4py.next import as_field
 from gt4py.next.common import Field
 
-from icon4py.model.common.dimension import C2E2C2EDim, CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim
 
 
 @dataclass
@@ -35,4 +34,3 @@ class TracerState:
     # meridional wind speed
     qs: Field[[CellDim, KDim], float]
     qg: Field[[CellDim, KDim], float]
-

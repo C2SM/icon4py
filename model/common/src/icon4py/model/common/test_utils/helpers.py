@@ -20,14 +20,11 @@ import pytest
 from gt4py._core.definitions import is_scalar_type
 from gt4py.next import as_field, common as gt_common, constructors
 from gt4py.next.ffront.decorator import Program
-from gt4py.next import as_field
-from hypothesis import strategies as st
-from hypothesis import target
+from hypothesis import strategies as st, target
 from hypothesis.extra.numpy import arrays as hypothesis_array
 
-from ..grid.simple import SimpleGrid
-
 from ..grid.base import BaseGrid
+from ..grid.simple import SimpleGrid
 from ..type_alias import wpfloat
 
 
@@ -42,16 +39,14 @@ def backend(request):
     return request.param
 
 
-def objShape(
-    obj: Union[tuple, np.ndarray, SimpleGrid], *dims: gt_common.Dimension
-):
-
+def objShape(obj: Union[tuple, np.ndarray, SimpleGrid], *dims: gt_common.Dimension):
     if isinstance(obj, SimpleGrid):
         return tuple(map(lambda x: obj.size[x], dims))
     if isinstance(obj, tuple):
         return obj
     if isinstance(obj, np.ndarray):
         return obj.shape
+
 
 def is_python(backend) -> bool:
     # want to exclude python backends:

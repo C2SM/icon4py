@@ -1443,7 +1443,6 @@ class IconGraupelExitSavepoint(IconSavepoint):
     def qg(self):
         return self._get_field("ser_out_graupel_qg", dims.CellDim, dims.KDim)
 
-
     def ddt_tend_t(self):
         return self._get_field("ser_out_graupel_ddt_tend_t", dims.CellDim, dims.KDim)
 
@@ -1794,25 +1793,61 @@ class IconSerialDataProvider:
         return IconGraupelInitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_graupel_entry(self, date: str) -> IconGraupelEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-graupel-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGraupelEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_graupel_exit(self, date: str) -> IconGraupelExitSavepoint:
-        savepoint = self.serializer.savepoint["call-graupel-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-graupel-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGraupelExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_gscp_satad_entry(self, date: str) -> IconGscpSatadEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-gscp-satad-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+    def from_savepoint_weisman_klemp_gscp_satad_entry(
+        self, date: str
+    ) -> IconGscpSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-gscp-satad-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGscpSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
     def from_savepoint_weisman_klemp_gscp_satad_exit(self, date: str) -> IconGscpSatadExitSavepoint:
-        savepoint = self.serializer.savepoint["call-gscp-satad-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+        savepoint = (
+            self.serializer.savepoint["call-gscp-satad-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconGscpSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_interface_satad_entry(self, date: str) -> IconInterfaceSatadEntrySavepoint:
-        savepoint = self.serializer.savepoint["call-interface-satad-entrance"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+    def from_savepoint_weisman_klemp_interface_satad_entry(
+        self, date: str
+    ) -> IconInterfaceSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconInterfaceSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
 
-    def from_savepoint_weisman_klemp_interface_satad_exit(self, date: str) -> IconInterfaceSatadExitSavepoint:
-        savepoint = self.serializer.savepoint["call-interface-satad-exit"].serial_rank[0].date["2008-09-01T01:59:"+date+".000"].as_savepoint()
+    def from_savepoint_weisman_klemp_interface_satad_exit(
+        self, date: str
+    ) -> IconInterfaceSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
         return IconInterfaceSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)

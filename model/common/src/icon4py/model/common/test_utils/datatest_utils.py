@@ -87,11 +87,11 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
         return root, level
-    except AttributeError as err:
-        #raise ValueError(
-        #    f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
-        #) from err
+    except AttributeError:
         # TODO (Chia Rui): remove this temporary fix after merging from Jacopo's branch
+        # TODO(Chia Rui): raise ValueError(
+        # TODO(Chia Rui):   f"Could not parse grid_root and grid_level from experiment: {experiment} no 'rXbY'pattern."
+        # TODO(Chia Rui):) from err
         return 0, 2
 
 
