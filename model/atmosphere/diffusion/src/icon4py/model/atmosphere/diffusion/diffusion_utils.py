@@ -19,6 +19,7 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
 
@@ -50,7 +51,7 @@ def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[floa
 
 @gtx.field_operator
 def _init_zero_v_k() -> gtx.Field[[dims.VertexDim, dims.KDim], float]:
-    return broadcast(0.0, (dims.VertexDim, dims.KDim))
+    return broadcast(0.0, (VertexDim, KDim))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
@@ -67,12 +68,12 @@ def _setup_smag_limit(diff_multfac_vn: fa.KField[float]) -> fa.KField[float]:
 def _setup_runtime_diff_multfac_vn(k4: float, dyn_substeps: float) -> fa.KField[float]:
     con = 1.0 / 128.0
     dyn = k4 * dyn_substeps / 3.0
-    return broadcast(minimum(con, dyn), (dims.KDim,))
+    return broadcast(minimum(con, dyn), (KDim,))
 
 
 @gtx.field_operator
 def _setup_initial_diff_multfac_vn(k4: float, hdiff_efdt_ratio: float) -> fa.KField[float]:
-    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (dims.KDim,))
+    return broadcast(k4 / 3.0 * hdiff_efdt_ratio, (KDim,))
 
 
 @gtx.field_operator
