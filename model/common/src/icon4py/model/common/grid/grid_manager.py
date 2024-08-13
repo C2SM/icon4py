@@ -503,8 +503,7 @@ class GridManager:
             self._add_start_end_indices(grid)
             return grid
         else:
-            decompose = halo.SimpleMetisDecomposer()
-            cells_to_rank_mapping = decompose(
+            cells_to_rank_mapping = self._decompose(
                 global_connectivities[dims.C2E2CDim], self._run_properties.comm_size
             )
             halo_constructor = halo.HaloGenerator(
