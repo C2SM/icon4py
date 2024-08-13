@@ -20,9 +20,9 @@ __all__ = [
 ]
 
 
-__author__: Final = "ETH Zurich and individual contributors"
-__copyright__: Final = "Copyright (c) 2014-2022 ETH Zurich"
-__license__: Final = "GPL-3.0-or-later"
+__author__: Final = "ETH Zurich,  MeteoSwiss and individual contributors"
+__copyright__: Final = "Copyright (c) 2022-2024 ETH Zurich and MeteoSwiss"
+__license__: Final = "BSD-3-Clause"
 
 
 __version__: Final = "0.0.6"

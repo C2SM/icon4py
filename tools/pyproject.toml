@@ -7,7 +7,7 @@ authors = [{email = 'gridtools@cscs.ch'}, {name = 'ETH Zurich'}]
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Intended Audience :: Science/Research',
-  'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
+  'License :: OSI Approved :: BSD License',
   'Operating System :: POSIX',
   'Programming Language :: Python',
   'Programming Language :: Python :: 3',
