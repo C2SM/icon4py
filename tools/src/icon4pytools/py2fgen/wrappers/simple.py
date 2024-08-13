@@ -28,9 +28,6 @@ profiler = cProfile.Profile()
 
 grid = SimpleGrid()
 
-CEDim = dims.CEDim
-KDim = dims.KDim
-
 
 def profile_enable():
     profiler.enable()
@@ -44,15 +41,15 @@ def profile_disable():
 
 @field_operator
 def _square(
-    inp: Field[[CEDim, KDim], float64],
-) -> Field[[CEDim, KDim], float64]:
+    inp: Field[[dims.CEDim, dims.KDim], float64],
+) -> Field[[dims.CEDim, dims.KDim], float64]:
     return inp**2
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def square(
-    inp: Field[[CEDim, KDim], float64],
-    result: Field[[CEDim, KDim], float64],
+    inp: Field[[dims.CEDim, dims.KDim], float64],
+    result: Field[[dims.CEDim, dims.KDim], float64],
 ):
     _square(inp, out=result)
 
@@ -61,14 +58,14 @@ square_cached = CachedProgram(square, with_domain=False)
 
 
 def square_from_function(
-    inp: Field[[CEDim, KDim], float64],
-    result: Field[[CEDim, KDim], float64],
+    inp: Field[[dims.CEDim, dims.KDim], float64],
+    result: Field[[dims.CEDim, dims.KDim], float64],
 ):
     square_cached(inp, result, offset_provider={})
 
 
 def square_error(
-    inp: Field[[CEDim, KDim], float64],
-    result: Field[[CEDim, KDim], float64],
+    inp: Field[[dims.CEDim, dims.KDim], float64],
+    result: Field[[dims.CEDim, dims.KDim], float64],
 ):
     raise Exception("Exception foo occurred")
