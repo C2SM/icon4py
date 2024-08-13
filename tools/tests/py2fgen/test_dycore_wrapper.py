@@ -54,9 +54,10 @@ def test_solve_nh_wrapper():
     # Other configuration parameters
     dtime = 10.0
     rayleigh_damping_height = 12500.0
-    nflatlev = 30
+    flat_height = 16000.0
     nflat_gradp = 59
     ndyn_substeps = 2.0
+    jstep = 0
 
     # Nonhydrostatic configuration
     itime_scheme = 4  # itime scheme can only be 4
@@ -325,7 +326,6 @@ def test_solve_nh_wrapper():
     solve_nh_init(
         vct_a=vct_a,
         nflat_gradp=nflat_gradp,
-        nflatlev=nflatlev,
         num_levels=num_levels,
         mean_cell_area=mean_cell_area,
         cell_areas=cell_areas,
@@ -420,6 +420,7 @@ def test_solve_nh_wrapper():
         divdamp_z4=divdamp_z4,
         htop_moist_proc=htop_moist_proc,
         limited_area=limited_area,
+        flat_height=flat_height
     )
 
     w_concorr_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
@@ -506,4 +507,5 @@ def test_solve_nh_wrapper():
         linit=linit,
         divdamp_fac_o2=divdamp_fac_o2,
         ndyn_substeps=ndyn_substeps,
+        jstep=jstep
     )

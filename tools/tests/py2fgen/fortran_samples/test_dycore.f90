@@ -136,7 +136,8 @@ program solve_nh_simulation
 
    real(c_double), parameter :: dtime = 10.0
    real(c_double), parameter :: rayleigh_damping_height = 12500.0
-   integer(c_int), parameter :: nflatlev = 30
+   integer(c_double), parameter :: flat_height = 16000.0
+   integer(c_int), parameter :: jstep = 0
    integer(c_int), parameter :: nflat_gradp = 59
    real(c_double), parameter :: ndyn_substeps = 2.0
 
@@ -549,7 +550,7 @@ program solve_nh_simulation
 
 
    ! Call solve_nh_init
-   call solve_nh_init(vct_a, nflat_gradp, nflatlev, num_levels, mean_cell_area, &
+   call solve_nh_init(vct_a, nflat_gradp, num_levels, mean_cell_area, &
                       cell_areas, primal_normal_cell_x, primal_normal_cell_y, &
                       dual_normal_cell_x, dual_normal_cell_y, edge_areas, &
                       tangent_orientation, inverse_primal_edge_lengths, &
@@ -578,7 +579,7 @@ program solve_nh_simulation
                       rhotheta_offctr, veladv_offctr, max_nudging_coeff, &
                       divdamp_fac, divdamp_fac2, divdamp_fac3, divdamp_fac4, &
                       divdamp_z, divdamp_z2, divdamp_z3, divdamp_z4, &
-                      htop_moist_proc, limited_area, rc)
+                      htop_moist_proc, limited_area, flat_height, rc)
 
    if (rc /= 0) then
        print *, "Error in solve_nh_init"
@@ -594,7 +595,7 @@ program solve_nh_simulation
                     grf_tend_thv, grf_tend_w, mass_fl_e, ddt_vn_phy, &
                     grf_tend_vn, vn_ie, vt, mass_flx_me, mass_flx_ic, &
                     vn_traj, dtime, lprep_adv, clean_mflx, recompute, linit, &
-                    divdamp_fac_o2, ndyn_substeps, rc)
+                    divdamp_fac_o2, ndyn_substeps, jstep, rc)
 
   if (rc /= 0) then
       print *, "Error in solve_nh_run"

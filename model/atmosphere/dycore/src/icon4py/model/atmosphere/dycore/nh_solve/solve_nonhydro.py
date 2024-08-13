@@ -301,7 +301,6 @@ class NonHydrostaticConfig:
         divdamp_z2: float = 40000.0,
         divdamp_z3: float = 60000.0,
         divdamp_z4: float = 80000.0,
-        htop_moist_proc: float = 22500.0,
     ):
         # parameters from namelist diffusion_nml
         self.itime_scheme: int = itime_scheme
@@ -361,9 +360,6 @@ class NonHydrostaticConfig:
         self.is_iau_active: bool = is_iau_active
         #: IAU weight for dynamics fields
         self.iau_wgt_dyn: float = iau_wgt_dyn
-
-        self.htop_moist_proc: float = htop_moist_proc
-
         self._validate()
 
     def _validate(self):

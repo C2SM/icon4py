@@ -95,7 +95,6 @@ def profile_disable():
 def solve_nh_init(
     vct_a: Field[[KDim], float64],
     nflat_gradp: int32,
-    nflatlev: int32,
     num_levels: int32,
     mean_cell_area: float64,
     cell_areas: Field[[CellDim], float64],
@@ -190,6 +189,7 @@ def solve_nh_init(
     divdamp_z4: float64,
     htop_moist_proc: float64,
     limited_area: bool,
+    flat_height: float64
 ):
     # globals
     global icon_grid
@@ -232,7 +232,6 @@ def solve_nh_init(
         divdamp_z2,
         divdamp_z3,
         divdamp_z4,
-        htop_moist_proc,
     )
     nonhydro_params = NonHydrostaticParams(config)
 
@@ -318,6 +317,8 @@ def solve_nh_init(
     vertical_config = VerticalGridConfig(
         num_levels=num_levels,
         rayleigh_damping_height=rayleigh_damping_height,
+        htop_moist_proc=htop_moist_proc,
+        flat_height=flat_height
     )
 
     # vertical parameters
@@ -381,6 +382,7 @@ def solve_nh_run(
     linit: bool,
     divdamp_fac_o2: float64,
     ndyn_substeps: float64,
+    jstep: int,
 ):
     global solve_nonhydro
 
@@ -436,8 +438,6 @@ def solve_nh_run(
     )
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
 
-    jstep_init = 0
-
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,
         prognostic_state_ls=prognostic_state_ls,
@@ -450,6 +450,6 @@ def solve_nh_run(
         nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
-        at_first_substep=jstep_init == 0,
-        at_last_substep=jstep_init == (ndyn_substeps - 1),
+        at_first_substep=jstep == 0,
+        at_last_substep=jstep == (ndyn_substeps - 1),
     )
