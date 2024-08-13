@@ -2,6 +2,6 @@
 -e ./atmosphere/dycore
 -e ./atmosphere/diffusion
 -e ./atmosphere/advection
--e ./model/atmosphere/subgrid_scale_physics/microphysics
+-e ./atmosphere/subgrid_scale_physics/microphysics
 -e ./common[io]
 -e ./driver
