@@ -274,6 +274,7 @@ class GridManager:
             self._decompose = decomposer
         self._config = config
         self._grid: Optional[icon_grid.IconGrid] = None
+        self._decomposition_info: Optional[decomposition.DecompositionInfo] = None
         self._dataset = None
         self._reader = None
 
