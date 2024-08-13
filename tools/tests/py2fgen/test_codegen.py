@@ -30,21 +30,17 @@ from icon4pytools.py2fgen.template import (
 )
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
 field_2d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
-    dimensions=[CellDim, KDim],
-    py_type_hint="Field[CellDim, KDim], float64]",
+    dimensions=[dims.CellDim, dims.KDim],
+    py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
 )
 field_1d = FuncParameter(
     name="name",
     d_type=ScalarKind.FLOAT32,
-    dimensions=[KDim],
-    py_type_hint="Field[KDim], float64]",
+    dimensions=[dims.KDim],
+    py_type_hint="Field[dims.KDim], float64]",
 )
 
 simple_type = FuncParameter(
@@ -66,8 +62,8 @@ foo = Func(
         FuncParameter(
             name="two",
             d_type=ScalarKind.FLOAT64,
-            dimensions=[CellDim, KDim],
-            py_type_hint="Field[CellDim, KDim], float64]",
+            dimensions=[dims.CellDim, dims.KDim],
+            py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
     ],
     is_gt4py_program=False,
@@ -80,10 +76,10 @@ bar = Func(
             name="one",
             d_type=ScalarKind.FLOAT32,
             dimensions=[
-                CellDim,
-                KDim,
+                dims.CellDim,
+                dims.KDim,
             ],
-            py_type_hint="Field[CellDim, KDim], float64]",
+            py_type_hint="Field[dims.CellDim, dims.KDim], float64]",
         ),
         FuncParameter(name="two", d_type=ScalarKind.INT32, dimensions=[], py_type_hint="int32"),
     ],
@@ -259,6 +255,7 @@ from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
+from icon4py.model.common import dimension as dims
 
 # logger setup
 log_format = '%(asctime)s.%(msecs)03d - %(levelname)s - %(message)s'
@@ -334,13 +331,13 @@ def int_array_to_bool_array(int_array: NDArray) -> NDArray:
     return bool_array
 
 @ffi.def_extern()
-def foo_wrapper(one: int32, two: Field[CellDim, KDim], float64], n_Cell: int32, n_K: int32):
+def foo_wrapper(one: int32, two: Field[dims.CellDim, dims.KDim], float64], n_Cell: int32, n_K: int32):
     try:
         # Unpack pointers into Ndarrays
         two = unpack_gpu(two, n_Cell, n_K)
 
         # Allocate GT4Py Fields
-        two = np_as_located_field(CellDim, KDim)(two)
+        two = np_as_located_field(dims.CellDim, dims.KDim)(two)
 
         foo(one, two)
 
@@ -351,13 +348,13 @@ def foo_wrapper(one: int32, two: Field[CellDim, KDim], float64], n_Cell: int32, 
     return 0
 
 @ffi.def_extern()
-def bar_wrapper(one: Field[CellDim, KDim], float64], two: int32, n_Cell: int32, n_K: int32):
+def bar_wrapper(one: Field[dims.CellDim, dims.KDim], float64], two: int32, n_Cell: int32, n_K: int32):
     try:
         # Unpack pointers into Ndarrays
         one = unpack_gpu(one, n_Cell, n_K)
 
         # Allocate GT4Py Fields
-        one = np_as_located_field(CellDim, KDim)(one)
+        one = np_as_located_field(dims.CellDim, dims.KDim)(one)
 
         bar(one, two)
 
