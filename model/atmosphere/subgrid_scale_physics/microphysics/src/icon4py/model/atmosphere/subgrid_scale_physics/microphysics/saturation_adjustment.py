@@ -134,7 +134,7 @@ class SaturationAdjustment:
         of the total system (dry air, vapor, and hydrometeors) the value of dry air
         is taken, which is a common approximation and introduces only a small error.
 
-        Originally inspirered from satad_v_3D of ICON.
+        Originally inspired from satad_v_3D of ICON.
         """
 
         start_cell_nudging = self.grid.get_start_index(
@@ -157,7 +157,7 @@ class SaturationAdjustment:
             self._newton_iteration_mask,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=0,
+            vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
@@ -168,7 +168,7 @@ class SaturationAdjustment:
         for _ in range(self.config.max_iter):
             if xp.any(
                 self._newton_iteration_mask.ndarray[
-                    start_cell_nudging:end_cell_local, 0:self.grid.num_levels
+                    start_cell_nudging:end_cell_local, 0 : self.grid.num_levels
                 ]
             ):
                 update_temperature_by_newton_iteration(
@@ -181,7 +181,7 @@ class SaturationAdjustment:
                     temperature_list[ncurrent],
                     horizontal_start=start_cell_nudging,
                     horizontal_end=end_cell_local,
-                    vertical_start=0,
+                    vertical_start=gtx.int32(0),
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
@@ -193,7 +193,7 @@ class SaturationAdjustment:
                     self._newton_iteration_mask,
                     horizontal_start=start_cell_nudging,
                     horizontal_end=end_cell_local,
-                    vertical_start=0,
+                    vertical_start=gtx.int32(0),
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
@@ -204,7 +204,7 @@ class SaturationAdjustment:
                     temperature_list[nnext],
                     horizontal_start=start_cell_nudging,
                     horizontal_end=end_cell_local,
-                    vertical_start=0,
+                    vertical_start=gtx.int32(0),
                     vertical_end=self.grid.num_levels,
                     offset_provider={},
                 )
@@ -233,7 +233,7 @@ class SaturationAdjustment:
             self.qc_tendency,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
-            vertical_start=0,
+            vertical_start=gtx.int32(0),
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
@@ -330,11 +330,11 @@ def _new_temperature_in_newton_iteration(
     """
     Update the temperature in saturation adjustment by Newton iteration. Moist enthalpy and mass are conserved.
     The latent heat is assumed to be constant with its value computed from the initial temperature.
-        T + Lv / cpd qv = TH, qv + qc = QTOT
-        T = TH - Lv / cpd qsat(T), which is a transcendental function. Newton method is applied to solve it for T.
-        f(T) = Lv / cpd qsat(T) + T - TH
-        f'(T) = Lv / cpd dqsat(T)/dT + 1
-        T_new = T - f(T)/f'(T) = ( TH - Lv / cpd (qsat(T) - T dqsat(T)/dT) ) / (Lv / cpd dqsat(T)/dT + 1)
+        T + Lv / cvd qv = TH, qv + qc = QTOT
+        T = TH - Lv / cvd qsat(T), which is a transcendental function. Newton method is applied to solve it for T.
+        f(T) = Lv / cvd qsat(T) + T - TH
+        f'(T) = Lv / cvd dqsat(T)/dT + 1
+        T_new = T - f(T)/f'(T) = ( TH - Lv / cvd (qsat(T) - T dqsat(T)/dT) ) / (Lv / cvd dqsat(T)/dT + 1)
 
     Args:
         temperature: initial temperature [K]
