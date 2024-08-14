@@ -1,32 +1,28 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, exp, int32, where
+from gt4py.next.ffront.fbuiltins import astype, exp, int32, where
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import EdgeDim
 from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _compute_nudgecoeffs(
-    refin_ctrl: Field[[EdgeDim], int32],
+    refin_ctrl: fa.EdgeField[int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
     nudge_efold_width: wpfloat,
     nudge_zone_width: int32,
-) -> Field[[EdgeDim], wpfloat]:
+) -> fa.EdgeField[wpfloat]:
     return where(
         ((refin_ctrl > 0) & (refin_ctrl <= (2 * nudge_zone_width + (grf_nudge_start_e - 3)))),
         nudge_max_coeffs
@@ -37,8 +33,8 @@ def _compute_nudgecoeffs(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def compute_nudgecoeffs(
-    nudgecoeffs_e: Field[[EdgeDim], wpfloat],
-    refin_ctrl: Field[[EdgeDim], int32],
+    nudgecoeffs_e: fa.EdgeField[wpfloat],
+    refin_ctrl: fa.EdgeField[int32],
     grf_nudge_start_e: int32,
     nudge_max_coeffs: wpfloat,
     nudge_efold_width: wpfloat,

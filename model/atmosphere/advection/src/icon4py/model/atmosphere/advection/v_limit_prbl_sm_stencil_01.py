@@ -1,26 +1,22 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import (
-    Field,
     FieldOffset,
     abs,
     int32,
     where,
 )
 
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import KDim
 
 
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
@@ -28,9 +24,9 @@ Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
 
 @field_operator
 def _v_limit_prbl_sm_stencil_01(
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-) -> Field[[CellDim, KDim], int32]:
+    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+) -> fa.CellKField[int32]:
     z_delta = p_face - p_face(Koff[1])
     z_a6i = 6.0 * (p_cc - 0.5 * (p_face + p_face(Koff[1])))
 
@@ -41,9 +37,9 @@ def _v_limit_prbl_sm_stencil_01(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def v_limit_prbl_sm_stencil_01(
-    p_face: Field[[CellDim, KDim], float],
-    p_cc: Field[[CellDim, KDim], float],
-    l_limit: Field[[CellDim, KDim], int32],
+    p_face: fa.CellKField[float],
+    p_cc: fa.CellKField[float],
+    l_limit: fa.CellKField[int32],
 ):
     _v_limit_prbl_sm_stencil_01(
         p_face,

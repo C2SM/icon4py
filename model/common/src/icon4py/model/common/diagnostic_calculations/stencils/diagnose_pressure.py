@@ -1,20 +1,16 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program, scan_operator
 from gt4py.next.ffront.fbuiltins import Field, exp, int32, sqrt
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -41,22 +37,22 @@ def _scan_pressure(
 
 @field_operator
 def _diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
-    temperature: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+    temperature: fa.CellKField[vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
     grav_o_rd: wpfloat,
-) -> tuple[Field[[CellDim, KDim], vpfloat], Field[[CellDim, KDim], vpfloat]]:
+) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
     pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, temperature, pressure_sfc, grav_o_rd)
     return pressure, pressure_ifc
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_pressure(
-    ddqz_z_full: Field[[CellDim, KDim], wpfloat],
-    temperature: Field[[CellDim, KDim], vpfloat],
+    ddqz_z_full: fa.CellKField[wpfloat],
+    temperature: fa.CellKField[vpfloat],
     pressure_sfc: Field[[CellDim], vpfloat],
-    pressure: Field[[CellDim, KDim], vpfloat],
-    pressure_ifc: Field[[CellDim, KDim], vpfloat],
+    pressure: fa.CellKField[vpfloat],
+    pressure_ifc: fa.CellKField[vpfloat],
     grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

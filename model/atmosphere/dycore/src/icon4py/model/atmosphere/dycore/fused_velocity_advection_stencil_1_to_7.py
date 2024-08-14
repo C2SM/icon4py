@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
@@ -34,27 +30,28 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.common.dimension import CellDim, E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def compute_interface_vt_vn_and_kinetic_energy(
-    vn: Field[[EdgeDim, KDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    vn: fa.EdgeKField[wpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     nlev: int32,
     lvn_only: bool,
 ) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     vn_ie, z_kin_hor_e = where(
         1 <= k < nlev,
@@ -85,27 +82,27 @@ def compute_interface_vt_vn_and_kinetic_energy(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_6(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
-    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     nlev: int32,
     lvn_only: bool,
 ) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     vt = where(
         k < nlev,
@@ -128,36 +125,36 @@ def _fused_velocity_advection_stencil_1_to_6(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_predictor(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
-    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    w: fa.CellKField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EdgeField[int32],
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     vt, vn_ie, z_vt_ie, z_kin_hor_e, z_w_concorr_me = _fused_velocity_advection_stencil_1_to_6(
         vn,
@@ -204,36 +201,36 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_corrector(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
-    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    w: fa.CellKField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EdgeField[int32],
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     k = broadcast(k, (EdgeDim, KDim))
 
@@ -262,37 +259,37 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
-    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    w: fa.CellKField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EdgeField[int32],
     lateral_boundary_7: int32,
     halo_1: int32,
 ) -> tuple[
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
-    Field[[EdgeDim, KDim], vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
+    fa.EdgeKField[vpfloat],
 ]:
     vt, vn_ie, z_kin_hor_e, z_w_concorr_me, z_v_grad_w = (
         _fused_velocity_advection_stencil_1_to_7_predictor(
@@ -355,32 +352,32 @@ def _fused_velocity_advection_stencil_1_to_7(
 
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_restricted(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
-    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    w: fa.CellKField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EdgeField[int32],
     lateral_boundary_7: int32,
     halo_1: int32,
-) -> Field[[EdgeDim, KDim], float]:
+) -> fa.EdgeKField[float]:
     return _fused_velocity_advection_stencil_1_to_7(
         vn,
         rbf_vec_coeff_e,
@@ -412,29 +409,29 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_1_to_7(
-    vn: Field[[EdgeDim, KDim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
     rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
-    wgtfac_e: Field[[EdgeDim, KDim], vpfloat],
-    ddxn_z_full: Field[[EdgeDim, KDim], vpfloat],
-    ddxt_z_full: Field[[EdgeDim, KDim], vpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfacq_e: Field[[EdgeDim, KDim], vpfloat],
+    wgtfac_e: fa.EdgeKField[vpfloat],
+    ddxn_z_full: fa.EdgeKField[vpfloat],
+    ddxt_z_full: fa.EdgeKField[vpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
     c_intp: Field[[VertexDim, V2CDim], wpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    inv_dual_edge_length: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    z_vt_ie: Field[[EdgeDim, KDim], wpfloat],
-    vt: Field[[EdgeDim, KDim], vpfloat],
-    vn_ie: Field[[EdgeDim, KDim], vpfloat],
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    z_v_grad_w: Field[[EdgeDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    w: fa.CellKField[wpfloat],
+    inv_dual_edge_length: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    z_vt_ie: fa.EdgeKField[wpfloat],
+    vt: fa.EdgeKField[vpfloat],
+    vn_ie: fa.EdgeKField[vpfloat],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    z_v_grad_w: fa.EdgeKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     nlev: int32,
     lvn_only: bool,
-    edge: Field[[EdgeDim], int32],
+    edge: fa.EdgeField[int32],
     lateral_boundary_7: int32,
     halo_1: int32,
     horizontal_start: int32,

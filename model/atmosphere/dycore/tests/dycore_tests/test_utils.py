@@ -1,29 +1,20 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
-from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.dycore.state_utils.utils import (
-    _calculate_bdy_divdamp,
-    _calculate_divdamp_fields,
-    _calculate_scal_divdamp,
-)
+from icon4py.model.atmosphere.dycore.state_utils import utils as solve_nh_utils
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import KDim
-from icon4py.model.common.grid.simple import SimpleGrid
+from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
-from icon4py.model.common.test_utils.helpers import dallclose, random_field, zero_field
+from icon4py.model.common.test_utils import helpers
 
 
 def scal_divdamp_for_order_24_numpy(a: np.array, factor: float, mean_cell_area: float):
@@ -39,11 +30,11 @@ def test_caclulate_scal_divdamp_order_24():
     divdamp_fac_o2 = 3.0
     divdamp_order = 24
     mean_cell_area = 1000.0
-    grid = SimpleGrid()
-    enh_divdamp_fac = random_field(grid, KDim)
-    out = random_field(grid, KDim)
+    grid = simple_grid.SimpleGrid()
+    enh_divdamp_fac = helpers.random_field(grid, KDim)
+    out = helpers.random_field(grid, KDim)
 
-    _calculate_scal_divdamp.with_backend(backend)(
+    solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_fac_o2=divdamp_fac_o2,
         divdamp_order=divdamp_order,
@@ -53,18 +44,18 @@ def test_caclulate_scal_divdamp_order_24():
     )
 
     ref = scal_divdamp_for_order_24_numpy(enh_divdamp_fac.asnumpy(), divdamp_fac_o2, mean_cell_area)
-    assert dallclose(ref, out.asnumpy())
+    assert helpers.dallclose(ref, out.asnumpy())
 
 
 def test_calculate_scal_divdamp_any_order():
     divdamp_fac_o2 = 4.2
     divdamp_order = 3
     mean_cell_area = 1000.0
-    grid = SimpleGrid()
-    enh_divdamp_fac = random_field(grid, KDim)
-    out = random_field(grid, KDim)
+    grid = simple_grid.SimpleGrid()
+    enh_divdamp_fac = helpers.random_field(grid, KDim)
+    out = helpers.random_field(grid, KDim)
 
-    _calculate_scal_divdamp.with_backend(backend)(
+    solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
         divdamp_fac_o2=divdamp_fac_o2,
         divdamp_order=divdamp_order,
@@ -73,26 +64,26 @@ def test_calculate_scal_divdamp_any_order():
         offset_provider={},
     )
     enhanced_factor = -enh_divdamp_fac.asnumpy() * mean_cell_area**2
-    assert dallclose(enhanced_factor, out.asnumpy())
+    assert helpers.dallclose(enhanced_factor, out.asnumpy())
 
 
 def test_calculate_bdy_divdamp():
-    grid = SimpleGrid()
-    scal_divdamp = random_field(grid, KDim)
-    out = zero_field(grid, KDim)
+    grid = simple_grid.SimpleGrid()
+    scal_divdamp = helpers.random_field(grid, KDim)
+    out = helpers.zero_field(grid, KDim)
     coeff = 0.3
-    _calculate_bdy_divdamp.with_backend(backend)(
+    solve_nh_utils._calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
     )
-    assert dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
+    assert helpers.dallclose(out.asnumpy(), bdy_divdamp_numpy(coeff, scal_divdamp.asnumpy()))
 
 
 def test_calculate_divdamp_fields():
-    grid = SimpleGrid()
-    divdamp_field = random_field(grid, KDim)
-    scal_divdamp = zero_field(grid, KDim)
-    boundary_divdamp = zero_field(grid, KDim)
-    divdamp_order = int32(24)
+    grid = simple_grid.SimpleGrid()
+    divdamp_field = helpers.random_field(grid, KDim)
+    scal_divdamp = helpers.zero_field(grid, KDim)
+    boundary_divdamp = helpers.zero_field(grid, KDim)
+    divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0
     divdamp_fac_o2 = 0.7
     nudge_max_coeff = 0.3
@@ -103,7 +94,7 @@ def test_calculate_divdamp_fields():
 
     boundary_ref = bdy_divdamp_numpy(nudge_max_coeff, scaled_ref)
 
-    _calculate_divdamp_fields.with_backend(backend)(
+    solve_nh_utils._calculate_divdamp_fields.with_backend(backend)(
         divdamp_field,
         divdamp_order,
         mean_cell_area,
@@ -113,5 +104,5 @@ def test_calculate_divdamp_fields():
         out=(scal_divdamp, boundary_divdamp),
         offset_provider={},
     )
-    dallclose(scal_divdamp.asnumpy(), scaled_ref)
-    dallclose(boundary_divdamp.asnumpy(), boundary_ref)
+    helpers.dallclose(scal_divdamp.asnumpy(), scaled_ref)
+    helpers.dallclose(boundary_divdamp.asnumpy(), boundary_ref)

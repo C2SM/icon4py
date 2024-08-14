@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import functools
 import logging
 import math
@@ -18,6 +14,7 @@ import dataclasses
 import enum
 from typing import Final, Optional
 
+from icon4py.model.common import field_type_aliases as fa
 import gt4py.next as gtx
 
 
@@ -28,6 +25,7 @@ from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
+from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.common.settings import xp
@@ -334,7 +332,7 @@ class Diffusion:
         self.interpolation_state: diffusion_states.DiffusionInterpolationState = None
         self.metric_state: diffusion_states.DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
-        self.diff_multfac_n2w: gtx.Field[[KDim], float] = None
+        self.diff_multfac_n2w: fa.KField[float] = None
         self.smag_offset: Optional[float] = None
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
@@ -426,28 +424,21 @@ class Diffusion:
         return self._initialized
 
     def _allocate_temporary_fields(self):
-        def _allocate(*dims: gtx.Dimension):
-            return diffusion_utils.zero_field(self.grid, *dims)
+        self.diff_multfac_vn = field_alloc.allocate_zero_field(KDim, grid=self.grid)
 
-        def _index_field(dim: gtx.Dimension, size=None):
-            size = size if size else self.grid.size[dim]
-            return gtx.as_field((dim,), xp.arange(size, dtype=gtx.int32))
-
-        self.diff_multfac_vn = _allocate(KDim)
-
-        self.smag_limit = _allocate(KDim)
-        self.enh_smag_fac = _allocate(KDim)
-        self.u_vert = _allocate(VertexDim, KDim)
-        self.v_vert = _allocate(VertexDim, KDim)
-        self.kh_smag_e = _allocate(EdgeDim, KDim)
-        self.kh_smag_ec = _allocate(EdgeDim, KDim)
-        self.z_nabla2_e = _allocate(EdgeDim, KDim)
-        self.z_temp = _allocate(CellDim, KDim)
-        self.diff_multfac_smag = _allocate(KDim)
+        self.smag_limit = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.enh_smag_fac = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.u_vert = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
+        self.v_vert = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
+        self.kh_smag_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.kh_smag_ec = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_nabla2_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
+        self.z_temp = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.diff_multfac_smag = field_alloc.allocate_zero_field(KDim, grid=self.grid)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = _index_field(KDim, self.grid.num_levels + 1)
-        self.horizontal_cell_index = _index_field(CellDim)
-        self.horizontal_edge_index = _index_field(EdgeDim)
+        self.vertical_index = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
+        self.horizontal_cell_index = field_alloc.allocate_indices(CellDim, grid=self.grid)
+        self.horizontal_edge_index = field_alloc.allocate_indices(EdgeDim, grid=self.grid)
         self.w_tmp = gtx.as_field(
             (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
         )
@@ -469,8 +460,8 @@ class Diffusion:
         This run uses special values for diff_multfac_vn, smag_limit and smag_offset
 
         """
-        diff_multfac_vn = diffusion_utils.zero_field(self.grid, KDim)
-        smag_limit = diffusion_utils.zero_field(self.grid, KDim)
+        diff_multfac_vn = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        smag_limit = field_alloc.allocate_zero_field(KDim, grid=self.grid)
 
         cached.setup_fields_for_initial_step(
             self.params.K4,
@@ -531,8 +522,8 @@ class Diffusion:
         diagnostic_state: diffusion_states.DiffusionDiagnosticState,
         prognostic_state: prognostics.PrognosticState,
         dtime: float,
-        diff_multfac_vn: gtx.Field[[KDim], float],
-        smag_limit: gtx.Field[[KDim], float],
+        diff_multfac_vn: fa.KField[float],
+        smag_limit: fa.KField[float],
         smag_offset: float,
     ):
         """

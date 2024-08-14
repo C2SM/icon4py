@@ -1,20 +1,16 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, astype, int32
+from gt4py.next.ffront.fbuiltins import astype, int32
 
+from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -22,12 +18,12 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 @field_operator
 def _add_analysis_increments_from_data_assimilation(
-    z_rho_expl: Field[[CellDim, KDim], wpfloat],
-    z_exner_expl: Field[[CellDim, KDim], wpfloat],
-    rho_incr: Field[[CellDim, KDim], vpfloat],
-    exner_incr: Field[[CellDim, KDim], vpfloat],
+    z_rho_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    rho_incr: fa.CellKField[vpfloat],
+    exner_incr: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
-) -> tuple[Field[[CellDim, KDim], wpfloat], Field[[CellDim, KDim], wpfloat]]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     """Formerly known as _mo_solve_nonhydro_stencil_50."""
     rho_incr_wp, exner_incr_wp = astype((rho_incr, exner_incr), wpfloat)
 
@@ -38,10 +34,10 @@ def _add_analysis_increments_from_data_assimilation(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_analysis_increments_from_data_assimilation(
-    z_rho_expl: Field[[CellDim, KDim], wpfloat],
-    z_exner_expl: Field[[CellDim, KDim], wpfloat],
-    rho_incr: Field[[CellDim, KDim], vpfloat],
-    exner_incr: Field[[CellDim, KDim], vpfloat],
+    z_rho_expl: fa.CellKField[wpfloat],
+    z_exner_expl: fa.CellKField[wpfloat],
+    rho_incr: fa.CellKField[vpfloat],
+    exner_incr: fa.CellKField[vpfloat],
     iau_wgt_dyn: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,

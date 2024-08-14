@@ -1,54 +1,51 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, where
 
-from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.dimension import E2EC, ECDim
 
 
 @field_operator
 def _btraj_dreg_stencil_03(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EdgeKField[float],
+    p_vt: fa.EdgeKField[float],
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
-    edge_verts_1_x: Field[[EdgeDim], float],
-    edge_verts_2_x: Field[[EdgeDim], float],
-    edge_verts_1_y: Field[[EdgeDim], float],
-    edge_verts_2_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_y: Field[[EdgeDim], float],
+    edge_verts_1_x: fa.EdgeField[float],
+    edge_verts_2_x: fa.EdgeField[float],
+    edge_verts_1_y: fa.EdgeField[float],
+    edge_verts_2_y: fa.EdgeField[float],
+    pos_on_tplane_e_1_x: fa.EdgeField[float],
+    pos_on_tplane_e_2_x: fa.EdgeField[float],
+    pos_on_tplane_e_1_y: fa.EdgeField[float],
+    pos_on_tplane_e_2_y: fa.EdgeField[float],
     primal_normal_cell_x: Field[[ECDim], float],
     primal_normal_cell_y: Field[[ECDim], float],
     dual_normal_cell_x: Field[[ECDim], float],
     dual_normal_cell_y: Field[[ECDim], float],
-    lvn_sys_pos: Field[[EdgeDim, KDim], bool],
+    lvn_sys_pos: fa.EdgeKField[bool],
     p_dt: float,
 ) -> tuple[
-    Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], int32],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
-    Field[[EdgeDim, KDim], float],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[int32],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
 ]:
     # logical switch for MERGE operations: True for p_vn >= 0
     lvn_pos = where(p_vn >= 0.0, True, False)
@@ -130,35 +127,35 @@ def _btraj_dreg_stencil_03(
 
 @program(grid_type=GridType.UNSTRUCTURED)
 def btraj_dreg_stencil_03(
-    p_vn: Field[[EdgeDim, KDim], float],
-    p_vt: Field[[EdgeDim, KDim], float],
+    p_vn: fa.EdgeKField[float],
+    p_vt: fa.EdgeKField[float],
     cell_idx: Field[[ECDim], int32],
     cell_blk: Field[[ECDim], int32],
-    edge_verts_1_x: Field[[EdgeDim], float],
-    edge_verts_2_x: Field[[EdgeDim], float],
-    edge_verts_1_y: Field[[EdgeDim], float],
-    edge_verts_2_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_x: Field[[EdgeDim], float],
-    pos_on_tplane_e_1_y: Field[[EdgeDim], float],
-    pos_on_tplane_e_2_y: Field[[EdgeDim], float],
+    edge_verts_1_x: fa.EdgeField[float],
+    edge_verts_2_x: fa.EdgeField[float],
+    edge_verts_1_y: fa.EdgeField[float],
+    edge_verts_2_y: fa.EdgeField[float],
+    pos_on_tplane_e_1_x: fa.EdgeField[float],
+    pos_on_tplane_e_2_x: fa.EdgeField[float],
+    pos_on_tplane_e_1_y: fa.EdgeField[float],
+    pos_on_tplane_e_2_y: fa.EdgeField[float],
     primal_normal_cell_x: Field[[ECDim], float],
     primal_normal_cell_y: Field[[ECDim], float],
     dual_normal_cell_x: Field[[ECDim], float],
     dual_normal_cell_y: Field[[ECDim], float],
-    lvn_sys_pos: Field[[EdgeDim, KDim], bool],
+    lvn_sys_pos: fa.EdgeKField[bool],
     p_dt: float,
-    p_cell_idx: Field[[EdgeDim, KDim], int32],
-    p_cell_rel_idx_dsl: Field[[EdgeDim, KDim], int32],
-    p_cell_blk: Field[[EdgeDim, KDim], int32],
-    p_coords_dreg_v_1_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_lon_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_1_lat_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_2_lat_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_3_lat_dsl: Field[[EdgeDim, KDim], float],
-    p_coords_dreg_v_4_lat_dsl: Field[[EdgeDim, KDim], float],
+    p_cell_idx: fa.EdgeKField[int32],
+    p_cell_rel_idx_dsl: fa.EdgeKField[int32],
+    p_cell_blk: fa.EdgeKField[int32],
+    p_coords_dreg_v_1_lon_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_2_lon_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_3_lon_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_4_lon_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_1_lat_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_2_lat_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_3_lat_dsl: fa.EdgeKField[float],
+    p_coords_dreg_v_4_lat_dsl: fa.EdgeKField[float],
 ):
     _btraj_dreg_stencil_03(
         p_vn,

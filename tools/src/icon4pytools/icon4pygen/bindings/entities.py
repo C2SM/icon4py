@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from typing import cast
 
@@ -49,8 +44,6 @@ class Offset(Node, OffsetEntity):
         self.includes_center = self._includes_center(chain)
         chain_ls = self._split_chain(chain)
         self.source = self._handle_source(chain_ls)
-        if self.is_compound_location():
-            chain_ls = chain_ls[1:]
         self.target = self._make_target(chain_ls, self.source)
         self.renderer = OffsetRenderer(self)
 
@@ -63,7 +56,7 @@ class Offset(Node, OffsetEntity):
     def _split_chain(self, chain: str) -> list:
         chain_ls = chain.split("2")
         if "O" in chain_ls[-1]:
-            chain_ls.pop()
+            chain_ls[-1] = chain_ls[-1].replace("O", "")
         return chain_ls
 
     @staticmethod
@@ -74,15 +67,17 @@ class Offset(Node, OffsetEntity):
 
     @staticmethod
     def _handle_source(chain_ls: list) -> BasicLocation | CompoundLocation:
-        source = "".join(chain_ls)
-
-        if source in [str(loc()) for loc in BASIC_LOCATIONS.values()]:
-            return chain_from_str(source)[0]
-        elif all(char in [str(loc()) for loc in BASIC_LOCATIONS.values()] for char in source):
-            source = source[1:]
-            return CompoundLocation(chain_from_str(source))
+        if all(
+            chain_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()] for chain_loc in chain_ls
+        ):
+            return chain_from_str(chain_ls[1])[0]
+        elif all(
+            source_loc in [str(loc()) for loc in BASIC_LOCATIONS.values()]
+            for source_loc in chain_ls[1]
+        ):
+            return CompoundLocation(chain_from_str(chain_ls[1]))
         else:
-            raise BindingsTypeConsistencyException(f"Invalid source {source}")
+            raise BindingsTypeConsistencyException(f"Invalid source {chain_ls[1]}")
 
     @staticmethod
     def _make_target(
