@@ -1,11 +1,11 @@
 ---
-tags: []
+tags: [physics components, tendencies, model state]
 ---
 
 # Physics components interface: return values
 
 - **Status**: valid ~~| superseded | deprecated~~
-- **Authors**: Magdalena Luz (@halungge)
+- **Authors**: Magdalena Luz (@halungge), Ong Chia Rui (@ongchia)
 - **Created**: 2024-07-23
 - **Updated**: YYYY-MM-DD
 
@@ -21,10 +21,15 @@ possibility of experimenting with the coupling of different physics components, 
 the order in which they are run and whether or not there result should be applied to the model state.
 
 In the original [ICON code](https://gitlab.dkrz.de/icon/icon-model) physics components may do both: compute tendencies and as well as
-update the model state (update diagnostic and prognostic variables directly). We believe that this behavior
-is very intransparent, makes the code inflexibel and the individual components and their application order tightly coupled.
+update the model state (update diagnostic and prognostic variables directly). More precisely, there are physcis
+processes are split in fast physics (runs every timestep) and slow physics (runs every n-th timestep, n > 1). Fast physics update model state directly
+while slow physics return tendendencies. The distinction is somewhat arbitrary and probably largely dictated by
+computational efficiency of a component. 
 
-We want to provide a cleaner and more transparent structure.
+We believe that this distinction is intransparent, makes the code inflexibel and the individual components and their application order tightly coupled.
+
+We want to provide a cleaner and more transparent structure that treats all physics components in the same way and allows
+the user to decide which update should be applied to the model state prior to the next dynamics step.
 
 **Concerns**
 
@@ -70,7 +75,7 @@ prior to the next dynamics step. This leads to a more complex structure of the m
 - Keeping tendencies produced by the individual components separate is more memory intensive
 and requires an explicit update step.
 
-## Alternatives Considered
+## Alternatives considered
 
 ### updating state (prognostics, diagnostics) directly inside a component
 
