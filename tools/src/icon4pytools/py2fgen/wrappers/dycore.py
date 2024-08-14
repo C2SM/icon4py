@@ -382,7 +382,7 @@ def solve_nh_run(
     linit: bool,
     divdamp_fac_o2: float64,
     ndyn_substeps: float64,
-    jstep: int,
+    jstep: int32,
 ):
     global solve_nonhydro
 
