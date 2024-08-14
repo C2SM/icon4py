@@ -37,6 +37,6 @@ mpirun -np 2 icon4py_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_
 
 #### Remarks
 
-- First (required) arg is the folder where the serialized input data is stored. In the example above, the input data is the same as is used in the unit tests. The path in the example is where the data is put when downloaded via the unit tests (the url can be found in [datatest_utils.py](../common/src/icon4py/model/common/test_utils/datatest_utils.py) to download the serialized data for a serial (single node) run generated from the MeteoSwiss regional experiment. You can also generate your own serialized data and put it in an arbitrary folder.
+- First (required) arg is the folder where the serialized input data is stored. In the example above, the path is where the data is put when downloaded via the unit tests (the url can be found in [datatest_utils.py](../common/src/icon4py/model/common/test_utils/datatest_utils.py). You can also generate your own serialized data and put it in an arbitrary folder.
 - Parallel runs are possible if corresponding data is provided, which is currently available for test with 2 or 4 MPI processes: check [datatest_fixtures.py](../common/src/icon4py/model/common/test_utils/datatest_fixtures.py) for download urls. However, parallel runs are not yet fully tested.
 - Please use the command `icon4py_driver --help` for information on the remaining optional arguments,.
