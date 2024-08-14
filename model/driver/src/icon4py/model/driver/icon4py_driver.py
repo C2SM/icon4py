@@ -422,26 +422,33 @@ def initialize(
 @click.option(
     "--mpi",
     default=False,
+    show_default=True,
     help="Whether or not you are running with mpi. Currently not fully tested yet.",
 )
 @click.option(
     "--serialization_type",
     default="serialbox",
+    show_default=True,
     help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
 )
 @click.option(
     "--experiment_type",
     default="any",
-    help="Option for configuration and how the initial state is generated. Setting it to default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data.",
+    show_default=True,
+    help="Option for configuration and how the initial state is generated. "
+    "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
+    "Currently, users can also set it to either jabw or grauss_3d_torus to generate analytic initial condition for the JW and mountain wave tests, respectively (they are placed in abs_path_to_icon4py/model/driver/src/icon4py/model/driver/test_cases/).",
 )
 @click.option(
     "--grid_root",
     default=2,
+    show_default=True,
     help="Grid root division (please refer to Sadourny et al. 1968 or ICON documentation for more information). When torus grid is used, it must be set to 2.",
 )
 @click.option(
     "--grid_level",
     default=4,
+    show_default=True,
     help="Grid refinement level. When torus grid is used, it must be set to 0.",
 )
 @click.option(
