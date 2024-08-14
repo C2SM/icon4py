@@ -4,7 +4,7 @@
 
 Currently, users need serialized data of the pre-computed metric and interpolation coefficients and grid to run the driver.
 
-Currently, it does only diffusion and solve_nonhydro (dry atmosphere with no physics). The configuration for the granules and driver is hardcoded in [icon4py_configuration.py](src/icon4py/model/driver/icon4py_configuration.py).
+Currently, it does only diffusion and solve_nonhydro (dry atmosphere with no physics). The configuration for the granules and driver is hardcoded in [icon4py_configuration.py](src/icon4py/model/driver/icon4py_configuration.py). Time step, total integration time, number of substeps, and etc. can be configured there. 
 
 The code is meant to be changed and enlarged as we port new parts of the model.
 
@@ -37,9 +37,9 @@ mpirun -np 2 icon4py_driver $ICON4PY_ROOT/testdata/ser_icondata/mpitask2/mch_ch_
 
 #### Remarks
 
-- First (required) arg is the folder where the serialized input data is stored. The input data is the same as is used in the unit tests. The path in the example is where the data is put when downloaded via the unit tests. Data for a serial (single node) run can be downloaded from https://polybox.ethz.ch/index.php/s/vcsCYmCFA9Qe26p. You can also generate your own serialized data and put it in an arbitrary folder.
+- First (required) arg is the folder where the serialized input data is stored. The input data is the same as is used in the unit tests. The path in the example is where the data is put when downloaded via the unit tests. As an example, you can use the DATA_URIS in [datatest_utils.py](../common/src/icon4py/model/common/test_utils/datatest_utils.py) to download the serialized data for a serial (single node) run generated from the MeteoSwiss regional experiment. You can also generate your own serialized data and put it in an arbitrary folder.
 - Second arg is an option for parallel runs. Parallel runs are possible if corresponding data is provided, which is currently available for test with 2 or 4 MPI processes: check [datatest_fixtures.py](../common/src/icon4py/model/common/test_utils/datatest_fixtures.py) for download urls.
 - The code logs to file and to console. Debug logging is only going to file. The log directory can be changed with the --run_path option.
 - --grid_root is the root division of the grid. When torus grid is used, it must be set to 2. Please refer to ICON documentation for more information.
 - --grid_level is the refinement division of the grid. When torus grid is used, it must be set to 0.
-- --experiment_type is an option for how the initial state is generated. Setting it default value "any" will instruct the model to read the initial state from serialized data.
+- --experiment_type is an option for configuration and how the initial state is generated. Setting it default value "any" will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data.
