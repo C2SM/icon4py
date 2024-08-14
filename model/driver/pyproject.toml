@@ -35,7 +35,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.scripts]
-dycore_driver = "icon4py.model.driver.dycore_driver:main"
+icon4py_driver = "icon4py.model.driver.icon4py_driver:main"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"
