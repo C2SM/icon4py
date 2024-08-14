@@ -368,7 +368,7 @@ def test_run_diffusion_multiple_steps(
     ndyn_substeps,
 ):
     if not dace_orchestration():
-        raise pytest.skip("This test is only executed for `--backend=dace_cpu_noopt_orch`")
+        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
     # Diffusion initialization
@@ -392,10 +392,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
-
-    settings.backend_name = "run_dace_cpu_noopt"
-    settings.backend = run_dace_cpu_noopt
+    settings.dace_orchestration = None
 
     diagnostic_state_dace_non_orch = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state_dace_non_orch = diffusion_savepoint_init.construct_prognostics()
@@ -422,8 +419,7 @@ def test_run_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    settings.backend_name = "run_dace_cpu_noopt_orch"
-    settings.backend = run_dace_cpu_noopt
+    settings.dace_orchestration = True
 
     diagnostic_state_dace_orch = construct_diagnostics(diffusion_savepoint_init)
     prognostic_state_dace_orch = diffusion_savepoint_init.construct_prognostics()

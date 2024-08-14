@@ -17,13 +17,23 @@ import functools
 import logging
 from dataclasses import dataclass
 from enum import IntEnum
-from typing import Any, Protocol
+from typing import Any, Optional, Protocol, Sequence
 
 import numpy as np
 import numpy.ma as ma
 from gt4py.next import Dimension
 
 from icon4py.model.common.utils import builder
+
+
+try:
+    import dace
+
+    from icon4py.model.common.orchestration.halo_exchange import DummyNestedSDFG
+except ImportError:
+    from types import ModuleType
+
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
 
 
 log = logging.getLogger(__name__)
@@ -160,6 +170,98 @@ class SingleNodeExchange:
 
     def get_size(self):
         return 1
+
+    def __call__(self, *args, **kwargs):
+        dim = kwargs.get("dim", None)
+        wait = kwargs.get("wait", True)
+
+        res = self.exchange(dim, *args)
+        if wait:
+            res.wait()
+        else:
+            return res
+
+    if dace:
+        # Implementation of DaCe SDFGConvertible interface
+        def dace__sdfg__(self, *args, **kwargs):
+            sdfg = DummyNestedSDFG().__sdfg__()
+            sdfg.name = "_halo_exchange_"
+            return sdfg
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            return DummyNestedSDFG().__sdfg_closure__()
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return DummyNestedSDFG().__sdfg_signature__()
+    else:
+
+        def dace__sdfg__(self, *args, **kwargs):
+            raise NotImplementedError(
+                "__sdfg__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            raise NotImplementedError(
+                "__sdfg_closure__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            raise NotImplementedError(
+                "__sdfg_signature__ is only supported when the 'dace' module is available."
+            )
+
+    __sdfg__ = dace__sdfg__
+    __sdfg_closure__ = dace__sdfg_closure__
+    __sdfg_signature__ = dace__sdfg_signature__
+
+
+@dataclass
+class HaloExchangeWait:
+    exchange_object: SingleNodeExchange  # maintain the same interface with the MPI counterpart
+
+    def __call__(self, communication_handle: SingleNodeResult):
+        communication_handle.wait()
+
+    if dace:
+        # Implementation of DaCe SDFGConvertible interface
+        def dace__sdfg__(self, *args, **kwargs):
+            sdfg = DummyNestedSDFG().__sdfg__()
+            sdfg.name = "_halo_exchange_wait_"
+            return sdfg
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            return DummyNestedSDFG().__sdfg_closure__()
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            return DummyNestedSDFG().__sdfg_signature__()
+    else:
+
+        def dace__sdfg__(self, *args, **kwargs):
+            raise NotImplementedError(
+                "__sdfg__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_closure__(
+            self, reevaluate: Optional[dict[str, str]] = None
+        ) -> dict[str, Any]:
+            raise NotImplementedError(
+                "__sdfg_closure__ is only supported when the 'dace' module is available."
+            )
+
+        def dace__sdfg_signature__(self) -> tuple[Sequence[str], Sequence[str]]:
+            raise NotImplementedError(
+                "__sdfg_signature__ is only supported when the 'dace' module is available."
+            )
+
+    __sdfg__ = dace__sdfg__
+    __sdfg_closure__ = dace__sdfg_closure__
+    __sdfg_signature__ = dace__sdfg_signature__
 
 
 class SingleNodeResult:

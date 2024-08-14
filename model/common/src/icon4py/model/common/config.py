@@ -49,16 +49,10 @@ class GT4PyBackend(Enum):
     CPU = "run_gtfn_cached"
     GPU = "run_gtfn_gpu_cached"
     ROUNDTRIP = "run_roundtrip"
-    # DaCe Backends
     DACE_CPU = "run_dace_cpu"
     DACE_GPU = "run_dace_gpu"
     DACE_CPU_NOOPT = "run_dace_cpu_noopt"
     DACE_GPU_NOOPT = "run_dace_gpu_noopt"
-    # DaCe Orchestration
-    DACE_CPU_ORCH = "run_dace_cpu_orch"
-    DACE_GPU_ORCH = "run_dace_gpu_orch"
-    DACE_CPU_NOOPT_ORCH = "run_dace_cpu_noopt_orch"
-    DACE_GPU_NOOPT_ORCH = "run_dace_gpu_noopt_orch"
 
 
 @dataclasses.dataclass
@@ -73,6 +67,10 @@ class Icon4PyConfig:
                 f"Invalid ICON4Py backend: {backend}. \n"
                 f"Available backends: {', '.join([f'{k}' for k in GT4PyBackend.__members__.keys()])}"
             )
+
+    @cached_property
+    def icon4py_dace_orchestration(self):
+        return os.environ.get("ICON4PY_DACE_ORCHESTRATION", None)
 
     @cached_property
     def array_ns(self):
@@ -96,11 +94,6 @@ class Icon4PyConfig:
                 GT4PyBackend.DACE_GPU.name: run_dace_gpu,
                 GT4PyBackend.DACE_CPU_NOOPT.name: run_dace_cpu_noopt,
                 GT4PyBackend.DACE_GPU_NOOPT.name: run_dace_gpu_noopt,
-                # DaCe Orchestration
-                GT4PyBackend.DACE_CPU_ORCH.name: run_dace_cpu,
-                GT4PyBackend.DACE_GPU_ORCH.name: run_dace_gpu,
-                GT4PyBackend.DACE_CPU_NOOPT_ORCH.name: run_dace_cpu_noopt,
-                GT4PyBackend.DACE_GPU_NOOPT_ORCH.name: run_dace_gpu_noopt,
             }
             backend_map.update(dace_backend_map)
         return backend_map[self.icon4py_backend]
@@ -118,11 +111,6 @@ class Icon4PyConfig:
                 GT4PyBackend.DACE_GPU.name: Device.GPU,
                 GT4PyBackend.DACE_CPU_NOOPT.name: Device.CPU,
                 GT4PyBackend.DACE_GPU_NOOPT.name: Device.GPU,
-                # DaCe Orchestration
-                GT4PyBackend.DACE_CPU_ORCH.name: Device.CPU,
-                GT4PyBackend.DACE_GPU_ORCH.name: Device.GPU,
-                GT4PyBackend.DACE_CPU_NOOPT_ORCH.name: Device.CPU,
-                GT4PyBackend.DACE_GPU_NOOPT_ORCH.name: Device.GPU,
             }
             device_map.update(dace_device_map)
         device = device_map[self.icon4py_backend]

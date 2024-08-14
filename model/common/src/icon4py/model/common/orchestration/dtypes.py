@@ -10,12 +10,17 @@
 # distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
-from icon4py.model.common.orchestration.decorator import dace_orchestration
 
-
-if dace_orchestration():
+try:
     import dace
+except ImportError:
+    from types import ModuleType
+    from typing import Optional
 
+    dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+
+
+if dace:
     # Define DaCe Symbols
     CellDim_sym = dace.symbol("CellDim_sym")
     EdgeDim_sym = dace.symbol("EdgeDim_sym")

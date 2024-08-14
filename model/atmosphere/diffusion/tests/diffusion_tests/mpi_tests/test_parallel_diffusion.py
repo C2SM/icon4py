@@ -159,7 +159,7 @@ def test_parallel_diffusion_multiple_steps(
     damping_height,
 ):
     if not dace_orchestration():
-        raise pytest.skip("This test is only executed for `--backend=dace_cpu_noopt_orch`")
+        raise pytest.skip("This test is only executed for `--dace-orchestration=True`.")
 
     ######################################################################
     # Diffusion initialization
@@ -203,10 +203,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # DaCe NON-Orchestrated Backend
     ######################################################################
-    from gt4py.next.program_processors.runners.dace import run_dace_cpu_noopt
-
-    settings.backend_name = "run_dace_cpu_noopt"
-    settings.backend = run_dace_cpu_noopt
+    settings.dace_orchestration = None
 
     diffusion = Diffusion(exchange)
 
@@ -247,8 +244,7 @@ def test_parallel_diffusion_multiple_steps(
     ######################################################################
     # DaCe Orchestrated Backend
     ######################################################################
-    settings.backend_name = "run_dace_cpu_noopt_orch"
-    settings.backend = run_dace_cpu_noopt
+    settings.dace_orchestration = True
 
     diffusion = Diffusion(exchange)
 

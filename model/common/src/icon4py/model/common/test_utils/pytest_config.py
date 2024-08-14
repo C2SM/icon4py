@@ -45,14 +45,9 @@ try:
             "dace_gpu": run_dace_gpu,
             "dace_cpu_noopt": run_dace_cpu_noopt,
             "dace_gpu_noopt": run_dace_gpu_noopt,
-            # DaCe Orchestration
-            "dace_cpu_orch": run_dace_cpu,
-            "dace_gpu_orch": run_dace_gpu,
-            "dace_cpu_noopt_orch": run_dace_cpu_noopt,
-            "dace_gpu_noopt_orch": run_dace_gpu_noopt,
         }
     )
-    gpu_backends.extend(["dace_gpu", "dace_gpu_noopt", "dace_gpu_orch", "dace_gpu_noopt_orch"])
+    gpu_backends.extend(["dace_gpu", "dace_gpu_noopt"])
 
 except ImportError:
     # dace module not installed, ignore dace backends
@@ -83,8 +78,10 @@ def pytest_configure(config):
     if config.getoption("--backend"):
         backend = config.getoption("--backend")
         check_backend_validity(backend)
-        settings.backend_name = backend
         settings.backend = backends[backend]
+
+    if config.getoption("--dace-orchestration"):
+        settings.dace_orchestration = True
 
 
 def pytest_addoption(parser):
@@ -126,6 +123,16 @@ def pytest_addoption(parser):
             action="store_true",
             help="Switch unit tests from double to mixed-precision",
             default=False,
+        )
+    except ValueError:
+        pass
+
+    try:
+        parser.addoption(
+            "--dace-orchestration",
+            action="store",
+            default=None,
+            help="Performs DaCe orchestration. Any value will enable it.",
         )
     except ValueError:
         pass

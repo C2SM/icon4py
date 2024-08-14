@@ -28,6 +28,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 
 from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
+from icon4py.model.common.decomposition import mpi_decomposition
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
@@ -475,6 +476,12 @@ class Diffusion:
             self.grid.offset_providers
         )
 
+        self.halo_exchange_wait = (
+            mpi_decomposition.HaloExchangeWait(self._exchange)
+            if isinstance(self._exchange, mpi_decomposition.GHexMultiNodeExchange)
+            else decomposition.HaloExchangeWait(self._exchange)
+        )
+
         self._initialized = True
 
     @property
@@ -537,7 +544,6 @@ class Diffusion:
             0.0,
         )
         self._sync_cell_fields(prognostic_state)
-        self._sync_edge_fields(prognostic_state)
 
     def run(
         self,
@@ -559,7 +565,6 @@ class Diffusion:
             smag_limit=self.smag_limit,
             smag_offset=self.smag_offset,
         )
-        self._sync_edge_fields(prognostic_state)
 
     def _sync_cell_fields(self, prognostic_state):
         """
@@ -576,11 +581,6 @@ class Diffusion:
             prognostic_state.exner,
         )
         log.debug("communication of prognostic cell fields: theta, w, exner - done")
-
-    def _sync_edge_fields(self, prognostic_state):
-        log.debug("communication of prognostic edge fields: vn - start")
-        self._exchange.exchange_and_wait(EdgeDim, prognostic_state.vn)
-        log.debug("ccommunication of prognostic edge fields: vn - done")
 
     def _do_diffusion_step(
         self,
@@ -648,7 +648,7 @@ class Diffusion:
 
         # 2.  HALO EXCHANGE -- CALL sync_patch_array_mult u_vert and v_vert
         log.debug("communication rbf extrapolation of vn - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
         log.debug("communication rbf extrapolation of vn - end")
 
         log.debug("running stencil 01(calculate_nabla2_and_smag_coefficients_for_vn): start")
@@ -710,7 +710,7 @@ class Diffusion:
         # TODO (magdalena) move this up and do asynchronous exchange
         if self.config.type_vn_diffu > 1:
             log.debug("communication rbf extrapolation of z_nable2_e - start")
-            self._exchange.exchange_and_wait(EdgeDim, self.z_nabla2_e)
+            self._exchange(self.z_nabla2_e, dim=EdgeDim, wait=True)
             log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("2nd rbf interpolation: start")
@@ -730,7 +730,7 @@ class Diffusion:
 
         # 6.  HALO EXCHANGE -- CALL sync_patch_array_mult (Vertex Fields)
         log.debug("communication rbf extrapolation of z_nable2_e - start")
-        self._exchange.exchange_and_wait(VertexDim, self.u_vert, self.v_vert)
+        self._exchange(self.u_vert, self.v_vert, dim=VertexDim, wait=True)
         log.debug("communication rbf extrapolation of z_nable2_e - end")
 
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): start")
@@ -760,9 +760,8 @@ class Diffusion:
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
 
-        # TODO(kotsaloscv): Remove it from here since I have added _sync_edge_fields?
-        # log.debug("communication of prognistic.vn : start")
-        # handle_edge_comm = self._exchange.exchange(EdgeDim, prognostic_state.vn)
+        log.debug("communication of prognistic.vn : start")
+        handle_edge_comm = self._exchange(prognostic_state.vn, dim=EdgeDim, wait=False)
 
         log.debug(
             "running stencils 07 08 09 10 (apply_diffusion_to_w_and_compute_horizontal_gradients_for_turbulence): start"
@@ -879,6 +878,7 @@ class Diffusion:
         )
         log.debug("running stencil 16 (update_theta_and_exner): end")
 
-        # TODO(kotsaloscv): Remove it from here since I have added _sync_edge_fields?
-        # wait(handle_edge_comm)  # need to do this here, since we currently only use 1 communication object.
-        # log.debug("communication of prognogistic.vn - end")
+        self.halo_exchange_wait(
+            handle_edge_comm
+        )  # need to do this here, since we currently only use 1 communication object.
+        log.debug("communication of prognogistic.vn - end")
