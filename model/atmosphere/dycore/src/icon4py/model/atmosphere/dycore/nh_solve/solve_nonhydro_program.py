@@ -353,7 +353,7 @@ def _predictor_stencils_7_8_9_firststep(
     theta_v: fa.CellKField[float],
     theta_ref_mc: fa.CellKField[float],
     rho_ic: fa.CellKField[float],
-    wgtfac_c:fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
     vwind_expl_wgt: fa.CellField[float],
     exner_pr: fa.CellKField[float],
     d_exner_dz_ref_ic: fa.CellKField[float],
@@ -508,7 +508,6 @@ def predictor_stencils_7_8_9_secondstep(
             KDim: (vertical_start, vertical_end),
         },
     )
-
 
 
 @gtx.field_operator

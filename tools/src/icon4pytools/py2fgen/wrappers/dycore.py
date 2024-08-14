@@ -189,7 +189,7 @@ def solve_nh_init(
     divdamp_z4: float64,
     htop_moist_proc: float64,
     limited_area: bool,
-    flat_height: float64
+    flat_height: float64,
 ):
     # globals
     global icon_grid
@@ -318,7 +318,7 @@ def solve_nh_init(
         num_levels=num_levels,
         rayleigh_damping_height=rayleigh_damping_height,
         htop_moist_proc=htop_moist_proc,
-        flat_height=flat_height
+        flat_height=flat_height,
     )
 
     # vertical parameters

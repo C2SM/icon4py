@@ -420,7 +420,7 @@ def test_solve_nh_wrapper():
         divdamp_z4=divdamp_z4,
         htop_moist_proc=htop_moist_proc,
         limited_area=limited_area,
-        flat_height=flat_height
+        flat_height=flat_height,
     )
 
     w_concorr_c = rng.uniform(low=0, high=1, size=(num_cells, num_levels + 1))
@@ -507,5 +507,5 @@ def test_solve_nh_wrapper():
         linit=linit,
         divdamp_fac_o2=divdamp_fac_o2,
         ndyn_substeps=ndyn_substeps,
-        jstep=jstep
+        jstep=jstep,
     )
