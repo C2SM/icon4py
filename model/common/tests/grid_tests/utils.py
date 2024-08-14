@@ -14,6 +14,7 @@ from pathlib import Path
 
 from icon4py.model.common.test_utils.data_handling import download_and_extract
 from icon4py.model.common.test_utils.datatest_utils import (
+    GAUSS3D_EXPERIMENT,
     GRIDS_PATH,
     MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL,
@@ -28,6 +29,7 @@ r04b09_dsl_data_file = r04b09_dsl_grid_path.joinpath("mch_ch_r04b09_dsl_grids_v1
 r02b04_global_grid_path = GRIDS_PATH.joinpath(R02B04_GLOBAL)
 r02b04_global_data_file = r02b04_global_grid_path.joinpath("icon_grid_0013_R02B04_R.tar.gz").name
 
+torus_grid_path = GRIDS_PATH.joinpath("torus")
 
 def resolve_file_from_gridfile_name(name: str) -> Path:
     if name == REGIONAL_EXPERIMENT:
@@ -50,5 +52,10 @@ def resolve_file_from_gridfile_name(name: str) -> Path:
                 r02b04_global_data_file,
             )
         return gridfile
+    elif name == GAUSS3D_EXPERIMENT:
+        gridfile = torus_grid_path.joinpath("Torus_Triangles_50000m_x_5000m_res500m.nc")
+        if not gridfile.exists():
+            raise FileNotFoundError(f"Grid file for {name} not found: {gridfile}")
+        return gridfile
     else:
-        raise ValueError(f"invalid name: use one of {R02B04_GLOBAL, REGIONAL_EXPERIMENT}")
+        raise ValueError(f"invalid name {name}: use one of {R02B04_GLOBAL, REGIONAL_EXPERIMENT, GAUSS3D_EXPERIMENT}")

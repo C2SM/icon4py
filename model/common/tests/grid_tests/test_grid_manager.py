@@ -22,6 +22,7 @@ import pytest
 
 from icon4py.model.common.grid import simple
 from icon4py.model.common.test_utils.datatest_utils import (
+    GAUSS3D_EXPERIMENT,
     GLOBAL_EXPERIMENT,
     JABW_EXPERIMENT,
     REGIONAL_EXPERIMENT,
@@ -873,75 +874,55 @@ def test_get_start_end_index_for_local_grid(
     from_grid_file = init_grid_manager(file, num_levels=num_levels).grid
     assert from_grid_file.get_start_index(dim, marker) == start_index
     assert from_grid_file.get_end_index(dim, marker) == end_index
+    
+    
+TORUS_NUM_CELLS = 1056
+TORUS_NUM_VERTICES = 528
+TORUS_NUM_EDGES = 1584
+TORUS_SIZE = {
+    CellDim: {"local": TORUS_NUM_CELLS, "interior": TORUS_NUM_CELLS, "nudging":0, "lateral_boundary":0, "end": TORUS_NUM_CELLS, "halo": TORUS_NUM_CELLS}, 
+    VertexDim: {"local": TORUS_NUM_VERTICES, "interior": TORUS_NUM_VERTICES, "nudging":TORUS_NUM_VERTICES, "lateral_boundary":0, "end": TORUS_NUM_VERTICES, "halo": TORUS_NUM_VERTICES}, 
+    EdgeDim: {"local": TORUS_NUM_EDGES, "interior": TORUS_NUM_EDGES, "nudging":0, "lateral_boundary":0, "end": TORUS_NUM_EDGES, "halo": TORUS_NUM_EDGES},
+              }     
+
+TORUS_START = {
+    CellDim: {"local": TORUS_NUM_CELLS, "interior": TORUS_NUM_CELLS, "nudging":0, "lateral_boundary":0, "end": TORUS_NUM_CELLS, "halo": TORUS_NUM_CELLS}, 
+    VertexDim: {"local": TORUS_NUM_VERTICES, "interior": TORUS_NUM_VERTICES, "nudging":TORUS_NUM_VERTICES, "lateral_boundary":0, "end": TORUS_NUM_VERTICES, "halo": TORUS_NUM_VERTICES}, 
+    EdgeDim: {"local": TORUS_NUM_EDGES, "interior": TORUS_NUM_EDGES, "nudging":0, "lateral_boundary":0, "end": TORUS_NUM_EDGES, "halo": TORUS_NUM_EDGES},
+              }   
+R2B4_START_DWD ={ 
+    CellDim: {"local": 0, "interior": 0, "nudging":0, "lateral_boundary":0, "end": R02B04_GLOBAL_NUM_CELLS, "halo": R02B04_GLOBAL_NUM_CELLS}, 
+    VertexDim: {"local": 0, "interior": 0, "nudging":R02B04_GLOBAL_NUM_VERTICES, "lateral_boundary":0, "end": R02B04_GLOBAL_NUM_VERTICES, "halo": R02B04_GLOBAL_NUM_VERTICES}, 
+    EdgeDim: {"local": 0, "interior": 0, "nudging":0, "lateral_boundary":0, "end": R02B04_GLOBAL_NUM_EDGES, "halo": R02B04_GLOBAL_NUM_EDGES},
+}
+R2B4_GLOBAL_SIZE ={ 
+    CellDim: {"local": R02B04_GLOBAL_NUM_CELLS, "interior": 0, "nudging":0, "lateral_boundary":0, "end": R02B04_GLOBAL_NUM_CELLS, "halo": R02B04_GLOBAL_NUM_CELLS}, 
+    VertexDim: {"local": R02B04_GLOBAL_NUM_VERTICES, "interior": 0, "nudging":R02B04_GLOBAL_NUM_VERTICES, "lateral_boundary":0, "end": R02B04_GLOBAL_NUM_VERTICES, "halo": R02B04_GLOBAL_NUM_VERTICES}, 
+    EdgeDim: {"local": R02B04_GLOBAL_NUM_EDGES, "interior": 0, "nudging":0, "lateral_boundary":0, "end": R02B04_GLOBAL_NUM_EDGES, "halo": R02B04_GLOBAL_NUM_EDGES},
+}
+                    
+END = {GAUSS3D_EXPERIMENT: TORUS_SIZE, R02B04_GLOBAL: R2B4_GLOBAL_SIZE}
+START = {GAUSS3D_EXPERIMENT: TORUS_START, R02B04_GLOBAL: R2B4_START_DWD}
 
 
 @pytest.mark.with_netcdf
+@pytest.mark.parametrize("zone", (HorizontalMarkerIndex.interior,HorizontalMarkerIndex.local,HorizontalMarkerIndex.nudging,HorizontalMarkerIndex.lateral_boundary, HorizontalMarkerIndex.end, HorizontalMarkerIndex.halo))
 @pytest.mark.parametrize(
-    "dim, marker,start_index,end_index",
-    [
-        (CellDim, HorizontalMarkerIndex.interior(CellDim), 0, 0),
-        (CellDim, HorizontalMarkerIndex.local(CellDim), 0, R02B04_GLOBAL_NUM_CELLS),
-        (CellDim, HorizontalMarkerIndex.nudging(CellDim), 0, 0),
-        (CellDim, HorizontalMarkerIndex.lateral_boundary(CellDim), 0, 0),
-        (
-            CellDim,
-            HorizontalMarkerIndex.end(CellDim),
-            R02B04_GLOBAL_NUM_CELLS,
-            R02B04_GLOBAL_NUM_CELLS,
-        ),
-        (
-            CellDim,
-            HorizontalMarkerIndex.halo(CellDim),
-            R02B04_GLOBAL_NUM_CELLS,
-            R02B04_GLOBAL_NUM_CELLS,
-        ),
-        (EdgeDim, HorizontalMarkerIndex.interior(EdgeDim), 0, 0),
-        (EdgeDim, HorizontalMarkerIndex.local(EdgeDim), 0, R02B04_GLOBAL_NUM_EDGES),
-        (EdgeDim, HorizontalMarkerIndex.nudging(EdgeDim), 0, 0),
-        (EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim), 0, 0),
-        (
-            EdgeDim,
-            HorizontalMarkerIndex.end(EdgeDim),
-            R02B04_GLOBAL_NUM_EDGES,
-            R02B04_GLOBAL_NUM_EDGES,
-        ),
-        (
-            EdgeDim,
-            HorizontalMarkerIndex.halo(EdgeDim),
-            R02B04_GLOBAL_NUM_EDGES,
-            R02B04_GLOBAL_NUM_EDGES,
-        ),
-        (VertexDim, HorizontalMarkerIndex.interior(VertexDim), 0, 0),
-        (
-            VertexDim,
-            HorizontalMarkerIndex.local(VertexDim),
-            0,
-            R02B04_GLOBAL_NUM_VERTICES,
-        ),
-        (VertexDim, HorizontalMarkerIndex.lateral_boundary(VertexDim), 0, 0),
-        (
-            VertexDim,
-            HorizontalMarkerIndex.end(VertexDim),
-            R02B04_GLOBAL_NUM_VERTICES,
-            R02B04_GLOBAL_NUM_VERTICES,
-        ),
-        (
-            VertexDim,
-            HorizontalMarkerIndex.halo(VertexDim),
-            R02B04_GLOBAL_NUM_VERTICES,
-            R02B04_GLOBAL_NUM_VERTICES,
-        ),
-    ],
+    "dim", (CellDim, EdgeDim, VertexDim),
 )
-@pytest.mark.parametrize("grid_file, num_levels", [(R02B04_GLOBAL, 80)])
+@pytest.mark.parametrize("grid_file, num_levels", [(GAUSS3D_EXPERIMENT, 1),(R02B04_GLOBAL, 1) ])
 def test_get_start_end_index_for_global_grid(
-    grid_file, num_levels, dim, marker, start_index, end_index
+        grid_file, num_levels, dim, zone, 
 ):
     file = resolve_file_from_gridfile_name(grid_file)
     from_grid_file = init_grid_manager(file, num_levels=num_levels).grid
-    assert from_grid_file.get_start_index(dim, marker) == start_index
-    assert from_grid_file.get_end_index(dim, marker) == end_index
-
+    marker = zone(dim)
+    start_index = from_grid_file.get_start_index(dim, marker)
+    end_index = from_grid_file.get_end_index(dim, marker)
+    zone_name = zone.__name__
+    print(f"experiment: {grid_file} --- dim = {dim}: zone {zone_name}: marker = {marker}: {start_index, end_index} zone size = {end_index - start_index}")
+    assert start_index == START[grid_file][dim][zone_name]
+    assert end_index == END[grid_file][dim][zone_name]
 
 @pytest.mark.parametrize(
     "grid_file, global_num_cells",
