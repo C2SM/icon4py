@@ -1,41 +1,50 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from icon4py.model.atmosphere.dycore.nh_solve.cached import mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl
-from icon4py.model.atmosphere.dycore.velocity.cached import (
+import numpy as np
+
+import icon4py.model.atmosphere.dycore.velocity.velocity_advection_program as velocity_prog
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_normal_wind_tendency_approaching_cfl import (
     add_extra_diffusion_for_normal_wind_tendency_approaching_cfl,
+)
+from icon4py.model.atmosphere.dycore.add_extra_diffusion_for_w_con_approaching_cfl import (
     add_extra_diffusion_for_w_con_approaching_cfl,
+)
+from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency import (
     compute_advective_normal_wind_tendency,
+)
+from icon4py.model.atmosphere.dycore.compute_horizontal_advection_term_for_vertical_velocity import (
     compute_horizontal_advection_term_for_vertical_velocity,
-    compute_tangential_wind,
-    extrapolate_at_top,
-    fused_stencil_14,
-    fused_stencils_4_5,
-    fused_stencils_9_10,
-    fused_stencils_11_to_13,
-    fused_stencils_16_to_17,
+)
+from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
+from icon4py.model.atmosphere.dycore.interpolate_contravariant_vertical_velocity_to_full_levels import (
     interpolate_contravariant_vertical_velocity_to_full_levels,
+)
+from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import (
     interpolate_to_cell_center,
+)
+from icon4py.model.atmosphere.dycore.interpolate_vn_to_ie_and_compute_ekin_on_edges import (
     interpolate_vn_to_ie_and_compute_ekin_on_edges,
+)
+from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
     interpolate_vt_to_interface_edges,
+)
+from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
+    mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
+)
+from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     mo_math_divrot_rot_vertex_ri_dsl,
 )
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
-from icon4py.model.common.settings import xp
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -200,7 +209,7 @@ class VelocityAdvection:
                 offset_provider=self.grid.offset_providers,
             )
 
-        fused_stencils_4_5(
+        velocity_prog.fused_stencils_4_5(
             vn=prognostic_state.vn,
             vt=diagnostic_state.vt,
             vn_ie=diagnostic_state.vn_ie,
@@ -218,7 +227,7 @@ class VelocityAdvection:
             vertical_end=self.grid.num_levels,
             offset_provider={},
         )
-        extrapolate_at_top(
+        velocity_prog.extrapolate_at_top(
             wgtfacq_e=self.metric_state.wgtfacq_e,
             vn=prognostic_state.vn,
             vn_ie=diagnostic_state.vn_ie,
@@ -257,7 +266,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        fused_stencils_9_10(
+        velocity_prog.fused_stencils_9_10(
             z_w_concorr_me=z_w_concorr_me,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
             local_z_w_concorr_mc=self.z_w_concorr_mc,
@@ -273,7 +282,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        fused_stencils_11_to_13(
+        velocity_prog.fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -287,7 +296,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        fused_stencil_14(
+        velocity_prog.fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -316,7 +325,7 @@ class VelocityAdvection:
         )
 
         if not vn_only:
-            fused_stencils_16_to_17(
+            velocity_prog.fused_stencils_16_to_17(
                 w=prognostic_state.w,
                 local_z_v_grad_w=self.z_v_grad_w,
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
@@ -400,7 +409,7 @@ class VelocityAdvection:
 
     def _update_levmask_from_cfl_clipping(self):
         self.levmask = gtx.as_field(
-            domain=(KDim,), data=(xp.any(self.cfl_clipping.ndarray, 0)), dtype=bool
+            domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):
@@ -505,7 +514,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        fused_stencils_11_to_13(
+        velocity_prog.fused_stencils_11_to_13(
             w=prognostic_state.w,
             w_concorr_c=diagnostic_state.w_concorr_c,
             local_z_w_con_c=self.z_w_con_c,
@@ -519,7 +528,7 @@ class VelocityAdvection:
             offset_provider={},
         )
 
-        fused_stencil_14(
+        velocity_prog.fused_stencil_14(
             ddqz_z_half=self.metric_state.ddqz_z_half,
             local_z_w_con_c=self.z_w_con_c,
             local_cfl_clipping=self.cfl_clipping,
@@ -545,7 +554,7 @@ class VelocityAdvection:
             offset_provider=self.grid.offset_providers,
         )
 
-        fused_stencils_16_to_17(
+        velocity_prog.fused_stencils_16_to_17(
             w=prognostic_state.w,
             local_z_v_grad_w=self.z_v_grad_w,
             e_bln_c_s=self.interpolation_state.e_bln_c_s,
