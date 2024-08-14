@@ -23,9 +23,11 @@ GAUSS3D_EXPERIMENT = "gauss3d_torus"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
+TORUS_GRID_URI = "https://polybox.ethz.ch/index.php/s/CUppakxhyUmof7o/download"
 GRID_URIS = {
     REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
+    GAUSS3D_EXPERIMENT: TORUS_GRID_URI,
 }
 
 GRID_IDS = {
