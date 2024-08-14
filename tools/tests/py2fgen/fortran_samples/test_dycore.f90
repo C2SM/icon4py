@@ -136,7 +136,7 @@ program solve_nh_simulation
 
    real(c_double), parameter :: dtime = 10.0
    real(c_double), parameter :: rayleigh_damping_height = 12500.0
-   integer(c_double), parameter :: flat_height = 16000.0
+   real(c_double), parameter :: flat_height = 16000.0
    integer(c_int), parameter :: jstep = 0
    integer(c_int), parameter :: nflat_gradp = 59
    real(c_double), parameter :: ndyn_substeps = 2.0
