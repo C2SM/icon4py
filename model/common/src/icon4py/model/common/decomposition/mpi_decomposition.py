@@ -322,7 +322,7 @@ class HaloExchangeWait:
                 "_halo_exchange_wait_",
                 inputs=None,
                 outputs=None,
-                code=f"h_{id(self.exchange_object)}.wait();\n__out = 1234;",
+                code=f"h_{id(self.exchange_object)}.wait();\n//__out = 1234;",
                 language=dace.dtypes.Language.CPP,
                 side_effects=False,
             )

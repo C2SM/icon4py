@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -14,23 +22,24 @@
 from __future__ import annotations
 
 import copy
-from typing import ClassVar, Optional, Sequence, Any
 import site
 import sys
+from typing import Any, ClassVar, Optional, Sequence
+
 
 try:
     import dace
 except ImportError as e:
     raise ImportError("DaCe is required for this module") from e
 
+from dace import dtypes
 from dace.memlet import Memlet
 from dace.properties import CodeBlock
 from dace.sdfg.state import SDFGState
-from dace import dtypes
+from gt4py.next.ffront.fbuiltins import Dimension
 
 import icon4py.model.common as common
 from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-from gt4py.next.ffront.fbuiltins import Dimension
 
 
 ghex_ptr_names = (
@@ -45,10 +54,19 @@ ghex_ptr_names = (
 )
 
 
-def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str, dace.data.Data], exchange: common.decomposition.mpi_decomposition.GHexMultiNodeExchange, dim: Dimension, unique_id: int, wait: bool, counter: int) -> None:
-    '''
+def add_halo_tasklet(
+    sdfg: dace.SDFG,
+    state: SDFGState,
+    global_buffers: dict[str, dace.data.Data],
+    exchange: common.decomposition.mpi_decomposition.GHexMultiNodeExchange,
+    dim: Dimension,
+    unique_id: int,
+    wait: bool,
+    counter: int,
+) -> None:
+    """
     Add halo exchange tasklet to the SDFG state.
-    
+
     Arg:
         sdfg: SDFG
         state: SDFG state to add the tasklet to
@@ -58,7 +76,7 @@ def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str
         unique_id:
         wait: Async exchange or not
         counter: counter to define the global variables only once
-    '''
+    """
     tasklet = dace.sdfg.nodes.Tasklet(
         "_halo_exchange_",
         inputs=None,
@@ -72,7 +90,7 @@ def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str
     in_connectors = {}
     out_connectors = {}
 
-    if counter == 0: # define them only once
+    if counter == 0:  # define them only once
         for buffer_name in ghex_ptr_names:
             sdfg.add_scalar(buffer_name, dtype=dace.uintp)
             buffer = state.add_read(buffer_name)
@@ -82,11 +100,13 @@ def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str
             )
 
     for i, (buffer_name, data_descriptor) in enumerate(global_buffers.items()):
-        sdfg.add_array(buffer_name,
-                       data_descriptor.shape,
-                       data_descriptor.dtype,
-                       storage=data_descriptor.storage,
-                       strides=data_descriptor.strides)
+        sdfg.add_array(
+            buffer_name,
+            data_descriptor.shape,
+            data_descriptor.dtype,
+            storage=data_descriptor.storage,
+            strides=data_descriptor.strides,
+        )
         buffer = state.add_read(buffer_name)
         in_connectors["IN_" + f"field_{i}"] = dtypes.pointer(data_descriptor.dtype)
         state.add_edge(
@@ -108,10 +128,10 @@ def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str
         )
 
     # Dummy return: preserve same interface with non-DaCe version
-    sdfg.add_scalar(name='__return', dtype=dace.int32)
-    ret = state.add_write('__return')
-    state.add_edge(tasklet, '__out', ret, None, dace.Memlet(data='__return', subset='0'))
-    out_connectors['__out'] = dace.int32
+    sdfg.add_scalar(name="__return", dtype=dace.int32)
+    ret = state.add_write("__return")
+    state.add_edge(tasklet, "__out", ret, None, dace.Memlet(data="__return", subset="0"))
+    out_connectors["__out"] = dace.int32
 
     tasklet.in_connectors = in_connectors
     tasklet.out_connectors = out_connectors
@@ -173,9 +193,7 @@ def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str
         else:
             # for async exchange, we need to keep the descriptors alive, until the wait
             fields_desc += f"{descr_unique_name} = std::make_unique<{descr_type_}>(*domain_descriptor, IN_field_{i}, levels, levels_first, outer_strides);\n"
-            fields_desc_glob_vars += (
-                f"std::unique_ptr<{descr_type_}> {descr_unique_name};\n"
-            )
+            fields_desc_glob_vars += f"std::unique_ptr<{descr_type_}> {descr_unique_name};\n"
 
     code = ""
     if counter == 0:
@@ -238,6 +256,7 @@ def add_halo_tasklet(sdfg: dace.SDFG, state: SDFGState, global_buffers: dict[str
 @dace.library.environment
 class DaceGHEX:
     """Set GHEX environment for compilation in DaCe"""
+
     python_site_packages: ClassVar[str] = site.getsitepackages()[0]
     ghex_path: ClassVar[str] = (
         python_site_packages + "/ghex"
