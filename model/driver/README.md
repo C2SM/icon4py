@@ -4,7 +4,7 @@
 
 Currently, users need serialized data of the pre-computed metric and interpolation coefficients and grid to run the driver.
 
-Currently, it does only diffusion and solve_nonhydro (dry atmosphere with no physics). The configuration for the granules and driver is hardcoded in [icon4py_configuration.py](src/icon4py/model/driver/icon4py_configuration.py). Time step, total integration time, number of substeps, and etc. can be configured there. 
+Currently, it does only diffusion and solve_nonhydro (dry atmosphere with no physics). The configuration for the granules and driver is hardcoded in [icon4py_configuration.py](src/icon4py/model/driver/icon4py_configuration.py). Time step, total integration time, number of substeps, and etc. can be configured there.
 
 The code is meant to be changed and enlarged as we port new parts of the model.
 
