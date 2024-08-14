@@ -17,6 +17,7 @@ Writing a new ADR is simple:
 ## Index by Topic
 
 ### ICON4Py Model Framework 
+- [0001: Model Physics Components Interface](0001_model_physics_components_interface.md)
 
 
 
