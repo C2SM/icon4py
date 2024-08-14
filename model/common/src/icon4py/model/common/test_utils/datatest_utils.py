@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import os
 import pathlib
 import re
@@ -23,6 +19,7 @@ GLOBAL_EXPERIMENT = "exclaim_ape_R02B04"
 REGIONAL_EXPERIMENT = "mch_ch_r04b09_dsl"
 R02B04_GLOBAL = "r02b04_global"
 JABW_EXPERIMENT = "jabw_R02B04"
+GAUSS3D_EXPERIMENT = "gauss3d_torus"
 
 MC_CH_R04B09_DSL_GRID_URI = "https://polybox.ethz.ch/index.php/s/hD232znfEPBh4Oh/download"
 R02B04_GLOBAL_GRID_URI = "https://polybox.ethz.ch/index.php/s/AKAO6ImQdIatnkB/download"
@@ -35,6 +32,7 @@ GRID_IDS = {
     GLOBAL_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
     REGIONAL_EXPERIMENT: uuid.UUID("f2e06839-694a-cca1-a3d5-028e0ff326e0"),
     JABW_EXPERIMENT: uuid.UUID("af122aca-1dd2-11b2-a7f8-c7bf6bc21eba"),
+    GAUSS3D_EXPERIMENT: uuid.UUID("80ae276e-ec54-11ee-bf58-e36354187f08"),
 }
 
 
@@ -61,6 +59,7 @@ DATA_URIS = {
 }
 DATA_URIS_APE = {1: "https://polybox.ethz.ch/index.php/s/y9WRP1mpPlf2BtM/download"}
 DATA_URIS_JABW = {1: "https://polybox.ethz.ch/index.php/s/kp9Rab00guECrEd/download"}
+DATA_URIS_GAUSS3D = {1: "https://polybox.ethz.ch/index.php/s/IiRimdJH2ZBZ1od/download"}
 
 
 def get_global_grid_params(experiment: str) -> tuple[int, int]:
@@ -72,6 +71,10 @@ def get_global_grid_params(experiment: str) -> tuple[int, int]:
         Args: experiment: str: The experiment name.
         Returns: tuple[int, int]: The grid root and level.
     """
+    if "torus" in experiment:
+        # these magic values seem to mark a torus: they are set in all torus grid files.
+        return 0, 2
+
     try:
         root, level = map(int, re.search("[Rr](\d+)[Bb](\d+)", experiment).groups())
         return root, level

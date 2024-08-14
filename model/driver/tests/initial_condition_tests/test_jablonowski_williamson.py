@@ -1,20 +1,15 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
-from icon4py.model.driver import initialization_utils as driver_init
+from icon4py.model.driver.test_cases import jablonowski_williamson as jabw
 
 
 @pytest.mark.datatest
@@ -43,7 +38,7 @@ def test_jabw_initial_condition(
         diagnostic_state,
         prognostic_state_now,
         prognostic_state_next,
-    ) = driver_init.model_initialization_jabw(
+    ) = jabw.model_initialization_jabw(
         icon_grid,
         cell_geometry,
         edge_geometry,

@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 import dataclasses
 from typing import Final, Optional
@@ -173,8 +169,6 @@ class TimeSteppingScheme(enum.IntEnum):
 
 
 class DivergenceDampingType(enum.IntEnum):
-    #: divergence damping acting on 2D divergence
-    TWO_DIMENSIONAL = 2
     #: divergence damping acting on 3D divergence
     THREE_DIMENSIONAL = 3
     #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere

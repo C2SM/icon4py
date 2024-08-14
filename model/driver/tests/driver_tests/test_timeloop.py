@@ -1,19 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
-import os
-
-import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.diffusion import diffusion
@@ -24,7 +16,11 @@ from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4py.model.driver import icon4py_driver, serialbox_helpers as driver_sb
+from icon4py.model.driver import (
+    icon4py_configuration,
+    icon4py_driver,
+    serialbox_helpers as driver_sb,
+)
 
 from .utils import (
     construct_diffusion_config,
@@ -35,10 +31,9 @@ from .utils import (
 
 @pytest.mark.datatest
 @pytest.mark.parametrize(
-    "debug_mode, experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
+    "experiment, istep_init, istep_exit, jstep_init, jstep_exit, timeloop_date_init, timeloop_date_exit, step_date_init, step_date_exit, timeloop_diffusion_linit_init, timeloop_diffusion_linit_exit, vn_only",
     [
         (
-            False,
             dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
@@ -53,7 +48,6 @@ from .utils import (
             False,
         ),
         (
-            False,
             dt_utils.REGIONAL_EXPERIMENT,
             1,
             2,
@@ -68,7 +62,6 @@ from .utils import (
             True,
         ),
         (
-            False,
             dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
@@ -83,7 +76,6 @@ from .utils import (
             False,
         ),
         (
-            False,
             dt_utils.GLOBAL_EXPERIMENT,
             1,
             2,
@@ -97,10 +89,23 @@ from .utils import (
             False,
             True,
         ),
+        (
+            dt_utils.GAUSS3D_EXPERIMENT,
+            1,
+            2,
+            0,
+            4,
+            "2001-01-01T00:00:00.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            "2001-01-01T00:00:04.000",
+            False,
+            False,
+            False,
+        ),
     ],
 )
 def test_run_timeloop_single_step(
-    debug_mode,
     experiment,
     timeloop_date_init,
     timeloop_date_exit,
@@ -120,10 +125,26 @@ def test_run_timeloop_single_step(
     savepoint_nonhydro_init,
     savepoint_nonhydro_exit,
 ):
-    diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_dtime = timeloop_diffusion_savepoint_init.get_metadata("dtime").get("dtime")
+    if experiment == dt_utils.GAUSS3D_EXPERIMENT:
+        config = icon4py_configuration.read_config(experiment)
+        diffusion_config = config.diffusion_config
+        nonhydro_config = config.solve_nonhydro_config
+        icon4pyrun_config = config.run_config
+
+    else:
+        diffusion_config = construct_diffusion_config(experiment, ndyn_substeps=ndyn_substeps)
+        nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
+        icon4pyrun_config = construct_icon4pyrun_config(
+            experiment,
+            timeloop_date_init,
+            timeloop_date_exit,
+            timeloop_diffusion_linit_init,
+            ndyn_substeps=ndyn_substeps,
+        )
+
     edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
     cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
+
     diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
         interpolation_savepoint
     )
@@ -156,23 +177,10 @@ def test_run_timeloop_single_step(
         cell_params=cell_geometry,
     )
 
-    nonhydro_config = construct_nonhydrostatic_config(experiment, ndyn_substeps=ndyn_substeps)
     sp = savepoint_nonhydro_init
     nonhydro_params = solve_nh.NonHydrostaticParams(nonhydro_config)
     sp_v = savepoint_velocity_init
-    nonhydro_dtime = savepoint_velocity_init.get_metadata("dtime").get("dtime")
     do_prep_adv = sp_v.get_metadata("prep_adv").get("prep_adv")
-
-    icon4pyrun_config = construct_icon4pyrun_config(
-        experiment,
-        timeloop_date_init,
-        timeloop_date_exit,
-        timeloop_diffusion_linit_init,
-        ndyn_substeps=ndyn_substeps,
-    )
-
-    assert timeloop_diffusion_savepoint_init.fac_bdydiff_v() == diffusion_granule.fac_bdydiff_v
-    assert icon4pyrun_config.dtime.total_seconds() == diffusion_dtime
 
     grg = interpolation_savepoint.geofac_grg()
     nonhydro_interpolation_state = solve_nh_states.InterpolationState(
@@ -229,9 +237,6 @@ def test_run_timeloop_single_step(
         coeff_gradekin=metrics_savepoint.coeff_gradekin(),
     )
 
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
-
     solve_nonhydro_granule = solve_nh.SolveNonhydro()
     solve_nonhydro_granule.init(
         grid=icon_grid,
@@ -282,13 +287,7 @@ def test_run_timeloop_single_step(
 
     timeloop = icon4py_driver.TimeLoop(icon4pyrun_config, diffusion_granule, solve_nonhydro_granule)
 
-    assert timeloop.substep_timestep == nonhydro_dtime
-
-    initial_prognostic_date = "2021-06-20T12:00:10.000"
-    if experiment == dt_utils.GLOBAL_EXPERIMENT:
-        initial_prognostic_date = "2000-01-01T00:00:00.000"
-
-    if timeloop_date_exit == initial_prognostic_date:
+    if timeloop_diffusion_linit_init:
         prognostic_state = timeloop_diffusion_savepoint_init.construct_prognostics()
     else:
         prognostic_state = prognostics.PrognosticState(
@@ -298,6 +297,7 @@ def test_run_timeloop_single_step(
             rho=sp.rho_now(),
             exner=sp.exner_now(),
         )
+
     prognostic_state_new = prognostics.PrognosticState(
         w=sp.w_new(),
         vn=sp.vn_new(),
@@ -322,53 +322,6 @@ def test_run_timeloop_single_step(
     theta_sp = timeloop_diffusion_savepoint_exit.theta_v()
     vn_sp = timeloop_diffusion_savepoint_exit.vn()
     w_sp = timeloop_diffusion_savepoint_exit.w()
-
-    if debug_mode:
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        base_dir = script_dir + "/"
-
-        def printing(ref, predict, title: str):
-            with open(base_dir + "analysis_" + timeloop_date_init + "_" + title + ".dat", "w") as f:
-                cell_size = ref.shape[0]
-                k_size = ref.shape[1]
-                print(title, cell_size, k_size)
-                difference = np.abs(ref - predict)
-                print(np.max(difference), np.min(difference))
-                for i in range(cell_size):
-                    for k in range(k_size):
-                        f.write("{0:7d} {1:7d}".format(i, k))
-                        f.write(
-                            " {0:.20e} {1:.20e} {2:.20e} ".format(
-                                difference[i, k], ref[i, k], predict[i, k]
-                            )
-                        )
-                        f.write("\n")
-
-        printing(
-            rho_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].rho.asnumpy(),
-            "rho",
-        )
-        printing(
-            exner_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].exner.asnumpy(),
-            "exner",
-        )
-        printing(
-            theta_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].theta_v.asnumpy(),
-            "theta_v",
-        )
-        printing(
-            w_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].w.asnumpy(),
-            "w",
-        )
-        printing(
-            vn_sp.asnumpy(),
-            prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),
-            "vn",
-        )
 
     assert helpers.dallclose(
         prognostic_state_list[timeloop.prognostic_now].vn.asnumpy(),

@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import functools
 import logging
 import uuid
@@ -770,9 +766,11 @@ class MetricSavepoint(IconSavepoint):
 
 
 class IconDiffusionInitSavepoint(IconSavepoint):
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def hdef_ic(self):
         return self._get_field("hdef_ic", dims.CellDim, dims.KDim)
 
+    @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)
     def div_ic(self):
         return self._get_field("div_ic", dims.CellDim, dims.KDim)
 
@@ -1344,10 +1342,10 @@ class IconJabwDiagnosticSavepoint(IconSavepoint):
     def pressure_sfc(self):
         return self._get_field("output_diag_pressure_sfc", dims.CellDim)
 
-    def zonal_Wind(self):
+    def zonal_wind(self):
         return self._get_field("output_diag_u", dims.CellDim, dims.KDim)
 
-    def meridional_Wind(self):
+    def meridional_wind(self):
         return self._get_field("output_diag_v", dims.CellDim, dims.KDim)
 
 

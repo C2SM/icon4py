@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import datetime
 import logging
@@ -149,6 +145,40 @@ def read_config(
             jabw_nonhydro_config,
         )
 
+    def _gauss3d_vertical_config():
+        return v_grid.VerticalGridConfig(
+            num_levels=35,
+            rayleigh_damping_height=45000.0,
+        )
+
+    def _gauss3d_diffusion_config(n_substeps: int):
+        return diffusion.DiffusionConfig()
+
+    def _gauss3d_nonhydro_config(n_substeps: int):
+        return solve_nh.NonHydrostaticConfig(
+            igradp_method=3,
+            ndyn_substeps_var=n_substeps,
+            max_nudging_coeff=0.02,
+            divdamp_fac=0.0025,
+        )
+
+    def _gauss3d_config():
+        icon_run_config = Icon4pyRunConfig(
+            dtime=datetime.timedelta(seconds=4.0),
+            end_date=datetime.datetime(1, 1, 1, 0, 0, 4),
+            apply_initial_stabilization=False,
+            n_substeps=5,
+        )
+        vertical_config = _gauss3d_vertical_config()
+        diffusion_config = _gauss3d_diffusion_config(icon_run_config.n_substeps)
+        nonhydro_config = _gauss3d_nonhydro_config(icon_run_config.n_substeps)
+        return (
+            icon_run_config,
+            vertical_config,
+            diffusion_config,
+            nonhydro_config,
+        )
+
     if experiment_type == driver_init.ExperimentType.JABW:
         (
             model_run_config,
@@ -156,6 +186,13 @@ def read_config(
             diffusion_config,
             nonhydro_config,
         ) = _jablownoski_Williamson_config()
+    elif experiment_type == driver_init.ExperimentType.GAUSS3D:
+        (
+            model_run_config,
+            vertical_grid_config,
+            diffusion_config,
+            nonhydro_config,
+        ) = _gauss3d_config()
     else:
         log.warning(
             "Experiment name is not specified, default configuration for mch_ch_r04b09_dsl is used."
