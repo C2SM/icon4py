@@ -8,6 +8,10 @@ ICON4Py hosts Python implementations of various components from the ICON climate
 
 The repository is organized into directories, each containing independent Python namespace packages for different ICON components or utility packages. These packages can be installed independently. Since these packages are not available from a package repository (yet), you need to specify the location of dependencies within this repository. This can be done by installing the required dependencies first. Refer to the [Installation instructions](#installation-instructions) below.
 
+## License
+
+ICON4Py is licensed under the terms of the BSD-3-Clause.
+
 ## Installation instructions
 ### Dependencies
 A minimal installation of ICON4Py needs 
