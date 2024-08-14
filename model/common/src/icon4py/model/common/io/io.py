@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import abc
 import dataclasses
@@ -91,7 +86,9 @@ class FieldGroupIOConfig(Config):
     """
 
     output_interval: str
-    start_time: Optional[str]
+    start_time: Optional[
+        str
+    ]  # TODO (halungge) make it possible to pass datetime.datetime objects other than strings?
     filename: str
     variables: list[str]
     timesteps_per_file: int = 10
@@ -184,7 +181,10 @@ class IOMonitor(monitor.Monitor):
             path.mkdir(parents=True, exist_ok=False, mode=0o777)
             self._output_path = path
         except OSError as error:
-            log.error(f"Output directory at {path} exists: {error}.")
+            log.error(
+                f"Output directory at {path} exists: {error}. Re-run with another output directory. Aborting."
+            )
+            exit(1)
 
     def _write_ugrid(self) -> None:
         writer = ugrid.IconUGridWriter(self._grid_file, self._output_path)

@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import math
 from dataclasses import dataclass
 from functools import cached_property
@@ -362,7 +358,14 @@ class CellParams:
         global_num_cells: int,
         length_rescale_factor: float = 1.0,
     ):
-        mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
+        if global_num_cells == 0:
+            # Compute from the area array (should be a torus grid)
+            # TODO (Magdalena) this would not work for a distributed setup (at
+            # least not for a sphere) for the torus it would because cell area
+            # is constant.
+            mean_cell_area = area.asnumpy().mean()
+        else:
+            mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
         return cls(
             cell_center_lat=cell_center_lat,
             cell_center_lon=cell_center_lon,
