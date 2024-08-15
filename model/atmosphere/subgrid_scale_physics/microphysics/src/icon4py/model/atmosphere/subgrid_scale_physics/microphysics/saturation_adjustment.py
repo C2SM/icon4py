@@ -49,41 +49,47 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
 # TODO (Chia Rui): Refactor this class when there is consensus in gt4py team about the best way to express compile-time constants
-class SaturationAdjustConstants(FrozenNamespace):
+class SaturatedPressureConstants(FrozenNamespace):
     """Constants used for the computation in saturation adjustment."""
 
-    #: Latent heat of vaporisation for water [J/kg]
+    #: Latent heat of vaporisation for water [J/kg]. Originally expressed as alv in ICON.
     vaporisation_latent_heat: ta.wpfloat = 2.5008e6
     #: Melting temperature of ice/snow [K]
     tmelt: ta.wpfloat = 273.15
 
+    #: See docstring in common/constanst.py
     rd: ta.wpfloat = constants.RD
+    #: See docstring in common/constanst.py
     rv: ta.wpfloat = constants.RV
+    #: See docstring in common/constanst.py
     cvd: ta.wpfloat = constants.CVD
+    #: See docstring in common/constanst.py
     cpd: ta.wpfloat = constants.CPD
 
-    #: cpd / cpl - 1
+    #: Dry air heat capacity at constant pressure / water heat capacity at constant pressure - 1
     rcpl: ta.wpfloat = 3.1733
-    #: Specific heat capacity of liquid water
+    #: Specific heat capacity of liquid water. Originally expressed as clw in ICON.
     spec_heat_cap_water: ta.wpfloat = (rcpl + 1.0) * cpd
 
-    #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation.
+    #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
     tetens_p0: ta.wpfloat = 610.78
-    #: aw in Tetens formula for saturation water pressure
+    #: aw in Tetens formula for saturation water pressure. Originally expressed as c3les in ICON.
     tetens_aw: ta.wpfloat = 17.269
-    #: bw in Tetens formula for saturation water pressure
+    #: bw in Tetens formula for saturation water pressure. Originally expressed as c4les in ICON.
     tetens_bw: ta.wpfloat = 35.86
-    #: numerator in temperature partial derivative of Tetens formula for saturation water pressure (psat tetens_der / (t - tetens_bw)^2)
+    #: numerator in temperature partial derivative of Tetens formula for saturation water pressure (psat tetens_der / (t - tetens_bw)^2). Originally expressed as c5les in ICON.
     tetens_der: ta.wpfloat = tetens_aw * (tmelt - tetens_bw)
 
 
 # Instantiate the class
-satad_const: Final = SaturationAdjustConstants()
+satpres_const: Final = SaturatedPressureConstants()
 
 
 @dataclasses.dataclass(frozen=True)
 class SaturationAdjustmentConfig:
+    #: in ICON, 10 is always used for max iteration when subroutine satad_v_3D is called.
     max_iter: int = 10
+    #: in ICON, 1.e-3 is always used for the tolerance when subroutine satad_v_3D is called.
     tolerance: ta.wpfloat = 1.0e-3
 
 
@@ -264,9 +270,9 @@ def _latent_heat_vaporization(
         latent heat of vaporization.
     """
     return (
-        satad_const.vaporisation_latent_heat
-        + (1850.0 - satad_const.spec_heat_cap_water) * (t - satad_const.tmelt)
-        - satad_const.rv * t
+        satpres_const.vaporisation_latent_heat
+        + (1850.0 - satpres_const.spec_heat_cap_water) * (t - satpres_const.tmelt)
+        - satpres_const.rv * t
     )
 
 
@@ -281,8 +287,8 @@ def _sat_pres_water(t: fa.CellKField[ta.wpfloat]) -> fa.CellKField[ta.wpfloat]:
     Returns:
         saturation water vapour pressure.
     """
-    return satad_const.tetens_p0 * exp(
-        satad_const.tetens_aw * (t - satad_const.tmelt) / (t - satad_const.tetens_bw)
+    return satpres_const.tetens_p0 * exp(
+        satpres_const.tetens_aw * (t - satpres_const.tmelt) / (t - satpres_const.tetens_bw)
     )
 
 
@@ -302,7 +308,7 @@ def _qsat_rho(
     Returns:
         specific humidity at water saturation.
     """
-    return _sat_pres_water(t) / (rho * satad_const.rv * t)
+    return _sat_pres_water(t) / (rho * satpres_const.rv * t)
 
 
 @gtx.field_operator
@@ -325,7 +331,7 @@ def _dqsatdT_rho(
     Returns:
         partial derivative of the specific humidity at water saturation.
     """
-    beta = satad_const.tetens_der / (t - satad_const.tetens_bw) ** 2 - 1.0 / t
+    beta = satpres_const.tetens_der / (t - satpres_const.tetens_bw) ** 2 - 1.0 / t
     return beta * zqsat
 
 
@@ -519,14 +525,14 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
         mask for Newton iteration case
     """
     temperature_after_all_qc_evaporated = (
-        temperature - _latent_heat_vaporization(temperature) / satad_const.cvd * qc
+        temperature - _latent_heat_vaporization(temperature) / satpres_const.cvd * qc
     )
 
     # Check, which points will still be subsaturated even after evaporating all cloud water.
     subsaturated_mask = qv + qc <= _qsat_rho(temperature_after_all_qc_evaporated, rho)
 
     # Remains const. during iteration
-    lwdocvd = _latent_heat_vaporization(temperature) / satad_const.cvd
+    lwdocvd = _latent_heat_vaporization(temperature) / satpres_const.cvd
 
     new_temperature1 = where(
         subsaturated_mask,
