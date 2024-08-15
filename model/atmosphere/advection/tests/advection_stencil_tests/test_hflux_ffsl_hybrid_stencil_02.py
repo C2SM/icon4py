@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.hflux_ffsl_hybrid_stencil_02 import (
+from icon4py.model.atmosphere.advection.stencils.hflux_ffsl_hybrid_stencil_02 import (
     hflux_ffsl_hybrid_stencil_02,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_list_stencil import (
+from icon4py.model.atmosphere.advection.stencils.prep_gauss_quadrature_c_list_stencil import (
     prep_gauss_quadrature_c_list_stencil,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

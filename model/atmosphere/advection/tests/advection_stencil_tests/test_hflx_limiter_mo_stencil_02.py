@@ -10,7 +10,9 @@ import numpy as np
 import pytest
 from numpy import int32
 
-from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_02 import hflx_limiter_mo_stencil_02
+from icon4py.model.atmosphere.advection.stencils.hflx_limiter_mo_stencil_02 import (
+    hflx_limiter_mo_stencil_02,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,

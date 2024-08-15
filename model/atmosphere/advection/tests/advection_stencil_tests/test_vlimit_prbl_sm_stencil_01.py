@@ -10,7 +10,9 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.advection.v_limit_prbl_sm_stencil_01 import v_limit_prbl_sm_stencil_01
+from icon4py.model.atmosphere.advection.stencils.v_limit_prbl_sm_stencil_01 import (
+    v_limit_prbl_sm_stencil_01,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 

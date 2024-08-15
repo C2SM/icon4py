@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.upwind_vflux_ppm_stencil_01 import (
+from icon4py.model.atmosphere.advection.stencils.upwind_vflux_ppm_stencil_01 import (
     upwind_vflux_ppm_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, KDim

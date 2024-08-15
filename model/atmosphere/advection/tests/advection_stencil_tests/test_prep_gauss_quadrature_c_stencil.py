@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.prep_gauss_quadrature_c_stencil import (
+from icon4py.model.atmosphere.advection.stencils.prep_gauss_quadrature_c_stencil import (
     prep_gauss_quadrature_c_stencil,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

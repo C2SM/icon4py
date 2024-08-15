@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.hflx_limiter_mo_stencil_01b import (
+from icon4py.model.atmosphere.advection.stencils.hflx_limiter_mo_stencil_01b import (
     hflx_limiter_mo_stencil_01b,
 )
 from icon4py.model.common.dimension import C2EDim, CEDim, CellDim, EdgeDim, KDim

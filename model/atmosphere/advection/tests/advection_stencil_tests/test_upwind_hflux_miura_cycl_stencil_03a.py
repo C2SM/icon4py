@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.upwind_hflux_miura_cycl_stencil_03a import (
+from icon4py.model.atmosphere.advection.stencils.upwind_hflux_miura_cycl_stencil_03a import (
     upwind_hflux_miura_cycl_stencil_03a,
 )
 from icon4py.model.common.dimension import EdgeDim, KDim

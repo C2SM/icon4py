@@ -11,7 +11,9 @@ import pytest
 from gt4py.next import as_field
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.advection.face_val_ppm_stencil_01 import face_val_ppm_stencil_01
+from icon4py.model.atmosphere.advection.stencils.face_val_ppm_stencil_01 import (
+    face_val_ppm_stencil_01,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import (
     Output,

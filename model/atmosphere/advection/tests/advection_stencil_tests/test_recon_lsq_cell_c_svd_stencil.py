@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.recon_lsq_cell_c_svd_stencil import (
+from icon4py.model.atmosphere.advection.stencils.recon_lsq_cell_c_svd_stencil import (
     recon_lsq_cell_c_svd_stencil,
 )
 from icon4py.model.common.dimension import C2E2C2E2CDim, CECECDim, CellDim, KDim

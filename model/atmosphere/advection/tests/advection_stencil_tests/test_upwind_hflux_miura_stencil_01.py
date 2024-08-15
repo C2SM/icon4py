@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.advection.upwind_hflux_miura_stencil_01 import (
+from icon4py.model.atmosphere.advection.stencils.upwind_hflux_miura_stencil_01 import (
     upwind_hflux_miura_stencil_01,
 )
 from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim

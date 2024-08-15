@@ -9,7 +9,9 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.face_val_ppm_stencil_05 import face_val_ppm_stencil_05
+from icon4py.model.atmosphere.advection.stencils.face_val_ppm_stencil_05 import (
+    face_val_ppm_stencil_05,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field, zero_field
 

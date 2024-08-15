@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.atmosphere.advection.mo_advection_traj_btraj_compute_o1_dsl import (
+from icon4py.model.atmosphere.advection.stencils.mo_advection_traj_btraj_compute_o1_dsl import (
     mo_advection_traj_btraj_compute_o1_dsl,
 )
 from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim

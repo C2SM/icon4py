@@ -9,7 +9,9 @@
 import numpy as np
 import pytest
 
-from icon4py.model.atmosphere.advection.step_advection_stencil_04 import step_advection_stencil_04
+from icon4py.model.atmosphere.advection.stencils.step_advection_stencil_04 import (
+    step_advection_stencil_04,
+)
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
