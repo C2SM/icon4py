@@ -8,10 +8,10 @@
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import maximum
+from gt4py.next.ffront.fbuiltins import int32, maximum
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import Koff
+from icon4py.model.common.dimension import CellDim, KDim, Koff
 
 
 @field_operator
@@ -35,6 +35,10 @@ def step_advection_stencil_02(
     deepatmo_divzu: fa.KField[float],
     p_dtime: float,
     rhodz_ast2: fa.CellKField[float],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _step_advection_stencil_02(
         p_rhodz_new,
@@ -43,4 +47,5 @@ def step_advection_stencil_02(
         deepatmo_divzu,
         p_dtime,
         out=rhodz_ast2,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

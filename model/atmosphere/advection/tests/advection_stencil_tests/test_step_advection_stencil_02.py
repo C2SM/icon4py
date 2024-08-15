@@ -55,4 +55,8 @@ class TestStepAdvectionStencil02(StencilTest):
             deepatmo_divzu=deepatmo_divzu,
             p_dtime=p_dtime,
             rhodz_ast2=rhodz_ast2,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=0,
+            vertical_end=grid.num_levels - 1,
         )
