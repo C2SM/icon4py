@@ -6,29 +6,10 @@
 ! Please, refer to the LICENSE file in the root directory.
 ! SPDX-License-Identifier: BSD-3-Clause
 
-!>
-!! mo_nh_diffusion_new
-!!
-!! Diffusion in the nonhydrostatic model
-!!
-!! @author Almut Gassmann, MPI-M
-!!
-!!
-!! @par Revision History
-!! Initial release by Almut Gassmann, MPI-M (2009-08.25)
-!! Modification by William Sawyer, CSCS (2015-02-06)
-!! - OpenACC implementation
-!! Modification by William Sawyer, CSCS (2015-02-06)
-!! - Turned into a granule
-!!
-!! @par Copyright and License
-!!
-!! This code is subject to the DWD and MPI-M-Software-License-Agreement in
-!! its most recent form.
-!! Please see the file LICENSE in the root of the source tree for this code.
-!! Where software is supplied by third parties, it is indicated in the
-!! headers of the routines.
-!!
+! and additionally
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+
 
 !----------------------------
 #include "omp_definitions.inc"
