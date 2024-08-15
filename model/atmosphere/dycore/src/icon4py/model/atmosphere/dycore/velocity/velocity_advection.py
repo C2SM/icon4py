@@ -409,7 +409,7 @@ class VelocityAdvection:
 
     def _update_levmask_from_cfl_clipping(self):
         self.levmask = gtx.as_field(
-            domain=(KDim,), data=(np.any(self.cfl_clipping.asnumpy(), 0)), dtype=bool
+            domain=(KDim,), data=(np.any(self.cfl_clipping.ndarray, 0)), dtype=bool
         )
 
     def _scale_factors_by_dtime(self, dtime):
