@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -11,26 +19,27 @@
 #
 # SPDX-License-Identifier: GPL-3.0-or-later
 
-from dataclasses import dataclass
+import dataclasses
 
-from gt4py.next.common import Field
-
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import field_type_aliases as fa, type_alias as ta
 
 
-@dataclass
+@dataclasses.dataclass
 class TracerState:
     """
     Class that contains the tracer state which includes hydrometeors and aerosols.
     Corresponds to tracer pointers in ICON t_nh_prog
     """
 
-    qv: Field[[CellDim, KDim], float]
-    # pressure at half levels
-    qc: Field[[CellDim, KDim], float]
-    qr: Field[[CellDim, KDim], float]
-    # zonal wind speed
-    qi: Field[[CellDim, KDim], float]
-    # meridional wind speed
-    qs: Field[[CellDim, KDim], float]
-    qg: Field[[CellDim, KDim], float]
+    #: specific humidity [kg/kg] at cell center
+    qv: fa.CellKField[ta.wpfloat]
+    #: specific cloud water content [kg/kg] at cell center
+    qc: fa.CellKField[ta.wpfloat]
+    #: specific rain content [kg/kg] at cell center
+    qr: fa.CellKField[ta.wpfloat]
+    #: specific cloud ice content [kg/kg] at cell center
+    qi: fa.CellKField[ta.wpfloat]
+    #: specific snow content [kg/kg] at cell center
+    qs: fa.CellKField[ta.wpfloat]
+    #: specific graupel content [kg/kg] at cell center
+    qg: fa.CellKField[ta.wpfloat]

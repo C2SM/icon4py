@@ -7,7 +7,7 @@ It includes the following packages:
 - `atmosphere/dycore`: Contains implementations of the dynamical core of the ICON model
 - `atmosphere/diffusion`: Contains the implementation of diffusion in the ICON model
 - `atmosphere/advection`: Contains implementations of the advection component of the ICON model
-- `atmosphere/subgrid_scale_physics/microphysics`: Contains implementations of the microphysics component of the ICON model
+- `atmosphere/subgrid_scale_physics/microphysics`: Contains implementations of the microphysics and saturation adjustment components of the ICON model
 - `common`: Contains shared functionality that is required by multiple components.
 - `driver`: Contains the driving code for the model
 
