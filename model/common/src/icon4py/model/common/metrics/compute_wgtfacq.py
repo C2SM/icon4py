@@ -17,9 +17,9 @@ def _compute_z1_z2_z3(z_ifc, i1, i2, i3, i4):
 
 
 def compute_wgtfacq_c_dsl(
-    z_ifc: np.array,
+    z_ifc: np.ndarray,
     nlev: int,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute weighting factor for quadratic interpolation to surface.
 
