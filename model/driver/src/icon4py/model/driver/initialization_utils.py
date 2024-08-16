@@ -21,6 +21,7 @@ from icon4py.model.common.decomposition import (
 from icon4py.model.common.dimension import (
     CEDim,
     CellDim,
+    EdgeDim,
     KDim,
 )
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
@@ -339,6 +340,9 @@ def read_static_fields(
     path: pathlib.Path,
     rank=0,
     ser_type: SerializationType = SerializationType.SB,
+    grid_id=GLOBAL_GRID_ID,
+    grid_root=2,
+    grid_level=4,
 ) -> tuple[
     diffus_states.DiffusionMetricState,
     diffus_states.DiffusionInterpolationState,
@@ -362,7 +366,7 @@ def read_static_fields(
     """
     if ser_type == SerializationType.SB:
         data_provider = _serial_data_provider(path, rank)
-
+        grid_savepoint = data_provider.from_savepoint_grid(grid_id, grid_root, grid_level)
         diffusion_interpolation_state = driver_sb.construct_interpolation_state_for_diffusion(
             data_provider.from_interpolation_savepoint()
         )
@@ -430,6 +434,13 @@ def read_static_fields(
             ddqz_z_full=metrics_savepoint.ddqz_z_full(),
             rbf_vec_coeff_c1=interpolation_savepoint.rbf_vec_coeff_c1(),
             rbf_vec_coeff_c2=interpolation_savepoint.rbf_vec_coeff_c2(),
+            cell_center_lat=grid_savepoint.cell_center_lat(),
+            cell_center_lon=grid_savepoint.cell_center_lon(),
+            v_lat=grid_savepoint.v_lat(),
+            v_lon=grid_savepoint.v_lon(),
+            e_lat=grid_savepoint.edge_center_lat(),
+            e_lon=grid_savepoint.edge_center_lon(),
+            vct_a=grid_savepoint.vct_a(),
         )
 
         return (

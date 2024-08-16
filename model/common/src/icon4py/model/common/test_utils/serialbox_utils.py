@@ -63,6 +63,14 @@ class IconSavepoint:
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dimensions, buffer)
 
+    def _get_reciprocal_field(self, name, *dimensions, dtype=float):
+        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = self._reduce_to_dim_size(buffer, dimensions)
+        buffer = xp.reciprocal(buffer)
+
+        self.log.debug(f"{name} {buffer.shape}")
+        return gtx.as_field(dimensions, buffer)
+
     def _get_field_component(self, name: str, ntnd: int, dims: tuple[gtx.Dimension, gtx]):
         buffer = self.serializer.read(name, self.savepoint).astype(float)
         buffer = xp.squeeze(buffer)[:, :, ntnd - 1]
@@ -195,6 +203,9 @@ class IconGridSavepoint(IconSavepoint):
     def inv_vert_vert_length(self):
         return self._get_field("inv_vert_vert_length", dims.EdgeDim)
 
+    def vert_vert_length(self):
+        return self._get_reciprocal_field("inv_vert_vert_length", dims.EdgeDim)
+
     def primal_normal_vert_x(self):
         return self._get_field("primal_normal_vert_x", dims.EdgeDim, dims.E2C2VDim)
 
@@ -239,6 +250,20 @@ class IconGridSavepoint(IconSavepoint):
 
     def edge_center_lon(self):
         return self._get_field("edges_center_lon", dims.EdgeDim)
+
+    def v_lat(self):
+        return self._get_field("v_lat", dims.VertexDim)
+
+    def v_lon(self):
+        return self._get_field("v_lon", dims.VertexDim)
+
+    @IconSavepoint.optionally_registered(dims.VertexDim)
+    def v_lat(self):
+        return self._get_field("v_lat", dims.VertexDim)
+
+    @IconSavepoint.optionally_registered(dims.VertexDim)
+    def v_lon(self):
+        return self._get_field("v_lon", dims.VertexDim)
 
     def mean_cell_area(self):
         return self.serializer.read("mean_cell_area", self.savepoint).astype(float)[0]
@@ -348,6 +373,17 @@ class IconGridSavepoint(IconSavepoint):
     def c2v(self):
         return self._get_connectivity_array("c2v", dims.CellDim)
 
+    def v2c2v(self):
+        if self._v2c2v() is None:
+            return xp.zeros((self.sizes[dims.VertexDim], 6), dtype=int)
+        else:
+            return self._v2c2v()
+
+    @IconSavepoint.optionally_registered()
+    def _v2c2v(self):
+        return self._get_connectivity_array("v2c2v", dims.VertexDim)
+
+
     def nrdmax(self):
         return self._read_int32_shift1("nrdmax")
 
@@ -435,6 +471,7 @@ class IconGridSavepoint(IconSavepoint):
             .with_connectivities(
                 {
                     dims.C2EDim: self.c2e(),
+                    dims.C2VDim: self.c2v(),
                     dims.E2CDim: self.e2c(),
                     dims.C2E2CDim: c2e2c,
                     dims.C2E2CODim: c2e2c0,
@@ -448,6 +485,7 @@ class IconGridSavepoint(IconSavepoint):
                     dims.E2VDim: self.e2v(),
                     dims.V2EDim: self.v2e(),
                     dims.V2CDim: self.v2c(),
+                    dims.V2C2VDim: self.v2c2v(),
                     dims.E2C2VDim: self.e2c2v(),
                     dims.C2VDim: self.c2v(),
                 }
@@ -493,8 +531,11 @@ class IconGridSavepoint(IconSavepoint):
         )
         return horizontal.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
+            primal_edge_lengths=self.primal_edge_length(),
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
+            dual_edge_lengths=self.dual_edge_length(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
+            vertex_vertex_lengths=self.vert_vert_length(),
             inverse_vertex_vertex_lengths=self.inv_vert_vert_length(),
             primal_normal_vert_x=primal_normal_vert[0],
             primal_normal_vert_y=primal_normal_vert[1],
