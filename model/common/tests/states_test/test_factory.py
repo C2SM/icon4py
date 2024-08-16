@@ -93,23 +93,23 @@ def test_numpy_func(icon_grid, metrics_savepoint, backend):
     fields_factory = factory.FieldsFactory(grid=icon_grid, backend=backend)
     k_index = gtx.as_field((dims.KDim,), xp.arange(icon_grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
+    wgtfacq_c_ref = metrics_savepoint.wgtfacq_c_dsl()
 
     pre_computed_fields = factory.PrecomputedFieldsProvider(
         {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index})
     fields_factory.register_provider(pre_computed_fields)
     func = compute_wgtfacq_c_dsl
-    signature = factory.inspect_func(compute_wgtfacq_c_dsl)
+    deps = {"z_ifc": "height_on_interface_levels"}
+    params = {"nlev": icon_grid.num_levels}
     compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(func=func,
                                                               domain={dims.CellDim: (0, icon_grid.num_cells),
                                                                    dims.KDim: (0, icon_grid.num_levels)},
                                                               fields=[
                                                                        "weighting_factor_for_quadratic_interpolation_to_cell_surface"],
-                                                              deps=[
-                                                                       "height_on_interface_levels"],
-                                                              params={
-                                                                       "num_lev": icon_grid.num_levels})
+                                                              deps=deps,
+                                                              params=params)
     fields_factory.register_provider(compute_wgtfacq_c_provider)
     
     
-    fields_factory.get("weighting_factor_for_quadratic_interpolation_to_cell_surface", factory.RetrievalType.FIELD)
-   
+    wgtfacq_c = fields_factory.get("weighting_factor_for_quadratic_interpolation_to_cell_surface", factory.RetrievalType.FIELD)
+    assert helpers.dallclose(wgtfacq_c.asnumpy(), wgtfacq_c_ref.asnumpy())

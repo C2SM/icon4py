@@ -12,6 +12,7 @@ import xarray as xa
 import icon4py.model.common.states.metadata as metadata
 from icon4py.model.common import dimension as dims, exceptions, settings, type_alias as ta
 from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
 
 
@@ -65,7 +66,9 @@ class FieldProvider(Protocol):
     @abc.abstractmethod
     def fields(self) -> Iterable[str]:
         pass
-        
+
+    def _unallocated(self) -> bool:
+        return not all(self._fields.values())
 
 class PrecomputedFieldsProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction and returns it upon provider.get(field_name)."""
@@ -125,8 +128,7 @@ class ProgramFieldProvider:
         return {k: allocator(field_domain, dtype=metadata.attrs[k]["dtype"]) for k in
                 self._fields.keys()}
 
-    def _unallocated(self) -> bool:
-        return not all(self._fields.values())
+
 
     def _evaluate(self, factory: 'FieldsFactory'):
         self._fields = self._allocate(factory.allocator, factory.grid)
@@ -154,21 +156,63 @@ class ProgramFieldProvider:
         return self._fields[field_name]
 
 
-class NumpyFieldsProvider(ProgramFieldProvider):
+class NumpyFieldsProvider(FieldProvider):
     def __init__(self, func:Callable, 
                  domain:dict[gtx.Dimension:tuple[gtx.int32, gtx.int32]], 
                  fields:Sequence[str], 
-                 deps:Sequence[str] = [], 
+                 deps:dict[str, str], 
                  params:dict[str, Scalar] = {}):
-        super().__init__(func, domain, fields, deps, params)
+        self._compute_domain = domain
+        self._func = func
+        self._fields:dict[str, Optional[FieldType]] = {name: None for name in fields}
+        self._dependencies = deps
+        self._params = params
+        
     def _evaluate(self, factory: 'FieldsFactory') -> None:
         domain = {dim: range(*self._compute_domain[dim]) for dim in self._compute_domain.keys()}
-        deps = [factory.get(k).ndarray for k in self.dependencies()]
-        params = [p for p in self._params.values()]
+       
+        # validate deps:
+        self._validate_dependencies(factory)
+        args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
+        args.update(self._params)
+        results = self._func(**args)
+        ## TODO: check order of return values
+        results = (results,) if isinstance(results, xp.ndarray) else results
+    
+        self._fields = {k: gtx.as_field(tuple(self._compute_domain.keys()), results[i]) for i, k in enumerate(self._fields.keys())}
+
+    def _validate_dependencies(self, factory):
+        func_signature = inspect.signature(self._func)
+        parameters = func_signature.parameters
+        for dep_key in self._dependencies.keys():
+            try:
+                parameter_definition = parameters[dep_key]
+                if parameter_definition.annotation != xp.ndarray: # also allow for gtx.Field ???
+                    raise ValueError(f"Dependency {dep_key} in function {self._func.__name__} : {func_signature} is not of type xp.ndarray")
+            except KeyError:
+                raise ValueError(f"Argument {dep_key} does not exist in {self._func.__name__} : {func_signature}.")    
         
-        results = self._func(*deps, *params)
-        self._fields = {k: results[i] for i, k in enumerate(self._fields.keys())}
         
+        for param_key, param_value in self._params.items():
+            try:
+                parameter_definition = parameters[param_key]
+                if parameter_definition.annotation != type(param_value):
+                    raise ValueError(f"parameter {parameter_definition} to function {self._func.__name__} has the wrong type")
+            except KeyError:
+                raise ValueError(f"Argument {param_key} does not exist in {self._func.__name__} : {func_signature}.")
+
+    def dependencies(self) -> Iterable[str]:
+        return self._dependencies.values()
+    
+    def fields(self) -> Iterable[str]:
+        return self._fields.keys()
+    
+    def __call__(self, field_name: str, factory:'FieldsFactory') -> FieldType:
+        if field_name not in self._fields.keys():
+            raise ValueError(f"Field {field_name} not provided by f{self._func.__name__}")
+        if any([f is None for f in self._fields.values()]):
+            self._evaluate(factory)
+        return self._fields[field_name]
 
 def inspect_func(func:Callable):
     signa = inspect.signature(func)
