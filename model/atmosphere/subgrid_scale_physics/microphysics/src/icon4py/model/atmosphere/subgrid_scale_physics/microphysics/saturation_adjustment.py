@@ -50,7 +50,10 @@ from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 # TODO (Chia Rui): Refactor this class when there is consensus in gt4py team about the best way to express compile-time constants
 class SaturatedPressureConstants(FrozenNamespace):
-    """Constants used for the computation in saturation adjustment."""
+    """
+    Constants used for the computation of saturated pressure in saturation adjustment and microphysics.
+    It was originally in mo_lookup_tables_constants.f90.
+    """
 
     #: Latent heat of vaporisation for water [J/kg]. Originally expressed as alv in ICON.
     vaporisation_latent_heat: ta.wpfloat = 2.5008e6
@@ -106,18 +109,23 @@ class SaturationAdjustment:
     # TODO (Chia Rui): add in input and output data properties when physics interface protocal is ready.
 
     def _allocate_tendencies(self):
-        self._new_temperature1 = field_alloc.allocate_zero_field(
+        #: it was originally named as tworkold in ICON. Old temperature before iteration.
+        self._temperature1 = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
         )
-        self._new_temperature2 = field_alloc.allocate_zero_field(
+        #: it was originally named as twork in ICON. New temperature before iteration.
+        self._temperature2 = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
         )
+        #: A mask that indicates whether the grid cell is subsaturated or not.
         self._subsaturated_mask = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=bool
         )
+        #: A mask that indicates whether next Newton iteration is required.
         self._newton_iteration_mask = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=bool
         )
+        #: latent heat vaporization / dry air heat capacity at constant volume
         self._lwdocvd = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
         )
@@ -168,8 +176,8 @@ class SaturationAdjustment:
             prognostic_state.rho,
             self._subsaturated_mask,
             self._lwdocvd,
-            self._new_temperature1,
-            self._new_temperature2,
+            self._temperature1,
+            self._temperature2,
             self._newton_iteration_mask,
             horizontal_start=start_cell_nudging,
             horizontal_end=end_cell_local,
@@ -179,7 +187,7 @@ class SaturationAdjustment:
         )
 
         # TODO (Chia Rui): this is inspired by the cpu version of the original ICON saturation_adjustment code. Consider to refactor this code when break and for loop features are ready in gt4py.
-        temperature_list = [self._new_temperature1, self._new_temperature2]
+        temperature_list = [self._temperature1, self._temperature2]
         ncurrent, nnext = 0, 1
         for _ in range(self.config.max_iter):
             if xp.any(
