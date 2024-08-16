@@ -175,7 +175,7 @@ def read_config(
             ).isoformat(),  # TODO (Jacopo) this should be simulation start_date, but that's not accessible here
             output_interval="4 seconds",
             filename="icon4py_output",
-            timesteps_per_file=1,
+            timesteps_per_file=4,
             variables=[
                 "air_density",
                 "theta_v",
