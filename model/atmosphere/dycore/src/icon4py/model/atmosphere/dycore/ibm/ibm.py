@@ -13,13 +13,14 @@
 import logging
 
 import gt4py.next as gtx
+from gt4py.next.ffront.fbuiltins import where
 
 from icon4py.model.atmosphere.dycore.state_utils import states as states_utils
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
-from icon4py.model.common.grid import icon as icon_grid
+from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common.grid import icon as icon_grid, horizontal as h_grid
 from icon4py.model.common.settings import xp
-from icon4py.model.common.states import prognostic_state as prog_state
-
+from icon4py.model.common.states import prognostic_state as prognostics
 
 """
 Immersed boundary method module
@@ -36,13 +37,14 @@ class ImmersedBoundaryMethod:
 
     def __init__(
         self,
-        icon_grid: icon_grid.IconGrid,
+        grid: icon_grid.IconGrid,
     ):
-        self.test_value = 313
+        self.test_value = 13
 
-        num_cells = icon_grid.num_cells
-        num_edges = icon_grid.num_edges
-        num_levels = icon_grid.num_levels
+        # Grid related totals
+        num_cells = grid.num_cells
+        num_edges = grid.num_edges
+        num_levels = grid.num_levels
 
         self._validate_config()
 
@@ -61,17 +63,49 @@ class ImmersedBoundaryMethod:
         log.info("IBM config validated")
         pass
 
+    @gtx.field_operator
+    def _set_bcs_cells(
+        mask: fa.CellKField[bool],
+        dir_value_w: float,
+        dir_value_theta_v: float,
+        w: fa.CellKField[float],
+        theta_v: fa.CellKField[float],
+    ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
+        w       = where(mask, w       + dir_value_w,       w)
+        theta_v = where(mask, theta_v + dir_value_theta_v, theta_v)
+        return w, theta_v
+
+    @gtx.field_operator
+    def _set_bcs_edges(
+        mask: fa.EdgeKField[bool],
+        dir_value_vn: float,
+        vn: fa.EdgeKField[float],
+    ) -> fa.EdgeKField[float]:
+        vn = where(mask, vn + dir_value_vn, vn)
+        return vn
+
     def set_boundary_conditions(
         self,
         diagnostic_state: states_utils.DiagnosticStateNonHydro,
-        prognostic_state: prog_state.PrognosticState,
+        prognostic_state: prognostics.PrognosticState,
     ):
         log.info("IBM set BCs...")
 
-        # cell centre variables
-        prognostic_state.w = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)
-        prognostic_state.theta_v = gtx.where(self.cell_mask, self.test_value, prognostic_state.w)
+        self._set_bcs_cells(
+            mask=self.cell_mask,
+            dir_value_w=self.test_value,
+            dir_value_theta_v=self.test_value,
+            w=prognostic_state.w,
+            theta_v=prognostic_state.theta_v,
+            out=(prognostic_state.w, prognostic_state.theta_v),
+            offset_provider={},
+        )
+        self._set_bcs_edges(
+            mask=self.edge_mask,
+            dir_value_vn=self.test_value,
+            vn=prognostic_state.vn,
+            out=(prognostic_state.vn),
+            offset_provider={},
+        )
 
-        # edge variables
-        prognostic_state.vn = gtx.where(self.edge_mask, self.test_value, prognostic_state.vn)
         log.info("IBM set BCs DONE")

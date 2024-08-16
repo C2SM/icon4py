@@ -598,11 +598,21 @@ class SolveNonhydro:
         self.set_timelevels(nnow, nnew)
 
         if self.config.use_ibm:
+            state0 = [
+                prognostic_state_ls[nnow].vn.asnumpy()[313,17].copy(),
+                prognostic_state_ls[nnow].w.asnumpy()[313,17].copy(),
+                prognostic_state_ls[nnow].theta_v.asnumpy()[313,17].copy(),
+            ]
             self.ibm.set_boundary_conditions(
                 diagnostic_state=diagnostic_state_nh,
                 prognostic_state=prognostic_state_ls[nnow],
             )
-            #import pdb; pdb.set_trace()
+            state1 = [
+                prognostic_state_ls[nnow].vn.asnumpy()[313,17].copy(),
+                prognostic_state_ls[nnow].w.asnumpy()[313,17].copy(),
+                prognostic_state_ls[nnow].theta_v.asnumpy()[313,17].copy(),
+            ]
+            print(f"IBM: {state0}\n  -> {state1}")
 
         self.run_predictor_step(
             diagnostic_state_nh=diagnostic_state_nh,
