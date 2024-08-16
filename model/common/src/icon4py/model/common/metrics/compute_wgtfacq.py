@@ -43,11 +43,12 @@ def compute_wgtfacq_c_dsl(
 
     return wgtfacq_c_dsl
 
+
 def compute_wgtfacq_e_dsl(
     e2c,
     z_ifc: np.ndarray,
     c_lin_e: np.ndarray,
-    wgtfacq_c_dsl: np.ndarray,    
+    wgtfacq_c_dsl: np.ndarray,
     n_edges: int,
     nlev: int,
 ):
