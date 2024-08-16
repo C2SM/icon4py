@@ -35,4 +35,10 @@ attrs = {"functional_determinant_of_metrics_on_interface_levels":dict(
                                units="", dims=(dims.KHalfDim,),
                                icon_var_name="k_index",
                                dtype=gtx.int32),
+        "weight_factor_for_quadratic_interpolation_to_cell_surface": dict(standard_name="weight_factor_for_quadratic_interpolation_to_cell_surface", 
+                                                                          units="", 
+                                                                          dims=(dims.CellDim, dims.KDim), 
+                                                                          dtype=ta.wpfloat, 
+                                                                          icon_var_name="wgtfacq_c_dsl",
+                                                                          long_name="weighting factor for quadratic interpolation to cell surface"),
     }

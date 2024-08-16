@@ -1,8 +1,9 @@
 import abc
 import functools
+import inspect
 import operator
 from enum import IntEnum
-from typing import Iterable, Optional, Protocol, Sequence, TypeAlias, TypeVar, Union
+from typing import Callable, Iterable, Optional, Protocol, Sequence, TypeAlias, TypeVar, Union
 
 import gt4py.next as gtx
 import gt4py.next.ffront.decorator as gtx_decorator
@@ -93,7 +94,7 @@ class ProgramFieldProvider:
     """
 
     def __init__(self,
-                 func: gtx_decorator.Program,
+                 func: Union[gtx_decorator.Program, Callable],
                  domain: dict[gtx.Dimension:tuple[gtx.int32, gtx.int32]],  # the compute domain 
                  fields: Sequence[str],
                  deps: Sequence[str] = [],  # the dependencies of func
@@ -130,24 +131,56 @@ class ProgramFieldProvider:
     def _evaluate(self, factory: 'FieldsFactory'):
         self._fields = self._allocate(factory.allocator, factory.grid)
         domain = functools.reduce(operator.add, self._compute_domain.values())
-        args = [factory.get(k) for k in self.dependencies()]
+        deps = [factory.get(k) for k in self.dependencies()]
         params = [p for p in self._params.values()]
         output = [f for f in self._fields.values()]
-        self._func(*args, *output, *params, *domain,
+        # it might be safer to call the field_operator here? then we can use the keyword only args for out= and domain=
+        self._func(*deps, *output, *params, *domain,
                    offset_provider=factory.grid.offset_providers)
+        
 
     def fields(self)->Iterable[str]:
         return self._fields.keys()
     
     def dependencies(self)->Iterable[str]:
         return self._dependencies
+    
     def __call__(self, field_name: str, factory:'FieldsFactory') -> FieldType:
         if field_name not in self._fields.keys():
             raise ValueError(f"Field {field_name} not provided by f{self._func.__name__}")
         if self._unallocated():
+            
             self._evaluate(factory)
         return self._fields[field_name]
 
+
+class NumpyFieldsProvider(ProgramFieldProvider):
+    def __init__(self, func:Callable, 
+                 domain:dict[gtx.Dimension:tuple[gtx.int32, gtx.int32]], 
+                 fields:Sequence[str], 
+                 deps:Sequence[str] = [], 
+                 params:dict[str, Scalar] = {}):
+        super().__init__(func, domain, fields, deps, params)
+    def _evaluate(self, factory: 'FieldsFactory') -> None:
+        domain = {dim: range(*self._compute_domain[dim]) for dim in self._compute_domain.keys()}
+        deps = [factory.get(k).ndarray for k in self.dependencies()]
+        params = [p for p in self._params.values()]
+        
+        results = self._func(*deps, *params)
+        self._fields = {k: results[i] for i, k in enumerate(self._fields.keys())}
+        
+
+def inspect_func(func:Callable):
+    signa = inspect.signature(func)
+    print(f"signature: {signa}")
+    print(f"parameters: {signa.parameters}")
+   
+    print(f"return : {signa.return_annotation}")
+    return signa
+
+    
+    
+    
 
 class FieldsFactory:
     """

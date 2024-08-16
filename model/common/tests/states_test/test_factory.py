@@ -5,6 +5,7 @@ import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.io import cf_utils
 from icon4py.model.common.metrics import metric_fields as mf
+from icon4py.model.common.metrics.compute_wgtfacq import compute_wgtfacq_c_dsl
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory
 
@@ -86,3 +87,29 @@ def test_field_provider(icon_grid, metrics_savepoint, backend):
                               type_=factory.RetrievalType.FIELD)
     ref = metrics_savepoint.ddqz_z_half().ndarray
     assert helpers.dallclose(data.ndarray, ref)
+
+
+def test_numpy_func(icon_grid, metrics_savepoint, backend):
+    fields_factory = factory.FieldsFactory(grid=icon_grid, backend=backend)
+    k_index = gtx.as_field((dims.KDim,), xp.arange(icon_grid.num_levels + 1, dtype=gtx.int32))
+    z_ifc = metrics_savepoint.z_ifc()
+
+    pre_computed_fields = factory.PrecomputedFieldsProvider(
+        {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index})
+    fields_factory.register_provider(pre_computed_fields)
+    func = compute_wgtfacq_c_dsl
+    signature = factory.inspect_func(compute_wgtfacq_c_dsl)
+    compute_wgtfacq_c_provider = factory.NumpyFieldsProvider(func=func,
+                                                              domain={dims.CellDim: (0, icon_grid.num_cells),
+                                                                   dims.KDim: (0, icon_grid.num_levels)},
+                                                              fields=[
+                                                                       "weighting_factor_for_quadratic_interpolation_to_cell_surface"],
+                                                              deps=[
+                                                                       "height_on_interface_levels"],
+                                                              params={
+                                                                       "num_lev": icon_grid.num_levels})
+    fields_factory.register_provider(compute_wgtfacq_c_provider)
+    
+    
+    fields_factory.get("weighting_factor_for_quadratic_interpolation_to_cell_surface", factory.RetrievalType.FIELD)
+   
