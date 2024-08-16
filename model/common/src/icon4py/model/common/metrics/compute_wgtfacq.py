@@ -9,7 +9,9 @@
 import numpy as np
 
 
-def _compute_z1_z2_z3(z_ifc, i1, i2, i3, i4):
+def _compute_z1_z2_z3(
+    z_ifc: np.ndarray, i1: int, i2: int, i3: int, i4: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     z1 = 0.5 * (z_ifc[:, i2] - z_ifc[:, i1])
     z2 = 0.5 * (z_ifc[:, i2] + z_ifc[:, i3]) - z_ifc[:, i1]
     z3 = 0.5 * (z_ifc[:, i3] + z_ifc[:, i4]) - z_ifc[:, i1]
@@ -43,11 +45,12 @@ def compute_wgtfacq_c_dsl(
 
     return wgtfacq_c_dsl
 
+
 def compute_wgtfacq_e_dsl(
     e2c,
     z_ifc: np.ndarray,
     c_lin_e: np.ndarray,
-    wgtfacq_c_dsl: np.ndarray,    
+    wgtfacq_c_dsl: np.ndarray,
     n_edges: int,
     nlev: int,
 ):
