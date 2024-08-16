@@ -51,11 +51,11 @@ class Component(Protocol):
         """Returns a dictionary of the output of the component: contains name, units and dimension of
         the output_properties.
 
-        We make this abstract in order to for the implementing class to define the output_properties.
+        We make this abstract in order for the implementing class to define the output_properties.
 
-        TODO (@halungge): is this too generic and we should split into separate properties for the different types of outputs like
+        TODO (@halungge): is this too generic and we should split into separate properties for the different types of outputs: like
             tendencies, diagnostics, prognostics, etc?
-            Are they different? or ar the just different in the way they are used later on
+            Are they different? or are they just different in the way they are used later on
             and how they are applied to the model state? Should this be made explicit in the interface?
             Along the same lines how should we track the time the produced values are valid for?
         """

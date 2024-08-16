@@ -26,7 +26,7 @@ processes are split in fast physics (runs every timestep) and slow physics (runs
 while slow physics return tendendencies. The distinction is somewhat arbitrary and probably largely dictated by
 computational efficiency of a component. 
 
-We believe that this distinction is intransparent, makes the code inflexibel and the individual components and their application order tightly coupled.
+We believe that this distinction is intransparent, makes the code inflexible and the individual components and their application order tightly coupled.
 
 We want to provide a cleaner and more transparent structure that treats all physics components in the same way and allows
 the user to decide which update should be applied to the model state prior to the next dynamics step.
