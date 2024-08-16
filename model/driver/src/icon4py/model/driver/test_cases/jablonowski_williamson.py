@@ -11,6 +11,7 @@ import math
 import pathlib
 
 import gt4py.next as gtx
+import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
@@ -68,18 +69,19 @@ def model_initialization_jabw(
         "icon_pydycore", str(path.absolute()), False, mpi_rank=rank
     )
 
-    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().asnumpy()
-    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().asnumpy()
-    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().asnumpy()
-    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().asnumpy()
-    exner_ref_mc = data_provider.from_metrics_savepoint().exner_ref_mc().asnumpy()
-    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().asnumpy()
-    geopot = data_provider.from_metrics_savepoint().geopot().asnumpy()
+    wgtfac_c = data_provider.from_metrics_savepoint().wgtfac_c().ndarray
+    ddqz_z_half = data_provider.from_metrics_savepoint().ddqz_z_half().ndarray
+    theta_ref_mc = data_provider.from_metrics_savepoint().theta_ref_mc().ndarray
+    theta_ref_ic = data_provider.from_metrics_savepoint().theta_ref_ic().ndarray
+    exner_ref_mc_xp = data_provider.from_metrics_savepoint().exner_ref_mc()
+    exner_ref_mc = exner_ref_mc_xp.ndarray
+    d_exner_dz_ref_ic = data_provider.from_metrics_savepoint().d_exner_dz_ref_ic().ndarray
+    geopot = data_provider.from_metrics_savepoint().geopot().ndarray
 
-    cell_lat = cell_param.cell_center_lat.asnumpy()
-    edge_lat = edge_param.edge_center[0].asnumpy()
-    edge_lon = edge_param.edge_center[1].asnumpy()
-    primal_normal_x = edge_param.primal_normal[0].asnumpy()
+    cell_lat = cell_param.cell_center_lat.ndarray
+    edge_lat = edge_param.edge_center[0].ndarray
+    edge_lon = edge_param.edge_center[1].ndarray
+    primal_normal_x = edge_param.primal_normal[0].ndarray
 
     cell_2_edge_coeff = data_provider.from_interpolation_savepoint().c_lin_e()
     rbf_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
@@ -129,7 +131,10 @@ def model_initialization_jabw(
     )
     lapse_rate = phy_const.RD * gamma / phy_const.GRAV
     for k_index in range(num_levels - 1, -1, -1):
-        eta_old = xp.full(num_cells, fill_value=1.0e-7, dtype=float)
+        # TODO (Chia Rui): full cannot be used for cupy
+        eta_old_np = np.full(num_cells, fill_value=1.0e-7, dtype=float)
+        #eta_old = xp.full(num_cells, fill_value=1.0e-7, dtype=float)
+        eta_old = xp.asarray(eta_old_np)
         log.info(f"In Newton iteration, k = {k_index}")
         # Newton iteration to determine zeta
         for _ in range(100):
@@ -215,7 +220,7 @@ def model_initialization_jabw(
         edge_lat,
         edge_lon,
         primal_normal_x,
-        eta_v_e.asnumpy(),
+        eta_v_e.ndarray,
     )
     log.info("U2vn computation completed.")
 
@@ -268,16 +273,25 @@ def model_initialization_jabw(
     log.info("U, V computation completed.")
 
     exner_pr = field_alloc.allocate_zero_field(CellDim, KDim, grid=grid)
-    init_exner_pr.init_exner_pr(
-        exner,
-        data_provider.from_metrics_savepoint().exner_ref_mc(),
-        exner_pr,
-        0,
-        num_cells,
-        0,
-        num_levels,
-        offset_provider={},
-    )
+    print(exner_numpy.device)
+    print(exner_ref_mc.device)
+    print(exner.ndarray.device)
+    print(exner_pr.ndarray.device)
+    print(exner_ref_mc_xp.ndarray.device)
+    print(exner.ndarray.shape)
+    print(exner_ref_mc.shape)
+    #buffer_exner = xp.asarray(exner.ndarray - exner_ref_mc)
+    # exner_pr = gtx.as_field((CellDim, KDim), xp.zeros(num_cells, num_levels), dtype=float)
+    # init_exner_pr.init_exner_pr(
+    #     exner,
+    #     exner_ref_mc_xp,
+    #     exner_pr,
+    #     0,
+    #     num_cells,
+    #     0,
+    #     num_levels,
+    #     offset_provider={},
+    # )
     log.info("exner_pr initialization completed.")
 
     diagnostic_state = diagnostics.DiagnosticState(

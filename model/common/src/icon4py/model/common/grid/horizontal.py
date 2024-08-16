@@ -371,7 +371,7 @@ class CellParams:
             # TODO (Magdalena) this would not work for a distributed setup (at
             # least not for a sphere) for the torus it would because cell area
             # is constant.
-            mean_cell_area = area.asnumpy().mean()
+            mean_cell_area = area.ndarray.mean()
         else:
             mean_cell_area = cls._compute_mean_cell_area(constants.EARTH_RADIUS, global_num_cells)
         return cls(

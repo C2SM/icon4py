@@ -66,11 +66,13 @@ log = logging.getLogger(__name__)
 
 def retract_data(input_data):
     if device == Device.GPU:
+        print(input_data.ndarray.device)
         return input_data.ndarray.get()
     return input_data.ndarray
 
 def retract_data_array(input_data):
     if device == Device.GPU:
+        print(input_data.ndarray.device)
         return input_data.get()
     return input_data
 
@@ -589,7 +591,7 @@ class TimeLoop:
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
-            f"max min v: {diagnostic_state.v.asnumpy().max()} {diagnostic_state.v.asnumpy().min()}"
+            f"max min v: {diagnostic_state.v.ndarray.max()} {diagnostic_state.v.ndarray.min()}"
         )
 
         diagnose_temperature(
@@ -710,7 +712,7 @@ class TimeLoop:
                     prognostic_state_list[self._now], diagnostic_state, diagnostic_metric_state
                 )
 
-                log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.asnumpy())}")
+                log.info(f"Debugging U (after diffusion): {np.max(diagnostic_state.u.ndarray)}")
 
                 output_state.advance_time(self._simulation_date)
                 output_data = {}

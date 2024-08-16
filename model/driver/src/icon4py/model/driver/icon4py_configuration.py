@@ -380,13 +380,13 @@ def read_config(
         )
         icon_run_config = Icon4pyRunConfig(
             dtime=datetime.timedelta(seconds=300.0),
-            end_date=datetime.datetime(1, 1, 1, 0, 30, 0),
+            end_date=datetime.datetime(1, 1, 2, 0, 0, 0),
             apply_initial_stabilization=False,
             n_substeps=5,
         )
         jabw_output_config = IconOutputConfig(
-            output_time_interval=datetime.timedelta(seconds=60),
-            output_file_time_interval=datetime.timedelta(seconds=60),
+            output_time_interval=datetime.timedelta(seconds=1800),
+            output_file_time_interval=datetime.timedelta(seconds=1800),
             output_path=pathlib.Path("./"),
             output_initial_condition_as_a_separate_file=True,
             output_variable_list=output_variable_list,

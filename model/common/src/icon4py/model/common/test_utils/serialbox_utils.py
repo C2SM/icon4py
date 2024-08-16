@@ -12,6 +12,7 @@ import uuid
 
 import gt4py.next as gtx
 import serialbox
+import numpy as np
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
@@ -59,14 +60,16 @@ class IconSavepoint:
     def _get_field(self, name, *dimensions, dtype=float):
         buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         buffer = self._reduce_to_dim_size(buffer, dimensions)
+        buffer = xp.asarray(buffer)
 
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dimensions, buffer)
 
     def _get_reciprocal_field(self, name, *dimensions, dtype=float):
-        buffer = xp.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
+        buffer = np.squeeze(self.serializer.read(name, self.savepoint).astype(dtype))
         buffer = self._reduce_to_dim_size(buffer, dimensions)
-        buffer = xp.reciprocal(buffer)
+        buffer = np.reciprocal(buffer)
+        buffer = xp.asarray(buffer)
 
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dimensions, buffer)
@@ -75,6 +78,7 @@ class IconSavepoint:
         buffer = self.serializer.read(name, self.savepoint).astype(float)
         buffer = xp.squeeze(buffer)[:, :, ntnd - 1]
         buffer = self._reduce_to_dim_size(buffer, dims)
+        buffer = xp.asarray(buffer)
         self.log.debug(f"{name} {buffer.shape}")
         return gtx.as_field(dims, buffer)
 
@@ -459,8 +463,10 @@ class IconGridSavepoint(IconSavepoint):
         )
         c2e2c = self.c2e2c()
         e2c2e = self.e2c2e()
-        c2e2c0 = xp.column_stack(((range(c2e2c.shape[0])), c2e2c))
-        e2c2e0 = xp.column_stack(((range(e2c2e.shape[0])), e2c2e))
+        c2e2c0 = xp.column_stack(((xp.asarray(range(c2e2c.shape[0]))), c2e2c))
+        e2c2e0 = xp.column_stack(((xp.asarray(range(e2c2e.shape[0]))), e2c2e))
+        # c2e2c0 = xp.column_stack(((range(c2e2c.shape[0])), c2e2c))
+        # e2c2e0 = xp.column_stack(((range(e2c2e.shape[0])), e2c2e))
         grid = (
             icon.IconGrid(self._grid_id)
             .with_config(config)
@@ -762,9 +768,10 @@ class MetricSavepoint(IconSavepoint):
     def wgtfacq_e_dsl(
         self, k_level
     ):  # TODO: @abishekg7 Simplify this after serialized data is fixed
-        ar = xp.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
+        ar = np.squeeze(self.serializer.read("wgtfacq_e", self.savepoint))
         k = k_level - 3
-        ar = xp.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
+        ar = np.pad(ar[:, ::-1], ((0, 0), (k, 0)), "constant", constant_values=(0.0,))
+        ar = xp.asarray(ar)
         return self._get_field_from_ndarray(ar, dims.EdgeDim, dims.KDim)
 
     @IconSavepoint.optionally_registered(dims.CellDim, dims.KDim)

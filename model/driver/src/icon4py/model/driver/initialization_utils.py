@@ -90,7 +90,7 @@ def read_icon_grid(
         return (
             sb.IconSerialDataProvider("icon_pydycore", str(path.absolute()), False, mpi_rank=rank)
             .from_savepoint_grid(grid_id, grid_root, grid_level)
-            .construct_icon_grid(on_gpu=False)
+            .construct_icon_grid(on_gpu=True)
         )
     else:
         raise NotImplementedError(SB_ONLY_MSG)
