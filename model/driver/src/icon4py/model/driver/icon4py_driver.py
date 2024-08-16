@@ -418,7 +418,7 @@ def initialize(
         config=config.io_config,
         vertical_size=vertical_geometry,
         horizontal_size=icon_grid.config.horizontal_config,
-        grid_file_name="testdata/grids/Torus_Triangles_50000m_x_5000m_res500m.nc",  # TODO (Jacopo) this is temporary
+        grid_file_name="testdata/grids/gauss3d_torus/Torus_Triangles_50000m_x_5000m_res500m.nc",  # TODO (Jacopo) this is temporary
         grid_id=icon_grid.id,
     )
 
