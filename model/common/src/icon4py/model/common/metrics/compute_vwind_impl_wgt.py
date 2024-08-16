@@ -39,9 +39,7 @@ def compute_vwind_impl_wgt(
         vwind_offctr=vwind_offctr,
         horizontal_start=horizontal_start_cell,
         horizontal_end=icon_grid.num_cells,
-        vertical_start=max(
-            10, icon_grid.num_levels - 8
-        ),  # TODO (@halungge) check what are these constants?
+        vertical_start=max(10, icon_grid.num_levels - 8),
         vertical_end=icon_grid.num_levels,
         offset_provider={
             "C2E": icon_grid.get_offset_provider("C2E"),
