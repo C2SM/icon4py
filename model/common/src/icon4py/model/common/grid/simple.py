@@ -32,6 +32,8 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
+    KHalf2KDim,
+    KHalfDim,
     V2CDim,
     V2EDim,
     VertexDim,
@@ -400,6 +402,15 @@ class SimpleGridData:
         dtype=gtx.int32,
     )
 
+    k_lev_ls = [0, 1]  # noqa: RUF012
+    nlev = 10
+    for k in range(nlev * 2):
+        k_lev_ls.append(k_lev_ls[k] + 1)
+    khalf2k_table = np.asarray(
+        k_lev_ls,
+        dtype=gtx.int32,
+    ).reshape(nlev + 1, 2)
+
 
 class SimpleGrid(BaseGrid):
     _CELLS = 18
@@ -424,6 +435,7 @@ class SimpleGrid(BaseGrid):
             "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
             "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
+            "KHalf2K": (self._get_offset_provider, KHalf2KDim, KHalfDim, KDim),
             "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
             "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
             "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
@@ -458,6 +470,10 @@ class SimpleGrid(BaseGrid):
         return self.config.num_levels
 
     @property
+    def num_half_levels(self) -> int:
+        return self.config.num_half_levels
+
+    @property
     def id(self) -> uuid.UUID:
         return uuid.UUID("bd68594d-e151-459c-9fdc-32e989d3ca85")
 
@@ -488,6 +504,7 @@ class SimpleGrid(BaseGrid):
             V2EDim: SimpleGridData.v2e_table,
             C2E2C2EDim: SimpleGridData.c2e2c2e_table,
             C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
+            KHalf2KDim: SimpleGridData.khalf2k_table,
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)

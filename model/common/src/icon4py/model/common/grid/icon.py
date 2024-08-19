@@ -34,6 +34,8 @@ from icon4py.model.common.dimension import (
     ECVDim,
     EdgeDim,
     KDim,
+    KHalf2KDim,
+    KHalfDim,
     V2CDim,
     V2EDim,
     VertexDim,
@@ -78,6 +80,7 @@ class IconGrid(BaseGrid):
             "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
             "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
             "Koff": (lambda: KDim,),  # Koff is a special case
+            "KHalf2K": (self._get_offset_provider, KHalf2KDim, KHalfDim, KDim),
             "C2CECEC ": (
                 self._get_offset_provider_for_sparse_fields,
                 C2E2C2E2CDim,

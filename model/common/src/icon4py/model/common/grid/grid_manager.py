@@ -42,6 +42,7 @@ from icon4py.model.common.dimension import (
     ECDim,
     ECVDim,
     EdgeDim,
+    KHalf2KDim,
     V2CDim,
     V2E2VDim,
     V2EDim,
@@ -381,6 +382,15 @@ class GridManager:
         c2e2c = self._get_index_field(reader, GridFile.OffsetName.C2E2C)
         c2e2c2e = self._construct_triangle_edges(c2e2c, c2e)
         c2e2c0 = np.column_stack((np.asarray(range(c2e2c.shape[0])), c2e2c))
+
+        k_lev_ls = [0, 1]
+        nlev = self._config.num_levels
+        for k in range(nlev * 2):
+            k_lev_ls.append(k_lev_ls[k] + 1)
+        khalf2k = np.asarray(
+            k_lev_ls,
+        ).reshape(nlev + 1, 2)
+
         (
             start_indices,
             end_indices,
@@ -413,6 +423,7 @@ class GridManager:
                     V2E2VDim: v2e2v,
                     E2C2EDim: e2c2e,
                     E2C2EODim: e2c2e0,
+                    KHalf2KDim: khalf2k,
                 }
             )
             .with_start_end_indices(CellDim, start_indices[CellDim], end_indices[CellDim])

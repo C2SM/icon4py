@@ -139,6 +139,7 @@ def construct_metric_state(savepoint: sb.MetricSavepoint) -> diffusion_states.Di
         mask_hdiff=savepoint.mask_hdiff(),
         theta_ref_mc=savepoint.theta_ref_mc(),
         wgtfac_c=savepoint.wgtfac_c(),
+        wgtfac_c_khalf=savepoint.wgtfac_c_khalf(),
         zd_intcoef=savepoint.zd_intcoef(),
         zd_vertoffset=savepoint.zd_vertoffset(),
         zd_diffcoef=savepoint.zd_diffcoef(),

@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_w_in_upper_damping_layer import (
     apply_nabla2_to_w_in_upper_damping_layer,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common.dimension import CellDim, KDim, KHalfDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -25,7 +25,10 @@ def apply_nabla2_to_w_in_upper_damping_layer_numpy(
     z_nabla2_c: np.array,
 ):
     cell_area = np.expand_dims(cell_area, axis=-1)
-    w = w + diff_multfac_n2w * cell_area * z_nabla2_c
+    diff_multfac_n2w_extend = np.insert(
+        diff_multfac_n2w, diff_multfac_n2w.shape, float("NaN"), axis=0
+    )
+    w = w + diff_multfac_n2w_extend * cell_area * z_nabla2_c
     return w
 
 
@@ -35,10 +38,10 @@ class TestApplyNabla2ToWInUpperDampingLayer(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        w = random_field(grid, CellDim, KHalfDim, dtype=wpfloat)
         diff_multfac_n2w = random_field(grid, KDim, dtype=wpfloat)
         cell_area = random_field(grid, CellDim, dtype=wpfloat)
-        z_nabla2_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_nabla2_c = random_field(grid, CellDim, KHalfDim, dtype=vpfloat)
 
         return dict(
             w=w,

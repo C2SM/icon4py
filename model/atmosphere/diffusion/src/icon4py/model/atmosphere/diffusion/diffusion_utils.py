@@ -21,12 +21,14 @@ from icon4py.model.common.settings import backend, xp
 
 
 @gtx.field_operator
-def _identity_c_k(field: fa.CellKField[float]) -> fa.CellKField[float]:
+def _identity_c_k(
+    field: fa.CellKHalfField[float],
+) -> fa.CellKHalfField[float]:
     return field
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def copy_field(old_f: fa.CellKField[float], new_f: fa.CellKField[float]):
+def copy_field(old_f: fa.CellKHalfField[float], new_f: fa.CellKHalfField[float]):
     _identity_c_k(old_f, out=new_f)
 
 

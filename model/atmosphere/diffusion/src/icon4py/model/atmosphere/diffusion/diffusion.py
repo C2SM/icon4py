@@ -23,7 +23,7 @@ from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states
 
 from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim, KHalfDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
@@ -436,11 +436,12 @@ class Diffusion:
         self.z_temp = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
         self.diff_multfac_smag = field_alloc.allocate_zero_field(KDim, grid=self.grid)
         # TODO(Magdalena): this is KHalfDim
-        self.vertical_index = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
+        self.vertical_index = field_alloc.allocate_indices(KHalfDim, grid=self.grid)
         self.horizontal_cell_index = field_alloc.allocate_indices(CellDim, grid=self.grid)
         self.horizontal_edge_index = field_alloc.allocate_indices(EdgeDim, grid=self.grid)
         self.w_tmp = gtx.as_field(
-            (CellDim, KDim), xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float)
+            (CellDim, KHalfDim),
+            xp.zeros((self.grid.num_cells, self.grid.num_levels + 1), dtype=float),
         )
 
     def initial_run(
@@ -635,7 +636,7 @@ class Diffusion:
                 e_bln_c_s=self.interpolation_state.e_bln_c_s,
                 geofac_div=self.interpolation_state.geofac_div,
                 diff_multfac_smag=self.diff_multfac_smag,
-                wgtfac_c=self.metric_state.wgtfac_c,
+                wgtfac_c=self.metric_state.wgtfac_c_khalf,  # TODO: analogous field in KHalfDim introduced in serialbox
                 div_ic=diagnostic_state.div_ic,
                 hdef_ic=diagnostic_state.hdef_ic,
                 horizontal_start=cell_start_nudging,

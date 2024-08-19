@@ -1,3 +1,2 @@
 # VCS
-gt4py @ git+https://github.com/GridTools/gt4py.git@main
-
+gt4py @ git+https://github.com/nfarabullini/gt4py.git@khalf_impl

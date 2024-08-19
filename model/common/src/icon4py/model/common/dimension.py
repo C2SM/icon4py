@@ -55,4 +55,5 @@ C2E2C2E2C = FieldOffset("C2E2C2E2C", source=CellDim, target=(CellDim, C2E2C2E2CD
 C2CECEC = FieldOffset("C2CECEC", source=CECECDim, target=(CellDim, C2E2C2E2CDim))
 V2E2V = FieldOffset("V2E2V", source=VertexDim, target=(VertexDim, V2E2VDim))
 Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
-KHalfOff = FieldOffset("KHalfOff", source=KHalfDim, target=(KHalfDim,))
+KHalf2KDim = Dimension("KHalf2KDim", kind=DimensionKind.LOCAL)
+KHalf2K = FieldOffset("KHalf2K", source=KDim, target=(KHalfDim, KHalf2KDim))

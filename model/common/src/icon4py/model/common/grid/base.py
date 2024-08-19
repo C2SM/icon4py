@@ -16,7 +16,7 @@ from typing import Callable, Dict
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, KHalfDim, VertexDim
 from icon4py.model.common.grid import utils as grid_utils
 from icon4py.model.common.settings import xp
 from icon4py.model.common.utils import builder
@@ -47,6 +47,10 @@ class GridConfig:
     @property
     def num_levels(self):
         return self.vertical_size
+
+    @property
+    def num_half_levels(self):
+        return self.vertical_size + 1
 
     @property
     def num_vertices(self):
@@ -129,6 +133,7 @@ class BaseGrid(ABC):
         self.size[CellDim] = self.config.num_cells
         self.size[EdgeDim] = self.config.num_edges
         self.size[KDim] = self.config.num_levels
+        self.size[KHalfDim] = self.config.num_half_levels
 
     def _get_offset_provider(self, dim, from_dim, to_dim):
         if dim not in self.connectivities:
