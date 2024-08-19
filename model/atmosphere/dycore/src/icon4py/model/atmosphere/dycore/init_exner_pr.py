@@ -13,23 +13,23 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
 def _init_exner_pr(
-    exner: fa.CellKField[vpfloat],
-    exner_ref: fa.CellKField[vpfloat],
-) -> fa.CellKField[vpfloat]:
+    exner: fa.CellKField[wpfloat],
+    exner_ref: fa.CellKField[wpfloat],
+) -> fa.CellKField[wpfloat]:
     exner_pr = exner - exner_ref
     return exner_pr
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def init_exner_pr(
-    exner: fa.CellKField[vpfloat],
-    exner_ref: fa.CellKField[vpfloat],
-    exner_pr: fa.CellKField[vpfloat],
+    exner: fa.CellKField[wpfloat],
+    exner_ref: fa.CellKField[wpfloat],
+    exner_pr: fa.CellKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

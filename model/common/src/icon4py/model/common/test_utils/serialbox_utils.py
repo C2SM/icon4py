@@ -1533,7 +1533,7 @@ class IconInterfaceSatadEntrySavepoint(IconSavepoint):
         return self.serializer.read("ser_in_satad_iend", self.savepoint)[0]
 
     def tolerance(self):
-        return self.serializer.read("ser_in_satad_satad_tol", self.savepoint)[0]
+        return self.serializer.read("ser_in_satad_tol", self.savepoint)[0]
 
     def maxiter(self):
         return self.serializer.read("ser_in_maxiter", self.savepoint)[0]
@@ -1548,6 +1548,49 @@ class IconInterfaceSatadExitSavepoint(IconSavepoint):
 
     def qc(self):
         return self._get_field("ser_out_satad_qc", dims.CellDim, dims.KDim)
+
+
+class IconInterfaceDiagSatadEntrySavepoint(IconSavepoint):
+    def qv(self):
+        return self._get_field("ser_in_satad_diag_qv", dims.CellDim, dims.KDim)
+
+    def qc(self):
+        return self._get_field("ser_in_satad_diag_qc", dims.CellDim, dims.KDim)
+
+    def qi(self):
+        return self._get_field("ser_in_satad_diag_qi", dims.CellDim, dims.KDim)
+
+    def qr(self):
+        return self._get_field("ser_in_satad_diag_qr", dims.CellDim, dims.KDim)
+
+    def qs(self):
+        return self._get_field("ser_in_satad_diag_qs", dims.CellDim, dims.KDim)
+
+    def qg(self):
+        return self._get_field("ser_in_satad_diag_qg", dims.CellDim, dims.KDim)
+
+    def virtual_temperature(self):
+        return self._get_field("ser_in_satad_diag_tempv", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("ser_in_satad_diag_exner", dims.CellDim, dims.KDim)
+
+
+class IconInterfaceDiagSatadExitSavepoint(IconSavepoint):
+    def virtual_temperature(self):
+        return self._get_field("ser_out_satad_diag_tempv", dims.CellDim, dims.KDim)
+
+    def exner(self):
+        return self._get_field("ser_out_satad_diag_exner", dims.CellDim, dims.KDim)
+
+    def pressure(self):
+        return self._get_field("ser_out_satad_diag_pressure", dims.CellDim, dims.KDim)
+
+    def pressure_ifc(self):
+        return self._get_field("ser_out_satad_diag_pressure_ifc", dims.CellDim, dims.KDim)
+
+    def qsum(self):
+        return self._get_field("ser_out_satad_diag_qsum", dims.CellDim, dims.KDim)
 
 
 class IconGraupelInitSavepoint(IconSavepoint):
@@ -1847,3 +1890,25 @@ class IconSerialDataProvider:
             .as_savepoint()
         )
         return IconInterfaceSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_interface_diag_after_satad_entry(
+        self, date: str
+    ) -> IconInterfaceDiagSatadEntrySavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-diag-entrance"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconInterfaceDiagSatadEntrySavepoint(savepoint, self.serializer, size=self.grid_size)
+
+    def from_savepoint_weisman_klemp_interface_diag_after_satad_exit(
+        self, date: str
+    ) -> IconInterfaceDiagSatadExitSavepoint:
+        savepoint = (
+            self.serializer.savepoint["call-interface-satad-diag-exit"]
+            .serial_rank[0]
+            .date["2008-09-01T01:59:" + date + ".000"]
+            .as_savepoint()
+        )
+        return IconInterfaceDiagSatadExitSavepoint(savepoint, self.serializer, size=self.grid_size)

@@ -23,12 +23,14 @@ class DiagnosticState:
     Corresponds to ICON t_nh_diag
     """
 
-    #: air pressure [Pa] at cell center and full levels
+    #: air pressure [Pa] at cell center and full levels, origianlly defined as pres in ICON
     pressure: fa.CellKField[ta.wpfloat]
-    #: air pressure [Pa] at cell center and half levels
+    #: air pressure [Pa] at cell center and half levels, origianlly defined as pres_sfc in ICON
     pressure_ifc: fa.CellKField[ta.wpfloat]
-    #: air temperature [K] at cell center
+    #: air temperature [K] at cell center, origianlly defined as temp in ICON
     temperature: fa.CellKField[ta.wpfloat]
+    #: air virtual temperature [K] at cell center, originally defined as tempv in ICON
+    virtual_temperature: fa.CellKField[ta.wpfloat]
     #: zonal wind speed [m/s] at cell center
     u: fa.CellKField[ta.wpfloat]
     #: meridional wind speed [m/s] at cell center

@@ -13,15 +13,15 @@ from gt4py.next.ffront.fbuiltins import Field, exp, int32, sqrt
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import vpfloat, wpfloat
+from icon4py.model.common.type_alias import wpfloat
 
 
 @scan_operator(axis=KDim, forward=False, init=(0.0, 0.0, True))
 def _scan_pressure(
-    state: tuple[vpfloat, vpfloat, bool],
-    ddqz_z_full: vpfloat,
-    temperature: vpfloat,
-    pressure_sfc: vpfloat,
+    state: tuple[wpfloat, wpfloat, bool],
+    ddqz_z_full: wpfloat,
+    temperature: wpfloat,
+    pressure_sfc: wpfloat,
     grav_o_rd: wpfloat,
 ):
     pressure_interface = (
@@ -38,10 +38,21 @@ def _scan_pressure(
 @field_operator
 def _diagnose_pressure(
     ddqz_z_full: fa.CellKField[wpfloat],
-    temperature: fa.CellKField[vpfloat],
-    pressure_sfc: Field[[CellDim], vpfloat],
+    temperature: fa.CellKField[wpfloat],
+    pressure_sfc: Field[[CellDim], wpfloat],
     grav_o_rd: wpfloat,
-) -> tuple[fa.CellKField[vpfloat], fa.CellKField[vpfloat]]:
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    """
+    Update pressure.
+
+    Args:
+        ddqz_z_full: vertical grid spacing at full levels [m]
+        temperature: air temperature [K]
+        pressure_sfc: surface air pressure [Pa]
+        grav_o_rd: gravitational constant / dry air constant [K kg m/s2/J]
+    Returns:
+        pressure at full levels, pressure at half levels (excluding surface level)
+    """
     pressure, pressure_ifc, _ = _scan_pressure(ddqz_z_full, temperature, pressure_sfc, grav_o_rd)
     return pressure, pressure_ifc
 
@@ -49,10 +60,10 @@ def _diagnose_pressure(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_pressure(
     ddqz_z_full: fa.CellKField[wpfloat],
-    temperature: fa.CellKField[vpfloat],
-    pressure_sfc: Field[[CellDim], vpfloat],
-    pressure: fa.CellKField[vpfloat],
-    pressure_ifc: fa.CellKField[vpfloat],
+    temperature: fa.CellKField[wpfloat],
+    pressure_sfc: Field[[CellDim], wpfloat],
+    pressure: fa.CellKField[wpfloat],
+    pressure_ifc: fa.CellKField[wpfloat],
     grav_o_rd: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
