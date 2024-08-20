@@ -7,30 +7,24 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import abc
+import enum
 import functools
 import inspect
-from enum import IntEnum
-from typing import Callable, Iterable, Optional, Protocol, Sequence, TypeAlias, TypeVar, Union
+from typing import Callable, Iterable, Optional, Protocol, Sequence, Union
 
 import gt4py.next as gtx
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
 
 import icon4py.model.common.states.metadata as metadata
-from icon4py.model.common import dimension as dims, exceptions, settings, type_alias as ta
+from icon4py.model.common import dimension as dims, exceptions, settings
 from icon4py.model.common.grid import base as base_grid
 from icon4py.model.common.settings import xp
+from icon4py.model.common.states import utils as state_utils
 from icon4py.model.common.utils import builder
 
 
-T = TypeVar("T", ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64)
-DimT = TypeVar("DimT", dims.KDim, dims.KHalfDim, dims.CellDim, dims.EdgeDim, dims.VertexDim)
-Scalar: TypeAlias = Union[ta.wpfloat, ta.vpfloat, float, bool, gtx.int32, gtx.int64]
-
-FieldType: TypeAlias = gtx.Field[Sequence[gtx.Dims[DimT]], T]
-
-
-class RetrievalType(IntEnum):
+class RetrievalType(enum.IntEnum):
     FIELD = (0,)
     DATA_ARRAY = (1,)
     METADATA = (2,)
@@ -65,14 +59,14 @@ class FieldProvider(Protocol):
 
     def __init__(self, func: Callable):
         self._func = func
-        self._fields: dict[str, Optional[FieldType]] = {}
+        self._fields: dict[str, Optional[state_utils.FieldType]] = {}
         self._dependencies: dict[str, str] = {}
 
     @abc.abstractmethod
     def evaluate(self, factory: "FieldsFactory") -> None:
         pass
 
-    def __call__(self, field_name: str, factory: "FieldsFactory") -> FieldType:
+    def __call__(self, field_name: str, factory: "FieldsFactory") -> state_utils.FieldType:
         if field_name not in self.fields():
             raise ValueError(f"Field {field_name} not provided by f{self._func.__name__}.")
         if any([f is None for f in self._fields.values()]):
@@ -89,7 +83,7 @@ class FieldProvider(Protocol):
 class PrecomputedFieldsProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction and returns it upon provider.get(field_name)."""
 
-    def __init__(self, fields: dict[str, FieldType]):
+    def __init__(self, fields: dict[str, state_utils.FieldType]):
         self._fields = fields
 
     def evaluate(self, factory: "FieldsFactory") -> None:
@@ -98,7 +92,7 @@ class PrecomputedFieldsProvider(FieldProvider):
     def dependencies(self) -> Sequence[str]:
         return []
 
-    def __call__(self, field_name: str, factory: "FieldsFactory") -> FieldType:
+    def __call__(self, field_name: str, factory: "FieldsFactory") -> state_utils.FieldType:
         return self._fields[field_name]
 
 
@@ -114,7 +108,7 @@ class ProgramFieldProvider(FieldProvider):
         domain: dict[gtx.Dimension : tuple[gtx.int32, gtx.int32]],
         fields: dict[str:str],
         deps: dict[str, str],
-        params: Optional[dict[str, Scalar]] = None,
+        params: Optional[dict[str, state_utils.Scalar]] = None,
     ):
         self._func = func
         self._compute_domain = domain
@@ -122,14 +116,14 @@ class ProgramFieldProvider(FieldProvider):
         self._output = fields
         self._params = params if params is not None else {}
         self._dims = self._domain_args()
-        self._fields: dict[str, Optional[gtx.Field | Scalar]] = {
+        self._fields: dict[str, Optional[gtx.Field | state_utils.Scalar]] = {
             name: None for name in fields.values()
         }
 
     def _unallocated(self) -> bool:
         return not all(self._fields.values())
 
-    def _allocate(self, allocator, grid: base_grid.BaseGrid) -> dict[str, FieldType]:
+    def _allocate(self, allocator, grid: base_grid.BaseGrid) -> dict[str, state_utils.FieldType]:
         def _map_size(dim: gtx.Dimension, grid: base_grid.BaseGrid) -> int:
             if dim == dims.KHalfDim:
                 return grid.num_levels + 1
@@ -188,12 +182,12 @@ class NumpyFieldsProvider(FieldProvider):
         domain: dict[gtx.Dimension : tuple[gtx.int32, gtx.int32]],
         fields: Sequence[str],
         deps: dict[str, str],
-        params: Optional[dict[str, Scalar]] = None,
+        params: Optional[dict[str, state_utils.Scalar]] = None,
     ):
         self._func = func
         self._compute_domain = domain
         self._dims = domain.keys()
-        self._fields: dict[str, Optional[FieldType]] = {name: None for name in fields}
+        self._fields: dict[str, Optional[state_utils.FieldType]] = {name: None for name in fields}
         self._dependencies = deps
         self._params = params if params is not None else {}
 
@@ -236,11 +230,11 @@ class FieldsFactory:
 
     def __init__(self, grid: base_grid.BaseGrid = None, backend=settings.backend):
         self._grid = grid
-        self._providers: dict[str, "FieldProvider"] = {}
+        self._providers: dict[str, 'FieldProvider'] = {}
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
 
     def validate(self):
-        return self._grid is not None and self._allocator is not None
+        return self._grid is not None
 
     @builder.builder
     def with_grid(self, grid: base_grid.BaseGrid):
@@ -269,7 +263,7 @@ class FieldsFactory:
     @valid
     def get(
         self, field_name: str, type_: RetrievalType = RetrievalType.FIELD
-    ) -> Union[FieldType, xa.DataArray, dict]:
+    ) -> Union[state_utils.FieldType, xa.DataArray, dict]:
         if field_name not in metadata.attrs:
             raise ValueError(f"Field {field_name} not found in metric fields")
         if type_ == RetrievalType.METADATA:
@@ -277,11 +271,9 @@ class FieldsFactory:
         if type_ == RetrievalType.FIELD:
             return self._providers[field_name](field_name, self)
         if type_ == RetrievalType.DATA_ARRAY:
-            return to_data_array(
-                self._providers[field_name](field_name), metadata.attrs[field_name]
+            return state_utils.to_data_array(
+                self._providers[field_name](field_name, self), metadata.attrs[field_name]
             )
         raise ValueError(f"Invalid retrieval type {type_}")
 
 
-def to_data_array(field, attrs):
-    return xa.DataArray(field, attrs=attrs)

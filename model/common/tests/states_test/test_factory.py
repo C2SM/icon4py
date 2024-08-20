@@ -13,13 +13,15 @@ import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims, exceptions
 from icon4py.model.common.io import cf_utils
 from icon4py.model.common.metrics import metric_fields as mf
-from icon4py.model.common.metrics.compute_wgtfacq import compute_wgtfacq_c_dsl
+from icon4py.model.common.metrics.compute_wgtfacq import (
+    compute_wgtfacq_c_dsl,
+)
 from icon4py.model.common.settings import xp
 from icon4py.model.common.states import factory
 
 
 @pytest.mark.datatest
-def test_check_dependencies_on_register(icon_grid, backend):
+def test_factory_check_dependencies_on_register(icon_grid, backend):
     fields_factory = factory.FieldsFactory(icon_grid, backend)
     provider = factory.ProgramFieldProvider(
         func=mf.compute_z_mc,
@@ -33,13 +35,15 @@ def test_check_dependencies_on_register(icon_grid, backend):
 
 
 @pytest.mark.datatest
-def test_factory_raise_error_if_no_grid_or_backend_set(metrics_savepoint):
+def test_factory_raise_error_if_no_grid_is_set(
+    metrics_savepoint
+):
     z_ifc = metrics_savepoint.z_ifc()
     k_index = gtx.as_field((dims.KDim,), xp.arange(1, dtype=gtx.int32))
     pre_computed_fields = factory.PrecomputedFieldsProvider(
         {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
-    fields_factory = factory.FieldsFactory(None, None)
+    fields_factory = factory.FieldsFactory(grid=None)
     fields_factory.register_provider(pre_computed_fields)
     with pytest.raises(exceptions.IncompleteSetupError) as e:
         fields_factory.get("height_on_interface_levels")
@@ -53,15 +57,24 @@ def test_factory_returns_field(metrics_savepoint, icon_grid, backend):
     pre_computed_fields = factory.PrecomputedFieldsProvider(
         {"height_on_interface_levels": z_ifc, cf_utils.INTERFACE_LEVEL_STANDARD_NAME: k_index}
     )
-    fields_factory = factory.FieldsFactory(None, None)
+    fields_factory = factory.FieldsFactory()
     fields_factory.register_provider(pre_computed_fields)
     fields_factory.with_grid(icon_grid).with_allocator(backend)
     field = fields_factory.get("height_on_interface_levels", factory.RetrievalType.FIELD)
     assert field.ndarray.shape == (icon_grid.num_cells, icon_grid.num_levels + 1)
-
+    meta = fields_factory.get("height_on_interface_levels", factory.RetrievalType.METADATA)
+    assert meta["standard_name"] == "height_on_interface_levels"
+    assert meta["dims"] == (dims.CellDim, dims.KHalfDim,)
+    assert meta["units"] == "m"
+    data_array = fields_factory.get("height_on_interface_levels", factory.RetrievalType.DATA_ARRAY)
+    assert data_array.data.shape == (icon_grid.num_cells, icon_grid.num_levels + 1)
+    assert data_array.data.dtype == xp.float64
+    for key in ("dims", "standard_name", "units", "icon_var_name"):
+        assert key in data_array.attrs.keys()
+    
 
 @pytest.mark.datatest
-def test_field_provider(icon_grid, metrics_savepoint, backend):
+def test_field_provider_for_program(icon_grid, metrics_savepoint, backend):
     fields_factory = factory.FieldsFactory(icon_grid, backend)
     k_index = gtx.as_field((dims.KDim,), xp.arange(icon_grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
@@ -101,7 +114,7 @@ def test_field_provider(icon_grid, metrics_savepoint, backend):
     assert helpers.dallclose(data.ndarray, ref)
 
 
-def test_numpy_function_evaluation(icon_grid, metrics_savepoint, backend):
+def test_field_provider_for_numpy_function(icon_grid, metrics_savepoint, interpolation_savepoint, backend):
     fields_factory = factory.FieldsFactory(grid=icon_grid, backend=backend)
     k_index = gtx.as_field((dims.KDim,), xp.arange(icon_grid.num_levels + 1, dtype=gtx.int32))
     z_ifc = metrics_savepoint.z_ifc()
