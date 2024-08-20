@@ -351,6 +351,7 @@ class SaturationAdjustment:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
+
             surface_pressure.diagnose_surface_pressure(
                 self._new_exner,
                 self._new_virtual_temperature,
@@ -365,6 +366,7 @@ class SaturationAdjustment:
                 vertical_end=self.grid.num_levels + gtx.int32(1),
                 offset_provider={"Koff": KDim},
             )
+
             pressure.diagnose_pressure(
                 self.metric_state.ddqz_z_full,
                 self._new_virtual_temperature,
@@ -378,6 +380,7 @@ class SaturationAdjustment:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
+
             compute_pressure_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure,
@@ -389,6 +392,7 @@ class SaturationAdjustment:
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
+
             compute_pressure_ifc_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure_ifc,
