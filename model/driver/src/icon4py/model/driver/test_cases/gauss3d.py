@@ -224,6 +224,7 @@ def model_initialization_gauss3d(
         temperature=temperature,
         u=u,
         v=v,
+        virtual_temperature=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
     )
 
     prognostic_state_now = prognostics.PrognosticState(

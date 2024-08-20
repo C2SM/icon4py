@@ -156,11 +156,7 @@ def test_saturation_adjustment(
     nwp_interface_satad_exit_savepoint = (
         data_provider.from_savepoint_weisman_klemp_interface_satad_exit(date=date)
     )
-
-    nwp_interface_satad_diag_entry_savepint = (
-        data_provider.from_savepoint_weisman_klemp_interface_diag_after_satad_entry(date=date)
-    )
-    nwp_interface_satad_diag_exit_savepint = (
+    nwp_interface_satad_diag_exit_savepoint = (
         data_provider.from_savepoint_weisman_klemp_interface_diag_after_satad_exit(date=date)
     )
 
@@ -180,25 +176,23 @@ def test_saturation_adjustment(
     tracer_state = tracers.TracerState(
         qv=nwp_interface_satad_entry_savepoint.qv(),
         qc=nwp_interface_satad_entry_savepoint.qc(),
-        qr=nwp_interface_satad_diag_entry_savepint.qr(),
-        qi=nwp_interface_satad_diag_entry_savepint.qi(),
-        qs=nwp_interface_satad_diag_entry_savepint.qs(),
-        qg=nwp_interface_satad_diag_entry_savepint.qg(),
+        qr=nwp_interface_satad_exit_savepoint.qr(),
+        qi=nwp_interface_satad_exit_savepoint.qi(),
+        qs=nwp_interface_satad_exit_savepoint.qs(),
+        qg=nwp_interface_satad_exit_savepoint.qg(),
     )
     prognostic_state = prognostics.PrognosticState(
         rho=nwp_interface_satad_entry_savepoint.rho(),
         vn=None,
         w=None,
-        exner=nwp_interface_satad_diag_entry_savepint.exner(),
+        exner=nwp_interface_satad_exit_savepoint.exner(),
         theta_v=None,
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=nwp_interface_satad_entry_savepoint.temperature(),
-        virtual_temperature=nwp_interface_satad_diag_entry_savepint.virtual_temperature(),
-        pressure=zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        pressure_ifc=zero_field(
-            icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
-        ),
+        virtual_temperature=nwp_interface_satad_exit_savepoint.virtual_temperature(),
+        pressure=nwp_interface_satad_exit_savepoint.pressure(),
+        pressure_ifc=nwp_interface_satad_exit_savepoint.pressure_ifc(),
         u=None,
         v=None,
     )
@@ -256,22 +250,22 @@ def test_saturation_adjustment(
     )
     assert dallclose(
         updated_virtual_temperature,
-        nwp_interface_satad_diag_exit_savepint.virtual_temperature().ndarray,
+        nwp_interface_satad_diag_exit_savepoint.virtual_temperature().ndarray,
         atol=1.0e-13,
     )
     assert dallclose(
         updated_exner,
-        nwp_interface_satad_diag_exit_savepint.exner().ndarray,
+        nwp_interface_satad_diag_exit_savepoint.exner().ndarray,
         atol=1.0e-13,
     )
 
     assert dallclose(
         updated_pressure,
-        nwp_interface_satad_diag_exit_savepint.pressure().ndarray,
+        nwp_interface_satad_diag_exit_savepoint.pressure().ndarray,
         atol=1.0e-13,
     )
     assert dallclose(
         updated_pressure_ifc,
-        nwp_interface_satad_diag_exit_savepint.pressure_ifc().ndarray,
+        nwp_interface_satad_diag_exit_savepoint.pressure_ifc().ndarray,
         atol=1.0e-13,
     )

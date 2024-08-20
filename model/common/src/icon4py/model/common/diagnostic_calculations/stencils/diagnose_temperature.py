@@ -17,28 +17,52 @@ from icon4py.model.common.type_alias import wpfloat
 
 
 @field_operator
-def _diagnose_temperature(
+def _diagnose_virtual_temperature_and_temperature(
+    qv: fa.CellKField[wpfloat],
+    qc: fa.CellKField[wpfloat],
+    qi: fa.CellKField[wpfloat],
+    qr: fa.CellKField[wpfloat],
+    qs: fa.CellKField[wpfloat],
+    qg: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
-) -> fa.CellKField[wpfloat]:
-    temperature = theta_v * exner
-    return temperature
+    rv_o_rd_minus1: wpfloat,
+) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    qsum = qc + qi + qr + qs + qg
+    virtual_temperature = theta_v * exner
+    temperature = virtual_temperature / (1.0 + rv_o_rd_minus1 * qv - qsum)
+    return virtual_temperature, temperature
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
-def diagnose_temperature(
+def diagnose_virtual_temperature_and_temperature(
+    qv: fa.CellKField[wpfloat],
+    qc: fa.CellKField[wpfloat],
+    qi: fa.CellKField[wpfloat],
+    qr: fa.CellKField[wpfloat],
+    qs: fa.CellKField[wpfloat],
+    qg: fa.CellKField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
     exner: fa.CellKField[wpfloat],
+    virtual_temperature: fa.CellKField[wpfloat],
     temperature: fa.CellKField[wpfloat],
+    rv_o_rd_minus1: wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
     vertical_end: int32,
 ):
-    _diagnose_temperature(
+    _diagnose_virtual_temperature_and_temperature(
+        qv,
+        qc,
+        qi,
+        qr,
+        qs,
+        qg,
         theta_v,
         exner,
-        out=(temperature),
+        rv_o_rd_minus1,
+        out=(virtual_temperature, temperature),
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

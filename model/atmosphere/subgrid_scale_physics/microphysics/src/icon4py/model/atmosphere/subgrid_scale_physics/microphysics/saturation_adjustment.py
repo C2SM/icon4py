@@ -25,6 +25,7 @@ from typing import Final
 
 import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
+from gt4py.next import broadcast
 from gt4py.next.ffront.fbuiltins import (
     abs,
     exp,
@@ -33,13 +34,13 @@ from gt4py.next.ffront.fbuiltins import (
 )
 
 from icon4py.model.common import (
-    constants,
     constants as phy_const,
     field_type_aliases as fa,
     type_alias as ta,
 )
-from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
-    diagnose_pressure,
+from icon4py.model.common.diagnostic_calculations.stencils import (
+    diagnose_pressure as pressure,
+    diagnose_surface_pressure as surface_pressure,
 )
 from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
@@ -52,7 +53,7 @@ from icon4py.model.common.states import (
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 
-# TODO (Chia Rui): Refactor this class when there is consensus in gt4py team about the best way to express compile-time constants
+# TODO (Chia Rui): Refactor this class when direct import is enabled for gt4py stencils
 class SaturatedPressureConstants(FrozenNamespace):
     """
     Constants used for the computation of saturated pressure in saturation adjustment and microphysics.
@@ -65,16 +66,16 @@ class SaturatedPressureConstants(FrozenNamespace):
     tmelt: ta.wpfloat = 273.15
 
     #: See docstring in common/constanst.py
-    rd: ta.wpfloat = constants.RD
+    rd: ta.wpfloat = phy_const.GAS_CONSTANT_DRY_AIR
     #: See docstring in common/constanst.py
-    rv: ta.wpfloat = constants.RV
+    rv: ta.wpfloat = phy_const.GAS_CONSTANT_WATER_VAPOR
     #: See docstring in common/constanst.py
-    cvd: ta.wpfloat = constants.CVD
+    cvd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_VOLUME
     #: See docstring in common/constanst.py
-    cpd: ta.wpfloat = constants.CPD
+    cpd: ta.wpfloat = phy_const.SPECIFIC_HEAT_CONSTANT_PRESSURE
 
-    vtmpc1: ta.wpfloat = rv / rd - 1.0
-    rd_o_cpd: ta.wpfloat = constants.RD_O_CPD
+    rv_o_rd_minus_1: ta.wpfloat = rv / rd - 1.0
+    rd_o_cpd: ta.wpfloat = phy_const.RD_O_CPD
 
     #: Dry air heat capacity at constant pressure / water heat capacity at constant pressure - 1
     rcpl: ta.wpfloat = 3.1733
@@ -151,6 +152,9 @@ class SaturationAdjustment:
         self._lwdocvd = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
         )
+        self._k_field = field_alloc.allocate_indices(
+            KDim, grid=self.grid, is_halfdim=True, dtype=gtx.int32
+        )
         # TODO (Chia Rui): remove local pressure and pressire_ifc when scan operator can be called along with pressure tendency computation
         self._pressure = field_alloc.allocate_zero_field(
             CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
@@ -161,6 +165,19 @@ class SaturationAdjustment:
             grid=self.grid,
             is_halfdim=True,
             dtype=ta.wpfloat,
+        )
+        self._pressure_ifc = field_alloc.allocate_zero_field(
+            CellDim,
+            KDim,
+            grid=self.grid,
+            is_halfdim=True,
+            dtype=ta.wpfloat,
+        )
+        self._new_exner = field_alloc.allocate_zero_field(
+            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+        )
+        self._new_virtual_temperature = field_alloc.allocate_zero_field(
+            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
         )
         # TODO (Chia Rui): remove the tendency terms below when architecture of the entire phyiscs component is ready to use.
         self.temperature_tendency = field_alloc.allocate_zero_field(
@@ -182,7 +199,7 @@ class SaturationAdjustment:
             CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
         )
         self.pressure_ifc_tendency = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid, dtype=ta.wpfloat
+            CellDim, KDim, grid=self.grid, is_halfdim=True, dtype=ta.wpfloat
         )
 
     def run(
@@ -308,6 +325,7 @@ class SaturationAdjustment:
         )
 
         if self.config.diagnose_variables_from_new_temperature:
+            # TODO (Chia Rui): Consider to merge the gt4py stencils below if scan operator can be called in the intermediate step
             compute_temperature_and_exner_tendencies_after_saturation_adjustment(
                 dtime,
                 tracer_state.qv,
@@ -323,17 +341,34 @@ class SaturationAdjustment:
                 prognostic_state.exner,
                 self.virtual_temperature_tendency,
                 self.exner_tendency,
+                self._new_exner,
+                self._new_virtual_temperature,
+                self._k_field,
+                self.vertical_params.kstart_moist,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
-                vertical_start=self.vertical_params.kstart_moist,
+                vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
             )
-
-            diagnose_pressure(
+            surface_pressure.diagnose_surface_pressure(
+                self._new_exner,
+                self._new_virtual_temperature,
                 self.metric_state.ddqz_z_full,
-                diagnostic_state.temperature,
-                diagnostic_state.pressure_sfc,
+                self._pressure_ifc,
+                phy_const.CPD_O_RD,
+                phy_const.P0REF,
+                phy_const.GRAV_O_RD,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=self.grid.num_levels,
+                vertical_end=self.grid.num_levels + gtx.int32(1),
+                offset_provider={"Koff": KDim},
+            )
+            pressure.diagnose_pressure(
+                self.metric_state.ddqz_z_full,
+                self._new_virtual_temperature,
+                gtx.as_field((CellDim,), self._pressure_ifc.ndarray[:, -1]),
                 self._pressure,
                 self._pressure_ifc,
                 phy_const.GRAV_O_RD,
@@ -346,15 +381,23 @@ class SaturationAdjustment:
             compute_pressure_tendency_after_saturation_adjustment(
                 dtime,
                 diagnostic_state.pressure,
-                diagnostic_state.pressure_ifc,
                 self._pressure,
-                self._pressure_ifc,
                 self.pressure_tendency,
-                self.pressure_ifc_tendency,
                 horizontal_start=start_cell_nudging,
                 horizontal_end=end_cell_local,
                 vertical_start=gtx.int32(0),
                 vertical_end=self.grid.num_levels,
+                offset_provider={},
+            )
+            compute_pressure_ifc_tendency_after_saturation_adjustment(
+                dtime,
+                diagnostic_state.pressure_ifc,
+                self._pressure_ifc,
+                self.pressure_ifc_tendency,
+                horizontal_start=start_cell_nudging,
+                horizontal_end=end_cell_local,
+                vertical_start=gtx.int32(0),
+                vertical_end=self.grid.num_levels + gtx.int32(1),
                 offset_provider={},
             )
 
@@ -765,7 +808,11 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     temperature: fa.CellKField[ta.wpfloat],
     virtual_temperature: fa.CellKField[ta.wpfloat],
     exner: fa.CellKField[ta.wpfloat],
+    k_field: fa.KField[gtx.int32],
+    kstart_moist: gtx.int32,
 ) -> tuple[
+    fa.CellKField[ta.wpfloat],
+    fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
     fa.CellKField[ta.wpfloat],
 ]:
@@ -785,21 +832,34 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
         temperature: air temperature [K]
         virtual_temperature: air virtual temperature [K]
         exner: exner function
+        k_field: k level indices
+        kstart_moist: starting level for all moisture processes
     Returns:
-        virtual temperature tendency [K/s], exner tendency [/s]
+        virtual temperature tendency [K/s], exner tendency [/s], new exner, new virtual temperature [K]
     """
-    qsum = qc + qc_tendency * dtime + qi + qr + qs + qg
-
-    new_virtual_temperature = temperature * (
-        1.0 + satpres_const.vtmpc1 * (qv + qv_tendency * dtime) - qsum
+    qsum = where(
+        k_field < kstart_moist,
+        broadcast(0.0, (CellDim, KDim)),
+        qc + qc_tendency * dtime + qi + qr + qs + qg,
     )
-    new_exner = exner * (
-        1.0 + satpres_const.rd_o_cpd * (new_virtual_temperature / virtual_temperature - 1.0)
+
+    new_virtual_temperature = where(
+        k_field < kstart_moist,
+        virtual_temperature,
+        temperature * (1.0 + satpres_const.rv_o_rd_minus_1 * (qv + qv_tendency * dtime) - qsum),
+    )
+    new_exner = where(
+        k_field < kstart_moist,
+        exner,
+        exner
+        * (1.0 + satpres_const.rd_o_cpd * (new_virtual_temperature / virtual_temperature - 1.0)),
     )
 
     return (
         (new_virtual_temperature - virtual_temperature) / dtime,
         (new_exner - exner) / dtime,
+        new_exner,
+        new_virtual_temperature,
     )
 
 
@@ -819,6 +879,10 @@ def compute_temperature_and_exner_tendencies_after_saturation_adjustment(
     exner: fa.CellKField[ta.wpfloat],
     virtual_temperature_tendency: fa.CellKField[ta.wpfloat],
     exner_tendency: fa.CellKField[ta.wpfloat],
+    new_exner: fa.CellKField[ta.wpfloat],
+    new_virtual_temperature: fa.CellKField[ta.wpfloat],
+    k_field: fa.KField[gtx.int32],
+    kstart_moist: gtx.int32,
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -837,9 +901,13 @@ def compute_temperature_and_exner_tendencies_after_saturation_adjustment(
         temperature,
         virtual_temperature,
         exner,
+        k_field,
+        kstart_moist,
         out=(
             virtual_temperature_tendency,
             exner_tendency,
+            new_exner,
+            new_virtual_temperature,
         ),
         domain={
             CellDim: (horizontal_start, horizontal_end),
@@ -852,40 +920,28 @@ def compute_temperature_and_exner_tendencies_after_saturation_adjustment(
 def _compute_pressure_tendency_after_saturation_adjustment(
     dtime: ta.wpfloat,
     old_pressure: fa.CellKField[ta.wpfloat],
-    old_pressure_ifc: fa.CellKField[ta.wpfloat],
     new_pressure: fa.CellKField[ta.wpfloat],
-    new_pressure_ifc: fa.CellKField[ta.wpfloat],
-) -> tuple[
-    fa.CellKField[ta.wpfloat],
-    fa.CellKField[ta.wpfloat],
-]:
+) -> fa.CellKField[ta.wpfloat]:
     """
-    Update virtual temperature, exner, and pressure tendencies after saturation adjustment updates temperature, qv , and qc.
+    Update pressure tendency at full levels after saturation adjustment updates temperature, qv , and qc.
 
     Args:
         dtime: time step [s]
         old_pressure: old air pressure at full levels [Pa]
-        old_pressure_ifc: old air pressure at interface [Pa]
         new_pressure: new air pressure at full levels [Pa]
-        new_pressure_ifc: new air pressure at interface [Pa]
     Returns:
-        pressure tendency [Pa/s], interface pressure tendency [Pa/s]
+        pressure tendency [Pa/s]
     """
-    return (
-        (new_pressure - old_pressure) / dtime,
-        (new_pressure_ifc - old_pressure_ifc) / dtime,
-    )
+
+    return (new_pressure - old_pressure) / dtime
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def compute_pressure_tendency_after_saturation_adjustment(
     dtime: ta.wpfloat,
     old_pressure: fa.CellKField[ta.wpfloat],
-    old_pressure_ifc: fa.CellKField[ta.wpfloat],
     new_pressure: fa.CellKField[ta.wpfloat],
-    new_pressure_ifc: fa.CellKField[ta.wpfloat],
     pressure_tendency: fa.CellKField[ta.wpfloat],
-    pressure_ifc_tendency: fa.CellKField[ta.wpfloat],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -894,12 +950,46 @@ def compute_pressure_tendency_after_saturation_adjustment(
     _compute_pressure_tendency_after_saturation_adjustment(
         dtime,
         old_pressure,
-        old_pressure_ifc,
         new_pressure,
+        out=pressure_tendency,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+    )
+
+
+@gtx.field_operator
+def _compute_pressure_ifc_tendency_after_saturation_adjustment(
+    dtime: ta.wpfloat,
+    old_pressure_ifc: fa.CellKField[ta.wpfloat],
+    new_pressure_ifc: fa.CellKField[ta.wpfloat],
+) -> fa.CellKField[ta.wpfloat]:
+    """
+    Update pressure tendency at half levels (including surface level) after saturation adjustment updates temperature, qv , and qc.
+
+    Args:
+        dtime: time step [s]
+        old_pressure_ifc: old air pressure at interface [Pa]
+        new_pressure_ifc: new air pressure at interface [Pa]
+    Returns:
+        interface pressure tendency [Pa/s]
+    """
+    return (new_pressure_ifc - old_pressure_ifc) / dtime
+
+
+@gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
+def compute_pressure_ifc_tendency_after_saturation_adjustment(
+    dtime: ta.wpfloat,
+    old_pressure_ifc: fa.CellKField[ta.wpfloat],
+    new_pressure_ifc: fa.CellKField[ta.wpfloat],
+    pressure_ifc_tendency: fa.CellKField[ta.wpfloat],
+    horizontal_start: gtx.int32,
+    horizontal_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
+):
+    _compute_pressure_ifc_tendency_after_saturation_adjustment(
+        dtime,
+        old_pressure_ifc,
         new_pressure_ifc,
-        out=(
-            pressure_tendency,
-            pressure_ifc_tendency,
-        ),
+        out=pressure_ifc_tendency,
         domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

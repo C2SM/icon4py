@@ -19,7 +19,7 @@ from icon4py.model.common.type_alias import wpfloat
 @field_operator
 def _diagnose_surface_pressure(
     exner: fa.CellKField[wpfloat],
-    temperature: fa.CellKField[wpfloat],
+    virtual_temperature: fa.CellKField[wpfloat],
     ddqz_z_full: fa.CellKField[wpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
@@ -29,9 +29,9 @@ def _diagnose_surface_pressure(
         cpd_o_rd * log(exner(Koff[-3]))
         + grav_o_rd
         * (
-            ddqz_z_full(Koff[-1]) / temperature(Koff[-1])
-            + ddqz_z_full(Koff[-2]) / temperature(Koff[-2])
-            + 0.5 * ddqz_z_full(Koff[-3]) / temperature(Koff[-3])
+            ddqz_z_full(Koff[-1]) / virtual_temperature(Koff[-1])
+            + ddqz_z_full(Koff[-2]) / virtual_temperature(Koff[-2])
+            + 0.5 * ddqz_z_full(Koff[-3]) / virtual_temperature(Koff[-3])
         )
     )
     return pressure_sfc
@@ -40,7 +40,7 @@ def _diagnose_surface_pressure(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_surface_pressure(
     exner: fa.CellKField[wpfloat],
-    temperature: fa.CellKField[wpfloat],
+    virtual_temperature: fa.CellKField[wpfloat],
     ddqz_z_full: fa.CellKField[wpfloat],
     pressure_sfc: fa.CellKField[wpfloat],
     cpd_o_rd: wpfloat,
@@ -53,7 +53,7 @@ def diagnose_surface_pressure(
 ):
     _diagnose_surface_pressure(
         exner,
-        temperature,
+        virtual_temperature,
         ddqz_z_full,
         cpd_o_rd,
         p0ref,

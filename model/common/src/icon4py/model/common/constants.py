@@ -33,6 +33,10 @@ CPD_O_RD: Final[wpfloat] = CPD / RD
 GAS_CONSTANT_WATER_VAPOR: Final[wpfloat] = 461.51
 RV: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR
 
+#: RV/RD - 1, tvmpc1 in ICON.
+RV_O_RD_MINUS_1: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR / GAS_CONSTANT_DRY_AIR - 1.0
+TVMPC1: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR
+
 #: Av. gravitational acceleration [m/s^2]
 GRAVITATIONAL_ACCELERATION: Final[wpfloat] = 9.80665
 GRAV: Final[wpfloat] = GRAVITATIONAL_ACCELERATION

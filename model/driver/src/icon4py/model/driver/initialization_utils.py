@@ -163,6 +163,7 @@ def model_initialization_serialbox(
         temperature=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
         u=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
         v=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
+        virtual_temperature=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
     )
 
     prognostic_state_next = prognostics.PrognosticState(
