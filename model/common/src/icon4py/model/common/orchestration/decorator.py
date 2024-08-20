@@ -21,23 +21,44 @@
 
 from __future__ import annotations
 
+import copy
+import inspect
+import os
+import shutil
 from collections.abc import Callable
-from typing import Union
+from typing import Any, Optional, Union, get_type_hints
 
-from gt4py.next import CompileTimeConnectivity
+import numpy as np
+from gt4py._core import definitions as core_defs
+from gt4py.next import CompileTimeConnectivity, Field
 from gt4py.next.common import Connectivity
+from gt4py.next.ffront.fbuiltins import int32, int64
+from gt4py.next.program_processors.runners.dace_iterator.utility import (
+    connectivity_identifier,
+)
 
+import icon4py.model.common.states.prognostic_state as prognostics
+from icon4py.model.atmosphere.diffusion import diffusion_states
 from icon4py.model.common import settings
-from icon4py.model.common.decomposition.definitions import SingleNodeResult
-from icon4py.model.common.decomposition.mpi_decomposition import MultiNodeResult
+from icon4py.model.common.decomposition.definitions import SingleNodeExchange, SingleNodeResult
+from icon4py.model.common.decomposition.mpi_decomposition import (
+    GHexMultiNodeExchange,
+    MultiNodeResult,
+)
+from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.grid.icon import IconGrid
+from icon4py.model.common.orchestration.dtypes import *  # noqa: F403
+from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 try:
     import dace
+    import ghex
 except ImportError:
     from types import ModuleType
 
     dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+    ghex: Optional[ModuleType] = None  # type: ignore[no-redef]
 
 
 def dace_orchestration() -> bool:
@@ -68,6 +89,11 @@ def orchestration(method=True):
                     raise ValueError(
                         "The orchestration decorator is only for methods -at least for now-."
                     )
+
+                fuse_func_orig_annotations = copy.deepcopy(fuse_func.__annotations__)
+                fuse_func.__annotations__ = to_dace_annotations(
+                    fuse_func
+                )  # every arg/kwarg is annotated with DaCe data types
 
                 has_exchange = False
                 has_grid = False
@@ -114,11 +140,15 @@ def orchestration(method=True):
                 with dace.config.temporary_config():
                     configure_dace_temp_env(default_build_folder)
 
-                    updated_args = mod_args_for_dace_structures(fuse_func, args)
+                    updated_args, updated_kwargs = mod_xargs_for_dace_structures(
+                        fuse_func, args, kwargs
+                    )
+
                     updated_kwargs = {
-                        **kwargs,
+                        **updated_kwargs,
                         **dace_specific_kwargs(exchange_obj, grid.offset_providers),
                     }
+
                     updated_kwargs = {
                         **updated_kwargs,
                         **dace_symbols_concretization(grid, fuse_func, args, kwargs),
@@ -128,6 +158,9 @@ def orchestration(method=True):
                     if method:
                         del sdfg_args[self_name]
 
+                    fuse_func.__annotations__ = (
+                        fuse_func_orig_annotations  # restore the original annotations
+                    )
                     return compiled_sdfg(**sdfg_args)
             else:
                 return fuse_func(*args, **kwargs)
@@ -135,6 +168,66 @@ def orchestration(method=True):
         return wrapper
 
     return decorator
+
+
+def to_dace_annotations(fuse_func: Callable) -> dict[str, Any]:
+    dace_annotations = {}  # replace the fuse_func.__annotations__ with DaCe annotations
+
+    precision = os.environ.get("FLOAT_PRECISION", "double").lower()
+    icon4py_primitive_dtypes = (wpfloat, vpfloat, float, bool, int32, int64)
+    dace_primitive_dtypes = (
+        dace.float64,
+        dace.float64 if precision == "double" else dace.float32,
+        dace.float64,
+        dace.bool,
+        dace.int32,
+        dace.int64,
+    )
+
+    fuse_func_type_hints = get_type_hints(fuse_func)
+    for param in inspect.signature(fuse_func).parameters.values():
+        if param.name in fuse_func_type_hints:
+            if hasattr(fuse_func_type_hints[param.name], "__origin__"):
+                if fuse_func_type_hints[param.name].__origin__ is Field:
+                    dims_ = fuse_func_type_hints[param.name].__args__[0].__args__
+                    dace_dims = []
+                    for dim_ in dims_:
+                        if "cell" in dim_.value.lower():
+                            dace_dims.append(CellDim_sym)  # noqa: F405
+                        elif "edge" in dim_.value.lower():
+                            dace_dims.append(EdgeDim_sym)  # noqa: F405
+                        elif "vertex" in dim_.value.lower():
+                            dace_dims.append(VertexDim_sym)  # noqa: F405
+                        elif "k" == dim_.value.lower():
+                            dace_dims.append(KDim_sym)  # noqa: F405
+                        else:
+                            raise ValueError(f"The dimension [{dim_}] is not supported.")
+
+                    dtype_ = fuse_func_type_hints[param.name].__args__[1]
+                    dace_annotations[param.name] = dace.data.Array(
+                        dtype=dace_primitive_dtypes[icon4py_primitive_dtypes.index(dtype_)],
+                        shape=dace_dims,
+                    )
+                else:
+                    raise ValueError(
+                        f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
+                    )
+            elif fuse_func_type_hints[param.name] is diffusion_states.DiffusionDiagnosticState:
+                dace_annotations[param.name] = DiffusionDiagnosticState_t  # noqa: F405
+            elif fuse_func_type_hints[param.name] is prognostics.PrognosticState:
+                dace_annotations[param.name] = PrognosticState_t  # noqa: F405
+            elif fuse_func_type_hints[param.name] in icon4py_primitive_dtypes:
+                dace_annotations[param.name] = dace_primitive_dtypes[
+                    icon4py_primitive_dtypes.index(fuse_func_type_hints[param.name])
+                ]
+            else:
+                raise ValueError(
+                    f"The type hint [{fuse_func_type_hints[param.name]}] is not supported."
+                )
+        else:
+            dace_annotations[param.name] = dace.compiletime
+
+    return dace_annotations
 
 
 def dace_inhibitor(f: Callable):
@@ -165,29 +258,11 @@ def build_compile_time_connectivities(
     return connectivities
 
 
-if dace:
-    import inspect
-    import os
-    import shutil
-    from typing import Any, Optional
-
+if dace and ghex:
     import dace
-    import numpy as np
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
     from ghex import expose_cpp_ptr
-    from gt4py._core import definitions as core_defs
-    from gt4py.next.program_processors.runners.dace_iterator.utility import (
-        connectivity_identifier,
-        field_size_symbol_name,
-        field_stride_symbol_name,
-    )
-
-    from icon4py.model.common.decomposition.definitions import SingleNodeExchange
-    from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-    from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
-    from icon4py.model.common.grid.icon import IconGrid
-    from icon4py.model.common.orchestration.dtypes import *  # noqa: F403
 
     def dev_type_from_gt4py_to_dace(device_type: core_defs.DeviceType) -> dace.dtypes.DeviceType:
         if device_type == core_defs.DeviceType.CPU:
@@ -408,6 +483,7 @@ if dace:
                 strict=False,
             )
         )
+
         return {
             **{
                 "CellDim_sym": grid.offset_providers["C2E"].table.shape[0],
@@ -432,36 +508,20 @@ if dace:
                 for stride in [0, 1]
                 if k_v[0] is PrognosticState_t  # noqa: F405
             },
-            **{
-                field_size_symbol_name(connectivity_identifier(k), axis=0): v.table.shape[0]
-                for k, v in grid.offset_providers.items()
-                if hasattr(v, "table")
-            },
-            **{
-                field_size_symbol_name(connectivity_identifier(k), axis=1): v.table.shape[1]
-                for k, v in grid.offset_providers.items()
-                if hasattr(v, "table")
-            },
-            **{
-                field_stride_symbol_name(
-                    connectivity_identifier(k), axis=0
-                ): get_stride_from_numpy_to_dace(v.table, 0)
-                for k, v in grid.offset_providers.items()
-                if hasattr(v, "table")
-            },
-            **{
-                field_stride_symbol_name(
-                    connectivity_identifier(k), axis=1
-                ): get_stride_from_numpy_to_dace(v.table, 1)
-                for k, v in grid.offset_providers.items()
-                if hasattr(v, "table")
-            },
         }
 
-    def mod_args_for_dace_structures(fuse_func: Callable, args: Any) -> tuple:
-        """Modify the args to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding GT4Py structures"""
+    def mod_xargs_for_dace_structures(fuse_func: Callable, args: Any, kwargs: Any) -> tuple:
+        """Modify the args/kwargs to support DaCe Structures, i.e., teach DaCe how to extract the data from the corresponding Python data classes"""
+        flattened_xargs_type_value = list(
+            zip(
+                list(fuse_func.__annotations__.values()),
+                list(args) + list(kwargs.values()),
+                strict=False,
+            )
+        )
+
         # DiffusionDiagnosticState_t
-        new_args = [
+        mod_args_kwargs = [
             DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()(  # noqa: F405
                 hdef_ic=k_v[1].hdef_ic.data_ptr(),
                 div_ic=k_v[1].div_ic.data_ptr(),
@@ -470,61 +530,25 @@ if dace:
             )
             if k_v[0] is DiffusionDiagnosticState_t  # noqa: F405
             else k_v[1]
-            for k_v in list(zip(list(fuse_func.__annotations__.values()), list(args), strict=False))
+            for k_v in flattened_xargs_type_value
         ]
         # PrognosticState_t
-        new_args = [
-            PrognosticState_t.dtype._typeclass.as_ctypes()(  # noqa: F405
-                rho=k_v[1].rho.data_ptr(),
-                w=k_v[1].w.data_ptr(),
-                vn=k_v[1].vn.data_ptr(),
-                exner=k_v[1].exner.data_ptr(),
-                theta_v=k_v[1].theta_v.data_ptr(),
-            )
-            if k_v[0] is PrognosticState_t  # noqa: F405
-            else k_v[1]
-            for k_v in list(
-                zip(list(fuse_func.__annotations__.values()), list(new_args), strict=False)
-            )
-        ]
-        # OffsetProviders_int64_t
-        new_args = [
-            OffsetProviders_int64_t.dtype._typeclass.as_ctypes()(  # noqa: F405
-                **{
-                    member: k_v[1][member].data_ptr()
-                    for member in k_v[1].keys()
-                    if hasattr(k_v[1][member], "table")
-                }
-            )
-            if k_v[0] is OffsetProviders_int64_t  # noqa: F405
-            else k_v[1]
-            for k_v in list(
-                zip(list(fuse_func.__annotations__.values()), list(new_args), strict=False)
-            )
-        ]
-        # OffsetProviders_int32_t
-        new_args = [
-            OffsetProviders_int32_t.dtype._typeclass.as_ctypes()(  # noqa: F405
-                **{
-                    member: k_v[1][member].data_ptr()
-                    for member in k_v[1].keys()
-                    if hasattr(k_v[1][member], "table")
-                }
-            )
-            if k_v[0] is OffsetProviders_int32_t  # noqa: F405
-            else k_v[1]
-            for k_v in list(
-                zip(list(fuse_func.__annotations__.values()), list(new_args), strict=False)
-            )
-        ]
+        for i, k_v in enumerate(flattened_xargs_type_value):
+            if k_v[0] is PrognosticState_t:  # noqa: F405
+                mod_args_kwargs[i] = PrognosticState_t.dtype._typeclass.as_ctypes()(  # noqa: F405
+                    rho=k_v[1].rho.data_ptr(),
+                    w=k_v[1].w.data_ptr(),
+                    vn=k_v[1].vn.data_ptr(),
+                    exner=k_v[1].exner.data_ptr(),
+                    theta_v=k_v[1].theta_v.data_ptr(),
+                )
 
-        for new_arg_ in new_args:
-            if isinstance(new_arg_, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):  # noqa: F405
-                new_arg_.descriptor = DiffusionDiagnosticState_t  # noqa: F405
-            if isinstance(new_arg_, PrognosticState_t.dtype._typeclass.as_ctypes()):  # noqa: F405
-                new_arg_.descriptor = PrognosticState_t  # noqa: F405
-            if isinstance(new_arg_, OffsetProviders_int64_t.dtype._typeclass.as_ctypes()):  # noqa: F405
-                new_arg_.descriptor = OffsetProviders_int64_t  # noqa: F405
-            if isinstance(new_arg_, OffsetProviders_int32_t.dtype._typeclass.as_ctypes()):  # noqa: F405
-                new_arg_.descriptor = OffsetProviders_int32_t  # noqa: F405
-        return tuple(new_args)
+        for mod_arg_kwarg in mod_args_kwargs:
+            if isinstance(mod_arg_kwarg, DiffusionDiagnosticState_t.dtype._typeclass.as_ctypes()):  # noqa: F405
+                mod_arg_kwarg.descriptor = DiffusionDiagnosticState_t  # noqa: F405
+            if isinstance(mod_arg_kwarg, PrognosticState_t.dtype._typeclass.as_ctypes()):  # noqa: F405
+                mod_arg_kwarg.descriptor = PrognosticState_t  # noqa: F405
+
+        return tuple(mod_args_kwargs[0 : len(args)]), {
+            k: v for k, v in zip(kwargs.keys(), mod_args_kwargs[len(args) :], strict=False)
+        }
