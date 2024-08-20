@@ -10,10 +10,15 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C, E2CDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator
@@ -21,7 +26,7 @@ def _compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
 ) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_19."""
@@ -38,7 +43,7 @@ def compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates(
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     z_exner_ex_pr: fa.CellKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
     z_dexner_dz_c_1: fa.CellKField[vpfloat],
     z_gradh_exner: fa.EdgeKField[vpfloat],
     horizontal_start: int32,

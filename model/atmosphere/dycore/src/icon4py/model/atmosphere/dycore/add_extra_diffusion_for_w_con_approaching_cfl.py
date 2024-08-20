@@ -18,21 +18,26 @@ from gt4py.next.ffront.fbuiltins import (
     where,
 )
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _add_extra_diffusion_for_w_con_approaching_cfl(
-    levmask: Field[[KDim], bool],
+    levmask: Field[[dims.KDim], bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     z_w_con_c: fa.CellKField[vpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
-    geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
+    geofac_n2s: Field[[dims.CellDim, C2E2CODim], wpfloat],
     w: fa.CellKField[wpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
     scalfac_exdiff: wpfloat,
@@ -65,13 +70,13 @@ def _add_extra_diffusion_for_w_con_approaching_cfl(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_w_con_approaching_cfl(
-    levmask: Field[[KDim], bool],
+    levmask: Field[[dims.KDim], bool],
     cfl_clipping: fa.CellKField[bool],
     owner_mask: fa.CellField[bool],
     z_w_con_c: fa.CellKField[vpfloat],
     ddqz_z_half: fa.CellKField[vpfloat],
     area: fa.CellField[wpfloat],
-    geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
+    geofac_n2s: Field[[dims.CellDim, C2E2CODim], wpfloat],
     w: fa.CellKField[wpfloat],
     ddt_w_adv: fa.CellKField[vpfloat],
     scalfac_exdiff: wpfloat,

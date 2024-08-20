@@ -14,8 +14,7 @@ from typing import Final
 
 import gt4py.next as gtx
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import xp
 
 
@@ -227,7 +226,7 @@ def _read_vct_a_and_vct_b_from_file(file_path: pathlib.Path, num_levels: int):
         ) from err
     except ValueError as err:
         raise ValueError(f"data is not float at {k}-th line.") from err
-    return gtx.as_field((KDim,), vct_a), gtx.as_field((KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
 
 
 def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
@@ -268,7 +267,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
 
     Args:
         vertical_config: Vertical grid configuration
-    Returns:  one dimensional (KDim) vct_a and vct_b gt4py fields.
+    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
     num_levels_plus_one = vertical_config.num_levels + 1
     if vertical_config.lowest_layer_thickness > 0.01:
@@ -408,7 +407,7 @@ def _compute_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
             f" Warning. vct_a[0], {vct_a[0]}, is not equal to model top height, {vertical_config.model_top_height}, of vertical configuration. Please consider changing the vertical setting."
         )
 
-    return gtx.as_field((KDim,), vct_a), gtx.as_field((KDim,), vct_b)
+    return gtx.as_field((dims.KDim,), vct_a), gtx.as_field((dims.KDim,), vct_b)
 
 
 def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
@@ -423,7 +422,7 @@ def get_vct_a_and_vct_b(vertical_config: VerticalGridConfig):
 
     Args:
         vertical_config: Vertical grid configuration
-    Returns:  one dimensional (KDim) vct_a and vct_b gt4py fields.
+    Returns:  one dimensional (dims.KDim) vct_a and vct_b gt4py fields.
     """
 
     return (

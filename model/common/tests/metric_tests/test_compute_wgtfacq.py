@@ -8,7 +8,7 @@
 
 import pytest
 
-from icon4py.model.common.dimension import E2CDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.metrics.compute_wgtfacq import (
     compute_wgtfacq_c_dsl,
     compute_wgtfacq_e_dsl,
@@ -35,7 +35,7 @@ def test_compute_wgtfacq_e_dsl(metrics_savepoint, interpolation_savepoint, icon_
     wgtfacq_c_dsl = metrics_savepoint.wgtfacq_c_dsl()
 
     wgtfacq_e_dsl_full = compute_wgtfacq_e_dsl(
-        e2c=icon_grid.connectivities[E2CDim],
+        e2c=icon_grid.connectivities[dims.E2CDim],
         z_ifc=metrics_savepoint.z_ifc().asnumpy(),
         wgtfacq_c_dsl=wgtfacq_c_dsl.asnumpy(),
         c_lin_e=interpolation_savepoint.c_lin_e().asnumpy(),

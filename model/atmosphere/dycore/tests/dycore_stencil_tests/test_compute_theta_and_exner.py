@@ -11,7 +11,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.compute_theta_and_exner import compute_theta_and_exner
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, random_mask
 from icon4py.model.common.type_alias import wpfloat
 
@@ -44,10 +44,10 @@ class TestComputeThetaAndExner(StencilTest):
     def input_data(self, grid):
         rd_o_cvd = wpfloat("10.0")
         rd_o_p0ref = wpfloat("20.0")
-        bdy_halo_c = random_mask(grid, CellDim)
-        exner = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
-        rho = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
-        theta_v = random_field(grid, CellDim, KDim, low=1, high=2, dtype=wpfloat)
+        bdy_halo_c = random_mask(grid, dims.CellDim)
+        exner = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
+        rho = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, low=1, high=2, dtype=wpfloat)
 
         return dict(
             bdy_halo_c=bdy_halo_c,

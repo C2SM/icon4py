@@ -28,19 +28,14 @@ from gt4py.next import (
     where,
 )
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     C2E,
     C2E2C,
     C2E2CO,
     E2C,
     C2E2CODim,
-    CellDim,
-    E2CDim,
-    EdgeDim,
-    KDim,
     Koff,
-    VertexDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -58,6 +53,11 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 """
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @dataclass(frozen=True)
@@ -79,11 +79,11 @@ def compute_z_mc(
     Compute the geometric height of full levels from the geometric height of half levels (z_ifc).
 
     This assumes that the input field z_ifc is defined on half levels (KHalfDim) and the
-    returned fields is defined on full levels (KDim)
+    returned fields is defined on full levels (dims.KDim)
 
     Args:
-        z_ifc: Field[Dims[CellDim, KDim], wpfloat] geometric height on half levels
-        z_mc: Field[Dims[CellDim, KDim], wpfloat] output, geometric height defined on full levels
+        z_ifc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] geometric height on half levels
+        z_mc: Field[Dims[dims.CellDim, dims.KDim], wpfloat] output, geometric height defined on full levels
         horizontal_start:int32 start index of horizontal domain
         horizontal_end:int32 end index of horizontal domain
         vertical_start:int32 start index of vertical domain
@@ -93,7 +93,10 @@ def compute_z_mc(
     average_cell_kdim_level_up(
         z_ifc,
         out=z_mc,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -145,7 +148,10 @@ def compute_ddqz_z_half(
         k,
         nlev,
         out=ddqz_z_half,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -187,7 +193,10 @@ def compute_ddqz_z_full_and_inverse(
     _compute_ddqz_z_full_and_inverse(
         z_ifc,
         out=(ddqz_z_full, inv_ddqz_z_full),
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -226,7 +235,7 @@ def compute_scalfac_dd3d(
     See mo_vertical_grid.f90
 
     Args:
-        vct_a: Field[Dims[KDim], float],
+        vct_a: Field[Dims[dims.KDim], float],
         scalfac_dd3d: (output) scaling factor for 3D divergence damping terms, and start level from which they are > 0
         divdamp_trans_start: lower bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
         divdamp_trans_end: upper bound of transition zone between 2D and 3D div damping in case of divdamp_type = 32
@@ -292,7 +301,7 @@ def compute_rayleigh_w(
 
     Args:
         rayleigh_w: (output) Rayleigh damping
-        vct_a: Field[Dims[KDim], float]
+        vct_a: Field[Dims[dims.KDim], float]
         vct_a_1: 1D of vct_a
         damping_height: height at which w-damping and sponge layer start
         rayleigh_type: type of Rayleigh damping (1: CLASSIC, 2: Klemp (2008))
@@ -358,7 +367,10 @@ def compute_coeff_dwdz(
         ddqz_z_full,
         z_ifc,
         out=(coeff1_dwdz, coeff2_dwdz),
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -453,7 +465,10 @@ def compute_d2dexdz2_fac_mc(
         igradp_method,
         igradp_constant,
         out=d2dexdz2_fac1_mc,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
     _compute_d2dexdz2_fac2_mc(
@@ -468,7 +483,10 @@ def compute_d2dexdz2_fac_mc(
         igradp_method,
         igradp_constant,
         out=d2dexdz2_fac2_mc,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -495,7 +513,7 @@ def compute_ddxn_z_half_e(
 
 @program
 def compute_ddxt_z_half_e(
-    z_ifv: Field[[VertexDim, KDim], float],
+    z_ifv: Field[[dims.VertexDim, dims.KDim], float],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     ddxt_z_half_e: fa.EdgeKField[wpfloat],
@@ -574,10 +592,10 @@ def _compute_maxslp_maxhgtd(
 
 @program
 def compute_maxslp_maxhgtd(
-    ddxn_z_full: Field[[EdgeDim, KDim], wpfloat],
-    dual_edge_length: Field[[EdgeDim], wpfloat],
-    z_maxslp: Field[[CellDim, KDim], wpfloat],
-    z_maxhgtd: Field[[CellDim, KDim], wpfloat],
+    ddxn_z_full: Field[[dims.EdgeDim, dims.KDim], wpfloat],
+    dual_edge_length: Field[[dims.EdgeDim], wpfloat],
+    z_maxslp: Field[[dims.CellDim, dims.KDim], wpfloat],
+    z_maxhgtd: Field[[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -602,7 +620,10 @@ def compute_maxslp_maxhgtd(
         ddxn_z_full=ddxn_z_full,
         dual_edge_length=dual_edge_length,
         out=(z_maxslp, z_maxhgtd),
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -724,7 +745,7 @@ def compute_vwind_impl_wgt_partial(
         z_ddxn_z_half_e: intermediate storage for field
         z_ddxt_z_half_e: intermediate storage for field
         dual_edge_length: dual_edge_length
-        vct_a: Field[Dims[KDim], float]
+        vct_a: Field[Dims[dims.KDim], float]
         z_ifc: geometric height on half levels
         vwind_impl_wgt: (output) offcentering in vertical mass flux
         vwind_offctr: off-centering in vertical wind solver
@@ -747,14 +768,17 @@ def compute_vwind_impl_wgt_partial(
         z_ifc=z_ifc,
         vwind_impl_wgt=vwind_impl_wgt,
         out=vwind_impl_wgt_k,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
 @program
 def compute_wgtfac_e(
     wgtfac_c: fa.CellKField[wpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], float],
     wgtfac_e: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
@@ -818,7 +842,7 @@ def _compute_z_aux2(
 
 @field_operator
 def _compute_pg_edgeidx_vertidx(
-    c_lin_e: Field[[EdgeDim, E2CDim], float],
+    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], float],
     z_ifc: fa.CellKField[wpfloat],
     z_aux2: fa.EdgeField[wpfloat],
     e_owner_mask: fa.EdgeField[bool],
@@ -897,7 +921,10 @@ def compute_pg_exdist_dsl(
         k_lev=k_lev,
         pg_exdist_dsl=pg_exdist_dsl,
         out=pg_exdist_dsl,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -938,7 +965,10 @@ def compute_pg_edgeidx_dsl(
         pg_edgeidx=pg_edgeidx,
         pg_vertidx=pg_vertidx,
         out=pg_edgeidx_dsl,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -1062,20 +1092,20 @@ def compute_hmask_dd3d(
 
 @field_operator
 def _compute_weighted_cell_neighbor_sum(
-    field: Field[[CellDim, KDim], wpfloat],
-    c_bln_avg: Field[[CellDim, C2E2CODim], wpfloat],
-) -> Field[[CellDim, KDim], wpfloat]:
+    field: Field[[dims.CellDim, dims.KDim], wpfloat],
+    c_bln_avg: Field[[dims.CellDim, C2E2CODim], wpfloat],
+) -> Field[[dims.CellDim, dims.KDim], wpfloat]:
     field_avg = neighbor_sum(field(C2E2CO) * c_bln_avg, axis=C2E2CODim)
     return field_avg
 
 
 @program
 def compute_weighted_cell_neighbor_sum(
-    maxslp: Field[[CellDim, KDim], wpfloat],
-    maxhgtd: Field[[CellDim, KDim], wpfloat],
-    c_bln_avg: Field[[CellDim, C2E2CODim], wpfloat],
-    z_maxslp_avg: Field[[CellDim, KDim], wpfloat],
-    z_maxhgtd_avg: Field[[CellDim, KDim], wpfloat],
+    maxslp: Field[[dims.CellDim, dims.KDim], wpfloat],
+    maxhgtd: Field[[dims.CellDim, dims.KDim], wpfloat],
+    c_bln_avg: Field[[dims.CellDim, C2E2CODim], wpfloat],
+    z_maxslp_avg: Field[[dims.CellDim, dims.KDim], wpfloat],
+    z_maxhgtd_avg: Field[[dims.CellDim, dims.KDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,
@@ -1102,21 +1132,27 @@ def compute_weighted_cell_neighbor_sum(
         field=maxslp,
         c_bln_avg=c_bln_avg,
         out=z_maxslp_avg,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
     _compute_weighted_cell_neighbor_sum(
         field=maxhgtd,
         c_bln_avg=c_bln_avg,
         out=z_maxhgtd_avg,
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
 @field_operator
 def _compute_max_nbhgt(
-    z_mc_nlev: Field[[CellDim], wpfloat],
-) -> Field[[CellDim], wpfloat]:
+    z_mc_nlev: Field[[dims.CellDim], wpfloat],
+) -> Field[[dims.CellDim], wpfloat]:
     max_nbhgt_0_1 = maximum(z_mc_nlev(C2E2C[0]), z_mc_nlev(C2E2C[1]))
     max_nbhgt = maximum(max_nbhgt_0_1, z_mc_nlev(C2E2C[2]))
     return max_nbhgt
@@ -1124,8 +1160,8 @@ def _compute_max_nbhgt(
 
 @program
 def compute_max_nbhgt(
-    z_mc_nlev: Field[[CellDim], wpfloat],
-    max_nbhgt: Field[[CellDim], wpfloat],
+    z_mc_nlev: Field[[dims.CellDim], wpfloat],
+    max_nbhgt: Field[[dims.CellDim], wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
 ):
@@ -1141,11 +1177,13 @@ def compute_max_nbhgt(
         horizontal_end: horizontal end index
     """
     _compute_max_nbhgt(
-        z_mc_nlev=z_mc_nlev, out=max_nbhgt, domain={CellDim: (horizontal_start, horizontal_end)}
+        z_mc_nlev=z_mc_nlev,
+        out=max_nbhgt,
+        domain={CellDim: (horizontal_start, horizontal_end)},
     )
 
 
-@scan_operator(axis=KDim, forward=True, init=(0, False))
+@scan_operator(axis=dims.KDim, forward=True, init=(0, False))
 def _compute_param(
     param: tuple[int32, bool],
     z_me_jk: float,
@@ -1163,7 +1201,7 @@ def _compute_param(
 
 @field_operator(grid_type=GridType.UNSTRUCTURED)
 def _compute_z_ifc_off_koff(
-    z_ifc_off: Field[[EdgeDim, KDim], wpfloat],
-) -> Field[[EdgeDim, KDim], wpfloat]:
+    z_ifc_off: Field[[dims.EdgeDim, dims.KDim], wpfloat],
+) -> Field[[dims.EdgeDim, dims.KDim], wpfloat]:
     n = z_ifc_off(Koff[1])
     return n

@@ -78,9 +78,14 @@ from icon4py.model.atmosphere.dycore.update_density_exner_wind import (
     _update_density_exner_wind,
 )
 from icon4py.model.atmosphere.dycore.update_wind import _update_wind
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CEDim, CellDim, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 # TODO: abishekg7 move this to tests
@@ -392,12 +397,12 @@ def predictor_stencils_11_lower_upper(
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    pos_on_tplane_e_1: gtx.Field[[ECDim], float],
-    pos_on_tplane_e_2: gtx.Field[[ECDim], float],
-    primal_normal_cell_1: gtx.Field[[ECDim], float],
-    dual_normal_cell_1: gtx.Field[[ECDim], float],
-    primal_normal_cell_2: gtx.Field[[ECDim], float],
-    dual_normal_cell_2: gtx.Field[[ECDim], float],
+    pos_on_tplane_e_1: gtx.Field[[dims.ECDim], float],
+    pos_on_tplane_e_2: gtx.Field[[dims.ECDim], float],
+    primal_normal_cell_1: gtx.Field[[dims.ECDim], float],
+    dual_normal_cell_1: gtx.Field[[dims.ECDim], float],
+    primal_normal_cell_2: gtx.Field[[dims.ECDim], float],
+    dual_normal_cell_2: gtx.Field[[dims.ECDim], float],
     p_dthalf: float,
     rho_ref_me: fa.EdgeKField[float],
     theta_ref_me: fa.EdgeKField[float],
@@ -545,7 +550,7 @@ def predictor_stencils_37_38(
 
 @gtx.field_operator
 def _stencils_39_40(
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
     wgtfac_c: fa.CellKField[float],
     wgtfacq_c_dsl: fa.CellKField[float],
@@ -573,7 +578,7 @@ def _stencils_39_40(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def stencils_39_40(
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     z_w_concorr_me: fa.EdgeKField[float],
     wgtfac_c: fa.CellKField[float],
     wgtfacq_c_dsl: fa.CellKField[float],

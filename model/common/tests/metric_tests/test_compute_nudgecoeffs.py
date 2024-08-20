@@ -9,7 +9,7 @@
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import EdgeDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex, RefinCtrlLevel
 from icon4py.model.common.metrics.compute_nudgecoeffs import compute_nudgecoeffs
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
@@ -34,20 +34,20 @@ def test_compute_nudgecoeffs_e(
     interpolation_savepoint,  # noqa: F811 # fixture
     icon_grid,  # noqa: F811  # fixture
 ):
-    nudgecoeff_e = zero_field(icon_grid, EdgeDim, dtype=wpfloat)
+    nudgecoeff_e = zero_field(icon_grid, dims.EdgeDim, dtype=wpfloat)
     nudgecoeff_e_ref = interpolation_savepoint.nudgecoeff_e()
-    refin_ctrl = grid_savepoint.refin_ctrl(EdgeDim)
-    grf_nudge_start_e = RefinCtrlLevel.boundary_nudging_start(EdgeDim)
+    refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
+    grf_nudge_start_e = RefinCtrlLevel.boundary_nudging_start(dims.EdgeDim)
     nudge_max_coeff = wpfloat(0.375)
     nudge_efold_width = wpfloat(2.0)
     nudge_zone_width = 10
 
     horizontal_start = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.nudging_2nd_level(EdgeDim)
+        dims.EdgeDim, HorizontalMarkerIndex.nudging_2nd_level(dims.EdgeDim)
     )
     horizontal_end = icon_grid.get_end_index(
-        EdgeDim,
-        HorizontalMarkerIndex.local(EdgeDim),
+        dims.EdgeDim,
+        HorizontalMarkerIndex.local(dims.EdgeDim),
     )
 
     compute_nudgecoeffs(
