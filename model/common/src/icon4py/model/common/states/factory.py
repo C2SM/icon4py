@@ -67,8 +67,7 @@ class FieldProvider(Protocol):
     def fields(self) -> Iterable[str]:
         pass
 
-    def _unallocated(self) -> bool:
-        return not all(self._fields.values())
+
 
 class PrecomputedFieldsProvider(FieldProvider):
     """Simple FieldProvider that does not do any computation but gets its fields at construction and returns it upon provider.get(field_name)."""
@@ -110,7 +109,8 @@ class ProgramFieldProvider:
         self._params = params
         self._fields: dict[str, Optional[gtx.Field | Scalar]] = {name: None for name in fields}
 
-
+    def _unallocated(self) -> bool:
+        return not all(self._fields.values())
 
     def _allocate(self, allocator, grid:base_grid.BaseGrid) -> dict[str, FieldType]:
         def _map_size(dim:gtx.Dimension, grid:base_grid.BaseGrid) -> int:
@@ -151,7 +151,6 @@ class ProgramFieldProvider:
         if field_name not in self._fields.keys():
             raise ValueError(f"Field {field_name} not provided by f{self._func.__name__}")
         if self._unallocated():
-            
             self._evaluate(factory)
         return self._fields[field_name]
 
