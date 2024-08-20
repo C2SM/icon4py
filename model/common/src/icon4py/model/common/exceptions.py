@@ -10,9 +10,11 @@
 class InvalidConfigError(Exception):
     pass
 
+
 class IncompleteSetupError(Exception):
     def __init__(self, msg):
-        super().__init__(f"{msg}" )
+        super().__init__(f"{msg}")
+
 
 class IncompleteStateError(Exception):
     def __init__(self, field_name):
