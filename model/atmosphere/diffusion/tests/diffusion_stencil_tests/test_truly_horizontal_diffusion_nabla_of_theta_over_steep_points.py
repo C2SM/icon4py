@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.truly_horizontal_diffusion_nabla_of_theta_over_steep_points import (
     truly_horizontal_diffusion_nabla_of_theta_over_steep_points,
 )
-from icon4py.model.common.dimension import C2E2CDim, CECDim, CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     flatten_first_two_dims,
@@ -36,7 +36,7 @@ def truly_horizontal_diffusion_nabla_of_theta_over_steep_points_numpy(
     z_temp: np.array,
     **kwargs,
 ) -> np.array:
-    c2e2c = grid.connectivities[C2E2CDim]
+    c2e2c = grid.connectivities[dims.C2E2CDim]
     shape = c2e2c.shape + vcoef.shape[1:]
     vcoef = vcoef.reshape(shape)
     zd_vertoffset = zd_vertoffset.reshape(shape)
@@ -99,12 +99,12 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[C2E2CDim] == -1):
+        if np.any(grid.connectivities[dims.C2E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        mask = random_mask(grid, CellDim, KDim)
+        mask = random_mask(grid, dims.CellDim, dims.KDim)
 
-        zd_vertoffset = zero_field(grid, CellDim, C2E2CDim, KDim, dtype=int32)
+        zd_vertoffset = zero_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=int32)
         rng = np.random.default_rng()
         for k in range(grid.num_levels):
             # construct offsets that reach all k-levels except the last (because we are using the entries of this field with `+1`)
@@ -114,16 +114,16 @@ class TestTrulyHorizontalDiffusionNablaOfThetaOverSteepPoints(StencilTest):
                 size=(zd_vertoffset.shape[0], zd_vertoffset.shape[1]),
             )
 
-        zd_diffcoef = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        geofac_n2s_c = random_field(grid, CellDim, dtype=wpfloat)
-        geofac_n2s_nbh = random_field(grid, CellDim, C2E2CDim, dtype=wpfloat)
-        vcoef = random_field(grid, CellDim, C2E2CDim, KDim, dtype=wpfloat)
-        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_temp = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        zd_diffcoef = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        geofac_n2s_c = random_field(grid, dims.CellDim, dtype=wpfloat)
+        geofac_n2s_nbh = random_field(grid, dims.CellDim, dims.C2E2CDim, dtype=wpfloat)
+        vcoef = random_field(grid, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
-        vcoef_new = flatten_first_two_dims(CECDim, KDim, field=vcoef)
-        zd_vertoffset_new = flatten_first_two_dims(CECDim, KDim, field=zd_vertoffset)
-        geofac_n2s_nbh_new = flatten_first_two_dims(CECDim, field=geofac_n2s_nbh)
+        vcoef_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=vcoef)
+        zd_vertoffset_new = flatten_first_two_dims(dims.CECDim, dims.KDim, field=zd_vertoffset)
+        geofac_n2s_nbh_new = flatten_first_two_dims(dims.CECDim, field=geofac_n2s_nbh)
 
         return dict(
             mask=mask,

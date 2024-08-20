@@ -9,9 +9,14 @@
 from gt4py.next import GridType, field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, int32, log
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator
@@ -66,7 +71,10 @@ def compute_reference_atmosphere_edge_fields(
         t0sl_bg,
         del_t_bg,
         out=(rho_ref_me, theta_ref_me),
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 
@@ -186,7 +194,10 @@ def compute_reference_atmosphere_cell_fields(
         t0sl_bg,
         del_t_bg,
         out=(theta_ref_mc, exner_ref_mc, rho_ref_mc),
-        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            CellDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
 
 

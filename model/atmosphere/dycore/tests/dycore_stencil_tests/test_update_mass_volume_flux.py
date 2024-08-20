@@ -11,7 +11,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.update_mass_volume_flux import update_mass_volume_flux
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
@@ -43,12 +43,12 @@ class TestUpdateMassVolumeFlux(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_contr_w_fl_l = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        rho_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        vwind_impl_wgt = random_field(grid, CellDim, dtype=wpfloat)
-        w = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        mass_flx_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        vol_flx_ic = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_contr_w_fl_l = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        rho_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        vwind_impl_wgt = random_field(grid, dims.CellDim, dtype=wpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        mass_flx_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        vol_flx_ic = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         r_nsubsteps = 7.0
 
         return dict(
