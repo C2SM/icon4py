@@ -34,7 +34,6 @@ from icon4py.model.common.settings import xp
 
 from icon4py.model.common.orchestration.decorator import (
     orchestration,
-    wait,
     build_compile_time_connectivities,
 )
 from icon4py.model.common.orchestration.dtypes import *
@@ -351,6 +350,12 @@ class Diffusion:
         self.cell_params: Optional[h_grid.CellParams] = None
         self._horizontal_start_index_w_diffusion: gtx.int32 = 0
 
+        self.halo_exchange_wait = (
+            mpi_decomposition.HaloExchangeWait(self._exchange)
+            if isinstance(self._exchange, mpi_decomposition.GHexMultiNodeExchange)
+            else decomposition.HaloExchangeWait(self._exchange)
+        )
+
     def init(
         self,
         grid: icon_grid.IconGrid,
@@ -470,12 +475,6 @@ class Diffusion:
 
         self.compile_time_connectivities = build_compile_time_connectivities(
             self.grid.offset_providers
-        )
-
-        self.halo_exchange_wait = (
-            mpi_decomposition.HaloExchangeWait(self._exchange)
-            if isinstance(self._exchange, mpi_decomposition.GHexMultiNodeExchange)
-            else decomposition.HaloExchangeWait(self._exchange)
         )
 
         self._initialized = True
