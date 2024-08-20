@@ -26,6 +26,7 @@ import inspect
 import os
 import shutil
 from collections.abc import Callable
+from types import ModuleType
 from typing import Any, Optional, Union, get_type_hints
 
 import numpy as np
@@ -53,11 +54,13 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 try:
     import dace
-    import ghex
 except ImportError:
-    from types import ModuleType
-
     dace: Optional[ModuleType] = None  # type: ignore[no-redef]
+
+try:
+    import ghex
+    from ghex import expose_cpp_ptr
+except ImportError:
     ghex: Optional[ModuleType] = None  # type: ignore[no-redef]
 
 
@@ -258,11 +261,10 @@ def build_compile_time_connectivities(
     return connectivities
 
 
-if dace and ghex:
+if dace:
     import dace
     from dace import hooks
     from dace.transformation.passes.simplify import SimplifyPass
-    from ghex import expose_cpp_ptr
 
     def dev_type_from_gt4py_to_dace(device_type: core_defs.DeviceType) -> dace.dtypes.DeviceType:
         if device_type == core_defs.DeviceType.CPU:
