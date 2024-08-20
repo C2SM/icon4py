@@ -67,6 +67,7 @@ class FuncParameter(Node):
         self.gtdims = [
             dimension.value.replace("KHalf", "K") + "Dim" for dimension in self.dimensions
         ]
+        self.gtdims = ["dims." + gtdim for gtdim in self.gtdims]
         self.np_type = to_np_type(self.d_type)
 
 
@@ -231,6 +232,7 @@ from numpy.typing import NDArray
 from gt4py.next.iterator.embedded import np_as_located_field
 from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.common.settings import xp
+from icon4py.model.common import dimension as dims
 
 {% if _this_node.is_gt4py_program_present %}
 # necessary imports when embedding a gt4py program directly

@@ -18,7 +18,7 @@ import uxarray as ux
 import xarray as xr
 
 import icon4py.model.common.exceptions as errors
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, simple, vertical as v_grid
 from icon4py.model.common.io import ugrid, utils
 from icon4py.model.common.io.io import (
@@ -43,11 +43,11 @@ global_grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPER
 
 
 def model_state(grid: base.BaseGrid) -> dict[str, xr.DataArray]:
-    rho = helpers.random_field(grid, CellDim, KDim, dtype=np.float32)
-    exner = helpers.random_field(grid, CellDim, KDim, dtype=np.float32)
-    theta_v = helpers.random_field(grid, CellDim, KDim, dtype=np.float32)
-    w = helpers.random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=np.float32)
-    vn = helpers.random_field(grid, EdgeDim, KDim, dtype=np.float32)
+    rho = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    exner = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    theta_v = helpers.random_field(grid, dims.CellDim, dims.KDim, dtype=np.float32)
+    w = helpers.random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=np.float32)
+    vn = helpers.random_field(grid, dims.EdgeDim, dims.KDim, dtype=np.float32)
     return {
         "air_density": utils.to_data_array(rho, data.PROGNOSTIC_CF_ATTRIBUTES["air_density"]),
         "exner_function": utils.to_data_array(
@@ -130,7 +130,7 @@ def test_io_monitor_create_output_path(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
     vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
-        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
         vct_b=None,
     )
     config = IOConfig(field_groups=[], output_path=path_name)
@@ -150,7 +150,7 @@ def test_io_monitor_write_ugrid_file(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
     vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
-        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
         vct_b=None,
     )
 
@@ -180,7 +180,7 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
-        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
         vct_b=None,
     )
 
@@ -230,7 +230,7 @@ def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
     vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
-        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
         vct_b=None,
     )
 
@@ -354,7 +354,7 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
     vertical_params = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
-        vct_a=gtx.as_field((KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
+        vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
         vct_b=None,
     )
 

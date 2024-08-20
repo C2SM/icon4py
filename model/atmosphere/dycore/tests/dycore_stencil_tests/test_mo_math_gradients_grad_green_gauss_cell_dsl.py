@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_math_gradients_grad_green_gauss_cell_dsl import (
     mo_math_gradients_grad_green_gauss_cell_dsl,
 )
-from icon4py.model.common.dimension import C2E2CODim, CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -31,7 +31,7 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
         geofac_grg_y: np.array,
         **kwargs,
     ) -> tuple[np.array]:
-        c2e2cO = grid.connectivities[C2E2CODim]
+        c2e2cO = grid.connectivities[dims.C2E2CODim]
         geofac_grg_x = np.expand_dims(geofac_grg_x, axis=-1)
         p_grad_1_u = np.sum(
             np.where((c2e2cO != -1)[:, :, np.newaxis], geofac_grg_x * p_ccpr1[c2e2cO], 0), axis=1
@@ -55,14 +55,14 @@ class TestMoMathGradientsGradGreenGaussCellDsl(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_ccpr1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        p_ccpr2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        geofac_grg_x = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
-        geofac_grg_y = random_field(grid, CellDim, C2E2CODim, dtype=wpfloat)
-        p_grad_1_u = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        p_grad_1_v = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        p_grad_2_u = zero_field(grid, CellDim, KDim, dtype=vpfloat)
-        p_grad_2_v = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        p_ccpr1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_ccpr2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        geofac_grg_x = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        geofac_grg_y = random_field(grid, dims.CellDim, dims.C2E2CODim, dtype=wpfloat)
+        p_grad_1_u = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_grad_1_v = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_grad_2_u = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        p_grad_2_v = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             p_grad_1_u=p_grad_1_u,

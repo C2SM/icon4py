@@ -19,16 +19,7 @@ from icon4py.model.atmosphere.dycore.compute_advective_normal_wind_tendency impo
 from icon4py.model.atmosphere.dycore.mo_math_divrot_rot_vertex_ri_dsl import (
     _mo_math_divrot_rot_vertex_ri_dsl,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import (
-    E2C2EODim,
-    E2CDim,
-    ECDim,
-    EdgeDim,
-    KDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -36,21 +27,21 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 @field_operator
 def _fused_velocity_advection_stencil_19_to_20(
     vn: fa.EdgeKField[wpfloat],
-    geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
+    geofac_rot: Field[[dims.VertexDim, dims.V2EDim], wpfloat],
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    coeff_gradekin: Field[[ECDim], vpfloat],
+    coeff_gradekin: Field[[dims.ECDim], vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     f_e: fa.EdgeField[wpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    levelmask: Field[[KDim], bool],
+    levelmask: Field[[dims.KDim], bool],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     k: fa.KField[int32],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
@@ -105,21 +96,21 @@ def _fused_velocity_advection_stencil_19_to_20(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_19_to_20(
     vn: fa.EdgeKField[wpfloat],
-    geofac_rot: Field[[VertexDim, V2EDim], wpfloat],
+    geofac_rot: Field[[dims.VertexDim, dims.V2EDim], wpfloat],
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    coeff_gradekin: Field[[ECDim], vpfloat],
+    coeff_gradekin: Field[[dims.ECDim], vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     f_e: fa.EdgeField[wpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    c_lin_e: Field[[dims.EdgeDim, dims.E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
-    levelmask: Field[[KDim], bool],
+    levelmask: Field[[dims.KDim], bool],
     area_edge: fa.EdgeField[wpfloat],
     tangent_orientation: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, dims.E2C2EODim], wpfloat],
     ddt_vn_apc: fa.EdgeKField[vpfloat],
     k: fa.KField[int32],
     cfl_w_limit: vpfloat,

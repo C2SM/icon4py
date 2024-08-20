@@ -20,18 +20,22 @@ from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_to_vn_in_lateral_b
     _apply_nabla2_to_vn_in_lateral_boundary,
 )
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla4 import _calculate_nabla4
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import ECVDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator
 def _apply_diffusion_to_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
-    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v1: Field[[dims.ECVDim], wpfloat],
+    primal_normal_vert_v2: Field[[dims.ECVDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -94,8 +98,8 @@ def _apply_diffusion_to_vn(
 def apply_diffusion_to_vn(
     u_vert: fa.VertexKField[vpfloat],
     v_vert: fa.VertexKField[vpfloat],
-    primal_normal_vert_v1: Field[[ECVDim], wpfloat],
-    primal_normal_vert_v2: Field[[ECVDim], wpfloat],
+    primal_normal_vert_v1: Field[[dims.ECVDim], wpfloat],
+    primal_normal_vert_v2: Field[[dims.ECVDim], wpfloat],
     z_nabla2_e: fa.EdgeKField[wpfloat],
     inv_vert_vert_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],

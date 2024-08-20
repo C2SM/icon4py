@@ -11,7 +11,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion import diffusion
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
@@ -192,10 +192,10 @@ def test_run_timeloop_single_step(
         pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
         pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
         rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), CEDim),
+        e_bln_c_s=helpers.as_1D_sparse_field(interpolation_savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=interpolation_savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=interpolation_savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
+        geofac_div=helpers.as_1D_sparse_field(interpolation_savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=interpolation_savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],
@@ -258,7 +258,7 @@ def test_run_timeloop_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     nonhydro_diagnostic_state = solve_nh_states.DiagnosticStateNonHydro(

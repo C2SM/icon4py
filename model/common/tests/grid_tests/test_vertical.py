@@ -12,7 +12,7 @@ import gt4py.next as gtx
 import numpy as np
 import pytest
 
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import vertical as v_grid
 from icon4py.model.common.test_utils.datatest_utils import (
     GLOBAL_EXPERIMENT,
@@ -27,9 +27,9 @@ from icon4py.model.common.test_utils.helpers import dallclose
 )
 def test_nrdmax_calculation(max_h, damping_height, delta, flat_height, grid_savepoint):
     vct_a = np.arange(0, max_h, delta)
-    vct_a_field = gtx.as_field((KDim,), data=vct_a[::-1])
+    vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(KDim),
+        num_levels=grid_savepoint.num(dims.KDim),
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
@@ -54,7 +54,7 @@ def test_nrdmax_calculation_from_icon_input(
     b = grid_savepoint.vct_b()
     nrdmax = grid_savepoint.nrdmax()
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(KDim),
+        num_levels=grid_savepoint.num(dims.KDim),
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
@@ -72,7 +72,7 @@ def test_nrdmax_calculation_from_icon_input(
 
 @pytest.mark.datatest
 def test_grid_size(grid_savepoint):
-    assert 65 == grid_savepoint.num(KDim)
+    assert 65 == grid_savepoint.num(dims.KDim)
 
 
 @pytest.mark.datatest
@@ -111,7 +111,7 @@ def test_vct_a_vct_b_calculation_from_icon_input(
     htop_moist_proc,
 ):
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=grid_savepoint.num(KDim),
+        num_levels=grid_savepoint.num(dims.KDim),
         maximal_layer_thickness=maximal_layer_thickness,
         top_height_limit_for_maximal_layer_thickness=top_height_limit_for_maximal_layer_thickness,
         lowest_layer_thickness=lowest_layer_thickness,

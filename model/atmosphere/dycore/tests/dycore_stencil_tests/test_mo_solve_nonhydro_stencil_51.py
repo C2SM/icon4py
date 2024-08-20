@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.mo_solve_nonhydro_stencil_51 import (
     mo_solve_nonhydro_stencil_51,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -72,15 +72,17 @@ class TestMoSolveNonHydroStencil51(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_q = zero_field(grid, CellDim, KDim)
-        w_nnew = zero_field(grid, CellDim, KDim)
-        vwind_impl_wgt = random_field(grid, CellDim)
-        theta_v_ic = random_field(grid, CellDim, KDim)
-        ddqz_z_half = random_field(grid, CellDim, KDim, low=0.5, high=1.5)
-        z_beta = random_field(grid, CellDim, KDim, low=0.5, high=1.5)
-        z_alpha = random_field(grid, CellDim, KDim, low=0.5, high=1.5, extend={KDim: 1})
-        z_w_expl = random_field(grid, CellDim, KDim, extend={KDim: 1})
-        z_exner_expl = random_field(grid, CellDim, KDim)
+        z_q = zero_field(grid, dims.CellDim, dims.KDim)
+        w_nnew = zero_field(grid, dims.CellDim, dims.KDim)
+        vwind_impl_wgt = random_field(grid, dims.CellDim)
+        theta_v_ic = random_field(grid, dims.CellDim, dims.KDim)
+        ddqz_z_half = random_field(grid, dims.CellDim, dims.KDim, low=0.5, high=1.5)
+        z_beta = random_field(grid, dims.CellDim, dims.KDim, low=0.5, high=1.5)
+        z_alpha = random_field(
+            grid, dims.CellDim, dims.KDim, low=0.5, high=1.5, extend={dims.KDim: 1}
+        )
+        z_w_expl = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
+        z_exner_expl = random_field(grid, dims.CellDim, dims.KDim)
         dtime = 10.0
         cpd = 1.0
         return dict(
