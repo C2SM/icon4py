@@ -71,7 +71,6 @@ build_image_aarch64:
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
     CSCS_NEEDED_DATA: icon4py
-    TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
@@ -81,10 +80,12 @@ build_image_aarch64:
   needs: [build_image_x86_64]
   variables:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
+    TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
 .test_template_aarch64:
   extends: [.container-runner-todi-gh200, .test_template]
   needs: [build_image_aarch64]
   variables:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5"
+    TEST_DATA_PATH: "/store/migration/project/d121/icon4py/ci/testdata"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
