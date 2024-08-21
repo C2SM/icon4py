@@ -56,6 +56,14 @@ build_image_aarch64:
   extends: [.container-builder-cscs-gh200, .build_image]
   needs: [build_baseimage_aarch64]
 
+.container-runner-todi-f7t:
+  # TODO: remove this config once it becomes available as base config in CSCS-CI
+  extends: [.f7t-container-runner]
+  variables:
+    ARCH: 'aarch64'
+    F7T_URL: 'https://firecrest-todi.v1.tds.cscs.ch'
+    FIRECREST_SYSTEM: 'todi'
+
 .test_template:
   timeout: 8h
   image: $CSCS_REGISTRY_PATH/public/$ARCH/icon4py/icon4py-ci:$CI_COMMIT_SHA-$PYVERSION
@@ -67,27 +75,24 @@ build_image_aarch64:
     SLURM_JOB_NUM_NODES: 1
     SLURM_NTASKS: 1
     SLURM_TIMELIMIT: '06:00:00'
-    CRAY_CUDA_MPS: 1
     NUM_PROCESSES: auto
     VIRTUALENV_SYSTEM_SITE_PACKAGES: 1
-    CSCS_NEEDED_DATA: icon4py
+    TEST_DATA_PATH: "/icon4py/ci/testdata"
     ICON_GRID_LOC: "${TEST_DATA_PATH}/grids/mch_ch_r04b09_dsl"
     PY2F_GPU_TESTS: 1
     CUDACXX: "${HPC_SDK_PATH}/compilers/bin/nvcc"
     NVFORTRAN_COMPILER: "${HPC_SDK_PATH}/compilers/bin/nvfortran"
 .test_template_x86_64:
-  extends: [.container-runner-daint-gpu, .test_template]
+  extends: [.container-runner-daint-gpu-f7t, .test_template]
   needs: [build_image_x86_64]
   variables:
+    CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:/icon4py/ci/testdata"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
-    TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
 .test_template_aarch64:
-  extends: [.f7t-container-runner, .test_template]
+  extends: [.container-runner-todi-f7t, .test_template]
   needs: [build_image_aarch64]
   variables:
-    F7T_URL: 'https://firecrest-todi.v1.tds.cscs.ch'
-    FIRECREST_SYSTEM: 'todi'
+    CSCS_ADDITIONAL_MOUNTS: '["/store/migration/project/d121/icon4py/ci/testdata:/icon4py/ci/testdata"]'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5"
-    TEST_DATA_PATH: "/store/migration/project/d121/icon4py/ci/testdata"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
