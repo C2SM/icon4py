@@ -82,9 +82,11 @@ build_image_aarch64:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
     TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
 .test_template_aarch64:
-  extends: [.container-runner-todi-gh200, .test_template]
+  extends: [.f7t-baremetal-runner, .test_template]
   needs: [build_image_aarch64]
   variables:
+    F7T_URL: 'https://firecrest-todi.v1.tds.cscs.ch'
+    FIRECREST_SYSTEM: 'todi'
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5"
     TEST_DATA_PATH: "/store/migration/project/d121/icon4py/ci/testdata"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
