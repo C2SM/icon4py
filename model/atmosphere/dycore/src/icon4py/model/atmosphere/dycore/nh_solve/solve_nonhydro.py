@@ -626,18 +626,17 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        start_cell_lb = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
-        )
-        end_cell_nudging_minus1 = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim) - 1
-        )
-        start_cell_halo = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.halo(dims.CellDim)
-        )
-        end_cell_end = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        )
+        start_cell_lb = self.grid.lateral_boundary(
+            dims.CellDim, h_grid.IndexType.START)
+        
+        end_cell_nudging_minus1 = self.grid.lateral_boundary(
+            dims.CellDim, h_grid.IndexType.END, line = h_grid.BoundaryLine.FOURTH)
+        
+        start_cell_halo = self.grid.halo(
+            dims.CellDim, h_grid.IndexType.START)
+        
+        end_cell_end = self.grid.end(
+            dims.CellDim)
         if self.grid.limited_area:
             compute_theta_and_exner(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
@@ -733,7 +732,7 @@ class SolveNonhydro:
         start_cell_lb = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START)
         end_cell_nudging_minus1 = self.grid.lateral_boundary(
             dims.CellDim,
-            h_grid.IndexType.END, line = h_grid.BoundaryLine.SECOND)
+            h_grid.IndexType.END, line = h_grid.BoundaryLine.FOURTH)
         
 
         start_edge_lb_plus6 = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START, h_grid.BoundaryLine.SEVENTH)
@@ -756,7 +755,6 @@ class SolveNonhydro:
         start_cell_lb_plus2 = self.grid.lateral_boundary(
             dims.CellDim, h_grid.IndexType.START, h_grid.BoundaryLine.THIRD
         )
-
         end_cell_halo = self.grid.halo(dims.CellDim, h_grid.IndexType.END)
         start_cell_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.START)
           
@@ -1450,47 +1448,29 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        start_cell_lb_plus2 = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
+        start_cell_lb_plus2 = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START, h_grid.BoundaryLine.THIRD)
+        
+        start_edge_lb_plus6 = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START, h_grid.BoundaryLine.SEVENTH)
+        
+        start_edge_nudging_plus1 = self.grid.nudging(dims.EdgeDim, h_grid.IndexType.START, h_grid.NudgingLine.SECOND)
+        end_edge_local = self.grid.local(dims.EdgeDim, h_grid.IndexType.END)
+        
+        start_edge_lb_plus4 = self.grid.lateral_boundary(
+            dims.EdgeDim,h_grid.IndexType.START, h_grid.BoundaryLine.FIFTH
+        )
+        end_edge_second_halo_line = self.grid.halo(
+            dims.EdgeDim, h_grid.IndexType.END, h_grid.HaloLine.SECOND
         )
 
-        start_edge_lb_plus6 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
-        )
-
-        start_edge_nudging_plus1 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
-        )
-        end_edge_local = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
-        )
-
-        start_edge_lb_plus4 = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
-        )
-        end_edge_local_minus2 = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
-        )
-
-        start_edge_lb = self.grid.get_start_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
-        )
-        end_edge_end = self.grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
-        )
-
-        start_cell_lb = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
-        )
-        end_cell_nudging = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-        )
-
-        start_cell_nudging = self.grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim)
+        start_edge_lb = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START)
+        end_edge_end = self.grid.end(dims.EdgeDim)
+        
+        start_cell_lb = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START)
+        end_cell_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.END)
+        
+        start_cell_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.START)
+        end_cell_local = self.grid.local(
+            dims.CellDim, h_grid.IndexType.END
         )
 
         lvn_only = False
@@ -1508,7 +1488,7 @@ class SolveNonhydro:
 
         nvar = nnew
 
-        #  Precompute Rayleigh damping factor
+
         solve_nh_utils.compute_z_raylfac(
             self.metric_state_nonhydro.rayleigh_w,
             dtime,
@@ -1551,7 +1531,7 @@ class SolveNonhydro:
             z_dwdz_dd=z_fields.z_dwdz_dd,
             z_graddiv_vn=z_fields.z_graddiv_vn,
             horizontal_start=start_edge_lb_plus6,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_end=end_edge_second_halo_line,
             vertical_start=self.params.kstart_dd3d,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1664,7 +1644,7 @@ class SolveNonhydro:
             vn=prognostic_state[nnew].vn,
             z_vn_avg=self.z_vn_avg,
             horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,
+            horizontal_end=end_edge_second_halo_line,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -1679,7 +1659,7 @@ class SolveNonhydro:
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
             horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_local_minus2,  # TODO: (halungge) this is actually the second halo line
+            horizontal_end=end_edge_second_halo_line, 
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
@@ -1706,7 +1686,7 @@ class SolveNonhydro:
                 mass_flx_me=prep_adv.mass_flx_me,
                 r_nsubsteps=r_nsubsteps,
                 horizontal_start=start_edge_lb_plus4,
-                horizontal_end=end_edge_local_minus2,
+                horizontal_end=end_edge_second_halo_line,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider={},
