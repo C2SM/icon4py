@@ -10,8 +10,7 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.constants import GRAV_O_RD
+from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_pressure import (
     diagnose_pressure,
 )
@@ -21,7 +20,6 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
-from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 class TestDiagnosePressure(StencilTest):
@@ -40,12 +38,12 @@ class TestDiagnosePressure(StencilTest):
         pressure = np.zeros_like(temperature)
         ground_level = temperature.shape[1] - 1
         pressure_ifc[:, ground_level] = pressure_sfc * np.exp(
-            -GRAV_O_RD * ddqz_z_full[:, ground_level] / temperature[:, ground_level]
+            -phy_const.GRAV_O_RD * ddqz_z_full[:, ground_level] / temperature[:, ground_level]
         )
         pressure[:, ground_level] = np.sqrt(pressure_ifc[:, ground_level] * pressure_sfc)
         for k in range(ground_level - 1, -1, -1):
             pressure_ifc[:, k] = pressure_ifc[:, k + 1] * np.exp(
-                -GRAV_O_RD * ddqz_z_full[:, k] / temperature[:, k]
+                -phy_const.GRAV_O_RD * ddqz_z_full[:, k] / temperature[:, k]
             )
             pressure[:, k] = np.sqrt(pressure_ifc[:, k] * pressure_ifc[:, k + 1])
 
@@ -59,19 +57,21 @@ class TestDiagnosePressure(StencilTest):
         if is_roundtrip:
             pytest.xfail("This stencil currently does not work properly with roundtrip backend.")
 
-        ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        temperature = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        pressure_sfc = random_field(grid, dims.CellDim, dtype=vpfloat)
-        pressure = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
-        pressure_ifc = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
+        virtual_temperature = random_field(
+            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+        )
+        pressure_sfc = random_field(grid, dims.CellDim, low=1.0e-6, dtype=ta.wpfloat)
+        pressure = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        pressure_ifc = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             ddqz_z_full=ddqz_z_full,
-            temperature=temperature,
+            virtual_temperature=virtual_temperature,
             pressure_sfc=pressure_sfc,
             pressure=pressure,
             pressure_ifc=pressure_ifc,
-            grav_o_rd=GRAV_O_RD,
+            grav_o_rd=phy_const.GRAV_O_RD,
             horizontal_start=0,
             horizontal_end=int32(grid.num_cells),
             vertical_start=0,
