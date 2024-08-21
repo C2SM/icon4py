@@ -390,7 +390,7 @@ def solve_nh_run(
     linit: bool,
     divdamp_fac_o2: float64,
     ndyn_substeps: float64,
-    jstep: int32,
+    idyn_timestep: int32,
 ):
     global solve_nonhydro
 
@@ -458,6 +458,6 @@ def solve_nh_run(
         nnow=nnow,
         lclean_mflx=clean_mflx,
         lprep_adv=lprep_adv,
-        at_first_substep=jstep == 0,
-        at_last_substep=jstep == (ndyn_substeps - 1),
+        at_first_substep=idyn_timestep == 0,
+        at_last_substep=idyn_timestep == (ndyn_substeps - 1),
     )
