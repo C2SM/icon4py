@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast, int32, where
@@ -34,10 +30,14 @@ from icon4py.model.atmosphere.dycore.interpolate_vt_to_interface_edges import (
 from icon4py.model.atmosphere.dycore.mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl import (
     _mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim, V2CDim, VertexDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator
@@ -87,7 +87,7 @@ def compute_interface_vt_vn_and_kinetic_energy(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_6(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
@@ -130,14 +130,14 @@ def _fused_velocity_advection_stencil_1_to_6(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_predictor(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -206,14 +206,14 @@ def _fused_velocity_advection_stencil_1_to_7_predictor(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_corrector(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -264,14 +264,14 @@ def _fused_velocity_advection_stencil_1_to_7_corrector(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -357,14 +357,14 @@ def _fused_velocity_advection_stencil_1_to_7(
 @field_operator
 def _fused_velocity_advection_stencil_1_to_7_restricted(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],
@@ -414,14 +414,14 @@ def _fused_velocity_advection_stencil_1_to_7_restricted(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_1_to_7(
     vn: fa.EdgeKField[wpfloat],
-    rbf_vec_coeff_e: Field[[EdgeDim, E2C2EDim], wpfloat],
+    rbf_vec_coeff_e: Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat],
     wgtfac_e: fa.EdgeKField[vpfloat],
     ddxn_z_full: fa.EdgeKField[vpfloat],
     ddxt_z_full: fa.EdgeKField[vpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfacq_e: fa.EdgeKField[vpfloat],
     nflatlev: int32,
-    c_intp: Field[[VertexDim, V2CDim], wpfloat],
+    c_intp: Field[[dims.VertexDim, dims.V2CDim], wpfloat],
     w: fa.CellKField[wpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     inv_primal_edge_length: fa.EdgeField[wpfloat],

@@ -1,36 +1,36 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C, E2EC
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator
 def _compute_btraj(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
-    primal_normal_cell_1: Field[[ECDim], wpfloat],
-    dual_normal_cell_1: Field[[ECDim], wpfloat],
-    primal_normal_cell_2: Field[[ECDim], wpfloat],
-    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
 ) -> tuple[fa.EdgeKField[wpfloat], fa.EdgeKField[wpfloat]]:
     lvn_pos = where(p_vn >= wpfloat("0.0"), True, False)
@@ -131,12 +131,12 @@ def _sten_16(
 def _compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
-    primal_normal_cell_1: Field[[ECDim], wpfloat],
-    dual_normal_cell_1: Field[[ECDim], wpfloat],
-    primal_normal_cell_2: Field[[ECDim], wpfloat],
-    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],
@@ -181,12 +181,12 @@ def _compute_horizontal_advection_of_rho_and_theta(
 def compute_horizontal_advection_of_rho_and_theta(
     p_vn: fa.EdgeKField[wpfloat],
     p_vt: fa.EdgeKField[vpfloat],
-    pos_on_tplane_e_1: Field[[ECDim], wpfloat],
-    pos_on_tplane_e_2: Field[[ECDim], wpfloat],
-    primal_normal_cell_1: Field[[ECDim], wpfloat],
-    dual_normal_cell_1: Field[[ECDim], wpfloat],
-    primal_normal_cell_2: Field[[ECDim], wpfloat],
-    dual_normal_cell_2: Field[[ECDim], wpfloat],
+    pos_on_tplane_e_1: Field[[dims.ECDim], wpfloat],
+    pos_on_tplane_e_2: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_1: Field[[dims.ECDim], wpfloat],
+    primal_normal_cell_2: Field[[dims.ECDim], wpfloat],
+    dual_normal_cell_2: Field[[dims.ECDim], wpfloat],
     p_dthalf: wpfloat,
     rho_ref_me: fa.EdgeKField[vpfloat],
     theta_ref_me: fa.EdgeKField[vpfloat],

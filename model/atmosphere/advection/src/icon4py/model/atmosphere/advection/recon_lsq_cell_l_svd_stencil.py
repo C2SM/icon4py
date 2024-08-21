@@ -1,28 +1,23 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2CEC, C2E2C, CECDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2CEC, C2E2C
 
 
 @field_operator
 def _recon_lsq_cell_l_svd_stencil(
     p_cc: fa.CellKField[float],
-    lsq_pseudoinv_1: Field[[CECDim], float],
-    lsq_pseudoinv_2: Field[[CECDim], float],
+    lsq_pseudoinv_1: Field[[dims.CECDim], float],
+    lsq_pseudoinv_2: Field[[dims.CECDim], float],
 ) -> tuple[
     fa.CellKField[float],
     fa.CellKField[float],
@@ -45,8 +40,8 @@ def _recon_lsq_cell_l_svd_stencil(
 @program(grid_type=GridType.UNSTRUCTURED)
 def recon_lsq_cell_l_svd_stencil(
     p_cc: fa.CellKField[float],
-    lsq_pseudoinv_1: Field[[CECDim], float],
-    lsq_pseudoinv_2: Field[[CECDim], float],
+    lsq_pseudoinv_1: Field[[dims.CECDim], float],
+    lsq_pseudoinv_2: Field[[dims.CECDim], float],
     p_coeff_1_dsl: fa.CellKField[float],
     p_coeff_2_dsl: fa.CellKField[float],
     p_coeff_3_dsl: fa.CellKField[float],

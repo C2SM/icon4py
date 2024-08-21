@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import datetime
 import logging
 import pathlib
@@ -418,28 +414,55 @@ def initialize(
 
 @click.command()
 @click.argument("input_path")
-@click.option("--run_path", default="./", help="folder for output")
-@click.option("--mpi", default=False, help="whether or not you are running with mpi")
+@click.option(
+    "--run_path",
+    default="./",
+    help="Folder for code logs to file and to console. Only debug logging is going to the file.",
+)
+@click.option(
+    "--mpi",
+    default=False,
+    show_default=True,
+    help="Whether or not you are running with mpi. Currently not fully tested yet.",
+)
 @click.option(
     "--serialization_type",
     default="serialbox",
-    help="serialization type for grid info and static fields",
+    show_default=True,
+    help="Serialization type for grid info and static fields. This is currently the only possible way to load the grid info and static fields.",
 )
-@click.option("--experiment_type", default="any", help="experiment selection")
-@click.option("--grid_root", default=2, help="experiment selection")
-@click.option("--grid_level", default=4, help="experiment selection")
+@click.option(
+    "--experiment_type",
+    default="any",
+    show_default=True,
+    help="Option for configuration and how the initial state is generated. "
+    "Setting it to the default value will instruct the model to use the default configuration of MeteoSwiss regional experiment and read the initial state from serialized data. "
+    "Currently, users can also set it to either jabw or grauss_3d_torus to generate analytic initial condition for the JW and mountain wave tests, respectively (they are placed in abs_path_to_icon4py/model/driver/src/icon4py/model/driver/test_cases/).",
+)
+@click.option(
+    "--grid_root",
+    default=2,
+    show_default=True,
+    help="Grid root division (please refer to Sadourny et al. 1968 or ICON documentation for more information). When torus grid is used, it must be set to 2.",
+)
+@click.option(
+    "--grid_level",
+    default=4,
+    show_default=True,
+    help="Grid refinement level. When torus grid is used, it must be set to 0.",
+)
 @click.option(
     "--grid_id",
     default="af122aca-1dd2-11b2-a7f8-c7bf6bc21eba",
     help="uuid of the horizontal grid ('uuidOfHGrid' from gridfile)",
 )
-def main(
+def icon4py_driver(
     input_path, run_path, mpi, serialization_type, experiment_type, grid_id, grid_root, grid_level
 ):
     """
-    Run the driver.
-
     usage: python dycore_driver.py abs_path_to_icon4py/testdata/ser_icondata/mpitask1/mch_ch_r04b09_dsl/ser_data
+
+    Run the icon4py driver, where INPUT_PATH is the path to folder storing the serialized data.
 
     steps:
     1. initialize model from serialized data:
@@ -499,4 +522,4 @@ def main(
 
 
 if __name__ == "__main__":
-    main()
+    icon4py_driver()

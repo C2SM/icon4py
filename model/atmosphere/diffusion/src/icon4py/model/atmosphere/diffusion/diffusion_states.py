@@ -1,30 +1,17 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import functools
 
 import gt4py.next as gtx
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import (
-    C2E2CODim,
-    CECDim,
-    CEDim,
-    CellDim,
-    KDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 
 @dataclasses.dataclass(frozen=True)
@@ -51,9 +38,9 @@ class DiffusionMetricState:
         float
     ]  # weighting factor for interpolation from full to half levels (nproma,nlevp1,nblks_c)
     mask_hdiff: fa.CellKField[bool]
-    zd_vertoffset: gtx.Field[[CECDim, KDim], gtx.int32]
+    zd_vertoffset: gtx.Field[[dims.CECDim, dims.KDim], gtx.int32]
     zd_diffcoef: fa.CellKField[float]
-    zd_intcoef: gtx.Field[[CECDim, KDim], float]
+    zd_intcoef: gtx.Field[[dims.CECDim, dims.KDim], float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -61,36 +48,36 @@ class DiffusionInterpolationState:
     """Represents the ICON interpolation state needed in diffusion."""
 
     e_bln_c_s: gtx.Field[
-        [CEDim], float
+        [dims.CEDim], float
     ]  # coefficent for bilinear interpolation from edge to cell ()
     rbf_coeff_1: gtx.Field[
-        [VertexDim, V2EDim], float
+        [dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_1(nproma, rbf_vec_dim_v, nblks_v)
     rbf_coeff_2: gtx.Field[
-        [VertexDim, V2EDim], float
+        [dims.VertexDim, dims.V2EDim], float
     ]  # rbf_vec_coeff_v_2(nproma, rbf_vec_dim_v, nblks_v)
 
-    geofac_div: gtx.Field[[CEDim], float]  # factor for divergence (nproma,cell_type,nblks_c)
+    geofac_div: gtx.Field[[dims.CEDim], float]  # factor for divergence (nproma,cell_type,nblks_c)
 
     geofac_n2s: gtx.Field[
-        [CellDim, C2E2CODim], float
+        [dims.CellDim, dims.C2E2CODim], float
     ]  # factor for nabla2-scalar (nproma,cell_type+1,nblks_c)
-    geofac_grg_x: gtx.Field[[CellDim, C2E2CODim], float]
+    geofac_grg_x: gtx.Field[[dims.CellDim, dims.C2E2CODim], float]
     geofac_grg_y: gtx.Field[
-        [CellDim, C2E2CODim], float
+        [dims.CellDim, dims.C2E2CODim], float
     ]  # factors for green gauss gradient (nproma,4,nblks_c,2)
     nudgecoeff_e: fa.EdgeField[float]  # Nudgeing coeffients for edges
 
     @functools.cached_property
     def geofac_n2s_c(self) -> fa.CellField[float]:
-        return gtx.as_field((CellDim,), data=self.geofac_n2s.ndarray[:, 0])
+        return gtx.as_field((dims.CellDim,), data=self.geofac_n2s.ndarray[:, 0])
 
     @functools.cached_property
-    def geofac_n2s_nbh(self) -> gtx.Field[[CECDim], float]:
+    def geofac_n2s_nbh(self) -> gtx.Field[[dims.CECDim], float]:
         geofac_nbh_ar = self.geofac_n2s.ndarray[:, 1:]
         old_shape = geofac_nbh_ar.shape
         return gtx.as_field(
-            (CECDim,),
+            (dims.CECDim,),
             geofac_nbh_ar.reshape(
                 old_shape[0] * old_shape[1],
             ),

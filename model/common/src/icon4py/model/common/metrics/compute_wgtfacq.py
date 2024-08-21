@@ -1,20 +1,17 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 
 
-def compute_z1_z2_z3(z_ifc, i1, i2, i3, i4):
+def _compute_z1_z2_z3(
+    z_ifc: np.ndarray, i1: int, i2: int, i3: int, i4: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     z1 = 0.5 * (z_ifc[:, i2] - z_ifc[:, i1])
     z2 = 0.5 * (z_ifc[:, i2] + z_ifc[:, i3]) - z_ifc[:, i1]
     z3 = 0.5 * (z_ifc[:, i3] + z_ifc[:, i4]) - z_ifc[:, i1]
@@ -22,9 +19,9 @@ def compute_z1_z2_z3(z_ifc, i1, i2, i3, i4):
 
 
 def compute_wgtfacq_c_dsl(
-    z_ifc: np.array,
+    z_ifc: np.ndarray,
     nlev: int,
-) -> np.array:
+) -> np.ndarray:
     """
     Compute weighting factor for quadratic interpolation to surface.
 
@@ -36,7 +33,7 @@ def compute_wgtfacq_c_dsl(
     """
     wgtfacq_c = np.zeros((z_ifc.shape[0], nlev + 1))
     wgtfacq_c_dsl = np.zeros((z_ifc.shape[0], nlev))
-    z1, z2, z3 = compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
+    z1, z2, z3 = _compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
 
     wgtfacq_c[:, 2] = z1 * z2 / (z2 - z3) / (z1 - z3)
     wgtfacq_c[:, 1] = (z1 - wgtfacq_c[:, 2] * (z1 - z3)) / (z1 - z2)
@@ -51,9 +48,9 @@ def compute_wgtfacq_c_dsl(
 
 def compute_wgtfacq_e_dsl(
     e2c,
-    z_ifc: np.array,
-    z_aux_c: np.array,
-    c_lin_e: np.array,
+    z_ifc: np.ndarray,
+    c_lin_e: np.ndarray,
+    wgtfacq_c_dsl: np.ndarray,
     n_edges: int,
     nlev: int,
 ):
@@ -63,7 +60,7 @@ def compute_wgtfacq_e_dsl(
     Args:
         e2c: Edge to Cell offset
         z_ifc: geometric height at the vertical interface of cells.
-        z_aux_c: interpolation of weighting coefficients to edges
+        wgtfacq_c_dsl: weighting factor for quadratic interpolation to surface
         c_lin_e: interpolation field
         n_edges: number of edges
         nlev: int, last k level
@@ -71,13 +68,13 @@ def compute_wgtfacq_e_dsl(
     Field[EdgeDim, KDim] (full levels)
     """
     wgtfacq_e_dsl = np.zeros(shape=(n_edges, nlev + 1))
-    z1, z2, z3 = compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
-    wgtfacq_c_dsl = compute_wgtfacq_c_dsl(z_ifc, nlev)
+    z_aux_c = np.zeros((z_ifc.shape[0], 6))
+    z1, z2, z3 = _compute_z1_z2_z3(z_ifc, nlev, nlev - 1, nlev - 2, nlev - 3)
     z_aux_c[:, 2] = z1 * z2 / (z2 - z3) / (z1 - z3)
     z_aux_c[:, 1] = (z1 - wgtfacq_c_dsl[:, nlev - 3] * (z1 - z3)) / (z1 - z2)
     z_aux_c[:, 0] = 1.0 - (wgtfacq_c_dsl[:, nlev - 2] + wgtfacq_c_dsl[:, nlev - 3])
 
-    z1, z2, z3 = compute_z1_z2_z3(z_ifc, 0, 1, 2, 3)
+    z1, z2, z3 = _compute_z1_z2_z3(z_ifc, 0, 1, 2, 3)
     z_aux_c[:, 5] = z1 * z2 / (z2 - z3) / (z1 - z3)
     z_aux_c[:, 4] = (z1 - z_aux_c[:, 5] * (z1 - z3)) / (z1 - z2)
     z_aux_c[:, 3] = 1.0 - (z_aux_c[:, 4] + z_aux_c[:, 5])

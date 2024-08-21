@@ -1,45 +1,42 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     E2C,
     E2EC,
     E2V,
     E2CDim,
     E2VDim,
-    ECDim,
-    EdgeDim,
-    KDim,
     Koff,
 )
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _compute_advective_normal_wind_tendency(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    coeff_gradekin: Field[[ECDim], vpfloat],
+    coeff_gradekin: Field[[dims.ECDim], vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     zeta: fa.VertexKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     f_e: fa.EdgeField[wpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],
@@ -68,12 +65,12 @@ def _compute_advective_normal_wind_tendency(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def compute_advective_normal_wind_tendency(
     z_kin_hor_e: fa.EdgeKField[vpfloat],
-    coeff_gradekin: Field[[ECDim], vpfloat],
+    coeff_gradekin: Field[[dims.ECDim], vpfloat],
     z_ekinh: fa.CellKField[vpfloat],
     zeta: fa.VertexKField[vpfloat],
     vt: fa.EdgeKField[vpfloat],
     f_e: fa.EdgeField[wpfloat],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
     z_w_con_c_full: fa.CellKField[vpfloat],
     vn_ie: fa.EdgeKField[vpfloat],
     ddqz_z_full_e: fa.EdgeKField[vpfloat],

@@ -1,21 +1,16 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection as vel_adv
-from icon4py.model.common.dimension import CellDim, EdgeDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
@@ -251,7 +246,7 @@ def test_velocity_predictor_step(
     assert helpers.dallclose(diagnostic_state.vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
 
     start_edge_lateral_boundary_6 = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
     )
     # stencil 07
     if not vn_only:
@@ -263,7 +258,7 @@ def test_velocity_predictor_step(
 
     # stencil 08
     start_cell_nudging = icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
     )
     assert helpers.dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
@@ -413,7 +408,7 @@ def test_velocity_corrector_step(
 
     # stencil 07
     start_cells_lateral_boundary_d = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
     )
     assert helpers.dallclose(
         velocity_advection.z_v_grad_w.asnumpy()[start_cells_lateral_boundary_d:, :],
@@ -422,7 +417,7 @@ def test_velocity_corrector_step(
     )
     # stencil 08
     start_cell_nudging = icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
     )
     assert helpers.dallclose(
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],

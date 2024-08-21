@@ -1,22 +1,16 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
 import numpy as np
 
 from icon4py.model.atmosphere.dycore.state_utils import utils as solve_nh_utils
-from icon4py.model.common import constants
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import simple as simple_grid
 from icon4py.model.common.settings import backend
 from icon4py.model.common.test_utils import helpers
@@ -36,8 +30,8 @@ def test_caclulate_scal_divdamp_order_24():
     divdamp_order = 24
     mean_cell_area = 1000.0
     grid = simple_grid.SimpleGrid()
-    enh_divdamp_fac = helpers.random_field(grid, KDim)
-    out = helpers.random_field(grid, KDim)
+    enh_divdamp_fac = helpers.random_field(grid, dims.KDim)
+    out = helpers.random_field(grid, dims.KDim)
 
     solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
@@ -57,8 +51,8 @@ def test_calculate_scal_divdamp_any_order():
     divdamp_order = 3
     mean_cell_area = 1000.0
     grid = simple_grid.SimpleGrid()
-    enh_divdamp_fac = helpers.random_field(grid, KDim)
-    out = helpers.random_field(grid, KDim)
+    enh_divdamp_fac = helpers.random_field(grid, dims.KDim)
+    out = helpers.random_field(grid, dims.KDim)
 
     solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
@@ -74,8 +68,8 @@ def test_calculate_scal_divdamp_any_order():
 
 def test_calculate_bdy_divdamp():
     grid = simple_grid.SimpleGrid()
-    scal_divdamp = helpers.random_field(grid, KDim)
-    out = helpers.zero_field(grid, KDim)
+    scal_divdamp = helpers.random_field(grid, dims.KDim)
+    out = helpers.zero_field(grid, dims.KDim)
     coeff = 0.3
     solve_nh_utils._calculate_bdy_divdamp.with_backend(backend)(
         scal_divdamp, coeff, constants.DBL_EPS, out=out, offset_provider={}
@@ -85,9 +79,9 @@ def test_calculate_bdy_divdamp():
 
 def test_calculate_divdamp_fields():
     grid = simple_grid.SimpleGrid()
-    divdamp_field = helpers.random_field(grid, KDim)
-    scal_divdamp = helpers.zero_field(grid, KDim)
-    boundary_divdamp = helpers.zero_field(grid, KDim)
+    divdamp_field = helpers.random_field(grid, dims.KDim)
+    scal_divdamp = helpers.zero_field(grid, dims.KDim)
+    boundary_divdamp = helpers.zero_field(grid, dims.KDim)
     divdamp_order = gtx.int32(24)
     mean_cell_area = 1000.0
     divdamp_fac_o2 = 0.7

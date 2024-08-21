@@ -1,27 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-# ICON4Py - ICON inspired code in Python and GT4Py
-#
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
-# All rights reserved.
-#
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
 import numpy as np
@@ -30,7 +13,8 @@ from gt4py.next import where
 import icon4py.model.common.field_type_aliases as fa
 import icon4py.model.common.math.projection as proj
 import icon4py.model.common.type_alias as ta
-from icon4py.model.common.dimension import C2E, V2E, C2EDim, CellDim, V2EDim, VertexDim
+from icon4py.model.common import dimension as dims
+from icon4py.model.common.dimension import C2E, V2E
 
 
 def compute_c_lin_e(
@@ -61,9 +45,9 @@ def compute_c_lin_e(
 @gtx.field_operator
 def compute_geofac_div(
     primal_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_orientation: gtx.Field[[CellDim, C2EDim], ta.wpfloat],
+    edge_orientation: gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat],
     area: fa.CellField[ta.wpfloat],
-) -> gtx.Field[[CellDim, C2EDim], ta.wpfloat]:
+) -> gtx.Field[[dims.CellDim, dims.C2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for divergence.
 
@@ -81,10 +65,10 @@ def compute_geofac_div(
 @gtx.field_operator
 def compute_geofac_rot(
     dual_edge_length: fa.EdgeField[ta.wpfloat],
-    edge_orientation: gtx.Field[[VertexDim, V2EDim], ta.wpfloat],
+    edge_orientation: gtx.Field[[dims.VertexDim, dims.V2EDim], ta.wpfloat],
     dual_area: fa.VertexField[ta.wpfloat],
     owner_mask: fa.VertexField[bool],
-) -> gtx.Field[[VertexDim, V2EDim], ta.wpfloat]:
+) -> gtx.Field[[dims.VertexDim, dims.V2EDim], ta.wpfloat]:
     """
     Compute geometrical factor for curl.
 
