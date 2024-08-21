@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
     calculate_nabla2_for_z,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.icon import IconGrid
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
@@ -27,7 +27,7 @@ def calculate_nabla2_for_z_numpy(
 ) -> np.array:
     inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
 
-    theta_v_e2c = theta_v[grid.connectivities[E2CDim]]
+    theta_v_e2c = theta_v[grid.connectivities[dims.E2CDim]]
     theta_v_weighted = theta_v_e2c[:, 1] - theta_v_e2c[:, 0]
 
     z_nabla2_e = kh_smag_e * inv_dual_edge_length * theta_v_weighted
@@ -56,10 +56,10 @@ class TestCalculateNabla2ForZ(StencilTest):
                 "Execution domain needs to be restricted or boundary taken into account in stencil."
             )
 
-        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
-        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             kh_smag_e=kh_smag_e,

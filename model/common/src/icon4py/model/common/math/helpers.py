@@ -8,8 +8,8 @@
 
 from gt4py.next import Field, field_operator
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2V, KDim, Koff, VertexDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C, E2V, Koff
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -23,9 +23,9 @@ def average_cell_kdim_level_up(
     Computes the average of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
     return 0.5 * (half_level_field + half_level_field(Koff[1]))
@@ -59,9 +59,9 @@ def difference_k_level_down(
     Computes the difference of two adjacent interface levels downwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
     return half_level_field(Koff[-1]) - half_level_field
@@ -77,9 +77,9 @@ def difference_k_level_up(
     Computes the difference of two adjacent interface levels upwards over a cell field for storage
     in the corresponding full levels.
     Args:
-        half_level_field: Field[Dims[CellDim, KDim], wpfloat]
+        half_level_field: Field[Dims[CellDim, dims.KDim], wpfloat]
 
-    Returns: Field[Dims[CellDim, KDim], wpfloat] full level field
+    Returns: Field[Dims[CellDim, dims.KDim], wpfloat] full level field
 
     """
     return half_level_field - half_level_field(Koff[1])
@@ -107,7 +107,7 @@ def grad_fd_norm(
 
 @field_operator
 def _grad_fd_tang(
-    psi_v: Field[[VertexDim, KDim], float],
+    psi_v: Field[[dims.VertexDim, dims.KDim], float],
     inv_primal_edge_length: fa.EdgeField[float],
     tangent_orientation: fa.EdgeField[float],
 ) -> fa.EdgeKField[float]:

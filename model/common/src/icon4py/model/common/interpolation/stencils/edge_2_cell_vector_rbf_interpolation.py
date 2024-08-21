@@ -10,17 +10,22 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E2C2E, C2E2C2EDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
 
 
 @field_operator
 def _edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[wpfloat],
-    ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
-    ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
+    ptr_coeff_1: Field[[dims.CellDim, C2E2C2EDim], wpfloat],
+    ptr_coeff_2: Field[[dims.CellDim, C2E2C2EDim], wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
     p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(C2E2C2E), axis=C2E2C2EDim)
     p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(C2E2C2E), axis=C2E2C2EDim)
@@ -30,8 +35,8 @@ def _edge_2_cell_vector_rbf_interpolation(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def edge_2_cell_vector_rbf_interpolation(
     p_e_in: fa.EdgeKField[wpfloat],
-    ptr_coeff_1: Field[[CellDim, C2E2C2EDim], wpfloat],
-    ptr_coeff_2: Field[[CellDim, C2E2C2EDim], wpfloat],
+    ptr_coeff_1: Field[[dims.CellDim, C2E2C2EDim], wpfloat],
+    ptr_coeff_2: Field[[dims.CellDim, C2E2C2EDim], wpfloat],
     p_u_out: fa.CellKField[wpfloat],
     p_v_out: fa.CellKField[wpfloat],
     horizontal_start: int32,

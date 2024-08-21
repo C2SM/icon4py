@@ -188,13 +188,13 @@ def test_diagnose_pressure(
     )
     diagnostic_state = diagnostics.DiagnosticState(
         temperature=sp.temperature(),
+        virtual_temperature=sp.temperature(),
         pressure=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         pressure_ifc=helpers.zero_field(
             icon_grid, dims.CellDim, dims.KDim, dtype=float, extend={dims.KDim: 1}
         ),
         u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
-        virtual_temperature=sp.temperature(),
     )
 
     surface_pressure.diagnose_surface_pressure(

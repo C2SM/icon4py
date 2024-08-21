@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates import (
     compute_horizontal_gradient_of_exner_pressure_for_nonflat_coordinates,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -32,7 +32,7 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
         z_dexner_dz_c_1: np.array,
         **kwargs,
     ) -> dict:
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         inv_dual_edge_length = np.expand_dims(inv_dual_edge_length, axis=-1)
         c_lin_e = np.expand_dims(c_lin_e, axis=-1)
 
@@ -46,15 +46,15 @@ class TestComputeHorizontalGradientOfExnerPressureForNonflatCoordinates(StencilT
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[E2CDim] == -1):
+        if np.any(grid.connectivities[dims.E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        inv_dual_edge_length = random_field(grid, EdgeDim, dtype=wpfloat)
-        z_exner_ex_pr = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddxn_z_full = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        c_lin_e = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        z_dexner_dz_c_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_gradh_exner = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        inv_dual_edge_length = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        z_exner_ex_pr = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddxn_z_full = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        c_lin_e = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        z_dexner_dz_c_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_gradh_exner = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             inv_dual_edge_length=inv_dual_edge_length,

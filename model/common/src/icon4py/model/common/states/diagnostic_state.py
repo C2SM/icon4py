@@ -11,8 +11,7 @@ from dataclasses import dataclass
 from gt4py.next import as_field
 from gt4py.next.common import Field
 
-from icon4py.model.common import field_type_aliases as fa, type_alias as ta
-from icon4py.model.common.dimension import C2E2C2EDim, CellDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 
 
 @dataclass
@@ -38,7 +37,7 @@ class DiagnosticState:
 
     @property
     def pressure_sfc(self) -> fa.CellField[ta.wpfloat]:
-        return as_field((CellDim,), self.pressure_ifc.ndarray[:, -1])
+        return as_field((dims.CellDim,), self.pressure_ifc.ndarray[:, -1])
 
 
 @dataclass
@@ -46,5 +45,5 @@ class DiagnosticMetricState:
     """Class that contains the diagnostic metric state for computing the diagnostic state."""
 
     ddqz_z_full: fa.CellKField[ta.wpfloat]
-    rbf_vec_coeff_c1: Field[[CellDim, C2E2C2EDim], ta.wpfloat]
-    rbf_vec_coeff_c2: Field[[CellDim, C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c1: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]
+    rbf_vec_coeff_c2: Field[[dims.CellDim, dims.C2E2C2EDim], ta.wpfloat]

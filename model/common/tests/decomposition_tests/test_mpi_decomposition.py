@@ -17,6 +17,7 @@ try:
 except ImportError:
     pytest.skip("Skipping parallel on single node installation", allow_module_level=True)
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition.definitions import (
     DecompositionInfo,
     DomainDescriptorIdGenerator,
@@ -24,7 +25,6 @@ from icon4py.model.common.decomposition.definitions import (
     create_exchange,
 )
 from icon4py.model.common.decomposition.mpi_decomposition import GHexMultiNodeExchange
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401 # import fixtures from test_utils
     data_provider,
     decomposition_info,
@@ -62,9 +62,9 @@ def test_props(processor_props):  # noqa: F811  # fixture
 @pytest.mark.parametrize(
     ("dim, owned, total"),
     (
-        (CellDim, (10448, 10448), (10611, 10612)),
-        (EdgeDim, (15820, 15738), (16065, 16067)),
-        (VertexDim, (5373, 5290), (5455, 5456)),
+        (dims.CellDim, (10448, 10448), (10611, 10612)),
+        (dims.EdgeDim, (15820, 15738), (16065, 16067)),
+        (dims.VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
 @pytest.mark.datatest
@@ -106,9 +106,9 @@ def _assert_index_partitioning(all_indices, halo_indices, owned_indices):
 @pytest.mark.parametrize(
     ("dim, owned, total"),
     (
-        (CellDim, (10448, 10448), (10611, 10612)),
-        (EdgeDim, (15820, 15738), (16065, 16067)),
-        (VertexDim, (5373, 5290), (5455, 5456)),
+        (dims.CellDim, (10448, 10448), (10611, 10612)),
+        (dims.EdgeDim, (15820, 15738), (16065, 16067)),
+        (dims.VertexDim, (5373, 5290), (5455, 5456)),
     ),
 )
 @pytest.mark.datatest
@@ -181,16 +181,16 @@ def test_decomposition_info_matches_gridsize(
     check_comm_size(processor_props)
     assert (
         decomposition_info.global_index(
-            dim=CellDim, entry_type=DecompositionInfo.EntryType.ALL
+            dim=dims.CellDim, entry_type=DecompositionInfo.EntryType.ALL
         ).shape[0]
         == icon_grid.num_cells
     )
     assert (
-        decomposition_info.global_index(VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(dims.VertexDim, DecompositionInfo.EntryType.ALL).shape[0]
         == icon_grid.num_vertices
     )
     assert (
-        decomposition_info.global_index(EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
+        decomposition_info.global_index(dims.EdgeDim, DecompositionInfo.EntryType.ALL).shape[0]
         == icon_grid.num_edges
     )
 
@@ -221,7 +221,7 @@ def test_create_single_node_runtime_without_mpi(
 
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
-@pytest.mark.parametrize("dimension", (CellDim, VertexDim, EdgeDim))
+@pytest.mark.parametrize("dimension", (dims.CellDim, dims.VertexDim, dims.EdgeDim))
 def test_exchange_on_dummy_data(
     processor_props,  # noqa: F811 # fixture
     decomposition_info,  # noqa: F811 # fixture
@@ -237,7 +237,7 @@ def test_exchange_on_dummy_data(
         grid,
         number,
         dimension,
-        KDim,
+        dims.KDim,
     )
 
     halo_points = decomposition_info.local_index(dimension, DecompositionInfo.EntryType.HALO)

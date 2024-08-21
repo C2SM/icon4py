@@ -15,15 +15,19 @@ from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w impor
 from icon4py.model.atmosphere.dycore.compute_contravariant_correction_of_w_for_lower_boundary import (
     _compute_contravariant_correction_of_w_for_lower_boundary,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _fused_solve_nonhydro_stencil_39_40(
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],
@@ -43,7 +47,7 @@ def _fused_solve_nonhydro_stencil_39_40(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_solve_nonhydro_stencil_39_40(
-    e_bln_c_s: Field[[CEDim], wpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
     z_w_concorr_me: fa.EdgeKField[vpfloat],
     wgtfac_c: fa.CellKField[vpfloat],
     wgtfacq_c: fa.CellKField[vpfloat],

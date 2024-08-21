@@ -10,15 +10,20 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2C, E2CDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2C, E2CDim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _cell_2_edge_interpolation(
-    in_field: fa.CellKField[wpfloat], coeff: Field[[EdgeDim, E2CDim], wpfloat]
+    in_field: fa.CellKField[wpfloat], coeff: Field[[dims.EdgeDim, dims.E2CDim], wpfloat]
 ) -> fa.EdgeKField[wpfloat]:
     """
     Interpolate a Cell Field to Edges.
@@ -34,7 +39,7 @@ def _cell_2_edge_interpolation(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def cell_2_edge_interpolation(
     in_field: fa.CellKField[wpfloat],
-    coeff: Field[[EdgeDim, E2CDim], wpfloat],
+    coeff: Field[[dims.EdgeDim, dims.E2CDim], wpfloat],
     out_field: fa.EdgeKField[wpfloat],
     horizontal_start: int32,
     horizontal_end: int32,
@@ -45,5 +50,8 @@ def cell_2_edge_interpolation(
         in_field,
         coeff,
         out=out_field,
-        domain={EdgeDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
+        domain={
+            EdgeDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
     )
