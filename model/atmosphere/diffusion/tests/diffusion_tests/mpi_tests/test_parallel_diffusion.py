@@ -48,10 +48,12 @@ def test_parallel_diffusion(
     model_top_height,
     stretch_factor,
     damping_height,
+    caplog,
 ):
+    caplog.set_level("DEBUG")
     check_comm_size(processor_props)
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: inializing diffusion for experiment '{REGIONAL_EXPERIMENT}'"
+        f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{REGIONAL_EXPERIMENT}'"
     )
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: decomposition info : klevels = {decomposition_info.klevels}, "
@@ -86,6 +88,20 @@ def test_parallel_diffusion(
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     diffusion = Diffusion(exchange)
+    dim = dims.CellDim
+    print(f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} ")
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} ")
+    dim = dims.EdgeDim
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} ")
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} ")
+    dim = dims.VertexDim
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} ")
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} ")
 
     diffusion.init(
         grid=icon_grid,
