@@ -47,7 +47,7 @@ def compute_wgtfacq_c_dsl(
 
 
 def compute_wgtfacq_e_dsl(
-    e2c,
+    e2c: xp.ndarray,
     z_ifc: xp.ndarray,
     c_lin_e: xp.ndarray,
     wgtfacq_c_dsl: xp.ndarray,
