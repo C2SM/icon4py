@@ -63,6 +63,7 @@ build_image_aarch64:
     ARCH: 'aarch64'
     F7T_URL: 'https://firecrest-todi.v1.tds.cscs.ch'
     FIRECREST_SYSTEM: 'todi'
+    USE_CE: 'YES'
 
 .test_template:
   timeout: 8h
