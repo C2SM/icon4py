@@ -10,17 +10,16 @@ import abc
 import enum
 import functools
 import inspect
-from typing import Callable, Iterable, Optional, Protocol, Sequence, Union
+from typing import Callable, Iterable, Optional, Protocol, Sequence, Union, get_args
 
 import gt4py.next as gtx
 import gt4py.next.ffront.decorator as gtx_decorator
 import xarray as xa
 
-import icon4py.model.common.states.metadata as metadata
 from icon4py.model.common import dimension as dims, exceptions, settings
-from icon4py.model.common.grid import base as base_grid
+from icon4py.model.common.grid import base as base_grid, icon as icon_grid
 from icon4py.model.common.settings import xp
-from icon4py.model.common.states import utils as state_utils
+from icon4py.model.common.states import metadata as metadata, utils as state_utils
 from icon4py.model.common.utils import builder
 
 
@@ -105,7 +104,9 @@ class ProgramFieldProvider(FieldProvider):
     def __init__(
         self,
         func: gtx_decorator.Program,
-        domain: dict[gtx.Dimension : tuple[gtx.int32, gtx.int32]],
+        domain: dict[
+            gtx.Dimension : tuple[Callable[[gtx.Dimension], int], Callable[[gtx.Dimension], int]]
+        ],
         fields: dict[str:str],
         deps: dict[str, str],
         params: Optional[dict[str, state_utils.Scalar]] = None,
@@ -115,7 +116,6 @@ class ProgramFieldProvider(FieldProvider):
         self._dependencies = deps
         self._output = fields
         self._params = params if params is not None else {}
-        self._dims = self._domain_args()
         self._fields: dict[str, Optional[gtx.Field | state_utils.Scalar]] = {
             name: None for name in fields.values()
         }
@@ -142,14 +142,14 @@ class ProgramFieldProvider(FieldProvider):
             for k in self._fields.keys()
         }
 
-    def _domain_args(self) -> dict[str : gtx.int32]:
+    def _domain_args(self, grid: icon_grid.IconGrid) -> dict[str : gtx.int32]:
         domain_args = {}
         for dim in self._compute_domain:
             if dim.kind == gtx.DimensionKind.HORIZONTAL:
                 domain_args.update(
                     {
-                        "horizontal_start": self._compute_domain[dim][0],
-                        "horizontal_end": self._compute_domain[dim][1],
+                        "horizontal_start": grid.get_start_index(dim, self._compute_domain[dim][0]),
+                        "horizontal_end": grid.get_end_index(dim, self._compute_domain[dim][1]),
                     }
                 )
             elif dim.kind == gtx.DimensionKind.VERTICAL:
@@ -168,7 +168,8 @@ class ProgramFieldProvider(FieldProvider):
         deps = {k: factory.get(v) for k, v in self._dependencies.items()}
         deps.update(self._params)
         deps.update({k: self._fields[v] for k, v in self._output.items()})
-        deps.update(self._dims)
+        dims = self._domain_args(factory.grid)
+        deps.update(dims)
         self._func(**deps, offset_provider=factory.grid.offset_providers)
 
     def fields(self) -> Iterable[str]:
@@ -182,18 +183,23 @@ class NumpyFieldsProvider(FieldProvider):
         domain: dict[gtx.Dimension : tuple[gtx.int32, gtx.int32]],
         fields: Sequence[str],
         deps: dict[str, str],
+        offsets: Optional[dict[str, gtx.Dimension]] = None,
         params: Optional[dict[str, state_utils.Scalar]] = None,
     ):
         self._func = func
         self._compute_domain = domain
+        self._offsets = offsets
         self._dims = domain.keys()
         self._fields: dict[str, Optional[state_utils.FieldType]] = {name: None for name in fields}
         self._dependencies = deps
+        self._offsets = offsets if offsets is not None else {}
         self._params = params if params is not None else {}
 
     def evaluate(self, factory: "FieldsFactory") -> None:
         self._validate_dependencies()
         args = {k: factory.get(v).ndarray for k, v in self._dependencies.items()}
+        offsets = {k: factory.grid.connectivities[v] for k, v in self._offsets.items()}
+        args.update(offsets)
         args.update(self._params)
         results = self._func(**args)
         ## TODO: can the order of return values be checked?
@@ -208,17 +214,31 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            if parameter_definition is None or parameter_definition.annotation != xp.ndarray:
-                raise ValueError(
-                    f"Dependency {dep_key} in function {self._func.__name__} :  does not exist in {func_signature} or has wrong type ('expected np.ndarray')"
-                )
+            assert (
+                parameter_definition.annotation == xp.ndarray
+            ), (f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
+                f"or has wrong type ('expected np.ndarray') in {func_signature}.")
 
         for param_key, param_value in self._params.items():
             parameter_definition = parameters.get(param_key)
-            if parameter_definition is None or parameter_definition.annotation != type(param_value):
-                raise ValueError(
-                    f"parameter {param_key} in function {self._func.__name__} does not exist or has the has the wrong type: {type(param_value)}"
-                )
+            checked = _check(
+                parameter_definition, param_value, union=state_utils.IntegerType
+            ) or _check(parameter_definition, param_value, union=state_utils.FloatType)
+            assert checked, (f"Parameter {param_key} in function {self._func.__name__} does not "
+                             f"exist or has the wrong type: {type(param_value)}.")
+
+
+def _check(
+    parameter_definition: inspect.Parameter,
+    value: Union[state_utils.Scalar, gtx.Field],
+    union: Union,
+) -> bool:
+    members = get_args(union)
+    return (
+        parameter_definition is not None
+        and parameter_definition.annotation in members
+        and type(value) in members
+    )
 
 
 class FieldsFactory:
@@ -228,9 +248,9 @@ class FieldsFactory:
     Lazily compute fields and cache them.
     """
 
-    def __init__(self, grid: base_grid.BaseGrid = None, backend=settings.backend):
+    def __init__(self, grid: icon_grid.IconGrid = None, backend=settings.backend):
         self._grid = grid
-        self._providers: dict[str, 'FieldProvider'] = {}
+        self._providers: dict[str, "FieldProvider"] = {}
         self._allocator = gtx.constructors.zeros.partial(allocator=backend)
 
     def validate(self):
@@ -275,5 +295,3 @@ class FieldsFactory:
                 self._providers[field_name](field_name, self), metadata.attrs[field_name]
             )
         raise ValueError(f"Invalid retrieval type {type_}")
-
-
