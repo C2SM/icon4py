@@ -42,7 +42,7 @@ from icon4py.model.common.test_utils.helpers import dallclose, zero_field
         (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "56"),
     ],
 )
-def test_saturation_adjustment(
+def test_saturation_adjustment_in_gscp_call(
     experiment,
     model_top_height,
     damping_height,
@@ -150,6 +150,29 @@ def test_saturation_adjustment(
         atol=1.0e-13,
     )
 
+@pytest.mark.parametrize(
+    "experiment, model_top_height, damping_height, stretch_factor, date",
+    [
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "48"),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "52"),
+        (dt_utils.WEISMAN_KLEMP_EXPERIMENT, 30000.0, 8000.0, 0.85, "56"),
+    ],
+)
+def test_saturation_adjustment_in_physics_interface_call(
+    experiment,
+    model_top_height,
+    damping_height,
+    stretch_factor,
+    date,
+    data_provider,
+    grid_savepoint,
+    metrics_savepoint,
+    icon_grid,
+    lowest_layer_thickness,
+):
+    entry_microphysics_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(
+        date=date
+    )
     nwp_interface_satad_entry_savepoint = (
         data_provider.from_savepoint_weisman_klemp_interface_satad_entry(date=date)
     )
@@ -164,6 +187,18 @@ def test_saturation_adjustment(
         tolerance=nwp_interface_satad_entry_savepoint.tolerance(),
         max_iter=nwp_interface_satad_entry_savepoint.maxiter(),
         diagnose_variables_from_new_temperature=True,
+    )
+
+    vertical_config = v_grid.VerticalGridConfig(icon_grid.num_levels)
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=vertical_config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
+    )
+
+    metric_state = saturation_adjustment.MetricStateSaturationAdjustment(
+        ddqz_z_full=metrics_savepoint.ddqz_z_full()
     )
 
     nwp_interface_saturation_adjustment_granule = saturation_adjustment.SaturationAdjustment(
@@ -197,6 +232,7 @@ def test_saturation_adjustment(
         v=None,
     )
 
+    dtime = entry_microphysics_savepoint.dt_microphysics()
     nwp_interface_saturation_adjustment_granule.run(
         dtime=dtime,
         prognostic_state=prognostic_state,
@@ -258,7 +294,6 @@ def test_saturation_adjustment(
         nwp_interface_satad_diag_exit_savepoint.exner().ndarray,
         atol=1.0e-13,
     )
-
     assert dallclose(
         updated_pressure,
         nwp_interface_satad_diag_exit_savepoint.pressure().ndarray,
