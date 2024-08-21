@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import enum
 import math
 from dataclasses import dataclass
 from functools import cached_property
@@ -170,6 +170,32 @@ class HorizontalMarkerIndex:
     def end(cls, dim: Dimension) -> int:
         return cls._end[dim]
 
+
+class LineNumber(enum.IntEnum):
+    pass
+
+
+class HaloLine(LineNumber):
+    FIRST = 0
+    SECOND = -1
+
+class NudgingLine(LineNumber):
+    FIRST = 0
+    SECOND = 1
+
+class BoundaryLine(LineNumber):
+    FIRST = 0
+    SECOND = 1
+    THIRD = 2
+    FOURTH = 3
+    FIFTH = 4
+    SIXTH = 5
+    SEVENTH = 6
+
+
+class IndexType(enum.IntEnum):
+    START = 0
+    END = 1
 
 @dataclass(frozen=True)
 class HorizontalGridSize:
