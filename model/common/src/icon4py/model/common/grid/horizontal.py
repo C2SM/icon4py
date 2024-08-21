@@ -37,26 +37,31 @@ _MIN_RL_EDGE_INT: Final[int] = 2 * _MIN_RL_CELL_INT
 _MIN_RL_EDGE: Final[int] = _MIN_RL_EDGE_INT - (2 * NUM_GHOST_ROWS + 1)
 _MAX_RL_EDGE: Final[int] = 2 * _MAX_RL_CELL
 
-_LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES
-_INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES
-_NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES
-_HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES
-_LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES
+_LATERAL_BOUNDARY_EDGES: Final[int] = 1 + _ICON_INDEX_OFFSET_EDGES  # 14
+_INTERIOR_EDGES: Final[int] = _ICON_INDEX_OFFSET_EDGES  # 13
+_NUDGING_EDGES: Final[int] = _GRF_BOUNDARY_WIDTH_EDGES + _ICON_INDEX_OFFSET_EDGES  # 22
+_HALO_EDGES: Final[int] = _MIN_RL_EDGE_INT - 1 + _ICON_INDEX_OFFSET_EDGES  # 4
+_LOCAL_EDGES: Final[int] = _MIN_RL_EDGE_INT + _ICON_INDEX_OFFSET_EDGES  # 5
 _END_EDGES: Final[int] = 0
 
-_LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS
-_INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS
-_NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS
-_HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS
-_LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS
+_LATERAL_BOUNDARY_CELLS: Final[int] = 1 + _ICON_INDEX_OFFSET_CELLS  # 9
+_INTERIOR_CELLS: Final[int] = _ICON_INDEX_OFFSET_CELLS  # 8
+_NUDGING_CELLS: Final[int] = _GRF_BOUNDARY_WIDTH_CELL + 1 + _ICON_INDEX_OFFSET_CELLS  # 13
+_HALO_CELLS: Final[int] = _MIN_RL_CELL_INT - 1 + _ICON_INDEX_OFFSET_CELLS  # 3
+_LOCAL_CELLS: Final[int] = _MIN_RL_CELL_INT + _ICON_INDEX_OFFSET_CELLS  # 4
 _END_CELLS: Final[int] = 0
 
-_LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX
-_INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX
+_LATERAL_BOUNDARY_VERTICES = 1 + _ICON_INDEX_OFFSET_VERTEX  # 8
+_INTERIOR_VERTICES: Final[int] = _ICON_INDEX_OFFSET_VERTEX  # 7
 _NUDGING_VERTICES: Final[int] = 0
-_HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX
-_LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX
+_HALO_VERTICES: Final[int] = _MIN_RL_VERTEX_INT - 1 + _ICON_INDEX_OFFSET_VERTEX  # 2
+_LOCAL_VERTICES: Final[int] = _MIN_RL_VERTEX_INT + _ICON_INDEX_OFFSET_VERTEX  # 3
 _END_VERTICES: Final[int] = 0
+
+
+_EDGE_GRF: Final[int] = 24
+_CELL_GRF: Final[int] = 14
+_VERTEX_GRF: Final[int] = 13
 
 
 class HorizontalMarkerIndex:
@@ -111,38 +116,55 @@ class HorizontalMarkerIndex:
         dimension.VertexDim: _END_VERTICES,
     }
 
+    _bounds: ClassVar = {
+        dimension.CellDim: (0, _CELL_GRF - 1),
+        dimension.EdgeDim: (0, _EDGE_GRF - 1),
+        dimension.VertexDim: (0, _VERTEX_GRF - 1),
+    }
+
     @classmethod
-    def lateral_boundary(cls, dim: Dimension) -> int:
+    def lateral_boundary(cls, dim: Dimension, offset=0) -> int:
         """Indicate lateral boundary.
 
         These points correspond to the sorted points in ICON, the marker can be incremented in order
         to access higher order boundary lines
         """
-        return cls._lateral_boundary[dim]
+        return cls._domain_index(cls._lateral_boundary, dim, offset)
 
     @classmethod
-    def local(cls, dim: Dimension) -> int:
+    def _domain_index(cls, value_dict, dim, offset):
+        index = value_dict[dim] + offset
+        assert (
+            index <= cls._bounds[dim][1]
+        ), f"Index {index} out of bounds for {dim}:  {cls._bounds[dim]}"
+        assert (
+            index >= cls._bounds[dim][0]
+        ), f"Index {index} out of bounds for {dim}: {cls._bounds[dim]}"
+        return index
+
+    @classmethod
+    def local(cls, dim: Dimension, offset=0) -> int:
         """Indicate points that are owned by the processing unit, i.e. no halo points."""
-        return cls._local[dim]
+        return cls._domain_index(cls._local, dim, offset)
 
     @classmethod
-    def halo(cls, dim: Dimension) -> int:
-        return cls._halo[dim]
+    def halo(cls, dim: Dimension, offset=0) -> int:
+        return cls._domain_index(cls._halo, dim, offset)
 
     @classmethod
-    def nudging(cls, dim: Dimension) -> int:
+    def nudging(cls, dim: Dimension, offset=0) -> int:
         """Indicate the nudging zone."""
-        return cls._nudging[dim]
+        return cls._domain_index(cls._nudging, dim, offset)
 
     @classmethod
     def nudging_2nd_level(cls, dim: Dimension) -> int:
         """Indicate the nudging zone for 2nd level."""
-        return cls.nudging(dim) + 1
+        return cls.nudging(dim, 1)
 
     @classmethod
-    def interior(cls, dim: Dimension) -> int:
+    def interior(cls, dim: Dimension, offset=0) -> int:
         """Indicate interior i.e. unordered prognostic cells in ICON."""
-        return cls._interior[dim]
+        return cls._domain_index(cls._interior, dim, offset)
 
     @classmethod
     def end(cls, dim: Dimension) -> int:
