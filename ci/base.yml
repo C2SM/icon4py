@@ -82,7 +82,7 @@ build_image_aarch64:
     HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
     TEST_DATA_PATH: "/project/d121/icon4py/ci/testdata"
 .test_template_aarch64:
-  extends: [.f7t-baremetal-runner, .test_template]
+  extends: [.f7t-container-runner, .test_template]
   needs: [build_image_aarch64]
   variables:
     F7T_URL: 'https://firecrest-todi.v1.tds.cscs.ch'
