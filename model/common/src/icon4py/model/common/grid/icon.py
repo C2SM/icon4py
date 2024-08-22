@@ -163,110 +163,30 @@ class IconGrid(base.BaseGrid):
     def lvert_nest(self):
         return True if self.config.lvertnest else False
 
-    def get_start_index(self, dim: gtx.Dimension, marker: int) -> gtx.int32:
+    def start_index(self, domain: h_grid.Domain):
         """
         Use to specify lower end of domains of a field for field_operators.
 
         For a given dimension, returns the start index of the
         horizontal region in a field given by the marker.
         """
-        return self.start_indices[dim][marker]
+        if domain.local:
+            return 0
+        return self.start_indices[domain.dim][domain()]
 
-    def get_end_index(self, dim: gtx.Dimension, marker: int) -> gtx.int32:
+    def end_index(self, domain: h_grid.Domain):
         """
         Use to specify upper end of domains of a field for field_operators.
 
         For a given dimension, returns the end index of the
         horizontal region in a field given by the marker.
         """
+        if domain.local:
+            return self.size.get(domain.dim)
+        return self.end_indices[domain.dim][domain()]
+
+    def get_start_index(self, dim: gtx.Dimension, marker: int) -> gtx.int32:
+        return self.start_indices[dim][marker]
+
+    def get_end_index(self, dim: gtx.Dimension, marker: int) -> gtx.int32:
         return self.end_indices[dim][marker]
-
-
-
-    def local(self, dim:gtx.Dimension, marker: h_grid.IndexType)-> gtx.int32:
-        """Returns the domain bound for a local field of a given dimension: this essentially returns 0 or the local num_edge, num_cell, or num_vertex, depending on the IndexType.
-        
-        Args:
-            dim: The dimension of the array (one of CellDim, VertexDim, EdgeDim).
-            marker: The IndexType (on of START or END)
-        """
-        assert dim in (dims.CellDim, dims.VertexDim, dims.EdgeDim), f"Invalid dimension {dim}"
-        if marker == h_grid.IndexType.START:
-            return gtx.int32(0)
-        else:
-            return gtx.int32(self.size.get(dim))
-        
-        
-    def end(self, dim:gtx.Dimension)-> gtx.int32:
-        """Returns the domain bound for the end of the local fields: this essentially returns local num_edge, num_cell, or num_vertex.
-        
-        Args:
-            dim: The dimension of the array (one of CellDim, VertexDim, EdgeDim).
-            
-        """
-        assert dim in (dims.CellDim, dims.VertexDim, dims.EdgeDim), f"Invalid dimension {dim}"
-        return gtx.int32(self.size.get(dim))
-        
-    def halo(self, dim:gtx.Dimension, index_type:h_grid.IndexType, line_number: h_grid.HaloLine = h_grid.HaloLine.FIRST )-> gtx.int32:
-        """Returns the domain bound for the halo fields: this essentially returns 2 for the halo fields.
-        
-        Args:
-            dim: The dimension of the array (one of CellDim, VertexDim, EdgeDim).
-            
-        """
-        assert dim in (dims.CellDim, dims.VertexDim, dims.EdgeDim), f"Invalid dimension {dim}"
-        if index_type == h_grid.IndexType.START:
-            return self.start_indices[dim][h_grid.HorizontalMarkerIndex.halo(dim, line_number)]
-        else:
-            return self.end_indices[dim][h_grid.HorizontalMarkerIndex.halo(dim, line_number)]
-
-    def lateral_boundary(self, dim, index_type:h_grid.IndexType, line:h_grid.BoundaryLine = h_grid.BoundaryLine.FIRST)-> gtx.int32:
-        """Returns the domain bound for the lateral boundary fields
-        
-        Args:
-            dim: The dimension of the array (one of CellDim, VertexDim, EdgeDim).
-            index_type: The IndexType (on of START or END)
-            line: The BoundaryLine (on of FIRST, SECOND, THIRD, FOURTH)
-            
-        """
-        assert dim in (dims.CellDim, dims.VertexDim, dims.EdgeDim), f"Invalid dimension for lateral_boundary '{dim}'"
-        if line > h_grid.BoundaryLine.FOURTH and dim !=dims.EdgeDim:
-            raise ValueError(f"Invalid line number '{line}' and dimension '{dim}'")
-        if index_type == h_grid.IndexType.START:
-            return self.start_indices[dim][h_grid.HorizontalMarkerIndex.lateral_boundary(dim, line)]
-        else:
-            return self.end_indices[dim][h_grid.HorizontalMarkerIndex.lateral_boundary(dim, line)]
-        
-        
-    def nudging(self, dim, index_type:h_grid.IndexType, line:h_grid.NudgingLine = h_grid.NudgingLine.FIRST)-> gtx.int32:
-        """Returns the domain bound for the nudging fields.
-        The function is only defined on edges and cells as there are no nudging related constants defined in 'mo_impl_constants_grf.f90'
-        
-        
-        Args:
-            dim: The dimension of the array (one of CellDim, EdgeDim).
-            index_type: The IndexType (on of START or END)
-            
-        """
-        assert dim in (dims.CellDim, dims.EdgeDim), f"Invalid dimension for nudging '{dim}'"
-        if line > h_grid.NudgingLine.FIRST and dim !=dims.EdgeDim:
-            raise ValueError(f"Invalid line number '{line}' and dimension '{dim}'")
-        if index_type == h_grid.IndexType.START:
-            return self.start_indices[dim][h_grid.HorizontalMarkerIndex.nudging(dim, line)]
-        else:
-            return self.end_indices[dim][h_grid.HorizontalMarkerIndex.nudging(dim, line)]
-        
-        
-    def interior(self, dim:gtx.Dimension, index_type:h_grid.IndexType)->gtx.int32:
-        """Returns the domain bound for the interior fields
-    
-        Args:
-            dim: The dimension of the array (one of CellDim, VertexDim, EdgeDim).
-            index_type: The IndexType (on of START or END)
-            
-        """
-        assert dim in (dims.CellDim, dims.VertexDim, dims.EdgeDim), f"Invalid dimension for interior '{dim}'"
-        if index_type == h_grid.IndexType.START:
-            return self.start_indices[dim][h_grid.HorizontalMarkerIndex.interior(dim)]
-        else:
-            return self.end_indices[dim][h_grid.HorizontalMarkerIndex.interior(dim)]

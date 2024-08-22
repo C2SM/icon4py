@@ -25,10 +25,12 @@ from icon4py.model.common import constants
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
+
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.common.settings import xp
+
 
 """
 Diffusion module ported from ICON mo_nh_diffusion.f90.
@@ -379,8 +381,12 @@ class Diffusion:
         self._allocate_temporary_fields()
 
         def _get_start_index_for_w_diffusion() -> gtx.int32:
-            return self.grid.nudging(dims.CellDim, h_grid.IndexType.START) if self.grid.limited_area else self.grid.interior(dims.CellDim, h_grid.IndexType.START) 
-                
+            cell_domain = h_grid.domain(dims.CellDim)
+            return (
+                self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+                if self.grid.limited_area
+                else self.grid.start_index(cell_domain(h_grid.Marker.INTERIOR))
+            )
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
         self.bdy_diff: float = 0.015 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
@@ -536,22 +542,32 @@ class Diffusion:
 
         """
         klevels = self.grid.num_levels
-        cell_start_interior = self.grid.interior(dims.CellDim, h_grid.IndexType.START)
-        cell_start_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.START)
-        cell_end_local = self.grid.local(dims.CellDim, h_grid.IndexType.END)
-        cell_end_halo = self.grid.halo(dims.CellDim, h_grid.IndexType.END)
-        
-        edge_start_nudging_plus_one = self.grid.nudging(dims.EdgeDim, h_grid.IndexType.START, h_grid.NudgingLine.SECOND)
-        edge_start_nudging = self.grid.halo(dims.EdgeDim, h_grid.IndexType.START)
-        
-        edge_start_lb_plus4 = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START, h_grid.BoundaryLine.FIFTH)
-        edge_end_local = self.grid.local(dims.EdgeDim, h_grid.IndexType.END)
-        edge_end_local_minus2 = self.grid.halo(dims.EdgeDim, h_grid.IndexType.END, h_grid.HaloLine.SECOND)
-        edge_end_halo = self.grid.halo(dims.EdgeDim, h_grid.IndexType.END)
+        cell_domain = h_grid.domain(dims.CellDim)
+        cell_start_interior = self.grid.start_index(cell_domain(h_grid.Marker.INTERIOR))
 
-        vertex_start_lb_plus1 = self.grid.lateral_boundary(dims.VertexDim, h_grid.IndexType.START, h_grid.BoundaryLine.SECOND)
-        vertex_end_local = self.grid.local(dims.VertexDim, h_grid.IndexType.END)
-       
+        cell_start_nudging = self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+        cell_end_local = self.grid.end_index(cell_domain(h_grid.Marker.END))
+        cell_end_halo = self.grid.end_index(cell_domain(h_grid.Marker.HALO))
+
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        edge_start_second_nudging_level = self.grid.start_index(
+            edge_domain(h_grid.Marker.NUDGING_LEVEL_2)
+        )
+        edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING))
+
+        edge_start_lateral_boundary_level_5 = self.grid.start_index(
+            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        edge_end_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+        edge_end_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Marker.HALO_LEVEL_2))
+        edge_end_halo = self.grid.end_index(edge_domain(h_grid.Marker.HALO))
+
+        vertex_domain = h_grid.domain(dims.VertexDim)
+        vertex_start_lateral_boundary_level_2 = self.grid.start_index(
+            vertex_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)
+        )
+        vertex_end_local = self.grid.end_index(vertex_domain(h_grid.Marker.LOCAL))
+
         # dtime dependent: enh_smag_factor,
         cached.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})
 
@@ -562,7 +578,7 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
+            horizontal_start=vertex_start_lateral_boundary_level_2,
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
@@ -593,8 +609,8 @@ class Diffusion:
             kh_smag_ec=self.kh_smag_ec,
             z_nabla2_e=self.z_nabla2_e,
             smag_offset=smag_offset,
-            horizontal_start=edge_start_lb_plus4,
-            horizontal_end=edge_end_local_minus2,
+            horizontal_start=edge_start_lateral_boundary_level_5,
+            horizontal_end=edge_end_halo_level_2,
             vertical_start=0,
             vertical_end=klevels,
             offset_provider=self.grid.offset_providers,
@@ -640,7 +656,7 @@ class Diffusion:
             ptr_coeff_2=self.interpolation_state.rbf_coeff_2,
             p_u_out=self.u_vert,
             p_v_out=self.v_vert,
-            horizontal_start=vertex_start_lb_plus1,
+            horizontal_start=vertex_start_lateral_boundary_level_2,
             horizontal_end=vertex_end_local,
             vertical_start=0,
             vertical_end=klevels,
@@ -670,9 +686,9 @@ class Diffusion:
             edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_nudging_plus_one),
+            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_second_nudging_level),
             limited_area=self.grid.limited_area,
-            horizontal_start=edge_start_lb_plus4,
+            horizontal_start=edge_start_lateral_boundary_level_5,
             horizontal_end=edge_end_local,
             vertical_start=0,
             vertical_end=klevels,

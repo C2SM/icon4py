@@ -5,15 +5,16 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+import dataclasses
 import enum
+import functools
 import math
-from dataclasses import dataclass
-from functools import cached_property
-from typing import ClassVar, Final
+from abc import abstractmethod
+from typing import ClassVar, Final, Protocol
 
-from gt4py.next import Dimension, Field
+import gt4py.next as gtx
 
-from icon4py.model.common import constants, dimension, dimension as dims, field_type_aliases as fa
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 
 
 NUM_GHOST_ROWS: Final[int] = 2
@@ -85,45 +86,45 @@ class HorizontalMarkerIndex:
     """
 
     _lateral_boundary: ClassVar = {
-        dimension.CellDim: _LATERAL_BOUNDARY_CELLS,
-        dimension.EdgeDim: _LATERAL_BOUNDARY_EDGES,
-        dimension.VertexDim: _LATERAL_BOUNDARY_VERTICES,
+        dims.CellDim: _LATERAL_BOUNDARY_CELLS,
+        dims.EdgeDim: _LATERAL_BOUNDARY_EDGES,
+        dims.VertexDim: _LATERAL_BOUNDARY_VERTICES,
     }
     _local: ClassVar = {
-        dimension.CellDim: _LOCAL_CELLS,
-        dimension.EdgeDim: _LOCAL_EDGES,
-        dimension.VertexDim: _LOCAL_VERTICES,
+        dims.CellDim: _LOCAL_CELLS,
+        dims.EdgeDim: _LOCAL_EDGES,
+        dims.VertexDim: _LOCAL_VERTICES,
     }
     _halo: ClassVar = {
-        dimension.CellDim: _HALO_CELLS,
-        dimension.EdgeDim: _HALO_EDGES,
-        dimension.VertexDim: _HALO_VERTICES,
+        dims.CellDim: _HALO_CELLS,
+        dims.EdgeDim: _HALO_EDGES,
+        dims.VertexDim: _HALO_VERTICES,
     }
     _interior: ClassVar = {
-        dimension.CellDim: _INTERIOR_CELLS,
-        dimension.EdgeDim: _INTERIOR_EDGES,
-        dimension.VertexDim: _INTERIOR_VERTICES,
+        dims.CellDim: _INTERIOR_CELLS,
+        dims.EdgeDim: _INTERIOR_EDGES,
+        dims.VertexDim: _INTERIOR_VERTICES,
     }
     _nudging: ClassVar = {
-        dimension.CellDim: _NUDGING_CELLS,
-        dimension.EdgeDim: _NUDGING_EDGES,
+        dims.CellDim: _NUDGING_CELLS,
+        dims.EdgeDim: _NUDGING_EDGES,
         # TODO [magdalena] there is no nudging for vertices?
-        dimension.VertexDim: _NUDGING_VERTICES,
+        dims.VertexDim: _NUDGING_VERTICES,
     }
     _end: ClassVar = {
-        dimension.CellDim: _END_CELLS,
-        dimension.EdgeDim: _END_EDGES,
-        dimension.VertexDim: _END_VERTICES,
+        dims.CellDim: _END_CELLS,
+        dims.EdgeDim: _END_EDGES,
+        dims.VertexDim: _END_VERTICES,
     }
 
     _bounds: ClassVar = {
-        dimension.CellDim: (0, _CELL_GRF - 1),
-        dimension.EdgeDim: (0, _EDGE_GRF - 1),
-        dimension.VertexDim: (0, _VERTEX_GRF - 1),
+        dims.CellDim: (0, _CELL_GRF - 1),
+        dims.EdgeDim: (0, _EDGE_GRF - 1),
+        dims.VertexDim: (0, _VERTEX_GRF - 1),
     }
 
     @classmethod
-    def lateral_boundary(cls, dim: Dimension, offset=0) -> int:
+    def lateral_boundary(cls, dim: gtx.Dimension, offset=0) -> int:
         """Indicate lateral boundary.
 
         These points correspond to the sorted points in ICON, the marker can be incremented in order
@@ -143,31 +144,31 @@ class HorizontalMarkerIndex:
         return index
 
     @classmethod
-    def local(cls, dim: Dimension, offset=0) -> int:
+    def local(cls, dim: gtx.Dimension, offset=0) -> int:
         """Indicate points that are owned by the processing unit, i.e. no halo points."""
         return cls._domain_index(cls._local, dim, offset)
 
     @classmethod
-    def halo(cls, dim: Dimension, offset=0) -> int:
+    def halo(cls, dim: gtx.Dimension, offset=0) -> int:
         return cls._domain_index(cls._halo, dim, offset)
 
     @classmethod
-    def nudging(cls, dim: Dimension, offset=0) -> int:
+    def nudging(cls, dim: gtx.Dimension, offset=0) -> int:
         """Indicate the nudging zone."""
         return cls._domain_index(cls._nudging, dim, offset)
 
     @classmethod
-    def nudging_2nd_level(cls, dim: Dimension) -> int:
+    def nudging_2nd_level(cls, dim: gtx.Dimension) -> int:
         """Indicate the nudging zone for 2nd level."""
         return cls.nudging(dim, 1)
 
     @classmethod
-    def interior(cls, dim: Dimension, offset=0) -> int:
+    def interior(cls, dim: gtx.Dimension, offset=0) -> int:
         """Indicate interior i.e. unordered prognostic cells in ICON."""
         return cls._domain_index(cls._interior, dim, offset)
 
     @classmethod
-    def end(cls, dim: Dimension) -> int:
+    def end(cls, dim: gtx.Dimension) -> int:
         return cls._end[dim]
 
 
@@ -179,11 +180,14 @@ class HaloLine(LineNumber):
     FIRST = 0
     SECOND = -1
 
+
 class NudgingLine(LineNumber):
     FIRST = 0
     SECOND = 1
 
-class BoundaryLine(LineNumber):
+
+class Level(LineNumber):
+    HALO = -1
     FIRST = 0
     SECOND = 1
     THIRD = 2
@@ -197,7 +201,158 @@ class IndexType(enum.IntEnum):
     START = 0
     END = 1
 
-@dataclass(frozen=True)
+
+class Marker(str, enum.Enum):
+    """Used to encode the different horizontal domain zones used in ICON.
+    The values vaguely corrspond to the constants used in ICON to pass as rl_start or rl_end to the get_indices_[e_c,v] functions.
+
+    The translation table is as follows:
+
+
+
+    """
+
+    END = "end"
+    INTERIOR = "interior"
+    HALO = "halo_level_1"
+    HALO_LEVEL_2 = "halo_level_2"
+    LOCAL = "local"
+    LATERAL_BOUNDARY = "lb_level_1"
+    LATERAL_BOUNDARY_LEVEL_2 = "lb_level_2"
+    LATERAL_BOUNDARY_LEVEL_3 = "lb_level_3"
+    LATERAL_BOUNDARY_LEVEL_4 = "lb_level_4"
+    LATERAL_BOUNDARY_LEVEL_5 = "lb_level_5"
+    LATERAL_BOUNDARY_LEVEL_6 = "lb_level_6"
+    LATERAL_BOUNDARY_LEVEL_7 = "lb_level_7"
+    NUDGING = "nudging_level_1"
+    NUDGING_LEVEL_2 = "nudging_level_2"
+
+
+def map_to_index(dim: gtx.Dimension, marker: Marker) -> int:
+    if marker == Marker.END:
+        return HorizontalMarkerIndex.end(dim)
+    elif marker == Marker.INTERIOR:
+        return HorizontalMarkerIndex.interior(dim)
+    elif marker == Marker.HALO:
+        return HorizontalMarkerIndex.halo(dim, Level.FIRST)
+    elif marker == Marker.HALO_LEVEL_2:
+        return HorizontalMarkerIndex.halo(dim, Level.HALO)
+    elif marker == Marker.LOCAL:
+        return HorizontalMarkerIndex.local(dim)
+    elif marker == Marker.LATERAL_BOUNDARY:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.FIRST)
+    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_2:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.SECOND)
+    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_3:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.THIRD)
+    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_4:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.FOURTH)
+    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_5:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.FIFTH)
+    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_6:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.SIXTH)
+    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_7:
+        return HorizontalMarkerIndex.lateral_boundary(dim, Level.SEVENTH)
+    elif marker == Marker.NUDGING:
+        return HorizontalMarkerIndex.nudging(dim, Level.FIRST)
+    elif marker == Marker.NUDGING_LEVEL_2:
+        return HorizontalMarkerIndex.nudging(dim, Level.SECOND)
+    else:
+        raise ValueError(f"Unknown marker {marker}")
+
+
+class Domain(Protocol):
+    _dim: gtx.Dimension
+    _marker: Marker
+    _index: int
+
+    @abstractmethod
+    def _valid(self, marker: Marker) -> bool:
+        ...
+
+    def marker(self, marker: Marker):
+        assert self._valid(marker), f" Domain `{marker}` not a valid for use with '{self.dim}'"
+        self._marker = marker
+        self._index = map_to_index(self.dim, marker)
+        return self
+
+    @property
+    def dim(self) -> gtx.Dimension:
+        return self._dim
+
+    @functools.cached_property
+    def local(self) -> bool:
+        return self._marker == Marker.LOCAL
+
+    def __call__(self) -> int:
+        return self._index
+
+
+def domain(dim: gtx.Dimension):
+    def _domain(marker: Marker):
+        return _domain_factory(dim, marker)
+
+    assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only defined for horizontal dimensions"
+    if dim == dims.CellDim:
+        return _domain
+    elif dim == dims.EdgeDim:
+        return _domain
+    else:
+        return _domain
+
+
+def _domain_factory(dim: gtx.Dimension, marker: Marker):
+    if dim == dims.CellDim:
+        return CellDomain().marker(marker)
+    elif dim == dims.EdgeDim:
+        return EdgeDomain().marker(marker)
+    else:
+        return VertexDomain().marker(marker)
+
+
+class EdgeDomain(Domain):
+    _dim = dims.EdgeDim
+
+    def _valid(self, marker: Marker):
+        return True
+
+
+class VertexDomain(Domain):
+    _dim = dims.VertexDim
+
+    def _valid(self, marker: Marker):
+        return marker in (
+            Marker.END,
+            Marker.INTERIOR,
+            Marker.HALO,
+            Marker.HALO_LEVEL_2,
+            Marker.LOCAL,
+            Marker.LATERAL_BOUNDARY,
+            Marker.LATERAL_BOUNDARY_LEVEL_2,
+            Marker.LATERAL_BOUNDARY_LEVEL_3,
+            Marker.LATERAL_BOUNDARY_LEVEL_4,
+        )
+
+
+class CellDomain(Domain):
+    _dim = dims.CellDim
+
+    def _valid(self, marker: Marker):
+        return marker in (
+            Marker.END,
+            Marker.INTERIOR,
+            Marker.HALO,
+            Marker.HALO_LEVEL_2,
+            Marker.LOCAL,
+            Marker.LATERAL_BOUNDARY,
+            Marker.LATERAL_BOUNDARY_LEVEL_2,
+            Marker.LATERAL_BOUNDARY_LEVEL_3,
+            Marker.LATERAL_BOUNDARY_LEVEL_4,
+            Marker.NUDGING,
+        )
+
+
+@dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int
     num_edges: int
@@ -296,7 +451,9 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
         """
 
-        self.primal_normal_vert: tuple[Field[[dims.ECVDim], float], Field[[dims.ECVDim], float]] = (
+        self.primal_normal_vert: tuple[
+            gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
+        ] = (
             primal_normal_vert_x,
             primal_normal_vert_y,
         )
@@ -308,7 +465,9 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.dual_normal_vert: tuple[Field[[dims.ECVDim], float], Field[[dims.ECVDim], float]] = (
+        self.dual_normal_vert: tuple[
+            gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
+        ] = (
             dual_normal_vert_x,
             dual_normal_vert_y,
         )
@@ -320,7 +479,9 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.primal_normal_cell: tuple[Field[[dims.ECDim], float], Field[[dims.ECDim], float]] = (
+        self.primal_normal_cell: tuple[
+            gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
+        ] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
         )
@@ -332,7 +493,9 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.dual_normal_cell: tuple[Field[[dims.ECDim], float], Field[[dims.ECDim], float]] = (
+        self.dual_normal_cell: tuple[
+            gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
+        ] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
         )
@@ -368,7 +531,9 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%center
         """
 
-        self.primal_normal: tuple[Field[[dims.ECDim], float], Field[[dims.ECDim], float]] = (
+        self.primal_normal: tuple[
+            gtx.Field[[dims.ECDim], float], gtx.Field[[dims.ECDim], float]
+        ] = (
             primal_normal_x,
             primal_normal_y,
         )
@@ -379,7 +544,7 @@ class EdgeParams:
         """
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class CellParams:
     #: Latitude at the cell center. The cell center is defined to be the circumcenter of a triangle.
     cell_center_lat: fa.CellField[float] = None
@@ -416,11 +581,11 @@ class CellParams:
             length_rescale_factor=length_rescale_factor,
         )
 
-    @cached_property
+    @functools.cached_property
     def characteristic_length(self):
         return math.sqrt(self.mean_cell_area)
 
-    @cached_property
+    @functools.cached_property
     def mean_cell_area(self):
         return self.mean_cell_area
 
@@ -447,7 +612,7 @@ class RefinCtrlLevel:
     }
 
     @classmethod
-    def boundary_nudging_start(cls, dim: Dimension) -> int:
+    def boundary_nudging_start(cls, dim: gtx.Dimension) -> int:
         """Start refin_ctrl levels for boundary nudging (as seen from the child domain)."""
         try:
             return cls._boundary_nudging_start[dim]

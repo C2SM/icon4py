@@ -173,22 +173,15 @@ def test_nonhydro_predictor_step(
         nnow=nnow,
         nnew=nnew,
     )
+    cell_domain = h_grid.domain(dims.CellDim)
+    edge_domain = h_grid.domain(dims.EdgeDim)
 
-    cell_start_lb_plus2 = icon_grid.get_start_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
-    )
-    cell_start_nudging = icon_grid.get_start_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-    )
-    edge_start_lb_plus4 = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
-    )
-    edge_start_lb_plus6 = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
-    )
-    edge_start_nuding_plus1 = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
-    )
+    cell_start_lb_plus2 = icon_grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_3))
+    cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+
+    edge_start_lb_plus4 = icon_grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5))
+    edge_start_lb_plus6 = icon_grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7))
+    edge_start_nuding_plus1 = icon_grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
 
     # stencils 2, 3
     assert helpers.dallclose(

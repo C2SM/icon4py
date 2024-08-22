@@ -89,19 +89,26 @@ def test_parallel_diffusion(
 
     diffusion = Diffusion(exchange)
     dim = dims.CellDim
-    print(f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} ")
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} ")
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} "
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} "
+    )
     dim = dims.EdgeDim
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} ")
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} "
+    )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} ")
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} "
+    )
     dim = dims.VertexDim
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} ")
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- start_indices {dim} {icon_grid.start_indices[dim]} "
+    )
     print(
-        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} ")
+        f"rank={processor_props.rank}/{processor_props.comm_size}: GRID -- end_indices {dim} {icon_grid.end_indices[dim]} "
+    )
 
     diffusion.init(
         grid=icon_grid,

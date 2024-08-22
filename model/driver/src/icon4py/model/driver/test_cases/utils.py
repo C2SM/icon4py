@@ -121,9 +121,7 @@ def zonalwind_2_normalwind_numpy(
 
     mask = xp.ones((grid.num_edges, grid.num_levels), dtype=bool)
     mask[
-        0 : grid.get_end_index(
-            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1
-        ),
+        0 : grid.end_index(h_grid.domain(dims.EdgeDim)(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)),
         :,
     ] = False
     edge_lat = xp.repeat(xp.expand_dims(edge_lat, axis=-1), eta_v_e.shape[1], axis=1)

@@ -578,11 +578,13 @@ class SolveNonhydro:
         log.info(
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
-        start_cell_lb = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START)
-        end_cell_end = self.grid.end(dims.CellDim)
-        start_edge_lb = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START)
-        end_edge_local = self.grid.local(dims.EdgeDim, h_grid.IndexType.END)
-        
+        cell_domain = h_grid.domain(dims.CellDim)
+        start_cell_lb = self.grid.end_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Marker.END))
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
             nhsolve_prog.init_test_fields(
@@ -626,17 +628,15 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        start_cell_lb = self.grid.lateral_boundary(
-            dims.CellDim, h_grid.IndexType.START)
-        
-        end_cell_nudging_minus1 = self.grid.lateral_boundary(
-            dims.CellDim, h_grid.IndexType.END, line = h_grid.BoundaryLine.FOURTH)
-        
-        start_cell_halo = self.grid.halo(
-            dims.CellDim, h_grid.IndexType.START)
-        
-        end_cell_end = self.grid.end(
-            dims.CellDim)
+        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
+
+        end_cell_nudging_minus1 = self.grid.end_index(
+            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_4)
+        )
+        start_cell_halo = self.grid.start_index(cell_domain(h_grid.Marker.HALO))
+
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Marker.END))
+
         if self.grid.limited_area:
             compute_theta_and_exner(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
@@ -716,50 +716,54 @@ class SolveNonhydro:
             )
 
         p_dthalf = 0.5 * dtime
+        cell_domain = h_grid.domain(dims.CellDim)
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        vertex_domain = h_grid.domain(dims.VertexDim)
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Marker.END))
 
-        end_cell_end = self.grid.end(dims.CellDim)
-        
-        start_cell_local_minus2 = self.grid.halo(
-            dims.CellDim, h_grid.IndexType.START, h_grid.HaloLine.SECOND       )
-        end_cell_local_minus2 = self.grid.halo(
-            dims.CellDim, h_grid.IndexType.END, h_grid.HaloLine.SECOND       )
+        second_halo_cell = cell_domain(h_grid.Marker.HALO_LEVEL_2)
+        start_cell_local_minus2 = self.grid.start_index(second_halo_cell)
+        end_cell_local_minus2 = self.grid.end_index(second_halo_cell)
 
-        start_vertex_lb_plus1 = self.grid.lateral_boundary(dims.VertexDim, h_grid.IndexType.START, h_grid.BoundaryLine.SECOND)
-        end_vertex_local_minus1 = self.grid.halo(
-            dims.VertexDim, h_grid.IndexType.END)
-        
-
-        start_cell_lb = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START)
-        end_cell_nudging_minus1 = self.grid.lateral_boundary(
-            dims.CellDim,
-            h_grid.IndexType.END, line = h_grid.BoundaryLine.FOURTH)
-        
-
-        start_edge_lb_plus6 = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START, h_grid.BoundaryLine.SEVENTH)
-        end_edge_local_minus1 = self.grid.halo(
-            dims.EdgeDim, h_grid.IndexType.END)
-        end_edge_local = self.grid.local(dims.EdgeDim, h_grid.IndexType.END)
-        
-        start_edge_nudging_plus1 = self.grid.nudging(dims.EdgeDim, h_grid.IndexType.START, h_grid.NudgingLine.SECOND)
-        end_edge_end = self.grid.end(dims.EdgeDim)
-        
-        start_edge_lb = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START)
-        end_edge_nudging = self.grid.nudging(
-            dims.EdgeDim, h_grid.IndexType.END)
-        
-        start_edge_lb_plus4 = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START, h_grid.BoundaryLine.FIFTH)
-        start_edge_local_minus2 = self.grid.halo(dims.EdgeDim, h_grid.IndexType.START, h_grid.HaloLine.SECOND)
-        
-        end_edge_local_minus2 = self.grid.halo(dims.EdgeDim, h_grid.IndexType.END, h_grid.HaloLine.SECOND)
-
-        start_cell_lb_plus2 = self.grid.lateral_boundary(
-            dims.CellDim, h_grid.IndexType.START, h_grid.BoundaryLine.THIRD
+        start_vertex_lb_plus1 = self.grid.start_index(
+            vertex_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)
         )
-        end_cell_halo = self.grid.halo(dims.CellDim, h_grid.IndexType.END)
-        start_cell_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.START)
-          
-        end_cell_local = self.grid.local(dims.CellDim, h_grid.IndexType.END)
-        
+        end_vertex_local_minus1 = self.grid.end_index(vertex_domain(h_grid.Marker.HALO))
+
+        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        end_cell_nudging_minus1 = self.grid.end_index(
+            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_4)
+        )
+
+        start_edge_lb_plus6 = self.grid.start_index(
+            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
+        )
+        end_edge_local_minus1 = self.grid.end_index(edge_domain(h_grid.Marker.HALO))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+
+        start_edge_nudging_plus1 = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
+        end_edge_end = self.grid.end_index(edge_domain(h_grid.Marker.END))
+
+        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY))
+
+        end_edge_nudging = self.grid.end_index(edge_domain(h_grid.Marker.NUDGING))
+
+        start_edge_lb_plus4 = self.grid.start_index(
+            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        edge_second_halo = edge_domain(h_grid.Marker.HALO_LEVEL_2)
+        start_edge_local_minus2 = self.grid.start_index(edge_second_halo)
+
+        end_edge_local_minus2 = self.grid.end_index(edge_second_halo)
+
+        start_cell_lb_plus2 = self.grid.start_index(
+            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_3)
+        )
+        end_cell_halo = self.grid.end_index(cell_domain(h_grid.Marker.HALO))
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+
+        end_cell_local = self.grid.end_index(cell_domain(h_grid.Marker.LOCAL))
+
         #  Precompute Rayleigh damping factor
         solve_nh_utils.compute_z_raylfac(
             rayleigh_w=self.metric_state_nonhydro.rayleigh_w,
@@ -1448,30 +1452,33 @@ class SolveNonhydro:
             offset_provider={},
         )
 
-        start_cell_lb_plus2 = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START, h_grid.BoundaryLine.THIRD)
-        
-        start_edge_lb_plus6 = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START, h_grid.BoundaryLine.SEVENTH)
-        
-        start_edge_nudging_plus1 = self.grid.nudging(dims.EdgeDim, h_grid.IndexType.START, h_grid.NudgingLine.SECOND)
-        end_edge_local = self.grid.local(dims.EdgeDim, h_grid.IndexType.END)
-        
-        start_edge_lb_plus4 = self.grid.lateral_boundary(
-            dims.EdgeDim,h_grid.IndexType.START, h_grid.BoundaryLine.FIFTH
-        )
-        end_edge_second_halo_line = self.grid.halo(
-            dims.EdgeDim, h_grid.IndexType.END, h_grid.HaloLine.SECOND
+        cell_domain = h_grid.domain(dims.CellDim)
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        start_cell_lb_plus2 = self.grid.start_index(
+            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_3)
         )
 
-        start_edge_lb = self.grid.lateral_boundary(dims.EdgeDim, h_grid.IndexType.START)
-        end_edge_end = self.grid.end(dims.EdgeDim)
-        
-        start_cell_lb = self.grid.lateral_boundary(dims.CellDim, h_grid.IndexType.START)
-        end_cell_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.END)
-        
-        start_cell_nudging = self.grid.nudging(dims.CellDim, h_grid.IndexType.START)
-        end_cell_local = self.grid.local(
-            dims.CellDim, h_grid.IndexType.END
+        start_edge_lb_plus6 = self.grid.start_index(
+            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
         )
+
+        start_edge_nudging_plus1 = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+
+        start_edge_lb_plus4 = self.grid.start_index(
+            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+        )
+        end_edge_second_halo_line = self.grid.end_index(edge_domain(h_grid.Marker.HALO_LEVEL_2))
+
+        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        end_edge_end = self.grid.end_index(edge_domain(h_grid.Marker.END))
+
+        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        cell_nudging = cell_domain(h_grid.Marker.NUDGING)
+        end_cell_nudging = self.grid.end_index(cell_nudging)
+
+        start_cell_nudging = self.grid.start_index(cell_nudging)
+        end_cell_local = self.grid.end_index(cell_domain(h_grid.Marker.LOCAL))
 
         lvn_only = False
         log.debug(f"corrector run velocity advection")
@@ -1487,7 +1494,6 @@ class SolveNonhydro:
         )
 
         nvar = nnew
-
 
         solve_nh_utils.compute_z_raylfac(
             self.metric_state_nonhydro.rayleigh_w,
@@ -1659,7 +1665,7 @@ class SolveNonhydro:
             mass_fl_e=diagnostic_state_nh.mass_fl_e,
             z_theta_v_fl_e=self.z_theta_v_fl_e,
             horizontal_start=start_edge_lb_plus4,
-            horizontal_end=end_edge_second_halo_line, 
+            horizontal_end=end_edge_second_halo_line,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider={},
