@@ -16,6 +16,9 @@
 import sys
 from typing import Final
 import dataclasses
+
+from gt4py.next.embedded.context import offset_provider
+from gt4py.next.program_processors.runners.double_roundtrip import backend
 from gt4py.next.program_processors.runners.gtfn import (
     run_gtfn_cached,
     run_gtfn_gpu_cached,
@@ -55,6 +58,60 @@ test_multiple_return(in_field, out=(out_field1, out_field2), offset_provider={})
 
 print(out_field1.ndarray)
 print(out_field2.ndarray)
+
+
+class MyConstants(FrozenNamespace):
+    a: wpfloat = 2.0
+
+
+my_constants: Final = MyConstants()
+
+class MyAnotherConstants(FrozenNamespace):
+    a: wpfloat = 1.0 + my_constants.a
+
+my_anotherconstants: Final = MyAnotherConstants()
+
+my_a: Final[wpfloat] = wpfloat("1.0")
+
+@field_operator
+def test_constant(
+    input_arg: gtx.Field[[CellDim, KDim], wpfloat]
+):
+    return input_arg + my_constants.a
+
+@program(backend=run_gtfn_cached)
+def program_test_constant(
+    input_arg: gtx.Field[[CellDim, KDim], wpfloat],
+    output_arg: gtx.Field[[CellDim, KDim], wpfloat],
+    cstart: gtx.int32,
+    cend: gtx.int32,
+    kstart: gtx.int32,
+    kend: gtx.int32,
+):
+    test_constant(
+        input_arg,
+        out=output_arg,
+        domain={
+            CellDim: (cstart, cend),
+            KDim: (kstart, kend),
+        }
+    )
+
+input_field = gtx.as_field((CellDim,KDim), np.full((cell_size,k_size),fill_value=0.0, dtype=float))
+output_field1 = gtx.as_field((CellDim,KDim), np.zeros((cell_size,k_size), dtype=float))
+output_field2 = gtx.as_field((CellDim,KDim), np.zeros((cell_size,k_size), dtype=float))
+
+test_constant.with_backend(run_gtfn_cached)(input_field, out=output_field1, offset_provider={})
+#program_test_constant(input_field,output_field, gtx.int32(0), gtx.int32(cell_size), gtx.int32(0), gtx.int32(k_size),offset_provider={})
+print()
+print(output_field1.ndarray)
+
+my_constants: Final = MyAnotherConstants()
+
+test_constant.with_backend(run_gtfn_cached)(input_field, out=output_field2, offset_provider={})
+print()
+print(output_field2.ndarray)
+
 
 '''
 @scan_operator(axis=KDim, forward=True, init=(0.0, 0.0))
@@ -137,7 +194,7 @@ print(out_field2.ndarray)
 
 
 
-
+'''
 graupel_config = graupel.SingleMomentSixClassIconGraupelConfig(
         do_saturation_adjustment=False,
         liquid_autoconversion_option=gtx.int32(1),
@@ -283,3 +340,4 @@ timer.summary(True)
 
 for cell in range(cell_size):
     print(cell, temperature_.ndarray[cell,:])
+'''

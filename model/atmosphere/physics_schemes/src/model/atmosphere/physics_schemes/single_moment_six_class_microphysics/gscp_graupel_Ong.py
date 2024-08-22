@@ -14,729 +14,360 @@
 
 """
 import sys
-import math
-from typing import Final, Optional
-import numpy as np
-import dataclasses
+from typing import Final
+from numpy import sqrt as numpy_sqrt
+from numpy import log as numpy_log
+from numpy import exp as numpy_exp
 
-import gt4py.next as gtx
 from gt4py.eve.utils import FrozenNamespace
 from gt4py.next.ffront.decorator import program, field_operator, scan_operator
 from gt4py.next.ffront.fbuiltins import (
+    Field,
     exp,
     tanh,
+    int32,
+    float64,
     log,
     maximum,
     minimum,
-    sqrt,
-    broadcast,
-    where,
+    sqrt
 )
-from icon4py.model.common.math.math_utilities import gamma_fct
+#from gt4py.next.iterator.embedded import np_as_located_field
+#from gt4py.next.program_processors.runners import roundtrip
+
 from icon4py.model.common.dimension import CellDim, KDim
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
-from icon4py.model.common.grid import icon as icon_grid
-from icon4py.model.common.grid import vertical as v_grid
-from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
-from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4py.model.common.type_alias import wpfloat
-from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment as satad
-from icon4py.model.common.settings import backend
+from icon4py.model.common.math.math_utilities import gamma_fct
+from icon4py.model.common.math.math_constants import math_const
+#from icon4py.atm_phy_schemes.mo_convect_tables import conv_table
+from icon4py.model.common.mo_physical_constants import phy_const
 
 
 sys.setrecursionlimit(350000)
 
 
-def _fxna(ztx: wpfloat) -> wpfloat:
-    # Return number of activate ice crystals from temperature
-    return 1.0e2 * np.exp(0.2 * (icon_graupel_params.tmelt - ztx))
+# This class contains all constants that are used in the transfer rate calculations
+class GraupelFunctionConstants(FrozenNamespace):
 
-def _fxna_cooper(ztx: wpfloat) -> wpfloat:
-    # Return number of activate ice crystals from temperature
-    # Method: Cooper (1986) used by Greg Thompson(2008)
-    return 5.0 * np.exp(0.304 * (icon_graupel_params.tmelt - ztx))
+   GrFuncConst_n0s1  = 13.5 * 5.65e5 # parameter in N0S(T)
+   GrFuncConst_n0s2  = -0.107        # parameter in N0S(T), Field et al
+   GrFuncConst_mma   = (5.065339, -0.062659, -3.032362, 0.029469, -0.000285, 0.312550,  0.000204,  0.003199, 0.000000, -0.015952)
+   GrFuncConst_mmb   = (0.476221, -0.015896,  0.165977, 0.007468, -0.000141, 0.060366,  0.000079,  0.000594, 0.000000, -0.003577)
 
-@dataclasses.dataclass(frozen=True)
-class SingleMomentSixClassIconGraupelConfig:
-    """
-    Contains necessary parameter to configure icon graupel microphysics scheme.
+   GrFuncConst_thet  = 248.15 # temperature for het. nuc. of cloud ice
 
-    Encapsulates namelist parameters.
-    Values should be read from configuration.
-    Default values are taken from the defaults in the corresponding ICON Fortran namelist files.
-    lpres_pri is removed because it is a duplicated parameter with do_ice_sedimentation.
-    ldiag_ttend, and ldiag_qtend are removed because default outputs in icon4py physics granules include tendencies.
-    """
-    #: execute saturation adjustment right after microphysics
-    do_saturation_adjustment: bool = True
-    #: liquid auto conversion mode. 1: Kessler (1969), 2: Seifert & Beheng (2006). Originally defined as iautocon in gscp_data.f90 in ICON.
-    liquid_autoconversion_option: gtx.int32 = gtx.int32(1)
-    #: Option for deriving snow size distribution interception parameter.
-    snow_intercept_option: gtx.int32 = gtx.int32(2)
-    #: Determine whether the microphysical processes are isochoric or isobaric. Originally defined as l_cv in ICON.
-    is_isochoric: bool = True
-    #: Do latent heat nudging. Originally defined as dass_lhn in ICON.
-    do_latent_heat_nudging = False
-    #: Whether a fixed latent heat capacities are used for water. Originally defined as ithermo_water in ICON (0 means True).
-    use_constant_water_heat_capacity = True
-    #: First parameter in RHS of eq. 5.163 for the sticking efficiency when ice_autocon_sticking_efficiency = 1. Default seems to be 0.075.
-    ice_stickeff_min: wpfloat = 0.01
-    #: Constant in v-qi ice terminal velocity-mixing ratio relationship, see eq. 5.169.
-    ice_v0: wpfloat = 1.25
-    #: Exponent of the density factor in ice terminal velocity equation to account for density (air thermodynamic state) change. Default seems to be 0.33.
-    ice_sedi_density_factor_exp: wpfloat = 0.3
-    #: Constant in v-D snow terminal velocity-Diameter relationship, see eqs. 5.57 (depricated after COSMO 3.0) and unnumbered eq. (v = 25 D^0.5) below eq. 5.159. default seems to be 20.0.
-    snow_v0: wpfloat = 20.0
-    #: mu exponential factor in gamma distribution of rain particles.
-    rain_mu: wpfloat = 0.0
-    #: Interception parameter in gamma distribution of rain particles.
-    rain_n0: wpfloat = 1.0
+   GrFuncConst_ccau  = 4.0e-4     # autoconversion coefficient (cloud water to rain)
+   GrFuncConst_cac   = 1.72       # (15/32)*(PI**0.5)*(ECR/RHOW)*V0R*AR**(1/8)
+   GrFuncConst_kphi1 = 6.00e+02   # constant in phi-function for autoconversion
+   GrFuncConst_kphi2 = 0.68e+00   # exponent in phi-function for autoconversion
+   GrFuncConst_kphi3 = 5.00e-05   # exponent in phi-function for accretion
+   GrFuncConst_kcau  = 9.44e+09   # kernel coeff for SB2001 autoconversion
+   GrFuncConst_kcac  = 5.25e+00   # kernel coeff for SB2001 accretion
+   GrFuncConst_cnue  = 2.00e+00   # gamma exponent for cloud distribution
+   GrFuncConst_xstar = 2.60e-10   # separating mass between cloud and rain
 
+   GrFuncConst_c1es    = 610.78                                               # = b1
+   GrFuncConst_c2es    = GrFuncConst_c1es*phy_const.rd/phy_const.rv           #
+   GrFuncConst_c3les   = 17.269                                               # = b2w
+   GrFuncConst_c3ies   = 21.875                                               # = b2i
+   GrFuncConst_c4les   = 35.86                                                # = b4w
+   GrFuncConst_c4ies   = 7.66                                                 # = b4i
+   GrFuncConst_c5les   = GrFuncConst_c3les*(phy_const.tmelt - GrFuncConst_c4les)      # = b234w
+   GrFuncConst_c5ies   = GrFuncConst_c3ies*(phy_const.tmelt - GrFuncConst_c4ies)      # = b234i
+   GrFuncConst_c5alvcp = GrFuncConst_c5les*phy_const.alv/phy_const.cpd            #
+   GrFuncConst_c5alscp = GrFuncConst_c5ies*phy_const.als/phy_const.cpd            #
+   GrFuncConst_alvdcp  = phy_const.alv/phy_const.cpd                          #
+   GrFuncConst_alsdcp  = phy_const.als/phy_const.cpd                          #
 
- # TODO (Chia Rui): move parameters below to common/constants? But they need to be declared under FrozenNameSpace to be used in the big graupel scan operator.
-class SingleMomentSixClassIconGraupelParams(FrozenNamespace):
-    """
-    Contains numerical, physical, and empirical constants for the ICON graupel scheme.
+   GrFuncConst_crim_g  = 4.43       # coefficient for graupel riming
+   GrFuncConst_csg     = 0.5        # coefficient for snow-graupel conversion by riming
+   GrFuncConst_cagg_g  = 2.46
+   GrFuncConst_ciau    = 1.0e-3     # autoconversion coefficient (cloud ice to snow)
+   GrFuncConst_msmin   = 3.0e-9     # initial mass of snow crystals
+   GrFuncConst_cicri   = 1.72       # (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)
+   GrFuncConst_crcri   = 1.24e-3    # (PI/24)*EIR*V0R*Gamma(6.5)*AR**(-5/8)
+   GrFuncConst_asmel   = 2.95e3     # DIFF*LH_v*RHO/LHEAT
+   GrFuncConst_tcrit   = 3339.5     # factor in calculation of critical temperature
 
-    These constants are not configurable from namelists in ICON.
-    If users want to tune the model for better results in specific cases, you may need to change the hard coded constants here.
-    All the equations can be found in A Description of the Nonhydrostatic Regional COSMO-Model Part II Physical Parameterizations.
-    """
-
-    # config: dataclasses.InitVar[SingleMomentSixClassIconGraupelConfig]
-    #: threshold temperature for heterogeneous freezing of raindrops
-    threshold_freeze_temperature: wpfloat = 271.15
-    #: coefficient for raindrop freezing, see eq. 5.126
-    coeff_rain_freeze_mode2: wpfloat = 1.68
-    #: FR: 1. coefficient for immersion raindrop freezing: alpha_if, see eq. 5.168
-    coeff_rain_freeze1_mode1: wpfloat = 9.95e-5
-    #: FR: 2. coefficient for immersion raindrop freezing: a_if, see eq. 5.168
-    coeff_rain_freeze2_mode1: wpfloat = 0.66
-    #: temperature for hom. freezing of cloud water
-    homogeneous_freeze_temperature: wpfloat = 236.15
-    #: threshold temperature for mixed-phase cloud freezing of cloud drops (Forbes 2012, Forbes & Ahlgrimm 2014), see eq. 5.166.
-    threshold_freeze_temperature_mixedphase: wpfloat = 250.15
-    #: threshold for lowest detectable mixing ratios
-    qmin: wpfloat = 1.0e-15
-    #: a small number for cloud existence criterion
-    eps: wpfloat = 1.0e-15
-    #: exponential factor in ice terminal velocity equation v = zvz0i*rhoqi^zbvi, see eq. 5.169
-    ice_exp_v: wpfloat = 0.16
-    #: reference air density
-    ref_air_density: wpfloat = 1.225e+0
-    #: in m/s; minimum terminal fall velocity of rain particles (applied only near the ground)
-    rain_v_sedi_min: wpfloat = 0.7
-    #: in m/s; minimum terminal fall velocity of snow particles (applied only near the ground)
-    snow_v_sedi_min: wpfloat = 0.1
-    #: in m/s; minimum terminal fall velocity of graupel particles (applied only near the ground)
-    graupel_v_sedi_min: wpfloat = 0.4
-    #: maximal number concentration of ice crystals, see eq. 5.165.
-    nimax_Thom: wpfloat = 250.0e+3
-    # TODO (Chia Rui): What are these two parameters for? Why they are not used but exist in ICON
-    # zams_ci= 0.069           # Formfactor in the mass-size relation of snow particles for cloud ice scheme
-    # zams_gr= 0.069           # Formfactor in the mass-size relation of snow particles for graupel scheme
-    #: Formfactor in the mass-diameter relation of snow particles, see eq. 5.159.
-    snow_m0: wpfloat = 0.069
-    #: A constant intercept parameter for inverse exponential size distribution of snow particles, see eq. 5.160.
-    snow_n0: wpfloat = 8.0e5
-    #: exponent of mixing ratio in the collection equation where cloud or ice particles are rimed by graupel (exp=(3+b)/(1+beta), v=a D^b, m=alpha D^beta), see eqs. 5.152 to 5.154.
-    graupel_exp_rim: wpfloat = 0.94878
-    #: exponent of mixing ratio in the graupel mean terminal velocity-mixing ratio relationship (exp=b/(1+beta)), see eq. 5.156.
-    graupel_exp_sed: wpfloat = 0.217
-    #: constant in the graupel mean terminal velocity-mixing ratio relationship, see eq. 5.156.
-    graupel_sed0: wpfloat = 12.24
-    #: initial crystal mass for cloud ice nucleation, see eq. 5.101
-    ice_initial_mass: wpfloat = 1.0e-12
-    #: maximum mass of cloud ice crystals to avoid too large ice crystals near melting point, see eq. 5.105
-    ice_max_mass: wpfloat = 1.0e-9
-    #: initial mass of snow crystals which is used in ice-ice autoconversion to snow particles, see eq. 5.108
-    snow_min_mass: wpfloat = 3.0e-9
-    #: Scaling factor [1/K] for temperature-dependent cloud ice sticking efficiency, see eq. 5.163
-    stick_eff_fac: wpfloat = 3.5e-3
-    #: Temperature at which cloud ice autoconversion starts, see eq. 5.163
-    tmin_iceautoconv: wpfloat = 188.15
-    #: Reference length for distance from cloud top (Forbes 2012), see eq. 5.166
-    dist_cldtop_ref: wpfloat = 500.0
-    #: lower bound on snow/ice deposition reduction, see eq. 5.166
-    reduce_dep_ref: wpfloat = 0.1
-    #: Howell factor in depositional growth equation, see eq. 5.71 and eqs. 5.103 & 5.104 (for ice? TODO (Chia Rui): check)
-    howell_factor: wpfloat = 2.270603
-    #: Collection efficiency for snow collecting cloud water, see eq. 5.113
-    snow_cloud_collection_eff: wpfloat = 0.9
-    #: Exponent in the terminal velocity for snow, see unnumbered eq. (v = 25 D^0.5) below eq. 5.159
-    snow_exp_v: wpfloat = 0.50
-    #: kinematic viscosity of air
-    eta: wpfloat = 1.75e-5
-    #: molecular diffusion coefficient for water vapour
-    diffusion_coeff_water_vapor: wpfloat = 2.22e-5
-    #: thermal conductivity of dry air
-    dry_air_latent_heat: wpfloat = 2.40e-2
-    #: Exponent in the mass-diameter relation of snow particles, see eq. 5.159
-    snow_exp_m: wpfloat = 2.000
-    #: Formfactor in the mass-diameter relation of cloud ice, see eq. 5.90
-    ice_m0: wpfloat = 130.0
-    #: density of liquid water
-    water_density: wpfloat = 1.000e+3
-    #: specific heat of water vapor J, at constant pressure (Landolt-Bornstein)
-    cp_v: wpfloat = 1850.0
-    #: specific heat of ice
-    ci: wpfloat = 2108.0
-
-    snow_n0s1: wpfloat = 13.5 * 5.65e5  # parameter in N0S(T)
-    snow_n0s2: wpfloat = -0.107  # parameter in N0S(T), Field et al
-    snow_mma: tuple[wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat] = (
-        5.065339, -0.062659, -3.032362, 0.029469, -0.000285, 0.312550, 0.000204, 0.003199, 0.000000, -0.015952
-    )
-    snow_mmb: tuple[wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat,wpfloat] = (
-        0.476221, -0.015896, 0.165977, 0.007468, -0.000141, 0.060366, 0.000079, 0.000594, 0.000000, -0.003577
-    )
-
-    #: temperature for het. nuc. of cloud ice
-    heterogeneous_freeze_temperature: wpfloat = 248.15
-    #: autoconversion coefficient (cloud water to rain)
-    kessler_cloud2rain_autoconversion_coeff_for_cloud: wpfloat = 4.0e-4
-    #: (15/32)*(PI**0.5)*(ECR/RHOW)*V0R*AR**(1/8) when Kessler (1969) is used for cloud-cloud autoconversion
-    kessler_cloud2rain_autoconversion_coeff_for_rain: wpfloat = 1.72
-    #: constant in phi-function for Seifert-Beheng (2001) autoconversion
-    kphi1: wpfloat = 6.00e+02
-    #: exponent in phi-function for Seifert-Beheng (2001) autoconversion
-    kphi2: wpfloat = 0.68e+00
-    #: exponent in phi-function for Seifert-Beheng (2001) accretion
-    kphi3: wpfloat = 5.00e-05
-    #: kernel coeff for Seifert-Beheng (2001) autoconversion
-    kcau: wpfloat = 9.44e+09
-    #: kernel coeff for Seifert-Beheng (2001) accretion
-    kcac: wpfloat = 5.25e+00
-    #: gamma exponent for cloud distribution in Seifert-Beheng (2001) autoconverssion
-    cnue: wpfloat = 2.00e+00
-    #: separating mass between cloud and rain in Seifert-Beheng (2001) autoconverssion
-    xstar: wpfloat = 2.60e-10
-
-    #: = b1
-    c1es: wpfloat = 610.78
-    #: = b2w
-    c3les: wpfloat = 17.269
-    #: = b2i
-    c3ies: wpfloat = 21.875
-    #: = b4w
-    c4les: wpfloat = 35.86
-    #: = b4i
-    c4ies: wpfloat = 7.66
-
-    #: coefficient for graupel riming
-    crim_g: wpfloat = 4.43
-    #: coefficient for snow-graupel conversion by riming
-    csg: wpfloat = 0.5
-    cagg_g: wpfloat = 2.46
-    #: autoconversion coefficient (cloud ice to snow)
-    ciau: wpfloat = 1.0e-3
-    #: initial mass of snow crystals
-    msmin: wpfloat = 3.0e-9
-    #: (15/32)*(PI**0.5)*(EIR/RHOW)*V0R*AR**(1/8)
-    cicri: wpfloat = 1.72
-    #: (PI/24)*EIR*V0R*Gamma(6.5)*AR**(-5/8)
-    crcri: wpfloat = 1.24e-3
-    #: DIFF*LH_v*RHO/LHEAT
-    asmel: wpfloat = 2.95e3
-    #: factor in calculation of critical temperature
-    tcrit: wpfloat = 3339.5
-
-    qc0: wpfloat = 0.0
-    qi0: wpfloat = 0.0
-
-    #: Latent heat of vaporisation for water [J/kg]
-    alv: wpfloat = 2.5008e6
-    #: Latent heat of sublimation for water [J/kg]
-    als: wpfloat = 2.8345e6
-    #: Melting temperature of ice/snow [K]
-    tmelt: wpfloat = 273.15
-    #: Triple point of water at 611hPa [K]
-    t3: wpfloat = 273.16
-
-    #: ice crystal number concentration at threshold temperature for mixed-phase cloud
-    nimix: wpfloat = 5.0 * np.exp(0.304 * (tmelt - threshold_freeze_temperature_mixedphase))
-
-    #: Gas constant of dry air [J/K/kg]
-    rd: wpfloat = 287.04
-    #: Specific heat of dry air at constant pressure [J/K/kg]
-    cpd: wpfloat = 1004.64
-    #: cp_d / cp_l - 1
-    rcpl: wpfloat = 3.1733
-
-    #: Gas constant of water vapor [J/K/kg] """
-    rv: wpfloat = 461.51
-    #: Specific heat of water vapour at constant pressure [J/K/kg]
-    cpv: wpfloat = 1869.46
-    #: Specific heat of water vapour at constant volume [J/K/kg]
-    cvv: wpfloat = cpv - rv
-
-    ccsdep: wpfloat = 0.26 * gamma_fct((snow_exp_v + 5.0) / 2.0) * np.sqrt(1.0 / eta)
-    _ccsvxp: wpfloat = -(snow_exp_v / (snow_exp_m + 1.0) + 1.0)
-    ccsvxp: wpfloat = _ccsvxp + 1.0
-    ccslam: wpfloat = snow_m0 * gamma_fct(snow_exp_m + 1.0)
-    ccslxp: wpfloat = 1.0 / (snow_exp_m + 1.0)
-    ccswxp: wpfloat = snow_exp_v * ccslxp
-    ccsaxp: wpfloat = -(snow_exp_v + 3.0)
-    ccsdxp: wpfloat = -(snow_exp_v + 1.0) / 2.0
-    ccshi1: wpfloat = als * als / (dry_air_latent_heat * rv)
-    ccdvtp: wpfloat = 2.22e-5 * tmelt ** (-1.94) * 101325.0
-    ccidep: wpfloat = 4.0 * ice_m0 ** (-1.0 / 3.0)
-    # log_10 = np.log(10.0)  # logarithm of 10
-    ccswxp_ln1o2: wpfloat = np.exp(ccswxp * np.log(0.5))
-
-    #: latent heat of fusion for water [J/kg]
-    alf: wpfloat = als - alv
-    #: Specific heat capacity of liquid water
-    clw: wpfloat = (rcpl + 1.0) * cpd
-
-    #: Specific heat of dry air at constant volume [J/K/kg]
-    cvd: wpfloat = cpd - rd
-    #: [K*kg/J]
-    rcpd: wpfloat = 1.0 / cpd
-    #: [K*kg/J]"""
-    rcvd: wpfloat = 1.0 / cvd
-
-    c2es: wpfloat = c1es * rd / rv
-    #: = b234w
-    c5les: wpfloat = c3les * (tmelt - c4les)
-    #: = b234i
-    c5ies: wpfloat = c3ies * (tmelt - c4ies)
-    c5alvcp: wpfloat = c5les * alv / cpd
-    c5alscp: wpfloat = c5ies * als / cpd
-    alvdcp: wpfloat = alv / cpd
-    alsdcp: wpfloat = als / cpd
-
-    pvsw0: wpfloat = c1es * np.exp(c3les * (tmelt - tmelt) / (tmelt - c4les))
+   GrFuncConst_qc0 = 0.0            # param_qc0
+   GrFuncConst_qi0 = 0.0            # param_qi0
 
 
-icon_graupel_params: Final = SingleMomentSixClassIconGraupelParams()
-
-@dataclasses.dataclass
-class MetricStateIconGraupel:
-    ddqz_z_full: gtx.Field[[CellDim, KDim], wpfloat]
+graupel_funcConst : Final = GraupelFunctionConstants()
 
 
-class SingleMomentSixClassIconGraupel:
+# Statement functions
+# -------------------
 
-    def __init__(
-        self,
-        graupel_config: SingleMomentSixClassIconGraupelConfig,
-        saturation_adjust_config: satad.SaturationAdjustmentConfig,
-        grid: Optional[icon_grid.IconGrid],
-        metric_state: Optional[MetricStateIconGraupel],
-        vertical_params: Optional[v_grid.VerticalGridParams]
-    ):
-        self.config = graupel_config
-        self._validate_and_initialize_configurable_parameters()
-        self.grid = grid
-        self.metric_state = metric_state
-        self.vertical_params = vertical_params
-        self.saturation_adjustment = satad.SaturationAdjustment(config=saturation_adjust_config, grid=grid)
-
-        self._initialize_local_fields()
-
-    def _validate_and_initialize_configurable_parameters(self):
-        if self.config.liquid_autoconversion_option != gtx.int32(0) and self.config.liquid_autoconversion_option != gtx.int32(1):
-            raise NotImplementedError("liquid_autoconversion_option can only be 0 or 1.")
-        if self.config.snow_intercept_option != gtx.int32(1) and self.config.snow_intercept_option != gtx.int32(2):
-            raise NotImplementedError("snow_intercept_option can only be 1 or 2.")
-        # TODO (Chia Rui): clean up the naming system of these parameters and categorize them in a tuple
-        ccsrim: wpfloat = 0.25 * math.pi * icon_graupel_params.snow_cloud_collection_eff * self.config.snow_v0 * gamma_fct(
-            icon_graupel_params.snow_exp_v + 3.0)
-        ccsagg: wpfloat = 0.25 * math.pi * self.config.snow_v0 * gamma_fct(icon_graupel_params.snow_exp_v + 3.0)
-        _ccsvxp = -(icon_graupel_params.snow_exp_v / (icon_graupel_params.snow_exp_m + 1.0) + 1.0)
-        ccsvel: wpfloat = icon_graupel_params.snow_m0 * self.config.snow_v0 * gamma_fct(
-            icon_graupel_params.snow_exp_m + icon_graupel_params.snow_exp_v + 1.0) * (
-                     icon_graupel_params.snow_m0 * gamma_fct(icon_graupel_params.snow_exp_m + 1.0)) ** _ccsvxp
-        _n0r: wpfloat = 8.0e6 * np.exp(3.2 * self.config.rain_mu) * 0.01 ** (
-            -self.config.rain_mu)  # empirical relation adapted from Ulbrich (1983)
-        _n0r: wpfloat = _n0r * self.config.rain_n0  # apply tuning factor to zn0r variable
-        _ar: wpfloat = math.pi * icon_graupel_params.water_density / 6.0 * _n0r * gamma_fct(
-            self.config.rain_mu + 4.0)  # pre-factor
-
-        rain_exp_v: wpfloat = wpfloat(0.5) / (self.config.rain_mu + wpfloat(4.0))
-        rain_v0: wpfloat = wpfloat(130.0) * gamma_fct(self.config.rain_mu + 4.5) / gamma_fct(self.config.rain_mu + 4.0) * _ar ** (
-            -rain_exp_v)
-
-        cevxp: wpfloat = (self.config.rain_mu + wpfloat(2.0)) / (self.config.rain_mu + 4.0)
-        cev: wpfloat = wpfloat(2.0) * math.pi * icon_graupel_params.diffusion_coeff_water_vapor / icon_graupel_params.howell_factor * _n0r * _ar ** (
-            -cevxp) * gamma_fct(self.config.rain_mu + 2.0)
-        bevxp: wpfloat = (wpfloat(2.0) * self.config.rain_mu + wpfloat(5.5)) / (2.0 * self.config.rain_mu + wpfloat(8.0)) - cevxp
-        bev: wpfloat = 0.26 * np.sqrt(icon_graupel_params.ref_air_density * 130.0 / icon_graupel_params.eta) * _ar ** (
-            -bevxp) * gamma_fct((2.0 * self.config.rain_mu + 5.5) / 2.0) / gamma_fct(self.config.rain_mu + 2.0)
-
-        # Precomputations for optimization
-        # vzxp_ln1o2 = np.exp(vzxp * np.log(0.5))
-        # bvi_ln1o2 = np.exp(icon_graupel_params.ice_exp_v * np.log(0.5))
-        # expsedg_ln1o2 = np.exp(icon_graupel_params.graupel_exp_sed * np.log(0.5))
-        rain_exp_v_ln1o2: wpfloat = np.exp(rain_exp_v * np.log(0.5))
-        ice_exp_v_ln1o2: wpfloat = np.exp(icon_graupel_params.ice_exp_v * np.log(0.5))
-        graupel_exp_sed_ln1o2: wpfloat = np.exp(icon_graupel_params.graupel_exp_sed * np.log(0.5))
-
-        self._ccs = (ccsrim, ccsagg, ccsvel)
-        self._rain_vel_coef = (rain_exp_v, rain_v0, cevxp, cev, bevxp, bev)
-        self._sed_dens_factor_coef = (rain_exp_v_ln1o2, ice_exp_v_ln1o2, graupel_exp_sed_ln1o2)
-
-    @property
-    def ccs(self) -> tuple[wpfloat, wpfloat, wpfloat]:
-        return self._ccs
-
-    @property
-    def rain_vel_coef(self) -> tuple[wpfloat, wpfloat, wpfloat, wpfloat, wpfloat, wpfloat]:
-        return self._rain_vel_coef
-
-    @property
-    def sed_dens_factor_coef(self) -> tuple[wpfloat, wpfloat, wpfloat]:
-        return self._sed_dens_factor_coef
-
-    def _initialize_local_fields(self):
-        self.qnc = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        # TODO (Chia Rui): remove these tendency terms when physics inteface infrastructure is ready
-        self.temperature_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.qv_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.qc_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.qi_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.qr_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.qs_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.qg_tendency = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.rhoqrv_old_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.rhoqsv_old_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.rhoqgv_old_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.rhoqiv_old_kup = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.vnew_r = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.vnew_s = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.vnew_g = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.vnew_i = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.rain_precipitation_flux = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.snow_precipitation_flux = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.graupel_precipitation_flux = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.ice_precipitation_flux = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-        self.total_precipitation_flux = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid, dtype=wpfloat)
-
-    def __str__(self):
-        # TODO (Chia Rui): Print out the configuration and derived empirical parameters
-        pass
-
-    def run(
-        self,
-        dtime: wpfloat,
-        prognostic_state: prognostics.PrognosticState,
-        diagnostic_state: diagnostics.DiagnosticState,
-        tracer_state: tracers.TracerState
-    ):
-
-        start_cell_nudging = self.grid.get_start_index(
-            CellDim, HorizontalMarkerIndex.nudging(CellDim)
-        )
-        end_cell_local = self.grid.get_end_index(CellDim, HorizontalMarkerIndex.local(CellDim))
-
-        icon_graupel(
-            self.vertical_params.kstart_moist,
-            self.config.liquid_autoconversion_option,
-            self.config.snow_intercept_option,
-            self.config.is_isochoric,
-            self.config.use_constant_water_heat_capacity,
-            self.config.ice_stickeff_min,
-            self.config.ice_v0,
-            self.config.ice_sedi_density_factor_exp,
-            self.config.snow_v0,
-            *self._ccs,
-            *self._rain_vel_coef,
-            *self._sed_dens_factor_coef,
-            dtime,
-            self.metric_state.ddqz_z_full,
-            diagnostic_state.temperature,
-            diagnostic_state.pressure,
-            prognostic_state.rho,
-            tracer_state.qv,
-            tracer_state.qc,
-            tracer_state.qi,
-            tracer_state.qr,
-            tracer_state.qs,
-            tracer_state.qg,
-            self.qnc,
-            self.temperature_tendency,
-            self.qv_tendency,
-            self.qc_tendency,
-            self.qi_tendency,
-            self.qr_tendency,
-            self.qs_tendency,
-            self.qg_tendency,
-            self.rhoqrv_old_kup,
-            self.rhoqsv_old_kup,
-            self.rhoqgv_old_kup,
-            self.rhoqiv_old_kup,
-            self.vnew_r,
-            self.vnew_s,
-            self.vnew_g,
-            self.vnew_i,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels,
-            offset_provider={},
-        )
-
-        icon_graupel_flux_above_ground(
-            self.config.do_latent_heat_nudging,
-            prognostic_state.rho,
-            tracer_state.qr,
-            tracer_state.qs,
-            tracer_state.qg,
-            tracer_state.qi,
-            self.qr_tendency,
-            self.qs_tendency,
-            self.qg_tendency,
-            self.qi_tendency,
-            self.vnew_r,
-            self.vnew_s,
-            self.vnew_g,
-            self.vnew_i,
-            self.rain_precipitation_flux,
-            self.snow_precipitation_flux,
-            self.graupel_precipitation_flux,
-            self.ice_precipitation_flux,
-            self.total_precipitation_flux,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=0,
-            vertical_end=self.grid.num_levels - gtx.int32(1),
-            offset_provider={},
-        )
-
-        icon_graupel_flux_ground(
-            self.config.do_latent_heat_nudging,
-            prognostic_state.rho,
-            tracer_state.qr,
-            tracer_state.qs,
-            tracer_state.qg,
-            tracer_state.qi,
-            self.qr_tendency,
-            self.qs_tendency,
-            self.qg_tendency,
-            self.qi_tendency,
-            self.rhoqrv_old_kup,
-            self.rhoqsv_old_kup,
-            self.rhoqgv_old_kup,
-            self.rhoqiv_old_kup,
-            self.vnew_r,
-            self.vnew_s,
-            self.vnew_g,
-            self.vnew_i,
-            self.rain_precipitation_flux,
-            self.snow_precipitation_flux,
-            self.graupel_precipitation_flux,
-            self.ice_precipitation_flux,
-            self.total_precipitation_flux,
-            horizontal_start=start_cell_nudging,
-            horizontal_end=end_cell_local,
-            vertical_start=self.grid.num_levels - gtx.int32(1),
-            vertical_end=self.grid.num_levels,
-            offset_provider={},
-        )
-
-        if self.config.do_saturation_adjustment:
-            self.saturation_adjustment.run(
-                dtime=dtime,
-                prognostic_state=prognostic_state,
-                diagnostic_state=diagnostic_state,
-                tracer_state=tracer_state,
-            )
+def fpvsw(
+   ztx: float64
+   ) -> float64:
+   # Return saturation vapour pressure over water from temperature
+   return graupel_funcConst.GrFuncConst_c1es * numpy_exp(
+      graupel_funcConst.GrFuncConst_c3les * (ztx - phy_const.tmelt) / (ztx - graupel_funcConst.GrFuncConst_c4les)
+   )
 
 
-@gtx.field_operator
-def _icon_graupel_flux_ground(
-    do_latent_heat_nudging: bool,
-    rho: gtx.Field[[CellDim, KDim], wpfloat],
-    qr: gtx.Field[[CellDim, KDim], wpfloat],
-    qs: gtx.Field[[CellDim, KDim], wpfloat],
-    qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qi: gtx.Field[[CellDim, KDim], wpfloat],
-    qr_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qs_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qg_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qi_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqrv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqsv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqgv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqiv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_r: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_s: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_g: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_i: gtx.Field[[CellDim, KDim], wpfloat],
-) -> tuple[
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat]
-]:
-    rain_flux = 0.5 * ((qr + qr_tendency) * rho * vnew_r + rhoqrv_old_kup)
-    snow_flux = 0.5 * ((qs + qs_tendency) * rho * vnew_s + rhoqsv_old_kup)
-    graupel_flux = 0.5 * ((qg + qg_tendency) * rho * vnew_g + rhoqgv_old_kup)
-    zero = broadcast(wpfloat("0.0"), (CellDim, KDim))
-    ice_flux = 0.5 * ((qi + qi_tendency) * rho * vnew_i + rhoqiv_old_kup)
-    # TODO (Chia Rui): check whether lpres_ice is redundant, prs_gsp = 0.5 * (rho * (qs * Vnew_s + qi * Vnew_i) + rhoqsV_old_kup + rhoqiV_old_kup)
-    # for the latent heat nudging
-    total_flux = rain_flux + snow_flux + graupel_flux if do_latent_heat_nudging else zero
-    return rain_flux, snow_flux, graupel_flux, ice_flux, total_flux
+def fxna(
+   ztx: float64
+   ) -> float64:
+   # Return number of activate ice crystals from temperature
+   return 1.0e2 * numpy_exp(0.2 * (phy_const.tmelt - ztx))
 
 
-@gtx.field_operator
-def _icon_graupel_flux_above_ground(
-    do_latent_heat_nudging: bool,
-    rho: gtx.Field[[CellDim, KDim], wpfloat],
-    qr: gtx.Field[[CellDim, KDim], wpfloat],
-    qs: gtx.Field[[CellDim, KDim], wpfloat],
-    qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qi: gtx.Field[[CellDim, KDim], wpfloat],
-    qr_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qs_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qg_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qi_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_r: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_s: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_g: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_i: gtx.Field[[CellDim, KDim], wpfloat],
-) -> tuple[
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat]
-]:
-    zero = broadcast(wpfloat("0.0"), (CellDim, KDim))
+def fxna_cooper(
+   ztx: float64
+   ) -> float64:
+   # Return number of activate ice crystals from temperature
 
-    rain_flux_ = (qr + qr_tendency) * rho * vnew_r
-    snow_flux_ = (qs + qs_tendency) * rho * vnew_s
-    graupel_flux_ = (qg + qg_tendency) * rho * vnew_g
-    ice_flux = (qi + qi_tendency) * rho * vnew_i
-    rain_flux = where(rain_flux_ <= icon_graupel_params.qmin, zero, rain_flux_)
-    snow_flux = where(snow_flux_ <= icon_graupel_params.qmin, zero, snow_flux_)
-    graupel_flux = where(graupel_flux_ <= icon_graupel_params.qmin, zero, graupel_flux_)
+   # Method: Cooper (1986) used by Greg Thompson(2008)
 
-    total_flux_ = rain_flux + snow_flux + graupel_flux + ice_flux
-    total_flux = total_flux_ if do_latent_heat_nudging else zero
+   return 5.0 * numpy_exp(0.304 * (phy_const.tmelt - ztx))
 
-    return rain_flux, snow_flux, graupel_flux, ice_flux, total_flux
+class GraupelGlobalConstants(FrozenNamespace):
+   """Constants for the graupel scheme."""
+
+   GrConst_trfrz              = 271.15           # threshold temperature for heterogeneous freezing of raindrops
+   GrConst_crfrz              = 1.68             # coefficient for raindrop freezing
+   GrConst_crfrz1             = 9.95e-5          # FR: 1. coefficient for immersion raindrop freezing: alpha_if
+   GrConst_crfrz2             = 0.66             # FR: 2. coefficient for immersion raindrop freezing: a_if
+   GrConst_thn                = 236.15           # temperature for hom. freezing of cloud water
+   GrConst_tmix               = 250.15           # threshold temperature for mixed-phase cloud freezing of cloud drops (Forbes 2012)
+   GrConst_qmin               = 1.0e-15          # threshold for computations
+   GrConst_eps                = 1.0e-15          # small number
+   GrConst_bvi                = 0.16             # v = zvz0i*rhoqi^zbvi
+   GrConst_rho0               = 1.225e+0         # reference air density
+   GrConst_v_sedi_rain_min    = 0.7              # in m/s; minimum terminal fall velocity of rain    particles (applied only near the ground)
+   GrConst_v_sedi_snow_min    = 0.1              # in m/s; minimum terminal fall velocity of snow    particles (applied only near the ground)
+   GrConst_v_sedi_graupel_min = 0.4              # in m/s; minimum terminal fall velocity of graupel particles (applied only near the ground)
+   GrConst_nimax_Thom         = 250.0e+3          # FR: maximal number of ice crystals
+   #zams_ci= 0.069           # Formfactor in the mass-size relation of snow particles for cloud ice scheme
+   #zams_gr= 0.069           # Formfactor in the mass-size relation of snow particles for graupel scheme
+   GrConst_ams                = 0.069            # Formfactor in the mass-size relation of snow particles for graupel scheme
+   GrConst_n0s0               = 8.0e5            #
+   GrConst_rimexp_g           = 0.94878          #
+   GrConst_expsedg            = 0.217            # exponent for graupel sedimentation
+   GrConst_vz0g               = 12.24            # coefficient of sedimentation velocity for graupel
+   GrConst_mi0                = 1.0e-12          # initial crystal mass for cloud ice nucleation
+   GrConst_mimax              = 1.0e-9           # maximum mass of cloud ice crystals
+   GrConst_msmin              = 3.0e-9           # initial mass of snow crystals
+   GrConst_ceff_fac           = 3.5e-3           # Scaling factor [1/K] for temperature-dependent cloud ice sticking efficiency
+   GrConst_tmin_iceautoconv   = 188.15           # Temperature at which cloud ice autoconversion starts
+   GrConst_dist_cldtop_ref    = 500.0            # Reference length for distance from cloud top (Forbes 2012)
+   GrConst_reduce_dep_ref     = 0.1              # lower bound on snow/ice deposition reduction
+   GrConst_hw                 = 2.270603         # Howell factor
+   GrConst_ecs                = 0.9              # Collection efficiency for snow collecting cloud water
+   GrConst_v1s                = 0.50             # Exponent in the terminal velocity for snow
+   GrConst_eta                = 1.75e-5          # kinematic viscosity of air
+   GrConst_dv                 = 2.22e-5          # molecular diffusion coefficient for water vapour
+   GrConst_lheat              = 2.40e-2          # thermal conductivity of dry air
+   GrConst_bms                = 2.000            # Exponent in the mass-size relation of snow particles
+   GrConst_ami                = 130.0            # Formfactor in the mass-size relation of cloud ice
+   GrConst_rhow               = 1.000e+3         # density of liquid water
+   GrConst_cp_v               = 1850.0           # specific heat of water vapor J, at constant pressure (Landolt-Bornstein)
+   GrConst_ci                 = 2108.0           # specific heat of ice
+
+   # option switches (remove in the future, not used)
+   GrConst_iautocon       = 1
+   GrConst_isnow_n0temp   = 2
+   GrConst_lsuper_coolw   = True  # switch for supercooled liquid water (work from Felix Rieper)
+   GrConst_lsedi_ice      = True  # switch for sedimentation of cloud ice (Heymsfield & Donner 1990 *1/3)
+   GrConst_lstickeff      = True  # switch for sticking coeff. (work from Guenther Zaengl)
+   GrConst_lred_depgrow   = True  # separate switch for reduced depositional growth near tops of water clouds
+   #GrConst_ithermo_water  = False #
+   #GrConst_l_cv           = True
+   #GrConst_lpres_pri      = True
+   #GrConst_ldass_lhn      = True # if true, latent heat nudging is applied
+   #GrConst_ldiag_ttend    = True # if true, temperature tendency shall be diagnosed
+   #GrConst_ldiag_qtend    = True # if true, moisture tendencies shall be diagnosed
+
+   #if (graupel_const.GrConst_lsuper_coolw):
+   GrConst_nimax = GrConst_nimax_Thom
+   GrConst_nimix = 5.0 * numpy_exp(0.304 * (phy_const.tmelt - GrConst_tmix))
+   #else:
+   #    GrConst_nimax = 1.0e2 * exp(0.2 * (phy_const.tmelt - GrConst_thn))
+   #    GrConst_nimix = 1.0e2 * exp(0.2 * (phy_const.tmelt - GrConst_tmix))
+
+   GrConst_x1o3   =  1.0/ 3.0
+   GrConst_x7o8   =  7.0/ 8.0
+   GrConst_x13o8  = 13.0/ 8.0
+   GrConst_x27o16 = 27.0/16.0
+   GrConst_x1o2   =  1.0/ 2.0
+   GrConst_x3o4   =  0.75
+   GrConst_x7o4   =  7.0/ 4.0
+
+   GrConst_ceff_min = 0.01 # default: 0.075
+   GrConst_v0snow = 20.0 # default: 20.0
+   GrConst_vz0i = 1.25
+   GrConst_icesedi_exp = 0.3 # default: 0.33
+   GrConst_mu_rain = 0.0
+   GrConst_rain_n0_factor = 1.0
+   '''
+   GrConst_ceff_min = graupel_optional.GOC_ceff_min
+   GrConst_v0snow = graupel_optional.GOC_v0snow
+   GrConst_vz0i = graupel_optional.GOC_vz0i
+   GrConst_mu_rain = graupel_optional.GOC_mu_rain
+   GrConst_rain_n0_factor = graupel_optional.GOC_rain_n0_factor
+   '''
+
+   GrConst_ccsrim = 0.25 * math_const.pi * GrConst_ecs * GrConst_v0snow * gamma_fct(GrConst_v1s + 3.0)
+   GrConst_ccsagg = 0.25 * math_const.pi * GrConst_v0snow * gamma_fct(GrConst_v1s + 3.0)
+   GrConst_ccsdep = 0.26 * gamma_fct((GrConst_v1s + 5.0) / 2.0) * numpy_sqrt(1.0 / GrConst_eta)
+   GrConst_ccsvxp_ = -(GrConst_v1s / (GrConst_bms + 1.0) + 1.0)
+   GrConst_ccsvel = GrConst_ams * GrConst_v0snow * gamma_fct(GrConst_bms + GrConst_v1s + 1.0) * (GrConst_ams * gamma_fct(GrConst_bms + 1.0))**GrConst_ccsvxp_
+   GrConst_ccsvxp = GrConst_ccsvxp_ + 1.0
+   GrConst_ccslam = GrConst_ams * gamma_fct(GrConst_bms + 1.0)
+   GrConst_ccslxp = 1.0 / (GrConst_bms + 1.0)
+   GrConst_ccswxp = GrConst_v1s * GrConst_ccslxp
+   GrConst_ccsaxp = -(GrConst_v1s + 3.0)
+   GrConst_ccsdxp = -(GrConst_v1s + 1.0) / 2.0
+   GrConst_ccshi1 = phy_const.als * phy_const.als / (GrConst_lheat * phy_const.rv)
+   GrConst_ccdvtp = 2.22e-5 * phy_const.tmelt**(-1.94) * 101325.0
+   GrConst_ccidep = 4.0 * GrConst_ami**(-GrConst_x1o3)
+
+   #if ( GrConst_lsuper_coolw ):
+   #   GrConst_nimax = GrConst_nimax_Thom
+   #   GrConst_nimix = fxna_cooper(GrConst_tmix)
+   #else:
+   #   GrConst_nimax = fxna(GrConst_thn)
+   #   GrConst_nimix = fxna(GrConst_tmix)
+
+   GrConst_pvsw0 = fpvsw(phy_const.tmelt)  # sat. vap. pressure for t = t0
+   GrConst_log_10 = numpy_log(10.0) # logarithm of 10
+
+   GrConst_n0r   = 8.0e6 * numpy_exp(3.2 * GrConst_mu_rain) * (0.01)**(-GrConst_mu_rain)  # empirical relation adapted from Ulbrich (1983)
+   GrConst_n0r   = GrConst_n0r * GrConst_rain_n0_factor                           # apply tuning factor to zn0r variable
+   GrConst_ar    = math_const.pi * GrConst_rhow / 6.0 * GrConst_n0r * gamma_fct(GrConst_mu_rain + 4.0)      # pre-factor
+
+   GrConst_vzxp  = 0.5 / (GrConst_mu_rain + 4.0)
+   GrConst_vz0r  = 130.0 * gamma_fct(GrConst_mu_rain + 4.5) / gamma_fct(GrConst_mu_rain + 4.0) * GrConst_ar**(-GrConst_vzxp)
+
+   GrConst_cevxp = (GrConst_mu_rain + 2.0) / (GrConst_mu_rain + 4.0)
+   GrConst_cev   = 2.0 * math_const.pi * GrConst_dv / GrConst_hw * GrConst_n0r*GrConst_ar**(-GrConst_cevxp) * gamma_fct(GrConst_mu_rain + 2.0)
+   GrConst_bevxp = (2.0 * GrConst_mu_rain + 5.5) / (2.0 * GrConst_mu_rain + 8.0) - GrConst_cevxp
+   GrConst_bev   =  0.26 * numpy_sqrt(GrConst_rho0 * 130.0 / GrConst_eta) * GrConst_ar**(-GrConst_bevxp) * gamma_fct((2.0 * GrConst_mu_rain + 5.5) / 2.0) / gamma_fct(GrConst_mu_rain + 2.0)
+
+   # Precomputations for optimization
+   GrConst_ccswxp_ln1o2  = numpy_exp(GrConst_ccswxp * numpy_log(0.5))
+   GrConst_vzxp_ln1o2    = numpy_exp(GrConst_vzxp * numpy_log(0.5))
+   GrConst_bvi_ln1o2     = numpy_exp(GrConst_bvi * numpy_log(0.5))
+   GrConst_expsedg_ln1o2 = numpy_exp(GrConst_expsedg * numpy_log(0.5))
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def icon_graupel_flux_ground(
-    do_latent_heat_nudging: bool,
-    rho: gtx.Field[[CellDim, KDim], wpfloat],
-    qr: gtx.Field[[CellDim, KDim], wpfloat],
-    qs: gtx.Field[[CellDim, KDim], wpfloat],
-    qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qi: gtx.Field[[CellDim, KDim], wpfloat],
-    qr_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qs_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qg_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qi_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqrv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqsv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqgv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqiv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_r: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_s: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_g: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_i: gtx.Field[[CellDim, KDim], wpfloat],
-    rain_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    snow_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    graupel_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    ice_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    total_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _icon_graupel_flux_ground(
-        do_latent_heat_nudging,
-        rho,
-        qr,
-        qs,
-        qg,
-        qi,
-        qr_tendency,
-        qs_tendency,
-        qg_tendency,
-        qi_tendency,
-        rhoqrv_old_kup,
-        rhoqsv_old_kup,
-        rhoqgv_old_kup,
-        rhoqiv_old_kup,
-        vnew_r,
-        vnew_s,
-        vnew_g,
-        vnew_i,
-        out=(
-            rain_precipitation_flux,
-            snow_precipitation_flux,
-            graupel_precipitation_flux,
-            ice_precipitation_flux,
-            total_precipitation_flux
-        ),
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        }
-    )
+graupel_const : Final = GraupelGlobalConstants()
 
 
-@program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def icon_graupel_flux_above_ground(
-    do_latent_heat_nudging: bool,
-    rho: gtx.Field[[CellDim, KDim], wpfloat],
-    qr: gtx.Field[[CellDim, KDim], wpfloat],
-    qs: gtx.Field[[CellDim, KDim], wpfloat],
-    qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qi: gtx.Field[[CellDim, KDim], wpfloat],
-    qr_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qs_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qg_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qi_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_r: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_s: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_g: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_i: gtx.Field[[CellDim, KDim], wpfloat],
-    rain_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    snow_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    graupel_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    ice_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    total_precipitation_flux: gtx.Field[[CellDim, KDim], wpfloat],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _icon_graupel_flux_above_ground(
-        do_latent_heat_nudging,
-        rho,
-        qr,
-        qs,
-        qg,
-        qi,
-        qr_tendency,
-        qs_tendency,
-        qg_tendency,
-        qi_tendency,
-        vnew_r,
-        vnew_s,
-        vnew_g,
-        vnew_i,
-        out=(
-            rain_precipitation_flux,
-            snow_precipitation_flux,
-            graupel_precipitation_flux,
-            ice_precipitation_flux,
-            total_precipitation_flux
-        ),
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        }
-    )
+# Field operation
+# -------------------
+
+@field_operator
+def _fxna(
+   ztx: float64
+   ) -> float64:
+   # Return number of activate ice crystals from temperature
+   return 1.0e2 * exp(0.2 * (phy_const.tmelt - ztx))
+
+
+@field_operator
+def _fxna_cooper(
+   ztx: float64
+   ) -> float64:
+   # Return number of activate ice crystals from temperature
+
+   # Method: Cooper (1986) used by Greg Thompson(2008)
+
+   return 5.0 * exp(0.304 * (phy_const.tmelt - ztx))
+
+
+@field_operator
+def latent_heat_vaporization(
+   input_t: float64
+) -> float64:
+   '''Return latent heat of vaporization.
+
+   Computed as internal energy and taking into account Kirchoff's relations
+   '''
+   # specific heat of water vapor at constant pressure (Landolt-Bornstein)
+   #cp_v = 1850.0
+
+   return (
+      phy_const.alv
+      + (graupel_const.GrConst_cp_v - phy_const.clw) * (input_t - phy_const.tmelt)
+      - phy_const.rv * input_t
+   )
+
+@field_operator
+def latent_heat_sublimation(
+   input_t: float64
+) -> float64:
+
+   #-------------------------------------------------------------------------------
+   #>
+   #! Description:
+   #!   Latent heat of sublimation as internal energy and taking into account
+   #!   Kirchoff's relations
+   #-------------------------------------------------------------------------------
+
+   # specific heat of water vapor at constant pressure (Landolt-Bornstein)
+   #cp_v = 1850.0
+   # specific heat of ice
+   #ci = 2108.0
+
+   return(
+      phy_const.als + (graupel_const.GrConst_cp_v - graupel_const.GrConst_ci) * (input_t - phy_const.tmelt) - phy_const.rv * input_t
+   )
+
+
+@field_operator
+def sat_pres_water(
+   input_t: float64
+) -> float64:
+
+   # Tetens formula
+   return (
+      graupel_funcConst.GrFuncConst_c1es * exp( graupel_funcConst.GrFuncConst_c3les * (input_t - phy_const.tmelt) / (input_t - graupel_funcConst.GrFuncConst_c4les) )
+   )
+
+
+@field_operator
+def sat_pres_ice(
+   input_t: float64
+) -> float64:
+
+   # Tetens formula
+   return (
+      graupel_funcConst.GrFuncConst_c1es * exp( graupel_funcConst.GrFuncConst_c3ies * (input_t - phy_const.tmelt) / (input_t - graupel_funcConst.GrFuncConst_c4ies) )
+   )
+
+@field_operator
+def sat_pres_water_murphykoop(
+   input_t: float64
+) -> float64:
+
+  # Eq. (10) of Murphy and Koop (2005)
+  return (
+     exp( 54.842763 - 6763.22 / input_t - 4.210 * log(input_t) + 0.000367 * input_t  + tanh(0.0415 * (input_t - 218.8)) * (53.878 - 1331.22 / input_t - 9.44523 * log(input_t) + 0.014025 * input_t) )
+  )
+
+@field_operator
+def sat_pres_ice_murphykoop(
+   input_t: float64
+) -> float64:
+
+  # Eq. (7) of Murphy and Koop (2005)
+  return (
+     exp(9.550426 - 5723.265 / input_t + 3.53068 * log(input_t) - 0.00728332 * input_t )
+  )
+
+@field_operator
+def TV(
+   input_t: float64
+) -> float64:
+
+   # Tetens formula
+   return (
+      graupel_funcConst.GrFuncConst_c1es * exp( graupel_funcConst.GrFuncConst_c3les * (input_t - phy_const.tmelt) / (input_t - graupel_funcConst.GrFuncConst_c4les) )
+   )
+
 
 
 @scan_operator(
@@ -879,40 +510,6 @@ def _icon_graupel_scan(
         k_lev
     ) = state_kup
 
-    if k_lev < startmoist_level:
-        # tracing current k level
-        k_lev = k_lev + 1
-        return (
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            qv,
-            qc,
-            qi,
-            qr,
-            qs,
-            qg,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            rho,
-            0.0,
-            0.0,
-            0.0,
-            0.0,
-            k_lev
-        )
-
     qv_kup = qv_old_kup + qv_tendency_kup * dt
     qc_kup = qc_old_kup + qc_tendency_kup * dt
     qi_kup = qi_old_kup + qi_tendency_kup * dt
@@ -920,8 +517,7 @@ def _icon_graupel_scan(
     qs_kup = qs_old_kup + qs_tendency_kup * dt
     qg_kup = qg_old_kup + qg_tendency_kup * dt
 
-    #is_surface = True if k_lev + startmoist_level == surface_level else False
-    is_surface = True if k_lev == surface_level else False
+    is_surface = True if k_lev + startmoist_level == surface_level else False
 
     # Define reciprocal of heat capacity of dry air (at constant pressure vs at constant volume)
     heat_cap_r = icon_graupel_params.rcvd if is_isochoric else icon_graupel_params.rcpd
@@ -1113,8 +709,7 @@ def _icon_graupel_scan(
     # qs_sedi, qr_sedi, qg_sedi, qi_sedi:
     # -------------------------------------------------------------------------
 
-    #if k_lev > 0:
-    if k_lev > startmoist_level:
+    if k_lev > 0:
         vnew_s = snow_sed0_kup * exp(icon_graupel_params.ccswxp * log(
             (qs_kup + qs) * 0.5 * rho_kup)) * crho1o2_kup if qs_kup + qs > icon_graupel_params.qmin else wpfloat(
             "0.0")
@@ -1353,21 +948,21 @@ def _icon_graupel_scan(
     # Description:
     #   This subroutine computes the rate of autoconversion and accretion by rain.
     #
-    #   Method 1: liquid_autoconversion_option = 0, Kessler (1969)
-    #   Method 2: liquid_autoconversion_option = 1, Seifert and beheng (2001)
+    #   Method 1: liquid_autoconversion_option = 1, Kessler (1969)
+    #   Method 2: liquid_autoconversion_option = 2, Seifert and beheng (2001)
     #
     # ------------------------------------------------------------------------------
 
     # if there is cloud water and the temperature is above homogeneuous freezing temperature
     if (llqc & (temperature > icon_graupel_params.homogeneous_freeze_temperature)):
 
-        if liquid_autoconversion_option == 0:
+        if liquid_autoconversion_option == 1:
             # Kessler(1969) autoconversion rate
             scaut_c2r = icon_graupel_params.kessler_cloud2rain_autoconversion_coeff_for_cloud * maximum(
                 qc - icon_graupel_params.qc0, wpfloat("0.0"))
             scacr_c2r = icon_graupel_params.kessler_cloud2rain_autoconversion_coeff_for_rain * qc * celn7o8qrk
 
-        elif liquid_autoconversion_option == 1:
+        elif liquid_autoconversion_option == 2:
             # Seifert and Beheng (2001) autoconversion rate
             local_const = icon_graupel_params.kcau / (20.0 * icon_graupel_params.xstar) * (
                     icon_graupel_params.cnue + 2.0) * (icon_graupel_params.cnue + 4.0) / (
@@ -1473,8 +1068,7 @@ def _icon_graupel_scan(
     ##----------------------------------------------------------------------------
 
     if llqc:
-        #if (k_lev > 0) & (not is_surface):
-        if (k_lev > startmoist_level) & (not is_surface):
+        if (k_lev > 0) & (not is_surface):
 
             cqcgk_1 = qi_kup + qs_kup + qg_kup
 
@@ -1486,8 +1080,7 @@ def _icon_graupel_scan(
                 dist_cldtop = dist_cldtop + dz
 
     if llqc:
-        #if (k_lev > 0) & (not is_surface):
-        if (k_lev > startmoist_level) & (not is_surface):
+        if (k_lev > 0) & (not is_surface):
             # finalizing transfer rates in clouds and calculate depositional growth reduction
             # TODO (Chia Rui): define a field operator for the ice nuclei number concentration, cnin = _fxna_cooper(temperature)
             cnin_cooper = 5.0 * exp(0.304 * (icon_graupel_params.tmelt - temperature))
@@ -1838,21 +1431,12 @@ def _icon_graupel_scan(
     cqgt = saggg_i2g - sgmlt_g2r + sicri_i2g + srcri_r2g + sgdep_v2g + srfrz_r2g + srimg_c2g + scosg_s2g
 
     temperature_tendency = heat_cap_r * (lhv * (cqct + cqrt) + lhs * (cqit + cqst + cqgt))
-    qi_tendency = maximum((rhoqi_intermediate * c1orho * cimi - qi) / dt + cqit * cimi, -qi / dt)
-    qr_tendency = maximum((rhoqr_intermediate * c1orho * cimr - qr) / dt + cqrt * cimr, -qr / dt)
-    qs_tendency = maximum((rhoqs_intermediate * c1orho * cims - qs) / dt + cqst * cims, -qs / dt)
-    qg_tendency = maximum((rhoqg_intermediate * c1orho * cimg - qg) / dt + cqgt * cimg, -qg / dt)
+    qi_tendency = maximum((rhoqi_intermediate * c1orho * cimi - qi) / dt + cqit, -qi / dt)
+    qr_tendency = maximum((rhoqr_intermediate * c1orho * cimr - qr) / dt + cqrt, -qr / dt)
+    qs_tendency = maximum((rhoqs_intermediate * c1orho * cims - qs) / dt + cqst, -qs / dt)
+    qg_tendency = maximum((rhoqg_intermediate * c1orho * cimg - qg) / dt + cqgt, -qg / dt)
     qc_tendency = maximum(cqct, -qc / dt)
     qv_tendency = maximum(cqvt, -qv / dt)
-
-    # qi = maximum(wpfloat("0.0"), (rhoqi_intermediate * c1orho + cqit * dt) * cimi)
-    # qr = maximum(wpfloat("0.0"), (rhoqr_intermediate * c1orho + cqrt * dt) * cimr)
-    # qs = maximum(wpfloat("0.0"), (rhoqs_intermediate * c1orho + cqst * dt) * cims)
-    # qg = maximum(wpfloat("0.0"), (rhoqg_intermediate * c1orho + cqgt * dt) * cimg)
-
-    # Update of prognostic variables or tendencies
-    # qv = maximum(wpfloat("0.0"), qv + cqvt * dt)
-    # qc = maximum(wpfloat("0.0"), qc + cqct * dt)
 
     k_lev = k_lev + 1
 
@@ -1889,229 +1473,86 @@ def _icon_graupel_scan(
 
 
 @field_operator
-def _icon_graupel(
-    startmoist_level: gtx.int32,
-    ground_level: gtx.int32,
-    liquid_autoconversion_option: gtx.int32,
-    snow_intercept_option: gtx.int32,
-    is_isochoric: bool,
-    use_constant_water_heat_capacity: bool,
-    ice_stickeff_min: wpfloat,
-    ice_v0: wpfloat,
-    ice_sedi_density_factor_exp: wpfloat,
-    snow_v0: wpfloat,
-    ccsrim: wpfloat,
-    ccsagg: wpfloat,
-    ccsvel: wpfloat,
-    rain_exp_v: wpfloat,
-    rain_v0: wpfloat,
-    cevxp: wpfloat,
-    cev: wpfloat,
-    bevxp: wpfloat,
-    bev: wpfloat,
-    rain_exp_v_ln1o2: wpfloat,
-    ice_exp_v_ln1o2: wpfloat,
-    graupel_exp_sed_ln1o2: wpfloat,
-    dt: wpfloat,  # time step
-    dz: gtx.Field[[CellDim, KDim], wpfloat],
-    temperature: gtx.Field[[CellDim, KDim], wpfloat],
-    pres: gtx.Field[[CellDim, KDim], wpfloat],
-    rho: gtx.Field[[CellDim, KDim], wpfloat],
-    qv: gtx.Field[[CellDim, KDim], wpfloat],
-    qc: gtx.Field[[CellDim, KDim], wpfloat],
-    qi: gtx.Field[[CellDim, KDim], wpfloat],
-    qr: gtx.Field[[CellDim, KDim], wpfloat],
-    qs: gtx.Field[[CellDim, KDim], wpfloat],
-    qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qnc: gtx.Field[[CellDim, KDim], wpfloat], # originally 2D Field, now 3D Field
-) -> tuple[
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat],
-    gtx.Field[[CellDim, KDim], wpfloat]
+def _graupel(
+   kstart_moist: int32,
+   kend: int32,
+   dt: float64,  # time step
+   dz: Field[[CellDim, KDim], float64],
+   temperature: Field[[CellDim, KDim], float64],
+   pres: Field[[CellDim, KDim], float64],
+   rho: Field[[CellDim, KDim], float64],
+   qv: Field[[CellDim, KDim], float64],
+   qc: Field[[CellDim, KDim], float64],
+   qi: Field[[CellDim, KDim], float64],
+   qr: Field[[CellDim, KDim], float64],
+   qs: Field[[CellDim, KDim], float64],
+   qg: Field[[CellDim, KDim], float64],
+   qnc: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   l_cv: bool,
+   ithermo_water: int32
+)-> tuple[
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64],
+    Field[[CellDim, KDim], float64]
 ]:
     (
-        temperature_tendency,
-        qv_tendency,
-        qc_tendency,
-        qi_tendency,
-        qr_tendency,
-        qs_tendency,
-        qg_tendency,
+        temperature_,
         qv_,
         qc_,
         qi_,
         qr_,
         qs_,
         qg_,
-        rhoqrv_old_kup,
-        rhoqsv_old_kup,
-        rhoqgv_old_kup,
-        rhoqiv_old_kup,
-        vnew_r,
-        vnew_s,
-        vnew_g,
-        vnew_i,
+        rhoqrV_old_kup,
+        rhoqsV_old_kup,
+        rhoqgV_old_kup,
+        rhoqiV_old_kup,
+        Vnew_r,
+        Vnew_s,
+        Vnew_g,
+        Vnew_i,
         dist_cldtop,
         rho_kup,
-        crho1o2_kup,
-        crhofac_qi_kup,
-        snow_sed0_kup,
+        Crho1o2_kup,
+        Crhofac_qi_kup,
+        Cvz0s_kup,
         qvsw_kup,
-        k_lev
-    ) = _icon_graupel_scan(
-        startmoist_level,
-        ground_level,
-        liquid_autoconversion_option,
-        snow_intercept_option,
-        is_isochoric,
-        use_constant_water_heat_capacity,
-        ice_stickeff_min,
-        ice_v0,
-        ice_sedi_density_factor_exp,
-        snow_v0,
-        ccsrim,
-        ccsagg,
-        ccsvel,
-        rain_exp_v,
-        rain_v0,
-        cevxp,
-        cev,
-        bevxp,
-        bev,
-        rain_exp_v_ln1o2,
-        ice_exp_v_ln1o2,
-        graupel_exp_sed_ln1o2,
-        dt,
-        dz,
-        temperature,
-        pres,
-        rho,
-        qv,
-        qc,
-        qi,
-        qr,
-        qs,
-        qg,
-        qnc
-    )
-
-    return(
-        temperature_tendency,
-        qv_tendency,
-        qc_tendency,
-        qi_tendency,
-        qr_tendency,
-        qs_tendency,
-        qg_tendency,
-        rhoqrv_old_kup,
-        rhoqsv_old_kup,
-        rhoqgv_old_kup,
-        rhoqiv_old_kup,
-        vnew_r,
-        vnew_s,
-        vnew_g,
-        vnew_i
-    )
-
-
-@program(grid_type=gtx.GridType.UNSTRUCTURED)
-def icon_graupel(
-    startmoist_level: gtx.int32,
-    ground_level: gtx.int32,
-    liquid_autoconversion_option: gtx.int32,
-    snow_intercept_option: gtx.int32,
-    is_isochoric: bool,
-    use_constant_water_heat_capacity: bool,
-    ice_stickeff_min: wpfloat,
-    ice_v0: wpfloat,
-    ice_sedi_density_factor_exp: wpfloat,
-    snow_v0: wpfloat,
-    ccsrim: wpfloat,
-    ccsagg: wpfloat,
-    ccsvel: wpfloat,
-    rain_exp_v: wpfloat,
-    rain_v0: wpfloat,
-    cevxp: wpfloat,
-    cev: wpfloat,
-    bevxp: wpfloat,
-    bev: wpfloat,
-    rain_exp_v_ln1o2: wpfloat,
-    ice_exp_v_ln1o2: wpfloat,
-    graupel_exp_sed_ln1o2: wpfloat,
-    dt: wpfloat,  # time step
-    dz: gtx.Field[[CellDim, KDim], wpfloat],
-    temperature: gtx.Field[[CellDim, KDim], wpfloat],
-    pres: gtx.Field[[CellDim, KDim], wpfloat],
-    rho: gtx.Field[[CellDim, KDim], wpfloat],
-    qv: gtx.Field[[CellDim, KDim], wpfloat],
-    qc: gtx.Field[[CellDim, KDim], wpfloat],
-    qi: gtx.Field[[CellDim, KDim], wpfloat],
-    qr: gtx.Field[[CellDim, KDim], wpfloat],
-    qs: gtx.Field[[CellDim, KDim], wpfloat],
-    qg: gtx.Field[[CellDim, KDim], wpfloat],
-    qnc: gtx.Field[[CellDim, KDim], wpfloat],  # originally 2D Field, now 3D Field
-    temperature_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qv_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qc_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qi_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qr_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qs_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    qg_tendency: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqrv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqsv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqgv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    rhoqiv_old_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_r: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_s: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_g: gtx.Field[[CellDim, KDim], wpfloat],
-    vnew_i: gtx.Field[[CellDim, KDim], wpfloat],
-    #dist_cldtop: gtx.Field[[CellDim, KDim], wpfloat],
-    #rho_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    #crho1o2_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    #crhofac_qi_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    #snow_sed0_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    #qvsw_kup: gtx.Field[[CellDim, KDim], wpfloat],
-    #k_lev: gtx.Field[[CellDim, KDim], gtx.int32],
-    horizontal_start: gtx.int32,
-    horizontal_end: gtx.int32,
-    vertical_start: gtx.int32,
-    vertical_end: gtx.int32,
-):
-    _icon_graupel(
-        startmoist_level,
-        ground_level,
-        liquid_autoconversion_option,
-        snow_intercept_option,
-        is_isochoric,
-        use_constant_water_heat_capacity,
-        ice_stickeff_min,
-        ice_v0,
-        ice_sedi_density_factor_exp,
-        snow_v0,
-        ccsrim,
-        ccsagg,
-        ccsvel,
-        rain_exp_v,
-        rain_v0,
-        cevxp,
-        cev,
-        bevxp,
-        bev,
-        rain_exp_v_ln1o2,
-        ice_exp_v_ln1o2,
-        graupel_exp_sed_ln1o2,
+        k_lev,
+        Szdep_v2i,
+        Szsub_v2i,
+        Snucl_v2i,
+        Scfrz_c2i,
+        Simlt_i2c,
+        Sicri_i2g,
+        Sidep_v2i,
+        Sdaut_i2s,
+        Saggs_i2s,
+        Saggg_i2g,
+        Siaut_i2s,
+        Ssmlt_s2r,
+        Srims_c2s,
+        Ssdep_v2s,
+        Scosg_s2g,
+        Sgmlt_g2r,
+        Srcri_r2g,
+        Sgdep_v2g,
+        Srfrz_r2g,
+        Srimg_c2g
+    ) = _graupel_scan(
+        kstart_moist,
+        kend,
         dt,
         dz,
         temperature,
@@ -2124,26 +1565,448 @@ def icon_graupel(
         qs,
         qg,
         qnc,
-        out=(
-            temperature_tendency,
-            qv_tendency,
-            qc_tendency,
-            qi_tendency,
-            qr_tendency,
-            qs_tendency,
-            qg_tendency,
-            rhoqrv_old_kup,
-            rhoqsv_old_kup,
-            rhoqgv_old_kup,
-            rhoqiv_old_kup,
-            vnew_r,
-            vnew_s,
-            vnew_g,
-            vnew_i
-        ),
-        domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
-        }
+        l_cv,
+        ithermo_water
     )
 
+    return(
+        temperature_,
+        qv_,
+        qc_,
+        qi_,
+        qr_,
+        qs_,
+        qg_,
+        rhoqrV_old_kup,
+        rhoqsV_old_kup,
+        rhoqgV_old_kup,
+        rhoqiV_old_kup,
+        Vnew_r,
+        Vnew_s,
+        Vnew_g,
+        Vnew_i
+    )
+
+
+
+
+@field_operator
+def _graupel_t_tendency(
+    dt: float64,
+    temperature_new: Field[[CellDim,KDim], float64],
+    temperature_old: Field[[CellDim,KDim], float64]
+) -> Field[[CellDim,KDim], float64]:
+    Cdtr = 1.0 / dt
+    return (temperature_new - temperature_old) * Cdtr
+
+@field_operator
+def _graupel_q_tendency(
+    dt: float64,
+    qv_new: Field[[CellDim, KDim], float64],
+    qc_new: Field[[CellDim, KDim], float64],
+    qi_new: Field[[CellDim, KDim], float64],
+    qr_new: Field[[CellDim, KDim], float64],
+    qs_new: Field[[CellDim, KDim], float64],
+    qv_old: Field[[CellDim, KDim], float64],
+    qc_old: Field[[CellDim, KDim], float64],
+    qi_old: Field[[CellDim, KDim], float64],
+    qr_old: Field[[CellDim, KDim], float64],
+    qs_old: Field[[CellDim, KDim], float64]
+) -> tuple[
+    Field[[CellDim,KDim], float64],
+    Field[[CellDim,KDim], float64],
+    Field[[CellDim,KDim], float64],
+    Field[[CellDim,KDim], float64],
+    Field[[CellDim,KDim], float64]
+]:
+    Cdtr = 1.0 / dt
+    return (
+        maximum( -qv_old * Cdtr , (qv_new - qv_old) * Cdtr ),
+        maximum( -qc_old * Cdtr , (qc_new - qc_old) * Cdtr ),
+        maximum( -qi_old * Cdtr , (qi_new - qi_old) * Cdtr ),
+        maximum( -qr_old * Cdtr , (qr_new - qr_old) * Cdtr ),
+        maximum( -qs_old * Cdtr , (qs_new - qs_old) * Cdtr )
+    )
+
+
+@scan_operator(
+    axis=KDim,
+    forward=True,
+    init=(
+        *(0.0,) * 5,  # rain, snow, graupel, ice, solid predicitation fluxes
+        0
+    ),
+)
+def _graupel_flux_scan(
+    state_kup: tuple[
+        float64,  # rain flux
+        float64,  # snow flux
+        float64,  # graupel flux
+        float64,  # ice flux
+        float64,  # solid precipitation flux
+        int32  # k level
+    ],
+    # Grid information
+    kstart_moist: int32,  # k starting level
+    kend: int32,  # k bottom level
+    rho: float64,
+    qr: float64,
+    qs: float64,
+    qg: float64,
+    qi: float64,
+    Vnew_r: float64,
+    Vnew_s: float64,
+    Vnew_g: float64,
+    Vnew_i: float64,
+    rhoqrV_old_kup: float64,
+    rhoqsV_old_kup: float64,
+    rhoqgV_old_kup: float64,
+    rhoqiV_old_kup: float64,
+    lpres_pri: bool,
+    ldass_lhn: bool  # if true, latent heat nudging is applied
+):
+    # unpack carry
+    (
+        prr_gsp_kup,
+        prs_gsp_kup,
+        prg_gsp_kup,
+        pri_gsp_kup,
+        qrsflux_kup,
+        k_lev
+    ) = state_kup
+
+    # | (k_lev > kend_moist)
+    if ( k_lev < kstart_moist ):
+        # tracing current k level
+        k_lev = k_lev + int32(1)
+        return(
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            k_lev
+        )
+
+
+    qrsflux = 0.0
+    prr_gsp = 0.0
+    prs_gsp = 0.0
+    prg_gsp = 0.0
+    pri_gsp = 0.0
+
+    rhoqrV_new_kup = qr * rho * Vnew_r
+    rhoqsV_new_kup = qs * rho * Vnew_s
+    rhoqgV_new_kup = qg * rho * Vnew_g
+    rhoqiV_new_kup = qi * rho * Vnew_i
+    if ( rhoqrV_new_kup <= graupel_const.GrConst_qmin ): rhoqrV_new_kup = 0.0
+    if ( rhoqsV_new_kup <= graupel_const.GrConst_qmin ): rhoqsV_new_kup = 0.0
+    if ( rhoqgV_new_kup <= graupel_const.GrConst_qmin ): rhoqgV_new_kup = 0.0
+    if ( rhoqiV_new_kup <= graupel_const.GrConst_qmin ): rhoqiV_new_kup = 0.0
+
+    # good solution provided by Nikki to know where I am along the KDim axis
+    if ( k_lev == kend ):
+
+        # Precipitation fluxes at the ground
+        prr_gsp = 0.5 * (qr * rho * Vnew_r + rhoqrV_old_kup)
+        if ( graupel_const.GrConst_lsedi_ice & lpres_pri ):
+            prs_gsp = 0.5 * (rho * qs * Vnew_s + rhoqsV_old_kup)
+            pri_gsp = 0.5 * (rho * qi * Vnew_i + rhoqiV_old_kup)
+        elif ( graupel_const.GrConst_lsedi_ice ):
+            prs_gsp = 0.5 * (rho * (qs * Vnew_s + qi * Vnew_i) + rhoqsV_old_kup + rhoqiV_old_kup)
+        else:
+            prs_gsp = 0.5 * (qs * rho * Vnew_s + rhoqsV_old_kup)
+        prg_gsp = 0.5 * (qg * rho * Vnew_g + rhoqgV_old_kup)
+
+        # for the latent heat nudging
+        if ( ldass_lhn ):  # THEN default: true
+            qrsflux = prr_gsp + prs_gsp + prg_gsp
+
+    else:
+
+        # for the latent heat nudging
+        if ( ldass_lhn ):  # THEN default: true
+            if (graupel_const.GrConst_lsedi_ice):
+                qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup + rhoqiV_new_kup
+                qrsflux = 0.5 * (qrsflux + rhoqrV_old_kup + rhoqsV_old_kup + rhoqgV_old_kup + rhoqiV_old_kup)
+            else:
+                qrsflux = rhoqrV_new_kup + rhoqsV_new_kup + rhoqgV_new_kup
+                qrsflux = 0.5 * (qrsflux + rhoqrV_old_kup + rhoqsV_old_kup + rhoqgV_old_kup)
+
+    # tracing current k level
+    k_lev = k_lev + int32(1)
+
+    return(
+        prr_gsp,
+        prs_gsp,
+        prg_gsp,
+        pri_gsp,
+        qrsflux,
+        k_lev
+    )
+
+'''
+def graupel_wrapper(
+   # Grid information
+   dt: float64,  # time step
+   dz: Field[[CellDim, KDim], float64],  # level thickness
+   # Prognostics
+   temperature: Field[[CellDim, KDim], float64],
+   pres: Field[[CellDim, KDim], float64],
+   rho: Field[[CellDim, KDim], float64],
+   qv: Field[[CellDim, KDim], float64],
+   qc: Field[[CellDim, KDim], float64],
+   qi: Field[[CellDim, KDim], float64],
+   qr: Field[[CellDim, KDim], float64],
+   qs: Field[[CellDim, KDim], float64],
+   qg: Field[[CellDim, KDim], float64],
+   # Number Densities
+   qnc: Field[[CellDim, KDim], float64], # originally 2D Field, now 3D Field
+   # Option Switches
+   l_cv: bool,
+   lpres_pri: bool,
+   ithermo_water: int32,
+   ldass_lhn: bool, # if true, latent heat nudging is applied
+   ldiag_ttend: bool,  # if true, temperature tendency shall be diagnosed
+   ldiag_qtend: bool,  # if true, moisture tendencies shall be diagnosed
+   # Grid indices
+   cell_size: int32,
+   k_size: int32,
+   kstart_moist: int32,
+   kend: int32,
+   kend_moist: int32,
+):
+
+    temperature_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qv_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qc_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qi_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qr_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qs_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qg_ = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+
+    #rho_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    #Crho1o2_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    #Crhofac_qi_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    #Cvz0s_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    rhoqrV_old_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    rhoqsV_old_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    rhoqgV_old_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    rhoqiV_old_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    Vnew_r = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    Vnew_s = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    Vnew_g = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    Vnew_i = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    #dist_cldtop = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    #qvsw_kup = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    #k_lev = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=int32))
+
+
+    _graupel(
+        kstart_moist,
+        kend,
+        dt,
+        dz,
+        temperature,
+        pres,
+        rho,
+        qv,
+        qi,
+        qc,
+        qr,
+        qs,
+        qg,
+        qnc,
+        l_cv,
+        ithermo_water,
+        out=(
+            temperature_,
+            qv_,
+            qc_,
+            qi_,
+            qr_,
+            qs_,
+            qg_,
+            # used in graupel scheme, do not output to outer world
+            rhoqrV_old_kup,
+            rhoqsV_old_kup,
+            rhoqgV_old_kup,
+            rhoqiV_old_kup,
+            Vnew_r,
+            Vnew_s,
+            Vnew_g,
+            Vnew_i
+        ),
+        offset_provider={}
+    )
+
+
+    ddt_tend_t = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    ddt_tend_qv = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    ddt_tend_qc = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    ddt_tend_qi = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    ddt_tend_qr = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    ddt_tend_qs = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    ddt_tend_qg = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+
+    prr_gsp = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    prs_gsp = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    pri_gsp = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    prg_gsp = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+    qrsflux = np_as_located_field(CellDim, KDim)(np.zeros((cell_size, k_size), dtype=float64))
+
+
+    if ( ldiag_ttend ):
+        _graupel_t_tendency(
+            dt,
+            temperature_,
+            temperature,
+            out=(
+                ddt_tend_t
+            ),
+            offset_provider={}
+        )
+
+    if ( ldiag_qtend ):
+        _graupel_q_tendency(
+            dt,
+            qv_,
+            qc_,
+            qi_,
+            qr_,
+            qs_,
+            qg_,
+            qv,
+            qc,
+            qi,
+            qr,
+            qs,
+            qg,
+            out=(
+                ddt_tend_qv,
+                ddt_tend_qc,
+                ddt_tend_qi,
+                ddt_tend_qr,
+                ddt_tend_qs,
+                ddt_tend_qg
+            ),
+            offset_provider={}
+        )
+
+
+    _graupel_flux(
+        kstart_moist,
+        kend,
+        rho,
+        qr_,
+        qs_,
+        qi_,
+        qg_,
+        Vnew_r,
+        Vnew_s,
+        Vnew_i,
+        Vnew_g,
+        rhoqrV_old_kup,
+        rhoqsV_old_kup,
+        rhoqiV_old_kup,
+        rhoqgV_old_kup,
+        lpres_pri,
+        ldass_lhn,
+        out=(
+            prr_gsp,
+            prs_gsp,
+            pri_gsp,
+            prg_gsp,
+            qrsflux
+        ),
+        offset_provider={}
+    )
+
+
+    return (
+        temperature_,
+        qv_,
+        qc_,
+        qi_,
+        qr_,
+        qs_,
+        qg_,
+        ddt_tend_t,
+        ddt_tend_qv,
+        ddt_tend_qc,
+        ddt_tend_qi,
+        ddt_tend_qr,
+        ddt_tend_qs,
+        ddt_tend_qg,
+        prr_gsp,
+        prs_gsp,
+        pri_gsp,
+        prg_gsp,
+        qrsflux
+    )
+'''
+
+@program
+def graupel(
+    kstart_moist: int32,
+    kend: int32,
+    dt: float64,  # time step
+    dz: Field[[CellDim, KDim], float64],
+    temperature: Field[[CellDim, KDim], float64],
+    pres: Field[[CellDim, KDim], float64],
+    rho: Field[[CellDim, KDim], float64],
+    qv: Field[[CellDim, KDim], float64],
+    qc: Field[[CellDim, KDim], float64],
+    qi: Field[[CellDim, KDim], float64],
+    qr: Field[[CellDim, KDim], float64],
+    qs: Field[[CellDim, KDim], float64],
+    qg: Field[[CellDim, KDim], float64],
+    qnc: Field[[CellDim, KDim], float64],  # originally 2D Field, now 3D Field
+    l_cv: bool,
+    ithermo_water: int32,
+    rhoqrV_old_kup: Field[[CellDim, KDim], float64],
+    rhoqsV_old_kup: Field[[CellDim, KDim], float64],
+    rhoqgV_old_kup: Field[[CellDim, KDim], float64],
+    rhoqiV_old_kup: Field[[CellDim, KDim], float64],
+    Vnew_r: Field[[CellDim, KDim], float64],
+    Vnew_s: Field[[CellDim, KDim], float64],
+    Vnew_g: Field[[CellDim, KDim], float64],
+    Vnew_i: Field[[CellDim, KDim], float64]
+):
+    _graupel(
+        kstart_moist,
+        kend,
+        dt,
+        dz,
+        temperature,
+        pres,
+        rho,
+        qv,
+        qc,
+        qi,
+        qr,
+        qs,
+        qg,
+        qnc,
+        l_cv,
+        ithermo_water,
+        out = (
+            temperature,
+            qv,
+            qc,
+            qi,
+            qr,
+            qs,
+            qg,
+            rhoqrV_old_kup,
+            rhoqsV_old_kup,
+            rhoqgV_old_kup,
+            rhoqiV_old_kup,
+            Vnew_r,
+            Vnew_s,
+            Vnew_g,
+            Vnew_i
+        )
+    )
+
+#(backend=roundtrip.executor)

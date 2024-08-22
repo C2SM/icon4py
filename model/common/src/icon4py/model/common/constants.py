@@ -37,6 +37,9 @@ CPD_O_RD: Final[wpfloat] = CPD / RD
 GAS_CONSTANT_WATER_VAPOR: Final[wpfloat] = 461.51
 RV: Final[wpfloat] = GAS_CONSTANT_WATER_VAPOR
 
+#: Melting temperature of ice/snow [K]
+TMELT: Final[wpfloat] = 273.15
+
 #: Av. gravitational acceleration [m/s^2]
 GRAVITATIONAL_ACCELERATION: Final[wpfloat] = 9.80665
 GRAV: Final[wpfloat] = GRAVITATIONAL_ACCELERATION
