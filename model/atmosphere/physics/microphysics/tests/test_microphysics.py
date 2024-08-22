@@ -610,6 +610,7 @@ def test_graupel(
         )
     print()
     for k in range(icon_grid.num_levels):
+
         print("{0:3d} {1:6e} {2:5e} {3:5e} {4:5e} {5:5e} {6:5e} {7:5e}".format(
             k,
             np.abs(relative_error_t[:,k]).max(),
@@ -621,7 +622,19 @@ def test_graupel(
             np.abs(relative_error_qg[:,k]).max(),
         )
         )
-
+        '''
+        print("{0:3d} {1:6e} {2:5e} {3:5e} {4:5e} {5:5e} {6:5e} {7:5e}".format(
+            k,
+            np.abs(relative_error_t[0, k]),
+            np.abs(relative_error_qv[0, k]),
+            np.abs(relative_error_qc[0, k]),
+            np.abs(relative_error_qi[0, k]),
+            np.abs(relative_error_qr[0, k]),
+            np.abs(relative_error_qs[0, k]),
+            np.abs(relative_error_qg[0, k]),
+        )
+        )
+        '''
     '''
 
     assert dallclose(

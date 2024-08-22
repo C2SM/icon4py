@@ -1819,8 +1819,8 @@ def _icon_graupel_scan(
     # limit snow depletion in order to avoid negative values of qs
     ccorr = wpfloat("1.0")
     if ssdep_v2s <= wpfloat("0.0"):
-        Csum = ssmlt_s2r + scosg_s2g - ssdep_v2s
-        if Csum > wpfloat("0.0"): ccorr = cssmax / maximum(cssmax, csum)
+        csum = ssmlt_s2r + scosg_s2g - ssdep_v2s
+        if csum > wpfloat("0.0"): ccorr = cssmax / maximum(cssmax, csum)
         ssmlt_s2r = ccorr * ssmlt_s2r
         scosg_s2g = ccorr * scosg_s2g
         ssdep_v2s = ccorr * ssdep_v2s
