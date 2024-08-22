@@ -249,6 +249,8 @@ logging.basicConfig(level=logging.{%- if _this_node.debug_mode -%}DEBUG{%- else 
                     datefmt='%Y-%m-%d %H:%M:%S')
 {% if _this_node.backend == 'GPU' %}logging.info(cp.show_config()) {% endif %}
 
+from icon4py.model.common.settings import xp
+
 # embedded module imports
 {% for stmt in imports -%}
 {{ stmt }}
@@ -312,6 +314,11 @@ def {{ func.name }}_wrapper(
         msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
         logging.debug(msg)
         {% endif %}
+        msg = 'min of {{ arg.name }} = %s' % str(xp.min({{ arg.name}}))
+        logging.debug(msg)
+
+        msg = 'max of {{ arg.name }} = %s' % str(xp.max({{ arg.name}}))
+        logging.debug(msg)
         {% endif %}
         {% endfor %}
 
