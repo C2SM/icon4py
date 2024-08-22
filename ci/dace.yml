@@ -8,7 +8,7 @@ variables:
   stage: test
   script:
     - pip install dace==$DACE_VERSION
-    - tox -r -e run_stencil_tests -c model/ -p $NUM_PROCESSES -- --backend=$BACKEND --grid=$GRID --verbose
+    - tox -r -e run_stencil_tests -c model/ -- --backend=$BACKEND --grid=$GRID --verbose
   parallel:
     matrix:
     - BACKEND: [dace_cpu, dace_gpu]
