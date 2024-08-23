@@ -117,28 +117,28 @@ class VelocityAdvection:
         edge_domain = h_grid.domain(dims.EdgeDim)
         cell_domain = h_grid.domain(dims.CellDim)
         start_vertex_lateral_boundary_row_2 = self.grid.start_index(
-            vertex_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)
+            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Marker.HALO))
+        end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
         start_edge_lateral_boundary_row_5 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
         start_edge_lateral_boundary_row_7 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
-        start_edge_nudging_row_2 = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
-        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+        start_edge_nudging_row_2 = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-        end_edge_local_minus1 = self.grid.end_index(edge_domain(h_grid.Marker.HALO))
-        end_edge_local_minus2 = self.grid.end_index(edge_domain(h_grid.Marker.HALO_LEVEL_2))
+        end_edge_local_minus1 = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
+        end_edge_local_minus2 = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
         start_cell_lb_plus3 = self.grid.start_index(
-            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_4)
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
-        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
-        end_cell_local = self.grid.end_index(cell_domain(h_grid.Marker.LOCAL))
-        end_cell_local_minus1 = self.grid.end_index(cell_domain(h_grid.Marker.HALO))
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        end_cell_local_minus1 = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(
@@ -424,23 +424,23 @@ class VelocityAdvection:
         edge_domain = h_grid.domain(dims.EdgeDim)
         cell_domain = h_grid.domain(dims.CellDim)
         start_vertex_lateral_boundary_row_2 = self.grid.start_index(
-            vertex_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)
+            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Marker.HALO))
+        end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
         start_edge_lateral_boundary_row_7 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
-        start_edge_nudging_row_2 = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
-        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
-        end_edge_halo = self.grid.end_index(edge_domain(h_grid.Marker.HALO))
+        start_edge_nudging_row_2 = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        end_edge_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         start_cell_lateral_boundary_row_3 = self.grid.start_index(
-            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_4)
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
 
-        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
-        end_cell_local = self.grid.end_index(cell_domain(h_grid.Marker.LOCAL))
-        end_cell_halo = self.grid.end_index(cell_domain(h_grid.Marker.HALO))
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         if not vn_only:
             mo_icon_interpolation_scalar_cells2verts_scalar_ri_dsl(

@@ -17,9 +17,6 @@ from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
 )
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal
-from icon4py.model.common.grid.horizontal import (
-    HorizontalMarkerIndex,
-)
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
@@ -64,6 +61,11 @@ from icon4py.model.common.test_utils.helpers import (
     random_field,
     zero_field,
 )
+
+
+cell_domain = horizontal.domain(dims.CellDim)
+edge_domain = horizontal.domain(dims.EdgeDim)
+vertex_domain = horizontal.domain(dims.VertexDim)
 
 
 class TestComputeZMc(StencilTest):
@@ -305,22 +307,15 @@ def test_compute_ddxt_z_full_e(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     ddxt_z_full_ref = metrics_savepoint.ddxt_z_full().asnumpy()
-    horizontal_start_vertex = icon_grid.get_start_index(
-        dims.VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1,
+    horizontal_start_vertex = icon_grid.start_index(
+        vertex_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    horizontal_end_vertex = icon_grid.get_end_index(
-        dims.VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) - 1,
+    horizontal_end_vertex = icon_grid.end_index(vertex_domain(horizontal.Zone.INTERIOR))
+    horizontal_start_edge = icon_grid.start_index(
+        edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    horizontal_start_edge = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 2,
-    )
-    horizontal_end_edge = icon_grid.get_end_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) - 1,
-    )
+
+    horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
@@ -413,14 +408,8 @@ def test_compute_ddxn_z_full(
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
-    horizontal_start = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
-    )
-    horizontal_end = icon_grid.get_end_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) - 1,
-    )
+    horizontal_start = icon_grid.start_index(edge_domain)(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    horizontal_end = icon_grid.end_index(edge_domain)(horizontal.Zone.INTERIOR)
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     ddxn_z_half_e = zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
@@ -455,22 +444,14 @@ def test_compute_ddxt_z_full(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     ddxt_z_full_ref = metrics_savepoint.ddxt_z_full().asnumpy()
-    horizontal_start_vertex = icon_grid.get_start_index(
-        dims.VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1,
+    horizontal_start_vertex = icon_grid.start_index(vertex_domain)(
+        horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2
     )
-    horizontal_end_vertex = icon_grid.get_end_index(
-        dims.VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) - 1,
+    horizontal_end_vertex = icon_grid.end_index(vertex_domain)(horizontal.Zone.INTERIOR)
+    horizontal_start_edge = icon_grid.start_index(edge_domain)(
+        horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3
     )
-    horizontal_start_edge = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 2,
-    )
-    horizontal_end_edge = icon_grid.get_end_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) - 1,
-    )
+    horizontal_end_edge = icon_grid.end_index(edge_domain)(horizontal.Zone.INTERIOR)
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
@@ -514,9 +495,8 @@ def test_compute_exner_exfac(
 ):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim, HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1
-    )
+
+    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     config = (
         MetricsConfig(exner_expol=0.333)
         if experiment == dt_utils.REGIONAL_EXPERIMENT
@@ -554,14 +534,10 @@ def test_compute_vwind_impl_wgt(
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     z_ddxt_z_half_e = zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
     z_ifv = zero_field(icon_grid, dims.VertexDim, dims.KDim, extend={dims.KDim: 1})
-    horizontal_start = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
-    )
-    horizontal_end = icon_grid.get_end_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) - 1,
-    )
+    horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
+    horizontal_end = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
+
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
 
@@ -576,23 +552,15 @@ def test_compute_vwind_impl_wgt(
         offset_provider={"E2C": icon_grid.get_offset_provider("E2C")},
     )
 
-    horizontal_start_edge = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 2,
+    horizontal_start_edge = icon_grid.start_index(
+        edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    horizontal_end_edge = icon_grid.get_end_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) - 1,
-    )
+    horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
 
-    horizontal_start_vertex = icon_grid.get_start_index(
-        dims.VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1,
+    horizontal_start_vertex = icon_grid.start_index(
+        vertex_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    horizontal_end_vertex = icon_grid.get_end_index(
-        dims.VertexDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) - 1,
-    )
+    horizontal_end_vertex = icon_grid.end_index(vertex_domain(horizontal.Zone.INTERIOR))
     compute_cell_2_vertex_interpolation(
         z_ifc,
         interpolation_savepoint.c_intp(),
@@ -616,9 +584,8 @@ def test_compute_vwind_impl_wgt(
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
 
-    horizontal_start_cell = icon_grid.get_start_index(
-        dims.CellDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
+    horizontal_start_cell = icon_grid.start_index(cell_domain)(
+        horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
@@ -688,13 +655,11 @@ def test_compute_pg_exdist_dsl(
     flat_idx = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     z_ifc = metrics_savepoint.z_ifc()
     z_ifc_sliced = gtx.as_field((dims.CellDim,), z_ifc.asnumpy()[:, nlev])
-    start_edge_nudging = icon_grid.get_end_index(
-        dims.EdgeDim, HorizontalMarkerIndex.nudging(dims.EdgeDim)
+    start_edge_nudging = icon_grid.end_index(edge_domain(horizontal.Zone.NUDGING))
+    horizontal_start_edge = icon_grid.start_index(
+        edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    horizontal_start_edge = icon_grid.get_start_index(
-        dims.EdgeDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 2,
-    )
+
     e_lev = gtx.as_field((dims.EdgeDim,), np.arange(icon_grid.num_edges, dtype=gtx.int32))
 
     average_cell_kdim_level_up.with_backend(backend)(
@@ -789,12 +754,8 @@ def test_compute_mask_prog_halo_c(metrics_savepoint, icon_grid, grid_savepoint, 
     mask_prog_halo_c_full = zero_field(icon_grid, dims.CellDim, dtype=bool)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     mask_prog_halo_c_ref = metrics_savepoint.mask_prog_halo_c()
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim, HorizontalMarkerIndex.local(dims.CellDim) - 1
-    )
-    horizontal_end = icon_grid.get_end_index(
-        dims.CellDim, HorizontalMarkerIndex.local(dims.CellDim)
-    )
+    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
+    horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
     compute_mask_prog_halo_c.with_backend(backend)(
         c_refin_ctrl=c_refin_ctrl,
         mask_prog_halo_c=mask_prog_halo_c_full,
@@ -811,12 +772,9 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
     bdy_halo_c_full = zero_field(icon_grid, dims.CellDim, dtype=bool)
     c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
     bdy_halo_c_ref = metrics_savepoint.bdy_halo_c()
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim, HorizontalMarkerIndex.local(dims.CellDim) - 1
-    )
-    horizontal_end = icon_grid.get_end_index(
-        dims.CellDim, HorizontalMarkerIndex.local(dims.CellDim)
-    )
+    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.HALO))
+    horizontal_end = icon_grid.end_index(cell_domain(horizontal.Zone.LOCAL))
+
     compute_bdy_halo_c(
         c_refin_ctrl=c_refin_ctrl,
         bdy_halo_c=bdy_halo_c_full,
@@ -833,9 +791,7 @@ def test_compute_bdy_halo_c(metrics_savepoint, icon_grid, grid_savepoint, backen
 def test_compute_hmask_dd3d(metrics_savepoint, icon_grid, grid_savepoint, backend):
     hmask_dd3d_full = zero_field(icon_grid, dims.EdgeDim)
     e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim, HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1
-    )
+    horizontal_start = icon_grid.start_index(cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
     hmask_dd3d_ref = metrics_savepoint.hmask_dd3d()
     compute_hmask_dd3d(
         e_refin_ctrl=e_refin_ctrl,

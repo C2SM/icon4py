@@ -250,8 +250,8 @@ def test_velocity_predictor_step(
     # stencil 02,05
     assert helpers.dallclose(diagnostic_state.vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
 
-    start_edge_lateral_boundary_6 = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
+    start_edge_lateral_boundary_6 = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     # stencil 07
     if not vn_only:
@@ -262,9 +262,7 @@ def test_velocity_predictor_step(
         )
 
     # stencil 08
-    start_cell_nudging = icon_grid.get_start_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-    )
+    start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
@@ -417,7 +415,7 @@ def test_velocity_corrector_step(
 
     # stencil 07
     start_cells_lateral_boundary_d = icon_grid.start_index(
-        h_grid.domain(dims.EdgeDim)(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     assert helpers.dallclose(
         velocity_advection.z_v_grad_w.asnumpy()[start_cells_lateral_boundary_d:, :],
@@ -425,7 +423,7 @@ def test_velocity_corrector_step(
         atol=1e-16,
     )
     # stencil 08
-    start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Marker.NUDGING))
+    start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],

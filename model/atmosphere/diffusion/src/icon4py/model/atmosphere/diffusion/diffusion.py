@@ -384,9 +384,9 @@ class Diffusion:
         def _get_start_index_for_w_diffusion() -> gtx.int32:
             cell_domain = h_grid.domain(dims.CellDim)
             return (
-                self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+                self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
                 if self.grid.limited_area
-                else self.grid.start_index(cell_domain(h_grid.Marker.INTERIOR))
+                else self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
             )
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)
@@ -544,30 +544,30 @@ class Diffusion:
         """
         klevels = self.grid.num_levels
         cell_domain = h_grid.domain(dims.CellDim)
-        cell_start_interior = self.grid.start_index(cell_domain(h_grid.Marker.INTERIOR))
+        cell_start_interior = self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
 
-        cell_start_nudging = self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
-        cell_end_local = self.grid.end_index(cell_domain(h_grid.Marker.END))
-        cell_end_halo = self.grid.end_index(cell_domain(h_grid.Marker.HALO))
+        cell_start_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        cell_end_local = self.grid.end_index(cell_domain(h_grid.Zone.END))
+        cell_end_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         edge_domain = h_grid.domain(dims.EdgeDim)
         edge_start_second_nudging_level = self.grid.start_index(
-            edge_domain(h_grid.Marker.NUDGING_LEVEL_2)
+            edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
         )
-        edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING))
+        edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING))
 
         edge_start_lateral_boundary_level_5 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        edge_end_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
-        edge_end_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Marker.HALO_LEVEL_2))
-        edge_end_halo = self.grid.end_index(edge_domain(h_grid.Marker.HALO))
+        edge_end_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
+        edge_end_halo_level_2 = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
+        edge_end_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         vertex_domain = h_grid.domain(dims.VertexDim)
         vertex_start_lateral_boundary_level_2 = self.grid.start_index(
-            vertex_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)
+            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        vertex_end_local = self.grid.end_index(vertex_domain(h_grid.Marker.LOCAL))
+        vertex_end_local = self.grid.end_index(vertex_domain(h_grid.Zone.LOCAL))
 
         # dtime dependent: enh_smag_factor,
         cached.scale_k(self.enh_smag_fac, dtime, self.diff_multfac_smag, offset_provider={})

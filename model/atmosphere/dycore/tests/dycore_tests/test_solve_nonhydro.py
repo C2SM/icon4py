@@ -181,12 +181,12 @@ def test_nonhydro_predictor_step(
     cell_domain = h_grid.domain(dims.CellDim)
     edge_domain = h_grid.domain(dims.EdgeDim)
 
-    cell_start_lb_plus2 = icon_grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_3))
-    cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+    cell_start_lb_plus2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+    cell_start_nudging = icon_grid.start_index(cell_domain(h_grid.Zone.NUDGING))
 
-    edge_start_lb_plus4 = icon_grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5))
-    edge_start_lb_plus6 = icon_grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7))
-    edge_start_nuding_plus1 = icon_grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
+    edge_start_lb_plus4 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
+    edge_start_lb_plus6 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7))
+    edge_start_nuding_plus1 = icon_grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
 
     # stencils 2, 3
     assert helpers.dallclose(
@@ -945,11 +945,11 @@ def test_run_solve_nonhydro_multi_step(
             nnow = nnew
             nnew = ntemp
 
-    cell_start_lb_plus2 = icon_grid.get_start_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
+    cell_start_lb_plus2 = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    edge_start_lb_plus4 = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
+    edge_start_lb_plus4 = icon_grid.start_index(
+        h_grid.comain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
 
     assert helpers.dallclose(

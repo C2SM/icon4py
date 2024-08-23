@@ -580,11 +580,11 @@ class SolveNonhydro:
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
         cell_domain = h_grid.domain(dims.CellDim)
-        start_cell_lb = self.grid.end_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
-        end_cell_end = self.grid.end_index(cell_domain(h_grid.Marker.END))
+        start_cell_lb = self.grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
         edge_domain = h_grid.domain(dims.EdgeDim)
-        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY))
-        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
@@ -629,14 +629,14 @@ class SolveNonhydro:
             at_last_substep=at_last_substep,
         )
 
-        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
 
         end_cell_nudging_minus1 = self.grid.end_index(
-            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_4)
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
-        start_cell_halo = self.grid.start_index(cell_domain(h_grid.Marker.HALO))
+        start_cell_halo = self.grid.start_index(cell_domain(h_grid.Zone.HALO))
 
-        end_cell_end = self.grid.end_index(cell_domain(h_grid.Marker.END))
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
 
         if self.grid.limited_area:
             compute_theta_and_exner(
@@ -720,50 +720,50 @@ class SolveNonhydro:
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         vertex_domain = h_grid.domain(dims.VertexDim)
-        end_cell_end = self.grid.end_index(cell_domain(h_grid.Marker.END))
+        end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
 
-        second_halo_cell = cell_domain(h_grid.Marker.HALO_LEVEL_2)
+        second_halo_cell = cell_domain(h_grid.Zone.HALO_LEVEL_2)
         start_cell_local_minus2 = self.grid.start_index(second_halo_cell)
         end_cell_local_minus2 = self.grid.end_index(second_halo_cell)
 
         start_vertex_lb_plus1 = self.grid.start_index(
-            vertex_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_2)
+            vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        end_vertex_local_minus1 = self.grid.end_index(vertex_domain(h_grid.Marker.HALO))
+        end_vertex_local_minus1 = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
-        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
         end_cell_nudging_minus1 = self.grid.end_index(
-            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_4)
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
 
         start_edge_lb_plus6 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
-        end_edge_local_minus1 = self.grid.end_index(edge_domain(h_grid.Marker.HALO))
-        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+        end_edge_local_minus1 = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
-        start_edge_nudging_plus1 = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
-        end_edge_end = self.grid.end_index(edge_domain(h_grid.Marker.END))
+        start_edge_nudging_plus1 = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_end = self.grid.end_index(edge_domain(h_grid.Zone.END))
 
-        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY))
+        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
 
-        end_edge_nudging = self.grid.end_index(edge_domain(h_grid.Marker.NUDGING))
+        end_edge_nudging = self.grid.end_index(edge_domain(h_grid.Zone.NUDGING))
 
         start_edge_lb_plus4 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        edge_second_halo = edge_domain(h_grid.Marker.HALO_LEVEL_2)
+        edge_second_halo = edge_domain(h_grid.Zone.HALO_LEVEL_2)
         start_edge_local_minus2 = self.grid.start_index(edge_second_halo)
 
         end_edge_local_minus2 = self.grid.end_index(edge_second_halo)
 
         start_cell_lb_plus2 = self.grid.start_index(
-            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_3)
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
-        end_cell_halo = self.grid.end_index(cell_domain(h_grid.Marker.HALO))
-        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Marker.NUDGING))
+        end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
+        start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
 
-        end_cell_local = self.grid.end_index(cell_domain(h_grid.Marker.LOCAL))
+        end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         #  Precompute Rayleigh damping factor
         solve_nh_utils.compute_z_raylfac(
@@ -1456,30 +1456,30 @@ class SolveNonhydro:
         cell_domain = h_grid.domain(dims.CellDim)
         edge_domain = h_grid.domain(dims.EdgeDim)
         start_cell_lb_plus2 = self.grid.start_index(
-            cell_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_3)
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
 
         start_edge_lb_plus6 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_7)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
         )
 
-        start_edge_nudging_plus1 = self.grid.start_index(edge_domain(h_grid.Marker.NUDGING_LEVEL_2))
-        end_edge_local = self.grid.end_index(edge_domain(h_grid.Marker.LOCAL))
+        start_edge_nudging_plus1 = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
+        end_edge_local = self.grid.end_index(edge_domain(h_grid.Zone.LOCAL))
 
         start_edge_lb_plus4 = self.grid.start_index(
-            edge_domain(h_grid.Marker.LATERAL_BOUNDARY_LEVEL_5)
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        end_edge_second_halo_line = self.grid.end_index(edge_domain(h_grid.Marker.HALO_LEVEL_2))
+        end_edge_second_halo_line = self.grid.end_index(edge_domain(h_grid.Zone.HALO_LEVEL_2))
 
-        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Marker.LATERAL_BOUNDARY))
-        end_edge_end = self.grid.end_index(edge_domain(h_grid.Marker.END))
+        start_edge_lb = self.grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY))
+        end_edge_end = self.grid.end_index(edge_domain(h_grid.Zone.END))
 
-        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Marker.LATERAL_BOUNDARY))
-        cell_nudging = cell_domain(h_grid.Marker.NUDGING)
+        start_cell_lb = self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
+        cell_nudging = cell_domain(h_grid.Zone.NUDGING)
         end_cell_nudging = self.grid.end_index(cell_nudging)
 
         start_cell_nudging = self.grid.start_index(cell_nudging)
-        end_cell_local = self.grid.end_index(cell_domain(h_grid.Marker.LOCAL))
+        end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
         lvn_only = False
         log.debug(f"corrector run velocity advection")

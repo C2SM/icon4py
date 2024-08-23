@@ -10,22 +10,25 @@ import re
 import pytest
 
 from icon4py.model.common import constants, dimension as dims
-from icon4py.model.common.grid import geometry, horizontal as h_grid, icon
+from icon4py.model.common.grid import (
+    geometry,
+    grid_manager as gm,
+    horizontal as h_grid,
+    icon,
+    vertical as v_grid,
+)
 
-
-def boundary_lines():
-    for line in h_grid.Level.__members__.values():
-        yield line
+from . import utils
 
 
 def lateral_boundary():
-    for marker in h_grid.Marker.__members__.values():
+    for marker in h_grid.Zone.__members__.values():
         if "lb" in marker.value:
             yield marker
 
 
 def nudging():
-    for marker in h_grid.Marker.__members__.values():
+    for marker in h_grid.Zone.__members__.values():
         if "nudging" in marker.value:
             yield marker
 
@@ -36,7 +39,7 @@ def horizontal_dim():
 
 
 @pytest.mark.parametrize("dim", horizontal_dim())
-@pytest.mark.parametrize("marker", [h_grid.Marker.HALO, h_grid.Marker.HALO_LEVEL_2])
+@pytest.mark.parametrize("marker", [h_grid.Zone.HALO, h_grid.Zone.HALO_LEVEL_2])
 def test_halo(icon_grid, dim, marker):
     # TODO for single node this returns an empty region - start and end index are the same
     domain = h_grid.domain(dim)(marker)
@@ -65,9 +68,21 @@ INTERIOR_IDX = {
 }
 
 
+@pytest.fixture
+def grid_from_file(grid_file) -> icon.IconGrid:
+    file_name = utils.resolve_file_from_gridfile_name(grid_file)
+    manager = gm.GridManager(
+        gm.ToGt4PyTransformation(), str(file_name), v_grid.VerticalGridConfig(65)
+    )
+    manager()
+    return manager.grid
+
+
+@pytest.mark.parametrize("grid", ["grid_from_file", "icon_grid"])
 @pytest.mark.parametrize("dim", horizontal_dim())
-def test_local(icon_grid, dim):
-    domain = h_grid.domain(dim)(h_grid.Marker.LOCAL)
+def test_local(grid, dim, request):
+    icon_grid = request.getfixturevalue(request.param)
+    domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     assert icon_grid.start_index(domain) == 0
     assert icon_grid.end_index(domain) == icon_grid.size[dim]
 
@@ -90,7 +105,7 @@ def test_lateral_boundary(icon_grid, dim, marker):
 
 @pytest.mark.parametrize("dim", horizontal_dim())
 def test_end(icon_grid, dim):
-    domain = h_grid.domain(dim)(h_grid.Marker.END)
+    domain = h_grid.domain(dim)(h_grid.Zone.END)
     assert icon_grid.start_index(domain) == icon_grid.size[dim]
     assert icon_grid.end_index(domain) == icon_grid.size[dim]
 
@@ -113,7 +128,7 @@ def test_nudging(icon_grid, dim, marker):
 
 @pytest.mark.parametrize("dim", horizontal_dim())
 def test_interior(icon_grid, dim):
-    domain = h_grid.domain(dim)(h_grid.Marker.INTERIOR)
+    domain = h_grid.domain(dim)(h_grid.Zone.INTERIOR)
     start_index = icon_grid.start_index(domain)
     end_index = icon_grid.end_index(domain)
     assert start_index == INTERIOR_IDX[dim][0]

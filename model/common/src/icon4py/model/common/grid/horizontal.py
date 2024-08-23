@@ -64,6 +64,17 @@ _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
 
+class LineNumber(enum.IntEnum):
+    HALO = -1
+    FIRST = 0
+    SECOND = 1
+    THIRD = 2
+    FOURTH = 3
+    FIFTH = 4
+    SIXTH = 5
+    SEVENTH = 6
+
+
 class HorizontalMarkerIndex:
     """
     Handles constants indexing into the start_index and end_index fields.
@@ -123,7 +134,7 @@ class HorizontalMarkerIndex:
     }
 
     @classmethod
-    def lateral_boundary(cls, dim: gtx.Dimension, offset=0) -> int:
+    def lateral_boundary(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
         """Indicate lateral boundary.
 
         These points correspond to the sorted points in ICON, the marker can be incremented in order
@@ -132,7 +143,7 @@ class HorizontalMarkerIndex:
         return cls._domain_index(cls._lateral_boundary, dim, offset)
 
     @classmethod
-    def _domain_index(cls, value_dict, dim, offset):
+    def _domain_index(cls, value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
         index = value_dict[dim] + offset
         assert (
             index <= cls._bounds[dim][1]
@@ -143,16 +154,16 @@ class HorizontalMarkerIndex:
         return index
 
     @classmethod
-    def local(cls, dim: gtx.Dimension, offset=0) -> int:
+    def local(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
         """Indicate points that are owned by the processing unit, i.e. no halo points."""
         return cls._domain_index(cls._local, dim, offset)
 
     @classmethod
-    def halo(cls, dim: gtx.Dimension, offset=0) -> int:
+    def halo(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
         return cls._domain_index(cls._halo, dim, offset)
 
     @classmethod
-    def nudging(cls, dim: gtx.Dimension, offset=0) -> int:
+    def nudging(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
         """Indicate the nudging zone."""
         return cls._domain_index(cls._nudging, dim, offset)
 
@@ -162,7 +173,7 @@ class HorizontalMarkerIndex:
         return cls.nudging(dim, 1)
 
     @classmethod
-    def interior(cls, dim: gtx.Dimension, offset=0) -> int:
+    def interior(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
         """Indicate interior i.e. unordered prognostic cells in ICON."""
         return cls._domain_index(cls._interior, dim, offset)
 
@@ -171,37 +182,7 @@ class HorizontalMarkerIndex:
         return cls._end[dim]
 
 
-class LineNumber(enum.IntEnum):
-    pass
-
-
-class HaloLine(LineNumber):
-    FIRST = 0
-    SECOND = -1
-
-
-class NudgingLine(LineNumber):
-    FIRST = 0
-    SECOND = 1
-
-
-class Level(LineNumber):
-    HALO = -1
-    FIRST = 0
-    SECOND = 1
-    THIRD = 2
-    FOURTH = 3
-    FIFTH = 4
-    SIXTH = 5
-    SEVENTH = 6
-
-
-class IndexType(enum.IntEnum):
-    START = 0
-    END = 1
-
-
-class Marker(str, enum.Enum):
+class Zone(str, enum.Enum):
     """Used to encode the different horizontal domain zones used in ICON.
     The values vaguely corrspond to the constants used in ICON to pass as rl_start or rl_end to the get_indices_[e_c,v] functions.
 
@@ -227,49 +208,49 @@ class Marker(str, enum.Enum):
     NUDGING_LEVEL_2 = "nudging_level_2"
 
 
-def map_to_index(dim: gtx.Dimension, marker: Marker) -> int:
-    if marker == Marker.END:
+def map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
+    if marker == Zone.END:
         return HorizontalMarkerIndex.end(dim)
-    elif marker == Marker.INTERIOR:
+    elif marker == Zone.INTERIOR:
         return HorizontalMarkerIndex.interior(dim)
-    elif marker == Marker.HALO:
-        return HorizontalMarkerIndex.halo(dim, Level.FIRST)
-    elif marker == Marker.HALO_LEVEL_2:
-        return HorizontalMarkerIndex.halo(dim, Level.HALO)
-    elif marker == Marker.LOCAL:
+    elif marker == Zone.HALO:
+        return HorizontalMarkerIndex.halo(dim, LineNumber.FIRST)
+    elif marker == Zone.HALO_LEVEL_2:
+        return HorizontalMarkerIndex.halo(dim, LineNumber.HALO)
+    elif marker == Zone.LOCAL:
         return HorizontalMarkerIndex.local(dim)
-    elif marker == Marker.LATERAL_BOUNDARY:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.FIRST)
-    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_2:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.SECOND)
-    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_3:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.THIRD)
-    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_4:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.FOURTH)
-    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_5:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.FIFTH)
-    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_6:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.SIXTH)
-    elif marker == Marker.LATERAL_BOUNDARY_LEVEL_7:
-        return HorizontalMarkerIndex.lateral_boundary(dim, Level.SEVENTH)
-    elif marker == Marker.NUDGING:
-        return HorizontalMarkerIndex.nudging(dim, Level.FIRST)
-    elif marker == Marker.NUDGING_LEVEL_2:
-        return HorizontalMarkerIndex.nudging(dim, Level.SECOND)
+    elif marker == Zone.LATERAL_BOUNDARY:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.FIRST)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_2:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.SECOND)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_3:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.THIRD)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_4:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.FOURTH)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_5:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.FIFTH)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_6:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.SIXTH)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_7:
+        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.SEVENTH)
+    elif marker == Zone.NUDGING:
+        return HorizontalMarkerIndex.nudging(dim, LineNumber.FIRST)
+    elif marker == Zone.NUDGING_LEVEL_2:
+        return HorizontalMarkerIndex.nudging(dim, LineNumber.SECOND)
     else:
         raise ValueError(f"Unknown marker {marker}")
 
 
 class Domain(Protocol):
     _dim: gtx.Dimension
-    _marker: Marker
+    _marker: Zone
     _index: int
 
     @abstractmethod
-    def _valid(self, marker: Marker) -> bool:
+    def _valid(self, marker: Zone) -> bool:
         ...
 
-    def marker(self, marker: Marker):
+    def marker(self, marker: Zone):
         assert self._valid(marker), f" Domain `{marker}` not a valid for use with '{self.dim}'"
         self._marker = marker
         self._index = map_to_index(self.dim, marker)
@@ -281,14 +262,14 @@ class Domain(Protocol):
 
     @functools.cached_property
     def local(self) -> bool:
-        return self._marker == Marker.LOCAL
+        return self._marker == Zone.LOCAL
 
     def __call__(self) -> int:
         return self._index
 
 
 def domain(dim: gtx.Dimension):
-    def _domain(marker: Marker):
+    def _domain(marker: Zone):
         return _domain_factory(dim, marker)
 
     assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only defined for horizontal dimensions"
@@ -300,7 +281,7 @@ def domain(dim: gtx.Dimension):
         return _domain
 
 
-def _domain_factory(dim: gtx.Dimension, marker: Marker):
+def _domain_factory(dim: gtx.Dimension, marker: Zone):
     if dim == dims.CellDim:
         return CellDomain().marker(marker)
     elif dim == dims.EdgeDim:
@@ -312,42 +293,42 @@ def _domain_factory(dim: gtx.Dimension, marker: Marker):
 class EdgeDomain(Domain):
     _dim = dims.EdgeDim
 
-    def _valid(self, marker: Marker):
+    def _valid(self, marker: Zone):
         return True
 
 
 class VertexDomain(Domain):
     _dim = dims.VertexDim
 
-    def _valid(self, marker: Marker):
+    def _valid(self, marker: Zone):
         return marker in (
-            Marker.END,
-            Marker.INTERIOR,
-            Marker.HALO,
-            Marker.HALO_LEVEL_2,
-            Marker.LOCAL,
-            Marker.LATERAL_BOUNDARY,
-            Marker.LATERAL_BOUNDARY_LEVEL_2,
-            Marker.LATERAL_BOUNDARY_LEVEL_3,
-            Marker.LATERAL_BOUNDARY_LEVEL_4,
+            Zone.END,
+            Zone.INTERIOR,
+            Zone.HALO,
+            Zone.HALO_LEVEL_2,
+            Zone.LOCAL,
+            Zone.LATERAL_BOUNDARY,
+            Zone.LATERAL_BOUNDARY_LEVEL_2,
+            Zone.LATERAL_BOUNDARY_LEVEL_3,
+            Zone.LATERAL_BOUNDARY_LEVEL_4,
         )
 
 
 class CellDomain(Domain):
     _dim = dims.CellDim
 
-    def _valid(self, marker: Marker):
+    def _valid(self, marker: Zone):
         return marker in (
-            Marker.END,
-            Marker.INTERIOR,
-            Marker.HALO,
-            Marker.HALO_LEVEL_2,
-            Marker.LOCAL,
-            Marker.LATERAL_BOUNDARY,
-            Marker.LATERAL_BOUNDARY_LEVEL_2,
-            Marker.LATERAL_BOUNDARY_LEVEL_3,
-            Marker.LATERAL_BOUNDARY_LEVEL_4,
-            Marker.NUDGING,
+            Zone.END,
+            Zone.INTERIOR,
+            Zone.HALO,
+            Zone.HALO_LEVEL_2,
+            Zone.LOCAL,
+            Zone.LATERAL_BOUNDARY,
+            Zone.LATERAL_BOUNDARY_LEVEL_2,
+            Zone.LATERAL_BOUNDARY_LEVEL_3,
+            Zone.LATERAL_BOUNDARY_LEVEL_4,
+            Zone.NUDGING,
         )
 
 
