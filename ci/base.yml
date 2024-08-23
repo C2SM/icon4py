@@ -89,13 +89,13 @@ build_image_aarch64:
   needs: [build_image_x86_64]
   variables:
     CSCS_ADDITIONAL_MOUNTS: '["/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/22.11"
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/22.11"
 .test_template_aarch64:
   extends: [.container-runner-todi-f7t, .test_template]
   needs: [build_image_aarch64]
   variables:
     CSCS_ADDITIONAL_MOUNTS: '["/store/migration/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_x86_64/24.5"
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.5"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
