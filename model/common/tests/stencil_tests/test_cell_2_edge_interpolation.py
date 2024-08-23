@@ -6,16 +6,15 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-import  gt4py.next as gtx
 
-from icon4py.model.common import dimension as dims
+from icon4py.model.common import dimension as dims, type_alias as ta
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
 )
 from icon4py.model.common.test_utils import helpers
-from icon4py.model.common import type_alias as ta
 
 
 class TestCell2EdgeInterpolation(helpers.StencilTest):

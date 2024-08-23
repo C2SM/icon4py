@@ -7,13 +7,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import gt4py.next as gtx
-from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
-from icon4py.model.common.settings import xp
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.settings import backend
-from icon4py.model.common import type_alias as ta
+from icon4py.model.common import (
+    constants as phy_const,
+    dimension as dims,
+    field_type_aliases as fa,
+    type_alias as ta,
+)
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.settings import backend, xp
 
 
 # TODO: this will have to be removed once domain allows for imports

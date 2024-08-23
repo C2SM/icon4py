@@ -6,9 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import gt4py.next as gtx
 import numpy as np
 import pytest
-import gt4py.next as gtx
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
@@ -49,7 +49,9 @@ class TestDiagnoseSurfacePressure(helpers.StencilTest):
         virtual_temperature = helpers.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
-        ddqz_z_full = helpers.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
+        ddqz_z_full = helpers.random_field(
+            grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
+        )
         surface_pressure = helpers.zero_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}
         )

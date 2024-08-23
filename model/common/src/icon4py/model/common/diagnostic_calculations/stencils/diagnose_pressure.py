@@ -33,7 +33,9 @@ def _scan_pressure(
         else state[1] * exp(-grav_o_rd * ddqz_z_full / virtual_temperature)
     )
     pressure = (
-        sqrt(surface_pressure * pressure_interface) if state[2] else sqrt(state[1] * pressure_interface)
+        sqrt(surface_pressure * pressure_interface)
+        if state[2]
+        else sqrt(state[1] * pressure_interface)
     )
     return pressure, pressure_interface, False
 
