@@ -11,6 +11,7 @@ import functools
 import logging
 import pathlib
 
+import icon4py.model.common.grid.geometry
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -18,7 +19,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -190,8 +191,8 @@ def model_initialization_serialbox(
 
 def read_initial_state(
     grid: icon_grid.IconGrid,
-    cell_param: h_grid.CellParams,
-    edge_param: h_grid.EdgeParams,
+    cell_param: icon4py.model.common.grid.geometry.CellParams,
+    edge_param: icon4py.model.common.grid.geometry.EdgeParams,
     path: pathlib.Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,
@@ -273,7 +274,12 @@ def read_geometry_fields(
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
-) -> tuple[h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGridParams, fa.CellField[bool]]:
+) -> tuple[
+    icon4py.model.common.grid.geometry.EdgeParams,
+    icon4py.model.common.grid.geometry.CellParams,
+    v_grid.VerticalGridParams,
+    fa.CellField[bool],
+]:
     """
     Read fields containing grid properties.
 

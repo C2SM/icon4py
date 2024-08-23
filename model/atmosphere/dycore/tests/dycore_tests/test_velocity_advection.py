@@ -8,6 +8,7 @@
 
 import pytest
 
+import icon4py.model.common.grid.geometry
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection as vel_adv
 from icon4py.model.common import dimension as dims
@@ -199,8 +200,12 @@ def test_velocity_predictor_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
+        grid_savepoint.construct_cell_geometry()
+    )
+    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
+        grid_savepoint.construct_edge_geometry()
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -370,8 +375,12 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
+        grid_savepoint.construct_cell_geometry()
+    )
+    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
+        grid_savepoint.construct_edge_geometry()
+    )
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,

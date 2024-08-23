@@ -19,7 +19,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.geometry import CellParams, EdgeParams
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,

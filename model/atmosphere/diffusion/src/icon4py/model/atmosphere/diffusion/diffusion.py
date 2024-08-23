@@ -14,6 +14,7 @@ import dataclasses
 import enum
 from typing import Final, Optional
 
+import icon4py.model.common.grid.geometry
 from icon4py.model.common import field_type_aliases as fa
 import gt4py.next as gtx
 
@@ -339,8 +340,8 @@ class Diffusion:
         self.fac_bdydiff_v: Optional[float] = None
         self.bdy_diff: Optional[float] = None
         self.nudgezone_diff: Optional[float] = None
-        self.edge_params: Optional[h_grid.EdgeParams] = None
-        self.cell_params: Optional[h_grid.CellParams] = None
+        self.edge_params: Optional[icon4py.model.common.grid.geometry.EdgeParams] = None
+        self.cell_params: Optional[icon4py.model.common.grid.geometry.CellParams] = None
         self._horizontal_start_index_w_diffusion: gtx.int32 = 0
 
     def init(
@@ -351,8 +352,8 @@ class Diffusion:
         vertical_params: v_grid.VerticalGridParams,
         metric_state: diffusion_states.DiffusionMetricState,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
-        edge_params: h_grid.EdgeParams,
-        cell_params: h_grid.CellParams,
+        edge_params: icon4py.model.common.grid.geometry.EdgeParams,
+        cell_params: icon4py.model.common.grid.geometry.CellParams,
     ):
         """
         Initialize Diffusion granule with configuration.

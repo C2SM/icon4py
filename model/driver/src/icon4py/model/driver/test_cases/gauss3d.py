@@ -11,6 +11,7 @@ import pathlib
 
 import gt4py.next as gtx
 
+import icon4py.model.common.grid.geometry
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
@@ -35,7 +36,7 @@ log = logging.getLogger(__name__)
 
 def model_initialization_gauss3d(
     grid: icon_grid.IconGrid,
-    edge_param: h_grid.EdgeParams,
+    edge_param: icon4py.model.common.grid.geometry.EdgeParams,
     path: pathlib.Path,
     rank=0,
 ) -> tuple[

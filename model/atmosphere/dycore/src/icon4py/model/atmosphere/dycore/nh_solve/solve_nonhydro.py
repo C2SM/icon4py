@@ -13,6 +13,7 @@ from typing import Final, Optional
 import gt4py.next as gtx
 
 import icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro_program as nhsolve_prog
+import icon4py.model.common.grid.geometry
 from icon4py.model.common import constants
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_wp import (
     init_cell_kdim_field_with_zero_wp,
@@ -420,8 +421,8 @@ class SolveNonhydro:
         self.metric_state_nonhydro: Optional[solve_nh_states.MetricStateNonHydro] = None
         self.interpolation_state: Optional[solve_nh_states.InterpolationState] = None
         self.vertical_params: Optional[v_grid.VerticalGridParams] = None
-        self.edge_geometry: Optional[h_grid.EdgeParams] = None
-        self.cell_params: Optional[h_grid.CellParams] = None
+        self.edge_geometry: Optional[icon4py.model.common.grid.geometry.EdgeParams] = None
+        self.cell_params: Optional[icon4py.model.common.grid.geometry.CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
         self.enh_divdamp_fac: Optional[fa.KField[float]] = None
@@ -440,8 +441,8 @@ class SolveNonhydro:
         metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
         vertical_params: v_grid.VerticalGridParams,
-        edge_geometry: h_grid.EdgeParams,
-        cell_geometry: h_grid.CellParams,
+        edge_geometry: icon4py.model.common.grid.geometry.EdgeParams,
+        cell_geometry: icon4py.model.common.grid.geometry.CellParams,
         owner_mask: fa.CellField[bool],
     ):
         """
