@@ -41,6 +41,8 @@ build_baseimage_aarch64:
     HPC_SDK_NAME: nvhpc_2024_245_Linux_aarch64_cuda_12.4
     NVHPC_DEFAULT_CUDA: 12.4
     CUPY_PACKAGE: cupy-cuda12x
+  # TODO: re-enable CI job when Todi is back in operational state
+  when: manual
 
 .build_image:
   stage: image
