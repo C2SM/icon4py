@@ -8,16 +8,16 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+import gt4py.next as gtx
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_temperature import (
     diagnose_virtual_temperature_and_temperature,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils import helpers
 
 
-class TestDiagnoseTemperature(StencilTest):
+class TestDiagnoseTemperature(helpers.StencilTest):
     PROGRAM = diagnose_virtual_temperature_and_temperature
     OUTPUTS = ("virtual_temperature", "temperature")
 
@@ -44,18 +44,18 @@ class TestDiagnoseTemperature(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        theta_v = random_field(
+        theta_v = helpers.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat
         )
-        exner = random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat)
-        qv = random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qc = random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qi = random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qr = random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qs = random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        qg = random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
-        virtual_temperature = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
-        temperature = zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        exner = helpers.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, high=1.0, dtype=ta.wpfloat)
+        qv = helpers.random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
+        qc = helpers.random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
+        qi = helpers.random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
+        qr = helpers.random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
+        qs = helpers.random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
+        qg = helpers.random_field(grid, dims.CellDim, dims.KDim, low=0.0, high=1.0, dtype=ta.wpfloat)
+        virtual_temperature = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        temperature = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             qv=qv,
@@ -69,8 +69,8 @@ class TestDiagnoseTemperature(StencilTest):
             virtual_temperature=virtual_temperature,
             temperature=temperature,
             rv_o_rd_minus1=phy_const.RV_O_RD_MINUS_1,
-            horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
         )

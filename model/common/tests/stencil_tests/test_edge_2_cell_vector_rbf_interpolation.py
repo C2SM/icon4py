@@ -8,17 +8,17 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+import gt4py.next as gtx
 
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.interpolation.stencils.edge_2_cell_vector_rbf_interpolation import (
     edge_2_cell_vector_rbf_interpolation,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
-from icon4py.model.common.type_alias import wpfloat
+from icon4py.model.common.test_utils import helpers
+from icon4py.model.common import type_alias as ta
 
 
-class TestEdge2CellVectorRBFInterpolation(StencilTest):
+class TestEdge2CellVectorRBFInterpolation(helpers.StencilTest):
     PROGRAM = edge_2_cell_vector_rbf_interpolation
     OUTPUTS = ("p_u_out", "p_v_out")
 
@@ -36,11 +36,11 @@ class TestEdge2CellVectorRBFInterpolation(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_e_in = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
-        ptr_coeff_1 = random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=wpfloat)
-        ptr_coeff_2 = random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=wpfloat)
-        p_v_out = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
-        p_u_out = zero_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        p_e_in = helpers.random_field(grid, dims.EdgeDim, dims.KDim, dtype=ta.wpfloat)
+        ptr_coeff_1 = helpers.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        ptr_coeff_2 = helpers.random_field(grid, dims.CellDim, dims.C2E2C2EDim, dtype=ta.wpfloat)
+        p_v_out = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
+        p_u_out = helpers.zero_field(grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat)
 
         return dict(
             p_e_in=p_e_in,
@@ -48,8 +48,8 @@ class TestEdge2CellVectorRBFInterpolation(StencilTest):
             ptr_coeff_2=ptr_coeff_2,
             p_v_out=p_v_out,
             p_u_out=p_u_out,
-            horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=0,
-            vertical_end=int32(grid.num_levels),
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=gtx.int32(0),
+            vertical_end=gtx.int32(grid.num_levels),
         )

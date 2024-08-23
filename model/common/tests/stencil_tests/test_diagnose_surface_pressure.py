@@ -8,18 +8,18 @@
 
 import numpy as np
 import pytest
-from gt4py.next.ffront.fbuiltins import int32
+import gt4py.next as gtx
 
 from icon4py.model.common import constants as phy_const, dimension as dims, type_alias as ta
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
 )
-from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
+from icon4py.model.common.test_utils import helpers
 
 
-class TestDiagnoseSurfacePressure(StencilTest):
+class TestDiagnoseSurfacePressure(helpers.StencilTest):
     PROGRAM = diagnose_surface_pressure
-    OUTPUTS = ("pressure_sfc",)
+    OUTPUTS = ("surface_pressure",)
 
     @staticmethod
     def reference(
@@ -29,8 +29,8 @@ class TestDiagnoseSurfacePressure(StencilTest):
         ddqz_z_full: np.array,
         **kwargs,
     ) -> dict:
-        pressure_sfc = np.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
-        pressure_sfc[:, -1] = phy_const.P0REF * np.exp(
+        surface_pressure = np.zeros((grid.num_cells, grid.num_levels + 1), dtype=ta.wpfloat)
+        surface_pressure[:, -1] = phy_const.P0REF * np.exp(
             phy_const.CPD_O_RD * np.log(exner[:, -3])
             + phy_const.GRAV_O_RD
             * (
@@ -40,17 +40,17 @@ class TestDiagnoseSurfacePressure(StencilTest):
             )
         )
         return dict(
-            pressure_sfc=pressure_sfc,
+            surface_pressure=surface_pressure,
         )
 
     @pytest.fixture
     def input_data(self, grid):
-        exner = random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
-        virtual_temperature = random_field(
+        exner = helpers.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
+        virtual_temperature = helpers.random_field(
             grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat
         )
-        ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
-        pressure_sfc = zero_field(
+        ddqz_z_full = helpers.random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=ta.wpfloat)
+        surface_pressure = helpers.zero_field(
             grid, dims.CellDim, dims.KDim, dtype=ta.wpfloat, extend={dims.KDim: 1}
         )
 
@@ -58,12 +58,12 @@ class TestDiagnoseSurfacePressure(StencilTest):
             exner=exner,
             virtual_temperature=virtual_temperature,
             ddqz_z_full=ddqz_z_full,
-            pressure_sfc=pressure_sfc,
+            surface_pressure=surface_pressure,
             cpd_o_rd=phy_const.CPD_O_RD,
             p0ref=phy_const.P0REF,
             grav_o_rd=phy_const.GRAV_O_RD,
-            horizontal_start=0,
-            horizontal_end=int32(grid.num_cells),
-            vertical_start=int32(grid.num_levels),
-            vertical_end=int32(grid.num_levels + 1),
+            horizontal_start=gtx.int32(0),
+            horizontal_end=gtx.int32(grid.num_cells),
+            vertical_start=gtx.int32(grid.num_levels),
+            vertical_end=gtx.int32(grid.num_levels + 1),
         )

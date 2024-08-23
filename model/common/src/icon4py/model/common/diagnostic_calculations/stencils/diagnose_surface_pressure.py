@@ -30,7 +30,7 @@ def _diagnose_surface_pressure(
     p0ref: wpfloat,
     grav_o_rd: wpfloat,
 ) -> fa.CellKField[wpfloat]:
-    pressure_sfc = p0ref * exp(
+    surface_pressure = p0ref * exp(
         cpd_o_rd * log(exner(Koff[-3]))
         + grav_o_rd
         * (
@@ -39,7 +39,7 @@ def _diagnose_surface_pressure(
             + 0.5 * ddqz_z_full(Koff[-3]) / virtual_temperature(Koff[-3])
         )
     )
-    return pressure_sfc
+    return surface_pressure
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
@@ -47,7 +47,7 @@ def diagnose_surface_pressure(
     exner: fa.CellKField[wpfloat],
     virtual_temperature: fa.CellKField[wpfloat],
     ddqz_z_full: fa.CellKField[wpfloat],
-    pressure_sfc: fa.CellKField[wpfloat],
+    surface_pressure: fa.CellKField[wpfloat],
     cpd_o_rd: wpfloat,
     p0ref: wpfloat,
     grav_o_rd: wpfloat,
@@ -63,7 +63,7 @@ def diagnose_surface_pressure(
         cpd_o_rd,
         p0ref,
         grav_o_rd,
-        out=pressure_sfc,
+        out=surface_pressure,
         domain={
             CellDim: (horizontal_start, horizontal_end),
             KDim: (vertical_start, vertical_end),

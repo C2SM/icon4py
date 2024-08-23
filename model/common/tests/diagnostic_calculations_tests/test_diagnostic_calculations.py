@@ -23,7 +23,7 @@ from icon4py.model.common.states import (
     prognostic_state,
     tracer_state as tracers,
 )
-from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers as helpers
+from icon4py.model.common.test_utils import datatest_utils as dt_utils, helpers
 
 
 @pytest.mark.datatest
@@ -217,7 +217,7 @@ def test_diagnose_pressure(
     pressure.diagnose_pressure(
         data_provider.from_metrics_savepoint().ddqz_z_full(),
         diagnostic_state.virtual_temperature,
-        diagnostic_state.pressure_sfc,
+        diagnostic_state.surface_pressure,
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,
         phy_const.GRAV_O_RD,
@@ -231,7 +231,7 @@ def test_diagnose_pressure(
     )
 
     assert helpers.dallclose(
-        diagnostic_state.pressure_sfc.asnumpy(),
+        diagnostic_state.surface_pressure.asnumpy(),
         icon_diagnostics_output_sp.pressure_sfc().asnumpy(),
     )
 
