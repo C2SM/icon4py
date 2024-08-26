@@ -27,6 +27,20 @@ def _edge_2_cell_vector_rbf_interpolation(
     ptr_coeff_1: Field[[dims.CellDim, C2E2C2EDim], wpfloat],
     ptr_coeff_2: Field[[dims.CellDim, C2E2C2EDim], wpfloat],
 ) -> tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]:
+    """
+    Performs vector RBF reconstruction at cell center from edge center.
+    It is ported from subroutine rbf_vec_interpol_cell in mo_intp_rbf.f90 in ICON.
+
+    The theory is described in Narcowich and Ward (Math Comp. 1994) and Bonaventura and Baudisch (Mox Report n. 75).
+    It takes edge based variables as input and combines them into three dimensional cartesian vectors at each cell center.
+
+    Args:
+        p_e_in: Input values at edge center.
+        ptr_coeff_1: RBF coefficient in zonal direction.
+        ptr_coeff_2: RBF coefficient in meridional direction.
+    Returns:
+        RBF reconstructed vector at cell center.
+    """
     p_u_out = neighbor_sum(ptr_coeff_1 * p_e_in(C2E2C2E), axis=C2E2C2EDim)
     p_v_out = neighbor_sum(ptr_coeff_2 * p_e_in(C2E2C2E), axis=C2E2C2EDim)
     return p_u_out, p_v_out
