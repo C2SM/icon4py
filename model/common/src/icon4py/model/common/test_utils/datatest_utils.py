@@ -28,6 +28,7 @@ TORUS_100X116_1000M_GRID_URI = "https://polybox.ethz.ch/index.php/s/yqvotFss9i1O
 GRID_URIS = {
     REGIONAL_EXPERIMENT: MC_CH_R04B09_DSL_GRID_URI,
     R02B04_GLOBAL: R02B04_GLOBAL_GRID_URI,
+    # TODO (Chia Rui): check if we can use the grid for gauss3d and get a good quality data for testing microphysics
     WEISMAN_KLEMP_EXPERIMENT: TORUS_100X116_1000M_GRID_URI,
 }
 
