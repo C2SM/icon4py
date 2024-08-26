@@ -66,4 +66,8 @@ class TestHorAdvStencil01(StencilTest):
             geofac_div=geofac_div_new,
             p_dtime=p_dtime,
             tracer_new_hor=tracer_new_hor,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=0,
+            vertical_end=grid.num_levels,
         )

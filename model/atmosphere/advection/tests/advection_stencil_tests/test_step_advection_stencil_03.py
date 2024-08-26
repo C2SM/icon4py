@@ -44,4 +44,8 @@ class TestStepAdvectionStencil03(StencilTest):
             p_grf_tend_tracer=p_grf_tend_tracer,
             p_dtime=p_dtime,
             p_tracer_new=p_tracer_new,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=0,
+            vertical_end=grid.num_levels,
         )

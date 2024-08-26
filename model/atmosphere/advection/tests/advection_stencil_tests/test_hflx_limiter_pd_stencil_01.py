@@ -72,4 +72,8 @@ class TestHflxLimiterPdStencil01(StencilTest):
             p_dtime=p_dtime,
             dbl_eps=dbl_eps,
             r_m=r_m,
+            horizontal_start=0,
+            horizontal_end=grid.num_cells,
+            vertical_start=0,
+            vertical_end=grid.num_levels,
         )

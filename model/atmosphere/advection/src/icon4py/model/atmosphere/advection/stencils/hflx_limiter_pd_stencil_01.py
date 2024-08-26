@@ -7,7 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.ffront.decorator import field_operator, program
-from gt4py.next.ffront.fbuiltins import Field, broadcast, maximum, minimum
+from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, maximum, minimum
 
 from icon4py.model.common import field_type_aliases as fa
 from icon4py.model.common.dimension import C2CE, C2E, CEDim, CellDim, KDim
@@ -42,6 +42,10 @@ def hflx_limiter_pd_stencil_01(
     r_m: fa.CellKField[float],
     p_dtime: float,
     dbl_eps: float,
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
 ):
     _hflx_limiter_pd_stencil_01(
         geofac_div,
@@ -51,4 +55,5 @@ def hflx_limiter_pd_stencil_01(
         p_dtime,
         dbl_eps,
         out=r_m,
+        domain={CellDim: (horizontal_start, horizontal_end), KDim: (vertical_start, vertical_end)},
     )

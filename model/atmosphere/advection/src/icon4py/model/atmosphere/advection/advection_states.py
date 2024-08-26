@@ -7,56 +7,70 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
-import functools
 
 import gt4py.next as gtx
 
 from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common.dimension import CECDim, CEDim, E2C2EDim, ECDim, EdgeDim
+from icon4py.model.common.type_alias import wpfloat
 
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionDiagnosticState:
     """Represents the diagnostic fields needed in advection."""
 
-    # fields for 3D elements in turbdiff
-    airmass_now: fa.CellKField[
-        float
-    ]  # mass of air in layer at physics time step now [kg/m^2]  (nproma,nlev,nblks_c)
+    # mass of air in layer at physics time step now [kg/m^2] (nproma,nlev,nblks_c)
+    airmass_now: fa.CellKField[wpfloat]
 
-    airmass_new: fa.CellKField[
-        float
-    ]  # mass of air in layer at physics time step new [kg/m^2]  (nproma,nlev,nblks_c)
+    # mass of air in layer at physics time step new [kg/m^2] (nproma,nlev,nblks_c)
+    airmass_new: fa.CellKField[wpfloat]
 
-    # grf_tend_tracer: fa.CellKField[
-    #    float
-    # ]  # tracer tendency field for use in grid refinement [kg/kg/s]  (nproma,nlev,nblks_c)
+    # tracer tendency field for use in grid refinement [kg/kg/s] (nproma,nlev,nblks_c)
+    grf_tend_tracer: fa.CellKField[wpfloat]
 
-    hfl_tracer: fa.EdgeKField[
-        float
-    ]  # horizontal tracer flux at edges [kg/m/s]  (nproma,nlev,nblks_e)
+    # horizontal tracer flux at edges [kg/m/s] (nproma,nlev,nblks_e)
+    hfl_tracer: fa.EdgeKField[wpfloat]
 
+    # vertical tracer flux at cells [kg/m/s] (nproma,nlevp1,nblks_c)
     # TODO (dastrm): should be KHalfDim
-    vfl_tracer: fa.CellKField[
-        float
-    ]  # vertical tracer flux at cells [kg/m/s]  (nproma,nlevp1,nblks_c)
+    vfl_tracer: fa.CellKField[wpfloat]
 
-    # rho_incr: fa.CellKField[
-    #    float
-    # ]  # moist density increment for IAU [kg/m^3]  (nproma,nlev,nblks_c)
 
-    ddt_tracer_adv: fa.CellKField[
-        float
-    ]  # tracer advective tendency [kg/kg/s]  (nproma,nlev,nblks_c)
+@dataclasses.dataclass(frozen=True)
+class AdvectionInterpolationState:
+    """Represents the interpolation state needed in advection."""
+
+    # factor for divergence (nproma,cell_type,nblks_c)
+    geofac_div: gtx.Field[[CEDim], wpfloat]
+
+    # coefficients used for rbf interpolation of the tangential velocity component (rbf_vec_dim_e,nproma,nblks_e)
+    rbf_vec_coeff_e: gtx.Field[[EdgeDim, E2C2EDim], wpfloat]
+
+    # x-components of positions of various points on local plane tangential to the edge midpoint (nproma,4,nblks_e)
+    pos_on_tplane_e_1: gtx.Field[[ECDim], wpfloat]
+
+    # y-components of positions of various points on local plane tangential to the edge midpoint (nproma,4,nblks_e)
+    pos_on_tplane_e_2: gtx.Field[[ECDim], wpfloat]
+
+
+@dataclasses.dataclass(frozen=True)
+class AdvectionLeastSquaresState:
+    """Represents the least squares state needed in advection."""
+
+    # pseudo (or Moore-Penrose) inverse of lsq design matrix A, originally (nproma,lsq_dim_unk,lsq_dim_c,nblks_c)
+    lsq_pseudoinv_1: gtx.Field[[CECDim], wpfloat]
+    lsq_pseudoinv_2: gtx.Field[[CECDim], wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
 class AdvectionMetricState:
     """Represents the metric fields needed in advection."""
 
-    deepatmo_divzl: fa.KField[
-        float
-    ]  # metrical modification factor for vertical part of divergence at full levels  (nlev)
-    deepatmo_divzu: fa.KField[
-        float
-    ]  # metrical modification factor for vertical part of divergence at full levels  (nlev)
+    # metrical modification factor for horizontal part of divergence at full levels (nlev)
+    deepatmo_divh: fa.KField[wpfloat]
+
+    # metrical modification factor for vertical part of divergence at full levels (nlev)
+    deepatmo_divzl: fa.KField[wpfloat]
+
+    # metrical modification factor for vertical part of divergence at full levels (nlev)
+    deepatmo_divzu: fa.KField[wpfloat]

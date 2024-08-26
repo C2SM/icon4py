@@ -84,4 +84,8 @@ class TestUpwindHfluxMiuraStencil01(StencilTest):
             p_mass_flx_e=p_mass_flx_e,
             cell_rel_idx_dsl=cell_rel_idx_dsl,
             p_out_e=p_out_e,
+            horizontal_start=0,
+            horizontal_end=grid.num_edges,
+            vertical_start=0,
+            vertical_end=grid.num_levels,
         )

@@ -58,5 +58,5 @@ class TestStepAdvectionStencil02(StencilTest):
             horizontal_start=0,
             horizontal_end=grid.num_cells,
             vertical_start=0,
-            vertical_end=grid.num_levels - 1,
+            vertical_end=grid.num_levels,
         )
