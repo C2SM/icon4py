@@ -24,7 +24,7 @@ class DiagnosticState:
 
     #: air pressure [Pa] at cell center and full levels, originally defined as pres in ICON
     pressure: fa.CellKField[ta.wpfloat]
-    #: air pressure [Pa] at cell center and half levels, originally defined as pres_sfc in ICON
+    #: air pressure [Pa] at cell center and half levels, originally defined as pres_ifc and pres_sfc for surface pressure in ICON.
     pressure_ifc: fa.CellKField[ta.wpfloat]
     #: air temperature [K] at cell center, originally defined as temp in ICON
     temperature: fa.CellKField[ta.wpfloat]
