@@ -10,10 +10,9 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import exp, int32, log
 
-from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa, type_alias as ta
 from icon4py.model.common.dimension import Koff
 from icon4py.model.common.settings import backend
-from icon4py.model.common.type_alias import wpfloat
 
 
 # TODO: this will have to be removed once domain allows for imports
@@ -23,13 +22,13 @@ KDim = dims.KDim
 
 @field_operator
 def _diagnose_surface_pressure(
-    exner: fa.CellKField[wpfloat],
-    virtual_temperature: fa.CellKField[wpfloat],
-    ddqz_z_full: fa.CellKField[wpfloat],
-    cpd_o_rd: wpfloat,
-    p0ref: wpfloat,
-    grav_o_rd: wpfloat,
-) -> fa.CellKField[wpfloat]:
+    exner: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
+    cpd_o_rd: ta.wpfloat,
+    p0ref: ta.wpfloat,
+    grav_o_rd: ta.wpfloat,
+) -> fa.CellKField[ta.wpfloat]:
     surface_pressure = p0ref * exp(
         cpd_o_rd * log(exner(Koff[-3]))
         + grav_o_rd
@@ -44,13 +43,13 @@ def _diagnose_surface_pressure(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def diagnose_surface_pressure(
-    exner: fa.CellKField[wpfloat],
-    virtual_temperature: fa.CellKField[wpfloat],
-    ddqz_z_full: fa.CellKField[wpfloat],
-    surface_pressure: fa.CellKField[wpfloat],
-    cpd_o_rd: wpfloat,
-    p0ref: wpfloat,
-    grav_o_rd: wpfloat,
+    exner: fa.CellKField[ta.wpfloat],
+    virtual_temperature: fa.CellKField[ta.wpfloat],
+    ddqz_z_full: fa.CellKField[ta.wpfloat],
+    surface_pressure: fa.CellKField[ta.wpfloat],
+    cpd_o_rd: ta.wpfloat,
+    p0ref: ta.wpfloat,
+    grav_o_rd: ta.wpfloat,
     horizontal_start: int32,
     horizontal_end: int32,
     vertical_start: int32,

@@ -177,6 +177,7 @@ def model_initialization_gauss3d(
     exner = gtx.as_field((dims.CellDim, dims.KDim), exner_numpy)
     rho = gtx.as_field((dims.CellDim, dims.KDim), rho_numpy)
     temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
+    virtual_temperature = gtx.as_field((dims.CellDim, dims.KDim), temperature_numpy)
     pressure = gtx.as_field((dims.CellDim, dims.KDim), pressure_numpy)
     theta_v = gtx.as_field((dims.CellDim, dims.KDim), theta_v_numpy)
     pressure_ifc_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
@@ -224,7 +225,7 @@ def model_initialization_gauss3d(
         pressure=pressure,
         pressure_ifc=pressure_ifc,
         temperature=temperature,
-        virtual_temperature=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+        virtual_temperature=virtual_temperature,
         u=u,
         v=v,
     )
