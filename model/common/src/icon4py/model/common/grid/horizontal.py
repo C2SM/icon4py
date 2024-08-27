@@ -92,38 +92,38 @@ _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
 
-_lateral_boundary = {
+_LATERAL_BOUNDARY = {
     dims.CellDim: _LATERAL_BOUNDARY_CELLS,
     dims.EdgeDim: _LATERAL_BOUNDARY_EDGES,
     dims.VertexDim: _LATERAL_BOUNDARY_VERTICES,
 }
-_local = {
+_LOCAL = {
     dims.CellDim: _LOCAL_CELLS,
     dims.EdgeDim: _LOCAL_EDGES,
     dims.VertexDim: _LOCAL_VERTICES,
 }
-_halo = {
+_HALO = {
     dims.CellDim: _HALO_CELLS,
     dims.EdgeDim: _HALO_EDGES,
     dims.VertexDim: _HALO_VERTICES,
 }
-_interior = {
+_INTERIOR = {
     dims.CellDim: _INTERIOR_CELLS,
     dims.EdgeDim: _INTERIOR_EDGES,
     dims.VertexDim: _INTERIOR_VERTICES,
 }
-_nudging = {
+_NUDGING = {
     dims.CellDim: _NUDGING_CELLS,
     dims.EdgeDim: _NUDGING_EDGES,
     dims.VertexDim: _NUDGING_VERTICES,
 }
-_end = {
+_END = {
     dims.CellDim: _END_CELLS,
     dims.EdgeDim: _END_EDGES,
     dims.VertexDim: _END_VERTICES,
 }
 
-_bounds = {
+_BOUNDS = {
     dims.CellDim: (0, _CELL_GRF - 1),
     dims.EdgeDim: (0, _EDGE_GRF - 1),
     dims.VertexDim: (0, _VERTEX_GRF - 1),
@@ -142,43 +142,43 @@ class LineNumber(enum.IntEnum):
     EIGHTH = 7
 
 
-def lateral_boundary(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _lateral_boundary(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     """Indicate lateral boundary.
 
     These points correspond to the sorted points in ICON, the marker can be incremented in order
     to access higher order boundary lines
     """
-    return _domain_index(_lateral_boundary, dim, offset)
+    return _domain_index(_LATERAL_BOUNDARY, dim, offset)
 
 
 def _domain_index(value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
     index = value_dict[dim] + offset
-    assert index <= _bounds[dim][1], f"Index {index} out of bounds for {dim}:  {_bounds[dim]}"
-    assert index >= _bounds[dim][0], f"Index {index} out of bounds for {dim}: {_bounds[dim]}"
+    assert index <= _BOUNDS[dim][1], f"Index {index} out of bounds for {dim}:  {_BOUNDS[dim]}"
+    assert index >= _BOUNDS[dim][0], f"Index {index} out of bounds for {dim}: {_BOUNDS[dim]}"
     return index
 
 
-def local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     """Indicate points that are owned by the processing unit, i.e. no halo points."""
-    return _domain_index(_local, dim, offset)
+    return _domain_index(_LOCAL, dim, offset)
 
 
-def halo(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-    return _domain_index(_halo, dim, offset)
+def _halo(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+    return _domain_index(_HALO, dim, offset)
 
 
-def nudging(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _nudging(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     """Indicate the nudging zone."""
-    return _domain_index(_nudging, dim, offset)
+    return _domain_index(_NUDGING, dim, offset)
 
 
-def interior(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+def _interior(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
     """Indicate interior i.e. unordered prognostic cells in ICON."""
-    return _domain_index(_interior, dim, offset)
+    return _domain_index(_INTERIOR, dim, offset)
 
 
-def end(dim: gtx.Dimension) -> int:
-    return _end[dim]
+def _end(dim: gtx.Dimension) -> int:
+    return _END[dim]
 
 
 class Zone(str, enum.Enum):
@@ -294,35 +294,35 @@ class Zone(str, enum.Enum):
 
 def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
     if marker == Zone.END:
-        return end(dim)
+        return _end(dim)
     elif marker == Zone.INTERIOR:
-        return interior(dim)
+        return _interior(dim)
     elif marker == Zone.HALO:
-        return halo(dim, LineNumber.FIRST)
+        return _halo(dim, LineNumber.FIRST)
     elif marker == Zone.HALO_LEVEL_2:
-        return halo(dim, LineNumber.HALO)
+        return _halo(dim, LineNumber.HALO)
     elif marker == Zone.LOCAL:
-        return local(dim)
+        return _local(dim)
     elif marker == Zone.LATERAL_BOUNDARY:
-        return lateral_boundary(dim, LineNumber.FIRST)
+        return _lateral_boundary(dim, LineNumber.FIRST)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_2:
-        return lateral_boundary(dim, LineNumber.SECOND)
+        return _lateral_boundary(dim, LineNumber.SECOND)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_3:
-        return lateral_boundary(dim, LineNumber.THIRD)
+        return _lateral_boundary(dim, LineNumber.THIRD)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_4:
-        return lateral_boundary(dim, LineNumber.FOURTH)
+        return _lateral_boundary(dim, LineNumber.FOURTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_5:
-        return lateral_boundary(dim, LineNumber.FIFTH)
+        return _lateral_boundary(dim, LineNumber.FIFTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_6:
-        return lateral_boundary(dim, LineNumber.SIXTH)
+        return _lateral_boundary(dim, LineNumber.SIXTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_7:
-        return lateral_boundary(dim, LineNumber.SEVENTH)
+        return _lateral_boundary(dim, LineNumber.SEVENTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_8:
-        return lateral_boundary(dim, LineNumber.EIGHTH)
+        return _lateral_boundary(dim, LineNumber.EIGHTH)
     elif marker == Zone.NUDGING:
-        return nudging(dim, LineNumber.FIRST)
+        return _nudging(dim, LineNumber.FIRST)
     elif marker == Zone.NUDGING_LEVEL_2:
-        return nudging(dim, LineNumber.SECOND)
+        return _nudging(dim, LineNumber.SECOND)
     else:
         raise ValueError(f"Unknown marker {marker}")
 
