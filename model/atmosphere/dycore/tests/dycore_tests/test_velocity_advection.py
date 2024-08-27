@@ -8,7 +8,7 @@
 
 import pytest
 
-import icon4py.model.common.grid.geometry
+import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection as vel_adv
 from icon4py.model.common import dimension as dims
@@ -200,10 +200,10 @@ def test_velocity_predictor_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
+    cell_geometry: geometry.CellParams = (
         grid_savepoint.construct_cell_geometry()
     )
-    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
+    edge_geometry: geometry.EdgeParams = (
         grid_savepoint.construct_edge_geometry()
     )
 

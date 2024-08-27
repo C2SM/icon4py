@@ -10,7 +10,7 @@ import logging
 
 import pytest
 
-import icon4py.model.common.grid.geometry
+import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
 from icon4py.model.atmosphere.dycore.state_utils import (
     states as solve_nh_states,
@@ -899,10 +899,10 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
+    cell_geometry: geometry.CellParams = (
         grid_savepoint.construct_cell_geometry()
     )
-    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
+    edge_geometry: geometry.EdgeParams = (
         grid_savepoint.construct_edge_geometry()
     )
 
