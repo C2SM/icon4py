@@ -314,11 +314,6 @@ def {{ func.name }}_wrapper(
         msg = 'shape of {{ arg.name }} after unpacking = %s' % str({{ arg.name}}.shape)
         logging.debug(msg)
         {% endif %}
-        msg = 'min of {{ arg.name }} = %s' % str(np.min({{ arg.name}}.asnumpy()))
-        logging.debug(msg)
-
-        msg = 'max of {{ arg.name }} = %s' % str(np.max({{ arg.name}}.asnumpy()))
-        logging.debug(msg)
         {% endif %}
         {% endfor %}
 

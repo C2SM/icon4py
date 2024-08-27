@@ -9,7 +9,7 @@
 import numpy as np
 
 from icon4py.model.common.metrics.metric_fields import compute_vwind_impl_wgt_partial
-
+from icon4py.model.common.settings import xp
 
 def compute_vwind_impl_wgt(
     backend,
@@ -46,8 +46,8 @@ def compute_vwind_impl_wgt(
     )
 
     vwind_impl_wgt = (
-        np.amin(vwind_impl_wgt_k.asnumpy(), axis=1)
+        xp.amin(vwind_impl_wgt_k.ndarray, axis=1)
         if experiment == global_exp
-        else np.amax(vwind_impl_wgt_k.asnumpy(), axis=1)
+        else xp.amax(vwind_impl_wgt_k.ndarray, axis=1)
     )
     return vwind_impl_wgt

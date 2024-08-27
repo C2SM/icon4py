@@ -81,10 +81,7 @@ from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 log = setup_logger(__name__)
 
 # global diffusion object
-solve_nonhydro: SolveNonhydro = None
-
-# global grid object
-icon_grid = None
+solve_nonhydro = SolveNonhydro()
 
 # global profiler object
 profiler = cProfile.Profile()
@@ -199,10 +196,6 @@ def solve_nh_init(
     limited_area: bool,
     flat_height: float64,
 ):
-    # globals
-    global icon_grid
-    global solve_nonhydro
-
     # ICON grid
     on_gpu = True if device.name == "GPU" else False
 
@@ -337,7 +330,6 @@ def solve_nh_init(
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
-    solve_nonhydro = SolveNonhydro()
     solve_nonhydro.init(
         grid=icon_grid,
         config=config,
@@ -392,15 +384,13 @@ def solve_nh_run(
     ndyn_substeps: float64,
     idyn_timestep: int32,
 ):
-    global solve_nonhydro
-
     log.info(f"Using Device = {device}")
 
     prep_adv = PrepAdvection(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=zero_field(solve_nonhydro.grid, CellDim, KDim, dtype=float),
     )
 
     nnow = 0
