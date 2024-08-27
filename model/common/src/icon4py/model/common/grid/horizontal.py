@@ -258,7 +258,7 @@ class Zone(str, enum.Enum):
     #: 2nd halo line
     HALO_LEVEL_2 = "halo_level_2"
 
-    #: all entries in a local grid, when used it grid.start_index, grid.end_index it will return ([0, grid.size[dim]])
+    #: all entries owned on the local grid, that is all entries excluding halo lines
     LOCAL = "local"
 
     #: lateral boundary (row 1) in LAM model
