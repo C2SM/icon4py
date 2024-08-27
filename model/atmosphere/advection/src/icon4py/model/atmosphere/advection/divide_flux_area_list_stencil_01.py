@@ -12,8 +12,8 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
 
 
 sys.setrecursionlimit(5500)
@@ -123,8 +123,8 @@ def line_intersect(
 def _divide_flux_area_list_stencil_01(
     famask_int: fa.EdgeKField[int32],
     p_vn: fa.EdgeKField[float],
-    ptr_v3_lon: Field[[ECDim], float],
-    ptr_v3_lat: Field[[ECDim], float],
+    ptr_v3_lon: Field[[dims.ECDim], float],
+    ptr_v3_lat: Field[[dims.ECDim], float],
     tangent_orientation_dsl: fa.EdgeField[float],
     dreg_patch0_1_lon_dsl: fa.EdgeKField[float],
     dreg_patch0_1_lat_dsl: fa.EdgeKField[float],
@@ -673,8 +673,8 @@ def _divide_flux_area_list_stencil_01(
 def divide_flux_area_list_stencil_01(
     famask_int: fa.EdgeKField[int32],
     p_vn: fa.EdgeKField[float],
-    ptr_v3_lon: Field[[ECDim], float],
-    ptr_v3_lat: Field[[ECDim], float],
+    ptr_v3_lon: Field[[dims.ECDim], float],
+    ptr_v3_lat: Field[[dims.ECDim], float],
     tangent_orientation_dsl: fa.EdgeField[float],
     dreg_patch0_1_lon_dsl: fa.EdgeKField[float],
     dreg_patch0_1_lat_dsl: fa.EdgeKField[float],

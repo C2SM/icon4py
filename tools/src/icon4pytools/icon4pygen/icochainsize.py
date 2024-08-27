@@ -106,7 +106,7 @@ from dataclasses import dataclass
 from typing import ClassVar, List, TypeAlias
 
 from gt4py.next.common import Dimension
-from icon4py.model.common.dimension import CellDim, EdgeDim, VertexDim
+from icon4py.model.common import dimension as dims
 
 
 @dataclass
@@ -191,12 +191,12 @@ class IcoChainSize:
     """A class to compute the number of neighbors for a given neighbor chain."""
 
     _CHAIN_DISPATCHER: ClassVar[dict[str, list[Dimension]]] = {
-        "vertex_to_edge": [VertexDim, EdgeDim],
-        "vertex_to_cell": [VertexDim, CellDim],
-        "edge_to_vertex": [EdgeDim, VertexDim],
-        "edge_to_cell": [EdgeDim, CellDim],
-        "cell_to_vertex": [CellDim, VertexDim],
-        "cell_to_edge": [CellDim, EdgeDim],
+        "vertex_to_edge": [dims.VertexDim, dims.EdgeDim],
+        "vertex_to_cell": [dims.VertexDim, dims.CellDim],
+        "edge_to_vertex": [dims.EdgeDim, dims.VertexDim],
+        "edge_to_cell": [dims.EdgeDim, dims.CellDim],
+        "cell_to_vertex": [dims.CellDim, dims.VertexDim],
+        "cell_to_edge": [dims.CellDim, dims.EdgeDim],
     }
 
     @classmethod
@@ -209,8 +209,8 @@ class IcoChainSize:
             connection = Connection(previous_location_type, loc_type)
 
             current_locations = set()
-            for func_name, dims in cls._CHAIN_DISPATCHER.items():
-                if [connection.start, connection.end] == dims:
+            for func_name, _dims in cls._CHAIN_DISPATCHER.items():
+                if [connection.start, connection.end] == _dims:
                     func = globals()[func_name]
                     for previous_location in previous_locations:
                         neighbors = func(previous_location)

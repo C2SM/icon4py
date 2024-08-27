@@ -207,5 +207,3 @@ def test_field_provider_for_numpy_function_with_offsets(
     )
 
     assert helpers.dallclose(wgtfacq_e.asnumpy(), wgtfacq_e_ref.asnumpy())
-
-

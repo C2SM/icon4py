@@ -13,13 +13,7 @@ from typing import ClassVar, Final
 
 from gt4py.next import Dimension, Field
 
-from icon4py.model.common import constants, dimension, field_type_aliases as fa
-from icon4py.model.common.dimension import (
-    CellDim,
-    ECDim,
-    ECVDim,
-    EdgeDim,
-)
+from icon4py.model.common import constants, dimension, dimension as dims, field_type_aliases as fa
 
 
 NUM_GHOST_ROWS: Final[int] = 2
@@ -254,7 +248,7 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%inv_vert_vert_length
         """
 
-        self.primal_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
+        self.primal_normal_vert: tuple[Field[[dims.ECVDim], float], Field[[dims.ECVDim], float]] = (
             primal_normal_vert_x,
             primal_normal_vert_y,
         )
@@ -266,7 +260,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.dual_normal_vert: tuple[Field[[ECVDim], float], Field[[ECVDim], float]] = (
+        self.dual_normal_vert: tuple[Field[[dims.ECVDim], float], Field[[dims.ECVDim], float]] = (
             dual_normal_vert_x,
             dual_normal_vert_y,
         )
@@ -278,7 +272,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.primal_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+        self.primal_normal_cell: tuple[Field[[dims.ECDim], float], Field[[dims.ECDim], float]] = (
             primal_normal_cell_x,
             primal_normal_cell_y,
         )
@@ -290,7 +284,7 @@ class EdgeParams:
         and computed in ICON in mo_intp_coeffs.f90
         """
 
-        self.dual_normal_cell: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+        self.dual_normal_cell: tuple[Field[[dims.ECDim], float], Field[[dims.ECDim], float]] = (
             dual_normal_cell_x,
             dual_normal_cell_y,
         )
@@ -326,7 +320,7 @@ class EdgeParams:
         defined in ICON in mo_model_domain.f90:t_grid_edges%center
         """
 
-        self.primal_normal: tuple[Field[[ECDim], float], Field[[ECDim], float]] = (
+        self.primal_normal: tuple[Field[[dims.ECDim], float], Field[[dims.ECDim], float]] = (
             primal_normal_x,
             primal_normal_y,
         )
@@ -400,8 +394,8 @@ class CellParams:
 
 class RefinCtrlLevel:
     _boundary_nudging_start: ClassVar = {
-        EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
-        CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
+        dims.EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,
+        dims.CellDim: _GRF_BOUNDARY_WIDTH_CELL + 1,
     }
 
     @classmethod
@@ -411,5 +405,5 @@ class RefinCtrlLevel:
             return cls._boundary_nudging_start[dim]
         except KeyError as err:
             raise ValueError(
-                f"nudging start level only exists for {CellDim} and {EdgeDim}"
+                f"nudging start level only exists for {dims.CellDim} and {dims.EdgeDim}"
             ) from err

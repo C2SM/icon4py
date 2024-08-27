@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_advective_vertical_wind_tendency import (
     compute_advective_vertical_wind_tendency,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -54,11 +54,11 @@ class TestComputeAdvectiveVerticalWindTendency(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_w_con_c = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        w = random_field(grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-        coeff1_dwdz = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        coeff2_dwdz = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddt_w_adv = zero_field(grid, CellDim, KDim, dtype=vpfloat)
+        z_w_con_c = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        w = random_field(grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat)
+        coeff1_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        coeff2_dwdz = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddt_w_adv = zero_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             z_w_con_c=z_w_con_c,

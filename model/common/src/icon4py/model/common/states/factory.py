@@ -214,18 +214,20 @@ class NumpyFieldsProvider(FieldProvider):
         parameters = func_signature.parameters
         for dep_key in self._dependencies.keys():
             parameter_definition = parameters.get(dep_key)
-            assert (
-                parameter_definition.annotation == xp.ndarray
-            ), (f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
-                f"or has wrong type ('expected np.ndarray') in {func_signature}.")
+            assert parameter_definition.annotation == xp.ndarray, (
+                f"Dependency {dep_key} in function {self._func.__name__}:  does not exist or has "
+                f"or has wrong type ('expected np.ndarray') in {func_signature}."
+            )
 
         for param_key, param_value in self._params.items():
             parameter_definition = parameters.get(param_key)
             checked = _check(
                 parameter_definition, param_value, union=state_utils.IntegerType
             ) or _check(parameter_definition, param_value, union=state_utils.FloatType)
-            assert checked, (f"Parameter {param_key} in function {self._func.__name__} does not "
-                             f"exist or has the wrong type: {type(param_value)}.")
+            assert checked, (
+                f"Parameter {param_key} in function {self._func.__name__} does not "
+                f"exist or has the wrong type: {type(param_value)}."
+            )
 
 
 def _check(
