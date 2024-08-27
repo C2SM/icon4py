@@ -82,18 +82,12 @@ def model_initialization_gauss3d(
     num_edges = grid.num_edges
     num_levels = grid.num_levels
 
-    grid_idx_edge_start_plus1 = grid.get_end_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1
-    )
-    grid_idx_edge_end = grid.get_end_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
-    )
-    grid_idx_cell_start_plus1 = grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1
-    )
-    grid_idx_cell_end = grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-    )
+    edge_domain = h_grid.domain(dims.EdgeDim)
+    cell_domain = h_grid.domain(dims.CellDim)
+    grid_idx_edge_start_plus1 = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    grid_idx_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
+    grid_idx_cell_start_plus1 = grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    grid_idx_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
     w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
     exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
