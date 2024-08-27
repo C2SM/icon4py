@@ -84,7 +84,7 @@ def compute_maximum_cfl_and_clip_contravariant_vertical_velocity(
         dtime,
         out=(cfl_clipping, vcfl, z_w_con_c),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @scan_operator(axis=dims.KDim, forward=False, init=(0.0, 0.0, True))
 def _scan_pressure(
     state: tuple[vpfloat, vpfloat, bool],
@@ -70,7 +65,7 @@ def diagnose_pressure(
         grav_o_rd,
         out=(pressure, pressure_ifc),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

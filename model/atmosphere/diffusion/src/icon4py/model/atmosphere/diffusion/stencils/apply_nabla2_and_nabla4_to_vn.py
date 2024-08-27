@@ -69,7 +69,7 @@ def apply_nabla2_and_nabla4_to_vn(
         nudgezone_diff,
         out=vn,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -64,7 +64,7 @@ def init_two_cell_kdim_fields_index_with_zero_vp(
         k2,
         out=(field_index_with_zero_1, field_index_with_zero_2),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

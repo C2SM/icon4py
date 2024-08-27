@@ -18,11 +18,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _init_two_cell_kdim_fields_with_zero_wp() -> (
     tuple[fa.CellKField[wpfloat], fa.CellKField[wpfloat]]
@@ -43,7 +38,7 @@ def init_two_cell_kdim_fields_with_zero_wp(
     _init_two_cell_kdim_fields_with_zero_wp(
         out=(cell_kdim_field_with_zero_wp_1, cell_kdim_field_with_zero_wp_2),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

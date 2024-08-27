@@ -57,7 +57,7 @@ def apply_weighted_2nd_and_4th_order_divergence_damping(
         vn,
         out=vn,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -55,7 +55,6 @@ Contains metric fields calculations for the vertical grid, ported from mo_vertic
 """
 
 # TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
 EdgeDim = dims.EdgeDim
 KDim = dims.KDim
 
@@ -94,8 +93,8 @@ def compute_z_mc(
         z_ifc,
         out=z_mc,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -149,8 +148,8 @@ def compute_ddqz_z_half(
         nlev,
         out=ddqz_z_half,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -194,8 +193,8 @@ def compute_ddqz_z_full_and_inverse(
         z_ifc,
         out=(ddqz_z_full, inv_ddqz_z_full),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -249,7 +248,7 @@ def compute_scalfac_dd3d(
         divdamp_trans_end,
         divdamp_type,
         out=scalfac_dd3d,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -322,7 +321,7 @@ def compute_rayleigh_w(
         vct_a_1,
         pi_const,
         out=rayleigh_w,
-        domain={KDim: (vertical_start, vertical_end)},
+        domain={dims.KDim: (vertical_start, vertical_end)},
     )
 
 
@@ -368,8 +367,8 @@ def compute_coeff_dwdz(
         z_ifc,
         out=(coeff1_dwdz, coeff2_dwdz),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -466,8 +465,8 @@ def compute_d2dexdz2_fac_mc(
         igradp_constant,
         out=d2dexdz2_fac1_mc,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -484,8 +483,8 @@ def compute_d2dexdz2_fac_mc(
         igradp_constant,
         out=d2dexdz2_fac2_mc,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -528,8 +527,8 @@ def compute_ddxt_z_half_e(
         tangent_orientation,
         out=ddxt_z_half_e,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -569,7 +568,7 @@ def compute_vwind_expl_wgt(
     _compute_vwind_expl_wgt(
         vwind_impl_wgt=vwind_impl_wgt,
         out=vwind_expl_wgt,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -621,8 +620,8 @@ def compute_maxslp_maxhgtd(
         dual_edge_length=dual_edge_length,
         out=(z_maxslp, z_maxhgtd),
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -677,8 +676,8 @@ def compute_exner_exfac(
         exner_expol=exner_expol,
         out=exner_exfac,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -760,7 +759,7 @@ def compute_vwind_impl_wgt_partial(
         dual_edge_length=dual_edge_length,
         vwind_offctr=vwind_offctr,
         out=vwind_impl_wgt,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
     _compute_vwind_impl_wgt_2(
@@ -769,8 +768,8 @@ def compute_vwind_impl_wgt_partial(
         vwind_impl_wgt=vwind_impl_wgt,
         out=vwind_impl_wgt_k,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -805,8 +804,8 @@ def compute_wgtfac_e(
         coeff=c_lin_e,
         out=wgtfac_e,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -922,8 +921,8 @@ def compute_pg_exdist_dsl(
         pg_exdist_dsl=pg_exdist_dsl,
         out=pg_exdist_dsl,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -966,8 +965,8 @@ def compute_pg_edgeidx_dsl(
         pg_vertidx=pg_vertidx,
         out=pg_edgeidx_dsl,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1002,7 +1001,7 @@ def compute_mask_prog_halo_c(
         c_refin_ctrl,
         mask_prog_halo_c,
         out=mask_prog_halo_c,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -1037,7 +1036,7 @@ def compute_bdy_halo_c(
         c_refin_ctrl,
         bdy_halo_c,
         out=bdy_halo_c,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -1086,7 +1085,7 @@ def compute_hmask_dd3d(
         grf_nudge_start_e=grf_nudge_start_e,
         grf_nudgezone_width=grf_nudgezone_width,
         out=hmask_dd3d,
-        domain={EdgeDim: (horizontal_start, horizontal_end)},
+        domain={dims.EdgeDim: (horizontal_start, horizontal_end)},
     )
 
 
@@ -1133,8 +1132,8 @@ def compute_weighted_cell_neighbor_sum(
         c_bln_avg=c_bln_avg,
         out=z_maxslp_avg,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1143,8 +1142,8 @@ def compute_weighted_cell_neighbor_sum(
         c_bln_avg=c_bln_avg,
         out=z_maxhgtd_avg,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -1179,7 +1178,7 @@ def compute_max_nbhgt(
     _compute_max_nbhgt(
         z_mc_nlev=z_mc_nlev,
         out=max_nbhgt,
-        domain={CellDim: (horizontal_start, horizontal_end)},
+        domain={dims.CellDim: (horizontal_start, horizontal_end)},
     )
 
 

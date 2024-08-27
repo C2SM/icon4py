@@ -37,7 +37,7 @@ def init_cell_kdim_field_with_zero_wp(
     _init_cell_kdim_field_with_zero_wp(
         out=field_with_zero_wp,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

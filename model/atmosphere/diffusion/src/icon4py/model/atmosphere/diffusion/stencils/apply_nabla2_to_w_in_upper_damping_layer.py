@@ -52,7 +52,7 @@ def apply_nabla2_to_w_in_upper_damping_layer(
         z_nabla2_c,
         out=w,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

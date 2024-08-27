@@ -40,7 +40,7 @@ def init_two_edge_kdim_fields_with_zero_wp(
     _init_two_edge_kdim_fields_with_zero_wp(
         out=(edge_kdim_field_with_zero_wp_1, edge_kdim_field_with_zero_wp_2),
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )

@@ -14,6 +14,10 @@ from icon4py.model.common import dimension as dims
 from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
 chain_false_skipvalues = [
     "C2E",
     "C2V",
@@ -74,11 +78,6 @@ def _add(
     return field1 + field2
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @program
 def with_domain(
     a: Field[[dims.CellDim, dims.KDim], float],
@@ -94,8 +93,8 @@ def with_domain(
         b,
         out=result,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 

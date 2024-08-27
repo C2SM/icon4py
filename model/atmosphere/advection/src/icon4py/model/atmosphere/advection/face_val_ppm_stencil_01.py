@@ -91,7 +91,7 @@ def face_val_ppm_stencil_01(
         elev,
         out=z_slope,
         domain={
-            CellDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.CellDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
