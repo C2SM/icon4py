@@ -544,7 +544,7 @@ class Diffusion:
         cell_start_interior = self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
 
         cell_start_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
-        cell_end_local = self.grid.end_index(cell_domain(h_grid.Zone.END))
+        cell_end_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
         cell_end_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         edge_domain = h_grid.domain(dims.EdgeDim)
