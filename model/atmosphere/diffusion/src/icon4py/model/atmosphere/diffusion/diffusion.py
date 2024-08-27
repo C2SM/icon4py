@@ -17,17 +17,16 @@ from typing import Final, Optional
 
 import gt4py.next as gtx
 
-
 from icon4py.model.atmosphere.diffusion import diffusion_utils, diffusion_states, cached
-
-import icon4py.model.common.grid.geometry as geometry
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common import constants
+from icon4py.model.common import field_type_aliases as fa, constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid, icon as icon_grid
+from icon4py.model.common.grid import (
+    horizontal as h_grid,
+    vertical as v_grid,
+    icon as icon_grid,
+    geometry as geometry,
+)
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-
 import icon4py.model.common.states.prognostic_state as prognostics
 from icon4py.model.common.settings import xp
 
