@@ -5,6 +5,34 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
+
+"""
+ This module handles several aspects of the horizontal grid in ICON.
+
+ Among which most importantly:
+
+ Horizontal domain zones
+ -------------------------
+ ICON provides three routines `get_indices_c`, `get_indices_e` and `get_indices_v` which return indices into Fields of the given dimension
+ that mark the start and end of specific horizontal grid domains such as the lateral boundaries, nudging zones etc.
+
+ Those routines get passed an integer value normally called `rl_start` or `rl_end`. The values ranges over a custom index range
+ for each dimension, some of which are denoted by constants defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90`.
+
+ Internally ICON uses a double indexing scheme for those start and end indices. They are 
+ stored in arrays `start_idx` and `end_idx` originally read from the grid file ICON accesses those indices by a custom index range
+ denoted by the constants mentioned above. However, some entries into these arrays contain invalid Field indices and must not 
+ be used ever.
+
+ horizontal.py provides an interface to a Python port of constants wrapped in a custom `Domain` class, which takes care of the
+ custom index range and makes sure that for each dimension only legal values can be passed. 
+
+ The horizontal domain zones are denoted by a set of named enums for the different zones: 
+ see Fig. 8.2 in the official [ICON tutorial](https://www.dwd.de/DE/leistungen/nwv_icon_tutorial/pdf_einzelbaende/icon_tutorial2024.html).
+
+
+"""
+
 import dataclasses
 import enum
 import functools
@@ -64,6 +92,44 @@ _CELL_GRF: Final[int] = 14
 _VERTEX_GRF: Final[int] = 13
 
 
+_lateral_boundary = {
+    dims.CellDim: _LATERAL_BOUNDARY_CELLS,
+    dims.EdgeDim: _LATERAL_BOUNDARY_EDGES,
+    dims.VertexDim: _LATERAL_BOUNDARY_VERTICES,
+}
+_local = {
+    dims.CellDim: _LOCAL_CELLS,
+    dims.EdgeDim: _LOCAL_EDGES,
+    dims.VertexDim: _LOCAL_VERTICES,
+}
+_halo = {
+    dims.CellDim: _HALO_CELLS,
+    dims.EdgeDim: _HALO_EDGES,
+    dims.VertexDim: _HALO_VERTICES,
+}
+_interior = {
+    dims.CellDim: _INTERIOR_CELLS,
+    dims.EdgeDim: _INTERIOR_EDGES,
+    dims.VertexDim: _INTERIOR_VERTICES,
+}
+_nudging = {
+    dims.CellDim: _NUDGING_CELLS,
+    dims.EdgeDim: _NUDGING_EDGES,
+    dims.VertexDim: _NUDGING_VERTICES,
+}
+_end = {
+    dims.CellDim: _END_CELLS,
+    dims.EdgeDim: _END_EDGES,
+    dims.VertexDim: _END_VERTICES,
+}
+
+_bounds = {
+    dims.CellDim: (0, _CELL_GRF - 1),
+    dims.EdgeDim: (0, _EDGE_GRF - 1),
+    dims.VertexDim: (0, _VERTEX_GRF - 1),
+}
+
+
 class LineNumber(enum.IntEnum):
     HALO = -1
     FIRST = 0
@@ -73,187 +139,216 @@ class LineNumber(enum.IntEnum):
     FIFTH = 4
     SIXTH = 5
     SEVENTH = 6
+    EIGHTH = 7
 
 
-class HorizontalMarkerIndex:
+def lateral_boundary(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+    """Indicate lateral boundary.
+
+    These points correspond to the sorted points in ICON, the marker can be incremented in order
+    to access higher order boundary lines
     """
-    Handles constants indexing into the start_index and end_index fields.
-
-     ICON uses a double indexing scheme for field indices marking the start and end of special
-     grid zone: The constants defined here (from mo_impl_constants.f90 and mo_impl_constants_grf.f90)
-     are the indices that are used to index into the start_idx and end_idx arrays
-     provided by the grid file where for each dimension the start index of the horizontal
-     "zones" are defined:
-     f.ex. an inlined access of the field F: Field[[CellDim], double] at the starting point of the lateral boundary zone would be
-
-     F[start_idx_c[_LATERAL_BOUNDARY_CELLS]
+    return _domain_index(_lateral_boundary, dim, offset)
 
 
-     ICON uses a custom index range from [ICON_INDEX_OFFSET... ] such that the index 0 marks the
-     internal entities for _all_ dimensions (Cell, Edge, Vertex) that is why we define these
-     additional INDEX_OFFSETs here in order to swap back to a 0 base python array.
+def _domain_index(value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
+    index = value_dict[dim] + offset
+    assert index <= _bounds[dim][1], f"Index {index} out of bounds for {dim}:  {_bounds[dim]}"
+    assert index >= _bounds[dim][0], f"Index {index} out of bounds for {dim}: {_bounds[dim]}"
+    return index
 
-    """
 
-    _lateral_boundary: ClassVar = {
-        dims.CellDim: _LATERAL_BOUNDARY_CELLS,
-        dims.EdgeDim: _LATERAL_BOUNDARY_EDGES,
-        dims.VertexDim: _LATERAL_BOUNDARY_VERTICES,
-    }
-    _local: ClassVar = {
-        dims.CellDim: _LOCAL_CELLS,
-        dims.EdgeDim: _LOCAL_EDGES,
-        dims.VertexDim: _LOCAL_VERTICES,
-    }
-    _halo: ClassVar = {
-        dims.CellDim: _HALO_CELLS,
-        dims.EdgeDim: _HALO_EDGES,
-        dims.VertexDim: _HALO_VERTICES,
-    }
-    _interior: ClassVar = {
-        dims.CellDim: _INTERIOR_CELLS,
-        dims.EdgeDim: _INTERIOR_EDGES,
-        dims.VertexDim: _INTERIOR_VERTICES,
-    }
-    _nudging: ClassVar = {
-        dims.CellDim: _NUDGING_CELLS,
-        dims.EdgeDim: _NUDGING_EDGES,
-        # TODO [magdalena] there is no nudging for vertices?
-        dims.VertexDim: _NUDGING_VERTICES,
-    }
-    _end: ClassVar = {
-        dims.CellDim: _END_CELLS,
-        dims.EdgeDim: _END_EDGES,
-        dims.VertexDim: _END_VERTICES,
-    }
+def local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+    """Indicate points that are owned by the processing unit, i.e. no halo points."""
+    return _domain_index(_local, dim, offset)
 
-    _bounds: ClassVar = {
-        dims.CellDim: (0, _CELL_GRF - 1),
-        dims.EdgeDim: (0, _EDGE_GRF - 1),
-        dims.VertexDim: (0, _VERTEX_GRF - 1),
-    }
 
-    @classmethod
-    def lateral_boundary(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-        """Indicate lateral boundary.
+def halo(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+    return _domain_index(_halo, dim, offset)
 
-        These points correspond to the sorted points in ICON, the marker can be incremented in order
-        to access higher order boundary lines
-        """
-        return cls._domain_index(cls._lateral_boundary, dim, offset)
 
-    @classmethod
-    def _domain_index(cls, value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
-        index = value_dict[dim] + offset
-        assert (
-            index <= cls._bounds[dim][1]
-        ), f"Index {index} out of bounds for {dim}:  {cls._bounds[dim]}"
-        assert (
-            index >= cls._bounds[dim][0]
-        ), f"Index {index} out of bounds for {dim}: {cls._bounds[dim]}"
-        return index
+def nudging(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+    """Indicate the nudging zone."""
+    return _domain_index(_nudging, dim, offset)
 
-    @classmethod
-    def local(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-        """Indicate points that are owned by the processing unit, i.e. no halo points."""
-        return cls._domain_index(cls._local, dim, offset)
 
-    @classmethod
-    def halo(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-        return cls._domain_index(cls._halo, dim, offset)
+def interior(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
+    """Indicate interior i.e. unordered prognostic cells in ICON."""
+    return _domain_index(_interior, dim, offset)
 
-    @classmethod
-    def nudging(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-        """Indicate the nudging zone."""
-        return cls._domain_index(cls._nudging, dim, offset)
 
-    @classmethod
-    def nudging_2nd_level(cls, dim: gtx.Dimension) -> int:
-        """Indicate the nudging zone for 2nd level."""
-        return cls.nudging(dim, 1)
-
-    @classmethod
-    def interior(cls, dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-        """Indicate interior i.e. unordered prognostic cells in ICON."""
-        return cls._domain_index(cls._interior, dim, offset)
-
-    @classmethod
-    def end(cls, dim: gtx.Dimension) -> int:
-        return cls._end[dim]
+def end(dim: gtx.Dimension) -> int:
+    return _end[dim]
 
 
 class Zone(str, enum.Enum):
-    """Used to encode the different horizontal domain zones used in ICON.
-    The values vaguely corrspond to the constants used in ICON to pass as rl_start or rl_end to the get_indices_[e_c,v] functions.
+    """
+    Enum of different zones on the horizontal ICON grid.
+    The mapping to the constant used in ICON is as follows: (note that not all values exist for all dimensions
 
-    The translation table is as follows:
 
+    ## CellDim
+    | ICON constant or value    | ICON4py Name               |
+    |:------------------------- |:-------------------------- |
+    | `min_rlcell` (-8)         | `END`                      |
+    | `min_rlcell_int-2`,  (-6) | `HALO_LEVEL_2`             |
+    | `min_rlcell_int-1` (-5)   | `HALO`                     |
+    | `min_rlcell_int`(-4)      | `LOCAL`                    |
+    | `0`                       | `INTERIOR`                 |
+    | `1`                       | `LATERAL_BOUNDARY`         |
+    | `2`                       | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                       | `LATERAL_BOUNDARY_LEVEL_3` |
+    | `grf_bdywidth_c` (4)      | `LATERAL_BOUNDARY_LEVEL_4` |
+    | `grf_bdywith_c +1` (5)    | `NUDGING`                  |
+    | `grf_bdywidth_c+2` (6)    | `NUDGING_LEVEL_2`          |
+
+    Lateral boundary and nudging are only relevant for LAM runs, halo lines only for distributed domains.
+    The constants are defined in `mo_impl_constants.f90` and `mo_impl_constants_grf.f90`
+    ## VertexDim
+
+
+    | ICON constant or value                  | ICON4Py Name               |
+    |:--------------------------------------- |:-------------------------- |
+    | `min_rlvert` (-7)                       | `END`                      |
+    | `min_rlvert+1`, `min_rlvert_int-2` (-6) | `HALO_LEVEL_2`             |
+    | `min_rlvert_int-1` (-5)                 | `HALO`                     |
+    | `min_rlvert_int` (-4)                   | `LOCAL`                    |
+    | `0`                                     | `INTERIOR`                 |
+    | `1`                                     | `LATERAL_BOUNDARY`         |
+    | `2`                                     | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                                     | `LATERAL_BOUNDARY_LEVEL_3` |
+    | `4`                                     | `LATERAL_BOUNDARY_LEVEL_4` |
+    | `max_rlvert` (5)                        |                            |
+
+    For the meaning see above.
+
+    ##EdgeDim
+
+
+    | ICON constant or value                 | ICON4Py Name               |
+    |:-------------------------------------- |:-------------------------- |
+    | `min_rledge` (-13)                     | `END`                      |
+    | `min_rledge_int-2`            (-10)    | `HALO_LEVEL_2`             |
+    | `min_rledge_int-1` (-9)                | `HALO`                     |
+    | `min_rledge_int` (-8)                  | `LOCAL`                    |
+    | `0`                                    | `INTERIOR`                 |
+    | `1`                                    | `LATERAL_BOUNDARY`         |
+    | `2`                                    | `LATERAL_BOUNDARY_LEVEL_2` |
+    | `3`                                    | `LATERAL_BOUNDARY_LEVEL_3` |
+    | `4`                                    | `LATERAL_BOUNDARY_LEVEL_4` |
+    | `5`                                    | `LATERAL_BOUNDARY_LEVEL_5` |
+    | `6`                                    | `LATERAL_BOUNDARY_LEVEL_6` |
+    | `7`                                    | `LATERAL_BOUNDARY_LEVEL_7` |
+    | `8`                                    | `LATERAL_BOUNDARY_LEVEL_8` |
+    | `grf_bdywidth_e`   (9)                 | `NUDGING`                  |
+    | `grf_bdywidth_e+1` `max_rledge`   (10) | `NUDGING_LEVEL_2`          |
 
 
     """
 
+    #: points the the number of entries in a local grid
     END = "end"
+
+    #: interior unordered prognostic entries
     INTERIOR = "interior"
+
+    #: first halo line
     HALO = "halo_level_1"
+
+    #: 2nd halo line
     HALO_LEVEL_2 = "halo_level_2"
+
+    #: all entries in a local grid, when used it grid.start_index, grid.end_index it will return ([0, grid.size[dim]])
     LOCAL = "local"
+
+    #: lateral boundary (row 1) in LAM model
     LATERAL_BOUNDARY = "lb_level_1"
+
+    #: lateral boundary (row 2) in LAM model
     LATERAL_BOUNDARY_LEVEL_2 = "lb_level_2"
+
+    # ; lateral boundary (row 3) in LAM model
     LATERAL_BOUNDARY_LEVEL_3 = "lb_level_3"
+
+    #: lateral boundary (row 4) in LAM model
     LATERAL_BOUNDARY_LEVEL_4 = "lb_level_4"
+
+    #: lateral boundary (row 5) in LAM model
     LATERAL_BOUNDARY_LEVEL_5 = "lb_level_5"
+
+    #: lateral boundary (row 6) in LAM model
     LATERAL_BOUNDARY_LEVEL_6 = "lb_level_6"
+
+    #: lateral boundary (row 7) in LAM model
     LATERAL_BOUNDARY_LEVEL_7 = "lb_level_7"
+
+    #: lateral boundary (row 8) in LAM model
+    LATERAL_BOUNDARY_LEVEL_8 = "lb_level_8"
+
+    #: nudging level in LAM model
     NUDGING = "nudging_level_1"
+
+    #: 2nd nudging level in LAM model
     NUDGING_LEVEL_2 = "nudging_level_2"
 
 
-def map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
+def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
     if marker == Zone.END:
-        return HorizontalMarkerIndex.end(dim)
+        return end(dim)
     elif marker == Zone.INTERIOR:
-        return HorizontalMarkerIndex.interior(dim)
+        return interior(dim)
     elif marker == Zone.HALO:
-        return HorizontalMarkerIndex.halo(dim, LineNumber.FIRST)
+        return halo(dim, LineNumber.FIRST)
     elif marker == Zone.HALO_LEVEL_2:
-        return HorizontalMarkerIndex.halo(dim, LineNumber.HALO)
+        return halo(dim, LineNumber.HALO)
     elif marker == Zone.LOCAL:
-        return HorizontalMarkerIndex.local(dim)
+        return local(dim)
     elif marker == Zone.LATERAL_BOUNDARY:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.FIRST)
+        return lateral_boundary(dim, LineNumber.FIRST)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_2:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.SECOND)
+        return lateral_boundary(dim, LineNumber.SECOND)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_3:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.THIRD)
+        return lateral_boundary(dim, LineNumber.THIRD)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_4:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.FOURTH)
+        return lateral_boundary(dim, LineNumber.FOURTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_5:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.FIFTH)
+        return lateral_boundary(dim, LineNumber.FIFTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_6:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.SIXTH)
+        return lateral_boundary(dim, LineNumber.SIXTH)
     elif marker == Zone.LATERAL_BOUNDARY_LEVEL_7:
-        return HorizontalMarkerIndex.lateral_boundary(dim, LineNumber.SEVENTH)
+        return lateral_boundary(dim, LineNumber.SEVENTH)
+    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_8:
+        return lateral_boundary(dim, LineNumber.EIGHTH)
     elif marker == Zone.NUDGING:
-        return HorizontalMarkerIndex.nudging(dim, LineNumber.FIRST)
+        return nudging(dim, LineNumber.FIRST)
     elif marker == Zone.NUDGING_LEVEL_2:
-        return HorizontalMarkerIndex.nudging(dim, LineNumber.SECOND)
+        return nudging(dim, LineNumber.SECOND)
     else:
         raise ValueError(f"Unknown marker {marker}")
 
 
 class Domain(Protocol):
+    """
+    Interface for a domain object.
+
+    Used to access horizontal domain zones in the ICON grid.
+    """
+
     _dim: gtx.Dimension
     _marker: Zone
     _index: int
+
+    def __str__(self):
+        return f"{self.dim}: {self._marker} /[ {self._index}]"
 
     @abstractmethod
     def _valid(self, marker: Zone) -> bool:
         ...
 
     def marker(self, marker: Zone):
-        assert self._valid(marker), f" Domain `{marker}` not a valid for use with '{self.dim}'"
+        assert self._valid(marker), f" Domain `{marker}` not a valid zone for use with '{self.dim}'"
         self._marker = marker
-        self._index = map_to_index(self.dim, marker)
+        self._index = _map_to_index(self.dim, marker)
         return self
 
     @property
@@ -269,16 +364,26 @@ class Domain(Protocol):
 
 
 def domain(dim: gtx.Dimension):
+    """
+    Factory function to create a domain object for a given dimension.
+
+    This is the main entry point to create a domain object for a given dimension. In order to access the start or end index for
+    `INTERIOR` (unordered prognostic) cells in ICON one would call:
+
+    >>> import icon4py.model.common.grid.icon as icon_grid
+    >>> grid = icon_grid.IconGrid()
+    >>> domain = domain(dims.CellDim)(Zone.INTERIOR)
+    >>> start_index = grid.start_index(domain)
+
+
+
+    """
+
     def _domain(marker: Zone):
         return _domain_factory(dim, marker)
 
     assert dim.kind == gtx.DimensionKind.HORIZONTAL, "Only defined for horizontal dimensions"
-    if dim == dims.CellDim:
-        return _domain
-    elif dim == dims.EdgeDim:
-        return _domain
-    else:
-        return _domain
+    return _domain
 
 
 def _domain_factory(dim: gtx.Dimension, marker: Zone):
@@ -291,6 +396,8 @@ def _domain_factory(dim: gtx.Dimension, marker: Zone):
 
 
 class EdgeDomain(Domain):
+    """Domain object for the Edge dimension."""
+
     _dim = dims.EdgeDim
 
     def _valid(self, marker: Zone):
@@ -298,6 +405,8 @@ class EdgeDomain(Domain):
 
 
 class VertexDomain(Domain):
+    """Domain object for the Vertex dimension."""
+
     _dim = dims.VertexDim
 
     def _valid(self, marker: Zone):
@@ -315,6 +424,8 @@ class VertexDomain(Domain):
 
 
 class CellDomain(Domain):
+    """Domain object for the Cell dimension."""
+
     _dim = dims.CellDim
 
     def _valid(self, marker: Zone):
@@ -332,6 +443,7 @@ class CellDomain(Domain):
         )
 
 
+# TODO (@ halungge): maybe this should to a separaemte module
 @dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int
@@ -339,6 +451,7 @@ class HorizontalGridSize:
     num_cells: int
 
 
+# TODO (@ halungge): maybe this should to a separate module
 class RefinCtrlLevel:
     _boundary_nudging_start: ClassVar = {
         dims.EdgeDim: _GRF_BOUNDARY_WIDTH_EDGES + 1,

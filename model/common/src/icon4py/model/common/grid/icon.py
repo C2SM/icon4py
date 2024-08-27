@@ -33,8 +33,8 @@ class IconGrid(base.BaseGrid):
         """Instantiate a grid according to the ICON model."""
         super().__init__()
         self._id = id_
-        self.start_indices = {}
-        self.end_indices = {}
+        self._start_indices = {}
+        self._end_indices = {}
         self.global_properties = None
         self.offset_provider_mapping = {
             "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
@@ -86,8 +86,8 @@ class IconGrid(base.BaseGrid):
     def with_start_end_indices(
         self, dim: gtx.Dimension, start_indices: np.ndarray, end_indices: np.ndarray
     ):
-        self.start_indices[dim] = start_indices.astype(gtx.int32)
-        self.end_indices[dim] = end_indices.astype(gtx.int32)
+        self._start_indices[dim] = start_indices.astype(gtx.int32)
+        self._end_indices[dim] = end_indices.astype(gtx.int32)
 
     @builder.builder
     def with_global_params(self, global_params: GlobalGridParams):
@@ -172,7 +172,7 @@ class IconGrid(base.BaseGrid):
         """
         if domain.local:
             return 0
-        return self.start_indices[domain.dim][domain()]
+        return self._start_indices[domain.dim][domain()]
 
     def end_index(self, domain: h_grid.Domain):
         """
@@ -183,10 +183,4 @@ class IconGrid(base.BaseGrid):
         """
         if domain.local:
             return self.size.get(domain.dim)
-        return self.end_indices[domain.dim][domain()]
-
-    def get_start_index(self, dim: gtx.Dimension, marker: int) -> gtx.int32:
-        return self.start_indices[dim][marker]
-
-    def get_end_index(self, dim: gtx.Dimension, marker: int) -> gtx.int32:
-        return self.end_indices[dim][marker]
+        return self._end_indices[domain.dim][domain()]
