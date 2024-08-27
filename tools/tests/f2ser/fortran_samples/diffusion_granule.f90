@@ -1,15 +1,10 @@
-! ICON4Py - ICON inspired code in Python and GT4Py
-!
-! Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
-! All rights reserved.
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
 !
 ! Please, refer to the LICENSE file in the root directory.
 ! SPDX-License-Identifier: BSD-3-Clause
-
-! and additionally
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-
+! ---------------------------------------------------------------
 
 !----------------------------
 #include "omp_definitions.inc"

@@ -66,6 +66,11 @@ repos:
     name: add license for all ICON4Py Python source files
     types: [fortran]
     args: [--comment-style, "|!|", --license-filepath, tools/.license_header.txt, --fuzzy-match-generates-todo]
+    exclude: |
+      (?x)^(
+        tools/tests/f2ser/fortran_samples/diffusion_granule.f90|
+        tools/tests/f2ser/fortran_samples/derived_types_example.f90
+      )$
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
   rev: v0.2.2
