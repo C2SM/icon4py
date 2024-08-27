@@ -408,8 +408,8 @@ def test_compute_ddxn_z_full(
     z_ifc = metrics_savepoint.z_ifc()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     ddxn_z_full_ref = metrics_savepoint.ddxn_z_full().asnumpy()
-    horizontal_start = icon_grid.start_index(edge_domain)(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
-    horizontal_end = icon_grid.end_index(edge_domain)(horizontal.Zone.INTERIOR)
+    horizontal_start = icon_grid.start_index(edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_end = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     ddxn_z_half_e = zero_field(icon_grid, dims.EdgeDim, dims.KDim, extend={dims.KDim: 1})
@@ -444,14 +444,14 @@ def test_compute_ddxt_z_full(
     tangent_orientation = grid_savepoint.tangent_orientation()
     inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
     ddxt_z_full_ref = metrics_savepoint.ddxt_z_full().asnumpy()
-    horizontal_start_vertex = icon_grid.start_index(vertex_domain)(
-        horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2
+    horizontal_start_vertex = icon_grid.start_index(
+        vertex_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    horizontal_end_vertex = icon_grid.end_index(vertex_domain)(horizontal.Zone.INTERIOR)
-    horizontal_start_edge = icon_grid.start_index(edge_domain)(
-        horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3
+    horizontal_end_vertex = icon_grid.end_index(vertex_domain(horizontal.Zone.INTERIOR))
+    horizontal_start_edge = icon_grid.start_index(
+        edge_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_3)
     )
-    horizontal_end_edge = icon_grid.end_index(edge_domain)(horizontal.Zone.INTERIOR)
+    horizontal_end_edge = icon_grid.end_index(edge_domain(horizontal.Zone.INTERIOR))
     vertical_start = 0
     vertical_end = icon_grid.num_levels + 1
     cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
@@ -584,8 +584,8 @@ def test_compute_vwind_impl_wgt(
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
 
-    horizontal_start_cell = icon_grid.start_index(cell_domain)(
-        horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2
+    horizontal_start_cell = icon_grid.start_index(
+        cell_domain(horizontal.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     vwind_impl_wgt_ref = metrics_savepoint.vwind_impl_wgt()
     dual_edge_length = grid_savepoint.dual_edge_length()
