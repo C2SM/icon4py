@@ -144,12 +144,8 @@ def test_nonhydro_predictor_step(
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
-        grid_savepoint.construct_cell_geometry()
-    )
-    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
-        grid_savepoint.construct_edge_geometry()
-    )
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro()
     nlev = icon_grid.num_levels
@@ -574,12 +570,8 @@ def test_nonhydro_corrector_step(
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
-        grid_savepoint.construct_cell_geometry()
-    )
-    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
-        grid_savepoint.construct_edge_geometry()
-    )
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro()
     solve_nonhydro.init(
@@ -766,12 +758,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
-        grid_savepoint.construct_cell_geometry()
-    )
-    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
-        grid_savepoint.construct_edge_geometry()
-    )
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro()
     solve_nonhydro.init(
@@ -899,12 +887,8 @@ def test_run_solve_nonhydro_multi_step(
     interpolation_state = construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = (
-        grid_savepoint.construct_cell_geometry()
-    )
-    edge_geometry: geometry.EdgeParams = (
-        grid_savepoint.construct_edge_geometry()
-    )
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     solve_nonhydro = solve_nh.SolveNonhydro()
     solve_nonhydro.init(

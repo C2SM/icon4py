@@ -631,9 +631,7 @@ class SolveNonhydro:
 
         start_cell_lb = self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
 
-        end_cell_lb_level_4 = self.grid.end_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
-        )
+        end_cell_lb_level_4 = self.grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
         start_cell_halo = self.grid.start_index(cell_domain(h_grid.Zone.HALO))
 
         end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
@@ -732,9 +730,7 @@ class SolveNonhydro:
         end_vertex_halo = self.grid.end_index(vertex_domain(h_grid.Zone.HALO))
 
         start_cell_lb = self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
-        end_cell_lb_level_4 = self.grid.end_index(
-            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
-        )
+        end_cell_lb_level_4 = self.grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
 
         start_edge_lb_level_7 = self.grid.start_index(
             edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)

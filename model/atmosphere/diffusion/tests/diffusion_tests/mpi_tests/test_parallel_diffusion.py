@@ -88,7 +88,7 @@ def test_parallel_diffusion(
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
     diffusion = Diffusion(exchange)
-    
+
     diffusion.init(
         grid=icon_grid,
         config=config,

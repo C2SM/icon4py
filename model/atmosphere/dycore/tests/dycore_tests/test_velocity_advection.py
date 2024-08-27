@@ -200,12 +200,8 @@ def test_velocity_predictor_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: geometry.CellParams = (
-        grid_savepoint.construct_cell_geometry()
-    )
-    edge_geometry: geometry.EdgeParams = (
-        grid_savepoint.construct_edge_geometry()
-    )
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -373,12 +369,8 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: icon4py.model.common.grid.geometry.CellParams = (
-        grid_savepoint.construct_cell_geometry()
-    )
-    edge_geometry: icon4py.model.common.grid.geometry.EdgeParams = (
-        grid_savepoint.construct_edge_geometry()
-    )
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
