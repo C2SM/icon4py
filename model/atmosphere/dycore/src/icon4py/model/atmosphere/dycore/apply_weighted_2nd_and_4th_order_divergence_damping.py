@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
-
 @field_operator
 def _apply_weighted_2nd_and_4th_order_divergence_damping(
     scal_divdamp: fa.KField[wpfloat],
@@ -31,8 +26,8 @@ def _apply_weighted_2nd_and_4th_order_divergence_damping(
     """Formelry known as _mo_solve_nonhydro_stencil_27."""
     z_graddiv2_vn_wp = astype(z_graddiv2_vn, wpfloat)
 
-    scal_divdamp = broadcast(scal_divdamp, (EdgeDim, KDim))
-    bdy_divdamp = broadcast(bdy_divdamp, (EdgeDim, KDim))
+    scal_divdamp = broadcast(scal_divdamp, (dims.EdgeDim, dims.KDim))
+    bdy_divdamp = broadcast(bdy_divdamp, (dims.EdgeDim, dims.KDim))
     vn_wp = vn + (scal_divdamp + bdy_divdamp * nudgecoeff_e) * z_graddiv2_vn_wp
     return vn_wp
 

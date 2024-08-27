@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _apply_nabla2_to_w_in_upper_damping_layer(
     w: fa.CellKField[wpfloat],
@@ -28,7 +23,7 @@ def _apply_nabla2_to_w_in_upper_damping_layer(
     z_nabla2_c: fa.CellKField[vpfloat],
 ) -> fa.CellKField[wpfloat]:
     z_nabla2_c_wp = astype(z_nabla2_c, wpfloat)
-    cell_area_tmp = broadcast(cell_area, (CellDim, KDim))
+    cell_area_tmp = broadcast(cell_area, (dims.CellDim, dims.KDim))
 
     w_wp = w + diff_multfac_n2w * cell_area_tmp * z_nabla2_c_wp
     return w_wp

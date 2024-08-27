@@ -14,10 +14,6 @@ from icon4py.model.common import dimension as dims
 from icon4pytools.icon4pygen.metadata import _get_field_infos, provide_neighbor_table
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
 chain_false_skipvalues = [
     "C2E",
     "C2V",
@@ -114,7 +110,7 @@ def with_constant_domain(
     b: Field[[dims.CellDim, dims.KDim], float],
     result: Field[[dims.CellDim, dims.KDim], float],
 ):
-    _add(a, b, out=result, domain={CellDim: (0, 3), KDim: (1, 8)})
+    _add(a, b, out=result, domain={dims.CellDim: (0, 3), dims.KDim: (1, 8)})
 
 
 @pytest.mark.parametrize("program", [with_domain, without_domain, with_constant_domain])

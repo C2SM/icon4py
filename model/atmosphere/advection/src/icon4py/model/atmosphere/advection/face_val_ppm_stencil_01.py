@@ -14,11 +14,6 @@ from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import Koff
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _face_val_ppm_stencil_01a(
     p_cc: fa.CellKField[float],
@@ -61,7 +56,7 @@ def _face_val_ppm_stencil_01(
     k: fa.KField[int32],
     elev: int32,
 ) -> fa.CellKField[float]:
-    k = broadcast(k, (CellDim, KDim))
+    k = broadcast(k, (dims.CellDim, dims.KDim))
 
     z_slope = where(
         k == elev,

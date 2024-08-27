@@ -15,15 +15,10 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _init_cell_kdim_field_with_zero_wp() -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_57 or _mo_solve_nonhydro_stencil_64."""
-    return broadcast(wpfloat("0.0"), (CellDim, KDim))
+    return broadcast(wpfloat("0.0"), (dims.CellDim, dims.KDim))
 
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)

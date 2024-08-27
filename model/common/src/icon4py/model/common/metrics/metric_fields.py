@@ -54,10 +54,6 @@ from icon4py.model.common.type_alias import vpfloat, wpfloat
 Contains metric fields calculations for the vertical grid, ported from mo_vertical_grid.f90.
 """
 
-# TODO: this will have to be removed once domain allows for imports
-EdgeDim = dims.EdgeDim
-KDim = dims.KDim
-
 
 @dataclass(frozen=True)
 class MetricsConfig:
@@ -206,7 +202,7 @@ def _compute_scalfac_dd3d(
     divdamp_trans_end: wpfloat,
     divdamp_type: int32,
 ) -> fa.KField[wpfloat]:
-    scalfac_dd3d = broadcast(1.0, (KDim,))
+    scalfac_dd3d = broadcast(1.0, (dims.KDim,))
     if divdamp_type == 32:
         zf = 0.5 * (vct_a + vct_a(Koff[1]))  # depends on nshift_total, assumed to be always 0
         scalfac_dd3d = where(zf >= divdamp_trans_end, 0.0, scalfac_dd3d)
@@ -263,7 +259,7 @@ def _compute_rayleigh_w(
     vct_a_1: wpfloat,
     pi_const: wpfloat,
 ) -> fa.KField[wpfloat]:
-    rayleigh_w = broadcast(0.0, (KDim,))
+    rayleigh_w = broadcast(0.0, (dims.KDim,))
     z_sin_diff = maximum(0.0, vct_a - damping_height)
     z_tanh_diff = vct_a_1 - vct_a  # vct_a(1) - vct_a
     if rayleigh_type == rayleigh_classic:
@@ -504,8 +500,8 @@ def compute_ddxn_z_half_e(
         inv_dual_edge_length,
         out=ddxn_z_half_e,
         domain={
-            EdgeDim: (horizontal_start, horizontal_end),
-            KDim: (vertical_start, vertical_end),
+            dims.EdgeDim: (horizontal_start, horizontal_end),
+            dims.KDim: (vertical_start, vertical_end),
         },
     )
 
@@ -851,8 +847,8 @@ def _compute_pg_edgeidx_vertidx(
     pg_edgeidx: fa.EdgeKField[int32],
     pg_vertidx: fa.EdgeKField[int32],
 ) -> tuple[fa.EdgeKField[int32], fa.EdgeKField[int32]]:
-    e_lev = broadcast(e_lev, (EdgeDim, KDim))
-    k_lev = broadcast(k_lev, (EdgeDim, KDim))
+    e_lev = broadcast(e_lev, (dims.EdgeDim, dims.KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     z_mc = average_cell_kdim_level_up(z_ifc)
     z_me = _cell_2_edge_interpolation(in_field=z_mc, coeff=c_lin_e)
     pg_edgeidx = where(
@@ -873,7 +869,7 @@ def _compute_pg_exdist_dsl(
     k_lev: fa.KField[int32],
     pg_exdist_dsl: fa.EdgeKField[wpfloat],
 ) -> fa.EdgeKField[wpfloat]:
-    k_lev = broadcast(k_lev, (EdgeDim, KDim))
+    k_lev = broadcast(k_lev, (dims.EdgeDim, dims.KDim))
     pg_exdist_dsl = where(
         (k_lev >= (flat_idx_max + 1)) & (z_me < z_aux2) & e_owner_mask,
         z_me - z_aux2,

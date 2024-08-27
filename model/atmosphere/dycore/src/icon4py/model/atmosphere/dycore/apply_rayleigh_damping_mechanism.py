@@ -15,11 +15,6 @@ from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import wpfloat
 
 
-# TODO: this will have to be removed once domain allows for imports
-CellDim = dims.CellDim
-KDim = dims.KDim
-
-
 @field_operator
 def _apply_rayleigh_damping_mechanism(
     z_raylfac: fa.KField[wpfloat],
@@ -27,7 +22,7 @@ def _apply_rayleigh_damping_mechanism(
     w: fa.CellKField[wpfloat],
 ) -> fa.CellKField[wpfloat]:
     """Formerly known as _mo_solve_nonhydro_stencil_54."""
-    z_raylfac = broadcast(z_raylfac, (CellDim, KDim))
+    z_raylfac = broadcast(z_raylfac, (dims.CellDim, dims.KDim))
     w_wp = z_raylfac * w + (wpfloat("1.0") - z_raylfac) * w_1
     return w_wp
 
