@@ -91,9 +91,7 @@ def test_parallel_diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=VerticalGrid(
-            vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
-        ),
+        vertical_grid=VerticalGrid(vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()),
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,

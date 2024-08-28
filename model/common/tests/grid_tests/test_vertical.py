@@ -68,9 +68,7 @@ def test_damping_layer_calculation_from_icon_input(
     a_array = a.asnumpy()
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
-    assert (
-        vertical_grid.index(v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.DAMPING)) == nrdmax
-    )
+    assert vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.DAMPING)) == nrdmax
 
 
 @pytest.mark.datatest
@@ -82,7 +80,7 @@ def test_grid_size(grid_savepoint):
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
-    
+
     assert 65 == vertical_grid.size(dims.KDim)
     assert 66 == vertical_grid.size(dims.KHalfDim)
 
@@ -115,7 +113,7 @@ def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
-    
+
     return vertical_grid
 
 
@@ -127,16 +125,17 @@ def test_moist_level_calculation(grid_savepoint, experiment, expected_moist_leve
     threshold = 22500.0
     vertical_grid = configure_vertical_grid(grid_savepoint, top_moist_threshold=threshold)
     assert expected_moist_level == vertical_grid.kstart_moist
-    assert expected_moist_level == vertical_grid.index(
-        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.MOIST)
-    )
+    assert expected_moist_level == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.MOIST))
+
 
 @pytest.mark.datatest
 def test_interface_physical_height(grid_savepoint):
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    assert dallclose(grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy())
-    
-    
+    assert dallclose(
+        grid_savepoint.vct_a().asnumpy(), vertical_grid.interface_physical_height.asnumpy()
+    )
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
 def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
@@ -144,34 +143,26 @@ def test_flat_level_calculation(grid_savepoint, experiment, flat_height):
 
     assert grid_savepoint.nflatlev() == vertical_grid.nflatlev
     assert grid_savepoint.nflatlev() == vertical_grid.index(
-        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.FLAT)
+        v_grid.Domain(dims.KDim, v_grid.Zone.FLAT)
     )
 
 
 @pytest.mark.parametrize("experiment, levels", [(REGIONAL_EXPERIMENT, 65), (GLOBAL_EXPERIMENT, 60)])
 def test_grid_index_top(grid_savepoint, experiment, levels):
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    assert 0 == vertical_grid.index(v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.TOP))
-    assert levels == vertical_grid.index(
-        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.BOTTOM)
-    )
-    assert levels + 1 == vertical_grid.index(
-        v_grid.VerticalDomain(dims.KHalfDim, v_grid.VerticalZone.BOTTOM)
-    )
-    assert 0 == vertical_grid.index(v_grid.VerticalDomain(dims.KHalfDim, v_grid.VerticalZone.TOP))
+    assert 0 == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.TOP))
+    assert levels == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM))
+    assert levels + 1 == vertical_grid.index(v_grid.Domain(dims.KHalfDim, v_grid.Zone.BOTTOM))
+    assert 0 == vertical_grid.index(v_grid.Domain(dims.KHalfDim, v_grid.Zone.TOP))
 
 
 @pytest.mark.parametrize("experiment, levels", [(REGIONAL_EXPERIMENT, 65), (GLOBAL_EXPERIMENT, 60)])
 def test_grid_index_bottom(grid_savepoint, experiment, levels):
     vertical_grid = configure_vertical_grid(grid_savepoint)
-    assert levels == vertical_grid.index(
-        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.BOTTOM)
-    )
-    assert levels + 1 == vertical_grid.index(
-        v_grid.VerticalDomain(dims.KHalfDim, v_grid.VerticalZone.BOTTOM)
-    )
-   
-    
+    assert levels == vertical_grid.index(v_grid.Domain(dims.KDim, v_grid.Zone.BOTTOM))
+    assert levels + 1 == vertical_grid.index(v_grid.Domain(dims.KHalfDim, v_grid.Zone.BOTTOM))
+
+
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
 def test_vct_a_vct_b_calculation_from_icon_input(

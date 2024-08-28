@@ -23,7 +23,7 @@ from icon4py.model.common.settings import xp
 log = logging.getLogger(__name__)
 
 
-class VerticalZone(enum.IntEnum):
+class Zone(enum.IntEnum):
     """
     Vertical zone markers to be used to select vertical domain indices.
 
@@ -38,9 +38,9 @@ class VerticalZone(enum.IntEnum):
 
 
 @dataclasses.dataclass(frozen=True)
-class VerticalDomain:
+class Domain:
     dim: dims.KDim
-    zone: VerticalZone
+    marker: Zone
 
 
 @dataclasses.dataclass(frozen=True)
@@ -97,7 +97,6 @@ class VerticalGrid:
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
-    
     def __post_init__(self, vct_a, vct_b):
         object.__setattr__(
             self,
@@ -113,9 +112,7 @@ class VerticalGrid:
         object.__setattr__(
             self,
             "_end_index_of_damping_layer",
-            self._determine_damping_height_index(
-                vct_a_array, self.config.rayleigh_damping_height
-            ),
+            self._determine_damping_height_index(vct_a_array, self.config.rayleigh_damping_height),
         )
         object.__setattr__(
             self,
@@ -163,12 +160,12 @@ class VerticalGrid:
     @functools.cached_property
     def kstart_moist(self):
         """Vertical index for start level of moist physics."""
-        return self.index(VerticalDomain(dims.KDim, VerticalZone.MOIST))
+        return self.index(Domain(dims.KDim, Zone.MOIST))
 
     @functools.cached_property
     def nflatlev(self):
         """Vertical index for bottommost level at which coordinate surfaces are flat."""
-        return self.index(VerticalDomain(dims.KDim, VerticalZone.FLAT))
+        return self.index(Domain(dims.KDim, Zone.FLAT))
 
     @functools.cached_property
     def nrdmax(self):
@@ -178,12 +175,11 @@ class VerticalGrid:
     @functools.cached_property
     def end_index_of_damping_layer(self):
         """Vertical index where damping starts."""
-        return self.index(VerticalDomain(dims.KDim, VerticalZone.DAMPING))
+        return self.index(Domain(dims.KDim, Zone.DAMPING))
 
     @property
     def nflat_gradp(self):
         return self._min_index_flat_horizontal_grad_pressure
-
 
     def size(self, dim: dims.VerticalDim) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
@@ -194,22 +190,21 @@ class VerticalGrid:
         else:
             raise ValueError(f"Unkown dimension {dim}.")
 
-    def index(self, domain: VerticalDomain) -> gtx.int32:
-        if domain.zone == VerticalZone.TOP:
+    def index(self, domain: Domain) -> gtx.int32:
+        if domain.marker == Zone.TOP:
             return gtx.int32(0)
-        if domain.zone == VerticalZone.BOTTOM:
+        if domain.marker == Zone.BOTTOM:
             return (
                 gtx.int32(self.config.num_levels)
                 if domain.dim == dims.KDim
                 else gtx.int32(self.config.num_levels + 1)
             )
-        if domain.zone == VerticalZone.MOIST:
+        if domain.marker == Zone.MOIST:
             return self._start_index_for_moist_physics
-        if domain.zone == VerticalZone.FLAT:
+        if domain.marker == Zone.FLAT:
             return self._end_index_of_flat_layer
-        if domain.zone == VerticalZone.DAMPING:
+        if domain.marker == Zone.DAMPING:
             return self._end_index_of_damping_layer
-
 
     @classmethod
     def _determine_start_level_of_moist_physics(
@@ -229,14 +224,15 @@ class VerticalGrid:
         )
 
     @classmethod
-    def _determine_end_index_of_flat_layers(cls, vct_a: xp.ndarray, flat_height: float) -> gtx.int32:
+    def _determine_end_index_of_flat_layers(
+        cls, vct_a: xp.ndarray, flat_height: float
+    ) -> gtx.int32:
         assert flat_height >= 0.0, "Flat surface height must be positive."
         return (
             0
             if flat_height > vct_a[0]
             else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
         )
-
 
 
 def _read_vct_a_and_vct_b_from_file(file_path: pathlib.Path, num_levels: int):

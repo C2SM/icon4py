@@ -170,7 +170,7 @@ def test_run_timeloop_single_step(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=diffusion_metric_state,
         interpolation_state=diffusion_interpolation_state,
         edge_params=edge_geometry,
