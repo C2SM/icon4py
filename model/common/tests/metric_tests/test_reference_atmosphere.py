@@ -9,8 +9,7 @@
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
-from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     cell_2_edge_interpolation,
@@ -42,10 +41,10 @@ def test_compute_reference_atmosphere_fields_on_full_level_masspoints(
     theta_ref_mc_ref = metrics_savepoint.theta_ref_mc()
     z_ifc = metrics_savepoint.z_ifc()
 
-    exner_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    rho_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    theta_ref_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    z_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
+    exner_ref_mc = zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    rho_ref_mc = zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    theta_ref_mc = zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat)
     start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels
@@ -94,9 +93,15 @@ def test_compute_reference_atmsophere_on_half_level_mass_points(
     theta_ref_ic_ref = metrics_savepoint.theta_ref_ic()
     z_ifc = metrics_savepoint.z_ifc()
 
-    exner_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-    rho_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
-    theta_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1}, dtype=wpfloat)
+    exner_ref_ic = zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat
+    )
+    rho_ref_ic = zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat
+    )
+    theta_ref_ic = zero_field(
+        icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1}, dtype=wpfloat
+    )
     start = 0
     horizontal_end = icon_grid.num_cells
     vertical_end = icon_grid.num_levels + 1
@@ -131,7 +136,7 @@ def test_compute_d_exner_dz_ref_ic(icon_grid, metrics_savepoint, backend):
         pytest.skip("skipping: slow backend")
     theta_ref_ic = metrics_savepoint.theta_ref_ic()
     d_exner_dz_ref_ic_ref = metrics_savepoint.d_exner_dz_ref_ic()
-    d_exner_dz_ref_ic = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    d_exner_dz_ref_ic = zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
     compute_d_exner_dz_ref_ic.with_backend(backend)(
         theta_ref_ic=theta_ref_ic,
         grav=constants.GRAVITATIONAL_ACCELERATION,
@@ -157,10 +162,10 @@ def test_compute_reference_atmosphere_on_full_level_edge_fields(
     c_lin_e = interpolation_savepoint.c_lin_e()
 
     z_ifc = metrics_savepoint.z_ifc()
-    z_mc = zero_field(icon_grid, CellDim, KDim, dtype=wpfloat)
-    z_me = zero_field(icon_grid, EdgeDim, KDim, dtype=wpfloat)
+    z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+    z_me = zero_field(icon_grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
     horizontal_start = icon_grid.get_start_index(
-        EdgeDim, HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+        dims.EdgeDim, HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1
     )
     num_cells = int32(icon_grid.num_cells)
     num_edges = int(icon_grid.num_edges)

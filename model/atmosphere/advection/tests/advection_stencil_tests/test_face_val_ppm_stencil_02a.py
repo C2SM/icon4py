@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.advection.face_val_ppm_stencil_02a import face_val_ppm_stencil_02a
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import Output, StencilTest, random_field
 
 
@@ -33,9 +33,9 @@ class TestFaceValPpmStencil02a(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        p_face = random_field(grid, CellDim, KDim)
-        p_cc = random_field(grid, CellDim, KDim)
-        p_cellhgt_mc_now = random_field(grid, CellDim, KDim)
+        p_face = random_field(grid, dims.CellDim, dims.KDim)
+        p_cc = random_field(grid, dims.CellDim, dims.KDim)
+        p_cellhgt_mc_now = random_field(grid, dims.CellDim, dims.KDim)
         return dict(
             p_cc=p_cc,
             p_cellhgt_mc_now=p_cellhgt_mc_now,

@@ -16,10 +16,14 @@ from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_for_z import (
 from icon4py.model.atmosphere.diffusion.stencils.calculate_nabla2_of_theta import (
     _calculate_nabla2_of_theta,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CEDim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
 
 
 @field_operator
@@ -27,7 +31,7 @@ def _calculate_nabla2_for_theta(
     kh_smag_e: fa.EdgeKField[vpfloat],
     inv_dual_edge_length: fa.EdgeField[wpfloat],
     theta_v: fa.CellKField[wpfloat],
-    geofac_div: Field[[CEDim], wpfloat],
+    geofac_div: Field[[dims.CEDim], wpfloat],
 ) -> fa.CellKField[vpfloat]:
     z_nabla2_e = _calculate_nabla2_for_z(kh_smag_e, inv_dual_edge_length, theta_v)
     z_temp = _calculate_nabla2_of_theta(z_nabla2_e, geofac_div)
@@ -39,7 +43,7 @@ def calculate_nabla2_for_theta(
     kh_smag_e: fa.EdgeKField[float],
     inv_dual_edge_length: fa.EdgeField[float],
     theta_v: fa.CellKField[float],
-    geofac_div: Field[[CEDim], float],
+    geofac_div: Field[[dims.CEDim], float],
     z_temp: fa.CellKField[float],
     horizontal_start: int32,
     horizontal_end: int32,

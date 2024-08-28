@@ -36,9 +36,14 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @gtx.field_operator
@@ -137,7 +142,7 @@ def extrapolate_at_top(
 @gtx.field_operator
 def _fused_stencils_9_10(
     z_w_concorr_me: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     local_z_w_concorr_mc: fa.CellKField[float],
     wgtfac_c: fa.CellKField[float],
     w_concorr_c: fa.CellKField[float],
@@ -163,7 +168,7 @@ def _fused_stencils_9_10(
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_9_10(
     z_w_concorr_me: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     local_z_w_concorr_mc: fa.CellKField[float],
     wgtfac_c: fa.CellKField[float],
     w_concorr_c: fa.CellKField[float],
@@ -296,7 +301,7 @@ def fused_stencil_14(
 def _fused_stencils_16_to_17(
     w: fa.CellKField[float],
     local_z_v_grad_w: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     local_z_w_con_c: fa.CellKField[float],
     coeff1_dwdz: fa.CellKField[float],
     coeff2_dwdz: fa.CellKField[float],
@@ -313,7 +318,7 @@ def _fused_stencils_16_to_17(
 def fused_stencils_16_to_17(
     w: fa.CellKField[float],
     local_z_v_grad_w: fa.EdgeKField[float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
     local_z_w_con_c: fa.CellKField[float],
     coeff1_dwdz: fa.CellKField[float],
     coeff2_dwdz: fa.CellKField[float],

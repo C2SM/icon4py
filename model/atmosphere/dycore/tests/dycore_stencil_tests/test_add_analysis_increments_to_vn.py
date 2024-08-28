@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.add_analysis_increments_to_vn import (
     add_analysis_increments_to_vn,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -29,8 +29,8 @@ class TestAddAnalysisIncrementsToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        vn_incr = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        vn_incr = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         iau_wgt_dyn = wpfloat("5.0")
 
         return dict(

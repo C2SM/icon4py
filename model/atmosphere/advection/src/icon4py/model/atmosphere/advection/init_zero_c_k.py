@@ -10,8 +10,12 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import broadcast
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
 
 
 @field_operator
