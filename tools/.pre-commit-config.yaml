@@ -69,7 +69,8 @@ repos:
     exclude: |
       (?x)^(
         tools/tests/f2ser/fortran_samples/diffusion_granule.f90|
-        tools/tests/f2ser/fortran_samples/derived_types_example.f90
+        tools/tests/f2ser/fortran_samples/derived_types_example.f90|
+        tools/tests/f2ser/fortran_samples/expected_diffusion_granule_savepoint.f90
       )$
 
 - repo: https://github.com/astral-sh/ruff-pre-commit
