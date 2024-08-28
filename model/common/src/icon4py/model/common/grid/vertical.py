@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import enum
 import logging
 import math
 import pathlib
@@ -21,6 +22,21 @@ from icon4py.model.common.settings import xp
 log = logging.getLogger(__name__)
 
 
+class VerticalZone(enum.IntEnum):
+    FULL = 0
+    DAMPING_HEIGHT = 1
+
+@dataclasses.dataclass(frozen=True)
+class VerticalDomain:
+    dim: dims.KDim
+    zone: VerticalZone
+    
+
+    
+    
+
+    # TODO (@halungge) add as needed
+    
 @dataclasses.dataclass(frozen=True)
 class VerticalGridConfig:
     """
@@ -74,7 +90,7 @@ class VerticalGridParams:
     _start_index_for_moist_physics: Final[gtx.int32] = dataclasses.field(init=False)
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
-
+    
     def __post_init__(self, vertical_config, vct_a, vct_b):
         object.__setattr__(
             self,
@@ -123,6 +139,16 @@ class VerticalGridParams:
         vertical_params_properties.extend(array_value)
         return "\n".join(vertical_params_properties)
 
+    def start_index(self, domain:VerticalDomain):
+        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else 0
+    
+    
+    
+    def end_index(self, domain:VerticalDomain):
+        num_levels = self.vertical_config.num_levels if domain.dim == dims.KDim else self.vertical_config.num_levels + 1
+        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else gtx.int32(num_levels)
+    
+        
     @property
     def metadata_interface_physical_height(self):
         return dict(
