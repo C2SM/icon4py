@@ -39,6 +39,10 @@ class Zone(enum.IntEnum):
 
 @dataclasses.dataclass(frozen=True)
 class Domain:
+    """
+    Simple data class used to specify a vertical domain such that index lookup and domain specification can be separated.
+    """
+
     dim: dims.KDim
     marker: Zone
 
