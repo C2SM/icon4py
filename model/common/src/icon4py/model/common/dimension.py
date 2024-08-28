@@ -15,7 +15,7 @@ KHalfDim = Dimension("KHalf", kind=DimensionKind.VERTICAL)
 EdgeDim = Dimension("Edge")
 CellDim = Dimension("Cell")
 VertexDim = Dimension("Vertex")
-HORIZONTAL_DIMENSIONS = {"CellDim": CellDim, "EdgeDim": EdgeDim, "VertexDim": VertexDim}
+global_dimensions = {"CellDim": CellDim, "EdgeDim": EdgeDim, "VertexDim": VertexDim}
 CEDim = Dimension("CE")
 CECDim = Dimension("CEC")
 ECDim = Dimension("EC")

@@ -10,11 +10,10 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import FieldOffset, int32, minimum, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 
 
-Koff = FieldOffset("Koff", source=KDim, target=(KDim,))
+Koff = FieldOffset("Koff", source=dims.KDim, target=(dims.KDim,))
 
 
 @field_operator

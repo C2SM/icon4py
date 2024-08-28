@@ -255,7 +255,7 @@ class GridManager:
         transformation: IndexTransformation,
         grid_file: Union[pathlib.Path, str],
         config: v_grid.VerticalGridConfig,  # TODO (@halungge) remove
-        decomposer: Callable[[np.ndarray, int], np.ndarray] = None,
+        decomposer: Optional[Callable[[np.ndarray, int], np.ndarray]] = None,
         run_properties: decomposition.ProcessProperties = decomposition.SingleNodeProcessProperties(),
          
     ):
@@ -300,8 +300,8 @@ class GridManager:
             GridFile.GridRefinementName.CONTROL_VERTICES,
         ]
         refin_ctrl = {
-            dim: reader.int_field(control_dims[dim_i])
-            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
+            dim: reader.int_field(control_dims[i])
+            for i, dim in enumerate(dims.global_dimensions.values())
         }
 
         grf_dims = [
@@ -310,8 +310,8 @@ class GridManager:
             GridFile.DimensionName.VERTEX_GRF,
         ]
         refin_ctrl_max = {
-            dim: reader.dimension(grf_dims[dim_i])
-            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
+            dim: reader.dimension(grf_dims[i])
+            for i, dim in enumerate(dims.global_dimensions.values())
         }
 
         start_index_dims = [
@@ -320,10 +320,10 @@ class GridManager:
             GridFile.GridRefinementName.START_INDEX_VERTICES,
         ]
         start_indices = {
-            dim: self._get_index_field(start_index_dims[dim_i], transpose=False, dtype=gtx.int32)[
-                _CHILD_DOM
-            ]
-            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
+            dim: self._get_index_field(
+                start_index_dims[i], transpose=False, dtype=gtx.int32
+            )[_CHILD_DOM]
+            for i, dim in enumerate(dims.global_dimensions.values())
         }
 
         end_index_dims = [
@@ -333,9 +333,9 @@ class GridManager:
         ]
         end_indices = {
             dim: self._get_index_field(
-                end_index_dims[dim_i], transpose=False, apply_offset=False, dtype=gtx.int32
+                end_index_dims[i], transpose=False, apply_offset=False, dtype=gtx.int32
             )[_CHILD_DOM]
-            for dim_i, dim in enumerate(dims.HORIZONTAL_DIMENSIONS.values())
+            for i, dim in enumerate(dims.global_dimensions.values())
         }
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max

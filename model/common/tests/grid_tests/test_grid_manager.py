@@ -19,7 +19,7 @@ import pytest
 import icon4py.model.common.test_utils.datatest_utils as dt_utils
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions as defs, halo
-from icon4py.model.common.decomposition.halo import HaloGenerator
+from icon4py.model.common.grid import horizontal as h_grid, simple, vertical as v_grid
 from icon4py.model.common.settings import xp
 
 
@@ -31,7 +31,6 @@ try:
 except ImportError:
     pytest.skip("optional netcdf dependency not installed", allow_module_level=True)
 
-from icon4py.model.common.grid import horizontal as h_grid, simple, vertical as v_grid
 from icon4py.model.common.grid.grid_manager import (
     GridFile,
     GridFileName,
@@ -1038,7 +1037,7 @@ def test_local_connectivities(processor_props, caplog, field_offset):  # fixture
     partitioner = halo.SimpleMetisDecomposer()
     face_face_connectivity = grid.connectivities[dims.C2E2CDim]
     labels = partitioner(face_face_connectivity, n_part=processor_props.comm_size)
-    halo_generator = HaloGenerator(
+    halo_generator = halo.HaloGenerator(
         connectivities=grid.connectivities,
         run_properties=processor_props,
         rank_mapping=labels,

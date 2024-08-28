@@ -10,7 +10,7 @@ import numpy as np
 import pytest
 
 from icon4py.model.atmosphere.advection.btraj_dreg_stencil_01 import btraj_dreg_stencil_01
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 
 
@@ -37,9 +37,9 @@ class TestBtrajDregStencil01(StencilTest):
     @pytest.fixture
     def input_data(self, grid):
         lcounterclock = True
-        p_vn = random_field(grid, EdgeDim, KDim)
-        tangent_orientation = random_field(grid, EdgeDim)
-        lvn_sys_pos = zero_field(grid, EdgeDim, KDim, dtype=bool)
+        p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        tangent_orientation = random_field(grid, dims.EdgeDim)
+        lvn_sys_pos = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=bool)
         return dict(
             lcounterclock=lcounterclock,
             p_vn=p_vn,

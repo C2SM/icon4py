@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.init_cell_kdim_field_with_zero_vp import (
     init_cell_kdim_field_with_zero_vp,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat
 
@@ -36,7 +36,7 @@ class TestInitCellKdimFieldWithZeroVp(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        field_with_zero_vp = random_field(grid, CellDim, KDim, dtype=vpfloat)
+        field_with_zero_vp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             field_with_zero_vp=field_with_zero_vp,

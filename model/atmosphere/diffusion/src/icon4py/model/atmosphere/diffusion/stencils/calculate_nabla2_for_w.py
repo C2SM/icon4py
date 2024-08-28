@@ -10,15 +10,20 @@ from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, astype, int32, neighbor_sum
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import C2E2CO, C2E2CODim, CellDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E2CO, C2E2CODim
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+KDim = dims.KDim
+
+
 @field_operator
 def _calculate_nabla2_for_w(
-    w: fa.CellKField[wpfloat], geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat]
+    w: fa.CellKField[wpfloat], geofac_n2s: Field[[dims.CellDim, C2E2CODim], wpfloat]
 ) -> fa.CellKField[vpfloat]:
     z_nabla2_c_wp = neighbor_sum(w(C2E2CO) * geofac_n2s, axis=C2E2CODim)
     return astype(z_nabla2_c_wp, vpfloat)
@@ -27,7 +32,7 @@ def _calculate_nabla2_for_w(
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def calculate_nabla2_for_w(
     w: fa.CellKField[wpfloat],
-    geofac_n2s: Field[[CellDim, C2E2CODim], wpfloat],
+    geofac_n2s: Field[[dims.CellDim, C2E2CODim], wpfloat],
     z_nabla2_c: fa.CellKField[vpfloat],
     horizontal_start: int32,
     horizontal_end: int32,

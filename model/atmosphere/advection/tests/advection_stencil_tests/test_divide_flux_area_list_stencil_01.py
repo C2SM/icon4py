@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.advection.divide_flux_area_list_stencil_01 import (
     divide_flux_area_list_stencil_01,
 )
-from icon4py.model.common.dimension import E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import (
     StencilTest,
     as_1D_sparse_field,
@@ -896,7 +896,7 @@ class TestDivideFluxAreaListStencil01(StencilTest):
         dreg_patch0_4_lat_dsl,
         **kwargs,
     ):
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         ptr_v3_lon = reshape(ptr_v3_lon, e2c.shape)
         ptr_v3_lon_e = np.expand_dims(ptr_v3_lon, axis=-1)
         ptr_v3_lat = reshape(ptr_v3_lat, e2c.shape)
@@ -1482,37 +1482,37 @@ class TestDivideFluxAreaListStencil01(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        famask_int = random_mask(grid, EdgeDim, KDim, dtype=int32)
-        p_vn = random_field(grid, EdgeDim, KDim)
-        ptr_v3_lon = random_field(grid, EdgeDim, E2CDim, low=0.1, high=1.0)
-        ptr_v3_lon_field = as_1D_sparse_field(ptr_v3_lon, ECDim)
-        ptr_v3_lat = random_field(grid, EdgeDim, E2CDim, low=0.1, high=1.0)
-        ptr_v3_lat_field = as_1D_sparse_field(ptr_v3_lat, ECDim)
-        tangent_orientation_dsl = random_field(grid, EdgeDim, low=0.1, high=1.0)
-        dreg_patch0_1_lon_dsl = constant_field(grid, 1.0, EdgeDim, KDim)
-        dreg_patch0_1_lat_dsl = constant_field(grid, 1.0, EdgeDim, KDim)
-        dreg_patch0_2_lon_dsl = constant_field(grid, 2.0, EdgeDim, KDim)
-        dreg_patch0_2_lat_dsl = constant_field(grid, 2.0, EdgeDim, KDim)
-        dreg_patch0_3_lon_dsl = constant_field(grid, 3.0, EdgeDim, KDim)
-        dreg_patch0_3_lat_dsl = constant_field(grid, 3.0, EdgeDim, KDim)
-        dreg_patch0_4_lon_dsl = constant_field(grid, 4.0, EdgeDim, KDim)
-        dreg_patch0_4_lat_dsl = constant_field(grid, 4.0, EdgeDim, KDim)
-        dreg_patch1_1_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_1_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_2_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_2_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_3_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_3_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_4_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch1_4_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_1_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_1_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_2_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_2_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_3_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_3_lat_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_4_lon_vmask = zero_field(grid, EdgeDim, KDim)
-        dreg_patch2_4_lat_vmask = zero_field(grid, EdgeDim, KDim)
+        famask_int = random_mask(grid, dims.EdgeDim, dims.KDim, dtype=int32)
+        p_vn = random_field(grid, dims.EdgeDim, dims.KDim)
+        ptr_v3_lon = random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        ptr_v3_lon_field = as_1D_sparse_field(ptr_v3_lon, dims.ECDim)
+        ptr_v3_lat = random_field(grid, dims.EdgeDim, dims.E2CDim, low=0.1, high=1.0)
+        ptr_v3_lat_field = as_1D_sparse_field(ptr_v3_lat, dims.ECDim)
+        tangent_orientation_dsl = random_field(grid, dims.EdgeDim, low=0.1, high=1.0)
+        dreg_patch0_1_lon_dsl = constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_1_lat_dsl = constant_field(grid, 1.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lon_dsl = constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_2_lat_dsl = constant_field(grid, 2.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lon_dsl = constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_3_lat_dsl = constant_field(grid, 3.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lon_dsl = constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch0_4_lat_dsl = constant_field(grid, 4.0, dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_1_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_2_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_3_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch1_4_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_1_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_2_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_3_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lon_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
+        dreg_patch2_4_lat_vmask = zero_field(grid, dims.EdgeDim, dims.KDim)
         return dict(
             famask_int=famask_int,
             p_vn=p_vn,

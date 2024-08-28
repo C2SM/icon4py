@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.apply_nabla2_and_nabla4_to_vn import (
     apply_nabla2_and_nabla4_to_vn,
 )
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -45,13 +45,13 @@ class TestApplyNabla2AndNabla4ToVn(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        area_edge = random_field(grid, EdgeDim, dtype=wpfloat)
-        kh_smag_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_nabla2_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_nabla4_e2 = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        diff_multfac_vn = random_field(grid, KDim, dtype=wpfloat)
-        nudgecoeff_e = random_field(grid, EdgeDim, dtype=wpfloat)
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        area_edge = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        kh_smag_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_nabla2_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_nabla4_e2 = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        diff_multfac_vn = random_field(grid, dims.KDim, dtype=wpfloat)
+        nudgecoeff_e = random_field(grid, dims.EdgeDim, dtype=wpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
         nudgezone_diff = vpfloat("9.0")
 
         return dict(
