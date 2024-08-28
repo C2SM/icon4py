@@ -64,15 +64,60 @@ def test_nrdmax_calculation_from_icon_input(
         vct_b=b,
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
+    vertical_grid = v_grid.VerticalGrid(vertical_config, vertical_params)
     assert nrdmax == vertical_params.end_index_of_damping_layer
     a_array = a.asnumpy()
     assert a_array[nrdmax] > damping_height
     assert a_array[nrdmax + 1] < damping_height
+    assert (
+        vertical_grid.index(v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.DAMPING)) == nrdmax
+    )
 
 
 @pytest.mark.datatest
 def test_grid_size(grid_savepoint):
-    assert 65 == grid_savepoint.num(dims.KDim)
+    config = v_grid.VerticalGridConfig(num_levels=grid_savepoint.num(dims.KDim))
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
+    )
+    vertical_grid = v_grid.VerticalGrid(config, vertical_params)
+    assert 65 == vertical_grid.size(dims.KDim)
+    assert 66 == vertical_grid.size(dims.KHalfDim)
+
+
+@pytest.mark.parametrize(
+    "dim", (dims.CellDim, dims.VertexDim, dims.EdgeDim, dims.C2EDim, dims.C2VDim, dims.E2VDim)
+)
+@pytest.mark.datatest
+def test_grid_size_raises_for_non_vertical_dim(grid_savepoint, dim):
+    vertical_grid = configure_vertical_grid(grid_savepoint)
+    with pytest.raises(AssertionError):
+        vertical_grid.size(dim)
+
+
+@pytest.mark.datatest
+def test_grid_size_raises_for_unknown_vertical_dim(grid_savepoint):
+    vertical_grid = configure_vertical_grid(grid_savepoint)
+    j_dim = gtx.Dimension("J", kind=gtx.DimensionKind.VERTICAL)
+    with pytest.raises(ValueError):
+        vertical_grid.size(j_dim)
+
+
+def configure_vertical_grid(grid_savepoint, top_moist_threshold=22500.0):
+    config = v_grid.VerticalGridConfig(
+        num_levels=grid_savepoint.num(dims.KDim), htop_moist_proc=top_moist_threshold
+    )
+    vertical_params = v_grid.VerticalGridParams(
+        vertical_config=config,
+        vct_a=grid_savepoint.vct_a(),
+        vct_b=grid_savepoint.vct_b(),
+        _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
+    )
+    vertical_grid = v_grid.VerticalGrid(config, vertical_params)
+    return vertical_grid
 
 
 @pytest.mark.datatest
@@ -81,19 +126,40 @@ def test_grid_size(grid_savepoint):
 )
 def test_kmoist_calculation(grid_savepoint, experiment, kmoist_level):
     threshold = 22500.0
+    vertical_grid = configure_vertical_grid(grid_savepoint, top_moist_threshold=threshold)
     vct_a = grid_savepoint.vct_a().asnumpy()
     assert kmoist_level == v_grid.VerticalGridParams._determine_kstart_moist(
         vct_a, threshold, nshift_total=0
+    )
+    assert kmoist_level == vertical_grid.index(
+        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.MOIST)
     )
 
 
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [REGIONAL_EXPERIMENT, GLOBAL_EXPERIMENT])
 def test_kflat_calculation(grid_savepoint, experiment, flat_height):
+    vertical_grid = configure_vertical_grid(grid_savepoint)
     vct_a = grid_savepoint.vct_a().asnumpy()
     assert grid_savepoint.nflatlev() == v_grid.VerticalGridParams._determine_kstart_flat(
         vct_a, flat_height
     )
+    assert grid_savepoint.nflatlev() == vertical_grid.index(
+        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.FLAT)
+    )
+
+
+@pytest.mark.parametrize("experiment, levels", [(REGIONAL_EXPERIMENT, 65), (GLOBAL_EXPERIMENT, 60)])
+def test_vertical_grid_index(grid_savepoint, experiment, levels):
+    vertical_grid = configure_vertical_grid(grid_savepoint)
+    assert 0 == vertical_grid.index(v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.TOP))
+    assert levels == vertical_grid.index(
+        v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.BOTTOM)
+    )
+    assert levels + 1 == vertical_grid.index(
+        v_grid.VerticalDomain(dims.KHalfDim, v_grid.VerticalZone.BOTTOM)
+    )
+    assert 0 == vertical_grid.index(v_grid.VerticalDomain(dims.KHalfDim, v_grid.VerticalZone.TOP))
 
 
 @pytest.mark.datatest

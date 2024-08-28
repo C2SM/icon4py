@@ -70,11 +70,11 @@ class NETCDFWriter:
 
     @functools.cached_property
     def num_levels(self) -> int:
-        return self._vertical_params.inteface_physical_height.ndarray.shape[0] - 1
+        return self._vertical_params.interface_physical_height.ndarray.shape[0] - 1
 
     @functools.cached_property
     def num_interfaces(self) -> int:
-        return self._vertical_params.inteface_physical_height.ndarray.shape[0]
+        return self._vertical_params.interface_physical_height.ndarray.shape[0]
 
     def initialize_dataset(self) -> None:
         self.dataset = nc.Dataset(
@@ -125,7 +125,7 @@ class NETCDFWriter:
         heights.axis = cf_utils.COARDS_VERTICAL_COORDINATE_NAME
         heights.long_name = "height value of half levels without topography"
         heights.standard_name = cf_utils.INTERFACE_LEVEL_HEIGHT_STANDARD_NAME
-        heights[:] = self._vertical_params.inteface_physical_height.ndarray
+        heights[:] = self._vertical_params.interface_physical_height.ndarray
 
     def append(self, state_to_append: dict[str, xr.DataArray], model_time: dt.datetime) -> None:
         """

@@ -7,6 +7,7 @@
 # SPDX-License-Identifier: BSD-3-Clause
 
 import dataclasses
+import enum
 import logging
 import math
 import pathlib
@@ -19,6 +20,26 @@ from icon4py.model.common.settings import xp
 
 
 log = logging.getLogger(__name__)
+
+
+class VerticalZone(enum.IntEnum):
+    """
+    Vertical zone markers to be used to select vertical domain indices.
+
+    The values here are taken from the special indices computed in `VerticalGridParams`.
+    """
+
+    TOP = 0
+    BOTTOM = 1
+    DAMPING = 2
+    MOIST = 3
+    FLAT = 4
+
+
+@dataclasses.dataclass(frozen=True)
+class VerticalDomain:
+    dim: dims.KDim
+    zone: VerticalZone
 
 
 @dataclasses.dataclass(frozen=True)
@@ -134,7 +155,7 @@ class VerticalGridParams:
         )
 
     @property
-    def inteface_physical_height(self) -> fa.KField[float]:
+    def interface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
 
     @property
@@ -186,6 +207,41 @@ class VerticalGridParams:
             if flat_height > vct_a[0]
             else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
         )
+
+
+class VerticalGrid:
+    def __init__(self, config: VerticalGridConfig, params: VerticalGridParams):
+        self.config = config
+        self.params = params
+
+    def size(self, dim: dims.VerticalDim) -> int:
+        assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
+        if dim == dims.KDim:
+            return self.config.num_levels
+        if dim == dims.KHalfDim:
+            return self.config.num_levels + 1
+        else:
+            raise ValueError(f"Unkown dimension {dim}.")
+
+    def index(self, domain: VerticalDomain) -> gtx.int32:
+        if domain.zone == VerticalZone.TOP:
+            return gtx.int32(0)
+        if domain.zone == VerticalZone.BOTTOM:
+            return (
+                gtx.int32(self.config.num_levels)
+                if domain.dim == dims.KDim
+                else gtx.int32(self.config.num_levels + 1)
+            )
+        if domain.zone == VerticalZone.MOIST:
+            return self.params.kstart_moist
+        if domain.zone == VerticalZone.FLAT:
+            return self.params.nflatlev
+        if domain.zone == VerticalZone.DAMPING:
+            return self.params.end_index_of_damping_layer
+
+    @property
+    def interface_physical_height(self) -> fa.KField[float]:
+        return self.params.interface_physical_height
 
 
 def _read_vct_a_and_vct_b_from_file(file_path: pathlib.Path, num_levels: int):

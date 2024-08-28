@@ -328,7 +328,7 @@ class Diffusion:
         self.grid: Optional[icon_grid.IconGrid] = None
         self.config: Optional[DiffusionConfig] = None
         self.params: Optional[DiffusionParams] = None
-        self.vertical_params: Optional[v_grid.VerticalGridParams] = None
+        self.vertical_params: Optional[v_grid.VerticalGrid] = None
         self.interpolation_state: diffusion_states.DiffusionInterpolationState = None
         self.metric_state: diffusion_states.DiffusionMetricState = None
         self.diff_multfac_w: Optional[float] = None
@@ -346,7 +346,7 @@ class Diffusion:
         grid: icon_grid.IconGrid,
         config: DiffusionConfig,
         params: DiffusionParams,
-        vertical_params: v_grid.VerticalGridParams,
+        vertical_params: v_grid.VerticalGrid,
         metric_state: diffusion_states.DiffusionMetricState,
         interpolation_state: diffusion_states.DiffusionInterpolationState,
         edge_params: h_grid.EdgeParams,
@@ -402,7 +402,7 @@ class Diffusion:
             config.substep_as_float,
             *params.smagorinski_factor,
             *params.smagorinski_height,
-            self.vertical_params.inteface_physical_height,
+            self.vertical_params.interface_physical_height,
             self.diff_multfac_vn,
             self.smag_limit,
             self.enh_smag_fac,
@@ -413,8 +413,10 @@ class Diffusion:
         self.diff_multfac_n2w = diffusion_utils.init_nabla2_factor_in_upper_damping_zone(
             k_size=self.grid.num_levels,
             nshift=0,
-            physical_heights=self.vertical_params.inteface_physical_height,
-            nrdmax=self.vertical_params.end_index_of_damping_layer,
+            physical_heights=self.vertical_params.interface_physical_height,
+            nrdmax=self.vertical_params.index(
+                v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.DAMPING)
+            ),
         )
         self._horizontal_start_index_w_diffusion = _get_start_index_for_w_diffusion()
         self._initialized = True
@@ -732,7 +734,10 @@ class Diffusion:
             k=self.vertical_index,
             cell=self.horizontal_cell_index,
             nrdmax=gtx.int32(
-                self.vertical_params.end_index_of_damping_layer + 1
+                self.vertical_params.index(
+                    v_grid.VerticalDomain(dims.KDim, v_grid.VerticalZone.DAMPING)
+                )
+                + 1
             ),  # +1 since Fortran includes boundaries
             interior_idx=gtx.int32(cell_start_interior),
             halo_idx=gtx.int32(cell_end_local),

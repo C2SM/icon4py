@@ -476,7 +476,7 @@ class SolveNonhydro:
             self.jk_start = 0
 
         smagorinsky.en_smag_fac_for_zero_nshift(
-            self.vertical_params.inteface_physical_height,
+            self.vertical_params.interface_physical_height,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
             self.config.divdamp_fac3,

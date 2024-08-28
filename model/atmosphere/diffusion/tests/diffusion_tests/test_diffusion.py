@@ -93,12 +93,13 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
-    return v_grid.VerticalGridParams(
+    param = v_grid.VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
+    return v_grid.VerticalGrid(vertical_config, param)
 
 
 @pytest.mark.datatest
