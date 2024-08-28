@@ -339,7 +339,7 @@ class Diffusion:
         self.nudgezone_diff: Optional[float] = None
         self.edge_params: Optional[geometry.EdgeParams] = None
         self.cell_params: Optional[geometry.CellParams] = None
-        self._horizontal_start_index_w_diffusion: gtx.int32 = 0
+        self._horizontal_start_index_w_diffusion: gtx.int32 = gtx.int32(0)
 
     def init(
         self,
@@ -383,7 +383,7 @@ class Diffusion:
             return (
                 self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
                 if self.grid.limited_area
-                else self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
+                else self.grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
             )
 
         self.nudgezone_diff: float = 0.04 / (params.scaled_nudge_max_coeff + sys.float_info.epsilon)

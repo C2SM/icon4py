@@ -11,6 +11,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
 from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
@@ -50,7 +51,7 @@ def test_parallel_diffusion(
     damping_height,
     caplog,
 ):
-    caplog.set_level("DEBUG")
+    caplog.set_level("INFO")
     check_comm_size(processor_props)
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}: initializing diffusion for experiment '{REGIONAL_EXPERIMENT}'"
@@ -117,6 +118,15 @@ def test_parallel_diffusion(
             dtime=dtime,
         )
     print(f"rank={processor_props.rank}/{processor_props.comm_size}: diffusion run ")
+    print(f"rank={processor_props.rank}/{processor_props.comm_size}: verifying diffusion fields")
+    cell_halo = h_grid.domain(dims.CellDim)(h_grid.Zone.HALO)
+    cell_halo_2 = h_grid.domain(dims.CellDim)(h_grid.Zone.HALO_LEVEL_2)
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: grid: {dims.CellDim} halo ({icon_grid.start_index(cell_halo)}, {icon_grid.end_index(cell_halo)})"
+    )
+    print(
+        f"rank={processor_props.rank}/{processor_props.comm_size}: grid: {dims.CellDim} halo 2 ({icon_grid.start_index(cell_halo_2)}, {icon_grid.end_index(cell_halo_2)})"
+    )
 
     verify_diffusion_fields(
         config=config,

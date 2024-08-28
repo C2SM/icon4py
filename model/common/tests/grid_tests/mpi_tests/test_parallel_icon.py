@@ -5,7 +5,7 @@
 #
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
-
+import logging
 import re
 
 import pytest
@@ -31,16 +31,38 @@ def test_props(processor_props):  # noqa: F811  # fixture
     assert processor_props.comm
 
 
+LOCAL_IDX_2 = {
+    dims.CellDim: {0: 10454, 1: 10454},
+    dims.EdgeDim: {0: 15830, 1: 15754},
+    dims.VertexDim: {0: 5375, 1: 5296},
+}
+
+LOCAL_IDX_4 = {
+    dims.CellDim: {0: 5238, 1: 5222, 2: 5231, 3: 5230},
+    dims.EdgeDim: {0: 7929, 1: 7838, 2: 7955, 3: 7889},
+    dims.VertexDim: {0: 2688, 1: 2612, 2: 2723, 3: 2656},
+}
+
+LOCAL_IDX = {4: LOCAL_IDX_4, 2: LOCAL_IDX_2}
+
+
 @pytest.mark.datatest
 @pytest.mark.mpi
 @pytest.mark.parametrize("processor_props", [True], indirect=True)
 @pytest.mark.parametrize("dim", test_icon.horizontal_dim())
-def test_distributed_local(processor_props, dim, icon_grid):  # noqa: F811  # fixture
+def test_distributed_local(processor_props, dim, icon_grid, caplog):  # noqa: F811  # fixture
+    caplog.set_level(logging.INFO)
     check_comm_size(processor_props)
     domain = h_grid.domain(dim)(h_grid.Zone.LOCAL)
     # local still runs entire field:
     assert icon_grid.start_index(domain) == 0
-    assert icon_grid.end_index(domain) == icon_grid.size[dim]
+    print(
+        f"rank {processor_props.rank}/{processor_props.comm_size} dim = {dim}  LOCAL : ({icon_grid.start_index(domain)}, {icon_grid.end_index(domain)})"
+    )
+    assert (
+        icon_grid.end_index(domain)
+        == LOCAL_IDX[processor_props.comm_size][dim][processor_props.rank]
+    )
 
 
 HALO_IDX_4 = {

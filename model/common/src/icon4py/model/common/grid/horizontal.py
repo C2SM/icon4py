@@ -159,7 +159,13 @@ def _domain_index(value_dict, dim: gtx.Dimension, offset: LineNumber) -> int:
 
 
 def _local(dim: gtx.Dimension, offset=LineNumber.FIRST) -> int:
-    """Indicate points that are owned by the processing unit, i.e. no halo points."""
+    """
+    Indicate points that are owned by the processing unit, i.e. non halo points.
+
+    This is true to the exception that it excludes points in the halo lines. For classical ICON ordering
+    this zone might include halo points that are part of lateral boundary and are ordered in the lateral boundary zone.
+    It is there _not_ identical to the fully correct owner mask in the [DecompositionInfo](../../../../../decomposition/definitions.py)
+    """
     return _domain_index(_LOCAL, dim, offset)
 
 
