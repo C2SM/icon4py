@@ -69,13 +69,12 @@ attrs = {
         icon_var_name="wgtfacq_e_dsl",
         long_name="weighting factor for quadratic interpolation to edge centers",
     ),
-    # TODO : FIX
-    "c_lin_e": dict(
-        standard_name="c_lin_e",
+    "cell_to_edge_interpolation_coefficient": dict(
+        standard_name="cell_to_edge_interpolation_coefficient",
         units="",
         dims=(dims.EdgeDim, dims.E2CDim),
         dtype=ta.wpfloat,
         icon_var_name="c_lin_e",
-        long_name="interpolation field",
+        long_name="coefficients for cell to edge interpolation",
     ),
 }
