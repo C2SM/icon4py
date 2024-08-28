@@ -77,4 +77,22 @@ attrs = {
         icon_var_name="c_lin_e",
         long_name="coefficients for cell to edge interpolation",
     ),
+    ### Nikki fields
+    "ddqz_z_full": dict(
+        standard_name="ddqz_z_full",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        dtype=ta.wpfloat,
+        icon_var_name="ddqz_z_full",
+        long_name="metrics field",
+    ),
+
+    "inv_ddqz_z_full": dict(
+        standard_name="inv_ddqz_z_full",
+        units="",
+        dims=(dims.CellDim, dims.KDim),
+        dtype=ta.wpfloat,
+        icon_var_name="inv_ddqz_z_full",
+        long_name="metrics field",
+    ),
 }
