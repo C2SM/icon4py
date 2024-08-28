@@ -92,14 +92,14 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
-def create_vertical_params(vertical_config, grid_savepoint):
-    param = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+def create_vertical_params(vertical_config:v_grid.VerticalGridConfig, grid_savepoint:sb.IconGridSavepoint):
+    return v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
     )
-    return v_grid.VerticalGrid(vertical_config, param)
+   
 
 
 @pytest.mark.datatest

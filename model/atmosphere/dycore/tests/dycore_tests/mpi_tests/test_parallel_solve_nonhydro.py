@@ -20,7 +20,7 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa : F401 fixture
     decomposition_info,
 )
@@ -103,8 +103,8 @@ def test_run_solve_nonhydro_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = VerticalGrid(
+        config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),

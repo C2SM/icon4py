@@ -8,6 +8,7 @@
 
 import dataclasses
 import enum
+import functools
 import logging
 import math
 import pathlib
@@ -75,7 +76,7 @@ class VerticalGridConfig:
 
 
 @dataclasses.dataclass(frozen=True)
-class VerticalGridParams:
+class VerticalGrid:
     """
     Contains vertical physical parameters defined on the vertical grid derived from vertical grid configuration.
 
@@ -86,7 +87,7 @@ class VerticalGridParams:
     _min_index_flat_horizontal_grad_pressure: The minimum height index at which the height of the center of an edge lies within two neighboring cells so that horizontal pressure gradient can be computed by first order discretization scheme.
     """
 
-    vertical_config: dataclasses.InitVar[VerticalGridConfig]
+    config: VerticalGridConfig
     vct_a: dataclasses.InitVar[fa.KField[float]]
     vct_b: dataclasses.InitVar[fa.KField[float]]
     _vct_a: fa.KField[float] = dataclasses.field(init=False)
@@ -96,7 +97,8 @@ class VerticalGridParams:
     _end_index_of_flat_layer: Final[gtx.int32] = dataclasses.field(init=False)
     _min_index_flat_horizontal_grad_pressure: Final[gtx.int32] = None
 
-    def __post_init__(self, vertical_config, vct_a, vct_b):
+    
+    def __post_init__(self, vct_a, vct_b):
         object.__setattr__(
             self,
             "_vct_a",
@@ -112,18 +114,18 @@ class VerticalGridParams:
             self,
             "_end_index_of_damping_layer",
             self._determine_damping_height_index(
-                vct_a_array, vertical_config.rayleigh_damping_height
+                vct_a_array, self.config.rayleigh_damping_height
             ),
         )
         object.__setattr__(
             self,
             "_start_index_for_moist_physics",
-            self._determine_kstart_moist(vct_a_array, vertical_config.htop_moist_proc),
+            self._determine_start_level_of_moist_physics(vct_a_array, self.config.htop_moist_proc),
         )
         object.__setattr__(
             self,
             "_end_index_of_flat_layer",
-            self._determine_kstart_flat(vct_a_array, vertical_config.flat_height),
+            self._determine_end_index_of_flat_layers(vct_a_array, self.config.flat_height),
         )
         log.info(f"computation of moist physics start on layer: {self.kstart_moist}")
         log.info(f"end index of Rayleigh damping layer for w: {self.nrdmax} ")
@@ -158,61 +160,30 @@ class VerticalGridParams:
     def interface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
 
-    @property
+    @functools.cached_property
     def kstart_moist(self):
         """Vertical index for start level of moist physics."""
-        return self._start_index_for_moist_physics
+        return self.index(VerticalDomain(dims.KDim, VerticalZone.MOIST))
 
-    @property
+    @functools.cached_property
     def nflatlev(self):
         """Vertical index for bottommost level at which coordinate surfaces are flat."""
-        return self._end_index_of_flat_layer
+        return self.index(VerticalDomain(dims.KDim, VerticalZone.FLAT))
 
-    @property
+    @functools.cached_property
     def nrdmax(self):
         """Vertical index where damping starts."""
-        return self._end_index_of_damping_layer
+        return self.end_index_of_damping_layer
 
-    @property
+    @functools.cached_property
     def end_index_of_damping_layer(self):
         """Vertical index where damping starts."""
-        return self._end_index_of_damping_layer
+        return self.index(VerticalDomain(dims.KDim, VerticalZone.DAMPING))
 
     @property
     def nflat_gradp(self):
         return self._min_index_flat_horizontal_grad_pressure
 
-    @classmethod
-    def _determine_kstart_moist(
-        cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
-    ) -> gtx.int32:
-        n_levels = vct_a.shape[0]
-        interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
-        return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
-
-    @classmethod
-    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float):
-        assert damping_height >= 0.0, "Damping height must be positive."
-        return (
-            0
-            if damping_height > vct_a[0]
-            else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
-        )
-
-    @classmethod
-    def _determine_kstart_flat(cls, vct_a: xp.ndarray, flat_height: float) -> gtx.int32:
-        assert flat_height >= 0.0, "Flat surface height must be positive."
-        return (
-            0
-            if flat_height > vct_a[0]
-            else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
-        )
-
-
-class VerticalGrid:
-    def __init__(self, config: VerticalGridConfig, params: VerticalGridParams):
-        self.config = config
-        self.params = params
 
     def size(self, dim: dims.VerticalDim) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
@@ -233,15 +204,39 @@ class VerticalGrid:
                 else gtx.int32(self.config.num_levels + 1)
             )
         if domain.zone == VerticalZone.MOIST:
-            return self.params.kstart_moist
+            return self._start_index_for_moist_physics
         if domain.zone == VerticalZone.FLAT:
-            return self.params.nflatlev
+            return self._end_index_of_flat_layer
         if domain.zone == VerticalZone.DAMPING:
-            return self.params.end_index_of_damping_layer
+            return self._end_index_of_damping_layer
 
-    @property
-    def interface_physical_height(self) -> fa.KField[float]:
-        return self.params.interface_physical_height
+
+    @classmethod
+    def _determine_start_level_of_moist_physics(
+        cls, vct_a: xp.ndarray, top_moist_threshold: float, nshift_total: int = 0
+    ) -> gtx.int32:
+        n_levels = vct_a.shape[0]
+        interface_height = 0.5 * (vct_a[: n_levels - 1 - nshift_total] + vct_a[1 + nshift_total :])
+        return gtx.int32(xp.min(xp.where(interface_height < top_moist_threshold)[0]).item())
+
+    @classmethod
+    def _determine_damping_height_index(cls, vct_a: xp.ndarray, damping_height: float):
+        assert damping_height >= 0.0, "Damping height must be positive."
+        return (
+            0
+            if damping_height > vct_a[0]
+            else gtx.int32(xp.argmax(xp.where(vct_a >= damping_height)[0]).item())
+        )
+
+    @classmethod
+    def _determine_end_index_of_flat_layers(cls, vct_a: xp.ndarray, flat_height: float) -> gtx.int32:
+        assert flat_height >= 0.0, "Flat surface height must be positive."
+        return (
+            0
+            if flat_height > vct_a[0]
+            else gtx.int32(xp.max(xp.where(vct_a >= flat_height)[0]).item())
+        )
+
 
 
 def _read_vct_a_and_vct_b_from_file(file_path: pathlib.Path, num_levels: int):

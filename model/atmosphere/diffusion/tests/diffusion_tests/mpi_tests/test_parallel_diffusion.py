@@ -11,7 +11,7 @@ import pytest
 from icon4py.model.atmosphere.diffusion.diffusion import Diffusion, DiffusionParams
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.test_utils.datatest_utils import REGIONAL_EXPERIMENT
 from icon4py.model.common.test_utils.parallel_helpers import (  # noqa: F401  # import fixtures from test_utils package
     check_comm_size,
@@ -91,7 +91,7 @@ def test_parallel_diffusion(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=VerticalGridParams(
+        vertical_params=VerticalGrid(
             vertical_config, grid_savepoint.vct_a(), grid_savepoint.vct_b()
         ),
         metric_state=metric_state,

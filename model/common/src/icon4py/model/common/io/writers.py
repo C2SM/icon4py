@@ -51,7 +51,7 @@ class NETCDFWriter:
     def __init__(
         self,
         file_name: pathlib.Path,
-        vertical: v_grid.VerticalGridParams,
+        vertical: v_grid.VerticalGrid,
         horizontal: h_grid.HorizontalGridSize,
         time_properties: TimeProperties,
         global_attrs: dict,

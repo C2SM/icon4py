@@ -22,6 +22,9 @@ import pstats
 
 from gt4py.next.common import Field
 from gt4py.next.ffront.fbuiltins import float64, int32
+from icon4pytools.common.logger import setup_logger
+from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+
 from icon4py.model.atmosphere.diffusion.diffusion import (
     Diffusion,
     DiffusionConfig,
@@ -36,14 +39,11 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, flatten_first_two_dims
-
-from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
 
 
 logger = setup_logger(__name__)
@@ -185,8 +185,8 @@ def diffusion_init(
     )
 
     # vertical parameters
-    vertical_params = VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = VerticalGrid(
+        config=vertical_config,
         vct_a=vct_a,
         vct_b=None,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
