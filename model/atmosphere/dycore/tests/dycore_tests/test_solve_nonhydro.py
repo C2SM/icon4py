@@ -17,6 +17,7 @@ from icon4py.model.atmosphere.dycore.state_utils import (
     states as solve_nh_states,
     utils as solve_nh_utils,
 )
+import gt4py.next as gtx
 from icon4py.model.common import constants
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
@@ -36,6 +37,7 @@ from .utils import (
     construct_interpolation_state_for_nonhydro,
     construct_nh_metric_state,
 )
+from icon4py.model.common import dimension as dims
 
 
 @pytest.mark.datatest
@@ -1174,20 +1176,20 @@ def test_granule_solve_nonhydro_single_step_regional(
     rho_ref_me = metrics_savepoint.rho_ref_me()
     theta_ref_me = metrics_savepoint.theta_ref_me()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
-    zdiff_gradp = metrics_savepoint.zdiff_gradp()
-    vertoffset_gradp = metrics_savepoint.vertoffset_gradp()
+    zdiff_gradp = metrics_savepoint._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
+    vertoffset_gradp = metrics_savepoint._get_field("vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
     ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
     ddxt_z_full = metrics_savepoint.ddxt_z_full()
     wgtfac_e = metrics_savepoint.wgtfac_e()
-    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(num_levels)  # todo: wgtfacq_e_dsl(num_k_lev),
+    wgtfacq_e = metrics_savepoint.wgtfacq_e_dsl(num_levels)
     vwind_impl_wgt = metrics_savepoint.vwind_impl_wgt()
     hmask_dd3d = metrics_savepoint.hmask_dd3d()
     scalfac_dd3d = metrics_savepoint.scalfac_dd3d()
     coeff1_dwdz = metrics_savepoint.coeff1_dwdz()
     coeff2_dwdz = metrics_savepoint.coeff2_dwdz()
-    coeff_gradekin = metrics_savepoint.coeff_gradekin()
+    coeff_gradekin = metrics_savepoint._get_field("coeff_gradekin", dims.EdgeDim, dims.E2CDim)
 
     # interpolation state parameters
     c_lin_e = interpolation_savepoint.c_lin_e()
@@ -1195,8 +1197,8 @@ def test_granule_solve_nonhydro_single_step_regional(
     e_flx_avg = interpolation_savepoint.e_flx_avg()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     geofac_rot = interpolation_savepoint.geofac_rot()
-    pos_on_tplane_e_1 = interpolation_savepoint.pos_on_tplane_e_x()
-    pos_on_tplane_e_2 = interpolation_savepoint.pos_on_tplane_e_y()
+    pos_on_tplane_e_1 = interpolation_savepoint._get_field("pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim)
+    pos_on_tplane_e_2 = interpolation_savepoint._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     rbf_coeff_1 = interpolation_savepoint.rbf_vec_coeff_v1()

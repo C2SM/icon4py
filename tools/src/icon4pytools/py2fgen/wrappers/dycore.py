@@ -213,7 +213,7 @@ def solve_nh_init(
     # todo: when we read icon grid from NC file model output does not verify
     #   against serialised data.
     # ICON grid (load from nc file)
-    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
+    # grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
 
     # icon_grid = load_grid_from_file(
     #     grid_file=grid_file_path,
@@ -289,8 +289,8 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=pos_on_tplane_e_1,  # todo: helpers.as_1D_sparse_field(field[:, 0:2], dims.ECDim), as_1D_sparse_field(pos_on_tplane_e_1, ECDim),
-        pos_on_tplane_e_2=pos_on_tplane_e_2,  # todo: helpers.as_1D_sparse_field(field[:, 0:2], dims.ECDim), as_1D_sparse_field(pos_on_tplane_e_2, ECDim),
+        pos_on_tplane_e_1=as_1D_sparse_field(pos_on_tplane_e_1[:, 0:2], ECDim),
+        pos_on_tplane_e_2=as_1D_sparse_field(pos_on_tplane_e_2[:, 0:2], ECDim),
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -322,20 +322,20 @@ def solve_nh_init(
         rho_ref_me=rho_ref_me,
         theta_ref_me=theta_ref_me,
         ddxn_z_full=ddxn_z_full,
-        zdiff_gradp=zdiff_gradp,  # todo: flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp),
-        vertoffset_gradp=vertoffset_gradp,  # todo: flatten_first_two_dims(ECDim, KDim, field=vertoffset_gradp),
+        zdiff_gradp=flatten_first_two_dims(ECDim, KDim, field=zdiff_gradp),
+        vertoffset_gradp=flatten_first_two_dims(ECDim, KDim, field=vertoffset_gradp),
         ipeidx_dsl=ipeidx_dsl,
         pg_exdist=pg_exdist,
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,
-        wgtfacq_e=wgtfacq_e,  # todo: wgtfacq_e_dsl(num_k_lev),
+        wgtfacq_e=wgtfacq_e,
         vwind_impl_wgt=vwind_impl_wgt,
         hmask_dd3d=hmask_dd3d,
         scalfac_dd3d=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=coeff_gradekin,  # todo: as_1D_sparse_field(coeff_gradekin, ECDim),
+        coeff_gradekin=as_1D_sparse_field(coeff_gradekin, ECDim)
     )
 
     # datatest config
