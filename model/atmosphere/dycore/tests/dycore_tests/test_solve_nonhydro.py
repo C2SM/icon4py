@@ -15,8 +15,7 @@ from icon4py.model.atmosphere.dycore.state_utils import (
     states as solve_nh_states,
     utils as solve_nh_utils,
 )
-from icon4py.model.common import constants
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.settings import backend
@@ -44,9 +43,9 @@ def test_validate_divdamp_fields_against_savepoint_values(
     config = solve_nh.NonHydrostaticConfig()
     divdamp_fac_o2 = 0.032
     mean_cell_area = grid_savepoint.mean_cell_area()
-    enh_divdamp_fac = field_alloc.allocate_zero_field(KDim, grid=icon_grid, is_halfdim=False)
-    scal_divdamp = field_alloc.allocate_zero_field(KDim, grid=icon_grid, is_halfdim=False)
-    bdy_divdamp = field_alloc.allocate_zero_field(KDim, grid=icon_grid, is_halfdim=False)
+    enh_divdamp_fac = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    scal_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
+    bdy_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=icon_grid, is_halfdim=False)
     smagorinsky.en_smag_fac_for_zero_nshift.with_backend(backend)(
         grid_savepoint.vct_a(),
         config.divdamp_fac,
@@ -58,7 +57,7 @@ def test_validate_divdamp_fields_against_savepoint_values(
         config.divdamp_z3,
         config.divdamp_z4,
         enh_divdamp_fac,
-        offset_provider={"Koff": KDim},
+        offset_provider={"Koff": dims.KDim},
     )
     solve_nh_utils._calculate_scal_divdamp.with_backend(backend)(
         enh_divdamp_fac=enh_divdamp_fac,
@@ -176,19 +175,19 @@ def test_nonhydro_predictor_step(
     )
 
     cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
     )
     cell_start_nudging = icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
     )
     edge_start_lb_plus4 = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
     )
     edge_start_lb_plus6 = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
     )
     edge_start_nuding_plus1 = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
+        dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
     )
 
     # stencils 2, 3
@@ -547,7 +546,7 @@ def test_nonhydro_corrector_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     nnow = 0
@@ -752,7 +751,7 @@ def test_run_solve_nonhydro_single_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     nnow = 0
@@ -880,7 +879,7 @@ def test_run_solve_nonhydro_multi_step(
         vn_traj=sp.vn_traj(),
         mass_flx_me=sp.mass_flx_me(),
         mass_flx_ic=sp.mass_flx_ic(),
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
+        vol_flx_ic=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid),
     )
 
     nnow = 0
@@ -937,10 +936,10 @@ def test_run_solve_nonhydro_multi_step(
             nnew = ntemp
 
     cell_start_lb_plus2 = icon_grid.get_start_index(
-        CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
     )
     edge_start_lb_plus4 = icon_grid.get_start_index(
-        EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
     )
 
     assert helpers.dallclose(

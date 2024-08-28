@@ -11,7 +11,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.compute_airmass import compute_airmass
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import wpfloat
 
@@ -29,10 +29,10 @@ class TestComputeAirmass(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        rho_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        ddqz_z_full_in = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        deepatmo_t1mc_in = random_field(grid, KDim, dtype=wpfloat)
-        airmass_out = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        rho_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        ddqz_z_full_in = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        deepatmo_t1mc_in = random_field(grid, dims.KDim, dtype=wpfloat)
+        airmass_out = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         return dict(
             rho_in=rho_in,
             ddqz_z_full_in=ddqz_z_full_in,

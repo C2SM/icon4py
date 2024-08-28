@@ -10,11 +10,11 @@ import numpy as np
 import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import CPD_O_RD, GRAV_O_RD, P0REF
 from icon4py.model.common.diagnostic_calculations.stencils.diagnose_surface_pressure import (
     diagnose_surface_pressure,
 )
-from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -47,10 +47,12 @@ class TestDiagnoseSurfacePressure(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        exner = random_field(grid, CellDim, KDim, low=1.0e-6, dtype=vpfloat)
-        temperature = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        ddqz_z_full = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        pressure_sfc = zero_field(grid, CellDim, KDim, dtype=vpfloat, extend={KDim: 1})
+        exner = random_field(grid, dims.CellDim, dims.KDim, low=1.0e-6, dtype=vpfloat)
+        temperature = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        ddqz_z_full = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        pressure_sfc = zero_field(
+            grid, dims.CellDim, dims.KDim, dtype=vpfloat, extend={dims.KDim: 1}
+        )
 
         return dict(
             exner=exner,

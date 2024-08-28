@@ -14,7 +14,7 @@ from gt4py.next.ffront.fbuiltins import (
     minimum,
 )
 
-from icon4py.model.common import field_type_aliases as fa
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import KDim, VertexDim
 from icon4py.model.common.math.smagorinsky import _en_smag_fac_for_zero_nshift
 from icon4py.model.common.settings import backend, xp
@@ -46,12 +46,12 @@ def scale_k(field: fa.KField[float], factor: float, scaled_field: fa.KField[floa
 
 
 @gtx.field_operator
-def _init_zero_v_k() -> gtx.Field[[VertexDim, KDim], float]:
+def _init_zero_v_k() -> gtx.Field[[dims.VertexDim, dims.KDim], float]:
     return broadcast(0.0, (VertexDim, KDim))
 
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
-def init_zero_v_k(field: gtx.Field[[VertexDim, KDim], float]):
+def init_zero_v_k(field: gtx.Field[[dims.VertexDim, dims.KDim], float]):
     _init_zero_v_k(out=field)
 
 
@@ -188,4 +188,4 @@ def init_nabla2_factor_in_upper_damping_zone(
         )
         ** 4
     )
-    return gtx.as_field((KDim,), buffer)
+    return gtx.as_field((dims.KDim,), buffer)

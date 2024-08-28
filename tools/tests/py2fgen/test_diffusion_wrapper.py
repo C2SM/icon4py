@@ -9,18 +9,7 @@
 # type: ignore
 from gt4py.next import as_field
 from icon4py.model.atmosphere.diffusion.diffusion import DiffusionType
-from icon4py.model.common.dimension import (
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    CellDim,
-    E2C2VDim,
-    E2CDim,
-    EdgeDim,
-    KDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.settings import xp
 from icon4py.model.common.test_utils.grid_utils import MCH_CH_R04B09_LEVELS
 
@@ -115,45 +104,45 @@ def test_diffusion_wrapper_interface():
     mask_hdiff = mask_hdiff < 0.5
 
     # input data - gt4py fields
-    theta_ref_mc = as_field((CellDim, KDim), theta_ref_mc)
-    wgtfac_c = as_field((CellDim, KDim), wgtfac_c)
-    vct_a = as_field((KDim,), vct_a)
-    e_bln_c_s = as_field((CellDim, C2EDim), e_bln_c_s)
-    geofac_div = as_field((CellDim, C2EDim), geofac_div)
-    geofac_grg_x = as_field((CellDim, C2E2CODim), geofac_grg_x)
-    geofac_grg_y = as_field((CellDim, C2E2CODim), geofac_grg_y)
-    geofac_n2s = as_field((CellDim, C2E2CODim), geofac_n2s)
-    nudgecoeff_e = as_field((EdgeDim,), nudgecoeff_e)
-    rbf_coeff_1 = as_field((VertexDim, V2EDim), rbf_coeff_1)
-    rbf_coeff_2 = as_field((VertexDim, V2EDim), rbf_coeff_2)
-    dwdx = as_field((CellDim, KDim), dwdx)
-    dwdy = as_field((CellDim, KDim), dwdy)
-    hdef_ic = as_field((CellDim, KDim), hdef_ic)
-    div_ic = as_field((CellDim, KDim), div_ic)
-    mask_hdiff = as_field((CellDim, KDim), mask_hdiff)
-    zd_diffcoef = as_field((CellDim, KDim), zd_diffcoef)
-    zd_vertoffset = as_field((CellDim, C2E2CDim, KDim), zd_vertoffset)
-    zd_intcoef = as_field((CellDim, C2E2CDim, KDim), zd_intcoef)
-    w = as_field((CellDim, KDim), w)
-    vn = as_field((EdgeDim, KDim), vn)
-    exner = as_field((CellDim, KDim), exner)
-    theta_v = as_field((CellDim, KDim), theta_v)
-    rho = as_field((CellDim, KDim), rho)
-    dual_normal_cell_x = as_field((EdgeDim, E2CDim), dual_normal_cell_x)
-    dual_normal_cell_y = as_field((EdgeDim, E2CDim), dual_normal_cell_y)
-    dual_normal_vert_x = as_field((EdgeDim, E2C2VDim), dual_normal_vert_x)
-    dual_normal_vert_y = as_field((EdgeDim, E2C2VDim), dual_normal_vert_y)
-    primal_normal_cell_x = as_field((EdgeDim, E2CDim), primal_normal_cell_x)
-    primal_normal_cell_y = as_field((EdgeDim, E2CDim), primal_normal_cell_y)
-    primal_normal_vert_x = as_field((EdgeDim, E2C2VDim), primal_normal_vert_x)
-    primal_normal_vert_y = as_field((EdgeDim, E2C2VDim), primal_normal_vert_y)
-    tangent_orientation = as_field((EdgeDim,), tangent_orientation)
-    inverse_primal_edge_lengths = as_field((EdgeDim,), inverse_primal_edge_lengths)
-    inv_dual_edge_length = as_field((EdgeDim,), inv_dual_edge_length)
-    inv_vert_vert_length = as_field((EdgeDim,), inv_vert_vert_length)
-    edge_areas = as_field((EdgeDim,), edge_areas)
-    f_e = as_field((EdgeDim,), f_e)
-    cell_areas = as_field((CellDim,), cell_areas)
+    theta_ref_mc = as_field((dims.CellDim, dims.KDim), theta_ref_mc)
+    wgtfac_c = as_field((dims.CellDim, dims.KDim), wgtfac_c)
+    vct_a = as_field((dims.KDim,), vct_a)
+    e_bln_c_s = as_field((dims.CellDim, dims.C2EDim), e_bln_c_s)
+    geofac_div = as_field((dims.CellDim, dims.C2EDim), geofac_div)
+    geofac_grg_x = as_field((dims.CellDim, dims.C2E2CODim), geofac_grg_x)
+    geofac_grg_y = as_field((dims.CellDim, dims.C2E2CODim), geofac_grg_y)
+    geofac_n2s = as_field((dims.CellDim, dims.C2E2CODim), geofac_n2s)
+    nudgecoeff_e = as_field((dims.EdgeDim,), nudgecoeff_e)
+    rbf_coeff_1 = as_field((dims.VertexDim, dims.V2EDim), rbf_coeff_1)
+    rbf_coeff_2 = as_field((dims.VertexDim, dims.V2EDim), rbf_coeff_2)
+    dwdx = as_field((dims.CellDim, dims.KDim), dwdx)
+    dwdy = as_field((dims.CellDim, dims.KDim), dwdy)
+    hdef_ic = as_field((dims.CellDim, dims.KDim), hdef_ic)
+    div_ic = as_field((dims.CellDim, dims.KDim), div_ic)
+    mask_hdiff = as_field((dims.CellDim, dims.KDim), mask_hdiff)
+    zd_diffcoef = as_field((dims.CellDim, dims.KDim), zd_diffcoef)
+    zd_vertoffset = as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_vertoffset)
+    zd_intcoef = as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_intcoef)
+    w = as_field((dims.CellDim, dims.KDim), w)
+    vn = as_field((dims.EdgeDim, dims.KDim), vn)
+    exner = as_field((dims.CellDim, dims.KDim), exner)
+    theta_v = as_field((dims.CellDim, dims.KDim), theta_v)
+    rho = as_field((dims.CellDim, dims.KDim), rho)
+    dual_normal_cell_x = as_field((dims.EdgeDim, dims.E2CDim), dual_normal_cell_x)
+    dual_normal_cell_y = as_field((dims.EdgeDim, dims.E2CDim), dual_normal_cell_y)
+    dual_normal_vert_x = as_field((dims.EdgeDim, dims.E2C2VDim), dual_normal_vert_x)
+    dual_normal_vert_y = as_field((dims.EdgeDim, dims.E2C2VDim), dual_normal_vert_y)
+    primal_normal_cell_x = as_field((dims.EdgeDim, dims.E2CDim), primal_normal_cell_x)
+    primal_normal_cell_y = as_field((dims.EdgeDim, dims.E2CDim), primal_normal_cell_y)
+    primal_normal_vert_x = as_field((dims.EdgeDim, dims.E2C2VDim), primal_normal_vert_x)
+    primal_normal_vert_y = as_field((dims.EdgeDim, dims.E2C2VDim), primal_normal_vert_y)
+    tangent_orientation = as_field((dims.EdgeDim,), tangent_orientation)
+    inverse_primal_edge_lengths = as_field((dims.EdgeDim,), inverse_primal_edge_lengths)
+    inv_dual_edge_length = as_field((dims.EdgeDim,), inv_dual_edge_length)
+    inv_vert_vert_length = as_field((dims.EdgeDim,), inv_vert_vert_length)
+    edge_areas = as_field((dims.EdgeDim,), edge_areas)
+    f_e = as_field((dims.EdgeDim,), f_e)
+    cell_areas = as_field((dims.CellDim,), cell_areas)
 
     diffusion_init(
         vct_a=vct_a,

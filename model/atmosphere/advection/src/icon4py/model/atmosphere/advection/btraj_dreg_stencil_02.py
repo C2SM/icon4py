@@ -10,15 +10,15 @@ from gt4py.next import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, broadcast, int32, sqrt, where
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import E2EC, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import E2EC, EdgeDim, KDim
 
 
 @field_operator
 def _btraj_dreg_stencil_02(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    edge_cell_length: Field[[ECDim], float],
+    edge_cell_length: Field[[dims.ECDim], float],
     p_dt: float,
 ) -> fa.EdgeKField[int32]:
     lvn_pos = where(p_vn >= 0.0, True, False)
@@ -33,7 +33,7 @@ def _btraj_dreg_stencil_02(
 def btraj_dreg_stencil_02(
     p_vn: fa.EdgeKField[float],
     p_vt: fa.EdgeKField[float],
-    edge_cell_length: Field[[ECDim], float],
+    edge_cell_length: Field[[dims.ECDim], float],
     p_dt: float,
     opt_famask_dsl: fa.EdgeKField[int32],
 ):

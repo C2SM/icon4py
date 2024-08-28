@@ -11,14 +11,14 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.compute_tangential_wind import compute_tangential_wind
-from icon4py.model.common.dimension import E2C2EDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 def compute_tangential_wind_numpy(grid, vn: np.array, rbf_vec_coeff_e: np.array) -> np.array:
     rbf_vec_coeff_e = np.expand_dims(rbf_vec_coeff_e, axis=-1)
-    e2c2e = grid.connectivities[E2C2EDim]
+    e2c2e = grid.connectivities[dims.E2C2EDim]
     vt = np.sum(np.where((e2c2e != -1)[:, :, np.newaxis], vn[e2c2e] * rbf_vec_coeff_e, 0), axis=1)
     return vt
 
@@ -34,9 +34,9 @@ class TestComputeTangentialWind(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        rbf_vec_coeff_e = random_field(grid, EdgeDim, E2C2EDim, dtype=wpfloat)
-        vt = zero_field(grid, EdgeDim, KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        rbf_vec_coeff_e = random_field(grid, dims.EdgeDim, dims.E2C2EDim, dtype=wpfloat)
+        vt = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
 
         return dict(
             vn=vn,

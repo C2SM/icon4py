@@ -11,7 +11,7 @@ import pytest
 from gt4py.next.ffront.fbuiltins import int32
 
 from icon4py.model.atmosphere.dycore.extrapolate_at_top import extrapolate_at_top
-from icon4py.model.common.dimension import EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field, zero_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -43,9 +43,9 @@ class TestExtrapolateAtTop(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        wgtfacq_e = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        vn_ie = zero_field(grid, EdgeDim, KDim, dtype=vpfloat, extend={KDim: 1})
+        wgtfacq_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        vn_ie = zero_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat, extend={dims.KDim: 1})
 
         return dict(
             wgtfacq_e=wgtfacq_e,

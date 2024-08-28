@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.diffusion.stencils.update_theta_and_exner import (
     update_theta_and_exner,
 )
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -52,10 +52,10 @@ class TestUpdateThetaAndExner(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        z_temp = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        area = random_field(grid, CellDim, dtype=wpfloat)
-        theta_v = random_field(grid, CellDim, KDim, dtype=wpfloat)
-        exner = random_field(grid, CellDim, KDim, dtype=wpfloat)
+        z_temp = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        area = random_field(grid, dims.CellDim, dtype=wpfloat)
+        theta_v = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
+        exner = random_field(grid, dims.CellDim, dims.KDim, dtype=wpfloat)
         rd_o_cvd = vpfloat("5.0")
 
         return dict(

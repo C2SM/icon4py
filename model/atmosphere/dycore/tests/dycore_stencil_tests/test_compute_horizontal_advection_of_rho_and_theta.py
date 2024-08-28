@@ -13,7 +13,7 @@ from gt4py.next.ffront.fbuiltins import int32
 from icon4py.model.atmosphere.dycore.compute_horizontal_advection_of_rho_and_theta import (
     compute_horizontal_advection_of_rho_and_theta,
 )
-from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.test_utils.helpers import StencilTest, as_1D_sparse_field, random_field
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
@@ -85,7 +85,7 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ) -> np.array:
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         z_rth_pr_1_e2c = z_rth_pr_1[e2c]
         z_rth_pr_2_e2c = z_rth_pr_2[e2c]
         z_grad_rth_1_e2c = z_grad_rth_1[e2c]
@@ -142,7 +142,7 @@ class TestComputeBtraj(StencilTest):
         z_rth_pr_2: np.array,
         **kwargs,
     ):
-        e2c = grid.connectivities[E2CDim]
+        e2c = grid.connectivities[dims.E2CDim]
         pos_on_tplane_e_1 = pos_on_tplane_e_1.reshape(e2c.shape)
         pos_on_tplane_e_2 = pos_on_tplane_e_2.reshape(e2c.shape)
         primal_normal_cell_1 = primal_normal_cell_1.reshape(e2c.shape)
@@ -182,35 +182,35 @@ class TestComputeBtraj(StencilTest):
 
     @pytest.fixture
     def input_data(self, grid):
-        if np.any(grid.connectivities[E2CDim] == -1):
+        if np.any(grid.connectivities[dims.E2CDim] == -1):
             pytest.xfail("Stencil does not support missing neighbors.")
 
-        p_vn = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        p_vt = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        pos_on_tplane_e_1 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, ECDim)
-        pos_on_tplane_e_2 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        pos_on_tplane_e_2_new = as_1D_sparse_field(pos_on_tplane_e_2, ECDim)
-        primal_normal_cell_1 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        primal_normal_cell_1_new = as_1D_sparse_field(primal_normal_cell_1, ECDim)
-        dual_normal_cell_1 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        dual_normal_cell_1_new = as_1D_sparse_field(dual_normal_cell_1, ECDim)
-        primal_normal_cell_2 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, ECDim)
-        dual_normal_cell_2 = random_field(grid, EdgeDim, E2CDim, dtype=wpfloat)
-        dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, ECDim)
+        p_vn = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        p_vt = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        pos_on_tplane_e_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        pos_on_tplane_e_1_new = as_1D_sparse_field(pos_on_tplane_e_1, dims.ECDim)
+        pos_on_tplane_e_2 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        pos_on_tplane_e_2_new = as_1D_sparse_field(pos_on_tplane_e_2, dims.ECDim)
+        primal_normal_cell_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        primal_normal_cell_1_new = as_1D_sparse_field(primal_normal_cell_1, dims.ECDim)
+        dual_normal_cell_1 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        dual_normal_cell_1_new = as_1D_sparse_field(dual_normal_cell_1, dims.ECDim)
+        primal_normal_cell_2 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        primal_normal_cell_2_new = as_1D_sparse_field(primal_normal_cell_2, dims.ECDim)
+        dual_normal_cell_2 = random_field(grid, dims.EdgeDim, dims.E2CDim, dtype=wpfloat)
+        dual_normal_cell_2_new = as_1D_sparse_field(dual_normal_cell_2, dims.ECDim)
         p_dthalf = wpfloat("2.0")
 
-        rho_ref_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        theta_ref_me = random_field(grid, EdgeDim, KDim, dtype=vpfloat)
-        z_grad_rth_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_grad_rth_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_grad_rth_3 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_grad_rth_4 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_1 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rth_pr_2 = random_field(grid, CellDim, KDim, dtype=vpfloat)
-        z_rho_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
-        z_theta_v_e = random_field(grid, EdgeDim, KDim, dtype=wpfloat)
+        rho_ref_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        theta_ref_me = random_field(grid, dims.EdgeDim, dims.KDim, dtype=vpfloat)
+        z_grad_rth_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_grad_rth_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_grad_rth_3 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_grad_rth_4 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_1 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rth_pr_2 = random_field(grid, dims.CellDim, dims.KDim, dtype=vpfloat)
+        z_rho_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
+        z_theta_v_e = random_field(grid, dims.EdgeDim, dims.KDim, dtype=wpfloat)
 
         return dict(
             p_vn=p_vn,

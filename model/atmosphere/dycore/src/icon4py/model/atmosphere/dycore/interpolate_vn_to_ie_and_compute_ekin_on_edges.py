@@ -13,10 +13,15 @@ from gt4py.next.ffront.fbuiltins import astype, int32
 from icon4py.model.atmosphere.dycore.compute_horizontal_kinetic_energy import (
     _compute_horizontal_kinetic_energy,
 )
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import EdgeDim, KDim, Koff
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import Koff
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
+
+
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @field_operator
