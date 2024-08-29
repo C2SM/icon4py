@@ -37,5 +37,6 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa F401
     data_provider,
     download_ser_data,
     processor_props,
-    ranked_data_path
+    ranked_data_path,
+    icon_grid
 )

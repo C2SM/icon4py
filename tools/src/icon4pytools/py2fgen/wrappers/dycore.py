@@ -452,6 +452,8 @@ def solve_nh_run(
     divdamp_fac_o2: float64,
     ndyn_substeps: float64,
     idyn_timestep: int32,
+    nnew: int32,
+    nnow: int32
 ):
     log.info(f"Using Device = {settings.device}")
 
@@ -461,9 +463,6 @@ def solve_nh_run(
         mass_flx_ic=mass_flx_ic,
         vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
-
-    nnow = 0
-    nnew = 1
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=theta_v_ic,
