@@ -4,6 +4,7 @@ import icon4py.model.common.states.factory as factory
 from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.grid import horizontal
+
 from icon4py.model.common.metrics import metric_fields as mf
 from icon4py.model.common.test_utils import datatest_utils as dt_utils, serialbox_utils as sb
 
@@ -32,7 +33,10 @@ metrics_savepoint = data_provider.from_metrics_savepoint()
 #interpolation fields also for now passing as precomputed fields
 interpolation_savepoint = data_provider.from_interpolation_savepoint()
 #can get geometry fields as pre computed fields from the grid_savepoint
-grid_savepoint = data_provider.from_savepoint_grid()
+root, level = dt_utils.get_global_grid_params(dt_utils.REGIONAL_EXPERIMENT)
+grid_id = dt_utils.get_grid_id_for_experiment(dt_utils.REGIONAL_EXPERIMENT)
+grid_savepoint = data_provider.from_savepoint_grid(grid_id, root, level)
+nlev = grid_savepoint.num(dims.KDim)
 #######
 
 # start build up factory:
@@ -42,11 +46,13 @@ grid = grid_savepoint.global_grid_params
 
 interface_model_height = metrics_savepoint.z_ifc()
 c_lin_e = interpolation_savepoint.c_lin_e()
-k_index = gtx.as_field((dims.KDim,), xp.arange(grid.num_levels + 1, dtype=gtx.int32))
+k_index = gtx.as_field((dims.KDim,), xp.arange(nlev + 1, dtype=gtx.int32))
 vct_a = grid_savepoint.vct_a()
 theta_ref_mc = metrics_savepoint.theta_ref_mc()
 exner_ref_mc = metrics_savepoint.exner_ref_mc()
 wgtfac_c = metrics_savepoint.wgtfac_c()
+c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
+e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
 
 fields_factory = factory.FieldsFactory()
 
@@ -59,24 +65,26 @@ fields_factory.register_provider(
             "vct_a": vct_a,
             "theta_ref_mc": theta_ref_mc,
             "exner_ref_mc": exner_ref_mc,
-            "wgtfac_c": wgtfac_c
+            "wgtfac_c": wgtfac_c,
+            "c_refin_ctrl": c_refin_ctrl,
+            "e_refin_ctrl": e_refin_ctrl
         }
     )
 )
 
 
 height_provider = factory.ProgramFieldProvider(
-        func=mf.compute_z_mc,
-        domain={
-            dims.CellDim: (
-                horizontal.HorizontalMarkerIndex.local(dims.CellDim),
-                horizontal.HorizontalMarkerIndex.end(dims.CellDim),
-            ),
-            dims.KDim: (0, grid.num_levels),
-        },
-        fields={"z_mc": "height"},
-        deps={"z_ifc": "height_on_interface_levels"},
-    )
+    func=mf.compute_z_mc,
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.local(dims.CellDim),
+            horizontal.HorizontalMarkerIndex.end(dims.CellDim),
+        ),
+        dims.KDim: (0, nlev),
+    },
+    fields={"z_mc": "height"},
+    deps={"z_ifc": "height_on_interface_levels"},
+)
 
 
 ddqz_z_full_and_inverse_provider = factory.ProgramFieldProvider(
@@ -89,7 +97,7 @@ ddqz_z_full_and_inverse_provider = factory.ProgramFieldProvider(
             horizontal.HorizontalMarkerIndex.local(dims.CellDim),
             horizontal.HorizontalMarkerIndex.end(dims.CellDim),
         ),
-        dims.KDim: (0, grid.num_levels),
+        dims.KDim: (0, nlev),
     },
     fields={"ddqz_z_full": "ddqz_z_full", "inv_ddqz_z_full": "inv_ddqz_z_full"},
 )
@@ -107,10 +115,10 @@ compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
             horizontal.HorizontalMarkerIndex.local(dims.CellDim),
             horizontal.HorizontalMarkerIndex.end(dims.CellDim),
         ),
-        dims.KDim: (0, grid.num_levels+1),
+        dims.KDim: (0, nlev+1),
     },
     fields={"ddqz_z_half": "ddqz_z_half"},
-    params={"nlev": grid.num_levels},
+    params={"nlev": nlev},
 )
 
 
@@ -149,7 +157,7 @@ compute_coeff_dwdz_provider = factory.ProgramFieldProvider(
             horizontal.HorizontalMarkerIndex.local(dims.CellDim),
             horizontal.HorizontalMarkerIndex.end(dims.CellDim),
         ),
-        dims.KDim: (1, grid.num_levels),
+        dims.KDim: (1, nlev),
     },
     fields={"coeff1_dwdz_full": "coeff1_dwdz_full",
             "coeff2_dwdz_full": "coeff2_dwdz_full"},
@@ -168,7 +176,7 @@ compute_d2dexdz2_fac_mc_provider = factory.ProgramFieldProvider(
             horizontal.HorizontalMarkerIndex.local(dims.CellDim),
             horizontal.HorizontalMarkerIndex.end(dims.CellDim),
         ),
-        dims.KDim: (0, grid.num_levels),
+        dims.KDim: (0, nlev),
     },
     fields={"d2dexdz2_fac1_mc": "d2dexdz2_fac1_mc",
             "d2dexdz2_fac2_mc": "d2dexdz2_fac2_mc"},
@@ -210,7 +218,39 @@ compute_wgtfac_e_provider = factory.ProgramFieldProvider(
             horizontal.HorizontalMarkerIndex.local(dims.EdgeDim),
             horizontal.HorizontalMarkerIndex.end(dims.EdgeDim), # TODO: check this bound
         ),
-        dims.KDim: (0, grid.num_levels+1),
+        dims.KDim: (0, nlev+1),
     },
     fields={"wgtfac_e": "wgtfac_e"},
+)
+
+compute_bdy_halo_c_provider = factory.ProgramFieldProvider(
+    func=mf.compute_hmask_dd3d,
+    deps={
+        "c_refin_ctrl": "c_refin_ctrl",
+    },
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.local(dims.CellDim),
+            horizontal.HorizontalMarkerIndex.end(dims.CellDim), # TODO: check this bound
+        ),
+    },
+    fields={"bdy_halo_c": "bdy_halo_c"},
+)
+
+compute_hmask_dd3d_provider = factory.ProgramFieldProvider(
+    func=mf.compute_hmask_dd3d,
+    deps={
+        "e_refin_ctrl": "e_refin_ctrl",
+    },
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim),
+            horizontal.HorizontalMarkerIndex.end(dims.EdgeDim), # TODO: check this bound
+        ),
+    },
+    fields={"hmask_dd3d": "hmask_dd3d"},
+    params={
+        "grf_nudge_start_e": gtx.int32(horizontal._GRF_NUDGEZONE_START_EDGES),
+        "grf_nudgezone_width": gtx.int32(horizontal._GRF_NUDGEZONE_WIDTH),
+    }
 )

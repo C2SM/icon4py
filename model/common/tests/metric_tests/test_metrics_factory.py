@@ -11,8 +11,10 @@ def test_factory(icon_grid, metrics_savepoint):
     factory = mf.fields_factory
     factory.with_grid(icon_grid).with_allocator(settings.backend)
     factory.get("height_on_interface_levels", states_factory.RetrievalType.FIELD)
-    factory.get("height", states_factory.RetrievalType.FIELD)
     factory.get(cf_utils.INTERFACE_LEVEL_STANDARD_NAME, states_factory.RetrievalType.FIELD)
+
+    factory.register_provider(mf.height_provider)
+    factory.get("height", states_factory.RetrievalType.FIELD)
 
     inv_ddqz_full_ref = metrics_savepoint.inv_ddqz_z_full()
     factory.register_provider(mf.ddqz_z_full_and_inverse_provider)
