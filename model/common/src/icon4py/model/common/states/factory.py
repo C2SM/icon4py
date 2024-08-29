@@ -264,7 +264,7 @@ class FieldsFactory:
 
     @builder.builder
     def with_allocator(self, backend=settings.backend):
-        self._allocator = backend
+        self._allocator = gtx.constructors.zeros.partial(allocator=backend)
 
     @property
     def grid(self):
