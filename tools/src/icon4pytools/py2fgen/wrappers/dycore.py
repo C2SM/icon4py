@@ -29,7 +29,6 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import cProfile
-import os
 import pstats
 
 from gt4py.next.common import Field
@@ -46,28 +45,35 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.common.dimension import (
+    C2E2C2EDim,
+    C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CEDim,
     CellDim,
+    CellIndexDim,
     E2C2EDim,
     E2C2EODim,
     E2C2VDim,
     E2CDim,
+    E2VDim,
     ECDim,
     ECVDim,
     EdgeDim,
+    EdgeIndexDim,
     KDim,
     KHalfDim,
     V2CDim,
     V2EDim,
     VertexDim,
+    VertexIndexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
-from icon4py.model.common.settings import device
+from icon4py.model.common import settings
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     flatten_first_two_dims,
@@ -75,7 +81,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+from icon4pytools.py2fgen.wrappers.common import construct_icon_grid
 
 
 log = setup_logger(__name__)
@@ -100,12 +106,66 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
+def grid_init(
+    cell_starts: Field[[CellIndexDim], int32],
+    cell_ends: Field[[CellIndexDim], int32],
+    vertex_starts: Field[[VertexIndexDim], int32],
+    vertex_ends: Field[[VertexIndexDim], int32],
+    edge_starts: Field[[EdgeIndexDim], int32],
+    edge_ends: Field[[EdgeIndexDim], int32],
+    c2e: Field[[CellDim, C2EDim], int32],
+    e2c: Field[[EdgeDim, E2CDim], int32],
+    c2e2c: Field[[CellDim, C2E2CDim], int32],
+    c2e2c2e: Field[[CellDim, C2E2C2EDim], int32],
+    e2c2e: Field[[EdgeDim, E2C2EDim], int32],
+    e2v: Field[[EdgeDim, E2VDim], int32],
+    v2e: Field[[VertexDim, V2EDim], int32],
+    v2c: Field[[VertexDim, V2CDim], int32],
+    e2c2v: Field[[EdgeDim, E2C2VDim], int32],
+    c2v: Field[[CellDim, C2VDim], int32],
+    global_root: int32,
+    global_level: int32,
+    num_vertices: int32,
+    num_cells: int32,
+    num_edges: int32,
+    vertical_size: int32,
+    limited_area: bool,
+):
+    global icon_grid
+
+    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
+
+    icon_grid = construct_icon_grid(
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        c2e2c2e=c2e2c2e,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+    )
+
+
 def solve_nh_init(
-    grid,
     vct_a: Field[[KDim], float64],
     vct_b: Field[[KDim], float64],
-    nflat_gradp: int32,
-    num_levels: int32,
     cell_areas: Field[[CellDim], float64],
     primal_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
@@ -202,28 +262,12 @@ def solve_nh_init(
     divdamp_z2: float64,
     divdamp_z3: float64,
     divdamp_z4: float64,
-    limited_area: bool,
     lowest_layer_thickness: float64,
     model_top_height: float64,
     stretch_factor: float64,
-    global_num_cells: float64
+    nflat_gradp: int32,
+    num_levels: int32,
 ):
-    global icon_grid
-
-    # todo: when we read icon grid from NC file model output does not verify
-    #   against serialised data.
-    # ICON grid (load from nc file)
-    # grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
-
-    # icon_grid = load_grid_from_file(
-    #     grid_file=grid_file_path,
-    #     num_levels=num_levels,
-    #     on_gpu=True if device.name == "GPU" else False,
-    #     limited_area=True if limited_area else False,
-    # )
-
-    icon_grid = grid
-
     config = NonHydrostaticConfig(
         itime_scheme=itime_scheme,
         iadv_rhotheta=iadv_rhotheta,
@@ -271,17 +315,17 @@ def solve_nh_init(
         edge_center_lat=edge_center_lat,
         edge_center_lon=edge_center_lon,
         primal_normal_x=primal_normal_x,
-        primal_normal_y=primal_normal_y
+        primal_normal_y=primal_normal_y,
     )
 
     # datatest config CellParams
     cell_geometry = CellParams.from_global_num_cells(
-            cell_center_lat=cell_center_lat,
-            cell_center_lon=cell_center_lon,
-            area=cell_areas,
-            global_num_cells=global_num_cells,
-            length_rescale_factor=1.0,
-        )
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        area=cell_areas,
+        global_num_cells=icon_grid.global_properties.num_cells,
+        length_rescale_factor=1.0,
+    )
 
     interpolation_state = InterpolationState(
         c_lin_e=c_lin_e,
@@ -335,7 +379,7 @@ def solve_nh_init(
         scalfac_dd3d=scalfac_dd3d,
         coeff1_dwdz=coeff1_dwdz,
         coeff2_dwdz=coeff2_dwdz,
-        coeff_gradekin=as_1D_sparse_field(coeff_gradekin, ECDim)
+        coeff_gradekin=as_1D_sparse_field(coeff_gradekin, ECDim),
     )
 
     # datatest config
@@ -409,7 +453,7 @@ def solve_nh_run(
     ndyn_substeps: float64,
     idyn_timestep: int32,
 ):
-    log.info(f"Using Device = {device}")
+    log.info(f"Using Device = {settings.device}")
 
     prep_adv = PrepAdvection(
         vn_traj=vn_traj,

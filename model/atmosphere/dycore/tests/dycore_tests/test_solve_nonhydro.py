@@ -8,17 +8,22 @@
 
 import logging
 
+import gt4py.next as gtx
 import pytest
+from icon4pytools.py2fgen.wrappers.dycore import grid_init, solve_nh_init, solve_nh_run
 
 from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as solve_nh
-from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import TimeSteppingScheme, RhoThetaAdvectionType, \
-    HorizontalPressureDiscretizationType, DivergenceDampingOrder
+from icon4py.model.atmosphere.dycore.nh_solve.solve_nonhydro import (
+    DivergenceDampingOrder,
+    HorizontalPressureDiscretizationType,
+    RhoThetaAdvectionType,
+    TimeSteppingScheme,
+)
 from icon4py.model.atmosphere.dycore.state_utils import (
     states as solve_nh_states,
     utils as solve_nh_utils,
 )
-import gt4py.next as gtx
-from icon4py.model.common import constants
+from icon4py.model.common import constants, dimension as dims
 from icon4py.model.common.dimension import CellDim, EdgeDim, KDim
 from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
 from icon4py.model.common.math import smagorinsky
@@ -30,14 +35,12 @@ from icon4py.model.common.test_utils import (
     serialbox_utils as sb,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
-from icon4pytools.py2fgen.wrappers.dycore import solve_nh_init, solve_nh_run
 
 from .utils import (
     construct_config,
     construct_interpolation_state_for_nonhydro,
     construct_nh_metric_state,
 )
-from icon4py.model.common import dimension as dims
 
 
 @pytest.mark.datatest
@@ -213,8 +216,8 @@ def test_nonhydro_predictor_step(
     )
     nflatlev = vertical_params.nflatlev
     assert helpers.dallclose(
-        solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lb_plus2:, nflatlev: nlev - 1],
-        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nflatlev: nlev - 1],
+        solve_nonhydro.z_exner_ic.asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
+        sp_exit.z_exner_ic().asnumpy()[cell_start_lb_plus2:, nflatlev : nlev - 1],
         rtol=1.0e-9,
     )
     # stencil 6
@@ -1077,7 +1080,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     savepoint_nonhydro_exit,
     savepoint_nonhydro_step_exit,
     caplog,
-    icon_grid
 ):
     caplog.set_level(logging.DEBUG)
 
@@ -1112,7 +1114,6 @@ def test_granule_solve_nonhydro_single_step_regional(
     divdamp_z4 = 80000.0
 
     # vertical grid params
-    limited_area = True
     num_levels = 65
     lowest_layer_thickness = 20.0
     model_top_height = 23000.0
@@ -1130,11 +1131,9 @@ def test_granule_solve_nonhydro_single_step_regional(
     clean_mflx = sp.get_metadata("clean_mflx").get("clean_mflx")
 
     # Cell geometry
-    mean_cell_area = grid_savepoint.mean_cell_area()
     cell_center_lat = grid_savepoint.cell_center_lat()
     cell_center_lon = grid_savepoint.cell_center_lon()
     cell_areas = grid_savepoint.cell_areas()
-    global_num_cells = grid_savepoint.global_grid_params.num_cells
 
     # Edge geometry
     tangent_orientation = grid_savepoint.tangent_orientation()
@@ -1176,8 +1175,12 @@ def test_granule_solve_nonhydro_single_step_regional(
     rho_ref_me = metrics_savepoint.rho_ref_me()
     theta_ref_me = metrics_savepoint.theta_ref_me()
     ddxn_z_full = metrics_savepoint.ddxn_z_full()
-    zdiff_gradp = metrics_savepoint._get_field("zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim)
-    vertoffset_gradp = metrics_savepoint._get_field("vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32)
+    zdiff_gradp = metrics_savepoint._get_field(
+        "zdiff_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim
+    )
+    vertoffset_gradp = metrics_savepoint._get_field(
+        "vertoffset_gradp_dsl", dims.EdgeDim, dims.E2CDim, dims.KDim, dtype=gtx.int32
+    )
     ipeidx_dsl = metrics_savepoint.ipeidx_dsl()
     pg_exdist = metrics_savepoint.pg_exdist()
     ddqz_z_full_e = metrics_savepoint.ddqz_z_full_e()
@@ -1197,8 +1200,12 @@ def test_granule_solve_nonhydro_single_step_regional(
     e_flx_avg = interpolation_savepoint.e_flx_avg()
     geofac_grdiv = interpolation_savepoint.geofac_grdiv()
     geofac_rot = interpolation_savepoint.geofac_rot()
-    pos_on_tplane_e_1 = interpolation_savepoint._get_field("pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim)
-    pos_on_tplane_e_2 = interpolation_savepoint._get_field("pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim)
+    pos_on_tplane_e_1 = interpolation_savepoint._get_field(
+        "pos_on_tplane_e_x", dims.EdgeDim, dims.E2CDim
+    )
+    pos_on_tplane_e_2 = interpolation_savepoint._get_field(
+        "pos_on_tplane_e_y", dims.EdgeDim, dims.E2CDim
+    )
     rbf_vec_coeff_e = interpolation_savepoint.rbf_vec_coeff_e()
     e_bln_c_s = interpolation_savepoint.e_bln_c_s()
     rbf_coeff_1 = interpolation_savepoint.rbf_vec_coeff_v1()
@@ -1212,13 +1219,63 @@ def test_granule_solve_nonhydro_single_step_regional(
     # other params
     c_owner_mask = grid_savepoint.c_owner_mask()
 
+    # grid params
+    cell_starts = grid_savepoint.cells_start_index()
+    cell_ends = grid_savepoint.cells_end_index()
+    vertex_starts = grid_savepoint.vertex_start_index()
+    vertex_ends = grid_savepoint.vertex_end_index()
+    edge_starts = grid_savepoint.edge_start_index()
+    edge_ends = grid_savepoint.edge_end_index()
+    num_vertices = grid_savepoint.num(dims.VertexDim)
+    num_cells = grid_savepoint.num(dims.CellDim)
+    num_edges = grid_savepoint.num(dims.EdgeDim)
+    vertical_size = grid_savepoint.num(dims.KDim)
+    limited_area = grid_savepoint.get_metadata("limited_area").get("limited_area")
+    c2e = grid_savepoint.c2e()
+    e2c = grid_savepoint.e2c()
+    e2v = grid_savepoint.e2v()
+    v2e = grid_savepoint.v2e()
+    v2c = grid_savepoint.v2c()
+    e2c2v = grid_savepoint.e2c2v()
+    c2v = grid_savepoint.c2v()
+    c2e2c = grid_savepoint.c2e2c()
+    e2c2e = grid_savepoint.e2c2e()
+    c2e2c2e = grid_savepoint.c2e2c2e()
+
+    # global grid params
+    global_root = 4
+    global_level = 9
+
+    grid_init(
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        c2e2c2e=c2e2c2e,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+        global_root=global_root,
+        global_level=global_level,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+    )
+
     # call solve init
     solve_nh_init(
-        grid=icon_grid,
         vct_a=vct_a,
         vct_b=vct_b,
-        nflat_gradp=nflat_gradp,
-        num_levels=num_levels,
         cell_areas=cell_areas,
         primal_normal_cell_x=primal_normal_cell_x,
         primal_normal_cell_y=primal_normal_cell_y,
@@ -1315,11 +1372,11 @@ def test_granule_solve_nonhydro_single_step_regional(
         divdamp_z2=divdamp_z2,
         divdamp_z3=divdamp_z3,
         divdamp_z4=divdamp_z4,
-        limited_area=limited_area,
         lowest_layer_thickness=lowest_layer_thickness,
         model_top_height=model_top_height,
         stretch_factor=stretch_factor,
-        global_num_cells=global_num_cells,
+        nflat_gradp=nflat_gradp,
+        num_levels=num_levels,
     )
 
     # solve nh run parameters
@@ -1412,9 +1469,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         sp_step_exit.theta_v_new().asnumpy(),
     )
 
-    assert helpers.dallclose(
-        exner_new.asnumpy(), sp_step_exit.exner_new().asnumpy()
-    )
+    assert helpers.dallclose(exner_new.asnumpy(), sp_step_exit.exner_new().asnumpy())
 
     assert helpers.dallclose(
         vn_new.asnumpy(),
@@ -1423,9 +1478,7 @@ def test_granule_solve_nonhydro_single_step_regional(
         atol=1e-13,
     )
 
-    assert helpers.dallclose(
-        rho_new.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy()
-    )
+    assert helpers.dallclose(rho_new.asnumpy(), savepoint_nonhydro_exit.rho_new().asnumpy())
 
     assert helpers.dallclose(
         w_new.asnumpy(),
