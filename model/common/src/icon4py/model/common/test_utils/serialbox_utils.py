@@ -1458,16 +1458,16 @@ class IconGraupelExitSavepoint(IconSavepoint):
         return self._get_field("ser_out_graupel_ddt_tend_qs", dims.CellDim, dims.KDim)
 
     def rain_flux(self):
-        return self._get_field("ser_out_graupel_prr_gsp", dims.CellDim, dims.KDim)
+        return self._get_field("ser_out_graupel_prr_gsp", dims.CellDim)
 
     def snow_flux(self):
-        return self._get_field("ser_out_graupel_prs_gsp", dims.CellDim, dims.KDim)
+        return self._get_field("ser_out_graupel_prs_gsp", dims.CellDim)
 
     def graupel_flux(self):
-        return self._get_field("ser_out_graupel_pri_gsp", dims.CellDim, dims.KDim)
+        return self._get_field("ser_out_graupel_pri_gsp", dims.CellDim)
 
     def ice_flux(self):
-        return self._get_field("ser_out_graupel_prg_gsp", dims.CellDim, dims.KDim)
+        return self._get_field("ser_out_graupel_prg_gsp", dims.CellDim)
 
 
 class IconGscpSatadEntrySavepoint(IconSavepoint):

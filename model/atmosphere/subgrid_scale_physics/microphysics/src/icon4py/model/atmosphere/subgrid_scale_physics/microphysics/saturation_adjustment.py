@@ -33,6 +33,7 @@ from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, v
 from icon4py.model.common.settings import backend, xp
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
+    model,
     prognostic_state as prognostics,
     tracer_state as tracers,
 )
@@ -46,7 +47,7 @@ class SaturatedPressureConstants(FrozenNamespace):
     It was originally in mo_lookup_tables_constants.f90.
     """
 
-    #: Latent heat of vaporisation for water [J/kg]. Originally expressed as alv in ICON.
+    #: Latent heat of vaporisation for water [J kg-1]. Originally expressed as alv in ICON.
     vaporisation_latent_heat: ta.wpfloat = 2.5008e6
     #: Melting temperature of ice/snow [K]
     tmelt: ta.wpfloat = 273.15
@@ -65,7 +66,7 @@ class SaturatedPressureConstants(FrozenNamespace):
 
     #: Dry air heat capacity at constant pressure / water heat capacity at constant pressure - 1
     rcpl: ta.wpfloat = 3.1733
-    #: Specific heat capacity of liquid water. Originally expressed as clw in ICON.
+    #: Specific heat capacity of liquid water [J K-1 kg-1]. Originally expressed as clw in ICON.
     spec_heat_cap_water: ta.wpfloat = (rcpl + 1.0) * cpd
 
     #: p0 in Tetens formula for saturation water pressure, see eq. 5.33 in COSMO documentation. Originally expressed as c1es in ICON.
@@ -101,6 +102,123 @@ class ConvergenceError(Exception):
     pass
 
 
+#: CF attributes of saturation adjustment input variables
+_SATURATION_ADJUST_INPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    air_density=dict(
+        standard_name="air_density",
+        long_name="density",
+        units="kg m-3",
+        icon_var_name="rho",
+    ),
+    exner_function=dict(
+        standard_name="dimensionless_exner_function",
+        long_name="exner function",
+        icon_var_name="exner",
+        units="1",
+    ),
+    temperature=dict(
+        standard_name="air_temperature",
+        long_name="air temperature",
+        units="K",
+        icon_var_name="temp",
+    ),
+    virtual_temperature=dict(
+        standard_name="air_virtual_temperature",
+        long_name="air virtual temperature",
+        units="K",
+        icon_var_name="tempv",
+    ),
+    pressure=dict(
+        standard_name="air_pressure",
+        long_name="air pressure",
+        units="Pa",
+        icon_var_name="pres",
+    ),
+    interface_pressure=dict(
+        standard_name="air_pressure_at_interface_level",
+        long_name="air pressure at model interface level",
+        units="Pa",
+        icon_var_name="pres_ifc",
+    ),
+    specific_humidity=dict(
+        standard_name="specific_humidity",
+        long_name="ratio of water vapor mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qv",
+    ),
+    specific_cloud=dict(
+        standard_name="specific_cloud_content",
+        long_name="ratio of cloud water mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qc",
+    ),
+    specific_ice=dict(
+        standard_name="specific_ice_content",
+        long_name="ratio of cloud ice mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qi",
+    ),
+    specific_rain=dict(
+        standard_name="specific_rain_content",
+        long_name="ratio of rain mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qr",
+    ),
+    specific_snow=dict(
+        standard_name="specific_snow_content",
+        long_name="ratio of snow mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qs",
+    ),
+    specific_graupel=dict(
+        standard_name="specific_graupel_content",
+        long_name="ratio of graupel mass to total moist air parcel mass",
+        units="1",
+        icon_var_name="qg",
+    ),
+)
+
+
+#: CF attributes of saturation adjustment output variables
+_SATURATION_ADJUST_OUTPUT_ATTRIBUTES: Final[dict[str, model.FieldMetaData]] = dict(
+    tend_exner_function_due_to_satad=dict(
+        standard_name="tendency_of_dimensionless_exner_function_due_to_saturation_adjustment",
+        long_name="tendency of exner function due to saturation adjustment",
+        units="K s-1",
+    ),
+    tend_temperature_due_to_satad=dict(
+        standard_name="tendency_of_air_temperature_due_to_saturation_adjustment",
+        long_name="tendency of air temperature due to saturation adjustment",
+        units="K s-1",
+    ),
+    tend_virtual_temperature_due_to_satad=dict(
+        standard_name="tendency_of_air_virtual_temperature_due_to_saturation_adjustment",
+        long_name="air virtual temperature",
+        units="K s-1",
+    ),
+    tend_pressure_due_to_satad=dict(
+        standard_name="tendency_of_air_pressure_due_to_saturation_adjustment",
+        long_name="tendency of air pressure due to saturation adjustment",
+        units="Pa s-1",
+    ),
+    tend_interface_pressure_due_to_satad=dict(
+        standard_name="tendency_of_air_pressure_at_interface_level_due_to_saturation_adjustment",
+        long_name="tendency of air pressure at model interface level due to saturation adjustment",
+        units="Pa s-1",
+    ),
+    tend_specific_humidity_due_to_satad=dict(
+        standard_name="tendency_of_specific_humidity_due_to_saturation_adjustment",
+        long_name="tendency of ratio of water vapor mass to total moist air parcel mass due to saturation adjustment",
+        units="s-1",
+    ),
+    tend_specific_cloud_due_to_satad=dict(
+        standard_name="tendency_of_specific_cloud_content_due_to_saturation_adjustment",
+        long_name="tendency of ratio of cloud water mass to total moist air parcel mass due to saturation adjustment",
+        units="s-1",
+    ),
+)
+
+
 class SaturationAdjustment:
     def __init__(
         self,
@@ -115,7 +233,12 @@ class SaturationAdjustment:
         self.metric_state: MetricStateSaturationAdjustment = metric_state
         self._allocate_tendencies()
 
-    # TODO (Chia Rui): add in input and output data properties when physics interface protocal is ready.
+    # TODO (Chia Rui): add in input and output data properties, and refactor this component to follow the physics component protocol.
+    def input_properties(self) -> dict[str, model.FieldMetaData]:
+        raise NotImplementedError
+
+    def output_properties(self) -> dict[str, model.FieldMetaData]:
+        raise NotImplementedError
 
     def _allocate_tendencies(self):
         #: it was originally named as tworkold in ICON. Old temperature before iteration.
@@ -491,7 +614,7 @@ def _new_temperature_in_newton_iteration(
 
     Args:
         temperature: initial temperature [K]
-        qv: specific humidity
+        qv: specific humidity [kg kg-1]
         rho: total air density [kg m-3]
         lwdocvd: Lv / cvd [K]
         new_temperature2: temperature at previous iteration [K]
@@ -571,8 +694,8 @@ def _update_temperature_qv_qc_tendencies(
         dtime: time step
         temperature: initial temperature [K]
         temperature_next: temperature updated by saturation adjustment [K]
-        qv: initial specific humidity
-        qc: initial cloud specific mixing ratio
+        qv: initial specific humidity [kg kg-1]
+        qc: initial cloud mixing ratio [kg kg-1]
         rho: total air density [kg m-3]
         subsaturated_mask: a mask where the air is subsaturated even if all cloud particles evaporate
     Returns:
@@ -651,8 +774,8 @@ def _compute_subsaturated_case_and_initialize_newton_iterations(
     Args:
         tolerance: tolerance for convergence in Newton iteration
         temperature: initial temperature [K]
-        qv: initial specific humidity
-        qc: initial cloud specific mixing ratio
+        qv: initial specific humidity [kg kg-1]
+        qc: initial cloud mixing ratio [kg kg-1]
         rho: total air density [kg m-3]
     Returns:
         mask for subsaturated case,
@@ -811,21 +934,21 @@ def _compute_temperature_and_exner_tendencies_after_saturation_adjustment(
 
     Args:
         dtime: time step [s]
-        qv: specific humidity [kg/kg]
-        qc: specific cloud water content [kg/kg]
-        qi: specific cloud ice content [kg/kg]
-        qr: specific rain water content [kg/kg]
-        qs: specific snow content [kg/kg]
-        qg: specific graupel content [kg/kg]
-        qv_tendency: specific humidity tendency [kg/kg/s]
-        qc_tendency: specific cloud water content tendency [kg/kg/s]
+        qv: specific humidity [kg kg-1]
+        qc: specific cloud water content [kg kg-1]
+        qi: specific cloud ice content [kg kg-1]
+        qr: specific rain water content [kg kg-1]
+        qs: specific snow content [kg kg-1]
+        qg: specific graupel content [kg kg-1]
+        qv_tendency: specific humidity tendency [kg kg-1 s-1]
+        qc_tendency: specific cloud water content tendency [kg kg-1 s-1]
         temperature: air temperature [K]
         virtual_temperature: air virtual temperature [K]
         exner: exner function
         k_field: k level indices
         kstart_moist: starting level for all moisture processes
     Returns:
-        virtual temperature tendency [K/s], exner tendency [/s], new exner, new virtual temperature [K]
+        virtual temperature tendency [K s-1], exner tendency [s-1], new exner, new virtual temperature [K]
     """
     qsum = where(
         k_field < kstart_moist,
@@ -920,7 +1043,7 @@ def _compute_pressure_tendency_after_saturation_adjustment(
         old_pressure: old air pressure at full levels [Pa]
         new_pressure: new air pressure at full levels [Pa]
     Returns:
-        pressure tendency [Pa/s]
+        pressure tendency [Pa s-1]
     """
 
     return (new_pressure - old_pressure) / dtime
@@ -960,7 +1083,7 @@ def _compute_pressure_ifc_tendency_after_saturation_adjustment(
         old_pressure_ifc: old air pressure at interface [Pa]
         new_pressure_ifc: new air pressure at interface [Pa]
     Returns:
-        interface pressure tendency [Pa/s]
+        interface pressure tendency [Pa s-1]
     """
     return (new_pressure_ifc - old_pressure_ifc) / dtime
 
