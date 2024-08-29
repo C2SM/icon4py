@@ -13,11 +13,15 @@
 
 
 import pytest
+
 from icon4py.model.atmosphere.physics.microphysics import saturation_adjustment
-from icon4py.model.common.states import prognostic_state as prognostics, diagnostic_state as diagnostics, tracer_state as tracers
+from icon4py.model.common.states import (
+    diagnostic_state as diagnostics,
+    prognostic_state as prognostics,
+    tracer_state as tracers,
+)
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose
-
 
 
 @pytest.mark.parametrize(
@@ -42,7 +46,9 @@ def test_saturation_adjustment(
 ):
     """Test satad aginst a numpy implementaion."""
 
-    entry_microphysics_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(date=date)
+    entry_microphysics_savepoint = data_provider.from_savepoint_weisman_klemp_graupel_entry(
+        date=date
+    )
     entry_savepoint = data_provider.from_savepoint_weisman_klemp_gscp_satad_entry(date=date)
     exit_savepoint = data_provider.from_savepoint_weisman_klemp_gscp_satad_exit(date=date)
 
@@ -89,20 +95,23 @@ def test_saturation_adjustment(
 
     updated_qv = tracer_state.qv.ndarray + saturation_adjustment_granule.qv_tendency.ndarray * dtime
     updated_qc = tracer_state.qc.ndarray + saturation_adjustment_granule.qc_tendency.ndarray * dtime
-    updated_temperature = diagnostic_state.temperature.ndarray + saturation_adjustment_granule.temperature_tendency.ndarray * dtime
+    updated_temperature = (
+        diagnostic_state.temperature.ndarray
+        + saturation_adjustment_granule.temperature_tendency.ndarray * dtime
+    )
 
     assert dallclose(
         updated_qv,
         exit_savepoint.qv().ndarray,
-        atol=1.e-13,
+        atol=1.0e-13,
     )
     assert dallclose(
         updated_qc,
         exit_savepoint.qc().ndarray,
-        atol = 1.e-13,
+        atol=1.0e-13,
     )
     assert dallclose(
         updated_temperature,
         exit_savepoint.temperature().ndarray,
-        atol = 1.e-13,
+        atol=1.0e-13,
     )
