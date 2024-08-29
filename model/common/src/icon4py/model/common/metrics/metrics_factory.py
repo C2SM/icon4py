@@ -53,6 +53,11 @@ exner_ref_mc = metrics_savepoint.exner_ref_mc()
 wgtfac_c = metrics_savepoint.wgtfac_c()
 c_refin_ctrl = grid_savepoint.refin_ctrl(dims.CellDim)
 e_refin_ctrl = grid_savepoint.refin_ctrl(dims.EdgeDim)
+dual_edge_length = grid_savepoint.dual_edge_length()
+tangent_orientation = grid_savepoint.tangent_orientation()
+inv_primal_edge_length = grid_savepoint.inverse_primal_edge_lengths()
+cells_aw_verts = interpolation_savepoint.c_intp().asnumpy()
+cells_aw_verts_field = gtx.as_field((dims.VertexDim, dims.V2CDim), cells_aw_verts)
 
 fields_factory = factory.FieldsFactory()
 
@@ -67,7 +72,11 @@ fields_factory.register_provider(
             "exner_ref_mc": exner_ref_mc,
             "wgtfac_c": wgtfac_c,
             "c_refin_ctrl": c_refin_ctrl,
-            "e_refin_ctrl": e_refin_ctrl
+            "e_refin_ctrl": e_refin_ctrl,
+            "dual_edge_length": dual_edge_length,
+            "tangent_orientation": tangent_orientation,
+            "inv_primal_edge_length": inv_primal_edge_length,
+            "cells_aw_verts_field": cells_aw_verts_field
         }
     )
 )
@@ -85,7 +94,7 @@ height_provider = factory.ProgramFieldProvider(
     fields={"z_mc": "height"},
     deps={"z_ifc": "height_on_interface_levels"},
 )
-
+fields_factory.register_provider(height_provider)
 
 ddqz_z_full_and_inverse_provider = factory.ProgramFieldProvider(
     func=mf.compute_ddqz_z_full_and_inverse,
@@ -101,7 +110,7 @@ ddqz_z_full_and_inverse_provider = factory.ProgramFieldProvider(
     },
     fields={"ddqz_z_full": "ddqz_z_full", "inv_ddqz_z_full": "inv_ddqz_z_full"},
 )
-
+fields_factory.register_provider(ddqz_z_full_and_inverse_provider)
 
 compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
     func=mf.compute_ddqz_z_half,
@@ -120,7 +129,7 @@ compute_ddqz_z_half_provider = factory.ProgramFieldProvider(
     fields={"ddqz_z_half": "ddqz_z_half"},
     params={"nlev": nlev},
 )
-
+fields_factory.register_provider(compute_ddqz_z_half_provider)
 
 # TODO: this should include experiment param as in test_metric_fields
 damping_height = 50000.0 if dt_utils.GLOBAL_EXPERIMENT else 12500.0
@@ -145,6 +154,7 @@ compute_rayleigh_w_provider = factory.ProgramFieldProvider(
         "vct_a_1": vct_a_1,
         "pi_const": math.pi},
 )
+fields_factory.register_provider(compute_rayleigh_w_provider)
 
 compute_coeff_dwdz_provider = factory.ProgramFieldProvider(
     func=mf.compute_coeff_dwdz,
@@ -162,6 +172,7 @@ compute_coeff_dwdz_provider = factory.ProgramFieldProvider(
     fields={"coeff1_dwdz_full": "coeff1_dwdz_full",
             "coeff2_dwdz_full": "coeff2_dwdz_full"},
 )
+fields_factory.register_provider(compute_coeff_dwdz_provider)
 
 compute_d2dexdz2_fac_mc_provider = factory.ProgramFieldProvider(
     func=mf.compute_d2dexdz2_fac_mc,
@@ -189,7 +200,71 @@ compute_d2dexdz2_fac_mc_provider = factory.ProgramFieldProvider(
         "igradp_constant": HorizontalPressureDiscretizationType.TAYLOR_HYDRO,
     }
 )
+fields_factory.register_provider(compute_d2dexdz2_fac_mc_provider)
 
+compute_cell_2_vertex_interpolation_provider = factory.ProgramFieldProvider(
+    func=mf.compute_cell_2_vertex_interpolation(),
+    deps={
+        "cell_in": "height_on_interface_levels",
+        "c_int": "cells_aw_verts_field",
+    },
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1,
+            horizontal.HorizontalMarkerIndex.end(dims.VertexDim) - 1, #TODO: upper bound is lateral boundary as well
+        ),
+        dims.KDim: (0, nlev+1),
+    },
+    fields={"z_ifv": "z_ifv"},
+)
+fields_factory.register_provider(compute_cell_2_vertex_interpolation_provider)
+
+compute_ddxt_z_half_e_provider = factory.ProgramFieldProvider(
+    func=mf.compute_ddxt_z_half_e,
+    deps={
+        "z_ifv": "z_ifv",
+        "inv_primal_edge_length": "inv_primal_edge_length",
+        "tangent_orientation": "inv_primal_edge_length",
+    },
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 2,
+            horizontal.HorizontalMarkerIndex.end(dims.EdgeDim) - 1, #TODO: upper bound is lateral boundary as well
+        ),
+        dims.KDim: (0, nlev+1),
+    },
+    fields={"ddxt_z_half_e": "ddxt_z_half_e"},
+)
+fields_factory.register_provider(compute_ddxt_z_half_e_provider)
+
+
+compute_ddxn_z_full_provider = factory.ProgramFieldProvider(
+    func=mf.compute_ddxn_z_full,
+    deps={
+        "ddxt_z_half_e": "ddxt_z_half_e",
+    },
+    domain={},
+    fields={"ddxn_z_full": "ddxn_z_full"},
+)
+fields_factory.register_provider(compute_ddxn_z_full_provider)
+
+compute_exner_exfac_provider = factory.ProgramFieldProvider(
+    func=mf.compute_exner_exfac,
+    deps={
+        "ddxn_z_full": "ddxn_z_full",
+        "dual_edge_length": "dual_edge_length",
+    },
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
+            horizontal.HorizontalMarkerIndex.end(dims.CellDim),
+        ),
+        dims.KDim: (0, nlev),
+    },
+    fields={"exner_exfac": "exner_exfac"},
+    params={"exner_expol": "exner_expol"}
+)
+fields_factory.register_provider(compute_exner_exfac_provider)
 
 # # TODO: need to do compute_vwind_impl_wgt first
 # compute_vwind_expl_wgt_provider = factory.ProgramFieldProvider(
@@ -222,20 +297,57 @@ compute_wgtfac_e_provider = factory.ProgramFieldProvider(
     },
     fields={"wgtfac_e": "wgtfac_e"},
 )
+fields_factory.register_provider(compute_wgtfac_e_provider)
 
-compute_bdy_halo_c_provider = factory.ProgramFieldProvider(
-    func=mf.compute_hmask_dd3d,
+
+# TODO: lots of dependencies
+# compute_pg_edgeidx_dsl_provider = factory.ProgramFieldProvider(
+#     func=mf.compute_hmask_dd3d,
+#     deps={
+#         "c_refin_ctrl": "c_refin_ctrl",
+#     },
+#     domain={
+#         dims.CellDim: (
+#             horizontal.HorizontalMarkerIndex.local(dims.EdgeDim),
+#             horizontal.HorizontalMarkerIndex.end(dims.EdgeDim),
+#         ),
+#         dims.KDim: (0, nlev),
+#     },
+#     fields={"pg_edgeidx_dsl": "pg_edgeidx_dsl"},
+# )
+
+
+compute_mask_prog_halo_c_provider = factory.ProgramFieldProvider(
+    func=mf.compute_mask_prog_halo_c,
     deps={
         "c_refin_ctrl": "c_refin_ctrl",
     },
     domain={
         dims.CellDim: (
-            horizontal.HorizontalMarkerIndex.local(dims.CellDim),
-            horizontal.HorizontalMarkerIndex.end(dims.CellDim), # TODO: check this bound
+            horizontal.HorizontalMarkerIndex.local(dims.CellDim) - 1,
+            horizontal.HorizontalMarkerIndex.end(dims.CellDim),
+        ),
+    },
+    fields={"mask_prog_halo_c": "mask_prog_halo_c"},
+)
+fields_factory.register_provider(compute_mask_prog_halo_c_provider)
+
+
+compute_bdy_halo_c_provider = factory.ProgramFieldProvider(
+    func=mf.compute_bdy_halo_c,
+    deps={
+        "c_refin_ctrl": "c_refin_ctrl",
+    },
+    domain={
+        dims.CellDim: (
+            horizontal.HorizontalMarkerIndex.local(dims.CellDim) - 1,
+            horizontal.HorizontalMarkerIndex.end(dims.CellDim),
         ),
     },
     fields={"bdy_halo_c": "bdy_halo_c"},
 )
+fields_factory.register_provider(compute_bdy_halo_c_provider)
+
 
 compute_hmask_dd3d_provider = factory.ProgramFieldProvider(
     func=mf.compute_hmask_dd3d,
@@ -254,3 +366,5 @@ compute_hmask_dd3d_provider = factory.ProgramFieldProvider(
         "grf_nudgezone_width": gtx.int32(horizontal._GRF_NUDGEZONE_WIDTH),
     }
 )
+fields_factory.register_provider(compute_hmask_dd3d_provider)
+

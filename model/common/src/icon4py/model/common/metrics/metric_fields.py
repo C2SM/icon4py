@@ -35,7 +35,7 @@ from icon4py.model.common.dimension import (
     C2E2CO,
     E2C,
     C2E2CODim,
-    Koff,
+    Koff, V2CDim, V2C, VertexDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -536,9 +536,9 @@ def compute_ddxt_z_half_e(
 
 @program
 def compute_ddxn_z_full(
-    z_ddxnt_z_half_e: fa.EdgeKField[wpfloat], ddxn_z_full: fa.EdgeKField[wpfloat]
+    ddxnt_z_half_e: fa.EdgeKField[wpfloat], ddxn_z_full: fa.EdgeKField[wpfloat]
 ):
-    average_edge_kdim_level_up(z_ddxnt_z_half_e, out=ddxn_z_full)
+    average_edge_kdim_level_up(ddxnt_z_half_e, out=ddxn_z_full)
 
 
 @field_operator
@@ -1205,3 +1205,46 @@ def _compute_z_ifc_off_koff(
 ) -> Field[[dims.EdgeDim, dims.KDim], wpfloat]:
     n = z_ifc_off(Koff[1])
     return n
+
+# TODO: this field is already in `compute_cell_2_vertex_interpolation` file
+# inquire if it is ok to move here
+@field_operator
+def _compute_cell_2_vertex_interpolation(
+    cell_in: Field[[dims.CellDim, dims.KDim], wpfloat],
+    c_int: Field[[dims.VertexDim, V2CDim], wpfloat],
+) -> Field[[dims.VertexDim, dims.KDim], wpfloat]:
+    vert_out = neighbor_sum(c_int * cell_in(V2C), axis=V2CDim)
+    return vert_out
+
+
+program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
+def compute_cell_2_vertex_interpolation(
+    cell_in: Field[[dims.CellDim, dims.KDim], wpfloat],
+    c_int: Field[[dims.VertexDim, V2CDim], wpfloat],
+    vert_out: Field[[dims.VertexDim, dims.KDim], wpfloat],
+    horizontal_start: int32,
+    horizontal_end: int32,
+    vertical_start: int32,
+    vertical_end: int32,
+):
+    """
+    Compute the interpolation from cell to vertex field.
+
+    Args:
+        cell_in: input cell field
+        c_int: interpolation coefficients
+        vert_out: (output) vertex field
+        horizontal_start: horizontal start index
+        horizontal_end: horizontal end index
+        vertical_start: vertical start index
+        vertical_end: vertical end index
+    """
+    _compute_cell_2_vertex_interpolation(
+        cell_in,
+        c_int,
+        out=vert_out,
+        domain={
+            VertexDim: (horizontal_start, horizontal_end),
+            KDim: (vertical_start, vertical_end),
+        },
+    )

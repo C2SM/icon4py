@@ -347,14 +347,14 @@ def test_compute_ddxt_z_full_e(
         vertical_end=vertical_end,
         offset_provider={"E2V": icon_grid.get_offset_provider("E2V")},
     )
-    ddxt_z_full = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
+    ddxn_z_full = zero_field(icon_grid, dims.EdgeDim, dims.KDim)
     compute_ddxn_z_full.with_backend(backend)(
-        z_ddxnt_z_half_e=ddxt_z_half_e,
-        ddxn_z_full=ddxt_z_full,
+        ddxnt_z_half_e=ddxt_z_half_e,
+        ddxn_z_full=ddxn_z_full,
         offset_provider={"Koff": icon_grid.get_offset_provider("Koff")},
     )
 
-    assert np.allclose(ddxt_z_full.asnumpy(), ddxt_z_full_ref)
+    assert np.allclose(ddxn_z_full.asnumpy(), ddxt_z_full_ref)
 
 
 @pytest.mark.datatest
