@@ -130,14 +130,14 @@ class GHexMultiNodeExchange:
             dim: self._create_domain_descriptor(
                 dim,
             )
-            for dim in dims.global_dimensions.values()
+            for dim in dims.horizontal_dims.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
         self._patterns = {
             dim: self._create_pattern(
                 dim,
             )
-            for dim in dims.global_dimensions.values()
+            for dim in dims.horizontal_dims.values()
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
@@ -189,7 +189,7 @@ class GHexMultiNodeExchange:
         return pattern
 
     def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
-        assert dim in dims.global_dimensions.values()
+        assert dim in dims.horizontal_dims.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]

@@ -183,9 +183,9 @@ def provide_neighbor_table(chain: str, is_global: bool) -> DummyConnectivity:
         skip_values = True
 
     include_center = True if chain.count("O") > 0 else False
-    dims_initials = [key[0] for key in dims.global_dimensions.keys()]
+    dims_initials = [key[0] for key in dims.horizontal_dims.keys()]
     map_to_dim = {
-        d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
+        d: list(dims.horizontal_dims.values())[d_i] for d_i, d in enumerate(dims_initials)
     }
     location_chain: list[Dimension] = [map_to_dim.get(c) for c in chain if c not in ("2", "O")]  # type: ignore[misc] # type specified
 

@@ -133,6 +133,7 @@ class GridFile:
         CELL_GRF = "cell_grf"
         EDGE_GRF = "edge_grf"
         VERTEX_GRF = "vert_grf"
+        CHILD_DOMAINS = "max_chdom"
 
     class GridRefinementName(GridFileName):
         """Names of arrays in grid file defining the grid control, definition of boundaries layers, start and end indices of horizontal zones."""
@@ -301,7 +302,7 @@ class GridManager:
         ]
         refin_ctrl = {
             dim: reader.int_field(control_dims[i])
-            for i, dim in enumerate(dims.global_dimensions.values())
+            for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
         grf_dims = [
@@ -311,7 +312,7 @@ class GridManager:
         ]
         refin_ctrl_max = {
             dim: reader.dimension(grf_dims[i])
-            for i, dim in enumerate(dims.global_dimensions.values())
+            for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
         start_index_dims = [
@@ -323,7 +324,7 @@ class GridManager:
             dim: self._get_index_field(
                 start_index_dims[i], transpose=False, dtype=gtx.int32
             )[_CHILD_DOM]
-            for i, dim in enumerate(dims.global_dimensions.values())
+            for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
         end_index_dims = [
@@ -335,7 +336,7 @@ class GridManager:
             dim: self._get_index_field(
                 end_index_dims[i], transpose=False, apply_offset=False, dtype=gtx.int32
             )[_CHILD_DOM]
-            for i, dim in enumerate(dims.global_dimensions.values())
+            for i, dim in enumerate(dims.horizontal_dims.values())
         }
 
         return start_indices, end_indices, refin_ctrl, refin_ctrl_max
@@ -502,13 +503,13 @@ class GridManager:
             cells_to_rank_mapping = self._decompose(
                 global_connectivities[dims.C2E2CDim], self._run_properties.comm_size
             )
-            halo_constructor = halo.HaloGenerator(
+            construct_decomposition_info = halo.HaloGenerator(
                 self._run_properties,
                 cells_to_rank_mapping,
                 global_connectivities,
                 self._config.num_levels,
             )
-            decomposition_info = halo_constructor()
+            decomposition_info = construct_decomposition_info()
             global_connectivities.update(
                 {
                     dims.E2V: self._get_index_field(GridFile.ConnectivityName.E2V),
@@ -522,12 +523,15 @@ class GridManager:
                 for offset, conn in global_connectivities.keys()
             }
             grid.with_connectivities(local_connectivities)
-            self._add_derived_connectivities(grid)
+            _add_derived_connectivities(grid)
+            # it has a fixed size that is a dimension in the grid file
+            
             # self._add_start_end_indices(grid)
 
-        self._update_size_for_1d_sparse_dims(grid)
+        _update_size_for_1d_sparse_dims(grid)
         return grid
-
+    
+    #TODO (@halungge) is this used?
     def get_size(self, dim: gtx.Dimension):
         if dim == dims.VertexDim:
             return self._grid.config.num_vertices
@@ -546,48 +550,63 @@ class GridManager:
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
+   
+    def _construct_start_indices(self, decomposition_info: decomposition.DecompositionInfo):
+        num_child_domins = self._reader.dimension(GridFile.DimensionName.MAX_CHILD_DOMAINS)
+        grf_cell_dim = self._reader.dimension(GridFile.DimensionName.CELL_GRF)
+        # single node case: just read?
+        #TODO switch from numpy to xp. ...
+        start_index = np.zeros((num_child_domins, grf_cell_dim), dtype=gtx.int32)
+        
+        
+        
+        
+    
 
-    def _add_derived_connectivities(self, grid) -> icon_grid.IconGrid:
-        e2c2v = self._construct_diamond_vertices(
-            grid.connectivities[dims.E2VDim],
-            grid.connectivities[dims.C2VDim],
-            grid.connectivities[dims.E2CDim],
-        )
-        e2c2e = self._construct_diamond_edges(
-            grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
-        )
-        e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
-        c2e2c2e = self._construct_triangle_edges(
-            grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
-        )
-        c2e2c0 = np.column_stack(
-            (
-                np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
-                (grid.connectivities[dims.C2E2CDim]),
-            )
-        )
+###########################
 
-        grid.with_connectivities(
-            {
-                dims.C2E2CODim: c2e2c0,
-                dims.C2E2C2EDim: c2e2c2e,
-                dims.E2C2VDim: e2c2v,
-                dims.E2C2EDim: e2c2e,
-                dims.E2C2EODim: e2c2e0,
-            }
-        )
+def _add_derived_connectivities(grid) -> icon_grid.IconGrid:
+    e2c2v = _construct_diamond_vertices(
+        grid.connectivities[dims.E2VDim],
+        grid.connectivities[dims.C2VDim],
+        grid.connectivities[dims.E2CDim],
+    )
+    e2c2e = _construct_diamond_edges(
+        grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
+    )
+    e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
-        return grid
-
-    def _update_size_for_1d_sparse_dims(self, grid):
-        grid.update_size_connectivities(
-            {
-                dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
-                dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
-                dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
-            }
+    c2e2c2e = _construct_triangle_edges(
+        grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
+    )
+    c2e2c0 = np.column_stack(
+        (
+            np.asarray(range(grid.connectivities[dims.C2E2CDim].shape[0])),
+            (grid.connectivities[dims.C2E2CDim]),
         )
+    )
+
+    grid.with_connectivities(
+        {
+            dims.C2E2CODim: c2e2c0,
+            dims.C2E2C2EDim: c2e2c2e,
+            dims.E2C2VDim: e2c2v,
+            dims.E2C2EDim: e2c2e,
+            dims.E2C2EODim: e2c2e0,
+        }
+    )
+
+    return grid
+
+def _update_size_for_1d_sparse_dims(grid):
+    grid.update_size_connectivities(
+        {
+            dims.ECVDim: grid.size[dims.EdgeDim] * grid.size[dims.E2C2VDim],
+            dims.CEDim: grid.size[dims.CellDim] * grid.size[dims.C2EDim],
+            dims.ECDim: grid.size[dims.EdgeDim] * grid.size[dims.E2CDim],
+        }
+    )
 
     def _initialize_global(self, limited_area, on_gpu):
         num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
@@ -609,111 +628,111 @@ class GridManager:
         grid = icon_grid.IconGrid(uuid).with_config(config).with_global_params(global_params)
         return grid
 
-    @staticmethod
-    def _construct_diamond_vertices(
-        e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray
-    ) -> np.ndarray:
-        r"""
-        Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
 
-        Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
+def _construct_diamond_vertices(
+    e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray
+) -> np.ndarray:
+    r"""
+    Construct the connectivity table for the vertices of a diamond in the ICON triangular grid.
 
-                     v0
-                    / \
-                  /    \
-                 /      \
-                /        \
-               v1---e0---v3
-                \       /
-                 \     /
-                  \   /
-                   \ /
-                    v2
-        For example for this diamond: e0 -> (v0, v1, v2, v3)
-        Ordering is the same as ICON uses.
+    Starting from the e2v and c2v connectivity the connectivity table for e2c2v is built up.
 
-        Args:
-            e2v: np.ndarray containing the connectivity table for edge-to-vertex
-            c2v: np.ndarray containing the connectivity table for cell-to-vertex
-            e2c: np.ndarray containing the connectivity table for edge-to-cell
+                 v0
+                / \
+              /    \
+             /      \
+            /        \
+           v1---e0---v3
+            \       /
+             \     /
+              \   /
+               \ /
+                v2
+    For example for this diamond: e0 -> (v0, v1, v2, v3)
+    Ordering is the same as ICON uses.
 
-        Returns: np.ndarray containing the connectivity table for edge-to-vertex on the diamond
-        """
-        dummy_c2v = _patch_with_dummy_lastline(c2v)
-        expanded = dummy_c2v[e2c[:, :], :]
-        sh = expanded.shape
-        flat = expanded.reshape(sh[0], sh[1] * sh[2])
-        far_indices = np.zeros_like(e2v)
-        # TODO (magdalena) vectorize speed this up?
-        for i in range(sh[0]):
-            far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
-        return np.hstack((e2v, far_indices))
+    Args:
+        e2v: np.ndarray containing the connectivity table for edge-to-vertex
+        c2v: np.ndarray containing the connectivity table for cell-to-vertex
+        e2c: np.ndarray containing the connectivity table for edge-to-cell
 
-    @staticmethod
-    def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray) -> np.ndarray:
-        r"""
-        Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
-
-        Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
-
-            / \
-          /    \
-         e2    e1
-        /    c0  \
-        ----e0----
-        \   c1   /
-         e3    e4
-          \   /
-           \ /
-
-        For example, for this diamond for e0 -> (e1, e2, e3, e4)
+    Returns: np.ndarray containing the connectivity table for edge-to-vertex on the diamond
+    """
+    dummy_c2v = _patch_with_dummy_lastline(c2v)
+    expanded = dummy_c2v[e2c[:, :], :]
+    sh = expanded.shape
+    flat = expanded.reshape(sh[0], sh[1] * sh[2])
+    far_indices = np.zeros_like(e2v)
+    # TODO (magdalena) vectorize speed this up?
+    for i in range(sh[0]):
+        far_indices[i, :] = flat[i, ~np.isin(flat[i, :], e2v[i, :])][:2]
+    return np.hstack((e2v, far_indices))
 
 
-        Args:
-            e2c: np.ndarray containing the connectivity table for edge-to-cell
-            c2e: np.ndarray containing the connectivity table for cell-to-edge
+def _construct_diamond_edges(e2c: np.ndarray, c2e: np.ndarray) -> np.ndarray:
+    r"""
+    Construct the connectivity table for the edges of a diamond in the ICON triangular grid.
 
-        Returns: np.ndarray containing the connectivity table for central edge-to- boundary edges
-                 on the diamond
-        """
-        dummy_c2e = _patch_with_dummy_lastline(c2e)
-        expanded = dummy_c2e[e2c[:, :], :]
-        sh = expanded.shape
-        flattened = expanded.reshape(sh[0], sh[1] * sh[2])
+    Starting from the e2c and c2e connectivity the connectivity table for e2c2e is built up.
 
-        diamond_sides = 4
-        e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
-        for i in range(sh[0]):
-            var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
-            e2c2e[i, : var.shape[0]] = var
-        return e2c2e
+        / \
+      /    \
+     e2    e1
+    /    c0  \
+    ----e0----
+    \   c1   /
+     e3    e4
+      \   /
+       \ /
 
-    def _construct_triangle_edges(self, c2e2c, c2e):
-        """Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
+    For example, for this diamond for e0 -> (e1, e2, e3, e4)
 
-           ____e3________e7____
-           \   c1  / \   c3  /
-            \     /   \     /
-            e4   e2    e1  e8
-              \ /   c0  \ /
-                ----e0----
-                \   c2  /
-                 e5    e6
-                  \   /
-                   \ /
 
-        For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
+    Args:
+        e2c: np.ndarray containing the connectivity table for edge-to-cell
+        c2e: np.ndarray containing the connectivity table for cell-to-edge
 
-        Args:
-            c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
-            c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
-        Returns:
-            np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
-                edges of its cell neighbors
-        """
-        dummy_c2e = _patch_with_dummy_lastline(c2e)
-        table = np.reshape(dummy_c2e[c2e2c[:, :], :], (c2e2c.shape[0], 9))
-        return table
+    Returns: np.ndarray containing the connectivity table for central edge-to- boundary edges
+             on the diamond
+    """
+    dummy_c2e = _patch_with_dummy_lastline(c2e)
+    expanded = dummy_c2e[e2c[:, :], :]
+    sh = expanded.shape
+    flattened = expanded.reshape(sh[0], sh[1] * sh[2])
+
+    diamond_sides = 4
+    e2c2e = GridFile.INVALID_INDEX * np.ones((sh[0], diamond_sides), dtype=gtx.int32)
+    for i in range(sh[0]):
+        var = flattened[i, (~np.isin(flattened[i, :], np.asarray([i, GridFile.INVALID_INDEX])))]
+        e2c2e[i, : var.shape[0]] = var
+    return e2c2e
+
+def _construct_triangle_edges(c2e2c, c2e):
+    r"""Compute the connectivity from a central cell to all neighboring edges of its cell neighbors.
+
+       ____e3________e7____
+       \   c1  / \   c3  /
+        \     /   \     /
+        e4   e2    e1  e8
+          \ /   c0  \ /
+            ----e0----
+            \   c2  /
+             e5    e6
+              \   /
+               \ /
+
+    For example, for the triangular shape above, c0 -> (e3, e4, e2, e0, e5, e6, e7, e1, e8).
+
+    Args:
+        c2e2c: shape (n_cell, 3) connectivity table from a central cell to its cell neighbors
+        c2e: shape (n_cell, 3), connectivity table from a cell to its neighboring edges
+    Returns:
+        np.ndarray: shape(n_cells, 9) connectivity table from a central cell to all neighboring
+            edges of its cell neighbors
+    """
+    dummy_c2e = _patch_with_dummy_lastline(c2e)
+    table = np.reshape(dummy_c2e[c2e2c[:, :], :], (c2e2c.shape[0], 9))
+    return table
 
 
 def _patch_with_dummy_lastline(ar):
@@ -753,6 +772,7 @@ def construct_local_connectivity(
     Args:
         field_offset: FieldOffset for which we want to construct the local connectivity table
         decomposition_info: DecompositionInfo for the current rank.
+        connectivity: 
 
     Returns:
         connectivity are for the same FieldOffset but mapping from local target dimension indices to local source dimension indices.
@@ -781,3 +801,5 @@ def construct_local_connectivity(
         local_connectivity[i, valid_neighbor_mask] = indices
     # log.debug(f"rank {self._props.rank} has local connectivity f: {local_connectivity}")
     return local_connectivity
+
+
