@@ -21,6 +21,9 @@ from icon4py.model.common.test_utils.datatest_utils import (
 from icon4py.model.common.test_utils.helpers import dallclose
 
 
+NUM_LEVELS = 65
+
+
 @pytest.mark.parametrize(
     "max_h,damping_height,delta",
     [(60000, 34000, 612), (12000, 10000, 100), (109050, 45000, 123)],
@@ -29,7 +32,7 @@ def test_damping_layer_calculation(max_h, damping_height, delta, flat_height):
     vct_a = np.arange(0, max_h, delta)
     vct_a_field = gtx.as_field((dims.KDim,), data=vct_a[::-1])
     vertical_config = v_grid.VerticalGridConfig(
-        num_levels=65,
+        num_levels=NUM_LEVELS,
         flat_height=flat_height,
         rayleigh_damping_height=damping_height,
     )
@@ -81,8 +84,8 @@ def test_grid_size(grid_savepoint):
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp,
     )
 
-    assert 65 == vertical_grid.size(dims.KDim)
-    assert 66 == vertical_grid.size(dims.KHalfDim)
+    assert NUM_LEVELS == vertical_grid.size(dims.KDim)
+    assert NUM_LEVELS + 1 == vertical_grid.size(dims.KHalfDim)
 
 
 @pytest.mark.parametrize(

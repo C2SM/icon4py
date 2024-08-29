@@ -157,6 +157,23 @@ class VerticalGrid:
             icon_var_name="vct_a",
         )
 
+    def index(self, domain: Domain) -> gtx.int32:
+        match domain.marker:
+            case Zone.TOP:
+                return gtx.int32(0)
+            case Zone.BOTTOM:
+                return (
+                    gtx.int32(self.config.num_levels)
+                    if domain.dim == dims.KDim
+                    else gtx.int32(self.config.num_levels + 1)
+                )
+            case Zone.MOIST:
+                return self._start_index_for_moist_physics
+            case Zone.FLAT:
+                return self._end_index_of_flat_layer
+            case Zone.DAMPING:
+                return self._end_index_of_damping_layer
+
     @property
     def interface_physical_height(self) -> fa.KField[float]:
         return self._vct_a
@@ -187,28 +204,13 @@ class VerticalGrid:
 
     def size(self, dim: dims.VerticalDim) -> int:
         assert dim.kind == gtx.DimensionKind.VERTICAL, "Only vertical dimensions are supported"
-        if dim == dims.KDim:
-            return self.config.num_levels
-        if dim == dims.KHalfDim:
-            return self.config.num_levels + 1
-        else:
-            raise ValueError(f"Unkown dimension {dim}.")
-
-    def index(self, domain: Domain) -> gtx.int32:
-        if domain.marker == Zone.TOP:
-            return gtx.int32(0)
-        if domain.marker == Zone.BOTTOM:
-            return (
-                gtx.int32(self.config.num_levels)
-                if domain.dim == dims.KDim
-                else gtx.int32(self.config.num_levels + 1)
-            )
-        if domain.marker == Zone.MOIST:
-            return self._start_index_for_moist_physics
-        if domain.marker == Zone.FLAT:
-            return self._end_index_of_flat_layer
-        if domain.marker == Zone.DAMPING:
-            return self._end_index_of_damping_layer
+        match dim:
+            case dims.KDim:
+                return self.config.num_levels
+            case dims.KHalfDim:
+                return self.config.num_levels + 1
+            case _:
+                raise ValueError(f"Unkown dimension {dim}.")
 
     @classmethod
     def _determine_start_level_of_moist_physics(
