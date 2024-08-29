@@ -23,24 +23,24 @@ def test_granule_parsing(diffusion_granule, diffusion_granule_deps):
     assert list(subroutines["diffusion_init"]) == ["in"]
     assert len(subroutines["diffusion_init"]["in"]) == 107
     assert subroutines["diffusion_init"]["in"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=190, last_declaration_ln=280, end_subroutine_ln=401
+        first_declaration_ln=174, last_declaration_ln=264, end_subroutine_ln=385
     )
 
     assert list(subroutines["diffusion_run"]) == ["in", "inout", "out"]
     assert len(subroutines["diffusion_run"]["in"]) == 5
     assert subroutines["diffusion_run"]["in"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=417, last_declaration_ln=492, end_subroutine_ln=1965
+        first_declaration_ln=401, last_declaration_ln=476, end_subroutine_ln=1949
     )
 
     assert len(subroutines["diffusion_run"]["inout"]) == 8
 
     assert len(subroutines["diffusion_run"]["out"]) == 5
     assert subroutines["diffusion_run"]["out"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=417, last_declaration_ln=492, end_subroutine_ln=1965
+        first_declaration_ln=401, last_declaration_ln=476, end_subroutine_ln=1949
     )
 
     assert isinstance(subroutines, dict)
-    assert parsed_granule.last_import_ln == 60
+    assert parsed_granule.last_import_ln == 44
 
 
 def test_granule_parsing_missing_derived_typedef(diffusion_granule, samples_path):
@@ -62,8 +62,8 @@ def test_multiline_declaration_parsing(samples_path):
     subroutines = parsed_granule.subroutines
     assert list(subroutines) == ["graupel_init", "graupel_run"]
     assert subroutines["graupel_init"]["in"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=121, last_declaration_ln=145, end_subroutine_ln=231
+        first_declaration_ln=129, last_declaration_ln=153, end_subroutine_ln=239
     )
     assert subroutines["graupel_run"]["in"]["codegen_ctx"] == CodegenContext(
-        first_declaration_ln=254, last_declaration_ln=301, end_subroutine_ln=419
+        first_declaration_ln=262, last_declaration_ln=309, end_subroutine_ln=427
     )
