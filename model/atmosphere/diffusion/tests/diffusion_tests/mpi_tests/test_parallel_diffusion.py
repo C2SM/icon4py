@@ -8,7 +8,7 @@
 
 import pytest
 
-import icon4py.model.atmosphere.diffusion.diffusion as diffu
+from icon4py.model.atmosphere.diffusion import diffusion as diffusion_
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
 from icon4py.model.common.grid import vertical as v_grid
@@ -68,14 +68,14 @@ def test_parallel_diffusion(
         rayleigh_damping_height=damping_height,
     )
     config = utils.construct_config(experiment, ndyn_substeps=ndyn_substeps)
-    diffusion_params = diffu.DiffusionParams(config)
+    diffusion_params = diffusion_.DiffusionParams(config)
     dtime = diffusion_savepoint_init.get_metadata("dtime").get("dtime")
     print(
         f"rank={processor_props.rank}/{processor_props.comm_size}:  setup: using {processor_props.comm_name} with {processor_props.comm_size} nodes"
     )
     exchange = definitions.create_exchange(processor_props, decomposition_info)
 
-    diffusion = diffu.Diffusion(exchange)
+    diffusion = diffusion_.Diffusion(exchange)
 
     diffusion.init(
         grid=icon_grid,
