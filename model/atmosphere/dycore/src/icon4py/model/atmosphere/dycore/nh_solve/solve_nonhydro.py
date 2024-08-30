@@ -420,7 +420,7 @@ class SolveNonhydro:
         self.params: Optional[NonHydrostaticParams] = None
         self.metric_state_nonhydro: Optional[solve_nh_states.MetricStateNonHydro] = None
         self.interpolation_state: Optional[solve_nh_states.InterpolationState] = None
-        self.vertical_params: Optional[v_grid.VerticalGridParams] = None
+        self.vertical_params: Optional[v_grid.VerticalGrid] = None
         self.edge_geometry: Optional[geometry.EdgeParams] = None
         self.cell_params: Optional[geometry.CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
@@ -440,7 +440,7 @@ class SolveNonhydro:
         params: NonHydrostaticParams,
         metric_state_nonhydro: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
-        vertical_params: v_grid.VerticalGridParams,
+        vertical_params: v_grid.VerticalGrid,
         edge_geometry: geometry.EdgeParams,
         cell_geometry: geometry.CellParams,
         owner_mask: fa.CellField[bool],
@@ -477,7 +477,7 @@ class SolveNonhydro:
             self.jk_start = 0
 
         smagorinsky.en_smag_fac_for_zero_nshift(
-            self.vertical_params.inteface_physical_height,
+            self.vertical_params.interface_physical_height,
             self.config.divdamp_fac,
             self.config.divdamp_fac2,
             self.config.divdamp_fac3,

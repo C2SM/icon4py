@@ -92,9 +92,9 @@ def test_smagorinski_factor_diffusion_type_5(experiment):
     assert np.all(params.smagorinski_factor >= np.zeros(len(params.smagorinski_factor)))
 
 
-def create_vertical_params(vertical_config, grid_savepoint):
-    return v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+def vertical_grid(vertical_config: v_grid.VerticalGridConfig, grid_savepoint: sb.IconGridSavepoint):
+    return v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
@@ -126,7 +126,7 @@ def test_diffusion_init(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = vertical_grid(vertical_config, grid_savepoint)
 
     meta = diffusion_savepoint_init.get_metadata("linit", "date")
 
@@ -143,7 +143,7 @@ def test_diffusion_init(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_params,
@@ -251,7 +251,7 @@ def test_verify_diffusion_init_against_savepoint(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = vertical_grid(vertical_config, grid_savepoint)
     interpolation_state = construct_interpolation_state(interpolation_savepoint)
     metric_state = construct_metric_state(metrics_savepoint)
     edge_params = grid_savepoint.construct_edge_geometry()
@@ -309,7 +309,7 @@ def test_run_diffusion_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = vertical_grid(vertical_config, grid_savepoint)
     config = construct_config(experiment, ndyn_substeps)
     additional_parameters = diffusion.DiffusionParams(config)
 
@@ -318,7 +318,7 @@ def test_run_diffusion_single_step(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,
@@ -366,7 +366,7 @@ def test_run_diffusion_initial_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = create_vertical_params(vertical_config, grid_savepoint)
+    vertical_params = vertical_grid(vertical_config, grid_savepoint)
     config = construct_config(experiment, ndyn_substeps=2)
     additional_parameters = diffusion.DiffusionParams(config)
 
@@ -375,7 +375,7 @@ def test_run_diffusion_initial_step(
         grid=icon_grid,
         config=config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_geometry,

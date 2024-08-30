@@ -19,7 +19,7 @@ from icon4py.model.common.decomposition import (
     definitions as decomposition,
     mpi_decomposition as mpi_decomp,
 )
-from icon4py.model.common.grid import icon as icon_grid, vertical as v_grid
+from icon4py.model.common.grid import geometry, icon as icon_grid, vertical as v_grid
 from icon4py.model.common.states import (
     diagnostic_state as diagnostics,
     prognostic_state as prognostics,
@@ -275,9 +275,9 @@ def read_geometry_fields(
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
 ) -> tuple[
-    icon4py.model.common.grid.geometry.EdgeParams,
-    icon4py.model.common.grid.geometry.CellParams,
-    v_grid.VerticalGridParams,
+    geometry.EdgeParams,
+    geometry.CellParams,
+    v_grid.VerticalGrid,
     fa.CellField[bool],
 ]:
     """
@@ -300,8 +300,8 @@ def read_geometry_fields(
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
-        vertical_geometry = v_grid.VerticalGridParams(
-            vertical_config=vertical_grid_config,
+        vertical_geometry = v_grid.VerticalGrid(
+            config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
             _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
