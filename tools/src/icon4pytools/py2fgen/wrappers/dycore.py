@@ -29,7 +29,6 @@ Fortran granule interfaces:
 - passing of scalar types or fields of simple types
 """
 import cProfile
-import os
 import pstats
 
 from gt4py.next.common import Field
@@ -46,28 +45,35 @@ from icon4py.model.atmosphere.dycore.state_utils.states import (
     PrepAdvection,
 )
 from icon4py.model.common.dimension import (
+    C2E2C2EDim,
+    C2E2CDim,
     C2E2CODim,
     C2EDim,
+    C2VDim,
     CEDim,
     CellDim,
+    CellIndexDim,
     E2C2EDim,
     E2C2EODim,
     E2C2VDim,
     E2CDim,
+    E2VDim,
     ECDim,
     ECVDim,
     EdgeDim,
+    EdgeIndexDim,
     KDim,
     KHalfDim,
     V2CDim,
     V2EDim,
     VertexDim,
+    VertexIndexDim,
 )
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
+from icon4py.model.common.grid.icon import GlobalGridParams
 from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
-from icon4py.model.common.settings import device
+from icon4py.model.common import settings
 from icon4py.model.common.states.prognostic_state import PrognosticState
-from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     flatten_first_two_dims,
@@ -75,13 +81,16 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 from icon4pytools.common.logger import setup_logger
-from icon4pytools.py2fgen.utils import get_grid_filename, get_icon_grid_loc
+from icon4pytools.py2fgen.wrappers.common import construct_icon_grid
 
 
 log = setup_logger(__name__)
 
 # global diffusion object
-solve_nonhydro = SolveNonhydro()
+solve_nonhydro: SolveNonhydro = SolveNonhydro()
+
+# global grid object
+icon_grid = None
 
 # global profiler object
 profiler = cProfile.Profile()
@@ -97,11 +106,66 @@ def profile_disable():
     stats.dump_stats(f"{__name__}.profile")
 
 
+def grid_init(
+    cell_starts: Field[[CellIndexDim], int32],
+    cell_ends: Field[[CellIndexDim], int32],
+    vertex_starts: Field[[VertexIndexDim], int32],
+    vertex_ends: Field[[VertexIndexDim], int32],
+    edge_starts: Field[[EdgeIndexDim], int32],
+    edge_ends: Field[[EdgeIndexDim], int32],
+    c2e: Field[[CellDim, C2EDim], int32],
+    e2c: Field[[EdgeDim, E2CDim], int32],
+    c2e2c: Field[[CellDim, C2E2CDim], int32],
+    #c2e2c2e: Field[[CellDim, C2E2C2EDim], int32],
+    e2c2e: Field[[EdgeDim, E2C2EDim], int32],
+    e2v: Field[[EdgeDim, E2VDim], int32],
+    v2e: Field[[VertexDim, V2EDim], int32],
+    v2c: Field[[VertexDim, V2CDim], int32],
+    e2c2v: Field[[EdgeDim, E2C2VDim], int32],
+    c2v: Field[[CellDim, C2VDim], int32],
+    global_root: int32,
+    global_level: int32,
+    num_vertices: int32,
+    num_cells: int32,
+    num_edges: int32,
+    vertical_size: int32,
+    limited_area: bool,
+):
+    global icon_grid
+
+    global_grid_params = GlobalGridParams(level=global_level, root=global_root)
+
+    icon_grid = construct_icon_grid(
+        grid_id="icon_grid",
+        global_grid_params=global_grid_params,
+        num_vertices=num_vertices,
+        num_cells=num_cells,
+        num_edges=num_edges,
+        vertical_size=vertical_size,
+        limited_area=limited_area,
+        on_gpu=True if settings.device == "GPU" else False,
+        cell_starts=cell_starts,
+        cell_ends=cell_ends,
+        vertex_starts=vertex_starts,
+        vertex_ends=vertex_ends,
+        edge_starts=edge_starts,
+        edge_ends=edge_ends,
+        c2e=c2e,
+        e2c=e2c,
+        c2e2c=c2e2c,
+        #c2e2c2e=c2e2c2e,
+        e2c2e=e2c2e,
+        e2v=e2v,
+        v2e=v2e,
+        v2c=v2c,
+        e2c2v=e2c2v,
+        c2v=c2v,
+    )
+
+
 def solve_nh_init(
     vct_a: Field[[KDim], float64],
-    nflat_gradp: int32,
-    num_levels: int32,
-    mean_cell_area: float64,
+    vct_b: Field[[KDim], float64],
     cell_areas: Field[[CellDim], float64],
     primal_normal_cell_x: Field[[EdgeDim, E2CDim], float64],
     primal_normal_cell_y: Field[[EdgeDim, E2CDim], float64],
@@ -110,8 +174,8 @@ def solve_nh_init(
     edge_areas: Field[[EdgeDim], float64],
     tangent_orientation: Field[[EdgeDim], float64],
     inverse_primal_edge_lengths: Field[[EdgeDim], float64],
-    inv_dual_edge_length: Field[[EdgeDim], float64],
-    inv_vert_vert_length: Field[[EdgeDim], float64],
+    inverse_dual_edge_lengths: Field[[EdgeDim], float64],
+    inverse_vertex_vertex_lengths: Field[[EdgeDim], float64],
     primal_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
     primal_normal_vert_y: Field[[EdgeDim, E2C2VDim], float64],
     dual_normal_vert_x: Field[[EdgeDim, E2C2VDim], float64],
@@ -139,7 +203,7 @@ def solve_nh_init(
     exner_exfac: Field[[CellDim, KDim], float64],
     exner_ref_mc: Field[[CellDim, KDim], float64],
     wgtfac_c: Field[[CellDim, KDim], float64],
-    wgtfacq_c_dsl: Field[[CellDim, KDim], float64],
+    wgtfacq_c: Field[[CellDim, KDim], float64],
     inv_ddqz_z_full: Field[[CellDim, KDim], float64],
     rho_ref_mc: Field[[CellDim, KDim], float64],
     theta_ref_mc: Field[[CellDim, KDim], float64],
@@ -167,6 +231,12 @@ def solve_nh_init(
     coeff2_dwdz: Field[[CellDim, KDim], float64],
     coeff_gradekin: Field[[EdgeDim, E2CDim], float64],
     c_owner_mask: Field[[CellDim], bool],
+    cell_center_lat: Field[[CellDim], float64],
+    cell_center_lon: Field[[CellDim], float64],
+    edge_center_lat: Field[[EdgeDim], float64],
+    edge_center_lon: Field[[EdgeDim], float64],
+    primal_normal_x: Field[[EdgeDim], float64],
+    primal_normal_y: Field[[EdgeDim], float64],
     rayleigh_damping_height: float64,
     itime_scheme: int32,
     iadv_rhotheta: int32,
@@ -174,7 +244,7 @@ def solve_nh_init(
     ndyn_substeps: float64,
     rayleigh_type: int32,
     rayleigh_coeff: float64,
-    divdamp_order: int32,  # the ICON default is 4,
+    divdamp_order: int32,
     is_iau_active: bool,
     iau_wgt_dyn: float64,
     divdamp_type: int32,
@@ -192,56 +262,46 @@ def solve_nh_init(
     divdamp_z2: float64,
     divdamp_z3: float64,
     divdamp_z4: float64,
-    htop_moist_proc: float64,
-    limited_area: bool,
-    flat_height: float64,
+    lowest_layer_thickness: float64,
+    model_top_height: float64,
+    stretch_factor: float64,
+    nflat_gradp: int32,
+    num_levels: int32,
 ):
-    # ICON grid
-    on_gpu = True if device.name == "GPU" else False
-
-    grid_file_path = os.path.join(get_icon_grid_loc(), get_grid_filename())
-
-    icon_grid = load_grid_from_file(
-        grid_file=grid_file_path,
-        num_levels=num_levels,
-        on_gpu=on_gpu,
-        limited_area=True if limited_area else False,
-    )
-
     config = NonHydrostaticConfig(
-        itime_scheme,
-        iadv_rhotheta,
-        igradp_method,
-        ndyn_substeps,
-        rayleigh_type,
-        rayleigh_coeff,
-        divdamp_order,
-        is_iau_active,
-        iau_wgt_dyn,
-        divdamp_type,
-        divdamp_trans_start,
-        divdamp_trans_end,
-        l_vert_nested,
-        rhotheta_offctr,
-        veladv_offctr,
-        max_nudging_coeff,
-        divdamp_fac,
-        divdamp_fac2,
-        divdamp_fac3,
-        divdamp_fac4,
-        divdamp_z,
-        divdamp_z2,
-        divdamp_z3,
-        divdamp_z4,
+        itime_scheme=itime_scheme,
+        iadv_rhotheta=iadv_rhotheta,
+        igradp_method=igradp_method,
+        ndyn_substeps_var=ndyn_substeps,
+        rayleigh_type=rayleigh_type,
+        rayleigh_coeff=rayleigh_coeff,
+        divdamp_order=divdamp_order,
+        is_iau_active=is_iau_active,
+        iau_wgt_dyn=iau_wgt_dyn,
+        divdamp_type=divdamp_type,
+        divdamp_trans_start=divdamp_trans_start,
+        divdamp_trans_end=divdamp_trans_end,
+        l_vert_nested=l_vert_nested,
+        rhotheta_offctr=rhotheta_offctr,
+        veladv_offctr=veladv_offctr,
+        max_nudging_coeff=max_nudging_coeff,
+        divdamp_fac=divdamp_fac,
+        divdamp_fac2=divdamp_fac2,
+        divdamp_fac3=divdamp_fac3,
+        divdamp_fac4=divdamp_fac4,
+        divdamp_z=divdamp_z,
+        divdamp_z2=divdamp_z2,
+        divdamp_z3=divdamp_z3,
+        divdamp_z4=divdamp_z4,
     )
     nonhydro_params = NonHydrostaticParams(config)
 
-    # Edge geometry
+    # edge geometry
     edge_geometry = EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
-        inverse_dual_edge_lengths=inv_dual_edge_length,
-        inverse_vertex_vertex_lengths=inv_vert_vert_length,
+        inverse_dual_edge_lengths=inverse_dual_edge_lengths,
+        inverse_vertex_vertex_lengths=inverse_vertex_vertex_lengths,
         primal_normal_vert_x=as_1D_sparse_field(primal_normal_vert_x, ECVDim),
         primal_normal_vert_y=as_1D_sparse_field(primal_normal_vert_y, ECVDim),
         dual_normal_vert_x=as_1D_sparse_field(dual_normal_vert_x, ECVDim),
@@ -252,11 +312,19 @@ def solve_nh_init(
         dual_normal_cell_y=as_1D_sparse_field(dual_normal_cell_y, ECDim),
         edge_areas=edge_areas,
         f_e=f_e,
+        edge_center_lat=edge_center_lat,
+        edge_center_lon=edge_center_lon,
+        primal_normal_x=primal_normal_x,
+        primal_normal_y=primal_normal_y,
     )
 
-    # cell geometry
-    cell_geometry = CellParams(
-        area=cell_areas, mean_cell_area=mean_cell_area, length_rescale_factor=1.0
+    # datatest config CellParams
+    cell_geometry = CellParams.from_global_num_cells(
+        cell_center_lat=cell_center_lat,
+        cell_center_lon=cell_center_lon,
+        area=cell_areas,
+        global_num_cells=icon_grid.global_properties.num_cells,
+        length_rescale_factor=1.0,
     )
 
     interpolation_state = InterpolationState(
@@ -265,8 +333,8 @@ def solve_nh_init(
         e_flx_avg=e_flx_avg,
         geofac_grdiv=geofac_grdiv,
         geofac_rot=geofac_rot,
-        pos_on_tplane_e_1=as_1D_sparse_field(pos_on_tplane_e_1, ECDim),
-        pos_on_tplane_e_2=as_1D_sparse_field(pos_on_tplane_e_2, ECDim),
+        pos_on_tplane_e_1=as_1D_sparse_field(pos_on_tplane_e_1[:, 0:2], ECDim),
+        pos_on_tplane_e_2=as_1D_sparse_field(pos_on_tplane_e_2[:, 0:2], ECDim),
         rbf_vec_coeff_e=rbf_vec_coeff_e,
         e_bln_c_s=as_1D_sparse_field(e_bln_c_s, CEDim),
         rbf_coeff_1=rbf_coeff_1,
@@ -285,7 +353,7 @@ def solve_nh_init(
         exner_exfac=exner_exfac,
         exner_ref_mc=exner_ref_mc,
         wgtfac_c=wgtfac_c,
-        wgtfacq_c=wgtfacq_c_dsl,
+        wgtfacq_c=wgtfacq_c,
         inv_ddqz_z_full=inv_ddqz_z_full,
         rho_ref_mc=rho_ref_mc,
         theta_ref_mc=theta_ref_mc,
@@ -305,7 +373,7 @@ def solve_nh_init(
         ddqz_z_full_e=ddqz_z_full_e,
         ddxt_z_full=ddxt_z_full,
         wgtfac_e=wgtfac_e,
-        wgtfacq_e=wgtfacq_e,  # todo: wgtfacq_e_dsl(num_k_lev),
+        wgtfacq_e=wgtfacq_e,
         vwind_impl_wgt=vwind_impl_wgt,
         hmask_dd3d=hmask_dd3d,
         scalfac_dd3d=scalfac_dd3d,
@@ -314,19 +382,20 @@ def solve_nh_init(
         coeff_gradekin=as_1D_sparse_field(coeff_gradekin, ECDim),
     )
 
-    # vertical grid config
+    # datatest config
     vertical_config = VerticalGridConfig(
         num_levels=num_levels,
+        lowest_layer_thickness=lowest_layer_thickness,
+        model_top_height=model_top_height,
+        stretch_factor=stretch_factor,
         rayleigh_damping_height=rayleigh_damping_height,
-        htop_moist_proc=htop_moist_proc,
-        flat_height=flat_height,
     )
 
-    # vertical parameters
+    # datatest config, vertical parameters
     vertical_params = VerticalGridParams(
         vertical_config=vertical_config,
         vct_a=vct_a,
-        vct_b=None,
+        vct_b=vct_b,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
     )
 
@@ -383,18 +452,17 @@ def solve_nh_run(
     divdamp_fac_o2: float64,
     ndyn_substeps: float64,
     idyn_timestep: int32,
+    nnew: int32,
+    nnow: int32
 ):
-    log.info(f"Using Device = {device}")
+    log.info(f"Using Device = {settings.device}")
 
     prep_adv = PrepAdvection(
         vn_traj=vn_traj,
         mass_flx_me=mass_flx_me,
         mass_flx_ic=mass_flx_ic,
-        vol_flx_ic=zero_field(solve_nonhydro.grid, CellDim, KDim, dtype=float),
+        vol_flx_ic=zero_field(icon_grid, CellDim, KDim, dtype=float),
     )
-
-    nnow = 0
-    nnew = 1
 
     diagnostic_state_nh = DiagnosticStateNonHydro(
         theta_v_ic=theta_v_ic,
@@ -435,6 +503,10 @@ def solve_nh_run(
         exner=exner_new,
     )
     prognostic_state_ls = [prognostic_state_nnow, prognostic_state_nnew]
+
+    # adjust for Fortran indexes
+    nnow = nnow - 1
+    nnew = nnew - 1
 
     solve_nonhydro.time_step(
         diagnostic_state_nh=diagnostic_state_nh,

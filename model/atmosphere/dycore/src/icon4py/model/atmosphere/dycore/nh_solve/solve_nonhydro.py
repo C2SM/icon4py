@@ -678,6 +678,10 @@ class SolveNonhydro:
         log.info(
             f"running predictor step: dtime = {dtime}, init = {l_init}, recompute = {l_recompute} "
         )
+
+        log.debug(f"NNOW {nnow}")
+        log.debug(f"NNEW {nnew}")
+
         if l_init or l_recompute:
             if self.config.itime_scheme == TimeSteppingScheme.MOST_EFFICIENT and not l_init:
                 lvn_only = True  # Recompute only vn tendency
