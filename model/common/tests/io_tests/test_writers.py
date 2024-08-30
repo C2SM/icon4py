@@ -50,7 +50,7 @@ def initialized_writer(
     num_levels = grid.config.vertical_size
     heights = np.linspace(start=12000.0, stop=0.0, num=num_levels + 1)
     vertical_config = v_grid.VerticalGridConfig(num_levels=num_levels)
-    vertical_params = v_grid.VerticalGridParams(
+    vertical_params = v_grid.VerticalGrid(
         vertical_config,
         vct_a=gtx.as_field((dims.KDim,), heights),
         vct_b=None,

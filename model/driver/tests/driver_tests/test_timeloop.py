@@ -157,8 +157,8 @@ def test_run_timeloop_single_step(
         stretch_factor=stretch_factor,
         rayleigh_damping_height=damping_height,
     )
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),
@@ -170,7 +170,7 @@ def test_run_timeloop_single_step(
         grid=icon_grid,
         config=diffusion_config,
         params=additional_parameters,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=diffusion_metric_state,
         interpolation_state=diffusion_interpolation_state,
         edge_params=edge_geometry,
