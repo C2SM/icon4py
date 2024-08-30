@@ -1,38 +1,34 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
-from icon4py.model.common.dimension import C2E, C2EDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
+from icon4py.model.common.dimension import C2E, C2EDim
 
 
 @field_operator
 def _upwind_hflux_miura_cycl_stencil_02(
     nsub: int32,
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-    z_rhofluxdiv_c: Field[[CellDim, KDim], float],
-    z_tracer_mflx: Field[[EdgeDim, KDim], float],
-    z_rho_now: Field[[CellDim, KDim], float],
-    z_tracer_now: Field[[CellDim, KDim], float],
+    p_mass_flx_e: fa.EdgeKField[float],
+    geofac_div: Field[[dims.CellDim, C2EDim], float],
+    z_rhofluxdiv_c: fa.CellKField[float],
+    z_tracer_mflx: fa.EdgeKField[float],
+    z_rho_now: fa.CellKField[float],
+    z_tracer_now: fa.CellKField[float],
     z_dtsub: float,
 ) -> tuple[
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
-    Field[[CellDim, KDim], float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
+    fa.CellKField[float],
 ]:
     z_rhofluxdiv_c_out = (
         neighbor_sum(p_mass_flx_e(C2E) * geofac_div, axis=C2EDim) if nsub == 1 else z_rhofluxdiv_c
@@ -50,17 +46,17 @@ def _upwind_hflux_miura_cycl_stencil_02(
 @program(grid_type=GridType.UNSTRUCTURED)
 def upwind_hflux_miura_cycl_stencil_02(
     nsub: int32,
-    p_mass_flx_e: Field[[EdgeDim, KDim], float],
-    geofac_div: Field[[CellDim, C2EDim], float],
-    z_rhofluxdiv_c: Field[[CellDim, KDim], float],
-    z_tracer_mflx: Field[[EdgeDim, KDim], float],
-    z_rho_now: Field[[CellDim, KDim], float],
-    z_tracer_now: Field[[CellDim, KDim], float],
+    p_mass_flx_e: fa.EdgeKField[float],
+    geofac_div: Field[[dims.CellDim, C2EDim], float],
+    z_rhofluxdiv_c: fa.CellKField[float],
+    z_tracer_mflx: fa.EdgeKField[float],
+    z_rho_now: fa.CellKField[float],
+    z_tracer_now: fa.CellKField[float],
     z_dtsub: float,
-    z_rhofluxdiv_c_out: Field[[CellDim, KDim], float],
-    z_fluxdiv_c_dsl: Field[[CellDim, KDim], float],
-    z_rho_new_dsl: Field[[CellDim, KDim], float],
-    z_tracer_new_dsl: Field[[CellDim, KDim], float],
+    z_rhofluxdiv_c_out: fa.CellKField[float],
+    z_fluxdiv_c_dsl: fa.CellKField[float],
+    z_rho_new_dsl: fa.CellKField[float],
+    z_tracer_new_dsl: fa.CellKField[float],
 ):
     _upwind_hflux_miura_cycl_stencil_02(
         nsub,

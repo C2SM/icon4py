@@ -1,20 +1,15 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import numpy as np
 
 from icon4py.model.atmosphere.diffusion import diffusion, diffusion_states
-from icon4py.model.common.dimension import CEDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 
@@ -128,10 +123,10 @@ def construct_interpolation_state(
 ) -> diffusion_states.DiffusionInterpolationState:
     grg = savepoint.geofac_grg()
     return diffusion_states.DiffusionInterpolationState(
-        e_bln_c_s=helpers.as_1D_sparse_field(savepoint.e_bln_c_s(), CEDim),
+        e_bln_c_s=helpers.as_1D_sparse_field(savepoint.e_bln_c_s(), dims.CEDim),
         rbf_coeff_1=savepoint.rbf_vec_coeff_v1(),
         rbf_coeff_2=savepoint.rbf_vec_coeff_v2(),
-        geofac_div=helpers.as_1D_sparse_field(savepoint.geofac_div(), CEDim),
+        geofac_div=helpers.as_1D_sparse_field(savepoint.geofac_div(), dims.CEDim),
         geofac_n2s=savepoint.geofac_n2s(),
         geofac_grg_x=grg[0],
         geofac_grg_y=grg[1],

@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import functools
 import uuid
@@ -18,30 +14,7 @@ import gt4py.next.common as gt_common
 import gt4py.next.ffront.fbuiltins as gt_builtins
 import numpy as np
 
-from icon4py.model.common.dimension import (
-    C2E2C2E2CDim,
-    C2E2C2EDim,
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    C2VDim,
-    CECDim,
-    CECECDim,
-    CEDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    ECDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.base import BaseGrid
 from icon4py.model.common.utils import builder
 
@@ -65,28 +38,48 @@ class IconGrid(BaseGrid):
         self.end_indices = {}
         self.global_properties = None
         self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
-            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
-            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
-            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
-            "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
-            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
-            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
-            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
-            "C2V": (self._get_offset_provider, C2VDim, CellDim, VertexDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
-            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
-            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
-            "Koff": (lambda: KDim,),  # Koff is a special case
+            "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
+            "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
+            "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
+            "C2E2C": (self._get_offset_provider, dims.C2E2CDim, dims.CellDim, dims.CellDim),
+            "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.E2CDim,
+                dims.EdgeDim,
+                dims.ECDim,
+            ),
+            "C2E2CO": (self._get_offset_provider, dims.C2E2CODim, dims.CellDim, dims.CellDim),
+            "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
+            "V2E": (self._get_offset_provider, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
+            "V2C": (self._get_offset_provider, dims.V2CDim, dims.VertexDim, dims.CellDim),
+            "C2V": (self._get_offset_provider, dims.C2VDim, dims.CellDim, dims.VertexDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.E2C2VDim,
+                dims.EdgeDim,
+                dims.ECVDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2E2CDim,
+                dims.CellDim,
+                dims.CECDim,
+            ),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2EDim,
+                dims.CellDim,
+                dims.CEDim,
+            ),
+            "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
+            "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+            "Koff": (lambda: dims.KDim,),  # Koff is a special case
             "C2CECEC ": (
                 self._get_offset_provider_for_sparse_fields,
-                C2E2C2E2CDim,
-                CellDim,
-                CECECDim,
+                dims.C2E2C2E2CDim,
+                dims.CellDim,
+                dims.CECECDim,
             ),
         }
 
@@ -142,18 +135,18 @@ class IconGrid(BaseGrid):
         assert (
             dimension.kind == gt_common.DimensionKind.LOCAL
         ), "only local dimensions can have skip values"
-        if dimension in (V2EDim, V2CDim):
+        if dimension in (dims.V2EDim, dims.V2CDim):
             return True
         elif self.limited_area:
             if dimension in (
-                C2E2C2E2CDim,
-                C2E2C2EDim,
-                E2CDim,
-                C2E2CDim,
-                C2E2CODim,
-                E2C2VDim,
-                E2C2EDim,
-                E2C2EODim,
+                dims.C2E2C2E2CDim,
+                dims.C2E2C2EDim,
+                dims.E2CDim,
+                dims.C2E2CDim,
+                dims.C2E2CODim,
+                dims.E2C2VDim,
+                dims.E2C2EDim,
+                dims.E2C2EODim,
             ):
                 return True
         else:

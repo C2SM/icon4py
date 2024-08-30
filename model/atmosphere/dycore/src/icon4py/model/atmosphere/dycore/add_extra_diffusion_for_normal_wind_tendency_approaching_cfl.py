@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from gt4py.next.common import GridType
 from gt4py.next.ffront.decorator import field_operator, program
@@ -26,39 +21,41 @@ from gt4py.next.ffront.fbuiltins import (
 from icon4py.model.atmosphere.dycore.init_two_edge_kdim_fields_with_zero_wp import (
     _init_two_edge_kdim_fields_with_zero_wp,
 )
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.dimension import (
     E2C,
     E2C2EO,
     E2V,
-    CellDim,
     E2C2EODim,
     E2CDim,
-    EdgeDim,
-    KDim,
     Koff,
-    VertexDim,
 )
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
+# TODO: this will have to be removed once domain allows for imports
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
+
+
 @field_operator
 def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: Field[[KDim], bool],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
-    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
-    area_edge: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    zeta: Field[[VertexDim, KDim], vpfloat],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
-    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
+    levelmask: Field[[dims.KDim], bool],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
+    z_w_con_c_full: fa.CellKField[vpfloat],
+    ddqz_z_full_e: fa.EdgeKField[vpfloat],
+    area_edge: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    zeta: fa.VertexKField[vpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
+    ddt_vn_apc: fa.EdgeKField[vpfloat],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     dtime: wpfloat,
-) -> Field[[EdgeDim, KDim], vpfloat]:
+) -> fa.EdgeKField[vpfloat]:
     """Formerly known as _mo_velocity_advection_stencil_20."""
     z_w_con_c_full_wp, ddqz_z_full_e_wp, ddt_vn_apc_wp, cfl_w_limit_wp = astype(
         (z_w_con_c_full, ddqz_z_full_e, ddt_vn_apc, cfl_w_limit), wpfloat
@@ -100,17 +97,17 @@ def _add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def add_extra_diffusion_for_normal_wind_tendency_approaching_cfl(
-    levelmask: Field[[KDim], bool],
-    c_lin_e: Field[[EdgeDim, E2CDim], wpfloat],
-    z_w_con_c_full: Field[[CellDim, KDim], vpfloat],
-    ddqz_z_full_e: Field[[EdgeDim, KDim], vpfloat],
-    area_edge: Field[[EdgeDim], wpfloat],
-    tangent_orientation: Field[[EdgeDim], wpfloat],
-    inv_primal_edge_length: Field[[EdgeDim], wpfloat],
-    zeta: Field[[VertexDim, KDim], vpfloat],
-    geofac_grdiv: Field[[EdgeDim, E2C2EODim], wpfloat],
-    vn: Field[[EdgeDim, KDim], wpfloat],
-    ddt_vn_apc: Field[[EdgeDim, KDim], vpfloat],
+    levelmask: Field[[dims.KDim], bool],
+    c_lin_e: Field[[dims.EdgeDim, E2CDim], wpfloat],
+    z_w_con_c_full: fa.CellKField[vpfloat],
+    ddqz_z_full_e: fa.EdgeKField[vpfloat],
+    area_edge: fa.EdgeField[wpfloat],
+    tangent_orientation: fa.EdgeField[wpfloat],
+    inv_primal_edge_length: fa.EdgeField[wpfloat],
+    zeta: fa.VertexKField[vpfloat],
+    geofac_grdiv: Field[[dims.EdgeDim, E2C2EODim], wpfloat],
+    vn: fa.EdgeKField[wpfloat],
+    ddt_vn_apc: fa.EdgeKField[vpfloat],
     cfl_w_limit: vpfloat,
     scalfac_exdiff: wpfloat,
     dtime: wpfloat,

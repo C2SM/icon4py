@@ -1,45 +1,18 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 import uuid
 
 import gt4py.next as gtx
 import numpy as np
 
-from icon4py.model.common.dimension import (
-    C2E2C2E2CDim,
-    C2E2C2EDim,
-    C2E2CDim,
-    C2E2CODim,
-    C2EDim,
-    C2VDim,
-    CECDim,
-    CECECDim,
-    CEDim,
-    CellDim,
-    E2C2EDim,
-    E2C2EODim,
-    E2C2VDim,
-    E2CDim,
-    E2VDim,
-    ECDim,
-    ECVDim,
-    EdgeDim,
-    KDim,
-    V2CDim,
-    V2EDim,
-    VertexDim,
-)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.base import BaseGrid, GridConfig, HorizontalGridSize
 
 # periodic
@@ -416,28 +389,48 @@ class SimpleGrid(BaseGrid):
 
         self._configure()
         self.offset_provider_mapping = {
-            "C2E": (self._get_offset_provider, C2EDim, CellDim, EdgeDim),
-            "C2E2CO": (self._get_offset_provider, C2E2CODim, CellDim, CellDim),
-            "C2E2C": (self._get_offset_provider, C2E2CDim, CellDim, CellDim),
-            "E2C2EO": (self._get_offset_provider, E2C2EODim, EdgeDim, EdgeDim),
-            "E2C2E": (self._get_offset_provider, E2C2EDim, EdgeDim, EdgeDim),
-            "V2C": (self._get_offset_provider, V2CDim, VertexDim, CellDim),
-            "V2E": (self._get_offset_provider, V2EDim, VertexDim, EdgeDim),
-            "E2C": (self._get_offset_provider, E2CDim, EdgeDim, CellDim),
-            "E2V": (self._get_offset_provider, E2VDim, EdgeDim, VertexDim),
-            "E2C2V": (self._get_offset_provider, E2C2VDim, EdgeDim, VertexDim),
-            "C2CE": (self._get_offset_provider_for_sparse_fields, C2EDim, CellDim, CEDim),
-            "Koff": (lambda: KDim,),  # Koff is a special case
-            "C2E2C2E": (self._get_offset_provider, C2E2C2EDim, CellDim, EdgeDim),
-            "C2E2C2E2C": (self._get_offset_provider, C2E2C2E2CDim, CellDim, CellDim),
-            "E2ECV": (self._get_offset_provider_for_sparse_fields, E2C2VDim, EdgeDim, ECVDim),
-            "E2EC": (self._get_offset_provider_for_sparse_fields, E2CDim, EdgeDim, ECDim),
-            "C2CEC": (self._get_offset_provider_for_sparse_fields, C2E2CDim, CellDim, CECDim),
+            "C2E": (self._get_offset_provider, dims.C2EDim, dims.CellDim, dims.EdgeDim),
+            "C2E2CO": (self._get_offset_provider, dims.C2E2CODim, dims.CellDim, dims.CellDim),
+            "C2E2C": (self._get_offset_provider, dims.C2E2CDim, dims.CellDim, dims.CellDim),
+            "E2C2EO": (self._get_offset_provider, dims.E2C2EODim, dims.EdgeDim, dims.EdgeDim),
+            "E2C2E": (self._get_offset_provider, dims.E2C2EDim, dims.EdgeDim, dims.EdgeDim),
+            "V2C": (self._get_offset_provider, dims.V2CDim, dims.VertexDim, dims.CellDim),
+            "V2E": (self._get_offset_provider, dims.V2EDim, dims.VertexDim, dims.EdgeDim),
+            "E2C": (self._get_offset_provider, dims.E2CDim, dims.EdgeDim, dims.CellDim),
+            "E2V": (self._get_offset_provider, dims.E2VDim, dims.EdgeDim, dims.VertexDim),
+            "E2C2V": (self._get_offset_provider, dims.E2C2VDim, dims.EdgeDim, dims.VertexDim),
+            "C2CE": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2EDim,
+                dims.CellDim,
+                dims.CEDim,
+            ),
+            "Koff": (lambda: dims.KDim,),  # Koff is a special case
+            "C2E2C2E": (self._get_offset_provider, dims.C2E2C2EDim, dims.CellDim, dims.EdgeDim),
+            "C2E2C2E2C": (self._get_offset_provider, dims.C2E2C2E2CDim, dims.CellDim, dims.CellDim),
+            "E2ECV": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.E2C2VDim,
+                dims.EdgeDim,
+                dims.ECVDim,
+            ),
+            "E2EC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.E2CDim,
+                dims.EdgeDim,
+                dims.ECDim,
+            ),
+            "C2CEC": (
+                self._get_offset_provider_for_sparse_fields,
+                dims.C2E2CDim,
+                dims.CellDim,
+                dims.CECDim,
+            ),
             "C2CECEC": (
                 self._get_offset_provider_for_sparse_fields,
-                C2E2C2E2CDim,
-                CellDim,
-                CECECDim,
+                dims.C2E2C2E2CDim,
+                dims.CellDim,
+                dims.CECECDim,
             ),
         }
 
@@ -479,26 +472,26 @@ class SimpleGrid(BaseGrid):
         )
 
         connectivity_dict = {
-            C2VDim: SimpleGridData.c2v_table,
-            E2CDim: SimpleGridData.e2c_table,
-            E2VDim: SimpleGridData.e2v_table,
-            C2EDim: SimpleGridData.c2e_table,
-            C2E2CODim: SimpleGridData.c2e2cO_table,
-            C2E2CDim: SimpleGridData.c2e2c_table,
-            E2C2EODim: SimpleGridData.e2c2eO_table,
-            E2C2EDim: SimpleGridData.e2c2e_table,
-            E2C2VDim: SimpleGridData.e2c2v_table,
-            V2CDim: SimpleGridData.v2c_table,
-            V2EDim: SimpleGridData.v2e_table,
-            C2E2C2EDim: SimpleGridData.c2e2c2e_table,
-            C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
+            dims.C2VDim: SimpleGridData.c2v_table,
+            dims.E2CDim: SimpleGridData.e2c_table,
+            dims.E2VDim: SimpleGridData.e2v_table,
+            dims.C2EDim: SimpleGridData.c2e_table,
+            dims.C2E2CODim: SimpleGridData.c2e2cO_table,
+            dims.C2E2CDim: SimpleGridData.c2e2c_table,
+            dims.E2C2EODim: SimpleGridData.e2c2eO_table,
+            dims.E2C2EDim: SimpleGridData.e2c2e_table,
+            dims.E2C2VDim: SimpleGridData.e2c2v_table,
+            dims.V2CDim: SimpleGridData.v2c_table,
+            dims.V2EDim: SimpleGridData.v2e_table,
+            dims.C2E2C2EDim: SimpleGridData.c2e2c2e_table,
+            dims.C2E2C2E2CDim: SimpleGridData.c2e2c2e2c_table,
         }
 
         self.with_config(config).with_connectivities(connectivity_dict)
         self.update_size_connectivities(
             {
-                ECVDim: self.size[EdgeDim] * self.size[E2C2VDim],
-                CEDim: self.size[CellDim] * self.size[C2EDim],
-                ECDim: self.size[EdgeDim] * self.size[E2CDim],
+                dims.ECVDim: self.size[dims.EdgeDim] * self.size[dims.E2C2VDim],
+                dims.CEDim: self.size[dims.CellDim] * self.size[dims.C2EDim],
+                dims.ECDim: self.size[dims.EdgeDim] * self.size[dims.E2CDim],
             }
         )

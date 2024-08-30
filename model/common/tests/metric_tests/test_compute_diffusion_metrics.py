@@ -1,28 +1,20 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
-
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 import pytest
 from gt4py.next import as_field
 
-from icon4py.model.common.dimension import (
-    C2E2CDim,
-    CECDim,
-    CellDim,
-    KDim,
-)
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid.horizontal import (
     HorizontalMarkerIndex,
+)
+from icon4py.model.common.metrics.compute_diffusion_metrics import (
+    compute_diffusion_metrics,
 )
 from icon4py.model.common.metrics.metric_fields import (
     compute_max_nbhgt,
@@ -30,9 +22,7 @@ from icon4py.model.common.metrics.metric_fields import (
     compute_weighted_cell_neighbor_sum,
     compute_z_mc,
 )
-from icon4py.model.common.metrics.stencils.compute_diffusion_metrics import (
-    compute_diffusion_metrics,
-)
+from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import (
     constant_field,
     dallclose,
@@ -43,31 +33,40 @@ from icon4py.model.common.test_utils.helpers import (
 
 
 @pytest.mark.datatest
+@pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
-    metrics_savepoint, interpolation_savepoint, icon_grid, grid_savepoint, backend
+    metrics_savepoint, experiment, interpolation_savepoint, icon_grid, grid_savepoint, backend
 ):
     if is_roundtrip(backend):
         pytest.skip("skipping: slow backend")
-    mask_hdiff = zero_field(icon_grid, CellDim, KDim, dtype=bool).asnumpy()
-    zd_vertoffset_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
-    z_vintcoeff = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
-    zd_intcoef_dsl = zero_field(icon_grid, CellDim, C2E2CDim, KDim).asnumpy()
-    z_maxslp_avg = zero_field(icon_grid, CellDim, KDim)
-    z_maxhgtd_avg = zero_field(icon_grid, CellDim, KDim)
-    zd_diffcoef_dsl = zero_field(icon_grid, CellDim, KDim).asnumpy()
-    maxslp = zero_field(icon_grid, CellDim, KDim)
-    maxhgtd = zero_field(icon_grid, CellDim, KDim)
-    max_nbhgt = zero_field(icon_grid, CellDim)
 
-    c2e2c = icon_grid.connectivities[C2E2CDim]
-    nbidx = constant_field(icon_grid, 1, CellDim, C2E2CDim, KDim, dtype=int).asnumpy()
+    if experiment == dt_utils.GLOBAL_EXPERIMENT:
+        pytest.skip(f"Fields not computed for {experiment}")
+
+    mask_hdiff = zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=bool).asnumpy()
+    zd_vertoffset_dsl = zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
+    z_vintcoeff = zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
+    zd_intcoef_dsl = zero_field(icon_grid, dims.CellDim, dims.C2E2CDim, dims.KDim).asnumpy()
+    z_maxslp_avg = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    z_maxhgtd_avg = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    zd_diffcoef_dsl = zero_field(icon_grid, dims.CellDim, dims.KDim).asnumpy()
+    maxslp = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    maxhgtd = zero_field(icon_grid, dims.CellDim, dims.KDim)
+    max_nbhgt = zero_field(icon_grid, dims.CellDim)
+
+    c2e2c = icon_grid.connectivities[dims.C2E2CDim]
+    nbidx = constant_field(
+        icon_grid, 1, dims.CellDim, dims.C2E2CDim, dims.KDim, dtype=int
+    ).asnumpy()
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125
-    cell_nudging = icon_grid.get_start_index(CellDim, HorizontalMarkerIndex.nudging(CellDim))
+    cell_nudging = icon_grid.get_start_index(
+        dims.CellDim, HorizontalMarkerIndex.nudging(dims.CellDim)
+    )
     cell_lateral = icon_grid.get_start_index(
-        CellDim,
-        HorizontalMarkerIndex.lateral_boundary(CellDim) + 1,
+        dims.CellDim,
+        HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
     )
     nlev = icon_grid.num_levels
 
@@ -83,7 +82,7 @@ def test_compute_diffusion_metrics(
         offset_provider={"C2E": icon_grid.get_offset_provider("C2E")},
     )
 
-    z_mc = zero_field(icon_grid, CellDim, KDim, extend={KDim: 1})
+    z_mc = zero_field(icon_grid, dims.CellDim, dims.KDim, extend={dims.KDim: 1})
     compute_z_mc.with_backend(backend)(
         metrics_savepoint.z_ifc(),
         z_mc,
@@ -111,7 +110,7 @@ def test_compute_diffusion_metrics(
     )
 
     compute_max_nbhgt.with_backend(backend)(
-        z_mc_nlev=as_field((CellDim,), z_mc.asnumpy()[:, nlev - 1]),
+        z_mc_nlev=as_field((dims.CellDim,), z_mc.asnumpy()[:, nlev - 1]),
         max_nbhgt=max_nbhgt,
         horizontal_start=cell_nudging,
         horizontal_end=icon_grid.num_cells,
@@ -138,10 +137,14 @@ def test_compute_diffusion_metrics(
         nlev=nlev,
     )
     zd_intcoef_dsl = flatten_first_two_dims(
-        CECDim, KDim, field=as_field((CellDim, C2E2CDim, KDim), zd_intcoef_dsl)
+        dims.CECDim,
+        dims.KDim,
+        field=as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_intcoef_dsl),
     )
     zd_vertoffset_dsl = flatten_first_two_dims(
-        CECDim, KDim, field=as_field((CellDim, C2E2CDim, KDim), zd_vertoffset_dsl)
+        dims.CECDim,
+        dims.KDim,
+        field=as_field((dims.CellDim, dims.C2E2CDim, dims.KDim), zd_vertoffset_dsl),
     )
 
     assert dallclose(mask_hdiff, metrics_savepoint.mask_hdiff().asnumpy())

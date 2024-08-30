@@ -1,30 +1,26 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import numpy as np
 
 
 def compute_zdiff_gradp_dsl(
     e2c,
-    z_me: np.array,
-    z_mc: np.array,
-    z_ifc: np.array,
-    flat_idx: np.array,
-    z_aux2: np.array,
+    z_me: np.ndarray,
+    z_mc: np.ndarray,
+    z_ifc: np.ndarray,
+    flat_idx: np.ndarray,
+    z_aux2: np.ndarray,
     nlev: int,
     horizontal_start: int,
     horizontal_start_1: int,
     nedges: int,
-) -> np.array:
+) -> np.ndarray:
     zdiff_gradp = np.zeros_like(z_mc[e2c])
     zdiff_gradp[horizontal_start:, :, :] = (
         np.expand_dims(z_me, axis=1)[horizontal_start:, :, :] - z_mc[e2c][horizontal_start:, :, :]

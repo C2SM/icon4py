@@ -1,21 +1,16 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from abc import ABCMeta, abstractmethod
 from typing import Iterator
 
 from gt4py.next.ffront.fbuiltins import Dimension
-from icon4py.model.common.dimension import global_dimensions
+from icon4py.model.common import dimension as dims
 
 from icon4pytools.icon4pygen.bindings.codegen.render.location import LocationRenderer
 
@@ -73,9 +68,9 @@ class MultiLocation(metaclass=ABCMeta):
         return self.chain[item]
 
     def to_dim_list(self) -> list[Dimension]:
-        dims_initials = [key[0] for key in global_dimensions.keys()]
+        dims_initials = [key[0] for key in dims.global_dimensions.keys()]
         map_to_dim = {
-            d: list(global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
+            d: list(dims.global_dimensions.values())[d_i] for d_i, d in enumerate(dims_initials)
         }
         return [map_to_dim[str(c)] for c in self.chain]
 

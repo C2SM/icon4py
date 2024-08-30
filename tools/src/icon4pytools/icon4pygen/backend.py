@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import warnings
 from pathlib import Path
 from typing import Any, Iterable, List
@@ -19,7 +15,7 @@ from gt4py.next.iterator import ir as itir
 from gt4py.next.iterator.transforms import LiftMode
 from gt4py.next.program_processors.codegens.gtfn import gtfn_module
 from gt4py.next.type_system import type_specifications as ts
-from icon4py.model.common.dimension import KDim, Koff
+from icon4py.model.common import dimension as dims
 
 from icon4pytools.icon4pygen.bindings.utils import write_string
 from icon4pytools.icon4pygen.metadata import StencilInfo
@@ -70,7 +66,7 @@ def transform_and_configure_fencil(
                 itir.FunCall(
                     fun=itir.SymRef(id="named_range"),
                     args=[
-                        itir.AxisLiteral(value=Koff.source.value),
+                        itir.AxisLiteral(value=dims.Koff.source.value),
                         itir.SymRef(id=V_START),
                         itir.SymRef(id=V_END),
                     ],
@@ -149,7 +145,7 @@ def generate_gtheader(
     return translation.generate_stencil_source(
         transformed_fencil,
         offset_provider=offset_provider,
-        column_axis=KDim,  # only used for ScanOperator
+        column_axis=dims.KDim,  # only used for ScanOperator
         **kwargs,
     )
 

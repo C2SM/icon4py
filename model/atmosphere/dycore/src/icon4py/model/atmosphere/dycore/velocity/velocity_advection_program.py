@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import gt4py.next as gtx
 from gt4py.next.ffront.fbuiltins import where
 
@@ -40,28 +36,34 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
+
+
+# TODO: this will have to be removed once domain allows for imports
+CellDim = dims.CellDim
+EdgeDim = dims.EdgeDim
+KDim = dims.KDim
 
 
 @gtx.field_operator
 def _fused_stencils_4_5(
-    vn: gtx.Field[[EdgeDim, KDim], float],
-    vt: gtx.Field[[EdgeDim, KDim], float],
-    vn_ie: gtx.Field[[EdgeDim, KDim], float],
-    z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
-    ddxn_z_full: gtx.Field[[EdgeDim, KDim], float],
-    ddxt_z_full: gtx.Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
-    k_field: gtx.Field[[KDim], gtx.int32],
+    vn: fa.EdgeKField[float],
+    vt: fa.EdgeKField[float],
+    vn_ie: fa.EdgeKField[float],
+    z_vt_ie: fa.EdgeKField[float],
+    z_kin_hor_e: fa.EdgeKField[float],
+    ddxn_z_full: fa.EdgeKField[float],
+    ddxt_z_full: fa.EdgeKField[float],
+    z_w_concorr_me: fa.EdgeKField[float],
+    k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
 ) -> tuple[
-    gtx.Field[[EdgeDim, KDim], float],
-    gtx.Field[[EdgeDim, KDim], float],
-    gtx.Field[[EdgeDim, KDim], float],
-    gtx.Field[[EdgeDim, KDim], float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
+    fa.EdgeKField[float],
 ]:
     z_w_concorr_me = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
@@ -80,15 +82,15 @@ def _fused_stencils_4_5(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_4_5(
-    vn: gtx.Field[[EdgeDim, KDim], float],
-    vt: gtx.Field[[EdgeDim, KDim], float],
-    vn_ie: gtx.Field[[EdgeDim, KDim], float],
-    z_vt_ie: gtx.Field[[EdgeDim, KDim], float],
-    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float],
-    ddxn_z_full: gtx.Field[[EdgeDim, KDim], float],
-    ddxt_z_full: gtx.Field[[EdgeDim, KDim], float],
-    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
-    k_field: gtx.Field[[KDim], gtx.int32],
+    vn: fa.EdgeKField[float],
+    vt: fa.EdgeKField[float],
+    vn_ie: fa.EdgeKField[float],
+    z_vt_ie: fa.EdgeKField[float],
+    z_kin_hor_e: fa.EdgeKField[float],
+    ddxn_z_full: fa.EdgeKField[float],
+    ddxt_z_full: fa.EdgeKField[float],
+    z_w_concorr_me: fa.EdgeKField[float],
+    k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -118,9 +120,9 @@ def fused_stencils_4_5(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def extrapolate_at_top(
-    wgtfacq_e: gtx.Field[[EdgeDim, KDim], float],
-    vn: gtx.Field[[EdgeDim, KDim], float],
-    vn_ie: gtx.Field[[EdgeDim, KDim], float],
+    wgtfacq_e: fa.EdgeKField[float],
+    vn: fa.EdgeKField[float],
+    vn_ie: fa.EdgeKField[float],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,
@@ -139,15 +141,15 @@ def extrapolate_at_top(
 
 @gtx.field_operator
 def _fused_stencils_9_10(
-    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
-    local_z_w_concorr_mc: gtx.Field[[CellDim, KDim], float],
-    wgtfac_c: gtx.Field[[CellDim, KDim], float],
-    w_concorr_c: gtx.Field[[CellDim, KDim], float],
-    k_field: gtx.Field[[KDim], gtx.int32],
+    z_w_concorr_me: fa.EdgeKField[float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    local_z_w_concorr_mc: fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
-) -> tuple[gtx.Field[[CellDim, KDim], float], gtx.Field[[CellDim, KDim], float]]:
+) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
     local_z_w_concorr_mc = where(
         (k_field >= nflatlev_startindex) & (k_field < nlev),
         _interpolate_to_cell_center(z_w_concorr_me, e_bln_c_s),
@@ -165,12 +167,12 @@ def _fused_stencils_9_10(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_9_10(
-    z_w_concorr_me: gtx.Field[[EdgeDim, KDim], float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
-    local_z_w_concorr_mc: gtx.Field[[CellDim, KDim], float],
-    wgtfac_c: gtx.Field[[CellDim, KDim], float],
-    w_concorr_c: gtx.Field[[CellDim, KDim], float],
-    k_field: gtx.Field[[KDim], gtx.int32],
+    z_w_concorr_me: fa.EdgeKField[float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    local_z_w_concorr_mc: fa.CellKField[float],
+    wgtfac_c: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -197,10 +199,10 @@ def fused_stencils_9_10(
 
 @gtx.field_operator
 def _fused_stencils_11_to_13(
-    w: gtx.Field[[CellDim, KDim], float],
-    w_concorr_c: gtx.Field[[CellDim, KDim], float],
-    local_z_w_con_c: gtx.Field[[CellDim, KDim], float],
-    k_field: gtx.Field[[KDim], gtx.int32],
+    w: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    local_z_w_con_c: fa.CellKField[float],
+    k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
 ):
@@ -222,10 +224,10 @@ def _fused_stencils_11_to_13(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_11_to_13(
-    w: gtx.Field[[CellDim, KDim], float],
-    w_concorr_c: gtx.Field[[CellDim, KDim], float],
-    local_z_w_con_c: gtx.Field[[CellDim, KDim], float],
-    k_field: gtx.Field[[KDim], gtx.int32],
+    w: fa.CellKField[float],
+    w_concorr_c: fa.CellKField[float],
+    local_z_w_con_c: fa.CellKField[float],
+    k_field: fa.KField[gtx.int32],
     nflatlev_startindex: gtx.int32,
     nlev: gtx.int32,
     horizontal_start: gtx.int32,
@@ -250,8 +252,8 @@ def fused_stencils_11_to_13(
 
 @gtx.field_operator
 def _fused_stencil_14(
-    local_z_w_con_c: gtx.Field[[CellDim, KDim], float],
-    ddqz_z_half: gtx.Field[[CellDim, KDim], float],
+    local_z_w_con_c: fa.CellKField[float],
+    ddqz_z_half: fa.CellKField[float],
     cfl_w_limit: float,
     dtime: float,
 ):
@@ -271,10 +273,10 @@ def _fused_stencil_14(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def fused_stencil_14(
-    local_z_w_con_c: gtx.Field[[CellDim, KDim], float],
-    ddqz_z_half: gtx.Field[[CellDim, KDim], float],
-    local_cfl_clipping: gtx.Field[[CellDim, KDim], bool],
-    local_vcfl: gtx.Field[[CellDim, KDim], float],
+    local_z_w_con_c: fa.CellKField[float],
+    ddqz_z_half: fa.CellKField[float],
+    local_cfl_clipping: fa.CellKField[bool],
+    local_vcfl: fa.CellKField[float],
     cfl_w_limit: float,
     dtime: float,
     horizontal_start: gtx.int32,
@@ -297,13 +299,13 @@ def fused_stencil_14(
 
 @gtx.field_operator
 def _fused_stencils_16_to_17(
-    w: gtx.Field[[CellDim, KDim], float],
-    local_z_v_grad_w: gtx.Field[[EdgeDim, KDim], float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
-    local_z_w_con_c: gtx.Field[[CellDim, KDim], float],
-    coeff1_dwdz: gtx.Field[[CellDim, KDim], float],
-    coeff2_dwdz: gtx.Field[[CellDim, KDim], float],
-) -> gtx.Field[[CellDim, KDim], float]:
+    w: fa.CellKField[float],
+    local_z_v_grad_w: fa.EdgeKField[float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    local_z_w_con_c: fa.CellKField[float],
+    coeff1_dwdz: fa.CellKField[float],
+    coeff2_dwdz: fa.CellKField[float],
+) -> fa.CellKField[float]:
     ddt_w_adv = _compute_advective_vertical_wind_tendency(
         local_z_w_con_c, w, coeff1_dwdz, coeff2_dwdz
     )
@@ -314,13 +316,13 @@ def _fused_stencils_16_to_17(
 
 @gtx.program(grid_type=gtx.GridType.UNSTRUCTURED, backend=backend)
 def fused_stencils_16_to_17(
-    w: gtx.Field[[CellDim, KDim], float],
-    local_z_v_grad_w: gtx.Field[[EdgeDim, KDim], float],
-    e_bln_c_s: gtx.Field[[CEDim], float],
-    local_z_w_con_c: gtx.Field[[CellDim, KDim], float],
-    coeff1_dwdz: gtx.Field[[CellDim, KDim], float],
-    coeff2_dwdz: gtx.Field[[CellDim, KDim], float],
-    ddt_w_adv: gtx.Field[[CellDim, KDim], float],
+    w: fa.CellKField[float],
+    local_z_v_grad_w: fa.EdgeKField[float],
+    e_bln_c_s: gtx.Field[[dims.CEDim], float],
+    local_z_w_con_c: fa.CellKField[float],
+    coeff1_dwdz: fa.CellKField[float],
+    coeff2_dwdz: fa.CellKField[float],
+    ddt_w_adv: fa.CellKField[float],
     horizontal_start: gtx.int32,
     horizontal_end: gtx.int32,
     vertical_start: gtx.int32,

@@ -1,15 +1,10 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
 
 from __future__ import annotations
 
@@ -43,8 +38,8 @@ except ImportError:
     ghex = None
     unstructured = None
 
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.dimension import DimensionKind, global_dimensions
 
 
 if TYPE_CHECKING:
@@ -134,14 +129,14 @@ class GHexMultiNodeExchange:
             dim: self._create_domain_descriptor(
                 dim,
             )
-            for dim in global_dimensions.values()
+            for dim in dims.global_dimensions.values()
         }
         log.info(f"domain descriptors for dimensions {self._domain_descriptors.keys()} initialized")
         self._patterns = {
             dim: self._create_pattern(
                 dim,
             )
-            for dim in global_dimensions.values()
+            for dim in dims.global_dimensions.values()
         }
         log.info(f"patterns for dimensions {self._patterns.keys()} initialized ")
         self._comm = make_communication_object(self._context)
@@ -175,7 +170,7 @@ class GHexMultiNodeExchange:
         return domain_desc
 
     def _create_pattern(self, horizontal_dim: Dimension):
-        assert horizontal_dim.kind == DimensionKind.HORIZONTAL
+        assert horizontal_dim.kind == dims.DimensionKind.HORIZONTAL
 
         global_halo_idx = self._decomposition_info.global_index(
             horizontal_dim, definitions.DecompositionInfo.EntryType.HALO
@@ -193,7 +188,7 @@ class GHexMultiNodeExchange:
         return pattern
 
     def exchange(self, dim: definitions.Dimension, *fields: Sequence[Field]):
-        assert dim in global_dimensions.values()
+        assert dim in dims.global_dimensions.values()
         pattern = self._patterns[dim]
         assert pattern is not None, f"pattern for {dim.value} not found"
         domain_descriptor = self._domain_descriptors[dim]

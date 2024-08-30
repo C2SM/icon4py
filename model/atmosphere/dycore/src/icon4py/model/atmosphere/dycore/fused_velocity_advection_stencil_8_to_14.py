@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 from gt4py.next.common import Field, GridType
 from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import int32, maximum, where
@@ -28,26 +24,26 @@ from icon4py.model.atmosphere.dycore.interpolate_to_cell_center import _interpol
 from icon4py.model.atmosphere.dycore.interpolate_to_half_levels_vp import (
     _interpolate_to_half_levels_vp,
 )
-from icon4py.model.common.dimension import CEDim, CellDim, EdgeDim, KDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.settings import backend
 from icon4py.model.common.type_alias import vpfloat, wpfloat
 
 
 @field_operator
 def _fused_velocity_advection_stencil_8_to_14(
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    pre_levelmask: Field[[CellDim, KDim], bool],
-    vcfl: Field[[CellDim, KDim], vpfloat],
-    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    z_ekinh: Field[[CellDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    pre_levelmask: fa.CellKField[bool],
+    vcfl: fa.CellKField[vpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     cfl_w_limit: vpfloat,
     dtime: wpfloat,
@@ -56,11 +52,11 @@ def _fused_velocity_advection_stencil_8_to_14(
     nflatlev: int32,
     nrdmax: int32,
 ) -> tuple[
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], bool],
-    Field[[CellDim, KDim], bool],
-    Field[[CellDim, KDim], vpfloat],
-    Field[[CellDim, KDim], vpfloat],
+    fa.CellKField[vpfloat],
+    fa.CellKField[bool],
+    fa.CellKField[bool],
+    fa.CellKField[vpfloat],
+    fa.CellKField[vpfloat],
 ]:
     z_ekinh = where(
         k < nlev,
@@ -112,20 +108,20 @@ def _fused_velocity_advection_stencil_8_to_14(
 
 @program(grid_type=GridType.UNSTRUCTURED, backend=backend)
 def fused_velocity_advection_stencil_8_to_14(
-    z_kin_hor_e: Field[[EdgeDim, KDim], vpfloat],
-    e_bln_c_s: Field[[CEDim], wpfloat],
-    z_w_concorr_me: Field[[EdgeDim, KDim], vpfloat],
-    wgtfac_c: Field[[CellDim, KDim], vpfloat],
-    w: Field[[CellDim, KDim], wpfloat],
-    ddqz_z_half: Field[[CellDim, KDim], vpfloat],
-    cfl_clipping: Field[[CellDim, KDim], bool],
-    pre_levelmask: Field[[CellDim, KDim], bool],
-    vcfl: Field[[CellDim, KDim], vpfloat],
-    z_w_concorr_mc: Field[[CellDim, KDim], vpfloat],
-    w_concorr_c: Field[[CellDim, KDim], vpfloat],
-    z_ekinh: Field[[CellDim, KDim], vpfloat],
-    z_w_con_c: Field[[CellDim, KDim], vpfloat],
-    k: Field[[KDim], int32],
+    z_kin_hor_e: fa.EdgeKField[vpfloat],
+    e_bln_c_s: Field[[dims.CEDim], wpfloat],
+    z_w_concorr_me: fa.EdgeKField[vpfloat],
+    wgtfac_c: fa.CellKField[vpfloat],
+    w: fa.CellKField[wpfloat],
+    ddqz_z_half: fa.CellKField[vpfloat],
+    cfl_clipping: fa.CellKField[bool],
+    pre_levelmask: fa.CellKField[bool],
+    vcfl: fa.CellKField[vpfloat],
+    z_w_concorr_mc: fa.CellKField[vpfloat],
+    w_concorr_c: fa.CellKField[vpfloat],
+    z_ekinh: fa.CellKField[vpfloat],
+    z_w_con_c: fa.CellKField[vpfloat],
+    k: fa.KField[int32],
     istep: int32,
     cfl_w_limit: wpfloat,
     dtime: wpfloat,

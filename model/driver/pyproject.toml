@@ -10,7 +10,7 @@ authors = [
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Science/Research",
-  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "License :: OSI Approved :: BSD License",
   "Operating System :: POSIX",
   "Programming Language :: Python",
   "Programming Language :: Python :: 3",
@@ -35,7 +35,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 
 [project.scripts]
-dycore_driver = "icon4py.model.driver.dycore_driver:main"
+icon4py_driver = "icon4py.model.driver.icon4py_driver:main"
 
 [project.urls]
 repository = "https://github.com/C2SM/icon4py"

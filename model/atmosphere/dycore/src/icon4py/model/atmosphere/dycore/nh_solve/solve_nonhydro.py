@@ -1,15 +1,11 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
-# Copyright (c) 2022, ETH Zurich and MeteoSwiss
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
-# This file is free software: you can redistribute it and/or modify it under
-# the terms of the GNU General Public License as published by the
-# Free Software Foundation, either version 3 of the License, or any later
-# version. See the LICENSE.txt file at the top-level directory of this
-# distribution for a copy of the license or check <https://www.gnu.org/licenses/>.
-#
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import logging
 import dataclasses
 from typing import Final, Optional
@@ -144,7 +140,7 @@ from icon4py.model.atmosphere.dycore.velocity.velocity_advection import (
     VelocityAdvection,
 )
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import CellDim, EdgeDim, KDim, VertexDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import (
     base as grid_def,
     horizontal as h_grid,
@@ -154,6 +150,7 @@ from icon4py.model.common.grid import (
 from icon4py.model.common.math import smagorinsky
 from icon4py.model.common.states import prognostic_state as prognostics
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+from icon4py.model.common import field_type_aliases as fa
 import enum
 
 # flake8: noqa
@@ -172,8 +169,6 @@ class TimeSteppingScheme(enum.IntEnum):
 
 
 class DivergenceDampingType(enum.IntEnum):
-    #: divergence damping acting on 2D divergence
-    TWO_DIMENSIONAL = 2
     #: divergence damping acting on 3D divergence
     THREE_DIMENSIONAL = 3
     #: combination of 3D div.damping in the troposphere with transition to 2D div. damping in the stratosphere
@@ -224,46 +219,50 @@ class IntermediateFields:
     contain state that is built up over the predictor and corrector part in a timestep.
     """
 
-    z_gradh_exner: gtx.Field[[EdgeDim, KDim], float]
-    z_alpha: gtx.Field[
-        [EdgeDim, KDim], float
+    z_gradh_exner: fa.EdgeKField[float]
+    z_alpha: fa.EdgeKField[
+        float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_beta: gtx.Field[[CellDim, KDim], float]
-    z_w_expl: gtx.Field[
-        [EdgeDim, KDim], float
+    z_beta: fa.CellKField[float]
+    z_w_expl: fa.EdgeKField[
+        float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_exner_expl: gtx.Field[[CellDim, KDim], float]
-    z_q: gtx.Field[[CellDim, KDim], float]
-    z_contr_w_fl_l: gtx.Field[
-        [EdgeDim, KDim], float
+    z_exner_expl: fa.CellKField[float]
+    z_q: fa.CellKField[float]
+    z_contr_w_fl_l: fa.EdgeKField[
+        float
     ]  # TODO: change this back to KHalfDim, but how do we treat it wrt to field_operators and domain?
-    z_rho_e: gtx.Field[[EdgeDim, KDim], float]
-    z_theta_v_e: gtx.Field[[EdgeDim, KDim], float]
-    z_kin_hor_e: gtx.Field[[EdgeDim, KDim], float]
-    z_vt_ie: gtx.Field[[EdgeDim, KDim], float]
-    z_graddiv_vn: gtx.Field[[EdgeDim, KDim], float]
-    z_rho_expl: gtx.Field[[CellDim, KDim], float]
-    z_dwdz_dd: gtx.Field[[CellDim, KDim], float]
+    z_rho_e: fa.EdgeKField[float]
+    z_theta_v_e: fa.EdgeKField[float]
+    z_kin_hor_e: fa.EdgeKField[float]
+    z_vt_ie: fa.EdgeKField[float]
+    z_graddiv_vn: fa.EdgeKField[float]
+    z_rho_expl: fa.CellKField[float]
+    z_dwdz_dd: fa.CellKField[float]
 
     @classmethod
     def allocate(cls, grid: grid_def.BaseGrid):
         return IntermediateFields(
-            z_gradh_exner=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
-            z_alpha=field_alloc.allocate_zero_field(CellDim, KDim, is_halfdim=True, grid=grid),
-            z_beta=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-            z_w_expl=field_alloc.allocate_zero_field(CellDim, KDim, is_halfdim=True, grid=grid),
-            z_exner_expl=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-            z_q=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-            z_contr_w_fl_l=field_alloc.allocate_zero_field(
-                CellDim, KDim, is_halfdim=True, grid=grid
+            z_gradh_exner=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            z_alpha=field_alloc.allocate_zero_field(
+                dims.CellDim, dims.KDim, is_halfdim=True, grid=grid
             ),
-            z_rho_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
-            z_theta_v_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
-            z_graddiv_vn=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
-            z_rho_expl=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-            z_dwdz_dd=field_alloc.allocate_zero_field(CellDim, KDim, grid=grid),
-            z_kin_hor_e=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
-            z_vt_ie=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=grid),
+            z_beta=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+            z_w_expl=field_alloc.allocate_zero_field(
+                dims.CellDim, dims.KDim, is_halfdim=True, grid=grid
+            ),
+            z_exner_expl=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+            z_q=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+            z_contr_w_fl_l=field_alloc.allocate_zero_field(
+                dims.CellDim, dims.KDim, is_halfdim=True, grid=grid
+            ),
+            z_rho_e=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            z_theta_v_e=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            z_graddiv_vn=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            z_rho_expl=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+            z_dwdz_dd=field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=grid),
+            z_kin_hor_e=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
+            z_vt_ie=field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=grid),
         )
 
 
@@ -425,9 +424,9 @@ class SolveNonhydro:
         self.cell_params: Optional[h_grid.CellParams] = None
         self.velocity_advection: Optional[VelocityAdvection] = None
         self.l_vert_nested: bool = False
-        self.enh_divdamp_fac: Optional[gtx.Field[[KDim], float]] = None
-        self.scal_divdamp: Optional[gtx.Field[[KDim], float]] = None
-        self._bdy_divdamp: Optional[gtx.Field[[KDim], float]] = None
+        self.enh_divdamp_fac: Optional[fa.KField[float]] = None
+        self.scal_divdamp: Optional[fa.KField[float]] = None
+        self._bdy_divdamp: Optional[fa.KField[float]] = None
         self.p_test_run = True
         self.jk_start = 0  # used in stencil_55
         self.ntl1 = 0
@@ -443,7 +442,7 @@ class SolveNonhydro:
         vertical_params: v_grid.VerticalGridParams,
         edge_geometry: h_grid.EdgeParams,
         cell_geometry: h_grid.CellParams,
-        owner_mask: gtx.Field[[CellDim], bool],
+        owner_mask: fa.CellField[bool],
     ):
         """
         Initialize NonHydrostatic granule with configuration.
@@ -487,7 +486,7 @@ class SolveNonhydro:
             self.config.divdamp_z3,
             self.config.divdamp_z4,
             self.enh_divdamp_fac,
-            offset_provider={"Koff": KDim},
+            offset_provider={"Koff": dims.KDim},
         )
 
         self.p_test_run = True
@@ -499,38 +498,56 @@ class SolveNonhydro:
 
     def _allocate_local_fields(self):
         self.z_exner_ex_pr = field_alloc.allocate_zero_field(
-            CellDim, KDim, is_halfdim=True, grid=self.grid
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid
         )
         self.z_exner_ic = field_alloc.allocate_zero_field(
-            CellDim, KDim, is_halfdim=True, grid=self.grid
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid
         )
-        self.z_dexner_dz_c_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.z_dexner_dz_c_1 = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid
+        )
         self.z_theta_v_pr_ic = field_alloc.allocate_zero_field(
-            CellDim, KDim, is_halfdim=True, grid=self.grid
+            dims.CellDim, dims.KDim, is_halfdim=True, grid=self.grid
         )
-        self.z_th_ddz_exner_c = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_rth_pr_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_rth_pr_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_3 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_grad_rth_4 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_hydro_corr = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.z_vn_avg = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.z_theta_v_fl_e = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.z_flxdiv_mass = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_flxdiv_theta = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.z_rho_v = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
-        self.z_theta_v_v = field_alloc.allocate_zero_field(VertexDim, KDim, grid=self.grid)
-        self.z_graddiv2_vn = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.k_field = field_alloc.allocate_indices(KDim, grid=self.grid, is_halfdim=True)
-        self.z_w_concorr_me = field_alloc.allocate_zero_field(EdgeDim, KDim, grid=self.grid)
-        self.z_hydro_corr_horizontal = field_alloc.allocate_zero_field(EdgeDim, grid=self.grid)
-        self.z_raylfac = field_alloc.allocate_zero_field(KDim, grid=self.grid)
-        self.enh_divdamp_fac = field_alloc.allocate_zero_field(KDim, grid=self.grid)
-        self._bdy_divdamp = field_alloc.allocate_zero_field(KDim, grid=self.grid)
-        self.scal_divdamp = field_alloc.allocate_zero_field(KDim, grid=self.grid)
+        self.z_th_ddz_exner_c = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid
+        )
+        self.z_rth_pr_1 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_rth_pr_2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_grad_rth_1 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_grad_rth_2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_grad_rth_3 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_grad_rth_4 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.z_dexner_dz_c_2 = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid
+        )
+        self.z_hydro_corr = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
+        self.z_vn_avg = field_alloc.allocate_zero_field(dims.EdgeDim, dims.KDim, grid=self.grid)
+        self.z_theta_v_fl_e = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid
+        )
+        self.z_flxdiv_mass = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid
+        )
+        self.z_flxdiv_theta = field_alloc.allocate_zero_field(
+            dims.CellDim, dims.KDim, grid=self.grid
+        )
+        self.z_rho_v = field_alloc.allocate_zero_field(dims.VertexDim, dims.KDim, grid=self.grid)
+        self.z_theta_v_v = field_alloc.allocate_zero_field(
+            dims.VertexDim, dims.KDim, grid=self.grid
+        )
+        self.z_graddiv2_vn = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid
+        )
+        self.k_field = field_alloc.allocate_indices(dims.KDim, grid=self.grid, is_halfdim=True)
+        self.z_w_concorr_me = field_alloc.allocate_zero_field(
+            dims.EdgeDim, dims.KDim, grid=self.grid
+        )
+        self.z_hydro_corr_horizontal = field_alloc.allocate_zero_field(dims.EdgeDim, grid=self.grid)
+        self.z_raylfac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        self.enh_divdamp_fac = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        self._bdy_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
+        self.scal_divdamp = field_alloc.allocate_zero_field(dims.KDim, grid=self.grid)
         self.intermediate_fields = IntermediateFields.allocate(self.grid)
 
     def set_timelevels(self, nnow, nnew):
@@ -562,14 +579,16 @@ class SolveNonhydro:
             f"running timestep: dtime = {dtime}, init = {l_init}, recompute = {l_recompute}, prep_adv = {lprep_adv}  clean_mflx={lclean_mflx} "
         )
         start_cell_lb = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
         )
-        end_cell_end = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.end(CellDim))
+        end_cell_end = self.grid.get_end_index(
+            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
+        )
         start_edge_lb = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
         )
         end_edge_local = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
         )
         # # TODO: abishekg7 move this to tests
         if self.p_test_run:
@@ -615,15 +634,17 @@ class SolveNonhydro:
         )
 
         start_cell_lb = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
         )
         end_cell_nudging_minus1 = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim) - 1
+            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim) - 1
         )
         start_cell_halo = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.halo(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.halo(dims.CellDim)
         )
-        end_cell_end = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.end(CellDim))
+        end_cell_end = self.grid.get_end_index(
+            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
+        )
         if self.grid.limited_area:
             compute_theta_and_exner(
                 bdy_halo_c=self.metric_state_nonhydro.bdy_halo_c,
@@ -704,72 +725,78 @@ class SolveNonhydro:
 
         p_dthalf = 0.5 * dtime
 
-        end_cell_end = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.end(CellDim))
+        end_cell_end = self.grid.get_end_index(
+            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
+        )
 
         start_cell_local_minus2 = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) - 2
+            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim) - 2
         )
         end_cell_local_minus2 = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) - 2
+            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim) - 2
         )
 
         start_vertex_lb_plus1 = self.grid.get_start_index(
-            VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(VertexDim) + 1
+            dims.VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1
         )  # TODO: check
         end_vertex_local_minus1 = self.grid.get_end_index(
-            VertexDim, h_grid.HorizontalMarkerIndex.local(VertexDim) - 1
+            dims.VertexDim, h_grid.HorizontalMarkerIndex.local(dims.VertexDim) - 1
         )
 
         start_cell_lb = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
         )
         end_cell_nudging_minus1 = self.grid.get_end_index(
-            CellDim,
-            h_grid.HorizontalMarkerIndex.nudging(CellDim) - 1,
+            dims.CellDim,
+            h_grid.HorizontalMarkerIndex.nudging(dims.CellDim) - 1,
         )
 
         start_edge_lb_plus6 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
         )
         end_edge_local_minus1 = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 1
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 1
         )
         end_edge_local = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
         )
 
         start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
         )
-        end_edge_end = self.grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.end(EdgeDim))
+        end_edge_end = self.grid.get_end_index(
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
+        )
 
         start_edge_lb = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
         )
         end_edge_nudging = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim)
         )
 
         start_edge_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
         )
         start_edge_local_minus2 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
         )
         end_edge_local_minus2 = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
         )
 
         start_cell_lb_plus2 = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
         )
 
-        end_cell_halo = self.grid.get_end_index(CellDim, h_grid.HorizontalMarkerIndex.halo(CellDim))
+        end_cell_halo = self.grid.get_end_index(
+            dims.CellDim, h_grid.HorizontalMarkerIndex.halo(dims.CellDim)
+        )
         start_cell_nudging = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
         )
         end_cell_local = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim)
         )
 
         #  Precompute Rayleigh damping factor
@@ -1057,7 +1084,7 @@ class SolveNonhydro:
         # TODO (Nikki) check when merging fused stencil
         lowest_level = self.grid.num_levels - 1
         hydro_corr_horizontal = gtx.as_field(
-            (EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
+            (dims.EdgeDim,), self.z_hydro_corr.asnumpy()[:, lowest_level]
         )
 
         if self.config.igradp_method == HorizontalPressureDiscretizationType.TAYLOR_HYDRO:
@@ -1114,7 +1141,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug("exchanging prognostic field 'vn' and local field 'z_rho_e'")
-        self._exchange.exchange_and_wait(EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
+        self._exchange.exchange_and_wait(dims.EdgeDim, prognostic_state[nnew].vn, z_fields.z_rho_e)
 
         compute_avg_vn_and_graddiv_vn_and_vt(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1414,10 +1441,12 @@ class SolveNonhydro:
                 offset_provider=self.grid.offset_providers,
             )
             log.debug("exchanging prognostic field 'w' and local field 'z_dwdz_dd'")
-            self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd)
+            self._exchange.exchange_and_wait(
+                dims.CellDim, prognostic_state[nnew].w, z_fields.z_dwdz_dd
+            )
         else:
             log.debug("exchanging prognostic field 'w'")
-            self._exchange.exchange_and_wait(CellDim, prognostic_state[nnew].w)
+            self._exchange.exchange_and_wait(dims.CellDim, prognostic_state[nnew].w)
 
     def run_corrector_step(
         self,
@@ -1459,44 +1488,46 @@ class SolveNonhydro:
         )
 
         start_cell_lb_plus2 = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2
         )
 
         start_edge_lb_plus6 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 6
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
         )
 
         start_edge_nudging_plus1 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.nudging(EdgeDim) + 1
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.nudging(dims.EdgeDim) + 1
         )
         end_edge_local = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim)
         )
 
         start_edge_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4
         )
         end_edge_local_minus2 = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) - 2
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.local(dims.EdgeDim) - 2
         )
 
         start_edge_lb = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim)
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim)
         )
-        end_edge_end = self.grid.get_end_index(EdgeDim, h_grid.HorizontalMarkerIndex.end(EdgeDim))
+        end_edge_end = self.grid.get_end_index(
+            dims.EdgeDim, h_grid.HorizontalMarkerIndex.end(dims.EdgeDim)
+        )
 
         start_cell_lb = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim)
         )
         end_cell_nudging = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
         )
 
         start_cell_nudging = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
         )
         end_cell_local = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
+            dims.CellDim, h_grid.HorizontalMarkerIndex.local(dims.CellDim)
         )
 
         lvn_only = False
@@ -1663,7 +1694,7 @@ class SolveNonhydro:
                 offset_provider={},
             )
         log.debug("exchanging prognostic field 'vn'")
-        self._exchange.exchange_and_wait(EdgeDim, (prognostic_state[nnew].vn))
+        self._exchange.exchange_and_wait(dims.EdgeDim, (prognostic_state[nnew].vn))
         log.debug("corrector: start stencil 31")
         compute_avg_vn(
             e_flx_avg=self.interpolation_state.e_flx_avg,
@@ -1991,7 +2022,7 @@ class SolveNonhydro:
             )
             log.debug("exchange prognostic fields 'rho' , 'exner', 'w'")
             self._exchange.exchange_and_wait(
-                CellDim,
+                dims.CellDim,
                 prognostic_state[nnew].rho,
                 prognostic_state[nnew].exner,
                 prognostic_state[nnew].w,
