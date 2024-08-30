@@ -299,38 +299,39 @@ class Zone(str, enum.Enum):
 
 
 def _map_to_index(dim: gtx.Dimension, marker: Zone) -> int:
-    if marker == Zone.END:
-        return _end(dim)
-    elif marker == Zone.INTERIOR:
-        return _interior(dim)
-    elif marker == Zone.HALO:
-        return _halo(dim, LineNumber.FIRST)
-    elif marker == Zone.HALO_LEVEL_2:
-        return _halo(dim, LineNumber.HALO)
-    elif marker == Zone.LOCAL:
-        return _local(dim)
-    elif marker == Zone.LATERAL_BOUNDARY:
-        return _lateral_boundary(dim, LineNumber.FIRST)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_2:
-        return _lateral_boundary(dim, LineNumber.SECOND)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_3:
-        return _lateral_boundary(dim, LineNumber.THIRD)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_4:
-        return _lateral_boundary(dim, LineNumber.FOURTH)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_5:
-        return _lateral_boundary(dim, LineNumber.FIFTH)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_6:
-        return _lateral_boundary(dim, LineNumber.SIXTH)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_7:
-        return _lateral_boundary(dim, LineNumber.SEVENTH)
-    elif marker == Zone.LATERAL_BOUNDARY_LEVEL_8:
-        return _lateral_boundary(dim, LineNumber.EIGHTH)
-    elif marker == Zone.NUDGING:
-        return _nudging(dim, LineNumber.FIRST)
-    elif marker == Zone.NUDGING_LEVEL_2:
-        return _nudging(dim, LineNumber.SECOND)
-    else:
-        raise ValueError(f"Unknown marker {marker}")
+    match marker:
+        case Zone.END:
+            return _end(dim)
+        case Zone.INTERIOR:
+            return _interior(dim)
+        case Zone.HALO:
+            return _halo(dim, LineNumber.FIRST)
+        case Zone.HALO_LEVEL_2:
+            return _halo(dim, LineNumber.HALO)
+        case Zone.LOCAL:
+            return _local(dim)
+        case Zone.LATERAL_BOUNDARY:
+            return _lateral_boundary(dim, LineNumber.FIRST)
+        case Zone.LATERAL_BOUNDARY_LEVEL_2:
+            return _lateral_boundary(dim, LineNumber.SECOND)
+        case Zone.LATERAL_BOUNDARY_LEVEL_3:
+            return _lateral_boundary(dim, LineNumber.THIRD)
+        case Zone.LATERAL_BOUNDARY_LEVEL_4:
+            return _lateral_boundary(dim, LineNumber.FOURTH)
+        case Zone.LATERAL_BOUNDARY_LEVEL_5:
+            return _lateral_boundary(dim, LineNumber.FIFTH)
+        case Zone.LATERAL_BOUNDARY_LEVEL_6:
+            return _lateral_boundary(dim, LineNumber.SIXTH)
+        case Zone.LATERAL_BOUNDARY_LEVEL_7:
+            return _lateral_boundary(dim, LineNumber.SEVENTH)
+        case Zone.LATERAL_BOUNDARY_LEVEL_8:
+            return _lateral_boundary(dim, LineNumber.EIGHTH)
+        case Zone.NUDGING:
+            return _nudging(dim, LineNumber.FIRST)
+        case Zone.NUDGING_LEVEL_2:
+            return _nudging(dim, LineNumber.SECOND)
+        case _:
+            raise ValueError(f"Unknown marker {marker}")
 
 
 class Domain(Protocol):
@@ -449,7 +450,7 @@ class CellDomain(Domain):
         )
 
 
-# TODO (@ halungge): maybe this should to a separaemte module
+# TODO (@ halungge): maybe this should to a separate module
 @dataclasses.dataclass(frozen=True)
 class HorizontalGridSize:
     num_vertices: int

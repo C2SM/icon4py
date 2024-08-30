@@ -539,7 +539,7 @@ class Diffusion:
             smag_offset:
 
         """
-        klevels = self.grid.num_levels
+        num_levels = self.grid.num_levels
         cell_domain = h_grid.domain(dims.CellDim)
         cell_start_interior = self.grid.start_index(cell_domain(h_grid.Zone.INTERIOR))
 
@@ -548,9 +548,7 @@ class Diffusion:
         cell_end_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
 
         edge_domain = h_grid.domain(dims.EdgeDim)
-        edge_start_second_nudging_level = self.grid.start_index(
-            edge_domain(h_grid.Zone.NUDGING_LEVEL_2)
-        )
+        edge_start_nudging_level_2 = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING_LEVEL_2))
         edge_start_nudging = self.grid.start_index(edge_domain(h_grid.Zone.NUDGING))
 
         edge_start_lateral_boundary_level_5 = self.grid.start_index(
@@ -579,7 +577,7 @@ class Diffusion:
             horizontal_start=vertex_start_lateral_boundary_level_2,
             horizontal_end=vertex_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("rbf interpolation 1: end")
@@ -610,7 +608,7 @@ class Diffusion:
             horizontal_start=edge_start_lateral_boundary_level_5,
             horizontal_end=edge_end_halo_level_2,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencil 01 (calculate_nabla2_and_smag_coefficients_for_vn): end")
@@ -633,7 +631,7 @@ class Diffusion:
                 horizontal_start=cell_start_nudging,
                 horizontal_end=cell_end_local,
                 vertical_start=1,
-                vertical_end=klevels,
+                vertical_end=num_levels,
                 offset_provider=self.grid.offset_providers,
             )
             log.debug(
@@ -657,7 +655,7 @@ class Diffusion:
             horizontal_start=vertex_start_lateral_boundary_level_2,
             horizontal_end=vertex_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("2nd rbf interpolation: end")
@@ -684,12 +682,12 @@ class Diffusion:
             edge=self.horizontal_edge_index,
             nudgezone_diff=self.nudgezone_diff,
             fac_bdydiff_v=self.fac_bdydiff_v,
-            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_second_nudging_level),
+            start_2nd_nudge_line_idx_e=gtx.int32(edge_start_nudging_level_2),
             limited_area=self.grid.limited_area,
             horizontal_start=edge_start_lateral_boundary_level_5,
             horizontal_end=edge_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 04 05 06 (apply_diffusion_to_vn): end")
@@ -724,7 +722,7 @@ class Diffusion:
             horizontal_start=self._horizontal_start_index_w_diffusion,
             horizontal_end=cell_end_halo,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
@@ -743,8 +741,8 @@ class Diffusion:
             kh_smag_e=self.kh_smag_e,
             horizontal_start=edge_start_nudging,
             horizontal_end=edge_end_halo,
-            vertical_start=(klevels - 2),
-            vertical_end=klevels,
+            vertical_start=(num_levels - 2),
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug(
@@ -761,7 +759,7 @@ class Diffusion:
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider=self.grid.offset_providers,
         )
         log.debug("running stencils 13_14 (calculate_nabla2_for_theta): end")
@@ -781,7 +779,7 @@ class Diffusion:
                 horizontal_start=cell_start_nudging,
                 horizontal_end=cell_end_local,
                 vertical_start=0,
-                vertical_end=klevels,
+                vertical_end=num_levels,
                 offset_provider=self.grid.offset_providers,
             )
 
@@ -798,7 +796,7 @@ class Diffusion:
             horizontal_start=cell_start_nudging,
             horizontal_end=cell_end_local,
             vertical_start=0,
-            vertical_end=klevels,
+            vertical_end=num_levels,
             offset_provider={},
         )
         log.debug("running stencil 16 (update_theta_and_exner): end")
