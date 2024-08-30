@@ -18,9 +18,9 @@ import numpy as np
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import (
     definitions as decomposition,
-    definitions as defs,
     halo,
 )
+from icon4py.model.common.grid import horizontal as h_grid
 from icon4py.model.common.settings import xp
 
 
@@ -42,8 +42,13 @@ from icon4py.model.common.grid import (
 )
 
 
+class ReadType(enum.IntEnum):
+    FLOAT = 0
+    INT = 1
+
 class GridFileName(str, enum.Enum):
     pass
+
 
 
 @dataclasses.dataclass
@@ -147,6 +152,7 @@ class GridFile:
         #: refine control value of vertex indices
         CONTROL_VERTICES = "refin_v_ctrl"
 
+        
         #: start indices of horizontal grid zones for cell fields
         START_INDEX_CELLS = "start_idx_c"
 
@@ -188,7 +194,7 @@ class GridFile:
         try:
             nc_variable = self._dataset.variables[name]
 
-            self._log.debug(f"reading {name}: {nc_variable}")
+            self._log.debug(f"reading {name}: {nc_variable}: transposing = {transpose}")
 
             data = nc_variable[:]
             data = np.array(data, dtype=dtype)
@@ -198,13 +204,16 @@ class GridFile:
             self._log.warning(msg)
             raise IconGridError(msg) from err
 
-    def float_field(
+    def array_1d(
         self, name: GridFileName, indices: np.ndarray = None, dtype=gtx.float64
     ) -> np.ndarray:
-        """Read a float field from the grid file.
+        """Read a  field from the grid file.
 
         If a index array is given it only reads the values at those positions.
-        TODO (@halungge): currently only supports 1D fields
+        Args:
+            name: name of the field to read
+            indices: indices to read
+            dtype: datatype of the field  
         """
         try:
             # use python slice? 2D fields
@@ -346,6 +355,7 @@ class GridManager:
         decomposition_info: decomposition.DecompositionInfo,
         fields: dict[dims.Dimension, Sequence[GridFileName]],
     ):
+        reader = self._reader.array_1d
         (cells_on_node, edges_on_node, vertices_on_node) = (
             (
                 decomposition_info.global_index(
@@ -367,9 +377,9 @@ class GridManager:
             edge_fields = fields.get(dims.EdgeDim, [])
             vertex_fields = fields.get(dims.VertexDim, [])
             vals = (
-                {name: self._reader.float_field(name, cells_on_node) for name in cell_fields}
-                | {name: self._reader.float_field(name, edges_on_node) for name in edge_fields}
-                | {name: self._reader.float_field(name, vertices_on_node) for name in vertex_fields}
+                {name: reader(name, cells_on_node) for name in cell_fields}
+                | {name:reader(name, edges_on_node) for name in edge_fields}
+                | {name: reader(name, vertices_on_node) for name in vertex_fields}
             )
 
             return vals
@@ -422,17 +432,17 @@ class GridManager:
             self._log.error(msg)
 
     def _from_grid_dataset(self, grid, on_gpu: bool, limited_area=True) -> icon_grid.IconGrid:
-        e2c2v = self._construct_diamond_vertices(
+        e2c2v = _construct_diamond_vertices(
             grid.connectivities[dims.E2VDim],
             grid.connectivities[dims.C2VDim],
             grid.connectivities[dims.E2CDim],
         )
-        e2c2e = self._construct_diamond_edges(
+        e2c2e = _construct_diamond_edges(
             grid.connectivities[dims.E2CDim], grid.connectivities[dims.C2EDim]
         )
         e2c2e0 = np.column_stack((np.asarray(range(e2c2e.shape[0])), e2c2e))
 
-        c2e2c2e = self._construct_triangle_edges(
+        c2e2c2e = _construct_triangle_edges(
             grid.connectivities[dims.C2E2CDim], grid.connectivities[dims.C2EDim]
         )
         c2e2c0 = np.column_stack(
@@ -451,7 +461,7 @@ class GridManager:
                 dims.E2C2EODim: e2c2e0,
             }
         )
-        self._update_size_for_1d_sparse_dims(grid)
+        _update_size_for_1d_sparse_dims(grid)
 
         return grid
 
@@ -469,6 +479,7 @@ class GridManager:
         ).with_start_end_indices(
             dims.VertexDim, start_indices[dims.VertexDim], end_indices[dims.VertexDim]
         )
+      
 
     # TODO (@halungge)
     #  - remove duplication,
@@ -496,7 +507,7 @@ class GridManager:
                 }
             )
             grid.with_connectivities({o.target[1]: c for o, c in global_connectivities.items()})
-            self._add_derived_connectivities(grid)
+            _add_derived_connectivities(grid)
             self._add_start_end_indices(grid)
             return grid
         else:
@@ -526,7 +537,7 @@ class GridManager:
             _add_derived_connectivities(grid)
             # it has a fixed size that is a dimension in the grid file
             
-            # self._add_start_end_indices(grid)
+            
 
         _update_size_for_1d_sparse_dims(grid)
         return grid
@@ -546,19 +557,61 @@ class GridManager:
     def _get_index_field(
         self, field: GridFileName, transpose=True, apply_offset=True, dtype=gtx.int32
     ):
-        field = self._reader.int_field(field, transpose=transpose, dtype=dtype)
+        field = self._reader.int_field(field, dtype=dtype, transpose=transpose)
         if apply_offset:
             field = field + self._transformation.get_offset_for_index_field(field)
         return field
    
     def _construct_start_indices(self, decomposition_info: decomposition.DecompositionInfo):
-        num_child_domins = self._reader.dimension(GridFile.DimensionName.MAX_CHILD_DOMAINS)
-        grf_cell_dim = self._reader.dimension(GridFile.DimensionName.CELL_GRF)
-        # single node case: just read?
-        #TODO switch from numpy to xp. ...
-        start_index = np.zeros((num_child_domins, grf_cell_dim), dtype=gtx.int32)
+        num_child_domains = self._reader.dimension(GridFile.DimensionName.MAX_CHILD_DOMAINS)
+        grid_refinement_dimensions = {dim: self._reader.dimension(name) for dim, name in {dims.CellDim: GridFile.DimensionName.CELL_GRF,
+                                      dims.EdgeDim: GridFile.DimensionName.EDGE_GRF,
+                                      dims.VertexDim: GridFile.DimensionName.VERTEX_GRF}.items()}
+        
+        start_index = {dim: np.zeros((num_child_domains, size), dtype=gtx.int32) for dim, size in grid_refinement_dimensions.items()}
+        end_index = {dim: np.zeros((num_child_domains, size), dtype=gtx.int32) for dim, size in
+                       grid_refinement_dimensions.items()}
+        field_names = {dims.CellDim: [GridFile.GridRefinementName.CONTROL_CELLS],
+                       dims.EdgeDim: [GridFile.GridRefinementName.CONTROL_EDGES],
+                       dims.VertexDim: [GridFile.GridRefinementName.CONTROL_EDGES]}
+   
+        refine_control_fields = self._read(decomposition_info, fields=field_names)
+        # do we need to modify the refinement control for "halo"
+        dim = dims.CellDim
+        local_size = decomposition_info.global_index(dim, decomposition.DecompositionInfo.EntryType.ALL).shape[0]
+        start_index[dim][h_grid.HorizontalMarkerIndex.end(dim)] = local_size
+        start_index[dim][h_grid.HorizontalMarkerIndex.local(dim)] = 0
+        # find first local halo index which is not on lateral boundary
+        local_halo_index = decomposition_info.local_index(dim, decomposition.DecompositionInfo.EntryType.HALO)
+        ref_ctrl = refine_control_fields[dim]
+        minimial_local_halo_index = np.min(np.where(ref_ctrl == local_halo_index)
+        start_index[dim][h_grid.HorizontalMarkerIndex.halo(dim)] = minimial_local_halo_index
         
         
+        # for global 
+        
+        
+        
+    def _initialize_global(self, limited_area, on_gpu):
+        num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
+        num_edges = self._reader.dimension(GridFile.DimensionName.EDGE_NAME)
+        num_vertices = self._reader.dimension(GridFile.DimensionName.VERTEX_NAME)
+        uuid = self._dataset.getncattr(GridFile.PropertyName.GRID_ID)
+        grid_level = self._dataset.getncattr(GridFile.PropertyName.LEVEL)
+        grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
+        global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
+        grid_size = base_grid.HorizontalGridSize(
+            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
+        )
+        config = base_grid.GridConfig(
+            horizontal_config=grid_size,
+            vertical_size=self._config.num_levels,
+            on_gpu=on_gpu,
+            limited_area=limited_area,
+        )
+        grid = icon_grid.IconGrid(uuid).with_config(config).with_global_params(global_params)
+        return grid
+
         
         
     
@@ -608,26 +661,7 @@ def _update_size_for_1d_sparse_dims(grid):
         }
     )
 
-    def _initialize_global(self, limited_area, on_gpu):
-        num_cells = self._reader.dimension(GridFile.DimensionName.CELL_NAME)
-        num_edges = self._reader.dimension(GridFile.DimensionName.EDGE_NAME)
-        num_vertices = self._reader.dimension(GridFile.DimensionName.VERTEX_NAME)
-        uuid = self._dataset.getncattr(GridFile.PropertyName.GRID_ID)
-        grid_level = self._dataset.getncattr(GridFile.PropertyName.LEVEL)
-        grid_root = self._dataset.getncattr(GridFile.PropertyName.ROOT)
-        global_params = icon_grid.GlobalGridParams(level=grid_level, root=grid_root)
-        grid_size = base_grid.HorizontalGridSize(
-            num_vertices=num_vertices, num_edges=num_edges, num_cells=num_cells
-        )
-        config = base_grid.GridConfig(
-            horizontal_config=grid_size,
-            vertical_size=self._config.num_levels,
-            on_gpu=on_gpu,
-            limited_area=limited_area,
-        )
-        grid = icon_grid.IconGrid(uuid).with_config(config).with_global_params(global_params)
-        return grid
-
+    
 
 def _construct_diamond_vertices(
     e2v: np.ndarray, c2v: np.ndarray, e2c: np.ndarray
@@ -758,7 +792,7 @@ def _patch_with_dummy_lastline(ar):
 
 def construct_local_connectivity(
     field_offset: gtx.FieldOffset,
-    decomposition_info: defs.DecompositionInfo,
+    decomposition_info: decomposition.DecompositionInfo,
     connectivity: xp.ndarray,
 ) -> xp.ndarray:
     """
@@ -780,11 +814,11 @@ def construct_local_connectivity(
     source_dim = field_offset.source
     target_dim = field_offset.target[0]
     sliced_connectivity = connectivity[
-        decomposition_info.global_index(target_dim, defs.DecompositionInfo.EntryType.ALL)
+        decomposition_info.global_index(target_dim, decomposition.DecompositionInfo.EntryType.ALL)
     ]
     # log.debug(f"rank {self._props.rank} has local connectivity f: {sliced_connectivity}")
 
-    global_idx = decomposition_info.global_index(source_dim, defs.DecompositionInfo.EntryType.ALL)
+    global_idx = decomposition_info.global_index(source_dim, decomposition.DecompositionInfo.EntryType.ALL)
 
     # replace indices in the connectivity that do not exist on the local node by the SKIP_VALUE (those are for example neighbors of the outermost halo points)
     local_connectivity = xp.where(

@@ -327,7 +327,7 @@ def test_grid_parser_index_fields(simple_grid_gridfile, caplog):
 @pytest.mark.parametrize(
     "grid_file, experiment",
     [
-        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        #(dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
         (utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
     ],
 )
@@ -345,6 +345,28 @@ def test_gridmanager_eval_v2e(caplog, grid_savepoint, grid_file):
     reset_invalid_index(seralized_v2e)
     assert np.allclose(v2e_table, seralized_v2e)
 
+
+pytest.mark.datatest
+@pytest.mark.with_netcdf
+@pytest.mark.parametrize(
+    "grid_file, experiment",
+    [
+        (dt_utils.REGIONAL_EXPERIMENT, dt_utils.REGIONAL_EXPERIMENT),
+        #(utils.R02B04_GLOBAL, dt_utils.GLOBAL_EXPERIMENT),
+    ],
+)
+def test_refin_ctrl(grid_savepoint, grid_file, experiment): 
+    file = utils.resolve_file_from_gridfile_name(grid_file)
+    gm = init_grid_manager(file)
+    start_index, end_index, refin_ctrl, refin_ctrl_max = gm._read_grid_refinement_information(gm._dataset)
+    refin_ctrl_c = grid_savepoint.refin_ctrl(dims.CellDim)
+    refin_ctrl_e = grid_savepoint.refin_ctrl(dims.EdgeDim)
+    
+
+    refin_ctrl_v = grid_savepoint.refin_ctrl(dims.VertexDim)
+    assert np.allclose(refin_ctrl_c.ndarray, refin_ctrl[dims.CellDim])
+    assert np.allclose(refin_ctrl_e.ndarray, refin_ctrl[dims.EdgeDim])
+    assert np.allclose(refin_ctrl_v.ndarray, refin_ctrl[dims.VertexDim])
 
 # v2c: exists in serial, simple, grid
 @pytest.mark.datatest
@@ -1025,7 +1047,7 @@ def test_gridmanager_eval_c2e2c2e(caplog, grid_savepoint, grid_file):
     assert grid.get_offset_provider("C2E2C2E").table.shape == (grid.num_cells, 9)
 
 
-@pytest.mark.with_mpi
+@pytest.mark.mpi
 @pytest.mark.parametrize(
     "field_offset",
     [dims.C2V, dims.E2V, dims.V2C, dims.E2C, dims.C2E, dims.V2E, dims.C2E2C, dims.V2E2V],
