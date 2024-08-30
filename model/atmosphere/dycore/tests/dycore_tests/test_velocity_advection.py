@@ -406,12 +406,12 @@ def test_velocity_corrector_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 07
-    start_cells_lateral_boundary_d = icon_grid.start_index(
+    start_cell_lateral_boundary_level_7 = icon_grid.start_index(
         h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     assert helpers.dallclose(
-        velocity_advection.z_v_grad_w.asnumpy()[start_cells_lateral_boundary_d:, :],
-        icon_result_z_v_grad_w[start_cells_lateral_boundary_d:, :],
+        velocity_advection.z_v_grad_w.asnumpy()[start_cell_lateral_boundary_level_7:, :],
+        icon_result_z_v_grad_w[start_cell_lateral_boundary_level_7:, :],
         atol=1e-16,
     )
     # stencil 08

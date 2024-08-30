@@ -11,7 +11,6 @@ import functools
 import logging
 import pathlib
 
-import icon4py.model.common.grid.geometry
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -191,8 +190,8 @@ def model_initialization_serialbox(
 
 def read_initial_state(
     grid: icon_grid.IconGrid,
-    cell_param: icon4py.model.common.grid.geometry.CellParams,
-    edge_param: icon4py.model.common.grid.geometry.EdgeParams,
+    cell_param: geometry.CellParams,
+    edge_param: geometry.EdgeParams,
     path: pathlib.Path,
     rank=0,
     experiment_type: ExperimentType = ExperimentType.ANY,

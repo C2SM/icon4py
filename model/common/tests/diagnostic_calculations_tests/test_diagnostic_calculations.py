@@ -103,19 +103,19 @@ def test_diagnose_meridional_and_zonal_winds(
     cell_domain = h_grid.domain(dims.CellDim)
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-    grid_idx_cell_start_plus1 = icon_grid.end_index(
+    cell_end_lateral_boundary_level_2 = icon_grid.end_index(
         cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
-    grid_idx_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
+    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
     rbf.edge_2_cell_vector_rbf_interpolation(
         prognostic_state_now.vn,
         rbv_vec_coeff_c1,
         rbv_vec_coeff_c2,
         diagnostic_state.u,
         diagnostic_state.v,
-        grid_idx_cell_start_plus1,
-        grid_idx_cell_end,
+        cell_end_lateral_boundary_level_2,
+        end_cell_end,
         0,
         icon_grid.num_levels,
         offset_provider={

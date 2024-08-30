@@ -11,12 +11,11 @@ import pathlib
 
 import gt4py.next as gtx
 
-import icon4py.model.common.grid.geometry
 from icon4py.model.atmosphere.diffusion import diffusion_states as diffus_states
 from icon4py.model.atmosphere.dycore import init_exner_pr
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants as phy_const, dimension as dims
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import geometry, horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.interpolation.stencils import (
     cell_2_edge_interpolation,
     edge_2_cell_vector_rbf_interpolation,
@@ -36,7 +35,7 @@ log = logging.getLogger(__name__)
 
 def model_initialization_gauss3d(
     grid: icon_grid.IconGrid,
-    edge_param: icon4py.model.common.grid.geometry.EdgeParams,
+    edge_param: geometry.EdgeParams,
     path: pathlib.Path,
     rank=0,
 ) -> tuple[
@@ -84,10 +83,14 @@ def model_initialization_gauss3d(
 
     edge_domain = h_grid.domain(dims.EdgeDim)
     cell_domain = h_grid.domain(dims.CellDim)
-    grid_idx_edge_start_plus1 = grid.end_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    grid_idx_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
-    grid_idx_cell_start_plus1 = grid.end_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
-    grid_idx_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
+    end_edge_lateral_boundary_level_2 = grid.end_index(
+        edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    end_edge_end = grid.end_index(edge_domain(h_grid.Zone.END))
+    end_cell_lateral_boundary_level_2 = grid.end_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
+    )
+    end_cell_end = grid.end_index(cell_domain(h_grid.Zone.END))
 
     w_numpy = xp.zeros((num_cells, num_levels + 1), dtype=float)
     exner_numpy = xp.zeros((num_cells, num_levels), dtype=float)
@@ -98,7 +101,7 @@ def model_initialization_gauss3d(
     eta_v_numpy = xp.zeros((num_cells, num_levels), dtype=float)
 
     mask_array_edge_start_plus1_to_edge_end = xp.ones(num_edges, dtype=bool)
-    mask_array_edge_start_plus1_to_edge_end[0:grid_idx_edge_start_plus1] = False
+    mask_array_edge_start_plus1_to_edge_end[0:end_edge_lateral_boundary_level_2] = False
     mask = xp.repeat(
         xp.expand_dims(mask_array_edge_start_plus1_to_edge_end, axis=-1), num_levels, axis=1
     )
@@ -160,8 +163,8 @@ def model_initialization_gauss3d(
         eta_v,
         cell_2_edge_coeff,
         eta_v_e,
-        grid_idx_edge_start_plus1,
-        grid_idx_edge_end,
+        end_edge_lateral_boundary_level_2,
+        end_edge_end,
         0,
         num_levels,
         offset_provider=grid.offset_providers,
@@ -195,8 +198,8 @@ def model_initialization_gauss3d(
         rbf_vec_coeff_c2,
         u,
         v,
-        grid_idx_cell_start_plus1,
-        grid_idx_cell_end,
+        end_cell_lateral_boundary_level_2,
+        end_cell_end,
         0,
         num_levels,
         offset_provider=grid.offset_providers,

@@ -35,7 +35,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 )
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
-from icon4py.model.common.grid.geometry import CellParams, EdgeParams
+from icon4py.model.common.grid import geometry
 from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
@@ -135,7 +135,7 @@ def diffusion_init(
     )
 
     # Edge geometry
-    edge_params = EdgeParams(
+    edge_params = geometry.EdgeParams(
         tangent_orientation=tangent_orientation,
         inverse_primal_edge_lengths=inverse_primal_edge_lengths,
         inverse_dual_edge_lengths=inv_dual_edge_length,
@@ -153,7 +153,7 @@ def diffusion_init(
     )
 
     # cell geometry
-    cell_params = CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
+    cell_params = geometry.CellParams(area=cell_areas, mean_cell_area=mean_cell_area)
 
     # diffusion parameters
     config = DiffusionConfig(

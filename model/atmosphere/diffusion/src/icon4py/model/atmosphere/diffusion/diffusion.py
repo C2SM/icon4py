@@ -24,7 +24,7 @@ from icon4py.model.common.grid import (
     horizontal as h_grid,
     vertical as v_grid,
     icon as icon_grid,
-    geometry as geometry,
+    geometry,
 )
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 import icon4py.model.common.states.prognostic_state as prognostics
