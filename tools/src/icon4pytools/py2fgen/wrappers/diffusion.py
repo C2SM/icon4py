@@ -36,7 +36,7 @@ from icon4py.model.atmosphere.diffusion.diffusion_states import (
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.constants import DEFAULT_PHYSICS_DYNAMICS_TIMESTEP_RATIO
 from icon4py.model.common.grid.horizontal import CellParams, EdgeParams
-from icon4py.model.common.grid.vertical import VerticalGridConfig, VerticalGridParams
+from icon4py.model.common.grid.vertical import VerticalGrid, VerticalGridConfig
 from icon4py.model.common.settings import device, limited_area
 from icon4py.model.common.states.prognostic_state import PrognosticState
 from icon4py.model.common.test_utils.grid_utils import load_grid_from_file
@@ -185,8 +185,8 @@ def diffusion_init(
     )
 
     # vertical parameters
-    vertical_params = VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = VerticalGrid(
+        config=vertical_config,
         vct_a=vct_a,
         vct_b=None,
         _min_index_flat_horizontal_grad_pressure=nflat_gradp,
@@ -217,7 +217,7 @@ def diffusion_init(
         grid=icon_grid,
         config=config,
         params=diffusion_params,
-        vertical_params=vertical_params,
+        vertical_grid=vertical_params,
         metric_state=metric_state,
         interpolation_state=interpolation_state,
         edge_params=edge_params,

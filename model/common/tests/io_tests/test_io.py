@@ -128,8 +128,8 @@ def is_valid_uxgrid(file: Union[pathlib.Path, str]) -> bool:
 def test_io_monitor_create_output_path(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
         vct_b=None,
     )
@@ -148,8 +148,8 @@ def test_io_monitor_create_output_path(test_path):
 def test_io_monitor_write_ugrid_file(test_path):
     path_name = test_path.absolute().as_posix() + "/output"
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
         vct_b=None,
     )
@@ -178,8 +178,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
     path_name = test_path.absolute().as_posix() + "/output"
     grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
         vct_b=None,
     )
@@ -228,8 +228,8 @@ def test_io_monitor_write_and_read_ugrid_dataset(test_path, variables):
 def test_fieldgroup_monitor_write_dataset_file_roll(test_path):
     grid = grid_utils.get_icon_grid_from_gridfile(datatest_utils.GLOBAL_EXPERIMENT, on_gpu=False)
     vertical_config = v_grid.VerticalGridConfig(num_levels=grid.num_levels)
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, grid.num_levels + 1)),
         vct_b=None,
     )
@@ -352,8 +352,8 @@ def create_field_group_monitor(test_path, grid, start_time="2024-01-01T00:00:00"
         variables=["exner_function", "air_density"],
     )
     vertical_config = v_grid.VerticalGridConfig(num_levels=simple_grid.num_levels)
-    vertical_params = v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    vertical_params = v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=gtx.as_field((dims.KDim,), np.linspace(12000.0, 0.0, simple_grid.num_levels + 1)),
         vct_b=None,
     )
