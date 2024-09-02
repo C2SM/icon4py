@@ -37,9 +37,9 @@ build_baseimage_x86_64:
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
-    HPC_SDK_VERSION: 23.7
-    HPC_SDK_NAME: "nvhpc_2024_237_Linux_${ARCH}_cuda_12.2"
-    NVHPC_DEFAULT_CUDA: 12.2
+    HPC_SDK_VERSION: 24.5
+    HPC_SDK_NAME: "nvhpc_2024_245_Linux_${ARCH}_cuda_12.4"
+    NVHPC_DEFAULT_CUDA: 12.4
     CUPY_PACKAGE: cupy-cuda12x
   # TODO: re-enable CI job when Todi is back in operational state
   when: manual
@@ -97,7 +97,7 @@ build_image_aarch64:
   needs: [build_image_aarch64]
   variables:
     CSCS_ADDITIONAL_MOUNTS: '["/store/migration/project/d121/icon4py/ci/testdata:$TEST_DATA_PATH"]'
-    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/23.7"
+    HPC_SDK_PATH: "/opt/nvidia/hpc_sdk/Linux_${ARCH}/24.5"
     # Grace-Hopper gpu architecture is not enabled by default in CUDA build
     CUDAARCHS: "90"
     # Limit test parallelism to avoid "OSError: too many open files" in the gt4py build stage.
