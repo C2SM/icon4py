@@ -48,6 +48,7 @@ RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 # Set environment variables
 ARG ARCH=x86_64
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
+# The variable CUDA_PATH is used by cupy to find the cuda toolchain
 ENV CUDA_PATH=${HPC_SDK_PATH}/cuda
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
