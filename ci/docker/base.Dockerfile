@@ -46,7 +46,8 @@ ENV NVHPC_SILENT=1
 RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 
 # Set environment variables
-ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_x86_64/${HPC_SDK_VERSION}
+ARG ARCH=x86_64
+ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
