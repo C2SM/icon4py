@@ -1,5 +1,4 @@
-ARG CUDA_VERSION=11.8.0
-FROM docker.io/nvidia/cuda:${CUDA_VERSION}-base-ubuntu20.04
+FROM ubuntu:20.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
