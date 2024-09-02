@@ -1,5 +1,5 @@
-ARG NVHPC_CUDA_VERSION=11.8
-FROM docker.io/nvidia/cuda:${NVHPC_CUDA_VERSION}-devel-ubuntu20.04
+ARG CUDA_VERSION=11.8.0
+FROM docker.io/nvidia/cuda:${CUDA_VERSION}-base-ubuntu20.04
 
 ENV LANG C.UTF-8
 ENV LC_ALL C.UTF-8
@@ -34,7 +34,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=22.11
-ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_${NVHPC_CUDA_VERSION}
+ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_12.4
 ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
