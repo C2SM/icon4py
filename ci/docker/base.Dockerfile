@@ -34,7 +34,7 @@ RUN apt-get update -qq && apt-get install -qq -y --no-install-recommends \
 
 # Install NVIDIA HPC SDK for nvfortran
 ARG HPC_SDK_VERSION=22.11
-ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_12.4
+ARG HPC_SDK_NAME=nvhpc_2022_2211_Linux_x86_64_cuda_11.8
 ENV HPC_SDK_URL=https://developer.download.nvidia.com/hpc-sdk/${HPC_SDK_VERSION}/${HPC_SDK_NAME}.tar.gz
 
 RUN wget -q ${HPC_SDK_URL} -O /tmp/nvhpc.tar.gz && \
@@ -48,10 +48,11 @@ RUN cd /opt/nvidia/${HPC_SDK_NAME} && ./install
 # Set environment variables
 ARG ARCH=x86_64
 ENV HPC_SDK_PATH=/opt/nvidia/hpc_sdk/Linux_${ARCH}/${HPC_SDK_VERSION}
+ENV CUDA_PATH=${HPC_SDK_PATH}/cuda
 
 ENV PATH=${HPC_SDK_PATH}/compilers/bin:${HPC_SDK_PATH}/comm_libs/mpi/bin:${PATH} \
     MANPATH=${HPC_SDK_PATH}/compilers/man:${MANPATH} \
-    LD_LIBRARY_PATH=${HPC_SDK_PATH}/cuda/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
+    LD_LIBRARY_PATH=${CUDA_PATH}/lib64:${HPC_SDK_PATH}/math_libs/lib64:${LD_LIBRARY_PATH}
 
 # Install Boost
 RUN wget --quiet https://archives.boost.io/release/1.85.0/source/boost_1_85_0.tar.gz && \
