@@ -37,9 +37,9 @@ build_baseimage_x86_64:
 build_baseimage_aarch64:
   extends: [.container-builder-cscs-gh200, .build_baseimage]
   variables:
-    CUDA_VERSION: 12.5.1
-    HPC_SDK_VERSION: 24.7
-    HPC_SDK_NAME: "nvhpc_2024_247_Linux_${ARCH}_cuda_12.5"
+    CUDA_VERSION: 12.4.1
+    HPC_SDK_VERSION: 24.5
+    HPC_SDK_NAME: "nvhpc_2024_245_Linux_${ARCH}_cuda_12.4"
     CUPY_PACKAGE: cupy-cuda12x
   # TODO: re-enable CI job when Todi is back in operational state
   when: manual
