@@ -72,6 +72,12 @@ def data_provider(download_ser_data, ranked_data_path, experiment, processor_pro
 
 
 @pytest.fixture
+def data_provider_advection(download_ser_data, ranked_data_path, experiment, processor_props):
+    data_path = dt_utils.get_datapath_for_experiment(ranked_data_path, experiment)
+    return dt_utils.create_icon_serial_data_provider_advection(data_path, processor_props)
+
+
+@pytest.fixture
 def grid_savepoint(data_provider, experiment):
     root, level = dt_utils.get_global_grid_params(experiment)
     grid_id = dt_utils.get_grid_id_for_experiment(experiment)

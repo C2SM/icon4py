@@ -28,9 +28,10 @@ from icon4py.model.atmosphere.advection.stencils import (
 from icon4py.model.atmosphere.dycore import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import constants, field_type_aliases as fa
+from icon4py.model.common.copy import copy_cell_field
 from icon4py.model.common.decomposition import definitions as decomposition
 from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, simple as simple_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     constant_field,
@@ -181,7 +182,7 @@ class Advection:
         self._allocate_temporary_fields()
 
         # misc
-        self.even_timestep = True  # originally jstep_adv(:)%marchuk_order = 0
+        self.even_timestep = False  # originally jstep_adv(:)%marchuk_order = 1 in integrate_nh
 
         log.debug("advection class init - end")
 
@@ -248,28 +249,43 @@ class Advection:
         self.exchange.exchange_and_wait(CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
+        if (
+            self.config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION
+            and self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION
+        ):
+            log.debug("running stencil copy_cell_field - start")
+            copy_cell_field(
+                p_tracer_now,
+                p_tracer_new,
+                horizontal_start=self.start_cell_nudging,
+                horizontal_end=self.end_cell_local,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider=self.grid.offset_providers,
+            )
+            log.debug("running stencil copy_cell_field - end")
+
+            log.debug("advection class run - early end")
+            return
+
         # Godunov splitting
         if self.even_timestep:  # even timestep, vertical transport precedes horizontal transport
-            if (
-                self.config.horizontal_advection_type != HorizontalAdvectionType.NO_ADVECTION
-                and self.config.vertical_advection_type != VerticalAdvectionType.NO_ADVECTION
-            ):
-                # reintegrate density with vertical increment for conservation of mass
-                log.debug("running stencil step_advection_stencil_01 - start")
-                step_advection_stencil_01.step_advection_stencil_01(
-                    rhodz_ast=diagnostic_state.airmass_now,
-                    p_mflx_contra_v=prep_adv.mass_flx_ic,
-                    deepatmo_divzl=self.metric_state.deepatmo_divzl,
-                    deepatmo_divzu=self.metric_state.deepatmo_divzu,
-                    p_dtime=dtime,
-                    rhodz_ast2=self.rhodz_ast2,
-                    horizontal_start=self.start_cell_lb_plus1,
-                    horizontal_end=self.end_cell_end,
-                    vertical_start=0,
-                    vertical_end=self.grid.num_levels,
-                    offset_provider=self.grid.offset_providers,
-                )
-                log.debug("running stencil step_advection_stencil_01 - end")
+            # reintegrate density with vertical increment for conservation of mass
+            log.debug("running stencil step_advection_stencil_01 - start")
+            step_advection_stencil_01.step_advection_stencil_01(
+                rhodz_ast=diagnostic_state.airmass_now,
+                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                deepatmo_divzl=self.metric_state.deepatmo_divzl,
+                deepatmo_divzu=self.metric_state.deepatmo_divzu,
+                p_dtime=dtime,
+                rhodz_ast2=self.rhodz_ast2,
+                horizontal_start=self.start_cell_lb_plus1,
+                horizontal_end=self.end_cell_end,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider=self.grid.offset_providers,
+            )
+            log.debug("running stencil step_advection_stencil_01 - end")
 
             # vertical transport
             self._run_vertical_advection(
@@ -294,26 +310,22 @@ class Advection:
             )
 
         else:  # odd timestep, horizontal transport precedes vertical transport
-            if (
-                self.config.horizontal_advection_type != HorizontalAdvectionType.NO_ADVECTION
-                and self.config.vertical_advection_type != VerticalAdvectionType.NO_ADVECTION
-            ):
-                # reintegrate density with horizontal increment for conservation of mass
-                log.debug("running stencil step_advection_stencil_02 - start")
-                step_advection_stencil_02.step_advection_stencil_02(
-                    p_rhodz_new=diagnostic_state.airmass_new,
-                    p_mflx_contra_v=prep_adv.mass_flx_ic,
-                    deepatmo_divzl=self.metric_state.deepatmo_divzl,
-                    deepatmo_divzu=self.metric_state.deepatmo_divzu,
-                    p_dtime=dtime,
-                    rhodz_ast2=self.rhodz_ast2,
-                    horizontal_start=self.start_cell_lb_plus2,
-                    horizontal_end=self.end_cell_end,
-                    vertical_start=0,
-                    vertical_end=self.grid.num_levels,
-                    offset_provider=self.grid.offset_providers,
-                )
-                log.debug("running stencil step_advection_stencil_02 - end")
+            # reintegrate density with horizontal increment for conservation of mass
+            log.debug("running stencil step_advection_stencil_02 - start")
+            step_advection_stencil_02.step_advection_stencil_02(
+                p_rhodz_new=diagnostic_state.airmass_new,
+                p_mflx_contra_v=prep_adv.mass_flx_ic,
+                deepatmo_divzl=self.metric_state.deepatmo_divzl,
+                deepatmo_divzu=self.metric_state.deepatmo_divzu,
+                p_dtime=dtime,
+                rhodz_ast2=self.rhodz_ast2,
+                horizontal_start=self.start_cell_lb_plus2,
+                horizontal_end=self.end_cell_end,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider=self.grid.offset_providers,
+            )
+            log.debug("running stencil step_advection_stencil_02 - end")
 
             # horizontal transport
             self._run_horizontal_advection(
@@ -379,8 +391,19 @@ class Advection:
         log.debug("horizontal advection run - start")
 
         if self.config.horizontal_advection_type == HorizontalAdvectionType.NO_ADVECTION:
-            p_tracer_new = p_tracer_now
-            log.debug("horizontal advection run - end")
+            log.debug("running stencil copy_cell_field - start")
+            copy_cell_field(
+                p_tracer_now,
+                p_tracer_new,
+                horizontal_start=self.start_cell_nudging,
+                horizontal_end=self.end_cell_local,
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider=self.grid.offset_providers,
+            )
+            log.debug("running stencil copy_cell_field - end")
+
+            log.debug("horizontal advection run - early end")
             return
 
         # get the horizontal numerical tracer flux
@@ -428,16 +451,29 @@ class Advection:
         """
         log.debug("vertical advection run - start")
 
-        if self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
-            p_tracer_new = p_tracer_now
-            log.debug("vertical advection run - end")
-            return
-
         # TODO (dastrm): maybe change how the indices are handled here? originally:
         # if even step, vertical transport includes all halo points in order to avoid an additional synchronization step, i.e.
         #    if lstep_even: i_rlstart  = 2,                i_rlend = min_rlcell
         #    else:          i_rlstart  = grf_bdywidth_c+1, i_rlend = min_rlcell_int
         # note: horizontal advection is always called with the same indices, i.e. i_rlstart = grf_bdywidth_c+1, i_rlend = min_rlcell_int
+
+        if self.config.vertical_advection_type == VerticalAdvectionType.NO_ADVECTION:
+            log.debug("running stencil copy_cell_field - start")
+            copy_cell_field(
+                p_tracer_now,
+                p_tracer_new,
+                horizontal_start=(
+                    self.start_cell_lb_plus1 if self.even_timestep else self.start_cell_nudging
+                ),
+                horizontal_end=(self.end_cell_end if self.even_timestep else self.end_cell_local),
+                vertical_start=0,
+                vertical_end=self.grid.num_levels,
+                offset_provider=self.grid.offset_providers,
+            )
+            log.debug("running stencil copy_cell_field - end")
+
+            log.debug("vertical advection run - early end")
+            return
 
         # get the vertical numerical tracer flux
 

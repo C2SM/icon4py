@@ -8,40 +8,48 @@
 
 import pytest
 
-from icon4py.model.atmosphere.advection import advection, advection_states
-from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common.dimension import C2E2CDim, CECDim, CEDim, CellDim, EdgeDim, KDim
-from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field, random_field
+from icon4py.model.atmosphere.advection import advection
+from icon4py.model.common.dimension import CellDim, KDim
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+from .utils import (
+    construct_config,
+    construct_diagnostic_exit_state,
+    construct_diagnostic_init_state,
+    construct_interpolation_state,
+    construct_least_squares_state,
+    construct_metric_state,
+    construct_prep_adv,
+    print_serialized,
+    verify_advection_fields,
+)
 
 
 @pytest.mark.datatest
-def test_run_horizontal_advection_single_step(grid_savepoint, icon_grid, interpolation_savepoint):
+@pytest.mark.parametrize(
+    "date, even_timestep",
+    [
+        ("2021-06-20T12:00:10.000", False),
+        ("2021-06-20T12:00:20.000", True),
+    ],
+)
+def test_advection_run_single_horizontal_step(
+    grid_savepoint,
+    icon_grid,
+    interpolation_savepoint,
+    least_squares_savepoint,
+    advection_init_savepoint,
+    advection_exit_savepoint,
+    data_provider,
+    data_provider_advection,
+    even_timestep,
+):
+    config = construct_config()
+    interpolation_state = construct_interpolation_state(interpolation_savepoint)
+    least_squares_state = construct_least_squares_state(least_squares_savepoint)
+    metric_state = construct_metric_state(icon_grid)
     edge_geometry = grid_savepoint.construct_edge_geometry()
     cell_geometry = grid_savepoint.construct_cell_geometry()
-    config = advection.AdvectionConfig()
-
-    interpolation_state = advection_states.AdvectionInterpolationState(
-        geofac_div=as_1D_sparse_field(interpolation_savepoint.geofac_div(), CEDim),
-        rbf_vec_coeff_e=interpolation_savepoint.rbf_vec_coeff_e(),
-        pos_on_tplane_e_1=interpolation_savepoint.pos_on_tplane_e_x(),
-        pos_on_tplane_e_2=interpolation_savepoint.pos_on_tplane_e_y(),
-    )
-
-    least_squares_state = advection_states.AdvectionLeastSquaresState(
-        lsq_pseudoinv_1=as_1D_sparse_field(
-            random_field(icon_grid, CellDim, C2E2CDim), CECDim
-        ),  # TODO (dastrm): need to serialize this
-        lsq_pseudoinv_2=as_1D_sparse_field(
-            random_field(icon_grid, CellDim, C2E2CDim), CECDim
-        ),  # TODO (dastrm): need to serialize this
-    )
-
-    metric_state = advection_states.AdvectionMetricState(
-        deepatmo_divh=constant_field(icon_grid, 1.0, KDim),
-        deepatmo_divzl=constant_field(icon_grid, 1.0, KDim),
-        deepatmo_divzu=constant_field(icon_grid, 1.0, KDim),
-    )
 
     advection_granule = advection.Advection(
         grid=icon_grid,
@@ -52,33 +60,38 @@ def test_run_horizontal_advection_single_step(grid_savepoint, icon_grid, interpo
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
+    advection_granule.even_timestep = even_timestep if 1 else True
 
-    diagnostic_state = advection_states.AdvectionDiagnosticState(
-        airmass_now=constant_field(icon_grid, 1.0, CellDim, KDim),
-        airmass_new=constant_field(icon_grid, 1.0, CellDim, KDim),
-        grf_tend_tracer=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
-        hfl_tracer=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=icon_grid),
-        vfl_tracer=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
-    )
+    # note: The first tracer is always dry air which is not advected. Thus, originally
+    # ntracer=2 is the first tracer in transport_nml, ntracer=3 the second, and so on.
+    # Here though, ntracer=1 corresponds to the first tracer in transport_nml.
+    ntracer = 2  # originally ihadv_tracer = 2, itype_hlimit = 3
 
-    prep_adv = solve_nh_states.PrepAdvection(
-        vn_traj=field_alloc.allocate_zero_field(EdgeDim, KDim, grid=icon_grid),
-        mass_flx_me=constant_field(icon_grid, 1.0, EdgeDim, KDim),
-        mass_flx_ic=field_alloc.allocate_zero_field(
-            CellDim, KDim, is_halfdim=True, grid=icon_grid
-        ),  # TODO (dastrm): should be KHalfDim
-        vol_flx_ic=field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid),
-    )
-
-    p_tracer_now = random_field(icon_grid, CellDim, KDim)
+    diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)
+    prep_adv = construct_prep_adv(icon_grid, advection_init_savepoint)
+    p_tracer_now = advection_init_savepoint.tracer(ntracer)
     p_tracer_new = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid)
+    dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
+
+    print_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 
     advection_granule.run(
         diagnostic_state=diagnostic_state,
         prep_adv=prep_adv,
         p_tracer_now=p_tracer_now,
         p_tracer_new=p_tracer_new,
-        dtime=10.0,
+        dtime=dtime,
     )
 
-    assert 0.125 == pytest.approx(0.125, abs=1e-12)
+    diagnostic_state_ref = construct_diagnostic_exit_state(
+        icon_grid, advection_exit_savepoint, ntracer
+    )
+    p_tracer_new_ref = advection_exit_savepoint.tracer(ntracer)
+
+    verify_advection_fields(
+        grid=icon_grid,
+        diagnostic_state=diagnostic_state,
+        diagnostic_state_ref=diagnostic_state_ref,
+        p_tracer_new=p_tracer_new,
+        p_tracer_new_ref=p_tracer_new_ref,
+    )

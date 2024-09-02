@@ -118,3 +118,15 @@ def create_icon_serial_data_provider(datapath, processor_props):
         mpi_rank=processor_props.rank,
         do_print=True,
     )
+
+
+def create_icon_serial_data_provider_advection(datapath, processor_props):
+    from icon4py.model.common.test_utils.serialbox_utils import IconSerialDataProvider
+
+    return IconSerialDataProvider(
+        fname_prefix="icon_pyadvection",
+        path=str(datapath),
+        mpi_rank=processor_props.rank,
+        do_print=True,
+        advection=True,
+    )
