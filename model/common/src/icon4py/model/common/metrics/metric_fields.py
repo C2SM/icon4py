@@ -34,8 +34,11 @@ from icon4py.model.common.dimension import (
     C2E2C,
     C2E2CO,
     E2C,
+    V2C,
     C2E2CODim,
-    Koff, V2CDim, V2C, VertexDim,
+    Koff,
+    V2CDim,
+    VertexDim,
 )
 from icon4py.model.common.interpolation.stencils.cell_2_edge_interpolation import (
     _cell_2_edge_interpolation,
@@ -1206,6 +1209,7 @@ def _compute_z_ifc_off_koff(
     n = z_ifc_off(Koff[1])
     return n
 
+
 # TODO: this field is already in `compute_cell_2_vertex_interpolation` file
 # inquire if it is ok to move here
 @field_operator
@@ -1218,6 +1222,8 @@ def _compute_cell_2_vertex_interpolation(
 
 
 program(grid_type=GridType.UNSTRUCTURED, backend=settings.backend)
+
+
 def compute_cell_2_vertex_interpolation(
     cell_in: Field[[dims.CellDim, dims.KDim], wpfloat],
     c_int: Field[[dims.VertexDim, V2CDim], wpfloat],
