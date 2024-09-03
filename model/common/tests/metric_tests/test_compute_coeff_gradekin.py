@@ -8,8 +8,8 @@
 
 import pytest
 
+import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.horizontal import HorizontalMarkerIndex
 from icon4py.model.common.metrics.compute_coeff_gradekin import compute_coeff_gradekin
 from icon4py.model.common.test_utils import datatest_utils as dt_utils
 from icon4py.model.common.test_utils.helpers import dallclose
@@ -21,8 +21,8 @@ def test_compute_coeff_gradekin(icon_grid, grid_savepoint, metrics_savepoint):
     edge_cell_length = grid_savepoint.edge_cell_length().asnumpy()
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length().asnumpy()
     coeff_gradekin_ref = metrics_savepoint.coeff_gradekin()
-    horizontal_start = icon_grid.get_start_index(
-        dims.EdgeDim, HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1
+    horizontal_start = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
     horizontal_end = icon_grid.num_edges
 

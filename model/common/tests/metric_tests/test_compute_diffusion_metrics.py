@@ -9,10 +9,8 @@
 import pytest
 from gt4py.next import as_field
 
+import icon4py.model.common.grid.horizontal as h_grid
 from icon4py.model.common import dimension as dims
-from icon4py.model.common.grid.horizontal import (
-    HorizontalMarkerIndex,
-)
 from icon4py.model.common.metrics.compute_diffusion_metrics import (
     compute_diffusion_metrics,
 )
@@ -32,6 +30,7 @@ from icon4py.model.common.test_utils.helpers import (
 )
 
 
+# TODO (halungge) fails in embedded
 @pytest.mark.datatest
 @pytest.mark.parametrize("experiment", [dt_utils.REGIONAL_EXPERIMENT, dt_utils.GLOBAL_EXPERIMENT])
 def test_compute_diffusion_metrics(
@@ -61,13 +60,12 @@ def test_compute_diffusion_metrics(
     c_bln_avg = interpolation_savepoint.c_bln_avg()
     thslp_zdiffu = 0.02
     thhgtd_zdiffu = 125
-    cell_nudging = icon_grid.get_start_index(
-        dims.CellDim, HorizontalMarkerIndex.nudging(dims.CellDim)
+    cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
+
+    cell_lateral = icon_grid.start_index(
+        h_grid.domain(dims.CellDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    cell_lateral = icon_grid.get_start_index(
-        dims.CellDim,
-        HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
-    )
+
     nlev = icon_grid.num_levels
 
     compute_maxslp_maxhgtd.with_backend(backend)(
@@ -104,7 +102,6 @@ def test_compute_diffusion_metrics(
         vertical_start=0,
         vertical_end=nlev,
         offset_provider={
-            "C2E2C": icon_grid.get_offset_provider("C2E2C"),
             "C2E2CO": icon_grid.get_offset_provider("C2E2CO"),
         },
     )
