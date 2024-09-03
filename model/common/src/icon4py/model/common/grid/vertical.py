@@ -150,7 +150,7 @@ class VerticalGrid:
     def start_index(self, domain: Domain):
         return (
             self._end_index_of_damping_layer
-            if domain.zone == self.config.rayleigh_damping_height
+            if domain.zone.DAMPING == self.config.rayleigh_damping_height
             else 0
         )
 
@@ -160,7 +160,7 @@ class VerticalGrid:
         )
         return (
             self._end_index_of_damping_layer
-            if domain.zone == self.config.rayleigh_damping_height
+            if domain.zone.DAMPING == self.config.rayleigh_damping_height
             else gtx.int32(num_levels)
         )
 
