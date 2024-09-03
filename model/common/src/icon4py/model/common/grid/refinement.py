@@ -1,3 +1,11 @@
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
 import dataclasses
 from typing import Final
 
@@ -10,8 +18,9 @@ Grid refinement is used in the context of
 - nested horizontal grids to determine the nested overlap regions for feedback
 - domain decomposition to order grid points
 
-See Zaengl et al. Grid Refinement in ICON v2.6.4 (Geosci. Model Dev., 15, 7153–7176, 202)
+See Zaengl et al. Grid Refinement in ICON v2.6.4 (Geosci. Model Dev., 15, 7153-7176, 202)
 
+This module only contains functionality related to grid refinement as we use it in ICON4Py.
 
 """
 
@@ -28,16 +37,18 @@ _UNORDERED: Final[tuple[int, int]] = (0, -4)
 _MIN_ORDERED: Final[int] = -3
 """For coarse parent grids the overlapping boundary regions are counted with negative values, from -1 to max -3, (as -4 is used to mark interior points)"""
 
-@dataclasses.dataclass(frozen=True)
-class RefinementValue():
-    value: int
-    
-    def __post_init__(self):
-        assert _UNORDERED[1] <= self.value <= _MAX_ORDERED, f"Invalid refinement control constant {self.value}"
 
+@dataclasses.dataclass(frozen=True)
+class RefinementValue:
+    value: int
+
+    def __post_init__(self):
+        assert (
+            _UNORDERED[1] <= self.value <= _MAX_ORDERED
+        ), f"Invalid refinement control constant {self.value}"
 
     def is_nested(self) -> bool:
         return self.value < 0
-    
+
     def is_ordered(self) -> bool:
         return self.value not in _UNORDERED

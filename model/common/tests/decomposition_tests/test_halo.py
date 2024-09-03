@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -64,12 +72,7 @@ SIMPLE_DISTRIBUTION = xp.asarray(
         1,  # 17c
     ]
 )
-_CELL_OWN = {
-    0: [0, 3, 4, 6, 7, 10], 
-    1: [1, 2, 5, 14, 17], 
-    2: [8, 9, 11], 
-    3: [12, 13, 15, 16]
-}
+_CELL_OWN = {0: [0, 3, 4, 6, 7, 10], 1: [1, 2, 5, 14, 17], 2: [8, 9, 11], 3: [12, 13, 15, 16]}
 
 _CELL_FIRST_HALO_LINE = {
     0: [1, 11, 13, 9, 2, 15],
@@ -99,11 +102,7 @@ _EDGE_OWN = {
     3: [19, 23, 22, 26, 0, 3, 20, 18, 21],
 }
 
-_EDGE_FIRST_HALO_LINE = {
-    0: [0, 4, 17, 21, 10, 2], 
-    1: [3, 15, 20, 26, 24], 
-    2: [18], 
-    3: []}
+_EDGE_FIRST_HALO_LINE = {0: [0, 4, 17, 21, 10, 2], 1: [3, 15, 20, 26, 24], 2: [18], 3: []}
 
 _EDGE_SECOND_HALO_LINE = {
     0: [3, 6, 7, 8, 15, 24, 25, 26, 16, 22, 23, 18, 19, 20, 11],
@@ -115,27 +114,38 @@ _EDGE_SECOND_HALO_LINE = {
 _EDGE_THIRD_HALO_LINE = {
     0: [],
     1: [14],
-    2: [0,1, 3, 5, 6],
+    2: [0, 1, 3, 5, 6],
     3: [9, 12, 15],
 }
 _EDGE_HALO = {
     0: _EDGE_FIRST_HALO_LINE[0] + _EDGE_SECOND_HALO_LINE[0] + _EDGE_THIRD_HALO_LINE[0],
     1: _EDGE_FIRST_HALO_LINE[1] + _EDGE_SECOND_HALO_LINE[1] + _EDGE_THIRD_HALO_LINE[1],
     2: _EDGE_FIRST_HALO_LINE[2] + _EDGE_SECOND_HALO_LINE[2] + _EDGE_THIRD_HALO_LINE[2],
-    3: _EDGE_FIRST_HALO_LINE[3] + _EDGE_SECOND_HALO_LINE[3] + _EDGE_THIRD_HALO_LINE[3]
+    3: _EDGE_FIRST_HALO_LINE[3] + _EDGE_SECOND_HALO_LINE[3] + _EDGE_THIRD_HALO_LINE[3],
 }
 
 _VERTEX_OWN = {
     0: [4],
     1: [],
     2: [3, 5],
-    3: [0, 1, 2, 6, 7, 8,],
+    3: [
+        0,
+        1,
+        2,
+        6,
+        7,
+        8,
+    ],
 }
 
 _VERTEX_FIRST_HALO_LINE = {
     0: [0, 1, 5, 8, 7, 3],
     1: [1, 2, 0, 5, 3, 8, 6],
-    2: [6, 8, 7,],
+    2: [
+        6,
+        8,
+        7,
+    ],
     3: [],
 }
 
@@ -226,7 +236,7 @@ def test_element_ownership_is_unique(dim, processor_props):  # noqa F811 # fixtu
 
 
 @pytest.mark.mpi(min_size=4)
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim]) 
+@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 def test_halo_constructor_decomposition_info_global_indices(processor_props, dim):  # noqa F811 # fixture
     if processor_props.comm_size != 4:
         pytest.skip("This test requires exactly 4 MPI ranks.")
@@ -255,7 +265,7 @@ def assert_same_entries(
     assert xp.setdiff1d(my_owned, reference[dim][rank], assume_unique=True).size == 0
 
 
-@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim]) 
+@pytest.mark.parametrize("dim", [dims.CellDim, dims.VertexDim, dims.EdgeDim])
 def test_halo_constructor_decomposition_info_halo_levels(processor_props, dim):  # noqa F811 # fixture
     grid = simple.SimpleGrid()
     halo_generator = HaloGenerator(

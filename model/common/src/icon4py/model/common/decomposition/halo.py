@@ -1,5 +1,13 @@
 # ICON4Py - ICON inspired code in Python and GT4Py
 #
+# Copyright (c) 2022-2024, ETH Zurich and MeteoSwiss
+# All rights reserved.
+#
+# Please, refer to the LICENSE file in the root directory.
+# SPDX-License-Identifier: BSD-3-Clause
+
+# ICON4Py - ICON inspired code in Python and GT4Py
+#
 # Copyright (c) 2022, ETH Zurich and MeteoSwiss
 # All rights reserved.
 #
@@ -152,10 +160,10 @@ class HaloGenerator:
 
     def find_edge_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(cell_line, connectivity=self.face_edge_connectivity)
-    
+
     def find_edge_neighbors_for_vertices(self, vertex_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(vertex_line, connectivity=self.node_edge_connectivity)
-    
+
     def find_vertex_neighbors_for_cells(self, cell_line: xp.ndarray) -> xp.ndarray:
         return self._find_neighbors(cell_line, connectivity=self.face_node_connectivity)
 
@@ -164,8 +172,8 @@ class HaloGenerator:
         owned_cells = self._mapping == self._props.rank
         return xp.asarray(owned_cells).nonzero()[0]
 
-    def _update_owner_mask_by_max_rank_convention(self,
-        owner_mask, all_indices, indices_on_cutting_line, target_connectivity
+    def _update_owner_mask_by_max_rank_convention(
+        self, owner_mask, all_indices, indices_on_cutting_line, target_connectivity
     ):
         """
         In order to have unique ownership of edges (and vertices) among nodes there needs to be
@@ -230,10 +238,8 @@ class HaloGenerator:
         vertex_on_second_halo_line = self.find_vertex_neighbors_for_cells(
             second_halo_cells
         )  # TODO (@halungge): do we need that at all?
-        
-        vertex_on_cutting_line = xp.intersect1d(
-            vertex_on_owned_cells, vertex_on_first_halo_line
-        )
+
+        vertex_on_cutting_line = xp.intersect1d(vertex_on_owned_cells, vertex_on_first_halo_line)
 
         # create decomposition_info for vertices
         all_vertices = xp.unique(xp.hstack((vertex_on_owned_cells, vertex_on_first_halo_line)))
@@ -264,10 +270,12 @@ class HaloGenerator:
         edges_on_owned_cells = self.find_edge_neighbors_for_cells(owned_cells)
         edges_on_first_halo_line = self.find_edge_neighbors_for_cells(first_halo_cells)
         edges_on_second_halo_line = self.find_edge_neighbors_for_cells(second_halo_cells)
-    
-        level_two_edges = xp.setdiff1d(self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells)
-        
-        #level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
+
+        level_two_edges = xp.setdiff1d(
+            self.find_edge_neighbors_for_vertices(vertex_on_cutting_line), edges_on_owned_cells
+        )
+
+        # level_two_edges = xp.setdiff1d(edges_on_first_halo_line, edges_on_owned_cells)
         all_edges = xp.hstack(
             (
                 edges_on_owned_cells,
@@ -281,8 +289,6 @@ class HaloGenerator:
         edge_intersect_owned_first_line = xp.intersect1d(
             edges_on_owned_cells, edges_on_first_halo_line
         )
-
-
 
         # construct the owner mask
         edge_owner_mask = xp.isin(all_edges, edges_on_owned_cells)
