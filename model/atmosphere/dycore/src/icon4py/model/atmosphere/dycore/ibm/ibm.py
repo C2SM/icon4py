@@ -39,6 +39,9 @@ class ImmersedBoundaryMethod:
         self,
         grid: icon_grid.IconGrid,
     ):
+        """
+        Initialize the immersed boundary method.
+        """
         self.test_value = 13
 
         # Grid related totals
@@ -63,32 +66,14 @@ class ImmersedBoundaryMethod:
         log.info("IBM config validated")
         pass
 
-    @gtx.field_operator
-    def _set_bcs_cells(
-        mask: fa.CellKField[bool],
-        dir_value_w: float,
-        dir_value_theta_v: float,
-        w: fa.CellKField[float],
-        theta_v: fa.CellKField[float],
-    ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
-        w       = where(mask, w       + dir_value_w,       w)
-        theta_v = where(mask, theta_v + dir_value_theta_v, theta_v)
-        return w, theta_v
-
-    @gtx.field_operator
-    def _set_bcs_edges(
-        mask: fa.EdgeKField[bool],
-        dir_value_vn: float,
-        vn: fa.EdgeKField[float],
-    ) -> fa.EdgeKField[float]:
-        vn = where(mask, vn + dir_value_vn, vn)
-        return vn
-
     def set_boundary_conditions(
         self,
         diagnostic_state: states_utils.DiagnosticStateNonHydro,
         prognostic_state: prognostics.PrognosticState,
     ):
+        """
+        Set boundary conditions on prognostic variables.
+        """
         log.info("IBM set BCs...")
 
         self._set_bcs_cells(
@@ -107,5 +92,32 @@ class ImmersedBoundaryMethod:
             out=(prognostic_state.vn),
             offset_provider={},
         )
+
+    @gtx.field_operator
+    def _set_bcs_cells(
+        mask: fa.CellKField[bool],
+        dir_value_w: float,
+        dir_value_theta_v: float,
+        w: fa.CellKField[float],
+        theta_v: fa.CellKField[float],
+    ) -> tuple[fa.CellKField[float], fa.CellKField[float]]:
+        """
+        Set boundary conditions for variables defined on cell centres.
+        """
+        w       = where(mask, w       + dir_value_w,       w)
+        theta_v = where(mask, theta_v + dir_value_theta_v, theta_v)
+        return w, theta_v
+
+    @gtx.field_operator
+    def _set_bcs_edges(
+        mask: fa.EdgeKField[bool],
+        dir_value_vn: float,
+        vn: fa.EdgeKField[float],
+    ) -> fa.EdgeKField[float]:
+        """
+        Set boundary conditions for variables defined on edges.
+        """
+        vn = where(mask, vn + dir_value_vn, vn)
+        return vn
 
         log.info("IBM set BCs DONE")
