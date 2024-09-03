@@ -6,7 +6,6 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
-import gt4py.next as gtx
 import numpy as np
 import pytest
 
@@ -38,16 +37,18 @@ from icon4py.model.common.test_utils.datatest_fixtures import (  # noqa: F401  #
 )
 
 
+cell_domain = h_grid.domain(dims.CellDim)
+edge_domain = h_grid.domain(dims.EdgeDim)
+vertex_domain = h_grid.domain(dims.VertexDim)
+
+
 @pytest.mark.datatest
 def test_compute_c_lin_e(grid_savepoint, interpolation_savepoint, icon_grid):  # fixture
     inv_dual_edge_length = grid_savepoint.inv_dual_edge_length()
     edge_cell_length = grid_savepoint.edge_cell_length()
     owner_mask = grid_savepoint.e_owner_mask()
     c_lin_e_ref = interpolation_savepoint.c_lin_e()
-    horizontal_start = icon_grid.get_start_index(
-        dims.EdgeDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
-    )
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     c_lin_e = compute_c_lin_e(
         edge_cell_length.asnumpy(),
         inv_dual_edge_length.asnumpy(),
@@ -86,11 +87,8 @@ def test_compute_geofac_rot(grid_savepoint, interpolation_savepoint, icon_grid):
     owner_mask = grid_savepoint.v_owner_mask()
     geofac_rot_ref = interpolation_savepoint.geofac_rot()
     geofac_rot = test_helpers.zero_field(mesh, dims.VertexDim, dims.V2EDim)
-    horizontal_start = gtx.int32(
-        icon_grid.get_start_index(
-            dims.VertexDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1
-        )
-    )
+    horizontal_start = icon_grid.start_index(vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+
     compute_geofac_rot(
         dual_edge_length,
         edge_orientation,
@@ -111,10 +109,7 @@ def test_compute_geofac_n2s(grid_savepoint, interpolation_savepoint, icon_grid):
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
-    )
+    horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_n2s = compute_geofac_n2s(
         dual_edge_length.asnumpy(),
         geofac_div.asnumpy(),
@@ -137,10 +132,7 @@ def test_compute_geofac_grg(grid_savepoint, interpolation_savepoint, icon_grid):
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
-    )
+    horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     primal_normal_ec = compute_primal_normal_ec(
         primal_normal_cell_x,
         primal_normal_cell_y,
@@ -175,10 +167,7 @@ def test_compute_geofac_grdiv(grid_savepoint, interpolation_savepoint, icon_grid
     c2e = icon_grid.connectivities[dims.C2EDim]
     e2c = icon_grid.connectivities[dims.E2CDim]
     e2c2e = icon_grid.connectivities[dims.E2C2EDim]
-    horizontal_start = icon_grid.get_start_index(
-        dims.EdgeDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
-    )
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     geofac_grdiv = compute_geofac_grdiv(
         geofac_div.asnumpy(),
         inv_dual_edge_length.asnumpy(),
@@ -198,14 +187,9 @@ def test_compute_c_bln_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     c_bln_avg_ref = interpolation_savepoint.c_bln_avg().asnumpy()
     owner_mask = grid_savepoint.c_owner_mask().asnumpy()
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
-    horizontal_start = icon_grid.get_start_index(
-        dims.CellDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1,
-    )
-    horizontal_start_p2 = icon_grid.get_start_index(
-        dims.CellDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 2,
-    )
+    horizontal_start = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
+    horizontal_start_p2 = icon_grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3))
+
     lat = grid_savepoint.cell_center_lat().asnumpy()
     lon = grid_savepoint.cell_center_lon().asnumpy()
     c_bln_avg = compute_c_bln_avg(
@@ -244,14 +228,8 @@ def test_compute_e_flx_avg(grid_savepoint, interpolation_savepoint, icon_grid):
     c2e = icon_grid.connectivities[dims.C2EDim]
     c2e2c = icon_grid.connectivities[dims.C2E2CDim]
     e2c2e = icon_grid.connectivities[dims.E2C2EDim]
-    horizontal_start_p3 = icon_grid.get_start_index(
-        dims.EdgeDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 3,
-    )
-    horizontal_start_p4 = icon_grid.get_start_index(
-        dims.EdgeDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 4,
-    )
+    horizontal_start_p3 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4))
+    horizontal_start_p4 = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5))
     e_flx_avg = compute_e_flx_avg(
         c_bln_avg,
         geofac_div,
@@ -280,9 +258,8 @@ def test_compute_cells_aw_verts(
     v2c = icon_grid.connectivities[dims.V2CDim]
     v2e = icon_grid.connectivities[dims.V2EDim]
     e2v = icon_grid.connectivities[dims.E2VDim]
-    horizontal_start_vertex = icon_grid.get_start_index(
-        dims.VertexDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.VertexDim) + 1,
+    horizontal_start_vertex = icon_grid.start_index(
+        vertex_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
 
     cells_aw_verts = compute_cells_aw_verts(
@@ -338,10 +315,7 @@ def test_compute_pos_on_tplane_e(grid_savepoint, interpolation_savepoint, icon_g
     e2c = icon_grid.connectivities[dims.E2CDim]
     e2v = icon_grid.connectivities[dims.E2VDim]
     e2c2e = icon_grid.connectivities[dims.E2C2EDim]
-    horizontal_start = icon_grid.get_start_index(
-        dims.EdgeDim,
-        h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 1,
-    )
+    horizontal_start = icon_grid.start_index(edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2))
     pos_on_tplane_e_x, pos_on_tplane_e_y = compute_pos_on_tplane_e_x_y(
         sphere_radius,
         primal_normal_v1,

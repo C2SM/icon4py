@@ -57,10 +57,8 @@ def test_diagnose_temperature(
         prognostic_state_now.theta_v,
         prognostic_state_now.exner,
         diagnostic_state.temperature,
-        icon_grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.interior(dims.CellDim)
-        ),
-        icon_grid.get_end_index(dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)),
+        icon_grid.start_index(domain=h_grid.domain(dims.CellDim)(h_grid.Zone.INTERIOR)),
+        icon_grid.end_index(h_grid.domain(dims.CellDim)(h_grid.Zone.END)),
         0,
         icon_grid.num_levels,
         offset_provider={},
@@ -102,23 +100,22 @@ def test_diagnose_meridional_and_zonal_winds(
         u=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
-
+    cell_domain = h_grid.domain(dims.CellDim)
     rbv_vec_coeff_c1 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c1()
     rbv_vec_coeff_c2 = data_provider.from_interpolation_savepoint().rbf_vec_coeff_c2()
-    grid_idx_cell_start_plus1 = icon_grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.CellDim) + 1
+    cell_end_lateral_boundary_level_2 = icon_grid.end_index(
+        cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
     )
-    grid_idx_cell_end = icon_grid.get_end_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-    )
+
+    end_cell_end = icon_grid.end_index(cell_domain(h_grid.Zone.END))
     rbf.edge_2_cell_vector_rbf_interpolation(
         prognostic_state_now.vn,
         rbv_vec_coeff_c1,
         rbv_vec_coeff_c2,
         diagnostic_state.u,
         diagnostic_state.v,
-        grid_idx_cell_start_plus1,
-        grid_idx_cell_end,
+        cell_end_lateral_boundary_level_2,
+        end_cell_end,
         0,
         icon_grid.num_levels,
         offset_provider={
@@ -169,6 +166,7 @@ def test_diagnose_pressure(
         v=helpers.zero_field(icon_grid, dims.CellDim, dims.KDim, dtype=float),
     )
 
+    cell_domain = h_grid.domain(dims.CellDim)
     surface_pressure.diagnose_surface_pressure(
         prognostic_state_now.exner,
         diagnostic_state.temperature,
@@ -177,12 +175,8 @@ def test_diagnose_pressure(
         constants.CPD_O_RD,
         constants.P0REF,
         constants.GRAV_O_RD,
-        horizontal_start=icon_grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.interior(dims.CellDim)
-        ),
-        horizontal_end=icon_grid.get_end_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)
-        ),
+        horizontal_start=icon_grid.start_index(cell_domain(h_grid.Zone.INTERIOR)),
+        horizontal_end=icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         vertical_start=icon_grid.num_levels,
         vertical_end=icon_grid.num_levels + 1,
         offset_provider={"Koff": dims.KDim},
@@ -195,10 +189,8 @@ def test_diagnose_pressure(
         diagnostic_state.pressure,
         diagnostic_state.pressure_ifc,
         constants.GRAV_O_RD,
-        icon_grid.get_start_index(
-            dims.CellDim, h_grid.HorizontalMarkerIndex.interior(dims.CellDim)
-        ),
-        icon_grid.get_end_index(dims.CellDim, h_grid.HorizontalMarkerIndex.end(dims.CellDim)),
+        icon_grid.start_index(cell_domain(h_grid.Zone.INTERIOR)),
+        icon_grid.end_index(cell_domain(h_grid.Zone.END)),
         0,
         icon_grid.num_levels,
         offset_provider={},

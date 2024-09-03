@@ -13,7 +13,7 @@ from icon4py.model.atmosphere.dycore.nh_solve import solve_nonhydro as nh
 from icon4py.model.atmosphere.dycore.state_utils import states
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.decomposition import definitions
-from icon4py.model.common.grid import horizontal as h_grid, vertical as v_grid
+from icon4py.model.common.grid import geometry, vertical as v_grid
 from icon4py.model.common.test_utils import helpers, parallel_helpers
 
 from .. import test_solve_nonhydro, utils
@@ -133,8 +133,8 @@ def test_run_solve_nonhydro_single_step(
     interpolation_state = utils.construct_interpolation_state_for_nonhydro(interpolation_savepoint)
     metric_state_nonhydro = utils.construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     prognostic_state_ls = test_solve_nonhydro.create_prognostic_states(sp)
     prognostic_state_nnew = prognostic_state_ls[1]
