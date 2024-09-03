@@ -54,7 +54,7 @@ class VelocityAdvection:
         grid: icon_grid.IconGrid,
         metric_state: solve_nh_states.MetricStateNonHydro,
         interpolation_state: solve_nh_states.InterpolationState,
-        vertical_params: v_grid.VerticalGridParams,
+        vertical_params: v_grid.VerticalGrid,
         edge_params: h_grid.EdgeParams,
         owner_mask: fa.CellField[bool],
     ):

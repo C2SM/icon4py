@@ -19,8 +19,8 @@ from .utils import construct_interpolation_state_for_nonhydro, construct_nh_metr
 
 
 def create_vertical_params(vertical_config, grid_savepoint):
-    return v_grid.VerticalGridParams(
-        vertical_config=vertical_config,
+    return v_grid.VerticalGrid(
+        config=vertical_config,
         vct_a=grid_savepoint.vct_a(),
         vct_b=grid_savepoint.vct_b(),
         _min_index_flat_horizontal_grad_pressure=grid_savepoint.nflat_gradp(),

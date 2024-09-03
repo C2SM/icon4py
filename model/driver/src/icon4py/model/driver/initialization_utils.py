@@ -273,7 +273,7 @@ def read_geometry_fields(
     grid_id=GLOBAL_GRID_ID,
     grid_root=GRID_ROOT,
     grid_level=GRID_LEVEL,
-) -> tuple[h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGridParams, fa.CellField[bool]]:
+) -> tuple[h_grid.EdgeParams, h_grid.CellParams, v_grid.VerticalGrid, fa.CellField[bool]]:
     """
     Read fields containing grid properties.
 
@@ -294,8 +294,8 @@ def read_geometry_fields(
         edge_geometry = sp.construct_edge_geometry()
         cell_geometry = sp.construct_cell_geometry()
         vct_a, vct_b = v_grid.get_vct_a_and_vct_b(vertical_grid_config)
-        vertical_geometry = v_grid.VerticalGridParams(
-            vertical_config=vertical_grid_config,
+        vertical_geometry = v_grid.VerticalGrid(
+            config=vertical_grid_config,
             vct_a=vct_a,
             vct_b=vct_b,
             _min_index_flat_horizontal_grad_pressure=sp.nflat_gradp(),
