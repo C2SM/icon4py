@@ -147,6 +147,16 @@ class VerticalGrid:
         vertical_params_properties.extend(array_value)
         return "\n".join(vertical_params_properties)
 
+    def start_index(self, domain:VerticalDomain):
+        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else 0
+
+
+
+    def end_index(self, domain:VerticalDomain):
+        num_levels = self.vertical_config.num_levels if domain.dim == dims.KDim else self.vertical_config.num_levels + 1
+        return self._end_index_of_damping_layer if domain.zone == VerticalZone.DAMPING_HEIGHT else gtx.int32(num_levels)
+
+
     @property
     def metadata_interface_physical_height(self):
         return dict(
