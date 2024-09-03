@@ -8,6 +8,7 @@
 
 import pytest
 
+import icon4py.model.common.grid.geometry as geometry
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.atmosphere.dycore.velocity import velocity_advection as vel_adv
 from icon4py.model.common import dimension as dims
@@ -199,8 +200,8 @@ def test_velocity_predictor_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -245,8 +246,8 @@ def test_velocity_predictor_step(
     # stencil 02,05
     assert helpers.dallclose(diagnostic_state.vn_ie.asnumpy(), icon_result_vn_ie, atol=1.0e-14)
 
-    start_edge_lateral_boundary_6 = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
+    start_edge_lateral_boundary_6 = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     # stencil 07
     if not vn_only:
@@ -257,9 +258,7 @@ def test_velocity_predictor_step(
         )
 
     # stencil 08
-    start_cell_nudging = icon_grid.get_start_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-    )
+    start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
@@ -370,8 +369,8 @@ def test_velocity_corrector_step(
 
     metric_state_nonhydro = construct_nh_metric_state(metrics_savepoint, icon_grid.num_levels)
 
-    cell_geometry: h_grid.CellParams = grid_savepoint.construct_cell_geometry()
-    edge_geometry: h_grid.EdgeParams = grid_savepoint.construct_edge_geometry()
+    cell_geometry: geometry.CellParams = grid_savepoint.construct_cell_geometry()
+    edge_geometry: geometry.EdgeParams = grid_savepoint.construct_edge_geometry()
 
     vertical_config = v_grid.VerticalGridConfig(
         icon_grid.num_levels,
@@ -407,18 +406,16 @@ def test_velocity_corrector_step(
     icon_result_z_v_grad_w = savepoint_velocity_exit.z_v_grad_w().asnumpy()
 
     # stencil 07
-    start_cells_lateral_boundary_d = icon_grid.get_start_index(
-        dims.EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(dims.EdgeDim) + 6
+    start_cell_lateral_boundary_level_7 = icon_grid.start_index(
+        h_grid.domain(dims.EdgeDim)(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_7)
     )
     assert helpers.dallclose(
-        velocity_advection.z_v_grad_w.asnumpy()[start_cells_lateral_boundary_d:, :],
-        icon_result_z_v_grad_w[start_cells_lateral_boundary_d:, :],
+        velocity_advection.z_v_grad_w.asnumpy()[start_cell_lateral_boundary_level_7:, :],
+        icon_result_z_v_grad_w[start_cell_lateral_boundary_level_7:, :],
         atol=1e-16,
     )
     # stencil 08
-    start_cell_nudging = icon_grid.get_start_index(
-        dims.CellDim, h_grid.HorizontalMarkerIndex.nudging(dims.CellDim)
-    )
+    start_cell_nudging = icon_grid.start_index(h_grid.domain(dims.CellDim)(h_grid.Zone.NUDGING))
     assert helpers.dallclose(
         velocity_advection.z_ekinh.asnumpy()[start_cell_nudging:, :],
         savepoint_velocity_exit.z_ekinh().asnumpy()[start_cell_nudging:, :],

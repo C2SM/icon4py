@@ -16,6 +16,7 @@ import serialbox
 
 import icon4py.model.common.decomposition.definitions as decomposition
 import icon4py.model.common.field_type_aliases as fa
+import icon4py.model.common.grid.geometry as geometry
 import icon4py.model.common.test_utils.helpers as helpers
 from icon4py.model.common import dimension as dims
 from icon4py.model.common.grid import base, horizontal, icon
@@ -464,7 +465,7 @@ class IconGridSavepoint(IconSavepoint):
 
         return grid
 
-    def construct_edge_geometry(self) -> horizontal.EdgeParams:
+    def construct_edge_geometry(self) -> geometry.EdgeParams:
         primal_normal_vert: tuple[
             gtx.Field[[dims.ECVDim], float], gtx.Field[[dims.ECVDim], float]
         ] = (
@@ -491,7 +492,7 @@ class IconGridSavepoint(IconSavepoint):
             helpers.as_1D_sparse_field(self.dual_normal_cell_x(), dims.ECDim),
             helpers.as_1D_sparse_field(self.dual_normal_cell_y(), dims.ECDim),
         )
-        return horizontal.EdgeParams(
+        return geometry.EdgeParams(
             tangent_orientation=self.tangent_orientation(),
             inverse_primal_edge_lengths=self.inverse_primal_edge_lengths(),
             inverse_dual_edge_lengths=self.inv_dual_edge_length(),
@@ -512,8 +513,8 @@ class IconGridSavepoint(IconSavepoint):
             primal_normal_y=self.primal_normal_y(),
         )
 
-    def construct_cell_geometry(self) -> horizontal.CellParams:
-        return horizontal.CellParams.from_global_num_cells(
+    def construct_cell_geometry(self) -> geometry.CellParams:
+        return geometry.CellParams.from_global_num_cells(
             cell_center_lat=self.cell_center_lat(),
             cell_center_lon=self.cell_center_lon(),
             area=self.cell_areas(),
