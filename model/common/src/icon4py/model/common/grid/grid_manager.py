@@ -584,7 +584,7 @@ class GridManager:
         # find first local halo index which is not on lateral boundary
         local_halo_index = decomposition_info.local_index(dim, decomposition.DecompositionInfo.EntryType.HALO)
         ref_ctrl = refine_control_fields[dim]
-        minimial_local_halo_index = np.min(np.where(ref_ctrl == local_halo_index)
+        minimial_local_halo_index = np.min(np.where(ref_ctrl == local_halo_index))
         start_index[dim][h_grid.HorizontalMarkerIndex.halo(dim)] = minimial_local_halo_index
         
         
