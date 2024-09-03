@@ -60,7 +60,7 @@ def test_advection_run_single_horizontal_step(
         edge_params=edge_geometry,
         cell_params=cell_geometry,
     )
-    advection_granule.even_timestep = even_timestep if 1 else True
+    advection_granule.even_timestep = even_timestep
 
     # note: The first tracer is always dry air which is not advected. Thus, originally
     # ntracer=2 is the first tracer in transport_nml, ntracer=3 the second, and so on.
