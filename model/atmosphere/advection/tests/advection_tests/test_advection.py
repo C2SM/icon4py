@@ -20,7 +20,7 @@ from .utils import (
     construct_least_squares_state,
     construct_metric_state,
     construct_prep_adv,
-    print_serialized,
+    log_serialized,
     verify_advection_fields,
 )
 
@@ -73,7 +73,7 @@ def test_advection_run_single_horizontal_step(
     p_tracer_new = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 
-    print_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
+    log_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)
 
     advection_granule.run(
         diagnostic_state=diagnostic_state,

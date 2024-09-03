@@ -6,6 +6,9 @@
 # Please, refer to the LICENSE file in the root directory.
 # SPDX-License-Identifier: BSD-3-Clause
 
+import logging
+
+
 from icon4py.model.atmosphere.advection import advection, advection_states
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
@@ -14,6 +17,10 @@ from icon4py.model.common.test_utils import helpers, serialbox_utils as sb
 from icon4py.model.common.test_utils.helpers import as_1D_sparse_field, constant_field
 from icon4py.model.common.type_alias import wpfloat
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
+
+
+# flake8: noqa
+log = logging.getLogger(__name__)
 
 
 def construct_config():
@@ -99,24 +106,24 @@ def construct_prep_adv(
     )
 
 
-def print_dbg(field):
-    print(field.min(), field.max(), field.mean())
+def log_dbg(field, name=""):
+    log.debug(f"{name}: min={field.min()}, max={field.max()}, mean={field.mean()}")
 
 
-def print_serialized(
+def log_serialized(
     diagnostic_state: advection_states.AdvectionDiagnosticState,
     prep_adv: solve_nh_states.PrepAdvection,
     p_tracer_now: fa.CellKField[wpfloat],
     dtime: wpfloat,
 ):
-    print_dbg(diagnostic_state.airmass_now.asnumpy())
-    print_dbg(diagnostic_state.airmass_new.asnumpy())
-    print_dbg(diagnostic_state.grf_tend_tracer.asnumpy())
-    print_dbg(prep_adv.vn_traj.asnumpy())
-    print_dbg(prep_adv.mass_flx_me.asnumpy())
-    print_dbg(prep_adv.mass_flx_ic.asnumpy())
-    print_dbg(p_tracer_now.asnumpy())
-    print(dtime)
+    log_dbg(diagnostic_state.airmass_now.asnumpy(), "airmass_now")
+    log_dbg(diagnostic_state.airmass_new.asnumpy(), "airmass_new")
+    log_dbg(diagnostic_state.grf_tend_tracer.asnumpy(), "grf_tend_tracer")
+    log_dbg(prep_adv.vn_traj.asnumpy(), "vn_traj")
+    log_dbg(prep_adv.mass_flx_me.asnumpy(), "mass_flx_me")
+    log_dbg(prep_adv.mass_flx_ic.asnumpy(), "mass_flx_ic")
+    log_dbg(p_tracer_now.asnumpy(), "p_tracer_now")
+    log.debug(f"dtime: {dtime}")
 
 
 def verify_advection_fields(
@@ -126,31 +133,44 @@ def verify_advection_fields(
     p_tracer_new: fa.CellKField[wpfloat],
     p_tracer_new_ref: fa.CellKField[wpfloat],
 ):
+    # cell indices
     cell_domain = h_grid.domain(dims.CellDim)
     start_cell_lateral_boundary = grid.start_index(cell_domain(h_grid.Zone.LATERAL_BOUNDARY))
     end_cell_local = grid.end_index(cell_domain(h_grid.Zone.LOCAL))
 
+    # edge indices
     edge_domain = h_grid.domain(dims.EdgeDim)
     start_edge_lateral_boundary_level_5 = grid.start_index(
         edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
     )
     end_edge_halo = grid.end_index(edge_domain(h_grid.Zone.HALO))
 
-    print_dbg(
-        diagnostic_state.hfl_tracer.asnumpy()[start_edge_lateral_boundary_level_5:end_edge_halo, :]
+    # log advection output fields
+    log_dbg(
+        diagnostic_state.hfl_tracer.asnumpy()[start_edge_lateral_boundary_level_5:end_edge_halo, :],
+        "hfl_tracer",
     )
-    print_dbg(
+    log_dbg(
         diagnostic_state_ref.hfl_tracer.asnumpy()[
             start_edge_lateral_boundary_level_5:end_edge_halo, :
-        ]
+        ],
+        "hfl_tracer_ref",
     )
-    print_dbg(diagnostic_state.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :])
-    print_dbg(
-        diagnostic_state_ref.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :]
+    log_dbg(
+        diagnostic_state.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
+        "vfl_tracer",
     )
-    print_dbg(p_tracer_new.asnumpy()[start_cell_lateral_boundary:end_cell_local, :])
-    print_dbg(p_tracer_new_ref.asnumpy()[start_cell_lateral_boundary:end_cell_local, :])
+    log_dbg(
+        diagnostic_state_ref.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
+        "vfl_tracer_ref",
+    )
+    log_dbg(p_tracer_new.asnumpy()[start_cell_lateral_boundary:end_cell_local, :], "p_tracer_new")
+    log_dbg(
+        p_tracer_new_ref.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
+        "p_tracer_new_ref",
+    )
 
+    # verify advection output fields
     assert helpers.dallclose(
         diagnostic_state.hfl_tracer.asnumpy()[start_edge_lateral_boundary_level_5:end_edge_halo, :],
         diagnostic_state_ref.hfl_tracer.asnumpy()[
@@ -158,7 +178,6 @@ def verify_advection_fields(
         ],
         rtol=1e-10,
     )
-    return
     assert helpers.dallclose(  # TODO (dastrm): adjust indices once there is vertical transport
         diagnostic_state.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
         diagnostic_state_ref.vfl_tracer.asnumpy()[start_cell_lateral_boundary:end_cell_local, :],
