@@ -95,19 +95,20 @@ def init_test_fields(
     z_theta_v_e: fa.EdgeKField[float],
     z_dwdz_dd: fa.CellKField[float],
     z_graddiv_vn: fa.EdgeKField[float],
-    indices_edges_1: gtx.int32,
-    indices_edges_2: gtx.int32,
-    indices_cells_1: gtx.int32,
-    indices_cells_2: gtx.int32,
-    nlev: gtx.int32,
+    edges_start: gtx.int32,
+    edges_end: gtx.int32,
+    cells_start: gtx.int32,
+    cells_end: gtx.int32,
+    vertical_start: gtx.int32,
+    vertical_end: gtx.int32,
 ):
     _broadcast_zero_to_three_edge_kdim_fields_wp(
         out=(z_rho_e, z_theta_v_e, z_graddiv_vn),
-        domain={EdgeDim: (indices_edges_1, indices_edges_2), KDim: (0, nlev)},
+        domain={EdgeDim: (edges_start, edges_end), KDim: (vertical_start, vertical_end)},
     )
     _init_cell_kdim_field_with_zero_wp(
         out=z_dwdz_dd,
-        domain={CellDim: (indices_cells_1, indices_cells_2), KDim: (0, nlev)},
+        domain={CellDim: (cells_start, cells_end), KDim: (vertical_start, vertical_end)},
     )
 
 
