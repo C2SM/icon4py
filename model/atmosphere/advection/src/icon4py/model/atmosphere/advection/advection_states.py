@@ -10,8 +10,7 @@ import dataclasses
 
 import gt4py.next as gtx
 
-from icon4py.model.common import field_type_aliases as fa
-from icon4py.model.common.dimension import CECDim, CEDim, E2C2EDim, ECDim, EdgeDim
+from icon4py.model.common import dimension as dims, field_type_aliases as fa
 from icon4py.model.common.type_alias import wpfloat
 
 
@@ -41,16 +40,16 @@ class AdvectionInterpolationState:
     """Represents the interpolation state needed in advection."""
 
     # factor for divergence (nproma,cell_type,nblks_c)
-    geofac_div: gtx.Field[[CEDim], wpfloat]
+    geofac_div: gtx.Field[[dims.CEDim], wpfloat]
 
     # coefficients used for rbf interpolation of the tangential velocity component (rbf_vec_dim_e,nproma,nblks_e)
-    rbf_vec_coeff_e: gtx.Field[[EdgeDim, E2C2EDim], wpfloat]
+    rbf_vec_coeff_e: gtx.Field[[dims.EdgeDim, dims.E2C2EDim], wpfloat]
 
     # x-components of positions of various points on local plane tangential to the edge midpoint (nproma,4,nblks_e)
-    pos_on_tplane_e_1: gtx.Field[[ECDim], wpfloat]
+    pos_on_tplane_e_1: gtx.Field[[dims.ECDim], wpfloat]
 
     # y-components of positions of various points on local plane tangential to the edge midpoint (nproma,4,nblks_e)
-    pos_on_tplane_e_2: gtx.Field[[ECDim], wpfloat]
+    pos_on_tplane_e_2: gtx.Field[[dims.ECDim], wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -58,8 +57,8 @@ class AdvectionLeastSquaresState:
     """Represents the least squares state needed in advection."""
 
     # pseudo (or Moore-Penrose) inverse of lsq design matrix A, originally (nproma,lsq_dim_unk,lsq_dim_c,nblks_c)
-    lsq_pseudoinv_1: gtx.Field[[CECDim], wpfloat]
-    lsq_pseudoinv_2: gtx.Field[[CECDim], wpfloat]
+    lsq_pseudoinv_1: gtx.Field[[dims.CECDim], wpfloat]
+    lsq_pseudoinv_2: gtx.Field[[dims.CECDim], wpfloat]
 
 
 @dataclasses.dataclass(frozen=True)

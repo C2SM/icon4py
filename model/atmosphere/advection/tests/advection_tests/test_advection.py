@@ -9,7 +9,7 @@
 import pytest
 
 from icon4py.model.atmosphere.advection import advection
-from icon4py.model.common.dimension import CellDim, KDim
+from icon4py.model.common import dimension as dims
 from icon4py.model.common.utils import gt4py_field_allocation as field_alloc
 
 from .utils import (
@@ -70,7 +70,7 @@ def test_advection_run_single_horizontal_step(
     diagnostic_state = construct_diagnostic_init_state(icon_grid, advection_init_savepoint, ntracer)
     prep_adv = construct_prep_adv(icon_grid, advection_init_savepoint)
     p_tracer_now = advection_init_savepoint.tracer(ntracer)
-    p_tracer_new = field_alloc.allocate_zero_field(CellDim, KDim, grid=icon_grid)
+    p_tracer_new = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=icon_grid)
     dtime = advection_init_savepoint.get_metadata("dtime").get("dtime")
 
     print_serialized(diagnostic_state, prep_adv, p_tracer_now, dtime)

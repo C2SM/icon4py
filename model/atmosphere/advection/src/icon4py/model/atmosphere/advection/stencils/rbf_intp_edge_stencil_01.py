@@ -11,7 +11,7 @@ from gt4py.next.ffront.decorator import field_operator, program
 from gt4py.next.ffront.fbuiltins import Field, int32, neighbor_sum
 
 from icon4py.model.common import dimension as dims, field_type_aliases as fa
-from icon4py.model.common.dimension import E2C2E, E2C2EDim, KDim
+from icon4py.model.common.dimension import E2C2E, E2C2EDim, EdgeDim, KDim
 from icon4py.model.common.settings import backend
 
 

@@ -27,11 +27,10 @@ from icon4py.model.atmosphere.advection.stencils import (
 )
 from icon4py.model.atmosphere.dycore import compute_tangential_wind
 from icon4py.model.atmosphere.dycore.state_utils import states as solve_nh_states
-from icon4py.model.common import constants, field_type_aliases as fa
+from icon4py.model.common import constants, dimension as dims, field_type_aliases as fa
 from icon4py.model.common.copy import copy_cell_field
 from icon4py.model.common.decomposition import definitions as decomposition
-from icon4py.model.common.dimension import CellDim, E2CDim, ECDim, EdgeDim, KDim
-from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid
+from icon4py.model.common.grid import horizontal as h_grid, icon as icon_grid, geometry
 from icon4py.model.common.test_utils.helpers import (
     as_1D_sparse_field,
     constant_field,
@@ -122,8 +121,8 @@ class Advection:
         interpolation_state: advection_states.AdvectionInterpolationState,
         least_squares_state: advection_states.AdvectionLeastSquaresState,
         metric_state: advection_states.AdvectionMetricState,
-        edge_params: h_grid.EdgeParams,
-        cell_params: h_grid.CellParams,
+        edge_params: geometry.EdgeParams,
+        cell_params: geometry.CellParams,
         exchange: decomposition.ExchangeRuntime = decomposition.SingleNodeExchange(),
     ):
         """
@@ -142,41 +141,33 @@ class Advection:
         self.exchange = exchange
 
         # cell indices
-        self.start_cell_lb = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim)
+        cell_domain = h_grid.domain(dims.CellDim)
+        self.start_cell_lateral_boundary = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY)
         )
-        self.start_cell_lb_plus1 = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 1
+        self.start_cell_lateral_boundary_level_2 = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        self.start_cell_lb_plus2 = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.lateral_boundary(CellDim) + 2
+        self.start_cell_lateral_boundary_level_3 = self.grid.start_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_3)
         )
-        self.end_cell_nudging_minus1 = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim) - 1
+        self.end_cell_lateral_boundary_level_4 = self.grid.end_index(
+            cell_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_4)
         )
-        self.start_cell_nudging = self.grid.get_start_index(
-            CellDim, h_grid.HorizontalMarkerIndex.nudging(CellDim)
-        )
-        self.end_cell_local = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim)
-        )
-        self.end_cell_local_plus1 = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.local(CellDim) + 1
-        )
-        self.end_cell_end = self.grid.get_end_index(
-            CellDim, h_grid.HorizontalMarkerIndex.end(CellDim)
-        )
+        self.start_cell_nudging = self.grid.start_index(cell_domain(h_grid.Zone.NUDGING))
+        self.end_cell_local = self.grid.end_index(cell_domain(h_grid.Zone.LOCAL))
+        self.end_cell_halo = self.grid.end_index(cell_domain(h_grid.Zone.HALO))
+        self.end_cell_end = self.grid.end_index(cell_domain(h_grid.Zone.END))
 
         # edge indices
-        self.start_edge_lb_plus1 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 1
+        edge_domain = h_grid.domain(dims.EdgeDim)
+        self.start_edge_lateral_boundary_level_2 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_2)
         )
-        self.start_edge_lb_plus4 = self.grid.get_start_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.lateral_boundary(EdgeDim) + 4
+        self.start_edge_lateral_boundary_level_5 = self.grid.start_index(
+            edge_domain(h_grid.Zone.LATERAL_BOUNDARY_LEVEL_5)
         )
-        self.end_edge_local_plus1 = self.grid.get_end_index(
-            EdgeDim, h_grid.HorizontalMarkerIndex.local(EdgeDim) + 1
-        )
+        self.end_edge_halo = self.grid.end_index(edge_domain(h_grid.Zone.HALO))
 
         # fields
         self._allocate_temporary_fields()
@@ -189,40 +180,40 @@ class Advection:
     def _allocate_temporary_fields(self):
         # density field
         self.rhodz_ast2 = field_alloc.allocate_zero_field(
-            CellDim, KDim, grid=self.grid
+            dims.CellDim, dims.KDim, grid=self.grid
         )  # intermediate density times cell thickness, includes either the horizontal or vertical advective density increment [kg/m^2] (nproma,nlev,nblks_c)
 
         # backtrajectory fields
         self.z_real_vt = field_alloc.allocate_zero_field(
-            EdgeDim, KDim, grid=self.grid
+            dims.EdgeDim, dims.KDim, grid=self.grid
         )  # unweighted tangential velocity component at edges (nproma,nlev,nblks_e)
         self.cell_idx = numpy_to_1D_sparse_field(
-            np.asarray(self.grid.connectivities[E2CDim], dtype=int32), ECDim
+            np.asarray(self.grid.connectivities[dims.E2CDim], dtype=int32), dims.ECDim
         )
         self.cell_blk = as_1D_sparse_field(
-            constant_field(self.grid, 1, EdgeDim, E2CDim, dtype=int32), ECDim
+            constant_field(self.grid, 1, dims.EdgeDim, dims.E2CDim, dtype=int32), dims.ECDim
         )
         self.p_cell_idx = field_alloc.allocate_zero_field(
-            EdgeDim, KDim, grid=self.grid, dtype=int32
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=int32
         )
         self.p_cell_rel_idx = field_alloc.allocate_zero_field(
-            EdgeDim, KDim, grid=self.grid, dtype=int32
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=int32
         )
         self.p_cell_blk = field_alloc.allocate_zero_field(
-            EdgeDim, KDim, grid=self.grid, dtype=int32
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=int32
         )
         self.p_distv_bary_1 = field_alloc.allocate_zero_field(
-            EdgeDim, KDim, grid=self.grid, dtype=vpfloat
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
         )
         self.p_distv_bary_2 = field_alloc.allocate_zero_field(
-            EdgeDim, KDim, grid=self.grid, dtype=vpfloat
+            dims.EdgeDim, dims.KDim, grid=self.grid, dtype=vpfloat
         )
 
         # reconstruction fields
-        self.p_coeff_1 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.p_coeff_2 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.p_coeff_3 = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
-        self.r_m = field_alloc.allocate_zero_field(CellDim, KDim, grid=self.grid)
+        self.p_coeff_1 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.p_coeff_2 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.p_coeff_3 = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
+        self.r_m = field_alloc.allocate_zero_field(dims.CellDim, dims.KDim, grid=self.grid)
 
     def run(
         self,
@@ -246,7 +237,7 @@ class Advection:
         log.debug("advection class run - start")
 
         log.debug("communication of prep_adv cell field: mass_flx_ic - start")
-        self.exchange.exchange_and_wait(CellDim, prep_adv.mass_flx_ic)
+        self.exchange.exchange_and_wait(dims.CellDim, prep_adv.mass_flx_ic)
         log.debug("communication of prep_adv cell field: mass_flx_ic - end")
 
         if (
@@ -279,7 +270,7 @@ class Advection:
                 deepatmo_divzu=self.metric_state.deepatmo_divzu,
                 p_dtime=dtime,
                 rhodz_ast2=self.rhodz_ast2,
-                horizontal_start=self.start_cell_lb_plus1,
+                horizontal_start=self.start_cell_lateral_boundary_level_2,
                 horizontal_end=self.end_cell_end,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
@@ -319,7 +310,7 @@ class Advection:
                 deepatmo_divzu=self.metric_state.deepatmo_divzu,
                 p_dtime=dtime,
                 rhodz_ast2=self.rhodz_ast2,
-                horizontal_start=self.start_cell_lb_plus2,
+                horizontal_start=self.start_cell_lateral_boundary_level_3,
                 horizontal_end=self.end_cell_end,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
@@ -357,8 +348,8 @@ class Advection:
                 p_grf_tend_tracer=diagnostic_state.grf_tend_tracer,
                 p_tracer_new=p_tracer_new,
                 p_dtime=dtime,
-                horizontal_start=self.start_cell_lb,
-                horizontal_end=self.end_cell_nudging_minus1,
+                horizontal_start=self.start_cell_lateral_boundary,
+                horizontal_end=self.end_cell_lateral_boundary_level_4,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -367,7 +358,7 @@ class Advection:
 
         # exchange updated tracer values, originally happens only if iforcing /= inwp
         log.debug("communication of advection cell field: p_tracer_new - start")
-        self.exchange.exchange_and_wait(CellDim, p_tracer_new)
+        self.exchange.exchange_and_wait(dims.CellDim, p_tracer_new)
         log.debug("communication of advection cell field: p_tracer_new - end")
 
         # finalize step
@@ -463,7 +454,9 @@ class Advection:
                 p_tracer_now,
                 p_tracer_new,
                 horizontal_start=(
-                    self.start_cell_lb_plus1 if self.even_timestep else self.start_cell_nudging
+                    self.start_cell_lateral_boundary_level_2
+                    if self.even_timestep
+                    else self.start_cell_nudging
                 ),
                 horizontal_end=(self.end_cell_end if self.even_timestep else self.end_cell_local),
                 vertical_start=0,
@@ -503,8 +496,8 @@ class Advection:
                 vn=prep_adv.vn_traj,
                 rbf_vec_coeff_e=self.interpolation_state.rbf_vec_coeff_e,
                 vt=self.z_real_vt,
-                horizontal_start=self.start_edge_lb_plus1,
-                horizontal_end=self.end_edge_local_plus1,
+                horizontal_start=self.start_edge_lateral_boundary_level_2,
+                horizontal_end=self.end_edge_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -514,8 +507,8 @@ class Advection:
                 p_vn_in=prep_adv.vn_traj,
                 ptr_coeff=self.interpolation_state.rbf_vec_coeff_e,
                 p_vt_out=self.z_real_vt,
-                horizontal_start=self.start_edge_lb_plus1,
-                horizontal_end=self.end_edge_local_plus1,
+                horizontal_start=self.start_edge_lateral_boundary_level_2,
+                horizontal_end=self.end_edge_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # originally UBOUND(p_vn,2)
                 offset_provider=self.grid.offset_providers,
@@ -541,8 +534,8 @@ class Advection:
             p_distv_bary_1=self.p_distv_bary_1,
             p_distv_bary_2=self.p_distv_bary_2,
             p_dthalf=0.5 * dtime,
-            horizontal_start=self.start_edge_lb_plus4,
-            horizontal_end=self.end_edge_local_plus1,
+            horizontal_start=self.start_edge_lateral_boundary_level_5,
+            horizontal_end=self.end_edge_halo,
             vertical_start=0,
             vertical_end=self.grid.num_levels,
             offset_provider=self.grid.offset_providers,
@@ -561,8 +554,8 @@ class Advection:
                 p_coeff_1_dsl=self.p_coeff_1,
                 p_coeff_2_dsl=self.p_coeff_2,
                 p_coeff_3_dsl=self.p_coeff_3,
-                horizontal_start=self.start_cell_lb_plus1,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
-                horizontal_end=self.end_cell_local_plus1,
+                horizontal_start=self.start_cell_lateral_boundary_level_2,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
+                horizontal_end=self.end_cell_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,  # originally UBOUND(p_cc,2)
                 offset_provider=self.grid.offset_providers,
@@ -580,8 +573,8 @@ class Advection:
                 p_mass_flx_e=prep_adv.mass_flx_me,
                 cell_rel_idx_dsl=self.p_cell_rel_idx,
                 p_out_e=p_mflx_tracer_h,
-                horizontal_start=self.start_edge_lb_plus4,
-                horizontal_end=self.end_edge_local_plus1,
+                horizontal_start=self.start_edge_lateral_boundary_level_5,
+                horizontal_end=self.end_edge_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
@@ -603,7 +596,7 @@ class Advection:
                 r_m=self.r_m,
                 p_dtime=dtime,
                 dbl_eps=constants.DBL_EPS,
-                horizontal_start=self.start_cell_lb_plus1,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
+                horizontal_start=self.start_cell_lateral_boundary_level_2,  # originally i_rlstart_c = get_startrow_c(startrow_e=5) = 2
                 horizontal_end=self.end_cell_local,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
@@ -612,7 +605,7 @@ class Advection:
             log.debug("running stencil hflx_limiter_pd_stencil_01 - end")
 
             log.debug("communication of advection cell field: r_m - start")
-            self.exchange.exchange_and_wait(CellDim, self.r_m)
+            self.exchange.exchange_and_wait(dims.CellDim, self.r_m)
             log.debug("communication of advection cell field: r_m - end")
 
             # limit outward fluxes
@@ -620,8 +613,8 @@ class Advection:
             hflx_limiter_pd_stencil_02.hflx_limiter_pd_stencil_02(
                 r_m=self.r_m,
                 p_mflx_tracer_h=p_mflx_tracer_h,
-                horizontal_start=self.start_edge_lb_plus4,
-                horizontal_end=self.end_edge_local_plus1,
+                horizontal_start=self.start_edge_lateral_boundary_level_5,
+                horizontal_end=self.end_edge_halo,
                 vertical_start=0,
                 vertical_end=self.grid.num_levels,
                 offset_provider=self.grid.offset_providers,
